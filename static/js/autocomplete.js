@@ -41,6 +41,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function debounce(func, delay) {
+        let timeoutId;
+        return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
+    }
+
+    const debouncedFetchSuggestions = debounce(fetchSuggestions, 300); // todo - externalise
+
     // Hide suggestions when clicking outside
     document.addEventListener('click', function(event) {
         if (!suggestionsContainer.contains(event.target) && event.target !== searchBox) {
@@ -50,6 +62,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     searchBox.addEventListener('input', function() {
         hiddenIsolateName.value = ''; // Clear hidden field when user types
-        fetchSuggestions();
+        debouncedFetchSuggestions();
     });
 });

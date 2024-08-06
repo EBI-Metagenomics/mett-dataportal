@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('pagination.js loaded');
+    // console.log('pagination.js loaded');
 
     const resultsBody = document.querySelector('.vf-table__body');
     const searchForm = document.getElementById('search-form');
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentSortOrder = '';
 
     async function fetchSearchResults(page = 1, sortField = currentSortField, sortOrder = currentSortOrder) {
-        console.log('fetchSearchResults called');
+        // console.log('fetchSearchResults called');
         const query = searchBox.value.trim();
         let isolateName = hiddenIsolateName.value.trim();
 
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (isolateName) {
-            console.log('Fetching data...');
+            // console.log('Fetching data...');
             const queryString = new URLSearchParams({
                 'isolate-name': isolateName,
                 'page': page,
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 'sortOrder': sortOrder
             }).toString();
             const url = `/search/?${queryString}`;
-            console.log('Full URL:', url);
+            // console.log('Full URL:', url);
 
             try {
                 const response = await fetch(url, {
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const data = await response.json();
-                console.log('Fetched data:', data);
+                // console.log('Fetched data:', data);
                 updateResultsTable(data.results);
                 updatePagination(data);
             } catch (error) {
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updateResultsTable(results) {
-        console.log('Updating results table with results:', results);
+        // console.log('Updating results table with results:', results);
         if (!resultsBody) {
             console.error('resultsBody element not found.');
             return;
@@ -72,11 +72,11 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
             resultsBody.innerHTML += row;
         });
-        console.log('Results table updated.');
+        // console.log('Results table updated.');
     }
 
     function updatePagination(data) {
-        console.log('Updating pagination with data:', data);
+        // console.log('Updating pagination with data:', data);
         const pagination = document.querySelector('.vf-pagination__list');
         if (!pagination) {
             console.error('Pagination container not found');
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 pagination.innerHTML += `<li class="vf-pagination__item"><a href="#" data-page="${data.num_pages}" class="vf-pagination__link">Last<span class="vf-u-sr-only"> page</span></a></li>`;
             }
 
-            console.log('Pagination HTML:', pagination.innerHTML);
+            // console.log('Pagination HTML:', pagination.innerHTML);
             document.querySelectorAll('.vf-pagination__link').forEach(link => {
                 link.addEventListener('click', function (event) {
                     event.preventDefault();
@@ -109,8 +109,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
 
-        } else {
-            console.log('Pagination not required.');
         }
     }
 
