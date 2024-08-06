@@ -2,12 +2,16 @@ import csv
 from django.core.management.base import BaseCommand
 from dataportal.models import SpeciesData
 from dataportal.utils import update_full_text_search
+import os
 
 class Command(BaseCommand):
     help = 'Import species data from CSV'
 
     def handle(self, *args, **kwargs):
-        with open('./Assemblies-Annotations-Map.csv', 'r') as file:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        data_file_path = os.path.join(base_dir, '../../data/assemblies_annotations_map.csv')
+
+        with open(data_file_path, 'r') as file:
             reader = csv.reader(file)
             next(reader)  # Skip header row
             for row in reader:
