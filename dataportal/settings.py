@@ -29,8 +29,6 @@ from pathlib import Path
 
 from django.templatetags.static import static
 
-from dataportal.config import DataPortalConfig
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
