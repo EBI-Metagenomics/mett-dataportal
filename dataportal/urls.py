@@ -47,7 +47,7 @@ admin.site.site_header = "DataPortal Data Portal Admin"
 
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
-    path('search/', SearchResultsView.as_view(), name='search_results'),
+    path('search/', SearchResultsView.as_view(), name='search'),
     path('autocomplete/', Autocomplete.as_view(), name='autocomplete'),
     path("admin/", admin.site.urls),
     path("404/", page_not_found, {"exception": Exception()}),

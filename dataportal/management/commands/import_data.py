@@ -1,8 +1,9 @@
 import csv
 from django.core.management.base import BaseCommand
 from dataportal.models import SpeciesData
-from dataportal.utils import update_full_text_search
+from dataportal.utils.fts_utils import FullTextSearchManager
 import os
+
 
 class Command(BaseCommand):
     help = 'Import species data from CSV'
@@ -22,5 +23,10 @@ class Command(BaseCommand):
                     fasta_file=row[3],
                     gff_file=row[4]
                 )
-        update_full_text_search()
+
+        fts_manager = FullTextSearchManager(
+            table_name='speciesdata',
+            fields=['species', 'isolate_name', 'assembly_name', 'fasta_file', 'gff_file']
+        )
+        fts_manager.update_full_text_search()
         self.stdout.write(self.style.SUCCESS('Data imported successfully'))
