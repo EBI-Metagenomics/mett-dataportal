@@ -60,6 +60,5 @@ Configuration is split between:
 source config/secrets.env
 python manage.py migrate
 python manage.py import_data
-python manage.py refresh_external_data
 python manage.py runserver
 ```
