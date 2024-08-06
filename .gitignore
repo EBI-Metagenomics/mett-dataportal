@@ -5,11 +5,19 @@
 # dependencies
 /node_modules
 
+# generated files
+staticfiles
+static/scss/*.css
+__pycache__
+**/*.pyc
+
+# Testing
+.coverage
+.pytest_cache
+test-results
+
 # database file
 *.sqlite3
-
-# python generated files
-**/*.pyc
 
 # IDEs and editors
 /.idea
