@@ -19,8 +19,8 @@ class Migration(migrations.Migration):
                 ("species", models.CharField(max_length=255)),
                 ("isolate_name", models.CharField(max_length=255)),
                 ("assembly_name", models.CharField(max_length=255)),
-                ("fasta_file", models.CharField(max_length=500)),
-                ("gff_file", models.CharField(max_length=500)),
+                ("fasta_file", models.CharField(max_length=255)),
+                ("gff_file", models.CharField(max_length=255)),
             ],
             options={
                 "db_table": "speciesdata",

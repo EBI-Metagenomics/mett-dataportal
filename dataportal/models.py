@@ -4,8 +4,8 @@ class SpeciesData(models.Model):
     species = models.CharField(max_length=255)
     isolate_name = models.CharField(max_length=255)
     assembly_name = models.CharField(max_length=255)
-    fasta_file = models.URLField()
-    gff_file = models.URLField()
+    fasta_file = models.CharField(max_length=255)
+    gff_file = models.CharField(max_length=255)
 
     class Meta:
         db_table = 'speciesdata'
