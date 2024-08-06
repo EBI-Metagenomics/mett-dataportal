@@ -1,0 +1,13 @@
+django==5.0.7
+requests==2.32.3
+django-filter==24.2
+django-compressor==4.5.1
+django-ninja==1.2.2
+django-admin-inline-paginator==0.4.0
+django-unfold==0.33.0
+pydantic-settings==2.3.4
+django-sass-processor==1.4.1
+aiosqlite==0.20.0
+libsass==0.23.0
+whitenoise==6.7.0
+gunicorn==22.0.0

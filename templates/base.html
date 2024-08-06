@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+{% load static %}
+{% load sass_tags %}
+<html lang="en">
+<head>
+    {% block head %}
+        <meta charset="UTF-8"/>
+        <meta name="description"
+              content="ME TT Data Portal"/>
+        <meta name="keywords"
+              content="METT, Transversal Themes, DataPortal, Phocaeicola vulgatus, Bacteroides uniformis"/>
+        <title>
+            {% block title %}
+                DataPortal Data Portal
+            {% endblock title %}
+        </title>
+        <link rel="preconnect" href="https://fonts.googleapis.com"/>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans&display=swap"
+              rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&display=swap"
+              rel="stylesheet"/>
+        <link rel="stylesheet"
+              href="https://assets.emblstatic.net/vf/v2.5.7/css/styles.css"/>
+        {#            <link rel="icon"#}
+        {#                  type="image/png"#}
+        {#                  href="{% static 'img/icons/mett-logo-brand.png' %}"/>#}
+        <!-- Web component polyfill (only loads what it needs) -->
+        <script src="https://cdn.jsdelivr.net/npm/@webcomponents/custom-elements@latest"
+                defer></script>
+        <!-- Required to polyfill modern browsers as code is ES5 for IE... -->
+        <script src="https://cdn.jsdelivr.net/npm/@webcomponents/custom-elements@latest/src/native-shim.js"
+                defer></script>
+        <script type="module" src="{% static 'js/autocomplete.js' %}"></script>
+        <script type="module" src="{% static 'js/search.js' %}"></script>
+        <script type="module" src="{% static 'js/pagination.js' %}"></script>
+        <script type="module" src="{% static 'js/utils.js' %}"></script>
+
+
+        <!-- For autocomplete/typeahead -->
+        <link rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.02.min.css"/>
+    {% endblock head %}
+</head>
+<body class="vf-body | vf-stack vf-stack--200">
+<link rel="stylesheet"
+      href="//ebi.emblstatic.net/web_guidelines/EBI-Icon-fonts/v1.3/fonts.css"
+      type="text/css"
+      media="all"/>
+<link href="{% sass_src 'scss/site.scss' %}"
+      rel="stylesheet"
+      type="text/css"/>
+
+<section class="vf-hero vf-hero--800 vf-hero--search | vf-u-fullbleed"
+         style="--vf-hero--bg-image: url('https://acxngcvroo.cloudimg.io/v7/https://www.embl.org/files/wp-content/uploads/microbial-ecosystems-l.jpg');">
+    <div class="vf-hero__content | vf-box | vf-stack vf-stack--400"><p class="vf-hero__kicker">
+    </p>
+        <h2 class="vf-hero__heading">Microbial Ecosystems TT - Data Portal</h2>
+        <p class="vf-hero__subheading">Microbial Ecosystems transversal theme - a part of the EMBL Programme "Molecules
+            to Ecosystems”.</p>
+        <div class="vf-card__heading"><a class="vf-card__link" href="JavaScript:Void(0);">Optional call to action link
+            <svg aria-hidden="true" class="vf-card__heading__icon | vf-icon vf-icon-arrow--inline-end"
+                 width="1em" height="1em" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12S18.627 0 12 0C5.376.008.008 5.376 0 12zm13.707-5.209l4.5 4.5a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414l2.366-2.367a.25.25 0 00-.177-.424H6a1 1 0 010-2h8.482a.25.25 0 00.177-.427l-2.366-2.368a1 1 0 011.414-1.414z"
+                      fill="currentColor" fill-rule="nonzero"></path>
+            </svg>
+        </a></div>
+    </div>
+</section>
+<noscript>You need to enable JavaScript to run this app.</noscript>
+
+{% block content %}
+{% endblock content %}
+<div class="full-width">
+    <footer class="vf-footer">
+        <div class="vf-footer__inner">
+
+            <div class="vf-flag vf-flag--middle vf-flag--400 space-below-20">
+                <div class="vf-flag__media">
+                    <img src="{% static 'img/eu-flag.svg' %}"
+                         width="100px"
+                         alt="EU Flag"
+                         height="67px"/>
+                </div>
+                <div class="vf-flag__body">
+                    <p class="vf-footer__notice">
+                        This project has received funding from the European Union’s Horizon
+                        2020 research and innovation programme under grant agreement No 817729
+                    </p>
+                </div>
+            </div>
+            <div class="vf-footer__links-group | vf-grid">
+                <div class="vf-links">
+                    <h4 class="vf-links__heading">The project</h4>
+                    <ul class="vf-links__list | vf-list">
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="https://www.dataportal.eu">DataPortal project site</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="{% url 'admin:index' %}">Admin login</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="{{ DOCS_URL }}/publications.html">DataPortal publications</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="vf-links">
+                    <h4 class="vf-links__heading">Help</h4>
+                    <ul class="vf-links__list | vf-list">
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="{{ DOCS_URL }}">Documentation</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="mailto:dataportal-help@ebi.ac.uk">Helpdesk</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="https://dataportal.cronitorstatus.com">Status page</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="https://github.com/ebi-metagenomics/dataportal-database">Data
+                                portal codebase</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="vf-links">
+                    <h4 class="vf-links__heading">Data repositories</h4>
+                    <ul class="vf-links__list | vf-list">
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="https://www.ebi.ac.uk/ena/browser/view/PRJEB43192">ENA</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link"
+                               href="https://www.ebi.ac.uk/biosamples/samples?filter=attr%3Aproject%3Adataportal">Biosamples</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="https://www.ebi.ac.uk/metabolights/">Metabolights</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="https://www.ebi.ac.uk/metagenomics/super-studies/dataportal">MGnify</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="https://workflowhub.eu/programmes/28">WorkflowHub</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link" href="https://workflowhub.eu/programmes/28">WorkflowHub</a>
+                        </li>
+                        <li class="vf-list__item">
+                            <a class="vf-list__link"
+                               href="https://ftp.ebi.ac.uk/pub/databases/metagenomics/dataportal_data/">Data portal DB
+                                snapshots</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <section class="vf-footer__legal | vf-grid vf-grid__col-1">
+                <ul class="vf-footer__list vf-footer__list--legal | vf-list vf-list--inline">
+                    <li class="vf-list__item">
+                        <a href="https://www.dataportal.eu/data-policy" class="vf-list__link">Privacy policy</a>
+                    </li>
+
+                    <li class="vf-footer__legal-text">Data Portal technical support: <a class="vf-list__link"
+                                                                                        href="mailto:dataportal-help@ebi.ac.uk">dataportal-help@ebi.ac.uk</a>
+                    </li>
+                </ul>
+            </section>
+            <div data-vf-js-banner-cookie-name="emblContentHub27360"
+                 class="vf-banner vf-banner--fixed vf-banner--bottom vf-banner--notice"
+                 data-vf-js-banner="true"
+                 data-vf-js-banner-cookie-version="224467"
+                 data-vf-js-banner-state="dismissible"
+                 data-vf-js-banner-button-text="I agree">
+                <div class="vf-banner__content | vf-grid" data-vf-js-banner-text="">
+                    <p class="vf-text vf-text-body--2"> This website uses cookies to function.
+                        By using the site you are agreeing to this as outlined in our
+                        <a class="vf-banner__link" href="https://www.embl.org/info/privacy-policy/">Privacy Policy</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+<script src="https://assets.emblstatic.net/vf/v2.5.7/scripts/scripts.js"></script>
+
+</body>
+</html>
