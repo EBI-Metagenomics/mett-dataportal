@@ -7,7 +7,7 @@ from django.views.generic import (
 )
 
 from .models import SpeciesData
-from .search import search_species_data
+from dataportal.services.search import search_species_data
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,6 @@ class HomeView(TemplateView):
 
 from django.core.paginator import Paginator
 from django.http import JsonResponse
-from django.shortcuts import render
 from django.views import View
 import logging
 

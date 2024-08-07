@@ -11,21 +11,22 @@ from dataportal.utils.fts_utils import FullTextSearchManager
 
 logger = logging.getLogger(__name__)
 
-@override_settings(DATABASES={
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(settings.BASE_DIR, 'test_db.sqlite3'),  # Use a file-based SQLite database for testing
-    }
-})
+# @override_settings(DATABASES={
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(settings.BASE_DIR, 'test_db.sqlite3'),
+#         'TEST_NAME': os.path.join(os.path.dirname(__file__), 'test_db.sqlite3'),# Use a file-based SQLite database for testing
+#     }
+# })
 class BaseTestSetup(TestCase):
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         # Ensure the test database is clean
-        test_db = settings.DATABASES['default']['NAME']
-        if os.path.exists(test_db):
-            os.remove(test_db)
+        # test_db = settings.DATABASES['default']['NAME']
+        # if os.path.exists(test_db):
+        #     os.remove(test_db)
 
         # Apply migrations
         logger.info("Applying migrations")
@@ -80,12 +81,12 @@ class BaseTestSetup(TestCase):
 
         # Notify that the setup is complete and wait
         print("Test database setup complete. You can now check the database file manually.")
-        time.sleep(60)  # Pause for 60 seconds
+        # time.sleep(60)  # Pause for 60 seconds
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        # Clean up the test database file
-        test_db = settings.DATABASES['default']['NAME']
-        if os.path.exists(test_db):
-            os.remove(test_db)
+    # @classmethod
+    # def tearDownClass(cls):
+    #     super().tearDownClass()
+    #     # Clean up the test database file
+    #     test_db = settings.DATABASES['default']['NAME']
+    #     if os.path.exists(test_db):
+    #         os.remove(test_db)
