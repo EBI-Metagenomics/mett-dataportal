@@ -1,4 +1,4 @@
-# METT DataPortal Data Portal
+# ME TT Data Portal
 The Microbial Ecosystems Transversal Theme, part of the EMBL Programme "Molecules to Ecosystems", focuses on understanding the roles and interactions of microbes within various ecosystems. 
 It explores how microbial communities impact their environments and aims to develop methods to modulate microbiomes for beneficial outcomes. 
 The research integrates disciplines like genomics, bioinformatics, and ecology, and includes projects such as the MGnify data resource and the TREC expedition. 
