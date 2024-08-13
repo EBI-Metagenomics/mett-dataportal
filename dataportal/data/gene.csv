@@ -1,0 +1,17 @@
+Strain ID,Gene ID,Gene Name,Gene Symbol,Locus Tag
+1,BU2243B_001,16S ribosomal RNA gene,rRNA,BU2243B_001
+1,BU2243B_002,DNA gyrase subunit A,gyrA,BU2243B_002
+2,BU3537_001,16S ribosomal RNA gene,rRNA,BU3537_001
+2,BU3537_002,DNA gyrase subunit A,gyrA,BU3537_002
+3,BU61_001,16S ribosomal RNA gene,rRNA,BU61_001
+3,BU61_002,DNA gyrase subunit B,gyrB,BU61_002
+4,PV_TC39_001,RNA polymerase beta subunit,rpoB,PV_TC39_001
+4,PV_TC39_002,Elongation factor Tu,tuf,PV_TC39_002
+5,PV_AN905_001,RNA polymerase beta subunit,rpoB,PV_AN905_001
+5,PV_AN905_002,Elongation factor Tu,tuf,PV_AN905_002
+6,PV_ATCC8482_001,RNA polymerase beta subunit,rpoB,PV_ATCC8482_001
+6,PV_ATCC8482_002,Elongation factor Tu,tuf,PV_ATCC8482_002
+7,PV_TC4716A_001,RNA polymerase beta subunit,rpoB,PV_TC4716A_001
+7,PV_TC4716A_002,Elongation factor Tu,tuf,PV_TC4716A_002
+8,PV_TC4835B_001,RNA polymerase beta subunit,rpoB,PV_TC4835B_001
+8,PV_TC4835B_002,Elongation factor Tu,tuf,PV_TC4835B_002

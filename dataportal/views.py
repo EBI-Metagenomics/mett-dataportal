@@ -1,28 +1,19 @@
 import logging
 
-from asgiref.sync import sync_to_async
-from django.db.models import Q
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.views import View
 from django.views.generic import (
     TemplateView,
 )
 
-from .models import SpeciesData
-from dataportal.services.search import search_species_data
+from .services.search import search_species_data, autocomplete_suggestions
 
 logger = logging.getLogger(__name__)
 
 
 class HomeView(TemplateView):
     template_name = "dataportal/pages/index.html"
-
-
-from django.core.paginator import Paginator
-from django.http import JsonResponse
-from django.views import View
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 class SearchResultsView(View):
     async def get(self, request, *args, **kwargs):
@@ -40,8 +31,7 @@ class SearchResultsView(View):
                 sort_order = request.GET.get('sortOrder', '')
                 page_number = int(request.GET.get('page', 1))
 
-                total_results, page_results = await search_species_data(search_term, sort_field, sort_order,
-                                                                        page=page_number)
+                total_results, page_results = await search_species_data(search_term, sort_field, sort_order, page=page_number)
                 paginator = Paginator(range(total_results), 10)  # 10 results per page
                 page_obj = paginator.get_page(page_number)
                 results = page_results
@@ -60,7 +50,6 @@ class SearchResultsView(View):
                 'has_next': page_obj.has_next() if page_obj else False,
             })
 
-        # Only return an empty JSON response if no search term is provided
         return JsonResponse({
             'results': [],
             'page_number': 1,
@@ -69,22 +58,10 @@ class SearchResultsView(View):
             'has_next': False,
         })
 
-
 class Autocomplete(View):
     async def get(self, request, *args, **kwargs):
         query = request.GET.get('query', '')
         suggestions = []
         if query:
-            # Use sync_to_async to run the query in a thread-safe manner
-            results = await sync_to_async(list)(SpeciesData.objects.filter(
-                Q(species__icontains=query) |
-                Q(isolate_name__icontains=query) |
-                Q(assembly_name__icontains=query)
-            ).values('species', 'isolate_name', 'assembly_name')[:10])
-
-            # Create a list of formatted suggestion strings
-            suggestions = [
-                f"{result['species']} - {result['isolate_name']} ({result['assembly_name']})"
-                for result in results
-            ]
+            suggestions = await autocomplete_suggestions(query)
         return JsonResponse({'suggestions': suggestions})
