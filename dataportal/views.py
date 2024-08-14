@@ -7,7 +7,7 @@ from django.views.generic import (
     TemplateView,
 )
 
-from .services.search import search_species_data, autocomplete_suggestions
+from .models import Species
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +30,16 @@ class SearchResultsView(View):
                 sort_field = request.GET.get('sortField', '')
                 sort_order = request.GET.get('sortOrder', '')
                 page_number = int(request.GET.get('page', 1))
+                per_page = 10  # Number of results per page
 
-                total_results, page_results = await search_species_data(search_term, sort_field, sort_order, page=page_number)
-                paginator = Paginator(range(total_results), 10)  # 10 results per page
+                # Fetch the results from the custom manager method without pagination
+                full_results = await Species.objects.search_species(search_term, sort_field, sort_order)
+                total_results = len(full_results)
+
+                # Paginate the results
+                paginator = Paginator(full_results, per_page)
                 page_obj = paginator.get_page(page_number)
-                results = page_results
+                results = page_obj.object_list
 
             except Exception as e:
                 logger.error(f"Error executing async query: {e}")
@@ -60,8 +65,8 @@ class SearchResultsView(View):
 
 class Autocomplete(View):
     async def get(self, request, *args, **kwargs):
-        query = request.GET.get('query', '')
-        suggestions = []
+        query = request.GET.get('query', '').strip()
         if query:
-            suggestions = await autocomplete_suggestions(query)
-        return JsonResponse({'suggestions': suggestions})
+            suggestions = await Species.objects.autocomplete_suggestions(query)
+            return JsonResponse({'suggestions': suggestions})
+        return JsonResponse({'suggestions': []})
