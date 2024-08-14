@@ -47,6 +47,7 @@ async def search_species_data(query, sort_field='', sort_order='', page=1, per_p
                     gene_ids.append(row[0])
 
             # Step 2: Now perform the main query using the obtained rowids but without retrieving gene information
+            # and include all strains linked to matched species
             query_string = f"""
             SELECT DISTINCT
                 s.scientific_name,
@@ -64,6 +65,7 @@ async def search_species_data(query, sort_field='', sort_order='', page=1, per_p
             WHERE
                 s.rowid IN ({','.join('?' * len(species_ids))})
                 OR st.rowid IN ({','.join('?' * len(strain_ids))})
+                OR st.species_id IN (SELECT id FROM species WHERE rowid IN ({','.join('?' * len(species_ids))}))
                 OR st.rowid IN (SELECT strain_id FROM gene WHERE rowid IN ({','.join('?' * len(gene_ids))}))
             {sort_clause}
             """
@@ -71,7 +73,7 @@ async def search_species_data(query, sort_field='', sort_order='', page=1, per_p
                 f"Executing query: {query_string} with species_ids: {species_ids}, strain_ids: {strain_ids}, gene_ids: {gene_ids}")
 
             all_results = []
-            async with db.execute(query_string, (*species_ids, *strain_ids, *gene_ids)) as cursor:
+            async with db.execute(query_string, (*species_ids, *strain_ids, *species_ids, *gene_ids)) as cursor:
                 async for row in cursor:
                     logger.debug(f"Processing row: {row}")
                     all_results.append({
