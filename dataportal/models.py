@@ -64,6 +64,7 @@ class SpeciesManager(models.Manager):
             all_results = []
             async with db.execute(query_string, (*species_ids, *strain_ids, *species_ids, *gene_ids)) as cursor:
                 async for row in cursor:
+                    isolate_name = row[2]
                     all_results.append({
                         'species': row[0],
                         'common_name': row[1],
@@ -71,8 +72,10 @@ class SpeciesManager(models.Manager):
                         'strain_name': row[3],
                         'assembly_name': row[4],
                         'assembly_accession': row[5],
-                        'fasta_file': row[6],
-                        'gff_file': row[7],
+                        # 'fasta_file': row[6],
+                        # 'gff_file': row[7],
+                        'fasta_file': settings.ASSEMBLY_FTP_PATH + row[6],
+                        'gff_file': settings.GFF_FTP_PATH.format(isolate_name) + row[7]
                     })
 
             print(f"Total results from search_species: {len(all_results)}")  # Debugging
