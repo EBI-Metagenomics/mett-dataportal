@@ -1,9 +1,11 @@
 import aiosqlite
+import math
 from django.db import models
 from django.conf import settings
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class SpeciesManager(models.Manager):
     async def search_species(self, query, sort_field='', sort_order=''):
@@ -73,6 +75,7 @@ class SpeciesManager(models.Manager):
                         'gff_file': row[7],
                     })
 
+            print(f"Total results from search_species: {len(all_results)}")  # Debugging
             return all_results
 
     async def autocomplete_suggestions(self, query, limit=10):

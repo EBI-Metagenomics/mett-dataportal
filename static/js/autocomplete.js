@@ -1,4 +1,4 @@
-import { extractIsolateName } from './utils.js';
+import {extractIsolateName} from './utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const searchBox = document.getElementById('search-box');
@@ -26,10 +26,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const query = searchBox.value;
         if (query.length >= 2) {
             try {
-                const response = await fetch(`/autocomplete/?query=${encodeURIComponent(query)}`);
+                const response = await fetch(`/api/search/autocomplete/?query=${encodeURIComponent(query)}`);
                 if (response.ok) {
                     const data = await response.json();
-                    displaySuggestions(data.suggestions);
+                    // console.log(data); // Log the API response
+                    displaySuggestions(data); // Pass the data directly
                 } else {
                     console.error('Error fetching suggestions:', response.statusText);
                 }
@@ -37,13 +38,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error('Network error:', error);
             }
         } else {
-            suggestionsContainer.innerHTML = ''; // Clear suggestions if input is less than 2 characters
+            suggestionsContainer.innerHTML = '';
         }
     }
 
     function debounce(func, delay) {
         let timeoutId;
-        return function(...args) {
+        return function (...args) {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {
                 func.apply(this, args);
@@ -54,13 +55,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const debouncedFetchSuggestions = debounce(fetchSuggestions, 300); // todo - externalise
 
     // Hide suggestions when clicking outside
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         if (!suggestionsContainer.contains(event.target) && event.target !== searchBox) {
             suggestionsContainer.innerHTML = ''; // Clear suggestions
         }
     });
 
-    searchBox.addEventListener('input', function() {
+    searchBox.addEventListener('input', function () {
         hiddenIsolateName.value = ''; // Clear hidden field when user types
         debouncedFetchSuggestions();
     });

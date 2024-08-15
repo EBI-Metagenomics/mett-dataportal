@@ -1,4 +1,3 @@
-import {fetchSearchResults, updateResultsTable} from './utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const searchForm = document.getElementById('search-form');
@@ -21,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const queryString = new URLSearchParams({'isolate-name': isolateName}).toString();
                 const url = `${searchForm.action}?${queryString}`;
 
-                // console.log('Submitting search with URL:', url);
+                // console.log('*** Submitting search with URL:', url);
 
                 fetchSearchResults(url, updateResultsTable, resultsBody)
                     .catch(error => console.error('Search fetch failed:', error));

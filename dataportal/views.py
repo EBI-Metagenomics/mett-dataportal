@@ -17,6 +17,7 @@ class HomeView(TemplateView):
 
 class SearchResultsView(View):
     async def get(self, request, *args, **kwargs):
+        logger.debug('SearchResultsView called')
         query = request.GET.get('query', '').strip()
         isolate_name = request.GET.get('isolate-name', '').strip()
         search_term = isolate_name or query
@@ -32,9 +33,11 @@ class SearchResultsView(View):
                 page_number = int(request.GET.get('page', 1))
                 per_page = 10  # Number of results per page
 
-                # Fetch the results from the custom manager method without pagination
+                # logger.debug(f'search_term: {search_term}')
+                # logger.debug(f'Page number: {page_number}')
+                # logger.debug(f'sort_field: {sort_field}, sort_order: {sort_order}')
                 full_results = await Species.objects.search_species(search_term, sort_field, sort_order)
-                total_results = len(full_results)
+                # total_results = len(full_results)
 
                 # Paginate the results
                 paginator = Paginator(full_results, per_page)
