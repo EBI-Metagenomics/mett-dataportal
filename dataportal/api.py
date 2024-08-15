@@ -36,12 +36,13 @@ class PaginationSchema(BaseModel):
 
 @search_router.get('/results/', response=PaginationSchema)
 async def search_results(request, query: Optional[str] = None, isolate_name: Optional[str] = None,
-                         sort_field: Optional[str] = '', sort_order: Optional[str] = '', page: int = 1,
+                         sortField: Optional[str] = '', sortOrder: Optional[str] = '', page: int = 1,
                          per_page: int = 10):
     search_term = isolate_name or query
+    print(f'sort_field: {sortField}, sort_order: {sortOrder}')
     if search_term:
         try:
-            full_results = await Species.objects.search_species(search_term, sort_field, sort_order)
+            full_results = await Species.objects.search_species(search_term, sortField, sortOrder)
 
             total_results = len(full_results)
             print(f'Total results found in search_results: {total_results}')

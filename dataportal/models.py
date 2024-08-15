@@ -12,6 +12,17 @@ class SpeciesManager(models.Manager):
         database_path = settings.DATABASES['default']['NAME']
         wildcard_query = f'"{query}"*'
 
+        SORT_FIELD_MAP = {
+            'species': 'scientific_name',   # Map 'species' to the correct column name
+            'common_name': 'common_name',
+            'isolate_name': 'isolate_name',
+            'strain_name': 'strain_name',
+            'assembly_name': 'assembly_name',
+            # Add other mappings as necessary
+        }
+
+        db_sort_field = SORT_FIELD_MAP.get(sort_field, sort_field)
+
         async with aiosqlite.connect(database_path) as db:
             species_match_query = """
             SELECT rowid FROM species_fts WHERE species_fts MATCH ?
@@ -58,8 +69,8 @@ class SpeciesManager(models.Manager):
                 OR st.rowid IN (SELECT strain_id FROM gene WHERE rowid IN ({','.join('?' * len(gene_ids))}))
             """
 
-            if sort_field and sort_order:
-                query_string += f" ORDER BY {sort_field} {sort_order.upper()}"
+            if db_sort_field and sort_order:
+                query_string += f" ORDER BY {db_sort_field} {sort_order.upper()}"
 
             all_results = []
             async with db.execute(query_string, (*species_ids, *strain_ids, *species_ids, *gene_ids)) as cursor:
@@ -72,13 +83,10 @@ class SpeciesManager(models.Manager):
                         'strain_name': row[3],
                         'assembly_name': row[4],
                         'assembly_accession': row[5],
-                        # 'fasta_file': row[6],
-                        # 'gff_file': row[7],
                         'fasta_file': settings.ASSEMBLY_FTP_PATH + row[6],
                         'gff_file': settings.GFF_FTP_PATH.format(isolate_name) + row[7]
                     })
 
-            print(f"Total results from search_species: {len(all_results)}")  # Debugging
             return all_results
 
     async def autocomplete_suggestions(self, query, limit=10):
