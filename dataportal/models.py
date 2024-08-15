@@ -13,12 +13,11 @@ class SpeciesManager(models.Manager):
         wildcard_query = f'"{query}"*'
 
         SORT_FIELD_MAP = {
-            'species': 'scientific_name',   # Map 'species' to the correct column name
+            'species': 'scientific_name',
             'common_name': 'common_name',
             'isolate_name': 'isolate_name',
             'strain_name': 'strain_name',
             'assembly_name': 'assembly_name',
-            # Add other mappings as necessary
         }
 
         db_sort_field = SORT_FIELD_MAP.get(sort_field, sort_field)
