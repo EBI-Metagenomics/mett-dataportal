@@ -1,29 +1,5 @@
 from django.db import migrations
 
-def create_fts(apps, schema_editor):
-    from dataportal.utils.fts_utils import FullTextSearchManager
-
-    # Full-text search for Species
-    species_fts_manager = FullTextSearchManager(
-        table_name='species',
-        fields=['scientific_name', 'common_name']
-    )
-    species_fts_manager.create_full_text_search_table()
-
-    # Full-text search for Strain
-    strain_fts_manager = FullTextSearchManager(
-        table_name='strain',
-        fields=['isolate_name', 'strain_name', 'assembly_name', 'assembly_accession', 'fasta_file', 'gff_file']
-    )
-    strain_fts_manager.create_full_text_search_table()
-
-    # Full-text search for Gene
-    gene_fts_manager = FullTextSearchManager(
-        table_name='gene',
-        fields=['gene_id', 'gene_name', 'gene_symbol', 'locus_tag']
-    )
-    gene_fts_manager.create_full_text_search_table()
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -31,5 +7,29 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(create_fts),
+        migrations.RunSQL(
+            sql='''
+                CREATE VIRTUAL TABLE IF NOT EXISTS species_fts USING fts5(
+                    scientific_name, common_name,
+                    content='species',
+                    content_rowid='id'
+                );
+                CREATE VIRTUAL TABLE IF NOT EXISTS strain_fts USING fts5(
+                    isolate_name, strain_name, assembly_name, assembly_accession, fasta_file, gff_file,
+                    content='strain',
+                    content_rowid='id'
+                );
+                CREATE VIRTUAL TABLE IF NOT EXISTS gene_fts USING fts5(
+                    gene_id, gene_name, gene_symbol, locus_tag,
+                    content='gene',
+                    content_rowid='id'
+                );
+            ''',
+            reverse_sql='''
+                DROP TABLE IF EXISTS species_fts;
+                DROP TABLE IF EXISTS strain_fts;
+                DROP TABLE IF EXISTS gene_fts;
+            '''
+        ),
+        # Remove the data population SQL commands
     ]
