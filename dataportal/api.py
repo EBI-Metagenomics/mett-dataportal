@@ -1,8 +1,9 @@
+from typing import List, Optional
+
 from ninja import NinjaAPI, Router
 from pydantic import BaseModel
 
 from .models import Species
-from typing import List, Optional
 
 api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
@@ -15,6 +16,7 @@ api = NinjaAPI(
 
 search_router = Router()
 
+
 class SearchResultSchema(BaseModel):
     species: str
     common_name: Optional[str]
@@ -24,6 +26,7 @@ class SearchResultSchema(BaseModel):
     assembly_accession: Optional[str]
     fasta_file: str
     gff_file: str
+
 
 class PaginationSchema(BaseModel):
     results: List[SearchResultSchema]
@@ -80,7 +83,6 @@ async def search_results(request, query: Optional[str] = None, isolate_name: Opt
     )
 
 
-
 @search_router.get('/autocomplete/', response=List[str])
 async def autocomplete_suggestions(request, query: str, limit: int = 10):
     try:
@@ -88,6 +90,7 @@ async def autocomplete_suggestions(request, query: str, limit: int = 10):
         return suggestions
     except Exception as e:
         return {'error': str(e)}, 500
+
 
 api.add_router("/search", search_router)
 

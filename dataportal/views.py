@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 class HomeView(TemplateView):
     template_name = "dataportal/pages/index.html"
 
+
 class SearchResultsView(View):
     async def get(self, request, *args, **kwargs):
         logger.debug('SearchResultsView called')
@@ -33,9 +34,6 @@ class SearchResultsView(View):
                 page_number = int(request.GET.get('page', 1))
                 per_page = 10  # Number of results per page
 
-                # logger.debug(f'search_term: {search_term}')
-                # logger.debug(f'Page number: {page_number}')
-                # logger.debug(f'sort_field: {sort_field}, sort_order: {sort_order}')
                 full_results = await Species.objects.search_species(search_term, sort_field, sort_order)
                 # total_results = len(full_results)
 
@@ -65,6 +63,7 @@ class SearchResultsView(View):
             'has_previous': False,
             'has_next': False,
         })
+
 
 class Autocomplete(View):
     async def get(self, request, *args, **kwargs):

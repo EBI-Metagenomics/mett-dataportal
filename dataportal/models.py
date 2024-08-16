@@ -1,8 +1,8 @@
-import aiosqlite
-import math
-from django.db import models
-from django.conf import settings
 import logging
+
+import aiosqlite
+from django.conf import settings
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
