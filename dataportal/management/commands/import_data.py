@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
+
     help = 'Import species, strain, and gene data from CSV files'
 
     def handle(self, *args, **kwargs):

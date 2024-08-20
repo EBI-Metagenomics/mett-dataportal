@@ -1,8 +1,6 @@
 import pytest
 from asgiref.testing import ApplicationCommunicator
-from django.conf import settings
-from dataportal.models import Species, Strain, Gene
-
+from dataportal.models import Species, Strain
 
 @pytest.mark.django_db
 class TestSpeciesManager:
