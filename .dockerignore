@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# PyCharm
+.idea
+
+# Artefacts
+db.*
+*.db
+
+# need to see if database can be hosted somehwere or bundled.
+#data-generators
+
+staticfiles
+static/scss/*.css
+__pycache__
+
+# Testing
+.coverage
+.pytest_cache
+test-results
+
+# repository
+.github
+.git

@@ -7,10 +7,9 @@ from django.db import connection
 
 @pytest.fixture(scope='session')
 def django_db_setup(django_db_blocker):
-    # Set up the test database configuration
     settings.DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(settings.BASE_DIR, 'test_db.sqlite3'),
+        'NAME': ':memory:',  # Use in-memory database for tests
         'ATOMIC_REQUESTS': False,
         'AUTOCOMMIT': True,
         'CONN_MAX_AGE': 0,
@@ -21,11 +20,10 @@ def django_db_setup(django_db_blocker):
         'HOST': '',
         'PORT': '',
     }
-
-    # Unblock the database and run migrations and collectstatic
     with django_db_blocker.unblock():
         call_command('migrate')
         call_command('collectstatic', interactive=False, clear=True)
+
 
 
 @pytest.fixture(scope='function')
