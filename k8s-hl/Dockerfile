@@ -22,9 +22,16 @@ ADD dataportal /app/dataportal
 ADD static /app/static
 ADD templates /app/templates
 
+# data migration -- hardcoding to be remvoed once database source is finalised
+ADD data-generators /app/data-generators
+
 WORKDIR /app
 
 EXPOSE 8000
+
+# migration step -- actual production will be different
+RUN python manage.py migrate
+RUN python manage.py import_data
 
 RUN python manage.py compilescss
 RUN python manage.py collectstatic --noinput
