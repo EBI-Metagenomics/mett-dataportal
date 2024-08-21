@@ -28,4 +28,5 @@ EXPOSE 8000
 
 RUN python manage.py compilescss
 RUN python manage.py collectstatic --noinput
+
 CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "dataportal.wsgi"]

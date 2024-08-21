@@ -19,5 +19,7 @@ pre-commit install
 python manage.py makemigrations
 python manage.py migrate
 python manage.py import_data
+python manage.py compilescss
+python manage.py collectstatic --noinput
 python manage.py runserver
 ```

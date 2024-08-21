@@ -114,17 +114,21 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
+SASS_PROCESSOR_ENABLED = True
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
     "sass_processor.finders.CssFinder",
 ]
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-SASS_PROCESSOR_ROOT = STATIC_ROOT
-SASS_PROCESSOR_ENABLED = True
+
+SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, "static")
+SASS_PROCESSOR_INCLUDE_DIRS = [
+    os.path.join(BASE_DIR, 'static/scss'),
+]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

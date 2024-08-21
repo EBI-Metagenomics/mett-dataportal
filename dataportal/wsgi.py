@@ -1,5 +1,5 @@
 """
-WSGI config for DataPortalDatabase project.
+WSGI config for ME TT DataPortal project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
