@@ -12,27 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "gh$rs07@5pgqy18p&a6@x1=x&m@bdl$-c$eo+^)3p1^y7wj19p")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-# LOGGING = {
-#     "version": 1,
-#     "disable_existing_loggers": False,
-#     "handlers": {
-#         "console": {
-#             "class": "logging.StreamHandler",
-#         },
-#     },
-#     "root": {
-#         "handlers": ["console"],
-#         "level": "DEBUG" if DEBUG else "INFO",
-#     },
-#     "loggers": {
-#         "django": {
-#             "handlers": ["console"],
-#             "level": "DEBUG",
-#         },
-#     },
-# }
+DEBUG = os.getenv("DJANGO_DEBUG", False)
 
 LOGGING = {
     "version": 1,

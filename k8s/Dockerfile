@@ -1,4 +1,5 @@
 FROM python:3.12.4
+
 ADD requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
@@ -10,7 +11,8 @@ ADD templates /app/templates
 
 WORKDIR /app
 
+RUN python manage.py collectstatic --noinput
+
 EXPOSE 8000
 
-RUN python manage.py collectstatic --noinput
 CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "dataportal.wsgi"]
