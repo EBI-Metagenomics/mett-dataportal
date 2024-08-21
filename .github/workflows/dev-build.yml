@@ -1,0 +1,26 @@
+name: Build and Push Docker Image to Quay
+
+#on:
+#  push:
+#    branches:
+#      - main
+
+on:
+  workflow_dispatch: # This allows manual trigger of the workflow
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Log in to Quay.io
+      run: echo "${{ secrets.QUAY_PASSWORD }}" | docker login quay.io -u "${{ secrets.QUAY_USERNAME }}" --password-stdin
+
+    - name: Build Docker image
+      run: docker build -t quay.io/your-username/your-image-name:latest .
+
+    - name: Push Docker image to Quay.io
+      run: docker push quay.io/your-username/your-image-name:latest
