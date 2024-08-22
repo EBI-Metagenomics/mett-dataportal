@@ -1,9 +1,10 @@
 from typing import List, Optional
 
+from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI, Router
 from pydantic import BaseModel
 
-from .models import Species
+from .models import Species, Strain
 
 api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
@@ -91,6 +92,23 @@ async def autocomplete_suggestions(request, query: str, limit: int = 10):
     except Exception as e:
         return {'error': str(e)}, 500
 
+class JBrowseResponseSchema(BaseModel):
+    species: str
+    isolate_name: str
+    fasta_url: str
+    gff_url: str
+
+
+@search_router.get('/jbrowse/{isolate_id}', response=JBrowseResponseSchema)
+async def get_jbrowse_data(request, isolate_id: int):
+    strain = get_object_or_404(Strain, id=isolate_id)
+
+    return JBrowseResponseSchema(
+        species=strain.species.scientific_name,
+        isolate_name=strain.isolate_name,
+        fasta_url=strain.fasta_file,
+        gff_url=strain.gff_file
+    )
 
 api.add_router("/search", search_router)
 

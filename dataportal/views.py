@@ -2,12 +2,13 @@ import logging
 
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views import View
 from django.views.generic import (
     TemplateView,
 )
 
-from .models import Species
+from .models import Species, Strain
 
 logger = logging.getLogger(__name__)
 
@@ -72,3 +73,20 @@ class Autocomplete(View):
             suggestions = await Species.objects.autocomplete_suggestions(query)
             return JsonResponse({'suggestions': suggestions})
         return JsonResponse({'suggestions': []})
+
+class JBrowseView(TemplateView):
+    template_name = "dataportal/pages/jbrowse_viewer.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        isolate_id = self.kwargs.get('isolate_id')
+        strain = get_object_or_404(Strain, id=isolate_id)
+
+        context.update({
+            'species': strain.species.scientific_name,
+            'isolate_name': strain.isolate_name,
+            'fasta_url': strain.fasta_file,
+            'gff_url': strain.gff_file,
+        })
+
+        return context

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+    {% load static %}
+    <div>
+        <nav class="vf-breadcrumbs" aria-label="Breadcrumb">
+            <ul class="vf-breadcrumbs__list | vf-list vf-list--inline">
+                <li class="vf-breadcrumbs__item">
+                    <a href="{% url 'home' %}" class="vf-breadcrumbs__link">Search</a>
+                </li>
+                <li class="vf-breadcrumbs__item" aria-current="location">
+                    Genome View
+                </li>
+            </ul>
+
+        </nav>
+    </div>
+    <h1>Genome Viewer for {{ isolate_name }}</h1>
+    <div id="jbrowse" style="height: 600px;"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Assuming that JBrowse2's main JS file initializes the browser
+            const {createView} = window.JBrowseReact.createView;
+            const config = {
+                assembly: {
+                    name: 'Genome Assembly',
+                    sequence: {
+                        type: 'ReferenceSequenceTrack',
+                        trackId: 'reference',
+                        adapter: {
+                            type: 'FromConfigSequenceAdapter',
+                            fastaLocation: {
+                                uri: '{{ fasta_url }}',
+                            },
+                        },
+                    },
+                },
+                tracks: [
+                    {
+                        type: 'FeatureTrack',
+                        trackId: 'annotations',
+                        adapter: {
+                            type: 'FromConfigAdapter',
+                            gffLocation: {
+                                uri: '{{ gff_url }}',
+                            },
+                        },
+                    },
+                ],
+            };
+
+            createView({config, targetElement: document.getElementById('jbrowse')});
+        });
+    </script>
+
+{% endblock content %}
