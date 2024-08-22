@@ -83,8 +83,10 @@ class JBrowseView(TemplateView):
         strain = get_object_or_404(Strain, id=isolate_id)
 
         context.update({
-            'species': strain.species.scientific_name,
+            'species_name': strain.species.scientific_name,
             'isolate_name': strain.isolate_name,
+            'assembly_name': strain.assembly_name,
+            'assembly_accession': strain.assembly_accession,
             'fasta_url': strain.fasta_file,
             'gff_url': strain.gff_file,
         })
