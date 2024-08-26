@@ -47,17 +47,7 @@
         </tr>
         </thead>
         <tbody class="vf-table__body">
-        {% if results %}
-            {% for result in results %}
-                <tr class="vf-table__row">
-                    <td class="vf-table__cell">{{ result.species }}</td>
-                    <td class="vf-table__cell">{{ result.isolate_name }}</td>
-                    <td class="vf-table__cell"><a href="{{ result.fasta_file }}">{{ result.assembly_name }}</a></td>
-                    <td class="vf-table__cell"><a href="{{ result.gff_file }}">GFF</a></td>
-                    <td class="vf-table__cell"><a href="{{ result.gff_file }}">Browse</a></td>
-                </tr>
-            {% endfor %}
-        {% endif %}
+        {#dynamic content#}
         </tbody>
         <tfoot class="vf-table__footer">
         <tr class="vf-table__row">

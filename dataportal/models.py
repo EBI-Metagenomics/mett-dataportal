@@ -49,6 +49,7 @@ class SpeciesManager(models.Manager):
 
             query_string = f"""
             SELECT DISTINCT
+                st.id,  -- Include the strain ID in the selection
                 s.scientific_name,
                 s.common_name,
                 st.isolate_name,
@@ -74,16 +75,18 @@ class SpeciesManager(models.Manager):
             all_results = []
             async with db.execute(query_string, (*species_ids, *strain_ids, *species_ids, *gene_ids)) as cursor:
                 async for row in cursor:
-                    isolate_name = row[2]
+                    print(f'id: {row[0]}')  # Adjusted index to match updated SELECT statement
+                    isolate_name = row[3]  # Adjusted index to match updated SELECT statement
                     all_results.append({
-                        'species': row[0],
-                        'common_name': row[1],
-                        'isolate_name': row[2],
-                        'strain_name': row[3],
-                        'assembly_name': row[4],
-                        'assembly_accession': row[5],
-                        'fasta_file': settings.ASSEMBLY_FTP_PATH + row[6],
-                        'gff_file': settings.GFF_FTP_PATH.format(isolate_name) + row[7]
+                        'id': row[0],  # Add the ID to the results
+                        'species': row[1],
+                        'common_name': row[2],
+                        'isolate_name': row[3],
+                        'strain_name': row[4],
+                        'assembly_name': row[5],
+                        'assembly_accession': row[6],
+                        'fasta_file': settings.ASSEMBLY_FTP_PATH + row[7],
+                        'gff_file': settings.GFF_FTP_PATH.format(isolate_name) + row[8]
                     })
 
             return all_results
