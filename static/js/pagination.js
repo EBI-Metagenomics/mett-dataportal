@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td class="vf-table__cell">${result.isolate_name || 'Unknown Isolate'}</td>
                 <td class="vf-table__cell"><a href="${result.fasta_file || '#'}">${result.assembly_name || 'Unknown Assembly'}</a></td>
                 <td class="vf-table__cell"><a href="${result.gff_file || '#'}">GFF</a></td>
-                <td class="vf-table__cell"><a href="/jbrowse/${result.id}/">Brrrrowse</a></td>
+                <td class="vf-table__cell"><a href="/jbrowse/${result.id}/">Browse</a></td>
             </tr>
         `;
             resultsBody.innerHTML += row;

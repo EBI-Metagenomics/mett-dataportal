@@ -5,6 +5,7 @@ from ninja import NinjaAPI, Router
 from pydantic import BaseModel
 
 from .models import Species, Strain
+from .utils import construct_file_urls
 
 api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
@@ -98,17 +99,22 @@ class JBrowseResponseSchema(BaseModel):
     isolate_name: str
     fasta_url: str
     gff_url: str
+    fasta_file_name: str
+    gff_file_name: str
 
 
 @search_router.get('/jbrowse/{isolate_id}', response=JBrowseResponseSchema)
-async def get_jbrowse_data(request, isolate_id: int):
+def get_jbrowse_data(request, isolate_id: int):
     strain = get_object_or_404(Strain, id=isolate_id)
+    fasta_url, gff_url, fasta_file_name, gff_file_name = construct_file_urls(strain)
 
     return JBrowseResponseSchema(
         species=strain.species.scientific_name,
         isolate_name=strain.isolate_name,
-        fasta_url=strain.fasta_file,
-        gff_url=strain.gff_file
+        fasta_url=fasta_url,
+        gff_url=gff_url,
+        fasta_file_name=fasta_file_name,
+        gff_file_name=gff_file_name
     )
 
 api.add_router("/search", search_router)

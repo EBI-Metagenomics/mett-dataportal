@@ -9,6 +9,7 @@ from django.views.generic import (
 )
 
 from .models import Species, Strain
+from .utils import construct_file_urls
 
 logger = logging.getLogger(__name__)
 
@@ -81,14 +82,17 @@ class JBrowseView(TemplateView):
         context = super().get_context_data(**kwargs)
         isolate_id = self.kwargs.get('isolate_id')
         strain = get_object_or_404(Strain, id=isolate_id)
+        fasta_url, gff_url, fasta_file_name, gff_file_name = construct_file_urls(strain)
 
         context.update({
             'species_name': strain.species.scientific_name,
             'isolate_name': strain.isolate_name,
             'assembly_name': strain.assembly_name,
             'assembly_accession': strain.assembly_accession,
-            'fasta_url': strain.fasta_file,
-            'gff_url': strain.gff_file,
+            'fasta_file_name': fasta_file_name,
+            'gff_file_name': gff_file_name,
+            'fasta_url': fasta_url,
+            'gff_url': gff_url,
         })
 
         return context

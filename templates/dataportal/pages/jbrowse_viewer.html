@@ -19,8 +19,8 @@
         <h2>{{ species_name }}: {{ isolate_name }}</h2>
         <p><strong>Assembly Name:</strong> {{ assembly_name }}</p>
         <p><strong>ENA Accession:</strong> {{ assembly_accession }}</p>
-        <p><strong>Assembly:</strong> {{ fasta_url }}</p>
-        <p><strong>Annotations:</strong> {{ gff_url }}</p>
+        <p><strong>Assembly:</strong> <a href="{{ fasta_url }}">{{ fasta_file_name }}</a></p>
+        <p><strong>Annotations:</strong> <a href="{{ gff_url }}">{{ gff_file_name }}</a></p>
     </div>
 
     <!-- Genome Viewer -->
