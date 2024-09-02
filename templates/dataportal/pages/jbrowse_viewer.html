@@ -26,44 +26,45 @@
     <!-- Genome Viewer -->
     <h1>Genome Viewer for {{ isolate_name }}</h1>
     <div id="jbrowse" style="height: 600px;"></div>
+    <link rel="manifest" href="{% static 'jbrowse/manifest.json' %}"/>
     <script defer src="{% static 'jbrowse/static/js/main.801d882d.js' %}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Check if JBrowseReact is loaded
-            if (window.JBrowseReact && window.JBrowseReact.createView) {
-                const { createView } = window.JBrowseReact;
-                const config = {
-                    assembly: {
-                        name: '{{ assembly_name }}',
-                        sequence: {
-                            type: 'ReferenceSequenceTrack',
-                            trackId: 'reference',
-                            adapter: {
-                                type: 'FromConfigSequenceAdapter',
-                                fastaLocation: {
-                                    uri: '{{ fasta_url }}',
-                                },
-                            },
-                        },
-                    },
-                    tracks: [
-                        {
-                            type: 'FeatureTrack',
-                            trackId: 'annotations',
-                            adapter: {
-                                type: 'FromConfigAdapter',
-                                gffLocation: {
-                                    uri: '{{ gff_url }}',
-                                },
-                            },
-                        },
-                    ],
-                };
-                createView({ config, targetElement: document.getElementById('jbrowse') });
-            } else {
-                console.error('JBrowseReact is not available.');
-            }
-        });
-    </script>
+{#    <script>#}
+{#        document.addEventListener('DOMContentLoaded', function () {#}
+{#            // Check if JBrowseReact is loaded#}
+{#            if (window.JBrowseReact && window.JBrowseReact.createView) {#}
+{#                const { createView } = window.JBrowseReact;#}
+{#                const config = {#}
+{#                    assembly: {#}
+{#                        name: '{{ assembly_name }}',#}
+{#                        sequence: {#}
+{#                            type: 'ReferenceSequenceTrack',#}
+{#                            trackId: 'reference',#}
+{#                            adapter: {#}
+{#                                type: 'FromConfigSequenceAdapter',#}
+{#                                fastaLocation: {#}
+{#                                    uri: '{{ fasta_url }}',#}
+{#                                },#}
+{#                            },#}
+{#                        },#}
+{#                    },#}
+{#                    tracks: [#}
+{#                        {#}
+{#                            type: 'FeatureTrack',#}
+{#                            trackId: 'annotations',#}
+{#                            adapter: {#}
+{#                                type: 'FromConfigAdapter',#}
+{#                                gffLocation: {#}
+{#                                    uri: '{{ gff_url }}',#}
+{#                                },#}
+{#                            },#}
+{#                        },#}
+{#                    ],#}
+{#                };#}
+{#                createView({ config, targetElement: document.getElementById('jbrowse') });#}
+{#            } else {#}
+{#                console.error('JBrowseReact is not available.');#}
+{#            }#}
+{#        });#}
+{#    </script>#}
 
 {% endblock content %}

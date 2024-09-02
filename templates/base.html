@@ -31,12 +31,9 @@
         <!-- Required to polyfill modern browsers as code is ES5 for IE... -->
         <script src="https://cdn.jsdelivr.net/npm/@webcomponents/custom-elements@latest/src/native-shim.js"
                 defer></script>
-        <script type="module" src="{% static 'js/autocomplete.js' %}"></script>
-        <script type="module" src="{% static 'js/search.js' %}"></script>
-        <script type="module" src="{% static 'js/pagination.js' %}"></script>
-        <script type="module" src="{% static 'js/utils.js' %}"></script>
-
-
+        {% block page_specific_scripts %}
+            <!-- Default scripts or nothing -->
+        {% endblock %}
         <!-- For autocomplete/typeahead -->
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.02.min.css"/>
