@@ -20,6 +20,7 @@ search_router = Router()
 
 class SearchResultSchema(BaseModel):
     species: str
+    id: int
     common_name: Optional[str]
     isolate_name: str
     strain_name: Optional[str]
