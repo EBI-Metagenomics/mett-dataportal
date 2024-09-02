@@ -25,46 +25,69 @@
 
     <!-- Genome Viewer -->
     <h1>Genome Viewer for {{ isolate_name }}</h1>
-    <div id="jbrowse" style="height: 600px;"></div>
-    <link rel="manifest" href="{% static 'jbrowse/manifest.json' %}"/>
-    <script defer src="{% static 'jbrowse/static/js/main.801d882d.js' %}"></script>
-{#    <script>#}
-{#        document.addEventListener('DOMContentLoaded', function () {#}
-{#            // Check if JBrowseReact is loaded#}
-{#            if (window.JBrowseReact && window.JBrowseReact.createView) {#}
-{#                const { createView } = window.JBrowseReact;#}
-{#                const config = {#}
-{#                    assembly: {#}
-{#                        name: '{{ assembly_name }}',#}
-{#                        sequence: {#}
-{#                            type: 'ReferenceSequenceTrack',#}
-{#                            trackId: 'reference',#}
-{#                            adapter: {#}
-{#                                type: 'FromConfigSequenceAdapter',#}
-{#                                fastaLocation: {#}
-{#                                    uri: '{{ fasta_url }}',#}
-{#                                },#}
-{#                            },#}
-{#                        },#}
-{#                    },#}
-{#                    tracks: [#}
-{#                        {#}
-{#                            type: 'FeatureTrack',#}
-{#                            trackId: 'annotations',#}
-{#                            adapter: {#}
-{#                                type: 'FromConfigAdapter',#}
-{#                                gffLocation: {#}
-{#                                    uri: '{{ gff_url }}',#}
-{#                                },#}
-{#                            },#}
-{#                        },#}
-{#                    ],#}
-{#                };#}
-{#                createView({ config, targetElement: document.getElementById('jbrowse') });#}
-{#            } else {#}
-{#                console.error('JBrowseReact is not available.');#}
-{#            }#}
-{#        });#}
-{#    </script>#}
+    <div id="jbrowse_linear_genome_view" style="height: 600px;"></div> <!-- Corrected ID -->
 
+    <!-- Load React and ReactDOM -->
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+
+    <!-- JBrowse Linear Genome View -->
+    <script
+            src="//unpkg.com/@jbrowse/react-linear-genome-view/dist/react-linear-genome-view.umd.development.js"
+            crossorigin
+    ></script>
+
+    <!-- Initialize JBrowse2 after scripts have loaded -->
+    <script type="module">
+        const {
+            createViewState,
+            JBrowseLinearGenomeView,
+            loadPlugins,
+        } = JBrowseReactLinearGenomeView;
+
+        const {createElement} = React;
+        const {render} = ReactDOM;
+
+        loadPlugins([
+            {
+                name: 'GWAS',
+                url:
+                    'https://unpkg.com/jbrowse-plugin-gwas/dist/jbrowse-plugin-gwas.umd.production.min.js',
+            },
+        ]).then(loadedPlugins => {
+            const state = new createViewState({
+                assembly: {
+                    name: '{{ assembly_name }}',
+                    sequence: {
+                        type: 'ReferenceSequenceTrack',
+                        trackId: 'reference',
+                        adapter: {
+                            type: 'FromConfigSequenceAdapter',
+                            fastaLocation: {
+                                uri: '{{ fasta_url }}',
+                            },
+                        },
+                    },
+                },
+                tracks: [
+                    {
+                        type: 'FeatureTrack',
+                        trackId: 'annotations',
+                        adapter: {
+                            type: 'FromConfigAdapter',
+                            gffLocation: {
+                                uri: '{{ gff_url }}',
+                            },
+                        },
+                    },
+                ],
+                {#location: '1:173,467,814..180,435,198',#}
+                plugins: loadedPlugins.map(p => p.plugin),
+            });
+            render(
+                createElement(JBrowseLinearGenomeView, {viewState: state}),
+                document.getElementById('jbrowse_linear_genome_view'),
+            );
+        });
+    </script>
 {% endblock content %}
