@@ -33,8 +33,8 @@
 
     <!-- JBrowse Linear Genome View -->
     <script
-            src="//unpkg.com/@jbrowse/react-linear-genome-view/dist/react-linear-genome-view.umd.development.js"
-            crossorigin
+        src="//unpkg.com/@jbrowse/react-linear-genome-view/dist/react-linear-genome-view.umd.development.js"
+        crossorigin
     ></script>
 
     <!-- Initialize JBrowse2 after scripts have loaded -->
@@ -45,17 +45,20 @@
             loadPlugins,
         } = JBrowseReactLinearGenomeView;
 
-        const {createElement} = React;
-        const {render} = ReactDOM;
+        const { createElement } = React;
+        const { render } = ReactDOM;
 
+        console.log('Loading plugins...');
         loadPlugins([
             {
                 name: 'GWAS',
-                url:
-                    'https://unpkg.com/jbrowse-plugin-gwas/dist/jbrowse-plugin-gwas.umd.production.min.js',
+                url: 'https://unpkg.com/jbrowse-plugin-gwas/dist/jbrowse-plugin-gwas.umd.production.min.js',
             },
         ]).then(loadedPlugins => {
-            const state = new createViewState({
+            console.log('Plugins loaded:', loadedPlugins);
+
+            // Manually initializing view state
+            const viewState = createViewState({
                 assembly: {
                     name: '{{ assembly_name }}',
                     sequence: {
@@ -73,20 +76,40 @@
                     {
                         type: 'FeatureTrack',
                         trackId: 'annotations',
+                        name: 'Annotations',
                         adapter: {
                             type: 'FromConfigAdapter',
-                            gffLocation: {
-                                uri: '{{ gff_url }}',
-                            },
+                            features: [],
                         },
                     },
                 ],
+                location: '1:1000..20000', 
                 plugins: loadedPlugins.map(p => p.plugin),
+                defaultSession: {
+                    name: 'My session',
+                    view: {
+                        id: 'linearGenomeView',
+                        type: 'LinearGenomeView',
+                        tracks: [
+                            {
+                                type: 'FeatureTrack',
+                                configuration: 'annotations',
+                            },
+                        ],
+                    },
+                },
             });
+
+            console.log('View state created:', viewState);
+
             render(
-                createElement(JBrowseLinearGenomeView, {viewState: state}),
+                createElement(JBrowseLinearGenomeView, { viewState }),
                 document.getElementById('jbrowse_linear_genome_view')
             );
+
+            console.log('JBrowse Linear Genome View rendered.');
+        }).catch(error => {
+            console.error('Error loading plugins or initializing JBrowse:', error);
         });
     </script>
 {% endblock content %}
