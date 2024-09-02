@@ -25,7 +25,7 @@
 
     <!-- Genome Viewer -->
     <h1>Genome Viewer for {{ isolate_name }}</h1>
-    <div id="jbrowse_linear_genome_view" style="height: 600px;"></div> <!-- Corrected ID -->
+    <div id="jbrowse_linear_genome_view" style="height: 600px;"></div>
 
     <!-- Load React and ReactDOM -->
     <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
@@ -81,12 +81,11 @@
                         },
                     },
                 ],
-                {#location: '1:173,467,814..180,435,198',#}
                 plugins: loadedPlugins.map(p => p.plugin),
             });
             render(
                 createElement(JBrowseLinearGenomeView, {viewState: state}),
-                document.getElementById('jbrowse_linear_genome_view'),
+                document.getElementById('jbrowse_linear_genome_view')
             );
         });
     </script>
