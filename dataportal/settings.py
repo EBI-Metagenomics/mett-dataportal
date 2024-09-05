@@ -29,7 +29,7 @@ LOGGING = {
 }
 
 
-ALLOWED_HOSTS = [os.getenv("DATA_PORTAL_URL", "127.0.0.1")]
+ALLOWED_HOSTS = [os.getenv("DATA_PORTAL_URL", "127.0.0.1"), "localhost"]
 CSRF_TRUSTED_ORIGINS = [
     "https://" + os.getenv("DATA_PORTAL_URL", "127.0.0.1"),
     "http://" + os.getenv("DATA_PORTAL_URL", "127.0.0.1"),
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "sass_processor",
+    "corsheaders",
     "dataportal",
     "ninja",
 ]
@@ -54,6 +55,7 @@ if DEBUG:
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -124,7 +126,6 @@ STATICFILES_FINDERS = [
     "sass_processor.finders.CssFinder",
 ]
 
-
 SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, "static")
 SASS_PROCESSOR_INCLUDE_DIRS = [
     os.path.join(BASE_DIR, 'static/scss'),
@@ -137,8 +138,15 @@ if DEBUG:
         "127.0.0.1",
     ]
 
-ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH', 'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
-GFF_FTP_PATH = os.getenv('GFF_FTP_PATH', 'http://ftp.ebi.ac.uk//pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/')
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",  # React app URL
+]
+
+ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
+                              'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
+GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
+                         'http://ftp.ebi.ac.uk//pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/')
 
 # Static files storage backend
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
