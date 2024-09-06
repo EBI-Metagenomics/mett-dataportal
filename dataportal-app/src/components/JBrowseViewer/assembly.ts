@@ -1,4 +1,4 @@
-import { IsolateData } from './JBrowseViewer';
+import {IsolateData} from './JBrowseViewer';
 
 const getAssembly = (isolateData: IsolateData) => ({
   name: isolateData.isolate_name,
