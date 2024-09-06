@@ -3,8 +3,8 @@ import {IsolateData} from './JBrowseViewer';
 const getTracks = (isolateData: IsolateData) => [
   {
     type: 'FeatureTrack',
-    trackId: 'structural_annotation',
-    name: 'Structural Annotation',
+    trackId: 'annotations',
+    name: 'Annotations',
     category: ['Annotations'],
     adapter: {
       type: 'FromConfigAdapter',

@@ -18,17 +18,21 @@ export interface IsolateData {
 }
 
 const JBrowseViewer: React.FC<JBrowseViewerProps> = () => {
-    const {isolateId} = useParams<{ isolateId: string }>(); // Get isolateId from URL
+    const {isolateId} = useParams<{ isolateId: string }>();
     const [isolateData, setIsolateData] = useState<IsolateData | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [fastaContent, setFastaContent] = useState<string | null>(null);
+    const [gffContent, setGffContent] = useState<string | null>(null);
+    const [viewerReady, setViewerReady] = useState<boolean>(false);
+    const [forceRender, setForceRender] = useState<boolean>(false);
     const viewStateRef = useRef<any>(null);
-    const [jbrowseReady, setJbrowseReady] = useState(false);
 
+    // Fetch isolate data
     useEffect(() => {
         const fetchIsolateData = async () => {
             try {
-                const response = await getData(`search/jbrowse/${isolateId}`, {cache: 'no-store'});
+                const response = await getData(`search/jbrowse/${isolateId}`);
                 if (!response) {
                     throw new Error('Failed to fetch isolate data');
                 }
@@ -49,20 +53,52 @@ const JBrowseViewer: React.FC<JBrowseViewerProps> = () => {
         }
     }, [isolateId]);
 
+    // Fetch FASTA and GFF content lazily
     useEffect(() => {
-        const initializeJBrowse = async () => {
-            if (!isolateData) {
-                console.log('Isolate data not yet available, skipping JBrowse initialization');
-                return;
+        if (!isolateData) return;
+
+        const fetchFileContent = async (url: string, setContent: React.Dispatch<React.SetStateAction<string | null>>) => {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch file from ${url}`);
+                }
+                const text = await response.text();
+                setContent(text.split('\n').slice(0, 10).join('\n'));  // Get first 10 lines of the file
+            } catch (error) {
+                console.error('Error fetching file:', error);
+                setContent('Error fetching file');
             }
+        };
 
-            console.log('Assembly:', getAssembly(isolateData));
-            console.log('Tracks:', getTracks(isolateData));
+        // Fetch FASTA and GFF files, and show viewer after they are loaded
+        const fetchData = async () => {
+            await Promise.all([
+                fetchFileContent(isolateData.fasta_url, setFastaContent),
+                fetchFileContent(isolateData.gff_url, setGffContent),
+            ]);
+            setViewerReady(true); // Show viewer after data is fetched
+        };
 
-            // Initialize view state without plugins
+        fetchData();
+    }, [isolateData]);
+
+    // Initialize JBrowse when the viewer is ready
+    useEffect(() => {
+        if (!viewerReady || !isolateData) return;
+
+        console.log('Initializing JBrowse Viewer');
+
+        try {
+            const assembly = getAssembly(isolateData);
+            const tracks = getTracks(isolateData);
+
+            console.log('Assembly:', assembly);
+            console.log('Tracks:', tracks);
+
             viewStateRef.current = createViewState({
-                assembly: getAssembly(isolateData),
-                tracks: getTracks(isolateData),
+                assembly,
+                tracks,
                 location: 'all',
                 defaultSession: {
                     name: 'Default session',
@@ -72,6 +108,7 @@ const JBrowseViewer: React.FC<JBrowseViewerProps> = () => {
                         tracks: [
                             {
                                 type: 'FeatureTrack',
+                                trackId: 'annotations',
                                 configuration: 'annotations',
                                 visible: true,
                             },
@@ -79,30 +116,24 @@ const JBrowseViewer: React.FC<JBrowseViewerProps> = () => {
                     },
                 },
             });
+            console.log('View state created:', viewStateRef.current);
+            setForceRender(true);  // Trigger re-render of the viewer
+        } catch (error) {
+            console.error('Error initializing JBrowse viewer:', error);
+        }
+    }, [viewerReady, isolateData]);
 
-            setJbrowseReady(true); // Indicate that JBrowse is ready to render
-        };
-
-        initializeJBrowse();
-    }, [isolateData]);
-
-// Render the JBrowse component only when viewStateRef.current is set
     if (loading) {
-        console.log('Loading data...');
-        return <p>Loading...</p>;
+        return <p>Loading isolate data...</p>;
     }
 
     if (error) {
-        console.log('Error occurred:', error);
         return <p>Error: {error}</p>;
     }
 
     if (!isolateData) {
-        console.log('No isolate data found for isolateId:', isolateId);
         return <p>No data found for isolate {isolateId}</p>;
     }
-
-    console.log('Rendering JBrowse component for isolate:', isolateData.isolate_name);
 
     return (
         <div>
@@ -124,13 +155,19 @@ const JBrowseViewer: React.FC<JBrowseViewerProps> = () => {
                 <p><strong>Assembly:</strong> <a href={isolateData.fasta_url}>{isolateData.fasta_file_name}</a></p>
                 <p><strong>Annotations:</strong> <a href={isolateData.gff_url}>{isolateData.gff_file_name}</a></p>
             </div>
-
             <h1>Genome Viewer for {isolateData.isolate_name}</h1>
+
+            <h2>FASTA File Preview:</h2>
+            <pre>{fastaContent ? fastaContent : 'Loading FASTA file...'}</pre>
+
+            <h2>GFF File Preview:</h2>
+            <pre>{gffContent ? gffContent : 'Loading GFF file...'}</pre>
+
             <div id="jbrowse_linear_genome_view" style={{height: '600px'}}>
-                {jbrowseReady ? (
+                {viewerReady && viewStateRef.current && forceRender ? (
                     <JBrowseLinearGenomeView viewState={viewStateRef.current}/>
                 ) : (
-                    <p>Initializing JBrowse viewer...</p>
+                    <p>Loading JBrowse viewer...</p>
                 )}
             </div>
         </div>
