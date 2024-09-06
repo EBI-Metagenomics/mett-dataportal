@@ -1,11 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import {
-  createViewState,
-  JBrowseLinearGenomeView,
-  loadPlugins,
-} from '@jbrowse/react-linear-genome-view';
-import { getData } from "../../utils/api";
+import React, {useEffect, useRef, useState} from 'react';
+import {useParams} from 'react-router-dom';
+import {createViewState, JBrowseLinearGenomeView, loadPlugins,} from '@jbrowse/react-linear-genome-view';
+import {getData} from "../../utils/api";
 import getAssembly from './assembly';
 import getTracks from './tracks';
 
@@ -110,7 +106,25 @@ const JBrowseViewer: React.FC<JBrowseViewerProps> = () => {
 
   return (
     <div>
-      {/* Your JSX UI code */}
+      <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
+        <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
+          <li className="vf-breadcrumbs__item">
+            <a href="/" className="vf-breadcrumbs__link">Search</a>
+          </li>
+          <li className="vf-breadcrumbs__item" aria-current="location">
+            Genome View
+          </li>
+        </ul>
+      </nav>
+
+      <div className="vf-box vf-box--primary">
+        <h2>{isolateData.species}: {isolateData.isolate_name}</h2>
+        <p><strong>Assembly Name:</strong> {isolateData.isolate_name}</p>
+        <p><strong>ENA Accession:</strong> {isolateData.isolate_name}</p>
+        <p><strong>Assembly:</strong> <a href={isolateData.fasta_url}>{isolateData.fasta_file_name}</a></p>
+        <p><strong>Annotations:</strong> <a href={isolateData.gff_url}>{isolateData.gff_file_name}</a></p>
+      </div>
+
       <h1>Genome Viewer for {isolateData.isolate_name}</h1>
       <div id="jbrowse_linear_genome_view" style={{ height: '600px' }}>
         {viewStateRef.current && (
