@@ -28,7 +28,6 @@ LOGGING = {
     },
 }
 
-
 ALLOWED_HOSTS = [os.getenv("DATA_PORTAL_URL", "127.0.0.1"), "localhost"]
 CSRF_TRUSTED_ORIGINS = [
     "https://" + os.getenv("DATA_PORTAL_URL", "127.0.0.1"),
@@ -42,8 +41,6 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "sass_processor",
     "corsheaders",
     "dataportal",
     "ninja",
@@ -72,7 +69,7 @@ ROOT_URLCONF = "dataportal.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -80,12 +77,10 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "dataportal.context_processors.apis",
             ],
         },
     },
 ]
-
 WSGI_APPLICATION = "dataportal.wsgi.application"
 
 DATABASES = {
@@ -115,21 +110,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
-
-SASS_PROCESSOR_ENABLED = True
-STATICFILES_FINDERS = [
-    "django.contrib.staticfiles.finders.FileSystemFinder",
-    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-    "sass_processor.finders.CssFinder",
-]
-
-SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, "static")
-SASS_PROCESSOR_INCLUDE_DIRS = [
-    os.path.join(BASE_DIR, 'static/scss'),
-]
+# Removed static and template-related settings
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -147,6 +128,3 @@ ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
                               'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
 GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
                          'http://ftp.ebi.ac.uk//pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/')
-
-# Static files storage backend
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'

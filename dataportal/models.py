@@ -75,10 +75,9 @@ class SpeciesManager(models.Manager):
             all_results = []
             async with db.execute(query_string, (*species_ids, *strain_ids, *species_ids, *gene_ids)) as cursor:
                 async for row in cursor:
-                    print(f'id: {row[0]}')  # Adjusted index to match updated SELECT statement
-                    isolate_name = row[3]  # Adjusted index to match updated SELECT statement
+                    isolate_name = row[3]
                     all_results.append({
-                        'id': row[0],  # Add the ID to the results
+                        'id': row[0],
                         'species': row[1],
                         'common_name': row[2],
                         'isolate_name': row[3],
