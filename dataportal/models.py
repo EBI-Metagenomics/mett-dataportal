@@ -1,17 +1,13 @@
 import logging
 
-import aiosqlite
-from django.conf import settings
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.db import models
 
 logger = logging.getLogger(__name__)
 
 
 class SpeciesManager(models.Manager):
-    async def search_species(self, query, sort_field='', sort_order=''):
-        database_path = settings.DATABASES['default']['NAME']
-        wildcard_query = f'"{query}"*'
-
+    def search_species(self, query, sort_field='', sort_order=''):
         SORT_FIELD_MAP = {
             'species': 'scientific_name',
             'common_name': 'common_name',
@@ -22,195 +18,144 @@ class SpeciesManager(models.Manager):
 
         db_sort_field = SORT_FIELD_MAP.get(sort_field, sort_field)
 
-        async with aiosqlite.connect(database_path) as db:
-            species_match_query = """
-            SELECT rowid FROM species_fts WHERE species_fts MATCH ?
-            """
-            strain_match_query = """
-            SELECT rowid FROM strain_fts WHERE strain_fts MATCH ?
-            """
-            gene_match_query = """
-            SELECT rowid FROM gene_fts WHERE gene_fts MATCH ?
-            """
+        search_vector = SearchVector('scientific_name', 'common_name', 'strain__strain_name', 'strain__assembly_name')
+        search_query = SearchQuery(query)
 
-            species_ids, strain_ids, gene_ids = [], [], []
+        query_set = self.annotate(
+            search=search_vector,
+            rank=SearchRank(search_vector, search_query)
+        ).filter(search=search_query)
 
-            async with db.execute(species_match_query, (wildcard_query,)) as cursor:
-                async for row in cursor:
-                    species_ids.append(row[0])
+        if db_sort_field and sort_order:
+            query_set = query_set.order_by(f"{db_sort_field} {sort_order.upper()}")
 
-            async with db.execute(strain_match_query, (wildcard_query,)) as cursor:
-                async for row in cursor:
-                    strain_ids.append(row[0])
+        return query_set
 
-            async with db.execute(gene_match_query, (wildcard_query,)) as cursor:
-                async for row in cursor:
-                    gene_ids.append(row[0])
+    def autocomplete_suggestions(self, query, limit=10):
+        search_vector = SearchVector('scientific_name', 'common_name')
+        search_query = SearchQuery(query)
 
-            query_string = f"""
-            SELECT DISTINCT
-                st.id,  -- Include the strain ID in the selection
-                s.scientific_name,
-                s.common_name,
-                st.isolate_name,
-                st.strain_name,
-                st.assembly_name,
-                st.assembly_accession,
-                st.fasta_file,
-                st.gff_file
-            FROM
-                species s
-            JOIN
-                strain st ON s.id = st.species_id
-            WHERE
-                s.rowid IN ({','.join('?' * len(species_ids))})
-                OR st.rowid IN ({','.join('?' * len(strain_ids))})
-                OR st.species_id IN (SELECT id FROM species WHERE rowid IN ({','.join('?' * len(species_ids))}))
-                OR st.rowid IN (SELECT strain_id FROM gene WHERE rowid IN ({','.join('?' * len(gene_ids))}))
-            """
-
-            if db_sort_field and sort_order:
-                query_string += f" ORDER BY {db_sort_field} {sort_order.upper()}"
-
-            all_results = []
-            async with db.execute(query_string, (*species_ids, *strain_ids, *species_ids, *gene_ids)) as cursor:
-                async for row in cursor:
-                    isolate_name = row[3]
-                    all_results.append({
-                        'id': row[0],
-                        'species': row[1],
-                        'common_name': row[2],
-                        'isolate_name': row[3],
-                        'strain_name': row[4],
-                        'assembly_name': row[5],
-                        'assembly_accession': row[6],
-                        'fasta_file': settings.ASSEMBLY_FTP_PATH + row[7],
-                        'gff_file': settings.GFF_FTP_PATH.format(isolate_name) + row[8]
-                    })
-
-            return all_results
-
-    async def autocomplete_suggestions(self, query, limit=10):
-        database_path = settings.DATABASES['default']['NAME']
-        wildcard_query = f'"{query}"*'
-
-        try:
-            async with aiosqlite.connect(database_path) as db:
-                suggestions = []
-
-                # Autocomplete for species
-                species_query = f"""
-                SELECT
-                    DISTINCT s.scientific_name,
-                    s.common_name
-                FROM
-                    species s
-                JOIN 
-                    species_fts fts ON s.rowid = fts.rowid
-                WHERE
-                    species_fts MATCH ?
-                LIMIT ?
-                """
-                async with db.execute(species_query, (wildcard_query, limit)) as cursor:
-                    async for row in cursor:
-                        suggestions.append(f"{row[0]} ({row[1]})")
-
-                # Autocomplete for strains
-                strain_query = f"""
-                SELECT
-                    DISTINCT st.isolate_name,
-                    st.strain_name,
-                    st.assembly_name
-                FROM
-                    strain st
-                JOIN 
-                    strain_fts fts ON st.rowid = fts.rowid
-                JOIN 
-                    species s ON st.species_id = s.id
-                WHERE
-                    strain_fts MATCH ?
-                AND 
-                    s.scientific_name IS NOT NULL
-                LIMIT ?
-                """
-                async with db.execute(strain_query, (wildcard_query, limit)) as cursor:
-                    async for row in cursor:
-                        suggestions.append(f"{row[0]} - {row[1]} ({row[2]})")
-
-                # Autocomplete for genes
-                gene_query = f"""
-                SELECT
-                    DISTINCT g.gene_name,
-                    g.gene_symbol
-                FROM
-                    gene g
-                JOIN 
-                    gene_fts fts ON g.rowid = fts.rowid
-                JOIN 
-                    strain st ON g.strain_id = st.id
-                JOIN 
-                    species s ON st.species_id = s.id
-                WHERE
-                    gene_fts MATCH ?
-                AND 
-                    s.scientific_name IS NOT NULL
-                AND 
-                    st.strain_name IS NOT NULL
-                LIMIT ?
-                """
-                async with db.execute(gene_query, (wildcard_query, limit)) as cursor:
-                    async for row in cursor:
-                        suggestions.append(f"{row[0]} ({row[1]})")
-
-                return suggestions
-
-        except Exception as e:
-            logger.error(f"Error executing autocomplete query: {e}")
-            return []
+        return self.annotate(
+            search=search_vector
+        ).filter(search=search_query)[:limit]
 
 
+from django.db import models
+from django.contrib.postgres.indexes import GinIndex
+
+
+# Species Model
 class Species(models.Model):
-    id = models.AutoField(primary_key=True)  # Primary key, auto-incrementing ID
-    scientific_name = models.CharField(max_length=255)
+    id = models.AutoField(primary_key=True)
+    scientific_name = models.CharField(max_length=255, db_index=True)  # Indexed for search
     common_name = models.CharField(max_length=255, blank=True, null=True)
-    taxonomy_id = models.IntegerField(unique=True)  # Unique taxonomy ID
+    acronym = models.CharField(max_length=10, blank=True, null=True)  # New column for acronym
+    taxonomy_id = models.IntegerField(unique=True)
 
-    objects = SpeciesManager()
+    objects = models.Manager()
 
     class Meta:
         db_table = 'species'
+        indexes = [
+            GinIndex(fields=['scientific_name'], name='species_sci_name_gin_idx', opclasses=['gin_trgm_ops']),
+        ]
 
     def __str__(self):
         return self.scientific_name
 
 
+# Strain Model
 class Strain(models.Model):
-    id = models.AutoField(primary_key=True)  # Primary key, auto-incrementing ID
-    species = models.ForeignKey(Species, on_delete=models.CASCADE, related_name='strains')
+    id = models.AutoField(primary_key=True)
+    species = models.ForeignKey('Species', on_delete=models.CASCADE, related_name='strains')
     isolate_name = models.CharField(max_length=255)
-    strain_name = models.CharField(max_length=255, blank=True, null=True)
     assembly_name = models.CharField(max_length=255, blank=True, null=True)
-    assembly_accession = models.CharField(max_length=255, blank=True, null=True)
+    assembly_accession = models.CharField(max_length=20, unique=True, blank=True, null=True)
     fasta_file = models.CharField(max_length=255)
-    gff_file = models.CharField(max_length=255)
+    gff_file = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         db_table = 'strain'
+        indexes = [
+            GinIndex(fields=['isolate_name'], name='isolate_name_gin_idx', opclasses=['gin_trgm_ops']),
+        ]
 
     def __str__(self):
-        return f"{self.isolate_name} ({self.strain_name})"
+        return f"{self.isolate_name}"
 
 
+# Gene Model (with JSONB annotations storing multiple records)
 class Gene(models.Model):
-    id = models.AutoField(primary_key=True)  # Primary key, auto-incrementing ID
-    strain = models.ForeignKey(Strain, on_delete=models.CASCADE, related_name='genes')
-    gene_id = models.CharField(max_length=255)
-    gene_name = models.CharField(max_length=255, blank=True, null=True)
-    gene_symbol = models.CharField(max_length=255, blank=True, null=True)
-    locus_tag = models.CharField(max_length=255, blank=True, null=True)
+    id = models.AutoField(primary_key=True)
+    strain = models.ForeignKey('Strain', on_delete=models.CASCADE, related_name='genes')
+    gene_name = models.CharField(max_length=255, blank=True, null=True, db_index=True)  # Optional gene name
+    locus_tag = models.CharField(max_length=255, unique=True, db_index=True)  # Ensure locus_tag is unique
+    description = models.TextField(blank=True, null=True)
+    annotations = models.JSONField(blank=True, null=True)  # Store flexible annotations
 
     class Meta:
         db_table = 'gene'
+        indexes = [
+            GinIndex(fields=['gene_name'], name='gene_name_gin_idx', opclasses=['gin_trgm_ops']),
+            GinIndex(fields=['locus_tag'], name='locus_tag_gin_idx', opclasses=['gin_trgm_ops']),  # Index locus_tag
+            GinIndex(fields=['annotations'], name='gene_annotations_gin_idx', opclasses=['jsonb_path_ops']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['locus_tag'], name='unique_locus_tag'),  # Unique constraint for locus_tag
+        ]
 
     def __str__(self):
-        return self.gene_name or self.gene_id
+        return self.gene_name or self.locus_tag
+
+
+# GeneOntologyTerm Model (for storing gene ontology data)
+class GeneOntologyTerm(models.Model):
+    gene = models.ForeignKey(Gene, on_delete=models.CASCADE, related_name='ontology_terms')
+    ontology_type = models.CharField(max_length=50)  # e.g., "GO"
+    ontology_id = models.CharField(max_length=255)
+    ontology_description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'gene_ontology_term'
+        indexes = [
+            GinIndex(fields=['ontology_id', 'ontology_description'], name='go_term_id_desc_gin_idx',
+                     opclasses=['gin_trgm_ops', 'gin_trgm_ops']),
+        ]
+
+    def __str__(self):
+        return f"{self.ontology_type} - {self.ontology_id}"
+
+
+# CrossReferences Model (for external references like UniProt, Pfam, etc.)
+class CrossReferences(models.Model):
+    gene = models.ForeignKey(Gene, on_delete=models.CASCADE, related_name='cross_references')
+    db_name = models.CharField(max_length=255)  # Name of the external database
+    db_accession = models.CharField(max_length=255)  # Accession number in the external database
+    db_description = models.TextField()
+
+    class Meta:
+        db_table = 'cross_references'
+        indexes = [
+            GinIndex(fields=['db_name', 'db_accession', 'db_description'], name='cross_refs_db_acc_desc_gin_idx',
+                     opclasses=['gin_trgm_ops', 'gin_trgm_ops', 'gin_trgm_ops']),
+        ]
+
+    def __str__(self):
+        return f"{self.db_name} - {self.db_accession}"
+
+
+# ReferenceGeneDescription Model (for storing reference gene descriptions like RefSeq, Ensembl, etc.)
+class ReferenceGeneDescription(models.Model):
+    gene = models.ForeignKey(Gene, on_delete=models.CASCADE, related_name='reference_descriptions')
+    reference_source = models.CharField(max_length=255)  # e.g., "RefSeq", "Ensembl"
+    description = models.TextField()
+
+    class Meta:
+        db_table = 'reference_gene_description'
+        indexes = [
+            GinIndex(fields=['reference_source', 'description'], name='ref_gene_src_desc_gin_idx',
+                     opclasses=['gin_trgm_ops', 'gin_trgm_ops']),
+        ]
+
+    def __str__(self):
+        return f"{self.reference_source} - Description for {self.gene.gene_name}"
