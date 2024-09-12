@@ -17,34 +17,34 @@ class SearchResultsView(View):
     async def get(self, request, *args, **kwargs):
         query = request.GET.get('query', '').strip()
         isolate_name = request.GET.get('isolate-name', '').strip()
+        gene_id = request.GET.get('gene_id', None)
         search_term = isolate_name or query
         results = []
         paginator = None
 
-        logger.debug(f"Search term: {search_term}")
+        logger.debug(f"Search term: {search_term}, gene_id: {gene_id}")
 
         try:
-            if search_term:
-                logger.debug("Search term exists, proceeding with search")
-                sort_field = request.GET.get('sortField', '')
-                sort_order = request.GET.get('sortOrder', '')
-                page_number = int(request.GET.get('page', 1))
-                per_page = 10
-
-                logger.debug(f"Calling SearchService.get_search_results with query: {search_term}")
+            if gene_id:
+                logger.debug(f"Searching by gene_id: {gene_id}")
+                full_results = await SearchService.get_search_results_by_gene(gene_id=gene_id)
+            elif search_term:
+                logger.debug(f"Search term exists, proceeding with search")
                 full_results = await SearchService.get_search_results(query=search_term)
-                logger.debug(f"Search results: {full_results}")
 
-                logger.debug("Instantiating Paginator")
-                paginator = await sync_to_async(Paginator)(full_results, per_page)
-                logger.debug(f"Paginator instantiated with {paginator.num_pages} pages")
+            if not full_results:
+                logger.debug(f"No results found for search term: {search_term}")
+                return JsonResponse({
+                    'results': [],
+                    'page_number': 1,
+                    'num_pages': 0,
+                    'has_previous': False,
+                    'has_next': False,
+                })
 
-                logger.debug(f"Getting page {page_number}")
-                page_obj = await sync_to_async(paginator.page)(page_number)
-                logger.debug(f"Page object: {page_obj}")
-
-                results = await sync_to_async(lambda: list(page_obj.object_list))()
-                logger.debug(f"Results: {results}")
+            paginator = await sync_to_async(Paginator)(full_results, 10)
+            page_obj = await sync_to_async(paginator.page)(int(request.GET.get('page', 1)))
+            results = await sync_to_async(lambda: list(page_obj.object_list))()
 
             return JsonResponse({
                 'results': results,

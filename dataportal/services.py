@@ -88,25 +88,43 @@ class SearchService:
     @staticmethod
     async def get_search_results(strain_id=None, query=None):
         try:
+            strains = []
             if strain_id:
                 logger.debug(f"Searching strain by ID: {strain_id}")
+                strains = await sync_to_async(lambda: list(
+                    Strain.objects.filter(id=strain_id)
+                ))()
+                logger.debug(f"Strains found for strain_id {strain_id}: {strains}")
 
-                strains = await sync_to_async(lambda: list(Strain.objects.filter(id=strain_id)))()
-
-                logger.debug(f"Strains found: {strains}")
-                return strains
-
-            if query:
+            elif query:
                 logger.debug(f"Searching strains by query: {query}")
-
                 strains = await sync_to_async(lambda: list(
                     Strain.objects.filter(isolate_name__icontains=query)
                 ))()
+                logger.debug(f"Strains found for query '{query}': {strains}")
 
-                logger.debug(f"Strains found: {strains}")
-                return strains
+            return strains
 
-            return []
         except Exception as e:
             logger.error(f"Error in get_search_results: {e}")
+            return []
+
+    @staticmethod
+    async def get_search_results_by_gene(gene_id=None):
+        try:
+            if gene_id:
+                logger.debug(f"Searching strains by gene ID: {gene_id}")
+
+                # Ensure the ManyToMany relationship is used correctly
+                strains = await sync_to_async(lambda: list(
+                    Strain.objects.filter(genes__id=gene_id)
+                ))()
+
+                logger.debug(f"Strains fetched for gene_id {gene_id}: {strains}")
+                return strains
+
+            logger.debug("No gene_id provided, returning empty list.")
+            return []
+        except Exception as e:
+            logger.error(f"Error in get_search_results_by_gene: {e}")
             return []

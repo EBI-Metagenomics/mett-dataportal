@@ -105,20 +105,37 @@ def search_genes_in_strains(request, strain_q: str, gene_q: str):
 
 @search_router.get('/results/', response=PaginationSchema)
 async def search_results(request, query: Optional[str] = None, isolate_name: Optional[str] = None,
-                         strain_id: Optional[int] = None, sortField: Optional[str] = '',
-                         sortOrder: Optional[str] = '', page: int = 1, per_page: int = 10):
+                         strain_id: Optional[int] = None, gene_id: Optional[int] = None,
+                         sortField: Optional[str] = '', sortOrder: Optional[str] = '',
+                         page: int = 1, per_page: int = 10):
     try:
-        logger.debug(f"query: {query}")
+        logger.debug(f"query: {query}, isolate_name: {isolate_name}, strain_id: {strain_id}, gene_id: {gene_id}")
 
-        if strain_id:
+        if gene_id:
+            # Search by gene_id if provided
+            full_results = await SearchService.get_search_results_by_gene(gene_id=gene_id)
+        elif strain_id:
+            # Search by strain_id if provided
             full_results = await SearchService.get_search_results(strain_id=strain_id)
         else:
             search_term = isolate_name or query
+            logger.debug(f"Search term: {search_term}")
             full_results = await SearchService.get_search_results(query=search_term)
+
+        if not full_results:
+            logger.debug("No results found")
+            return PaginationSchema(
+                results=[],
+                page_number=1,
+                num_pages=0,
+                has_previous=False,
+                has_next=False,
+                total_results=0,
+            )
 
         results = await sync_to_async(lambda: [
             {
-                "species": strain.species.scientific_name,  # Assuming species has scientific_name
+                "species": strain.species.scientific_name,
                 "id": strain.id,
                 "common_name": strain.species.common_name if strain.species.common_name else None,
                 "isolate_name": strain.isolate_name,
@@ -131,6 +148,8 @@ async def search_results(request, query: Optional[str] = None, isolate_name: Opt
         ])()
 
         total_results = len(results)
+        logger.debug(f"Total results before pagination: {total_results}")
+
         start = (page - 1) * per_page
         end = start + per_page
         page_results = results[start:end]

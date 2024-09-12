@@ -1,11 +1,12 @@
 import logging
-
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.db import models
+from django.contrib.postgres.indexes import GinIndex
 
 logger = logging.getLogger(__name__)
 
 
+# Species Manager for handling custom search logic
 class SpeciesManager(models.Manager):
     def search_species(self, query, sort_field='', sort_order=''):
         SORT_FIELD_MAP = {
@@ -18,7 +19,7 @@ class SpeciesManager(models.Manager):
 
         db_sort_field = SORT_FIELD_MAP.get(sort_field, sort_field)
 
-        search_vector = SearchVector('scientific_name', 'common_name', 'strain__strain_name', 'strain__assembly_name')
+        search_vector = SearchVector('scientific_name', 'common_name', 'strain__isolate_name', 'strain__assembly_name')
         search_query = SearchQuery(query)
 
         query_set = self.annotate(
@@ -40,19 +41,15 @@ class SpeciesManager(models.Manager):
         ).filter(search=search_query)[:limit]
 
 
-from django.db import models
-from django.contrib.postgres.indexes import GinIndex
-
-
 # Species Model
 class Species(models.Model):
     id = models.AutoField(primary_key=True)
-    scientific_name = models.CharField(max_length=255, db_index=True)  # Indexed for search
+    scientific_name = models.CharField(max_length=255, db_index=True)
     common_name = models.CharField(max_length=255, blank=True, null=True)
-    acronym = models.CharField(max_length=10, blank=True, null=True)  # New column for acronym
+    acronym = models.CharField(max_length=10, blank=True, null=True)
     taxonomy_id = models.IntegerField(unique=True)
 
-    objects = models.Manager()
+    objects = SpeciesManager()
 
     class Meta:
         db_table = 'species'
@@ -81,37 +78,37 @@ class Strain(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.isolate_name}"
+        return self.isolate_name
 
 
-# Gene Model (with JSONB annotations storing multiple records)
+# Gene Model (One-to-Many with Strain)
 class Gene(models.Model):
     id = models.AutoField(primary_key=True)
-    strain = models.ForeignKey('Strain', on_delete=models.CASCADE, related_name='genes')
-    gene_name = models.CharField(max_length=255, blank=True, null=True, db_index=True)  # Optional gene name
-    locus_tag = models.CharField(max_length=255, unique=True, db_index=True)  # Ensure locus_tag is unique
+    strain = models.ForeignKey('Strain', on_delete=models.CASCADE, related_name='genes')  # One-to-Many relationship
+    gene_name = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    locus_tag = models.CharField(max_length=255, unique=True, db_index=True)
     description = models.TextField(blank=True, null=True)
-    annotations = models.JSONField(blank=True, null=True)  # Store flexible annotations
+    annotations = models.JSONField(blank=True, null=True)
 
     class Meta:
         db_table = 'gene'
         indexes = [
             GinIndex(fields=['gene_name'], name='gene_name_gin_idx', opclasses=['gin_trgm_ops']),
-            GinIndex(fields=['locus_tag'], name='locus_tag_gin_idx', opclasses=['gin_trgm_ops']),  # Index locus_tag
+            GinIndex(fields=['locus_tag'], name='locus_tag_gin_idx', opclasses=['gin_trgm_ops']),
             GinIndex(fields=['annotations'], name='gene_annotations_gin_idx', opclasses=['jsonb_path_ops']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['locus_tag'], name='unique_locus_tag'),  # Unique constraint for locus_tag
+            models.UniqueConstraint(fields=['locus_tag'], name='unique_locus_tag'),
         ]
 
     def __str__(self):
         return self.gene_name or self.locus_tag
 
 
-# GeneOntologyTerm Model (for storing gene ontology data)
+# GeneOntologyTerm Model
 class GeneOntologyTerm(models.Model):
     gene = models.ForeignKey(Gene, on_delete=models.CASCADE, related_name='ontology_terms')
-    ontology_type = models.CharField(max_length=50)  # e.g., "GO"
+    ontology_type = models.CharField(max_length=50)
     ontology_id = models.CharField(max_length=255)
     ontology_description = models.TextField(blank=True, null=True)
 
@@ -126,11 +123,11 @@ class GeneOntologyTerm(models.Model):
         return f"{self.ontology_type} - {self.ontology_id}"
 
 
-# CrossReferences Model (for external references like UniProt, Pfam, etc.)
+# CrossReferences Model
 class CrossReferences(models.Model):
     gene = models.ForeignKey(Gene, on_delete=models.CASCADE, related_name='cross_references')
-    db_name = models.CharField(max_length=255)  # Name of the external database
-    db_accession = models.CharField(max_length=255)  # Accession number in the external database
+    db_name = models.CharField(max_length=255)
+    db_accession = models.CharField(max_length=255)
     db_description = models.TextField()
 
     class Meta:
@@ -144,10 +141,10 @@ class CrossReferences(models.Model):
         return f"{self.db_name} - {self.db_accession}"
 
 
-# ReferenceGeneDescription Model (for storing reference gene descriptions like RefSeq, Ensembl, etc.)
+# ReferenceGeneDescription Model
 class ReferenceGeneDescription(models.Model):
     gene = models.ForeignKey(Gene, on_delete=models.CASCADE, related_name='reference_descriptions')
-    reference_source = models.CharField(max_length=255)  # e.g., "RefSeq", "Ensembl"
+    reference_source = models.CharField(max_length=255)
     description = models.TextField()
 
     class Meta:
