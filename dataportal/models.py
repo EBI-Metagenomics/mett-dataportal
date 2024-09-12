@@ -88,6 +88,19 @@ class Gene(models.Model):
     gene_name = models.CharField(max_length=255, blank=True, null=True, db_index=True)
     locus_tag = models.CharField(max_length=255, unique=True, db_index=True)
     description = models.TextField(blank=True, null=True)
+
+    # Extracted fields from the annotations JSON
+    cog = models.CharField(max_length=10, blank=True, null=True, db_index=True)
+    kegg = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    pfam = models.CharField(max_length=255, blank=True, null=True)  # Multiple values stored as comma-separated
+    interpro = models.TextField(blank=True, null=True)  # Can be multiple values, so stored as text
+    dbxref = models.CharField(max_length=255, blank=True, null=True)
+    ec_number = models.CharField(max_length=20, blank=True, null=True, db_index=True)
+    product = models.TextField(blank=True, null=True)
+    start_position = models.IntegerField(blank=True, null=True)
+    end_position = models.IntegerField(blank=True, null=True)
+
+    # Keeping the annotations JSON for backward compatibility
     annotations = models.JSONField(blank=True, null=True)
 
     class Meta:
@@ -96,6 +109,9 @@ class Gene(models.Model):
             GinIndex(fields=['gene_name'], name='gene_name_gin_idx', opclasses=['gin_trgm_ops']),
             GinIndex(fields=['locus_tag'], name='locus_tag_gin_idx', opclasses=['gin_trgm_ops']),
             GinIndex(fields=['annotations'], name='gene_annotations_gin_idx', opclasses=['jsonb_path_ops']),
+            GinIndex(fields=['product'], name='product_gin_idx', opclasses=['gin_trgm_ops']),
+            GinIndex(fields=['cog'], name='cog_gin_idx', opclasses=['gin_trgm_ops']),
+            GinIndex(fields=['kegg'], name='kegg_gin_idx', opclasses=['gin_trgm_ops']),
         ]
         constraints = [
             models.UniqueConstraint(fields=['locus_tag'], name='unique_locus_tag'),
