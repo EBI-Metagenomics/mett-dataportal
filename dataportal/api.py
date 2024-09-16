@@ -7,6 +7,7 @@ from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
+from .models import Species
 from .models import Strain, Gene
 from .services import SearchService
 from .utils import construct_file_urls
@@ -51,6 +52,16 @@ class JBrowseResponseSchema(BaseModel):
     gff_url: str
     fasta_file_name: str
     gff_file_name: str
+
+
+class SpeciesOut(BaseModel):
+    id: int
+    scientific_name: str
+    common_name: str
+    acronym: str
+
+    class Config:
+        from_attributes = True
 
 
 # SearchAPI class to handle search-related endpoints
@@ -185,22 +196,27 @@ search_service = SearchService()
 search_api = SearchAPI(search_service)
 jbrowse_api = JBrowseAPI()
 
+
 # Map the router to the class methods
 @search_router.get('/autocomplete/')
 async def autocomplete_suggestions(request, query: str, limit: int = 10):
     return await search_api.autocomplete_suggestions(query, limit)
 
+
 @search_router.get('/strains/{strain_id}/genes/search/')
 async def search_genes_in_strain(request, strain_id: int, q: str):
     return await search_api.search_genes_in_strain(strain_id, q)
+
 
 @search_router.get('/genes/search/')
 def search_genes_globally(request, q: str):
     return search_api.search_genes_globally(q)
 
+
 @search_router.get('/strains-genes/search/')
 def search_genes_in_strains(request, strain_q: str, gene_q: str):
     return search_api.search_genes_in_strains(strain_q, gene_q)
+
 
 @search_router.get('/results/')
 async def search_results(request, query: Optional[str] = None, isolate_name: Optional[str] = None,
@@ -210,9 +226,23 @@ async def search_results(request, query: Optional[str] = None, isolate_name: Opt
     return await search_api.search_results(query=query, isolate_name=isolate_name, strain_id=strain_id, gene_id=gene_id,
                                            sortField=sortField, sortOrder=sortOrder, page=page, per_page=per_page)
 
+
+species_router = Router()
+
+
+@species_router.get("/list", response=List[SpeciesOut])
+def get_species_list(request):
+    species = Species.objects.all()
+    # Convert the queryset into a list of SpeciesOut Pydantic models
+    return [SpeciesOut.from_orm(sp) for sp in species]
+
+
 @search_router.get('/jbrowse/{isolate_id}')
 def get_jbrowse_data(request, isolate_id: int):
     return jbrowse_api.get_jbrowse_data(isolate_id)
 
 
 api.add_router("/search", search_router)
+
+# Add the species router to the main API
+api.add_router("/species", species_router)

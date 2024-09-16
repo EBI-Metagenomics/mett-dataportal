@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {createViewState, JBrowseLinearGenomeView,} from '@jbrowse/react-linear-genome-view';
-import {getData} from "../../utils/api";
+import {getData} from "../../services/api";
 import getAssembly from './assembly';
 import getTracks from './tracks';
 

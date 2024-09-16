@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import SearchForm from '../SearchForm/SearchForm';
-import {getData} from "../../utils/api";
+import {getData} from "../../services/api";
 import styles from './HomePage.module.scss';
 
 const HomePage: React.FC = () => {

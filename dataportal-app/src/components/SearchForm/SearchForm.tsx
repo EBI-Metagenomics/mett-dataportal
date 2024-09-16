@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {getData} from '../../utils/api';
+import {getData} from '../../services/api';
 import {extractIsolateName} from '../../utils/utils';
 import styles from "./SearchForm.module.scss";
 

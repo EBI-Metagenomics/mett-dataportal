@@ -1,9 +1,9 @@
 import React from 'react';
 import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
-import Header from './components/Header/Header';
-import Footer from './components/Footer/Footer';
-import HomePage from './components/HomePage/HomePage';
-import JBrowseViewer from "@components/JBrowseViewer/JBrowseViewer";
+import Header from './components/organisms/Header';
+import Footer from './components/organisms/Footer';
+import HomePage from './components/pages/HomePage';
+import JBrowseViewer from './components/JBrowseViewer/JBrowseViewer';
 
 const App: React.FC = () => {
   return (
