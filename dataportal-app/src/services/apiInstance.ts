@@ -1,12 +1,11 @@
 import axios from 'axios';
 
 const apiInstance = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api', // Update with your actual base URL
+  baseURL: 'http://localhost:8000/api', // Update with your actual base URL
   headers: {
     'Content-Type': 'application/json',
-    // Add any other headers you need here
   },
-  timeout: 10000, // Set a default timeout
+  timeout: 10000,
 });
 
 // Add request interceptor
