@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
-import {fetchSpeciesList} from '../../services/speciesService';
-import {fetchSearchResults} from '../../services/searchService';
+import React, { useEffect, useState } from 'react';
+import { fetchSpeciesList, fetchIsolateList } from '../../services/speciesService'; // Assuming you have this service
+import { fetchSearchResults } from '../../services/searchService';
 import SearchForm from '../organisms/SearchForm';
 import ResultsTable from '../organisms/ResultsTable';
 import styles from "@components/pages/HomePage.module.scss";
@@ -8,8 +8,11 @@ import styles from "@components/pages/HomePage.module.scss";
 const HomePage: React.FC = () => {
     const [results, setResults] = useState<any[]>([]);
     const [speciesList, setSpeciesList] = useState<any[]>([]);
+    const [isolateList, setIsolateList] = useState<any[]>([]);
     const [selectedSpecies, setSelectedSpecies] = useState('');
-    const [selectedGenome, setSelectedGenome] = useState('');
+    const [selectedIsolate, setSelectedIsolate] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
 
     // Fetch species list on component mount
     useEffect(() => {
@@ -26,22 +29,56 @@ const HomePage: React.FC = () => {
         fetchSpecies();
     }, []);
 
+    // Fetch isolates based on selected species
+    useEffect(() => {
+        const fetchIsolates = async () => {
+            try {
+                const isolates = await fetchIsolateList(selectedSpecies);
+                setIsolateList(isolates.results || []);
+            } catch (error) {
+                console.error('Error fetching isolates:', error);
+            }
+        };
+
+        if (selectedSpecies) {
+            fetchIsolates();
+        } else {
+            setIsolateList([]); // Reset isolate list when no species is selected
+        }
+    }, [selectedSpecies]);
+
     const handleSearch = async () => {
         try {
-            const response = await fetchSearchResults(selectedSpecies, selectedGenome);
+            const response = await fetchSearchResults(selectedIsolate || searchQuery, selectedSpecies);
             setResults(response.results || []);
+            setPagination({
+                page: response.page || 1,
+                totalPages: response.totalPages || 1,
+            });
         } catch (error) {
             console.error('Error fetching search results:', error);
             setResults([]);
         }
     };
 
-    const handleGenomeSelect = (id: string) => {
-        setSelectedGenome(id);
-    };
-
     const handleSpeciesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedSpecies(e.target.value);
+        setSelectedIsolate(''); // Reset isolate when species changes
+        setSearchQuery(''); // Clear the search query
+    };
+
+    const handleIsolateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value); // For free-text search
+    };
+
+    const handleIsolateSelect = (isolate: string) => {
+        setSelectedIsolate(isolate);
+        setSearchQuery(''); // Clear search query once an isolate is selected
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setPagination(prev => ({ ...prev, page: newPage }));
+        handleSearch(); // Re-run search with updated page
     };
 
     return (
@@ -90,11 +127,11 @@ const HomePage: React.FC = () => {
                     <hr className="vf-divider"></hr>
                 </div>
             </section>
+
             {/* Species Dropdown */}
             <section className="vf-grid__col--span-2">
                 <div>
                     <label className="vf-dropdown__label" htmlFor="species-select">Select Species: </label>
-                    {/*<div className="vf-dropdown__label">Select Species:</div>*/}
                     <select id="species-select" value={selectedSpecies} onChange={handleSpeciesChange}>
                         <option value="">-- Select a Species --</option>
                         {speciesList.map(species => (
@@ -107,12 +144,42 @@ const HomePage: React.FC = () => {
                 <div>&nbsp;</div>
             </section>
 
+            {/* Isolate Autocomplete/Search */}
+            <section className="vf-grid__col--span-2">
+                <div>
+                    <label htmlFor="isolate-search">Search Isolate:</label>
+                    <input
+                        type="text"
+                        id="isolate-search"
+                        value={searchQuery}
+                        onChange={handleIsolateChange}
+                        placeholder="Start typing to search isolates..."
+                    />
+                    {isolateList.length > 0 && (
+                        <ul>
+                            {isolateList.map(isolate => (
+                                <li key={isolate.id} onClick={() => handleIsolateSelect(isolate.name)}>
+                                    {isolate.name}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </section>
+
+            {/* Search Form and Button */}
             <section className="vf-grid vf-grid__col-3">
                 <SearchForm onSearch={handleSearch}/>
             </section>
 
+            {/* Results Table with Pagination */}
             <section className="vf-grid vf-grid__col-3">
-                <ResultsTable results={results} onGenomeSelect={handleGenomeSelect} selectedGenome={selectedGenome}/>
+                <ResultsTable
+                    results={results}
+                    pagination={pagination}
+                    onPageChange={handlePageChange}
+                    onIsolateSelect={setSelectedIsolate}
+                />
             </section>
         </div>
     );

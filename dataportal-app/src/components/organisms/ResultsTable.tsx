@@ -1,35 +1,53 @@
-import React from 'react';
-import ResultRow from '../molecules/ResultRow';
-
+// Assuming ResultsTableProps is an interface
 interface ResultsTableProps {
-  results: any[];
-  onGenomeSelect: (id: string) => void;
-  selectedGenome: string;
+  results: any[]; // Adjust the type based on your actual results
+  pagination?: {
+    page: number;
+    totalPages: number;
+  };
+  onPageChange?: (newPage: number) => void;
+  onIsolateSelect: (isolate: string) => void; // Add this as well
 }
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ results, onGenomeSelect, selectedGenome }) => {
+// Example of how to handle pagination and results in ResultsTable
+const ResultsTable: React.FC<ResultsTableProps> = ({ results, pagination, onPageChange, onIsolateSelect }) => {
   return (
-    <table className="vf-table vf-table--sortable">
-      <thead>
-        <tr>
-          <th>Species</th>
-          <th>Strain</th>
-          <th>Assembly</th>
-          <th>Annotations</th>
-          <th>Search Gene</th>
-        </tr>
-      </thead>
-      <tbody>
-        {results.map((result) => (
-          <ResultRow
-            key={result.id}
-            result={result}
-            onGenomeSelect={() => onGenomeSelect(result.id)}
-            isSelected={selectedGenome === result.id}
-          />
-        ))}
-      </tbody>
-    </table>
+    <div>
+      {/* Render the results */}
+      <table>
+        <thead>
+          <tr>
+            {/* Table header */}
+          </tr>
+        </thead>
+        <tbody>
+          {results.map(result => (
+            <tr key={result.id} onClick={() => onIsolateSelect(result.id)}>
+              {/* Render table rows based on result */}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Pagination controls, if pagination exists */}
+      {pagination && (
+        <div>
+          <button
+            disabled={pagination.page === 1}
+            onClick={() => onPageChange && onPageChange(pagination.page - 1)}
+          >
+            Previous
+          </button>
+          <span>Page {pagination.page} of {pagination.totalPages}</span>
+          <button
+            disabled={pagination.page === pagination.totalPages}
+            onClick={() => onPageChange && onPageChange(pagination.page + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 
