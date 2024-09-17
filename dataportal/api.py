@@ -69,9 +69,9 @@ class SearchAPI:
     def __init__(self, search_service: SearchService):
         self.search_service = search_service
 
-    async def autocomplete_suggestions(self, query: str, limit: int = 10):
+    async def autocomplete_suggestions(self, query: str, limit: int = 10, species_id: Optional[int] = None):
         try:
-            suggestions = await self.search_service.search_strains(query, limit)
+            suggestions = await self.search_service.search_strains(query, limit, species_id)
             return suggestions
         except Exception as e:
             raise HttpError(500, f"Error occurred: {str(e)}")
@@ -198,9 +198,9 @@ jbrowse_api = JBrowseAPI()
 
 
 # Map the router to the class methods
-@search_router.get('/autocomplete/')
-async def autocomplete_suggestions(request, query: str, limit: int = 10):
-    return await search_api.autocomplete_suggestions(query, limit)
+@search_router.get('/autocomplete')
+async def autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None):
+    return await search_api.autocomplete_suggestions(query, limit, species_id)
 
 
 @search_router.get('/strains/{strain_id}/genes/search/')

@@ -1,25 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { fetchSpeciesList, fetchIsolateList } from '../../services/speciesService'; // Assuming you have this service
-import { fetchSearchResults } from '../../services/searchService';
-import SearchForm from '../organisms/SearchForm';
+import React, {useCallback, useEffect, useState} from 'react';
+import {fetchSpeciesList} from '../../services/speciesService';
 import ResultsTable from '../organisms/ResultsTable';
 import styles from "@components/pages/HomePage.module.scss";
+import {fetchFuzzyIsolateSearch, fetchSearchResults} from "../../services/searchService";
+import {extractIsolateName} from "../../utils/utils";
 
 const HomePage: React.FC = () => {
     const [results, setResults] = useState<any[]>([]);
     const [speciesList, setSpeciesList] = useState<any[]>([]);
     const [isolateList, setIsolateList] = useState<any[]>([]);
+    const [isolateName, setIsolateName] = useState<string>('');
     const [selectedSpecies, setSelectedSpecies] = useState('');
-    const [selectedIsolate, setSelectedIsolate] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
+    const [searchQuery, setSearchQuery] = useState(''); // For isolate input
+    const [isTyping, setIsTyping] = useState(false);
 
     // Fetch species list on component mount
     useEffect(() => {
         const fetchSpecies = async () => {
             try {
                 const species = await fetchSpeciesList();
-                console.log('Species fetched:', species);
                 setSpeciesList(species || []);
             } catch (error) {
                 console.error('Error fetching species:', error);
@@ -29,56 +28,52 @@ const HomePage: React.FC = () => {
         fetchSpecies();
     }, []);
 
-    // Fetch isolates based on selected species
-    useEffect(() => {
-        const fetchIsolates = async () => {
-            try {
-                const isolates = await fetchIsolateList(selectedSpecies);
-                setIsolateList(isolates.results || []);
-            } catch (error) {
-                console.error('Error fetching isolates:', error);
-            }
+    // Debounce hook to delay search requests
+    const debounce = (func: Function, delay: number) => {
+        let timeoutId: NodeJS.Timeout;
+        return (...args: any[]) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func(...args), delay);
         };
+    };
 
-        if (selectedSpecies) {
-            fetchIsolates();
-        } else {
-            setIsolateList([]); // Reset isolate list when no species is selected
+    const performFuzzySearch = async (query: string) => {
+        if (query.length < 2) return; // Don't search for very short queries
+        try {
+            const isolates = await fetchFuzzyIsolateSearch(query, selectedSpecies); // API for fuzzy search
+            setIsolateList(isolates || []);
+        } catch (error) {
+            console.error('Error fetching isolates:', error);
+            setIsolateList([]);
         }
-    }, [selectedSpecies]);
+    };
+
+    // Debounced version of the search function
+    const debouncedSearch = useCallback(debounce(performFuzzySearch, 500), [selectedSpecies]);
+
+    // Handle isolate search input
+    const handleIsolateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        setIsolateName('');
+        setIsTyping(true);
+        debouncedSearch(query); // Trigger the debounced fuzzy search
+    };
+
+    const handleIsolateSelect = (isolate: string) => {
+        setSearchQuery(isolate);
+        setIsolateName(extractIsolateName(isolate));
+        setIsTyping(false); // Hide autocomplete once an isolate is selected
+    };
 
     const handleSearch = async () => {
         try {
-            const response = await fetchSearchResults(selectedIsolate || searchQuery, selectedSpecies);
+            const response = await fetchSearchResults(searchQuery, selectedSpecies);
             setResults(response.results || []);
-            setPagination({
-                page: response.page || 1,
-                totalPages: response.totalPages || 1,
-            });
         } catch (error) {
             console.error('Error fetching search results:', error);
             setResults([]);
         }
-    };
-
-    const handleSpeciesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedSpecies(e.target.value);
-        setSelectedIsolate(''); // Reset isolate when species changes
-        setSearchQuery(''); // Clear the search query
-    };
-
-    const handleIsolateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchQuery(e.target.value); // For free-text search
-    };
-
-    const handleIsolateSelect = (isolate: string) => {
-        setSelectedIsolate(isolate);
-        setSearchQuery(''); // Clear search query once an isolate is selected
-    };
-
-    const handlePageChange = (newPage: number) => {
-        setPagination(prev => ({ ...prev, page: newPage }));
-        handleSearch(); // Re-run search with updated page
     };
 
     return (
@@ -128,58 +123,68 @@ const HomePage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Species Dropdown */}
             <section className="vf-grid__col--span-2">
-                <div>
-                    <label className="vf-dropdown__label" htmlFor="species-select">Select Species: </label>
-                    <select id="species-select" value={selectedSpecies} onChange={handleSpeciesChange}>
-                        <option value="">-- Select a Species --</option>
-                        {speciesList.map(species => (
-                            <option key={species.id} value={species.id}>
-                                {species.scientific_name}
-                            </option>
-                        ))}
-                    </select>
+                <div className={`vf-grid__col--span-3 ${styles.searchContainer}`}>
+                    <h2 className="vf-section-header__subheading">Search Genome</h2>
+                    <form onSubmit={handleSearch}
+                          className="vf-form vf-form--search vf-form--search--responsive">
+                        {/* Flexbox container for aligning components horizontally */}
+                        <div className={`vf-form__item ${styles.searchElements}`}>
+                            {/* Species Dropdown */}
+                            <select id="species-select" value={selectedSpecies}
+                                    className={`vf-dropdown ${styles.selectDropDown}`}
+                                    onChange={e => setSelectedSpecies(e.target.value)}>
+                                <option value="">-- Select a Species --</option>
+                                {speciesList.map(species => (
+                                    <option key={species.id} value={species.id}>
+                                        {species.scientific_name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            {/* Search Isolate Input */}
+                            <div className="vf-form__item">
+                                <input
+                                    className={`vf-form__input ${styles.vfFormInput}`}
+                                    value={searchQuery}
+                                    onChange={handleIsolateChange}
+                                    placeholder="Search..."
+                                    autoComplete="off"
+                                    aria-autocomplete="list"
+                                    aria-controls="suggestions"
+                                    role="combobox"
+                                    aria-expanded={isolateList.length > 0}
+                                />
+                                <input type="hidden" name="isolate-name" value={isolateName}/>
+
+                                {isTyping && isolateList.length > 0 && (
+                                    <div id="suggestions" className={`vf-dropdown__menu ${styles.vfDropdown__menu}`}
+                                         role="listbox">
+                                        {isolateList.map((suggestion, index) => (
+                                            <div
+                                                key={index}
+                                                className={`${styles.suggestionItem}`}
+                                                onClick={() => handleIsolateSelect(suggestion)}
+                                                role="option"
+                                            >
+                                                {suggestion}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {/* Search Button */}
+                            <button className={`vf-button vf-button--primary ${styles.searchButton}`}>Search
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div>&nbsp;</div>
             </section>
 
-            {/* Isolate Autocomplete/Search */}
-            <section className="vf-grid__col--span-2">
-                <div>
-                    <label htmlFor="isolate-search">Search Isolate:</label>
-                    <input
-                        type="text"
-                        id="isolate-search"
-                        value={searchQuery}
-                        onChange={handleIsolateChange}
-                        placeholder="Start typing to search isolates..."
-                    />
-                    {isolateList.length > 0 && (
-                        <ul>
-                            {isolateList.map(isolate => (
-                                <li key={isolate.id} onClick={() => handleIsolateSelect(isolate.name)}>
-                                    {isolate.name}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-            </section>
 
-            {/* Search Form and Button */}
+            {/* Results Table */}
             <section className="vf-grid vf-grid__col-3">
-                <SearchForm onSearch={handleSearch}/>
-            </section>
-
-            {/* Results Table with Pagination */}
-            <section className="vf-grid vf-grid__col-3">
-                <ResultsTable
-                    results={results}
-                    pagination={pagination}
-                    onPageChange={handlePageChange}
-                    onIsolateSelect={setSelectedIsolate}
-                />
+                <ResultsTable results={results}/>
             </section>
         </div>
     );

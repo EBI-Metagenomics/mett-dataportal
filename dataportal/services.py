@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from asgiref.sync import sync_to_async
 from django.contrib.postgres.search import SearchVector, SearchQuery
@@ -14,7 +15,7 @@ class SearchService:
     def __init__(self):
         self.limit = 10
 
-    async def search_strains(self, query: str, limit: int = 10):
+    async def search_strains(self, query: str, limit: int = 10, species_id: Optional[int] = None):
         try:
             suggestions = []
 
@@ -27,20 +28,24 @@ class SearchService:
             for species in species_query:
                 suggestions.append(f"{species.scientific_name} ({species.common_name})")
 
-            # Search Strains
+            # Search Strains, with optional species_id filter
+            strain_filter = Q(isolate_name__icontains=query) | Q(assembly_name__icontains=query)
+            if species_id:
+                strain_filter &= Q(species_id=species_id)
+
             strain_query = await sync_to_async(lambda: list(
-                Strain.objects.filter(
-                    Q(isolate_name__icontains=query) | Q(assembly_name__icontains=query)
-                ).select_related('species')[:limit]
+                Strain.objects.filter(strain_filter).select_related('species')[:limit]
             ))()
             for strain in strain_query:
                 suggestions.append(f"{strain.isolate_name} - ({strain.assembly_name})")
 
-            # Search Genes
+            # Search Genes, with optional species_id filter
+            gene_filter = Q(gene_name__icontains=query)
+            if species_id:
+                gene_filter &= Q(strain__species_id=species_id)
+
             gene_query = await sync_to_async(lambda: list(
-                Gene.objects.filter(
-                    Q(gene_name__icontains=query)
-                ).select_related('strain__species')[:limit]
+                Gene.objects.filter(gene_filter).select_related('strain__species')[:limit]
             ))()
             for gene in gene_query:
                 suggestions.append(f"{gene.gene_name} ({gene.strain.isolate_name})")

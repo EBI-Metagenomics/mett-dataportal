@@ -1,4 +1,4 @@
-// Assuming ResultsTableProps is an interface
+// Adjust the ResultsTableProps interface to make `onIsolateSelect` optional
 interface ResultsTableProps {
   results: any[]; // Adjust the type based on your actual results
   pagination?: {
@@ -6,7 +6,7 @@ interface ResultsTableProps {
     totalPages: number;
   };
   onPageChange?: (newPage: number) => void;
-  onIsolateSelect: (isolate: string) => void; // Add this as well
+  onIsolateSelect?: (isolate: string) => void; // Make this optional
 }
 
 // Example of how to handle pagination and results in ResultsTable
@@ -22,7 +22,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, pagination, onPage
         </thead>
         <tbody>
           {results.map(result => (
-            <tr key={result.id} onClick={() => onIsolateSelect(result.id)}>
+            <tr key={result.id} onClick={() => onIsolateSelect && onIsolateSelect(result.id)}>
               {/* Render table rows based on result */}
             </tr>
           ))}

@@ -15,8 +15,8 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
 
   return (
     <form className="vf-form" onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
-      <SearchInput query={speciesQuery} setQuery={setSpeciesQuery} onSearch={handleSearch} />
-      <SearchInput query={genomeQuery} setQuery={setGenomeQuery} onSearch={handleSearch} />
+      {/*<SearchInput query={speciesQuery} setQuery={setSpeciesQuery} onSearch={handleSearch} />*/}
+      {/*<SearchInput query={genomeQuery} setQuery={setGenomeQuery} onSearch={handleSearch} />*/}
     </form>
   );
 };

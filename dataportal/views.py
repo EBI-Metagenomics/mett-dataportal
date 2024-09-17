@@ -62,8 +62,9 @@ class SearchResultsView(View):
 class Autocomplete(View):
     async def get(self, request, *args, **kwargs):
         query = request.GET.get('query', '').strip()
+        species_id = request.GET.get('species_id')  # Get species_id if provided
         if query:
-            suggestions = await SearchService.search_strains(query)
+            suggestions = await SearchService.search_strains(query, species_id=species_id)
             return JsonResponse({'suggestions': suggestions})
         return JsonResponse({'suggestions': []})
 
