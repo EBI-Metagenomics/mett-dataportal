@@ -25,7 +25,7 @@ search_router = Router()
 
 
 # Define response schemas
-class SearchResultSchema(BaseModel):
+class SearchGenomeSchema(BaseModel):
     species: str
     id: int
     common_name: Optional[str]
@@ -37,7 +37,7 @@ class SearchResultSchema(BaseModel):
 
 
 class PaginationSchema(BaseModel):
-    results: List[SearchResultSchema]
+    results: List[SearchGenomeSchema]
     page_number: int
     num_pages: int
     has_previous: bool
@@ -125,12 +125,12 @@ class SearchAPI:
             logger.debug(f"query: {query}, isolate_name: {isolate_name}, strain_id: {strain_id}, gene_id: {gene_id}")
 
             if gene_id:
-                full_results = await self.search_service.get_search_results_by_gene(gene_id=gene_id)
+                full_results = await self.search_service.search_genome_by_gene(gene_id=gene_id)
             elif strain_id:
-                full_results = await self.search_service.get_search_results(strain_id=strain_id)
+                full_results = await self.search_service.search_genomes(strain_id=strain_id)
             else:
                 search_term = isolate_name or query
-                full_results = await self.search_service.get_search_results(query=search_term)
+                full_results = await self.search_service.search_genomes(query=search_term)
 
             if not full_results:
                 return PaginationSchema(
@@ -218,7 +218,7 @@ def search_genes_in_strains(request, strain_q: str, gene_q: str):
     return search_api.search_genes_in_strains(strain_q, gene_q)
 
 
-@search_router.get('/results/')
+@search_router.get('/genome')
 async def search_results(request, query: Optional[str] = None, isolate_name: Optional[str] = None,
                          strain_id: Optional[int] = None, gene_id: Optional[int] = None,
                          sortField: Optional[str] = '', sortOrder: Optional[str] = '',

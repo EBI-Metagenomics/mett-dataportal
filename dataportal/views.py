@@ -13,7 +13,7 @@ from .utils import construct_file_urls
 logger = logging.getLogger(__name__)
 
 
-class SearchResultsView(View):
+class SearchGenomesView(View):
     async def get(self, request, *args, **kwargs):
         query = request.GET.get('query', '').strip()
         isolate_name = request.GET.get('isolate-name', '').strip()
@@ -27,10 +27,10 @@ class SearchResultsView(View):
         try:
             if gene_id:
                 logger.debug(f"Searching by gene_id: {gene_id}")
-                full_results = await SearchService.get_search_results_by_gene(gene_id=gene_id)
+                full_results = await SearchService.search_genome_by_gene(gene_id=gene_id)
             elif search_term:
                 logger.debug(f"Search term exists, proceeding with search")
-                full_results = await SearchService.get_search_results(query=search_term)
+                full_results = await SearchService.search_genomes(query=search_term)
 
             if not full_results:
                 logger.debug(f"No results found for search term: {search_term}")

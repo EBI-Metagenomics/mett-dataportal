@@ -3,6 +3,7 @@ from typing import Optional
 
 from asgiref.sync import sync_to_async
 from django.contrib.postgres.search import SearchVector, SearchQuery
+from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Q
 
 from .models import Species, Strain, Gene
@@ -98,7 +99,7 @@ class SearchService:
             logger.error(f"Error searching genes across strains: {e}")
             return []
 
-    async def get_search_results(self, strain_id=None, query=None):
+    async def search_genomes(self, strain_id=None, query=None):
         try:
             if strain_id:
                 logger.debug(f"Searching strain by ID: {strain_id}")
@@ -106,23 +107,61 @@ class SearchService:
                     Strain.objects.filter(id=strain_id)
                 ))()
                 logger.debug(f"Strains found for strain_id {strain_id}: {strains}")
+                return strains
+
             elif query:
-                logger.debug(f"Searching strains by query: {query}")
-                strains = await sync_to_async(lambda: list(
-                    Strain.objects.filter(isolate_name__icontains=query)
+                logger.debug(f"Searching strains by query (fuzzy search): {query}")
+
+                # Fuzzy search for Strains using TrigramSimilarity
+                strain_query = await sync_to_async(lambda: list(
+                    Strain.objects.annotate(
+                        similarity=TrigramSimilarity('isolate_name', query) +
+                                   TrigramSimilarity('assembly_name', query)
+                    ).filter(similarity__gt=0.1)  # Adjust threshold as needed
+                    .order_by('-similarity')
+                    .select_related('species')
                 ))()
-                logger.debug(f"Strains found for query '{query}': {strains}")
+
+                # If strains are found, return
+                if strain_query:
+                    return strain_query
+
+                # If no strains found, proceed to search for species
+                logger.debug(f"No strains found. Searching species by query: {query}")
+                species_query = await sync_to_async(lambda: list(
+                    Species.objects.annotate(
+                        similarity=TrigramSimilarity('scientific_name', query) +
+                                   TrigramSimilarity('common_name', query)
+                    ).filter(similarity__gt=0.1)
+                    .order_by('-similarity')
+                ))()
+
+                if not species_query:
+                    logger.debug(f"No species found for query '{query}'")
+                    return []
+
+                # Taking the first matched species
+                species = species_query[0]
+                logger.debug(f"Species found: {species.scientific_name}, fetching its strains...")
+
+                strains_from_species = await sync_to_async(lambda: list(
+                    Strain.objects.filter(species=species).select_related('species')
+                ))()
+
+                logger.debug(f"Strains found for species: {strains_from_species}")
+
+                return strains_from_species
+
             else:
-                strains = []
-            return strains
+                return []
         except Exception as e:
-            logger.error(f"Error in get_search_results: {e}")
+            logger.error(f"Error in search_genomes: {e}")
             return []
 
-    async def get_search_results_by_gene(self, gene_id=None):
+    async def search_genome_by_gene(self, gene_id=None):
         try:
             if gene_id:
-                logger.debug(f"Searching strains by gene ID: {gene_id}")
+                logger.debug(f"Searching genome by gene ID: {gene_id}")
 
                 strains = await sync_to_async(lambda: list(
                     Strain.objects.filter(genes__id=gene_id)
