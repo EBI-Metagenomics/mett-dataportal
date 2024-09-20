@@ -117,13 +117,14 @@ class SearchService:
                     Strain.objects.annotate(
                         similarity=TrigramSimilarity('isolate_name', query) +
                                    TrigramSimilarity('assembly_name', query)
-                    ).filter(similarity__gt=0.1)  # Adjust threshold as needed
+                    ).filter(similarity__gt=0.4)  # Adjust threshold as needed
                     .order_by('-similarity')
                     .select_related('species')
                 ))()
 
                 # If strains are found, return
                 if strain_query:
+                    logger.debug(f"strains found (fuzzy search): {strain_query}")
                     return strain_query
 
                 # If no strains found, proceed to search for species
@@ -140,15 +141,16 @@ class SearchService:
                     logger.debug(f"No species found for query '{query}'")
                     return []
 
-                # Taking the first matched species
-                species = species_query[0]
-                logger.debug(f"Species found: {species.scientific_name}, fetching its strains...")
+                # Fetch all strains for all found species
+                strains_from_species = []
+                for species in species_query:
+                    logger.debug(f"Fetching strains for species: {species.scientific_name}")
+                    strains_for_species = await sync_to_async(lambda: list(
+                        Strain.objects.filter(species=species).select_related('species')
+                    ))()
+                    strains_from_species.extend(strains_for_species)
 
-                strains_from_species = await sync_to_async(lambda: list(
-                    Strain.objects.filter(species=species).select_related('species')
-                ))()
-
-                logger.debug(f"Strains found for species: {strains_from_species}")
+                logger.debug(f"Strains found for species: {len(strains_from_species)}")
 
                 return strains_from_species
 

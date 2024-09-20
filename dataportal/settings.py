@@ -13,7 +13,6 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "gh$rs07@5pgqy18p&a6@x1=x&m@bdl$-c$e
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", False)
-# DEBUG = True
 
 LOGGING = {
     'version': 1,
@@ -31,6 +30,10 @@ LOGGING = {
         'dataportal': {
             'handlers': ['console'],
             'level': 'DEBUG',
+        },
+        'django.db.backends': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
         },
     },
 }
@@ -134,9 +137,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",  # React app URL
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True # todo remove later
-APPEND_SLASH = False # todo verify and remove
-
+CORS_ALLOW_ALL_ORIGINS = True  # todo remove later
+APPEND_SLASH = False  # todo verify and remove
 
 ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
                               'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
@@ -146,10 +148,3 @@ GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 
-# Additional locations of static files
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
-
-# For production (Optional)
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
