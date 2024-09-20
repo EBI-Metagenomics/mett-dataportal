@@ -49,7 +49,7 @@ const SearchForm: React.FC<SearchFormProps> = ({onSearch}) => {
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
 
     // Fetch search results based on query, page, sort field, and sort order
-    const fetchSearchResults = useCallback(
+    const fetchSearchGenomes = useCallback(
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
             let isolate = isolateName.trim() || query.trim();
 
@@ -106,19 +106,19 @@ const SearchForm: React.FC<SearchFormProps> = ({onSearch}) => {
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        fetchSearchResults();
+        fetchSearchGenomes();
     };
 
     const handleSortClick = (sortField: string) => {
         const newSortOrder = currentSortField === sortField ? (currentSortOrder === 'asc' ? 'desc' : 'asc') : 'asc';
         setCurrentSortField(sortField);
         setCurrentSortOrder(newSortOrder);
-        fetchSearchResults(1, sortField, newSortOrder);
+        fetchSearchGenomes(1, sortField, newSortOrder);
     };
 
     const handlePageClick = (page: number) => {
         setCurrentPage(page);
-        fetchSearchResults(page);
+        fetchSearchGenomes(page);
     };
 
     return (
