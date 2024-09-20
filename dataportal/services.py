@@ -19,16 +19,6 @@ class SearchService:
     async def search_strains(self, query: str, limit: int = 10, species_id: Optional[int] = None):
         try:
             suggestions = []
-
-            # Search Species
-            species_query = await sync_to_async(lambda: list(
-                Species.objects.filter(
-                    Q(scientific_name__icontains=query) | Q(common_name__icontains=query)
-                )[:limit]
-            ))()
-            for species in species_query:
-                suggestions.append(f"{species.scientific_name} ({species.common_name})")
-
             # Search Strains, with optional species_id filter
             strain_filter = Q(isolate_name__icontains=query) | Q(assembly_name__icontains=query)
             if species_id:
@@ -40,16 +30,16 @@ class SearchService:
             for strain in strain_query:
                 suggestions.append(f"{strain.isolate_name} - ({strain.assembly_name})")
 
-            # Search Genes, with optional species_id filter
-            gene_filter = Q(gene_name__icontains=query)
-            if species_id:
-                gene_filter &= Q(strain__species_id=species_id)
-
-            gene_query = await sync_to_async(lambda: list(
-                Gene.objects.filter(gene_filter).select_related('strain__species')[:limit]
-            ))()
-            for gene in gene_query:
-                suggestions.append(f"{gene.gene_name} ({gene.strain.isolate_name})")
+            # # Search Genes, with optional species_id filter
+            # gene_filter = Q(gene_name__icontains=query)
+            # if species_id:
+            #     gene_filter &= Q(strain__species_id=species_id)
+            #
+            # gene_query = await sync_to_async(lambda: list(
+            #     Gene.objects.filter(gene_filter).select_related('strain__species')[:limit]
+            # ))()
+            # for gene in gene_query:
+            #     suggestions.append(f"{gene.gene_name} ({gene.strain.isolate_name})")
 
             return suggestions
 
