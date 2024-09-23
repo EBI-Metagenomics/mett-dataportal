@@ -200,6 +200,16 @@ jbrowse_api = JBrowseAPI()
 # Map the router to the class methods
 @search_router.get('/autocomplete')
 async def autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None):
+    # Convert species_id to None if it's an empty string
+    if species_id == '' or species_id is None:
+        species_id = None
+    else:
+        try:
+            species_id = int(species_id)
+        except ValueError:
+            species_id = None
+
+    logger.info(f'species_id={species_id}')
     return await search_api.autocomplete_suggestions(query, limit, species_id)
 
 

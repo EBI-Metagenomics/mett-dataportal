@@ -7,6 +7,7 @@ import {fetchSearchGenomes} from '../../services/searchService';
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomeIntroSection from "@components/pages/HomeIntroSection";
+import Dropdown from '../atoms/Dropdown';
 
 const HomePage: React.FC = () => {
     const [speciesList, setSpeciesList] = useState<any[]>([]);
@@ -48,9 +49,23 @@ const HomePage: React.FC = () => {
 
     return (
         <div>
-
             <div>
-                <HomeIntroSection/> {}
+                <HomeIntroSection/>
+            </div>
+            <div className="vf-grid__col--span-3">
+                <h2 className="vf-section-header__subheading">Select Species</h2>
+                <p/>
+                <Dropdown
+                    options={speciesList.map(species => ({
+                        value: species.id,
+                        label: species.scientific_name
+                    }))}
+                    selectedValue={selectedSpecies}
+                    onChange={setSelectedSpecies}
+                    className={styles.customDropdown}
+                    style={{width: '300px', height: '40px'}}
+                />
+                <p/>
             </div>
 
             <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab}/>
@@ -65,12 +80,6 @@ const HomePage: React.FC = () => {
                 <div className="right-pane">
                     {activeTab === 'vf-tabs__section--1' && (
                         <SearchGeneForm
-                            speciesOptions={speciesList.map(species => ({
-                                value: species.id,
-                                label: species.scientific_name
-                            }))}
-                            selectedSpecies={selectedSpecies}
-                            onSpeciesChange={setSelectedSpecies}
                             searchQuery={searchQuery}
                             onSearchQueryChange={e => setSearchQuery(e.target.value)}
                             onSearchSubmit={handleSearch}
@@ -79,16 +88,11 @@ const HomePage: React.FC = () => {
 
                     {activeTab === 'vf-tabs__section--2' && (
                         <SearchGenomeForm
-                            speciesOptions={speciesList.map(species => ({
-                                value: species.id,
-                                label: species.scientific_name
-                            }))}
-                            selectedSpecies={selectedSpecies}
-                            onSpeciesChange={setSelectedSpecies}
                             searchQuery={searchQuery}
                             onSearchQueryChange={e => setSearchQuery(e.target.value)}
                             onSearchSubmit={handleSearch}
-                            onGenomeSelect={handleGenomeSelect} // Pass the genome selection handler
+                            onGenomeSelect={handleGenomeSelect}
+                            selectedSpecies={selectedSpecies}
                         />
                     )}
                 </div>

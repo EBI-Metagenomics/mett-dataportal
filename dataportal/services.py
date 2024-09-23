@@ -21,18 +21,21 @@ class SearchService:
             suggestions = []
             # Search Strains, with optional species_id filter
             strain_filter = Q(isolate_name__icontains=query) | Q(assembly_name__icontains=query)
-            if species_id:
+
+            # Apply species_id filter only if it is provided and valid
+            if species_id is not None and species_id != '':
                 strain_filter &= Q(species_id=species_id)
 
             strain_query = await sync_to_async(lambda: list(
                 Strain.objects.filter(strain_filter).select_related('species')[:limit]
             ))()
+
             for strain in strain_query:
                 suggestions.append(f"{strain.isolate_name} - ({strain.assembly_name})")
 
-            # # Search Genes, with optional species_id filter
+            # Uncomment if gene search is needed, along with optional species_id filtering
             # gene_filter = Q(gene_name__icontains=query)
-            # if species_id:
+            # if species_id is not None and species_id != '':
             #     gene_filter &= Q(strain__species_id=species_id)
             #
             # gene_query = await sync_to_async(lambda: list(

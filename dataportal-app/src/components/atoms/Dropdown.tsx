@@ -1,14 +1,22 @@
+// Dropdown.tsx
 import React from 'react';
 
 interface DropdownProps {
   options: { value: string, label: string }[];
   selectedValue: string;
   onChange: (value: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-const Dropdown: React.FC<DropdownProps> = ({ options, selectedValue, onChange }) => {
+const Dropdown: React.FC<DropdownProps> = ({ options, selectedValue, onChange, className, style }) => {
   return (
-    <select className="vf-dropdown" value={selectedValue} onChange={e => onChange(e.target.value)}>
+    <select
+      className={`vf-dropdown ${className || ''}`}
+      style={style}
+      value={selectedValue}
+      onChange={e => onChange(e.target.value)}
+    >
       {options.map(option => (
         <option key={option.value} value={option.value}>
           {option.label}
