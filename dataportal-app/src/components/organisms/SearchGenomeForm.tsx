@@ -30,27 +30,32 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
     const [hasNext, setHasNext] = useState<boolean>(false);
 
     // Fetch suggestions for autocomplete based on the query and selected species
-    const fetchSuggestions = useCallback(async () => {
-        console.log("selectedSpecies: " + selectedSpecies);
+    const fetchSuggestions = useCallback(
+        async (inputQuery: string) => {
+            console.log("selectedSpecies: " + selectedSpecies);
+            console.log("query: " + inputQuery);
+            console.log("query.length: " + inputQuery.length);
 
-        if (query.length >= 2) {
-            try {
-                const url = selectedSpecies
-                    ? `/search/autocomplete?query=${encodeURIComponent(query)}&species_id=${selectedSpecies}`
-                    : `/search/autocomplete?query=${encodeURIComponent(query)}`;
+            if (inputQuery.length >= 2) {
+                try {
+                    const url = selectedSpecies
+                        ? `/search/autocomplete?query=${encodeURIComponent(inputQuery)}&species_id=${selectedSpecies}`
+                        : `/search/autocomplete?query=${encodeURIComponent(inputQuery)}`;
 
-                const response = await getData(url);
+                    const response = await getData(url);
 
-                if (response) {
-                    setSuggestions(response);
+                    if (response) {
+                        setSuggestions(response);
+                    }
+                } catch (error) {
+                    console.error('Error fetching suggestions:', error);
                 }
-            } catch (error) {
-                console.error('Error fetching suggestions:', error);
+            } else {
+                setSuggestions([]);
             }
-        } else {
-            setSuggestions([]);
-        }
-    }, [query, selectedSpecies]);
+        },
+        [selectedSpecies]
+    );
 
 
     // Debounce function to reduce the frequency of API calls
@@ -65,6 +70,7 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
     };
 
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
+
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
@@ -109,9 +115,10 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
     );
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setQuery(event.target.value);
+        const newQuery = event.target.value;
+        setQuery(newQuery);
         setIsolateName('');
-        debouncedFetchSuggestions(); // Call the debounced fetch suggestions function
+        debouncedFetchSuggestions(newQuery);
     };
 
     const handleSuggestionClick = (suggestion: string) => {
