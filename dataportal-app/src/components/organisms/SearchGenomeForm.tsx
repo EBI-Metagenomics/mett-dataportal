@@ -19,7 +19,11 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                                                                selectedSpecies // Use the selectedSpecies prop
                                                            }) => {
     const [query, setQuery] = useState<string>('');
-    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestions, setSuggestions] = useState<{
+        strain_id: number,
+        isolate_name: string,
+        assembly_name: string
+    }[]>([]);
     const [isolateName, setIsolateName] = useState<string>('');
     const [results, setResults] = useState<any[]>([]);
     const [currentSortField, setCurrentSortField] = useState<string>('');
@@ -32,10 +36,6 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
         async (inputQuery: string) => {
-            console.log("selectedSpecies: " + selectedSpecies);
-            console.log("query: " + inputQuery);
-            console.log("query.length: " + inputQuery.length);
-
             if (inputQuery.length >= 2) {
                 try {
                     const url = selectedSpecies
@@ -57,7 +57,6 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
         [selectedSpecies]
     );
 
-
     // Debounce function to reduce the frequency of API calls
     const debounce = (func: Function, delay: number) => {
         let timeoutId: NodeJS.Timeout;
@@ -70,7 +69,7 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
     };
 
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
-    const [selectedStrainId, setSelectedStrainId] = useState<string | null>(null);
+    const [selectedStrainId, setSelectedStrainId] = useState<number | null>(null);
 
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
@@ -151,20 +150,19 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
         debouncedFetchSuggestions(newQuery);
     };
 
-
-    const handleSuggestionClick = (suggestion: any) => {
-        setQuery(suggestion);
-        setIsolateName(extractIsolateName(suggestion));
+    const handleSuggestionClick = (suggestion: { strain_id: number, isolate_name: string, assembly_name: string }) => {
         console.log('suggestion: ' + suggestion)
         console.log('isolateName: ' + isolateName)
         console.log('suggestion.strain_id: ' + suggestion.strain_id)
+        setQuery(suggestion.isolate_name);
+        setIsolateName(suggestion.isolate_name);
         setSelectedStrainId(suggestion.strain_id);
         setSuggestions([]);
     };
 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        console.log('selectedStrainId:' +selectedStrainId)
+        console.log('selectedStrainId:' + selectedStrainId)
         event.preventDefault();
         fetchSearchResults();
     };
@@ -212,11 +210,12 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                                             onClick={() => handleSuggestionClick(suggestion)} // Pass the full suggestion object
                                             role="option"
                                         >
-                                            {suggestion}
+                                            {`${suggestion.isolate_name} - (${suggestion.assembly_name})`} {/* Display isolate_name and assembly_name */}
                                         </div>
                                     ))}
                                 </div>
                             )}
+
 
                         </div>
                         <button type="submit" className="vf-button vf-button--primary vf-button--sm">
