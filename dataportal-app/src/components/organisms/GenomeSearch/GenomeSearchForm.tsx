@@ -1,6 +1,5 @@
 import React, {useCallback, useState} from 'react';
 import {getData} from "../../../services/api";
-import styles from "./GenomeSearchForm.module.scss";
 import Pagination from "../../molecules/Pagination";
 import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
 import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
@@ -14,10 +13,6 @@ interface SearchGenomeFormProps {
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
-                                                               searchQuery,
-                                                               onSearchQueryChange,
-                                                               onSearchSubmit,
-                                                               onGenomeSelect,
                                                                selectedSpecies
                                                            }) => {
     const [query, setQuery] = useState<string>('');
@@ -27,7 +22,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         assembly_name: string
     }[]>([]);
     const [isolateName, setIsolateName] = useState<string>('');
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState<never[]>([]);
     const [currentSortField, setCurrentSortField] = useState<string>('');
     const [currentSortOrder, setCurrentSortOrder] = useState<string>('');
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -60,9 +55,10 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     );
 
     // Debounce function to reduce the frequency of API calls
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     const debounce = (func: Function, delay: number) => {
         let timeoutId: NodeJS.Timeout;
-        return (...args: any[]) => {
+        return (...args: string[]) => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {
                 func.apply(this, args);
@@ -104,7 +100,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 }
             } else {
                 // Perform the regular search
-                let isolate = isolateName.trim() || query.trim();
+                const isolate = isolateName.trim() || query.trim();
                 if (isolate && selectedSpecies) {
                     const queryString = new URLSearchParams({
                         'isolate_name': isolate,
@@ -187,15 +183,15 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 <h2 className="vf-section-header__subheading">Search Genome</h2>
                 <form onSubmit={handleSubmit}
                       className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
-                        <GenomeSearchInput
-                            query={query}
-                            onInputChange={handleInputChange}
-                            suggestions={suggestions}
-                            onSuggestionClick={handleSuggestionClick}
-                        />
-                        <button type="submit" className="vf-button vf-button--primary vf-button--sm">
-                            <span className="vf-button__text">Search</span>
-                        </button>
+                    <GenomeSearchInput
+                        query={query}
+                        onInputChange={handleInputChange}
+                        suggestions={suggestions}
+                        onSuggestionClick={handleSuggestionClick}
+                    />
+                    <button type="submit" className="vf-button vf-button--primary vf-button--sm">
+                        <span className="vf-button__text">Search</span>
+                    </button>
                 </form>
 
                 <div className="vf-grid__col--span-3" id="results-table"
