@@ -1,14 +1,14 @@
 import React from 'react';
-import InputField from '../atoms/InputField';
-import Button from '../atoms/Button';
+import InputField from '../../atoms/InputField';
+import Button from '../../atoms/Button';
 
-interface SearchFormMoleculeProps {
+interface GeneSearchInputProps {
     searchQuery: string;
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: () => void;
 }
 
-const SearchFormMolecule: React.FC<SearchFormMoleculeProps> = ({
+const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                                                                    searchQuery,
                                                                    onSearchQueryChange,
                                                                    onSearchSubmit
@@ -24,4 +24,4 @@ const SearchFormMolecule: React.FC<SearchFormMoleculeProps> = ({
     );
 };
 
-export default SearchFormMolecule;
+export default GeneSearchInput;

@@ -1,13 +1,13 @@
 import React from 'react';
-import SearchFormMolecule from '../../molecules/SearchFormMolecule';
+import GeneSearchInput from './GeneSearchInput';
 
-interface SearchGeneFormProps {
+interface GeneSearchFormProps {
     searchQuery: string;
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: () => void;
 }
 
-const SearchGeneForm: React.FC<SearchGeneFormProps> = ({
+const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            searchQuery,
                                                            onSearchQueryChange,
                                                            onSearchSubmit
@@ -15,7 +15,7 @@ const SearchGeneForm: React.FC<SearchGeneFormProps> = ({
     return (
         <section id="vf-tabs__section--1">
             <h2>Search Gene</h2>
-            <SearchFormMolecule
+            <GeneSearchInput
                 searchQuery={searchQuery}
                 onSearchQueryChange={onSearchQueryChange}
                 onSearchSubmit={onSearchSubmit}
@@ -24,4 +24,4 @@ const SearchGeneForm: React.FC<SearchGeneFormProps> = ({
     );
 };
 
-export default SearchGeneForm;
+export default GeneSearchForm;
