@@ -5,8 +5,7 @@ import {getData} from "../../services/api";
 import getAssembly from './assembly';
 import getTracks from './tracks';
 
-interface JBrowseViewerProps {
-}
+type JBrowseViewerProps = object
 
 export interface IsolateData {
     species: string;

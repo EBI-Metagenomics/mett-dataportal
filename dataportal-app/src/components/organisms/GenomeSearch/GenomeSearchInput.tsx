@@ -6,7 +6,7 @@ interface GenomeSearchInputProps {
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     suggestions: { strain_id: number; isolate_name: string; assembly_name: string }[];
     onSuggestionClick: (suggestion: { strain_id: number; isolate_name: string; assembly_name: string }) => void;
-    onSuggestionsClear: () => void; // Add this prop
+    onSuggestionsClear: () => void;
 }
 
 const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
@@ -14,15 +14,14 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
     onInputChange,
     suggestions,
     onSuggestionClick,
-    onSuggestionsClear // Add this prop
+    onSuggestionsClear
 }) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-    // Handle click outside to close suggestions
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                onSuggestionsClear(); // Clear suggestions when clicking outside
+                onSuggestionsClear();
             }
         };
 
@@ -63,7 +62,7 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
             <button
                 type="submit"
                 className="vf-button vf-button--primary vf-button--sm"
-                onClick={onSuggestionsClear} // Clear suggestions on search button click
+                onClick={onSuggestionsClear}
             >
                 <span className="vf-button__text">Search</span>
             </button>

@@ -11,10 +11,23 @@ interface SearchGenomeFormProps {
     onSearchSubmit: () => void;
     onGenomeSelect: (genome: string) => void;
     selectedSpecies: string;
+    results: any[];
+    onSortClick: (sortField: string) => void;
+    selectedGenomes: string[];
+    onToggleGenomeSelect: (genome: string) => void;
+    totalPages: number;
+    currentPage: number;
+    handlePageClick: (page: number) => void;
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
-                                                               selectedSpecies
+                                                               selectedSpecies,
+                                                               selectedGenomes,
+                                                               onToggleGenomeSelect,
+                                                               searchQuery,
+                                                               onSearchSubmit,
+                                                               onGenomeSelect,
+                                                               onSortClick
                                                            }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{
@@ -75,7 +88,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const fetchSearchResults = useCallback(
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
             if (selectedStrainId) {
-                // Fetch data by strain_id
                 try {
                     const response = await getData(`/search/genome?strain_id=${selectedStrainId}&page=${page}`);
                     if (response && response.results) {
@@ -100,7 +112,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     setHasNext(false);
                 }
             } else {
-                // Perform the regular search
                 const isolate = isolateName.trim() || query.trim();
                 if (isolate && selectedSpecies) {
                     const queryString = new URLSearchParams({
@@ -157,6 +168,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         setIsolateName(suggestion.isolate_name);
         setSelectedStrainId(suggestion.strain_id);
         setSuggestions([]);
+        onGenomeSelect(suggestion.isolate_name);
     };
 
 
@@ -199,10 +211,17 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     />
 
                 </form>
-
+                <div>
+                    <p>&nbsp;</p>
+                </div>
                 <div className="vf-grid__col--span-3" id="results-table"
                      style={{display: results.length > 0 ? 'block' : 'none'}}>
-                    <GenomeResultsTable results={results} onSortClick={handleSortClick}/>
+                    <GenomeResultsTable
+                        results={results}
+                        onSortClick={onSortClick}
+                        selectedGenomes={selectedGenomes}
+                        onToggleGenomeSelect={onToggleGenomeSelect}
+                    />
                     {totalPages > 1 && (
                         <Pagination
                             currentPage={currentPage}
