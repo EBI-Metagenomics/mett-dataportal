@@ -10,13 +10,11 @@ interface GeneSearchInputProps {
 
 const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                                                                    searchQuery,
-                                                                   onSearchQueryChange,
-                                                                   onSearchSubmit
+                                                                   onSearchQueryChange
                                                                }) => {
     return (
         <form onSubmit={(e) => {
             e.preventDefault();
-            onSearchSubmit();
         }}>
             <InputField value={searchQuery} onChange={onSearchQueryChange} placeholder="Search genome..."/>
             <Button label="Search" type="submit"/>

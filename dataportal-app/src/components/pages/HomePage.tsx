@@ -63,7 +63,7 @@ const HomePage: React.FC = () => {
                     selectedValue={selectedSpecies}
                     onChange={(value) => setSelectedSpecies(value === "" ? "" : value)} // Handle setting to empty string
                     className={styles.customDropdown}
-                    style={{ width: '300px', height: '40px' }}
+                    // style={{ width: '300px', height: '40px' }}
                 />
                 <p />
             </div>
