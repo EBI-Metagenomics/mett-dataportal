@@ -1,6 +1,5 @@
 import React, {useCallback, useState} from 'react';
 import {getData} from "../../services/api";
-import {extractIsolateName} from "../../utils/utils";
 import styles from "./SearchGenomeForm.module.scss";
 
 interface SearchGenomeFormProps {
@@ -8,7 +7,7 @@ interface SearchGenomeFormProps {
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: () => void;
     onGenomeSelect: (genome: string) => void;
-    selectedSpecies: string; // Accept the selectedSpecies prop
+    selectedSpecies: string;
 }
 
 const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
@@ -207,10 +206,10 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                                         <div
                                             key={index}
                                             className="suggestion-item"
-                                            onClick={() => handleSuggestionClick(suggestion)} // Pass the full suggestion object
+                                            onClick={() => handleSuggestionClick(suggestion)}
                                             role="option"
                                         >
-                                            {`${suggestion.isolate_name} - (${suggestion.assembly_name})`} {/* Display isolate_name and assembly_name */}
+                                            {`${suggestion.isolate_name} - (${suggestion.assembly_name})`}
                                         </div>
                                     ))}
                                 </div>
@@ -267,6 +266,64 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                             </tr>
                         ))}
                         </tbody>
+                        {/* Pagination Section */}
+                        {totalPages > 1 && (
+                            <tfoot className={`vf-table__footer ${styles.vfTableFooter}`}>
+                            <tr className="vf-table__row">
+                                <td className="vf-table__cell" colSpan={5}>
+                                    <nav className="vf-pagination" aria-label="Pagination">
+                                        <ul className="vf-pagination__list">
+                                            {hasPrevious && (
+                                                <li className="vf-pagination__item">
+                                                    <button
+                                                        className="vf-pagination__link"
+                                                        onClick={() => handlePageClick(1)}
+                                                    >
+                                                        First
+                                                    </button>
+                                                </li>
+                                            )}
+                                            {hasPrevious && (
+                                                <li className="vf-pagination__item vf-pagination__item--previous-page">
+                                                    <button
+                                                        className="vf-pagination__link"
+                                                        onClick={() => handlePageClick(currentPage - 1)}
+                                                    >
+                                                        Previous
+                                                    </button>
+                                                </li>
+                                            )}
+                                            <li className="vf-pagination__item">
+                                              <span className="vf-pagination__link">
+                                                Page {currentPage} of {totalPages}
+                                              </span>
+                                            </li>
+                                            {hasNext && (
+                                                <li className="vf-pagination__item vf-pagination__item--next-page">
+                                                    <button
+                                                        className="vf-pagination__link"
+                                                        onClick={() => handlePageClick(currentPage + 1)}
+                                                    >
+                                                        Next
+                                                    </button>
+                                                </li>
+                                            )}
+                                            {hasNext && (
+                                                <li className="vf-pagination__item">
+                                                    <button
+                                                        className="vf-pagination__link"
+                                                        onClick={() => handlePageClick(totalPages)}
+                                                    >
+                                                        Last
+                                                    </button>
+                                                </li>
+                                            )}
+                                        </ul>
+                                    </nav>
+                                </td>
+                            </tr>
+                            </tfoot>
+                        )}
                     </table>
                 </div>
             </div>
