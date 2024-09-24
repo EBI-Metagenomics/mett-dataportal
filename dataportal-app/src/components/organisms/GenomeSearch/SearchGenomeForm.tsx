@@ -1,5 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {getData} from "../../services/api";
+import {getData} from "../../../services/api";
 import styles from "./SearchGenomeForm.module.scss";
 
 interface SearchGenomeFormProps {
@@ -15,7 +15,7 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                                                                onSearchQueryChange,
                                                                onSearchSubmit,
                                                                onGenomeSelect,
-                                                               selectedSpecies // Use the selectedSpecies prop
+                                                               selectedSpecies
                                                            }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{

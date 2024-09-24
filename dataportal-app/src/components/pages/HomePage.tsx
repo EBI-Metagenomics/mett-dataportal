@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import TabNavigation from '../molecules/TabNavigation';
-import SearchGeneForm from '../organisms/SearchGeneForm';
-import SearchGenomeForm from '../organisms/SearchGenomeForm';
+import SearchGeneForm from '../organisms/GeneSearch/SearchGeneForm';
+import SearchGenomeForm from '../organisms/GenomeSearch/SearchGenomeForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
 import { fetchSearchGenomes } from '../../services/searchService';
 import { fetchSpeciesList } from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
-import HomeIntroSection from "@components/pages/HomeIntroSection";
+import HomeIntroSection from "@components/organisms/HomeIntroSection";
 import Dropdown from '../atoms/Dropdown';
 
 const HomePage: React.FC = () => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import SearchFormMolecule from '../molecules/SearchFormMolecule';
+import SearchFormMolecule from '../../molecules/SearchFormMolecule';
 
 interface SearchGeneFormProps {
     searchQuery: string;
