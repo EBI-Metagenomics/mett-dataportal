@@ -25,6 +25,12 @@ search_router = Router()
 
 
 # Define response schemas
+
+class StrainSuggestionSchema(BaseModel):
+    strain_id: int
+    isolate_name: str
+    assembly_name: str
+
 class SearchGenomeSchema(BaseModel):
     species: str
     id: int
@@ -198,7 +204,7 @@ jbrowse_api = JBrowseAPI()
 
 
 # Map the router to the class methods
-@search_router.get('/autocomplete')
+@search_router.get('/autocomplete', response=List[StrainSuggestionSchema])
 async def autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None):
     # Convert species_id to None if it's an empty string
     if species_id == '' or species_id is None:

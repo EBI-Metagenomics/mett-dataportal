@@ -147,20 +147,24 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
         const newQuery = event.target.value;
         setQuery(newQuery);
         setIsolateName('');
-        setSelectedStrainId(null); // Reset strain ID only when typing manually
+        setSelectedStrainId(null);
         debouncedFetchSuggestions(newQuery);
     };
 
 
     const handleSuggestionClick = (suggestion: any) => {
-        setQuery(suggestion.isolate_name); // Display the isolate_name in the input field
-        setIsolateName(suggestion.isolate_name); // Store the isolate name
-        setSelectedStrainId(suggestion.strain_id); // Store the selected strain ID
+        setQuery(suggestion);
+        setIsolateName(extractIsolateName(suggestion));
+        console.log('suggestion: ' + suggestion)
+        console.log('isolateName: ' + isolateName)
+        console.log('suggestion.strain_id: ' + suggestion.strain_id)
+        setSelectedStrainId(suggestion.strain_id);
         setSuggestions([]);
     };
 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        console.log('selectedStrainId:' +selectedStrainId)
         event.preventDefault();
         fetchSearchResults();
     };
@@ -197,6 +201,8 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                                 role="combobox"
                                 aria-expanded={suggestions.length > 0}
                             />
+                            <input type="hidden" name="isolate-name" value={isolateName}/>
+
                             {suggestions.length > 0 && (
                                 <div id="suggestions" className="vf-dropdown__menu" role="listbox">
                                     {suggestions.map((suggestion, index) => (
