@@ -70,27 +70,16 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
     };
 
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
+    const [selectedStrainId, setSelectedStrainId] = useState<string | null>(null);
 
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
-            let isolate = isolateName.trim() || query.trim();
-
-            console.log("isolate: " + isolate);
-            console.log("selectedSpecies: " + selectedSpecies);
-
-            if (isolate && selectedSpecies) {
-                const queryString = new URLSearchParams({
-                    'isolate_name': isolate,
-                    'species_id': selectedSpecies,
-                    'page': String(page),
-                    'sortField': sortField,
-                    'sortOrder': sortOrder
-                }).toString();
-
+            if (selectedStrainId) {
+                // Fetch data by strain_id
                 try {
-                    const response = await getData(`/search/genome?${queryString}`);
+                    const response = await getData(`/search/genome?strain_id=${selectedStrainId}&page=${page}`);
                     if (response && response.results) {
                         setResults(response.results);
                         setCurrentPage(response.page_number);
@@ -112,23 +101,64 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                     setHasPrevious(false);
                     setHasNext(false);
                 }
+            } else {
+                // Perform the regular search
+                let isolate = isolateName.trim() || query.trim();
+                if (isolate && selectedSpecies) {
+                    const queryString = new URLSearchParams({
+                        'isolate_name': isolate,
+                        'species_id': selectedSpecies,
+                        'page': String(page),
+                        'sortField': sortField,
+                        'sortOrder': sortOrder
+                    }).toString();
+
+                    try {
+                        const response = await getData(`/search/genome?${queryString}`);
+                        if (response && response.results) {
+                            setResults(response.results);
+                            setCurrentPage(response.page_number);
+                            setTotalPages(response.num_pages);
+                            setHasPrevious(response.has_previous);
+                            setHasNext(response.has_next);
+                        } else {
+                            setResults([]);
+                            setCurrentPage(1);
+                            setTotalPages(1);
+                            setHasPrevious(false);
+                            setHasNext(false);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                        setResults([]);
+                        setCurrentPage(1);
+                        setTotalPages(1);
+                        setHasPrevious(false);
+                        setHasNext(false);
+                    }
+                }
             }
         },
-        [isolateName, query, selectedSpecies, currentSortField, currentSortOrder]
+        [selectedStrainId, isolateName, query, selectedSpecies, currentSortField, currentSortOrder]
     );
+
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newQuery = event.target.value;
         setQuery(newQuery);
         setIsolateName('');
+        setSelectedStrainId(null); // Reset strain ID only when typing manually
         debouncedFetchSuggestions(newQuery);
     };
 
-    const handleSuggestionClick = (suggestion: string) => {
-        setQuery(suggestion);
-        setIsolateName(extractIsolateName(suggestion));
+
+    const handleSuggestionClick = (suggestion: any) => {
+        setQuery(suggestion.isolate_name); // Display the isolate_name in the input field
+        setIsolateName(suggestion.isolate_name); // Store the isolate name
+        setSelectedStrainId(suggestion.strain_id); // Store the selected strain ID
         setSuggestions([]);
     };
+
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -173,7 +203,7 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                                         <div
                                             key={index}
                                             className="suggestion-item"
-                                            onClick={() => handleSuggestionClick(suggestion)}
+                                            onClick={() => handleSuggestionClick(suggestion)} // Pass the full suggestion object
                                             role="option"
                                         >
                                             {suggestion}
@@ -181,6 +211,7 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                                     ))}
                                 </div>
                             )}
+
                         </div>
                         <button type="submit" className="vf-button vf-button--primary vf-button--sm">
                             <span className="vf-button__text">Search</span>
