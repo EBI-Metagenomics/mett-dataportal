@@ -1,21 +1,21 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import TabNavigation from '../molecules/TabNavigation';
 import SearchGeneForm from '../organisms/SearchGeneForm';
 import SearchGenomeForm from '../organisms/SearchGenomeForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
-import {fetchSearchGenomes} from '../../services/searchService';
-import {fetchSpeciesList} from "../../services/speciesService";
+import { fetchSearchGenomes } from '../../services/searchService';
+import { fetchSpeciesList } from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomeIntroSection from "@components/pages/HomeIntroSection";
 import Dropdown from '../atoms/Dropdown';
 
 const HomePage: React.FC = () => {
     const [speciesList, setSpeciesList] = useState<any[]>([]);
-    const [selectedSpecies, setSelectedSpecies] = useState('');
+    const [selectedSpecies, setSelectedSpecies] = useState(''); // Initialize with an empty string
     const [searchQuery, setSearchQuery] = useState('');
     const [results, setResults] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
-    const [selectedGenomes, setSelectedGenomes] = useState<string[]>([]); // State to track selected genomes
+    const [selectedGenomes, setSelectedGenomes] = useState<string[]>([]);
 
     // Fetch species list on component mount
     useEffect(() => {
@@ -34,46 +34,46 @@ const HomePage: React.FC = () => {
 
     const handleGenomeSelect = (genome: string) => {
         if (!selectedGenomes.includes(genome)) {
-            setSelectedGenomes([...selectedGenomes, genome]); // Add genome to the chip list
+            setSelectedGenomes([...selectedGenomes, genome]);
         }
     };
 
     const handleRemoveGenome = (genome: string) => {
-        setSelectedGenomes(selectedGenomes.filter(g => g !== genome)); // Remove genome chip
+        setSelectedGenomes(selectedGenomes.filter(g => g !== genome));
     };
 
     const tabs = [
-        {id: 'vf-tabs__section--1', label: 'Search Gene'},
-        {id: 'vf-tabs__section--2', label: 'Search Genome'}
+        { id: 'vf-tabs__section--1', label: 'Search Gene' },
+        { id: 'vf-tabs__section--2', label: 'Search Genome' }
     ];
 
     return (
         <div>
             <div>
-                <HomeIntroSection/>
+                <HomeIntroSection />
             </div>
             <div className="vf-grid__col--span-3">
                 <h2 className="vf-section-header__subheading">Select Species</h2>
-                <p/>
+                <p />
                 <Dropdown
                     options={speciesList.map(species => ({
                         value: species.id,
                         label: species.scientific_name
                     }))}
                     selectedValue={selectedSpecies}
-                    onChange={setSelectedSpecies}
+                    onChange={(value) => setSelectedSpecies(value === "" ? "" : value)} // Handle setting to empty string
                     className={styles.customDropdown}
-                    style={{width: '300px', height: '40px'}}
+                    style={{ width: '300px', height: '40px' }}
                 />
-                <p/>
+                <p />
             </div>
 
-            <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab}/>
+            <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} />
 
             <div className="layout-container">
                 {/* Left Panel - Selected Genomes */}
                 <div className="left-pane">
-                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
+                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome} />
                 </div>
 
                 {/* Right Panel - Search Form */}

@@ -77,6 +77,9 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
             let isolate = isolateName.trim() || query.trim();
 
+            console.log("isolate: " + isolate);
+            console.log("selectedSpecies: " + selectedSpecies);
+
             if (isolate && selectedSpecies) {
                 const queryString = new URLSearchParams({
                     'isolate_name': isolate,
@@ -87,7 +90,7 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
                 }).toString();
 
                 try {
-                    const response = await getData(`/search/genome/?${queryString}`);
+                    const response = await getData(`/search/genome?${queryString}`);
                     if (response && response.results) {
                         setResults(response.results);
                         setCurrentPage(response.page_number);
@@ -125,12 +128,11 @@ const SearchGenomeForm: React.FC<SearchGenomeFormProps> = ({
         setQuery(suggestion);
         setIsolateName(extractIsolateName(suggestion));
         setSuggestions([]);
-        fetchSearchResults(); // Fetch results for the selected suggestion
     };
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        fetchSearchResults(); // Fetch results based on typed query or selected suggestion
+        fetchSearchResults();
     };
 
     const handleSortClick = (sortField: string) => {
