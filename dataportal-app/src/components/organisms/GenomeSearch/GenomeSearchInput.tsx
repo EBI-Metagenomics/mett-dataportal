@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import styles from "./GenomeSearchInput.module.scss";
 
 interface GenomeSearchInputProps {
@@ -6,17 +6,34 @@ interface GenomeSearchInputProps {
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     suggestions: { strain_id: number; isolate_name: string; assembly_name: string }[];
     onSuggestionClick: (suggestion: { strain_id: number; isolate_name: string; assembly_name: string }) => void;
+    onSuggestionsClear: () => void; // Add this prop
 }
 
 const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
-                                                                 query,
-                                                                 onInputChange,
-                                                                 suggestions,
-                                                                 onSuggestionClick
-                                                             }) => {
-    return (
+    query,
+    onInputChange,
+    suggestions,
+    onSuggestionClick,
+    onSuggestionsClear // Add this prop
+}) => {
+    const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-        <div className={`vf-form__item ${styles.vfFormItem}`}>
+    // Handle click outside to close suggestions
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+                onSuggestionsClear(); // Clear suggestions when clicking outside
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [onSuggestionsClear]);
+
+    return (
+        <div ref={wrapperRef} className={`vf-form__item ${styles.vfFormItem}`}>
             <input
                 type="search"
                 value={query}
@@ -43,11 +60,14 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
                     ))}
                 </div>
             )}
-            <button type="submit" className="vf-button vf-button--primary vf-button--sm">
+            <button
+                type="submit"
+                className="vf-button vf-button--primary vf-button--sm"
+                onClick={onSuggestionsClear} // Clear suggestions on search button click
+            >
                 <span className="vf-button__text">Search</span>
             </button>
         </div>
-
     );
 };
 
