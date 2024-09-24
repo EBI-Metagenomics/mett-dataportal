@@ -99,11 +99,6 @@ const HomePage: React.FC = () => {
                     )}
                 </div>
             </div>
-
-            {/* Results Table - shared across both tabs */}
-            <section className="vf-grid vf-grid__col-3">
-                {/* Render search results */}
-            </section>
         </div>
     );
 };
