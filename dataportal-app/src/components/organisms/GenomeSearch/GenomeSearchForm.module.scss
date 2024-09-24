@@ -1,34 +1,12 @@
-.vf-form__input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-}
 
-.vf-dropdown__menu {
-  position: absolute;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-top: 5px;
-  max-height: 200px;
-  overflow-y: auto;
-  width: calc(100% - 20px);
-  z-index: 1000;
+.vfGenomeSection {
+  float: left;
+  width: 100%;
 }
 
 .vfGenomeSubHeading {
-  float: left;
-}
-
-.suggestion-item {
-  padding: 8px 12px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #f0f0f0;
-  }
+  width: 100%;
+  float: right;
 }
 
 .vf-button {
@@ -46,10 +24,11 @@
 .vf-table {
   width: 100%;
 }
+
 .vfTableCell {
   font-size: 16px !important;
 }
 
 .vfTableFooter {
-    background-color: #ffffff !important;
+  background-color: #ffffff !important;
 }

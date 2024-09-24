@@ -180,19 +180,23 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
     return (
         <section id="vf-tabs__section--2">
-            <div className="vf-grid__col--span-3">
-                <h2 className={`vf-section-header__subheading ${styles.vfGenomeSubHeading}`}>Search Genome</h2>
+            <div>
+                <p/>
+            </div>
+            <div className={`vf-grid__col--span-3 ${styles.vfGenomeSection}`}>
                 <form onSubmit={handleSubmit}
                       className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
+                    <h2 className={`vf-section-header__subheading ${styles.vfGenomeSubHeading}`}>Search Genome</h2>
+                    <div>
+                        <p/>
+                    </div>
                     <GenomeSearchInput
                         query={query}
                         onInputChange={handleInputChange}
                         suggestions={suggestions}
                         onSuggestionClick={handleSuggestionClick}
                     />
-                    <button type="submit" className="vf-button vf-button--primary vf-button--sm">
-                        <span className="vf-button__text">Search</span>
-                    </button>
+
                 </form>
 
                 <div className="vf-grid__col--span-3" id="results-table"

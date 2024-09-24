@@ -1,5 +1,6 @@
-import React, {useState} from 'react';
+import React from 'react';
 import styles from "./GenomeSearchInput.module.scss";
+
 interface GenomeSearchInputProps {
     query: string;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -7,10 +8,15 @@ interface GenomeSearchInputProps {
     onSuggestionClick: (suggestion: { strain_id: number; isolate_name: string; assembly_name: string }) => void;
 }
 
-const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({query, onInputChange, suggestions, onSuggestionClick}) => {
+const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
+                                                                 query,
+                                                                 onInputChange,
+                                                                 suggestions,
+                                                                 onSuggestionClick
+                                                             }) => {
     return (
 
-        <div className="vf-form__item">
+        <div className={`vf-form__item ${styles.vfFormItem}`}>
             <input
                 type="search"
                 value={query}
@@ -24,11 +30,11 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({query, onInputChan
                 aria-expanded={suggestions.length > 0}
             />
             {suggestions.length > 0 && (
-                <div id="suggestions" className="vf-dropdown__menu" role="listbox">
+                <div id="suggestions" className={`vf-dropdown__menu ${styles.vfDropdownMenu}`} role="listbox">
                     {suggestions.map((suggestion, index) => (
                         <div
                             key={index}
-                            className="suggestion-item"
+                            className={styles.suggestionItem}
                             onClick={() => onSuggestionClick(suggestion)}
                             role="option"
                         >
@@ -37,7 +43,11 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({query, onInputChan
                     ))}
                 </div>
             )}
+            <button type="submit" className="vf-button vf-button--primary vf-button--sm">
+                <span className="vf-button__text">Search</span>
+            </button>
         </div>
+
     );
 };
 
