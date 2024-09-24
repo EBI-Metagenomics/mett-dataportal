@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import TabNavigation from '../molecules/TabNavigation';
 import SearchGeneForm from '../organisms/GeneSearch/SearchGeneForm';
-import SearchGenomeForm from '../organisms/GenomeSearch/SearchGenomeForm';
+import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
 import { fetchSearchGenomes } from '../../services/searchService';
 import { fetchSpeciesList } from "../../services/speciesService";
@@ -87,7 +87,7 @@ const HomePage: React.FC = () => {
                     )}
 
                     {activeTab === 'vf-tabs__section--2' && (
-                        <SearchGenomeForm
+                        <GenomeSearchForm
                             searchQuery={searchQuery}
                             onSearchQueryChange={e => setSearchQuery(e.target.value)}
                             onSearchSubmit={handleSearch}
