@@ -207,7 +207,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         onInputChange={handleInputChange}
                         suggestions={suggestions}
                         onSuggestionClick={handleSuggestionClick}
-                        onSuggestionsClear={() => setSuggestions([])} // Pass the handler to clear suggestions
+                        onSuggestionsClear={() => setSuggestions([])}
                     />
 
                 </form>

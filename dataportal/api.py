@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
@@ -30,6 +31,7 @@ class StrainSuggestionSchema(BaseModel):
     strain_id: int
     isolate_name: str
     assembly_name: str
+
 
 class SearchGenomeSchema(BaseModel):
     species: str
@@ -156,8 +158,8 @@ class SearchAPI:
                     "isolate_name": strain.isolate_name,
                     "assembly_name": strain.assembly_name,
                     "assembly_accession": strain.assembly_accession,
-                    "fasta_file": strain.fasta_file,
-                    "gff_file": strain.gff_file,
+                    "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file,
+                    "gff_file": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
                 }
                 for strain in full_results
             ])()

@@ -12,12 +12,17 @@ import Dropdown from '../atoms/Dropdown';
 const HomePage: React.FC = () => {
     const [speciesList, setSpeciesList] = useState<any[]>([]);
     const [selectedSpecies, setSelectedSpecies] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [results, setResults] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
     const [selectedGenomes, setSelectedGenomes] = useState<string[]>([]);
-    const [currentPage, setCurrentPage] = useState(1); // Initialize current page
-    const [totalPages, setTotalPages] = useState(1); // Initialize total pages
+    const [totalPages, setTotalPages] = useState(1);
+    // State for Genome Search
+    const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
+    const [genomeResults, setGenomeResults] = useState<any[]>([]);
+    const [genomeCurrentPage, setGenomeCurrentPage] = useState(1);
+
+    // State for Gene Search
+    const [geneSearchQuery, setGeneSearchQuery] = useState('');
+    const [geneResults, setGeneResults] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchSpecies = async () => {
@@ -28,10 +33,10 @@ const HomePage: React.FC = () => {
         fetchSpecies();
     }, []);
 
-    const handleSearch = async () => {
-        const response = await fetchSearchGenomes(searchQuery, selectedSpecies);
-        setResults(response.results || []);
-        setTotalPages(response.num_pages || 1); // Assuming response has total pages info
+    const handleGenomeSearch = async () => {
+        const response = await fetchSearchGenomes(genomeSearchQuery, selectedSpecies);
+        setGenomeResults(response.results || []);
+        setTotalPages(response.num_pages || 1);
     };
 
     const handleGenomeSelect = (genome: string) => {
@@ -46,15 +51,10 @@ const HomePage: React.FC = () => {
 
     const handleToggleGenomeSelect = (genome: string) => {
         if (selectedGenomes.includes(genome)) {
-            handleRemoveGenome(genome);
+            handleRemoveGenome(genome); // Remove if already selected
         } else {
-            handleGenomeSelect(genome);
+            handleGenomeSelect(genome); // Add if not selected
         }
-    };
-
-    const handlePageClick = (page: number) => {
-        setCurrentPage(page);
-        handleSearch(); // This will update results for the selected page
     };
 
     const tabs = [
@@ -65,7 +65,7 @@ const HomePage: React.FC = () => {
     return (
         <div>
             <div>
-                <HomeIntroSection />
+                <HomeIntroSection/>
             </div>
             <div className="vf-grid__col--span-3">
                 <h2 className="vf-section-header__subheading">Select Species</h2>
@@ -90,33 +90,35 @@ const HomePage: React.FC = () => {
             <div className="layout-container">
                 {/* Left Panel - Selected Genomes */}
                 <div className={styles.leftPane}>
-                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome} />
+                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
                 </div>
 
                 {/* Right Panel - Search Form */}
                 <div className={styles.rightPane}>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GeneSearchForm
-                            searchQuery={searchQuery}
-                            onSearchQueryChange={e => setSearchQuery(e.target.value)}
-                            onSearchSubmit={handleSearch}
+                            searchQuery={geneSearchQuery}
+                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                            onSearchSubmit={() => {
+                                // Your existing search logic for Gene Search
+                            }}
                         />
                     )}
 
                     {activeTab === 'vf-tabs__section--2' && (
                         <GenomeSearchForm
-                            searchQuery={searchQuery}
-                            onSearchQueryChange={e => setSearchQuery(e.target.value)}
-                            onSearchSubmit={handleSearch}
+                            searchQuery={genomeSearchQuery}
+                            onSearchQueryChange={e => setGenomeSearchQuery(e.target.value)}
+                            onSearchSubmit={handleGenomeSearch}
                             onGenomeSelect={handleGenomeSelect}
                             selectedSpecies={selectedSpecies}
-                            results={results}
+                            results={genomeResults}
                             onSortClick={(sortField) => console.log('Sort by:', sortField)}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
+                            currentPage={genomeCurrentPage}
                             totalPages={totalPages}
-                            currentPage={currentPage}
-                            handlePageClick={handlePageClick}
+                            handlePageClick={(page) => setGenomeCurrentPage(page)}
                         />
                     )}
                 </div>
