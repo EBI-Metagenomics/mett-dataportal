@@ -16,7 +16,7 @@ const App: React.FC = () => {
           {/* Add other routes here */}
         </Routes>
       </main>
-      <Footer />
+      {/*<Footer />*/}
     </Router>
   );
 };

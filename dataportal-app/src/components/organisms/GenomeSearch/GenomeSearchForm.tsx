@@ -3,6 +3,7 @@ import {getData} from "../../../services/api";
 import Pagination from "../../molecules/Pagination";
 import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
 import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
+import styles from "@components/organisms/GenomeSearch/GenomeSearchForm.module.scss";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -180,7 +181,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     return (
         <section id="vf-tabs__section--2">
             <div className="vf-grid__col--span-3">
-                <h2 className="vf-section-header__subheading">Search Genome</h2>
+                <h2 className={`vf-section-header__subheading ${styles.vfGenomeSubHeading}`}>Search Genome</h2>
                 <form onSubmit={handleSubmit}
                       className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
                     <GenomeSearchInput

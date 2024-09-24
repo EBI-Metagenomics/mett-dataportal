@@ -63,21 +63,23 @@ const HomePage: React.FC = () => {
                     selectedValue={selectedSpecies}
                     onChange={(value) => setSelectedSpecies(value === "" ? "" : value)} // Handle setting to empty string
                     className={styles.customDropdown}
-                    // style={{ width: '300px', height: '40px' }}
                 />
                 <p />
             </div>
 
             <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} />
+            <div>
+                <p/>
+            </div>
 
             <div className="layout-container">
                 {/* Left Panel - Selected Genomes */}
-                <div className="left-pane">
+                <div className={styles.leftPane}>
                     <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome} />
                 </div>
 
                 {/* Right Panel - Search Form */}
-                <div className="right-pane">
+                <div className={styles.rightPane}>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GeneSearchForm
                             searchQuery={searchQuery}
