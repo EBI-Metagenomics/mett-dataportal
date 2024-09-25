@@ -95,6 +95,35 @@ class SearchService:
             logger.error(f"Error fetching genome by ID {genome_id}: {e}")
             return None
 
+    async def autocomplete_gene_suggestions(self, query: str, limit: int = 10, species_id: Optional[int] = None, genome_ids: Optional[List[int]] = None):
+        try:
+            gene_filter = Q(gene_name__icontains=query)
+
+            if species_id:
+                gene_filter &= Q(strain__species_id=species_id)
+
+            if genome_ids:
+                gene_filter &= Q(strain_id__in=genome_ids)
+
+            genes = await sync_to_async(lambda: list(
+                Gene.objects.filter(gene_filter).select_related('strain')[:limit]
+            ))()
+
+            suggestions = [
+                {
+                    "gene_id": gene.id,
+                    "gene_name": gene.gene_name,
+                    "strain_name": gene.strain.isolate_name,
+                }
+                for gene in genes
+            ]
+
+            return suggestions
+
+        except Exception as e:
+            logger.error(f"Error fetching gene autocomplete suggestions: {e}")
+            return []
+
     async def get_gene_by_id(self, gene_id: int):
         try:
             return await sync_to_async(lambda: get_object_or_404(Gene, id=gene_id))()

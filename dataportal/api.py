@@ -37,6 +37,12 @@ class StrainSuggestionSchema(BaseModel):
     assembly_name: str
 
 
+class GeneAutocompleteResponseSchema(BaseModel):
+    gene_id: int
+    gene_name: str
+    strain_name: str
+
+
 class SearchGenomeSchema(BaseModel):
     species: str
     id: int
@@ -104,6 +110,19 @@ class SearchAPI:
             return suggestions
         except Exception as e:
             raise HttpError(500, f"Error occurred: {str(e)}")
+
+    async def gene_autocomplete(self, query: str, limit: int = 10, species_id: Optional[int] = None,
+                                genome_ids: Optional[str] = None):
+        try:
+            genome_id_list = [int(gid) for gid in genome_ids.split(",") if gid.strip()] if genome_ids else None
+
+            suggestions = await self.search_service.autocomplete_gene_suggestions(query, limit, species_id,
+                                                                                  genome_id_list)
+            return suggestions
+
+        except Exception as e:
+            logger.error(f"Error in gene_autocomplete: {e}")
+            raise HttpError(500, "Internal Server Error")
 
     async def search_genes_in_strain(self, strain_id: int, q: str):
         try:
@@ -225,6 +244,7 @@ search_service = SearchService()
 search_api = SearchAPI(search_service)
 jbrowse_api = JBrowseAPI()
 
+
 # Map the router to the class methods
 @genome_router.get('/autocomplete', response=List[StrainSuggestionSchema])
 async def autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None):
@@ -239,6 +259,7 @@ async def autocomplete_suggestions(request, query: str, limit: int = 10, species
 
     logger.info(f'species_id={species_id}')
     return await search_api.autocomplete_suggestions(query, limit, species_id)
+
 
 # API Endpoint to retrieve all species
 @species_router.get("/", response=List[SpeciesOut])
@@ -289,7 +310,6 @@ async def get_all_genomes(request, page: int = 1, per_page: int = 10):
 # API Endpoint to search genomes by query string
 @genome_router.get("/search", response=GenomePaginationSchema)
 async def search_genomes_by_string(request, query: str, page: int = 1, per_page: int = 10):
-    logger.debug("33333333333")
     try:
         strains = await sync_to_async(lambda: list(Strain.objects.select_related('species')
                                                    .filter(isolate_name__icontains=query)))()
@@ -425,6 +445,14 @@ async def search_genomes_by_species_and_string(request, species_id: int, query: 
     except Exception as e:
         logger.error(f"Error in search_genomes_by_species_and_string: {e}")
         raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+@gene_router.get("/autocomplete", response=List[GeneAutocompleteResponseSchema])
+async def gene_autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None, genome_ids: Optional[str] = None):
+    if not query.strip():
+        raise HttpError(400, "Query parameter 'query' cannot be empty")
+
+    return await search_api.gene_autocomplete(query, limit, species_id, genome_ids)
 
 
 # API Endpoint to search genes by query string
