@@ -1,12 +1,12 @@
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from asgiref.sync import sync_to_async
-from django.contrib.postgres.search import SearchVector, SearchQuery
-from django.contrib.postgres.search import TrigramSimilarity
+from django.core.paginator import Paginator
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
-from .models import Species, Strain, Gene
+from .models import Strain, Gene
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +15,18 @@ class SearchService:
 
     def __init__(self):
         self.limit = 10
+
+    def paginate_results(self, queryset, page: int, per_page: int):
+        paginator = Paginator(queryset, per_page)
+        page_obj = paginator.get_page(page)
+        return {
+            "results": list(page_obj.object_list),
+            "page_number": page_obj.number,
+            "num_pages": paginator.num_pages,
+            "has_previous": page_obj.has_previous(),
+            "has_next": page_obj.has_next(),
+            "total_results": paginator.count,
+        }
 
     async def search_strains(self, query: str, limit: int = 10, species_id: Optional[int] = None):
         try:
@@ -43,123 +55,93 @@ class SearchService:
             logger.error(f"Error executing autocomplete query: {e}")
             return []
 
-    def search_genes_in_strain(self, strain_id: int, query: str):
+    async def get_genomes(self, page: int = 1, per_page: int = 10):
         try:
-            search_vector = SearchVector('gene_name', 'description')
-            search_query = SearchQuery(query)
-            strain = Strain.objects.get(id=strain_id)
-            return Gene.objects.filter(strain=strain).annotate(
-                search=search_vector
-            ).filter(search=search_query)
+            strains = await sync_to_async(lambda: list(Strain.objects.all()))()
+            return self.paginate_results(strains, page, per_page)
         except Exception as e:
-            logger.error(f"Error searching genes in strain {strain_id}: {e}")
-            return []
+            logger.error(f"Error fetching genomes: {e}")
+            return self.paginate_results([], page, per_page)
 
-    def search_genes_globally(self, query: str):
+    async def search_genomes(self, query: str = None, species_id: Optional[int] = None, page: int = 1,
+                             per_page: int = 10):
         try:
-            search_vector = SearchVector('gene_name', 'description')
-            search_query = SearchQuery(query)
-            return Gene.objects.annotate(
-                search=search_vector
-            ).filter(search=search_query)
-        except Exception as e:
-            logger.error(f"Error searching genes globally: {e}")
-            return []
+            filters = Q()
+            if query:
+                filters &= Q(isolate_name__icontains=query) | Q(assembly_name__icontains=query)
+            if species_id:
+                filters &= Q(species_id=species_id)
 
-    def search_genes_in_strains(self, strain_query: str, gene_query: str):
+            strains = await sync_to_async(lambda: list(Strain.objects.filter(filters).select_related('species')))()
+            return self.paginate_results(strains, page, per_page)
+
+        except Exception as e:
+            logger.error(f"Error searching genomes: {e}")
+            return self.paginate_results([], page, per_page)
+
+    async def get_genomes_by_species(self, species_id: int, page: int = 1, per_page: int = 10):
         try:
-            strain_search_vector = SearchVector('isolate_name', 'assembly_name')
-            strain_search_query = SearchQuery(strain_query)
-
-            strains = Strain.objects.annotate(
-                search=strain_search_vector
-            ).filter(search=strain_search_query)
-
-            gene_search_vector = SearchVector('gene_name', 'description')
-            gene_search_query = SearchQuery(gene_query)
-
-            return Gene.objects.filter(strain__in=strains).annotate(
-                search=gene_search_vector
-            ).filter(search=gene_search_query)
+            strains = await sync_to_async(
+                lambda: list(Strain.objects.filter(species_id=species_id).select_related('species')))()
+            return self.paginate_results(strains, page, per_page)
         except Exception as e:
-            logger.error(f"Error searching genes across strains: {e}")
-            return []
+            logger.error(f"Error fetching genomes by species ID {species_id}: {e}")
+            return self.paginate_results([], page, per_page)
 
-    async def search_genomes(self, strain_id=None, query=None):
+    async def get_genome_by_id(self, genome_id: int):
         try:
-            if strain_id:
-                logger.debug(f"Searching strain by ID: {strain_id}")
-                strains = await sync_to_async(lambda: list(
-                    Strain.objects.filter(id=strain_id)
-                ))()
-                logger.debug(f"Strains found for strain_id {strain_id}: {strains}")
-                return strains
-
-            elif query:
-                logger.debug(f"Searching strains by query (fuzzy search): {query}")
-
-                # Fuzzy search for Strains using TrigramSimilarity
-                strain_query = await sync_to_async(lambda: list(
-                    Strain.objects.annotate(
-                        similarity=TrigramSimilarity('isolate_name', query) +
-                                   TrigramSimilarity('assembly_name', query)
-                    ).filter(similarity__gt=0.4)  # Adjust threshold as needed
-                    .order_by('-similarity')
-                    .select_related('species')
-                ))()
-
-                # If strains are found, return
-                if strain_query:
-                    logger.debug(f"strains found (fuzzy search): {strain_query}")
-                    return strain_query
-
-                # If no strains found, proceed to search for species
-                logger.debug(f"No strains found. Searching species by query: {query}")
-                species_query = await sync_to_async(lambda: list(
-                    Species.objects.annotate(
-                        similarity=TrigramSimilarity('scientific_name', query) +
-                                   TrigramSimilarity('common_name', query)
-                    ).filter(similarity__gt=0.1)
-                    .order_by('-similarity')
-                ))()
-
-                if not species_query:
-                    logger.debug(f"No species found for query '{query}'")
-                    return []
-
-                # Fetch all strains for all found species
-                strains_from_species = []
-                for species in species_query:
-                    logger.debug(f"Fetching strains for species: {species.scientific_name}")
-                    strains_for_species = await sync_to_async(lambda: list(
-                        Strain.objects.filter(species=species).select_related('species')
-                    ))()
-                    strains_from_species.extend(strains_for_species)
-
-                logger.debug(f"Strains found for species: {len(strains_from_species)}")
-
-                return strains_from_species
-
-            else:
-                return []
+            return await sync_to_async(lambda: get_object_or_404(Strain, id=genome_id))()
         except Exception as e:
-            logger.error(f"Error in search_genomes: {e}")
-            return []
+            logger.error(f"Error fetching genome by ID {genome_id}: {e}")
+            return None
 
-    async def search_genome_by_gene(self, gene_id=None):
+    async def get_gene_by_id(self, gene_id: int):
         try:
-            if gene_id:
-                logger.debug(f"Searching genome by gene ID: {gene_id}")
-
-                strains = await sync_to_async(lambda: list(
-                    Strain.objects.filter(genes__id=gene_id)
-                ))()
-
-                logger.debug(f"Strains fetched for gene_id {gene_id}: {strains}")
-                return strains
-
-            logger.debug("No gene_id provided, returning empty list.")
-            return []
+            return await sync_to_async(lambda: get_object_or_404(Gene, id=gene_id))()
         except Exception as e:
-            logger.error(f"Error in get_search_results_by_gene: {e}")
-            return []
+            logger.error(f"Error fetching gene by ID {gene_id}: {e}")
+            return None
+
+    async def get_genes(self, page: int = 1, per_page: int = 10):
+        try:
+            genes = await sync_to_async(lambda: list(Gene.objects.all()))()
+            return self.paginate_results(genes, page, per_page)
+        except Exception as e:
+            logger.error(f"Error fetching genes: {e}")
+            return self.paginate_results([], page, per_page)
+
+    async def search_genes(self, query: str = None, genome_id: Optional[int] = None,
+                           genome_ids: Optional[List[int]] = None, page: int = 1, per_page: int = 10):
+        try:
+            filters = Q()
+            if query:
+                filters &= Q(gene_name__icontains=query) | Q(description__icontains=query)
+            if genome_id:
+                filters &= Q(strain_id=genome_id)
+            elif genome_ids:
+                filters &= Q(strain_id__in=genome_ids)
+
+            genes = await sync_to_async(lambda: list(Gene.objects.filter(filters).select_related('strain')))()
+            return self.paginate_results(genes, page, per_page)
+
+        except Exception as e:
+            logger.error(f"Error searching genes: {e}")
+            return self.paginate_results([], page, per_page)
+
+    async def get_genes_by_genome(self, genome_id: int, page: int = 1, per_page: int = 10):
+        try:
+            genes = await sync_to_async(
+                lambda: list(Gene.objects.filter(strain_id=genome_id).select_related('strain')))()
+            return self.paginate_results(genes, page, per_page)
+        except Exception as e:
+            logger.error(f"Error fetching genes for genome ID {genome_id}: {e}")
+            return self.paginate_results([], page, per_page)
+
+    async def get_genes_by_multiple_genomes(self, genome_ids: List[int], page: int = 1, per_page: int = 10):
+        try:
+            genes = await sync_to_async(
+                lambda: list(Gene.objects.filter(strain_id__in=genome_ids).select_related('strain')))()
+            return self.paginate_results(genes, page, per_page)
+        except Exception as e:
+            logger.error(f"Error fetching genes for genome IDs {genome_ids}: {e}")
+            return self.paginate_results([], page, per_page)

@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
@@ -22,7 +23,10 @@ api = NinjaAPI(
     csrf=True,
 )
 
-search_router = Router()
+genome_router = Router()
+gene_router = Router()
+species_router = Router()
+jbrowse_router = Router()
 
 
 # Define response schemas
@@ -44,8 +48,25 @@ class SearchGenomeSchema(BaseModel):
     gff_file: str
 
 
-class PaginationSchema(BaseModel):
+class GeneResponseSchema(BaseModel):
+    id: int
+    gene_name: str
+    description: Optional[str]
+    strain: str
+    assembly: Optional[str]
+
+
+class GenomePaginationSchema(BaseModel):
     results: List[SearchGenomeSchema]
+    page_number: int
+    num_pages: int
+    has_previous: bool
+    has_next: bool
+    total_results: int
+
+
+class GenePaginationSchema(BaseModel):
+    results: List[GeneResponseSchema]
     page_number: int
     num_pages: int
     has_previous: bool
@@ -141,7 +162,7 @@ class SearchAPI:
                 full_results = await self.search_service.search_genomes(query=search_term)
 
             if not full_results:
-                return PaginationSchema(
+                return GenomePaginationSchema(
                     results=[],
                     page_number=1,
                     num_pages=0,
@@ -169,7 +190,7 @@ class SearchAPI:
             end = start + per_page
             page_results = results[start:end]
 
-            return PaginationSchema(
+            return GenomePaginationSchema(
                 results=page_results,
                 page_number=page,
                 num_pages=(total_results + per_page - 1) // per_page,
@@ -205,62 +226,417 @@ search_api = SearchAPI(search_service)
 jbrowse_api = JBrowseAPI()
 
 
-# Map the router to the class methods
-@search_router.get('/autocomplete', response=List[StrainSuggestionSchema])
-async def autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None):
-    # Convert species_id to None if it's an empty string
-    if species_id == '' or species_id is None:
-        species_id = None
-    else:
-        try:
-            species_id = int(species_id)
-        except ValueError:
-            species_id = None
-
-    logger.info(f'species_id={species_id}')
-    return await search_api.autocomplete_suggestions(query, limit, species_id)
-
-
-@search_router.get('/strains/{strain_id}/genes/search/')
-async def search_genes_in_strain(request, strain_id: int, q: str):
-    return await search_api.search_genes_in_strain(strain_id, q)
-
-
-@search_router.get('/genes/search/')
-def search_genes_globally(request, q: str):
-    return search_api.search_genes_globally(q)
-
-
-@search_router.get('/strains-genes/search/')
-def search_genes_in_strains(request, strain_q: str, gene_q: str):
-    return search_api.search_genes_in_strains(strain_q, gene_q)
-
-
-@search_router.get('/genome')
-async def search_results(request, query: Optional[str] = None, isolate_name: Optional[str] = None,
-                         strain_id: Optional[int] = None, gene_id: Optional[int] = None,
-                         sortField: Optional[str] = '', sortOrder: Optional[str] = '',
-                         page: int = 1, per_page: int = 10):
-    return await search_api.search_results(query=query, isolate_name=isolate_name, strain_id=strain_id, gene_id=gene_id,
-                                           sortField=sortField, sortOrder=sortOrder, page=page, per_page=per_page)
-
-
-species_router = Router()
-
-
-@species_router.get("/list", response=List[SpeciesOut])
-def get_species_list(request):
+# API Endpoint to retrieve all species
+@species_router.get("/", response=List[SpeciesOut])
+def get_all_species(request):
     species = Species.objects.all()
-    # Convert the queryset into a list of SpeciesOut Pydantic models
     return [SpeciesOut.from_orm(sp) for sp in species]
 
 
-@search_router.get('/jbrowse/{isolate_id}')
+# API Endpoint to retrieve all genomes
+@genome_router.get("/", response=GenomePaginationSchema)
+async def get_all_genomes(request, page: int = 1, per_page: int = 10):
+    try:
+        strains = await sync_to_async(lambda: list(Strain.objects.select_related('species').all()))()
+
+        total_results = len(strains)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = strains[start:end]
+
+        serialized_results = [
+            {
+                "species": strain.species.scientific_name,
+                "id": strain.id,
+                "common_name": strain.species.common_name if strain.species.common_name else None,
+                "isolate_name": strain.isolate_name,
+                "assembly_name": strain.assembly_name,
+                "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
+                "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
+                "gff_file": settings.GFF_FTP_PATH.format(
+                    strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+            }
+            for strain in page_results
+        ]
+
+        return GenomePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except Exception as e:
+        logger.error(f"Error in get_all_genomes: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to search genomes by query string
+@genome_router.get("/search", response=GenomePaginationSchema)
+async def search_genomes_by_string(request, query: str, page: int = 1, per_page: int = 10):
+    logger.debug("33333333333")
+    try:
+        strains = await sync_to_async(lambda: list(Strain.objects.select_related('species')
+                                                   .filter(isolate_name__icontains=query)))()
+
+        total_results = len(strains)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = strains[start:end]
+
+        serialized_results = [
+            {
+                "species": strain.species.scientific_name,
+                "id": strain.id,
+                "common_name": strain.species.common_name if strain.species.common_name else None,
+                "isolate_name": strain.isolate_name,
+                "assembly_name": strain.assembly_name,
+                "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
+                "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
+                "gff_file": settings.GFF_FTP_PATH.format(
+                    strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+            }
+            for strain in page_results
+        ]
+
+        return GenomePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except Exception as e:
+        logger.error(f"Error in search_genomes_by_string: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to retrieve genome by ID
+@genome_router.get("/{genome_id}", response=SearchGenomeSchema)
+def get_genome(request, genome_id: int):
+    try:
+        strain = Strain.objects.select_related('species').get(id=genome_id)
+        response_data = {
+            "id": strain.id,
+            "species": strain.species.scientific_name,
+            "common_name": strain.species.common_name if strain.species.common_name else None,
+            "isolate_name": strain.isolate_name,
+            "assembly_name": strain.assembly_name,
+            "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
+            "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
+            "gff_file": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+        }
+        return response_data
+    except Strain.DoesNotExist:
+        raise HttpError(404, "Genome not found")
+
+
+# API Endpoint to retrieve genomes filtered by species ID
+@species_router.get("/{species_id}/genomes", response=GenomePaginationSchema)
+async def get_genomes_by_species(request, species_id: int, page: int = 1, per_page: int = 10):
+    try:
+        strains = await sync_to_async(lambda: list(Strain.objects.select_related('species')
+                                                   .filter(species_id=species_id)))()
+
+        total_results = len(strains)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = strains[start:end]
+
+        serialized_results = [
+            {
+                "species": strain.species.scientific_name,
+                "id": strain.id,
+                "common_name": strain.species.common_name if strain.species.common_name else None,
+                "isolate_name": strain.isolate_name,
+                "assembly_name": strain.assembly_name,
+                "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
+                "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
+                "gff_file": settings.GFF_FTP_PATH.format(
+                    strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+            }
+            for strain in page_results
+        ]
+
+        return GenomePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except Exception as e:
+        logger.error(f"Error in get_genomes_by_species: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to search genomes by species ID and query string
+@species_router.get("/{species_id}/genomes/search", response=GenomePaginationSchema)
+async def search_genomes_by_species_and_string(request, species_id: int, query: str, page: int = 1, per_page: int = 10):
+    try:
+        strains = await sync_to_async(lambda: list(Strain.objects.select_related('species')
+                                                   .filter(species_id=species_id, isolate_name__icontains=query)))()
+
+        total_results = len(strains)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = strains[start:end]
+
+        serialized_results = [
+            {
+                "species": strain.species.scientific_name,
+                "id": strain.id,
+                "common_name": strain.species.common_name if strain.species.common_name else None,
+                "isolate_name": strain.isolate_name,
+                "assembly_name": strain.assembly_name,
+                "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
+                "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
+                "gff_file": settings.GFF_FTP_PATH.format(
+                    strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+            }
+            for strain in page_results
+        ]
+
+        return GenomePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except Exception as e:
+        logger.error(f"Error in search_genomes_by_species_and_string: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to search genes by query string
+@gene_router.get("/search", response=GenePaginationSchema)
+async def search_genes_by_string(request, query: str, page: int = 1, per_page: int = 10):
+    try:
+        genes = await sync_to_async(
+            lambda: list(Gene.objects.select_related('strain').filter(gene_name__icontains=query)))()
+
+        total_results = len(genes)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = genes[start:end]
+
+        serialized_results = [
+            {
+                "id": gene.id,
+                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
+                "description": gene.description if gene.description else None,
+                "strain": gene.strain.isolate_name,
+                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+            }
+            for gene in page_results
+        ]
+
+        return GenePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except Exception as e:
+        logger.error(f"Error in search_genes_by_string: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to retrieve gene by ID
+@gene_router.get("/{gene_id}", response=GeneResponseSchema)
+async def get_gene_by_id(request, gene_id: int):
+    try:
+        # Fetch the gene object in an async-friendly manner
+        gene = await sync_to_async(lambda: get_object_or_404(Gene.objects.select_related('strain'), id=gene_id))()
+
+        response_data = {
+            "id": gene.id,
+            "gene_name": gene.gene_name,
+            "description": gene.description if gene.description else None,
+            "strain": gene.strain.isolate_name,
+            "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+        }
+
+        return response_data
+    except Http404:
+        raise HttpError(404, f"Gene with id {gene_id} not found")
+    except Exception as e:
+        logger.error(f"Error in get_gene_by_id: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to retrieve all genes
+@gene_router.get("/", response=GenePaginationSchema)
+async def get_all_genes(request, page: int = 1, per_page: int = 10):
+    try:
+        genes = await sync_to_async(lambda: list(Gene.objects.select_related('strain').all()))()
+
+        total_results = len(genes)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = genes[start:end]
+
+        serialized_results = [
+            {
+                "id": gene.id,
+                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
+                "description": gene.description if gene.description else None,
+                "strain": gene.strain.isolate_name,
+                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+            }
+            for gene in page_results
+        ]
+
+        return GenePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except Exception as e:
+        logger.error(f"Error in get_all_genes: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to retrieve genes filtered by a single genome ID
+@genome_router.get("/{genome_id}/genes", response=GenePaginationSchema)
+async def get_genes_by_genome(request, genome_id: int, page: int = 1, per_page: int = 10):
+    try:
+        genes = await sync_to_async(lambda: list(Gene.objects.select_related('strain').filter(strain_id=genome_id)))()
+
+        total_results = len(genes)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = genes[start:end]
+
+        serialized_results = [
+            {
+                "id": gene.id,
+                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
+                "description": gene.description if gene.description else None,
+                "strain": gene.strain.isolate_name,
+                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+            }
+            for gene in page_results
+        ]
+
+        return GenePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except Exception as e:
+        logger.error(f"Error in get_genes_by_genome: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to search genes by genome ID and gene string
+@genome_router.get("/{genome_id}/genes/search", response=GenePaginationSchema)
+async def search_genes_by_genome_and_string(request, genome_id: int, query: str, page: int = 1, per_page: int = 10):
+    try:
+        genes = await sync_to_async(lambda: list(
+            Gene.objects.select_related('strain').filter(strain_id=genome_id, gene_name__icontains=query)
+        ))()
+
+        total_results = len(genes)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = genes[start:end]
+
+        serialized_results = [
+            {
+                "id": gene.id,
+                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
+                "description": gene.description if gene.description else None,
+                "strain": gene.strain.isolate_name,
+                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+            }
+            for gene in page_results
+        ]
+
+        return GenePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except Exception as e:
+        logger.error(f"Error in search_genes_by_genome_and_string: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+# API Endpoint to search genes across multiple genome IDs using a gene string
+@gene_router.get("/search/filter", response=GenePaginationSchema)
+async def search_genes_by_multiple_genomes_and_string(request, genome_ids: str = "", query: str = "", page: int = 1,
+                                                      per_page: int = 10):
+    try:
+        if not genome_ids.strip():
+            raise HttpError(400, "No genome IDs provided")
+
+        genome_id_list = [int(gid) for gid in genome_ids.split(",") if gid.strip()]
+
+        if not genome_id_list:
+            raise HttpError(400, "Invalid genome IDs provided")
+
+        genes = await sync_to_async(lambda: list(
+            Gene.objects.select_related('strain').filter(strain_id__in=genome_id_list, gene_name__icontains=query)
+        ))()
+
+        total_results = len(genes)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_results = genes[start:end]
+
+        serialized_results = [
+            {
+                "id": gene.id,
+                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
+                "description": gene.description if gene.description else None,
+                "strain": gene.strain.isolate_name,
+                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+            }
+            for gene in page_results
+        ]
+
+        return GenePaginationSchema(
+            results=serialized_results,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=end < total_results,
+            total_results=total_results,
+        )
+    except HttpError as e:
+        raise e
+    except ValueError:
+        logger.error("Invalid genome ID provided")
+        raise HttpError(400, "Invalid genome ID provided")
+    except Exception as e:
+        logger.error(f"Error in search_genes_by_multiple_genomes_and_string: {e}")
+        raise HttpError(500, f"Internal Server Error: {str(e)}")
+
+
+@jbrowse_router.get('/search/{isolate_id}')
 def get_jbrowse_data(request, isolate_id: int):
     return jbrowse_api.get_jbrowse_data(isolate_id)
 
 
-api.add_router("/search", search_router)
-
-# Add the species router to the main API
+# Register routers with the main API
 api.add_router("/species", species_router)
+api.add_router("/genomes", genome_router)
+api.add_router("/genes", gene_router)
+api.add_router("/jbrowse", jbrowse_router)
