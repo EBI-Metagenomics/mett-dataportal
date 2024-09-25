@@ -36,7 +36,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         assembly_name: string
     }[]>([]);
     const [isolateName, setIsolateName] = useState<string>('');
-    const [results, setResults] = useState<never[]>([]);
+    const [results, setResults] = useState<any[]>([]);
     const [currentSortField, setCurrentSortField] = useState<string>('');
     const [currentSortOrder, setCurrentSortOrder] = useState<string>('');
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -50,8 +50,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             if (inputQuery.length >= 2) {
                 try {
                     const url = selectedSpecies
-                        ? `/search/autocomplete?query=${encodeURIComponent(inputQuery)}&species_id=${selectedSpecies}`
-                        : `/search/autocomplete?query=${encodeURIComponent(inputQuery)}`;
+                        ? `/genomes/autocomplete?query=${encodeURIComponent(inputQuery)}&species_id=${selectedSpecies}`
+                        : `/genomes/autocomplete?query=${encodeURIComponent(inputQuery)}`;
 
                     const response = await getData(url);
 
@@ -69,6 +69,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     );
 
     // Debounce function to reduce the frequency of API calls
+    //todo handle this properly
     // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     const debounce = (func: Function, delay: number) => {
         let timeoutId: NodeJS.Timeout;
@@ -89,13 +90,14 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
             if (selectedStrainId) {
                 try {
-                    const response = await getData(`/search/genome?strain_id=${selectedStrainId}&page=${page}`);
-                    if (response && response.results) {
-                        setResults(response.results);
-                        setCurrentPage(response.page_number);
-                        setTotalPages(response.num_pages);
-                        setHasPrevious(response.has_previous);
-                        setHasNext(response.has_next);
+                    const response = await getData(`/genomes/${selectedStrainId}`);
+                    console.log("response: " + response)
+                    if (response) {
+                        setResults([response]);
+                        setCurrentPage(1);
+                        setTotalPages(1);
+                        setHasPrevious(false);
+                        setHasNext(false);
                     } else {
                         setResults([]);
                         setCurrentPage(1);
@@ -115,15 +117,15 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 const isolate = isolateName.trim() || query.trim();
                 if (isolate && selectedSpecies) {
                     const queryString = new URLSearchParams({
-                        'isolate_name': isolate,
-                        'species_id': selectedSpecies,
+                        'query': isolate,
                         'page': String(page),
                         'sortField': sortField,
                         'sortOrder': sortOrder
                     }).toString();
 
                     try {
-                        const response = await getData(`/search/genome?${queryString}`);
+                        // const response = await getData(`/search/genome?${queryString}`);
+                        const response = await getData(`/species/${selectedSpecies}/genomes/search?${queryString}`);
                         if (response && response.results) {
                             setResults(response.results);
                             setCurrentPage(response.page_number);

@@ -3,7 +3,7 @@ import TabNavigation from '../molecules/TabNavigation';
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
-import {fetchSearchGenomes} from '../../services/searchService';
+import {fetchGenomesBySearch} from '../../services/genomeService';
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomeIntroSection from "@components/organisms/HomeIntroSection";
@@ -34,7 +34,7 @@ const HomePage: React.FC = () => {
     }, []);
 
     const handleGenomeSearch = async () => {
-        const response = await fetchSearchGenomes(genomeSearchQuery, selectedSpecies);
+        const response = await fetchGenomesBySearch(genomeSearchQuery, selectedSpecies);
         setGenomeResults(response.results || []);
         setTotalPages(response.num_pages || 1);
     };
