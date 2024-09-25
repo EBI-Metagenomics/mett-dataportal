@@ -1,0 +1,43 @@
+.vf-table {
+  width: 100%;
+}
+
+.vfTableCell {
+  font-size: 14px !important;
+  text-align: center;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.vfTableHeading {
+  font-size: 16px !important;
+  text-align: center !important;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.vfTableFooter {
+  background-color: #ffffff !important;
+}
+
+.toggleButton {
+  width: 25px;
+  height: 25px;
+  background-color: #3b6fb6;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  text-align: center;
+}
+
+.toggleButton:hover {
+  background-color: darkblue;
+}

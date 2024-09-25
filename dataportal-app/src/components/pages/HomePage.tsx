@@ -97,11 +97,16 @@ const HomePage: React.FC = () => {
                 <div className={styles.rightPane}>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GeneSearchForm
-                            searchQuery={geneSearchQuery}
-                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                            onSearchSubmit={() => {
-                                // Your existing search logic for Gene Search
-                            }}
+                            searchQuery={genomeSearchQuery}
+                            onSearchQueryChange={e => setGenomeSearchQuery(e.target.value)}
+                            onSearchSubmit={handleGenomeSearch}
+                            onGeneSelect={handleGenomeSelect}
+                            selectedSpecies={selectedSpecies}
+                            results={genomeResults}
+                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
+                            currentPage={genomeCurrentPage}
+                            totalPages={totalPages}
+                            handlePageClick={(page) => setGenomeCurrentPage(page)}
                         />
                     )}
 
