@@ -4,8 +4,8 @@ import styles from './GenomeResultsTable.module.scss';
 interface GenomeResultsTableProps {
     results: any[];
     onSortClick: (sortField: string) => void;
-    selectedGenomes: string[]; // Pass the selectedGenomes as a prop
-    onToggleGenomeSelect: (genome: string) => void; // Handle toggle action
+    selectedGenomes: { id: number; name: string }[];
+    onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
 }
 
 const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
@@ -14,6 +14,10 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                                                                    selectedGenomes,
                                                                    onToggleGenomeSelect
                                                                }) => {
+    const isGenomeSelected = (genomeId: number) => {
+        return selectedGenomes.some(genome => genome.id === genomeId);
+    };
+
     return (
         <table className="vf-table vf-table--sortable">
             <thead className="vf-table__header">
@@ -34,7 +38,6 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                 <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Annotations</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Add to Gene Search</th>
-                {/* New column */}
             </tr>
             </thead>
             <tbody className="vf-table__body">
@@ -51,9 +54,9 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         <button
                             className={styles.toggleButton}
-                            onClick={() => onToggleGenomeSelect(result.isolate_name)}
+                            onClick={() => onToggleGenomeSelect({id: result.id, name: result.isolate_name})}
                         >
-                            {selectedGenomes.includes(result.isolate_name) ? '−' : '+'} {/* Toggle between plus and minus */}
+                            {isGenomeSelected(result.id) ? '−' : '+'} {/* Toggle between plus and minus */}
                         </button>
                     </td>
                 </tr>

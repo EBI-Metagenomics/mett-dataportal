@@ -13,7 +13,7 @@ const HomePage: React.FC = () => {
     const [speciesList, setSpeciesList] = useState<any[]>([]);
     const [selectedSpecies, setSelectedSpecies] = useState('');
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
-    const [selectedGenomes, setSelectedGenomes] = useState<string[]>([]);
+    const [selectedGenomes, setSelectedGenomes] = useState<{ id: number; name: string }[]>([]);
     const [totalPages, setTotalPages] = useState(1);
     // State for Genome Search
     const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
@@ -46,23 +46,24 @@ const HomePage: React.FC = () => {
         setTotalPages(response.num_pages || 1);
     };
 
-    const handleGenomeSelect = (genome: string) => {
-        if (!selectedGenomes.includes(genome)) {
+    const handleGenomeSelect = (genome: { id: number; name: string }) => {
+        if (!selectedGenomes.some(g => g.id === genome.id)) {
             setSelectedGenomes([...selectedGenomes, genome]);
         }
     };
 
-    const handleRemoveGenome = (genome: string) => {
-        setSelectedGenomes(selectedGenomes.filter(g => g !== genome));
+    const handleRemoveGenome = (genomeId: number) => {
+        setSelectedGenomes(selectedGenomes.filter(g => g.id !== genomeId));
     };
 
-    const handleToggleGenomeSelect = (genome: string) => {
-        if (selectedGenomes.includes(genome)) {
-            handleRemoveGenome(genome); // Remove if already selected
+    const handleToggleGenomeSelect = (genome: { id: number; name: string }) => {
+        if (selectedGenomes.some(g => g.id === genome.id)) {
+            handleRemoveGenome(genome.id);
         } else {
-            handleGenomeSelect(genome); // Add if not selected
+            handleGenomeSelect(genome);
         }
     };
+
 
     const tabs = [
         {id: 'vf-tabs__section--1', label: 'Search Gene'},
@@ -76,7 +77,7 @@ const HomePage: React.FC = () => {
             </div>
             <div className="vf-grid__col--span-3">
                 <h2 className="vf-section-header__subheading">Select Species</h2>
-                <p />
+                <p/>
                 <Dropdown
                     options={speciesList.map(species => ({
                         value: species.id,
@@ -86,10 +87,10 @@ const HomePage: React.FC = () => {
                     onChange={(value) => setSelectedSpecies(value === "" ? "" : value)}
                     className={styles.customDropdown}
                 />
-                <p />
+                <p/>
             </div>
 
-            <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} />
+            <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab}/>
             <div>
                 <p/>
             </div>
@@ -108,6 +109,7 @@ const HomePage: React.FC = () => {
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                             onSearchSubmit={handleGeneSearch}
                             selectedSpecies={selectedSpecies}
+                            selectedGenomes={selectedGenomes}
                             results={geneResults}
                             onSortClick={(sortField) => console.log('Sort by:', sortField)}
                             currentPage={geneCurrentPage}

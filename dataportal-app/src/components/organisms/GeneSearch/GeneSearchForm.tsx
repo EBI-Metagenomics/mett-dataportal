@@ -5,7 +5,6 @@ import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable"
 import Pagination from "@components/molecules/Pagination";
 import {getData} from "../../../services/api";
 import {fetchGeneAutocompleteSuggestions} from "../../../services/geneService";
-import selectedGenomes from "@components/organisms/SelectedGenomes";
 
 interface GeneSearchFormProps {
     searchQuery: string;
@@ -17,11 +16,13 @@ interface GeneSearchFormProps {
     totalPages: number;
     currentPage: number;
     handlePageClick: (page: number) => void;
+    selectedGenomes: { id: number; name: string }[];
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            selectedSpecies,
-                                                           onSortClick
+                                                           onSortClick,
+                                                           selectedGenomes
                                                        }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{
@@ -42,16 +43,15 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const fetchSuggestions = useCallback(
         async (inputQuery: string) => {
             if (inputQuery.length >= 2) {
-                console.log("selectedGenomes: "  + selectedGenomes)
                 try {
-                    const speciesId = selectedSpecies ? Number(selectedSpecies) : undefined;
-
-                    const genomeIds = Array.isArray(selectedGenomes) ? selectedGenomes.join(',') : undefined;
-
+                    const genomeIds = selectedGenomes.map((genome: {
+                        id: number;
+                        name: string
+                    }) => genome.id).join(',');
                     const response = await fetchGeneAutocompleteSuggestions(
                         inputQuery,
                         10,
-                        speciesId,
+                        selectedSpecies ? Number(selectedSpecies) : undefined,
                         genomeIds
                     );
 
@@ -65,7 +65,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         },
-        [selectedSpecies, selectedGenomes] // Ensure dependencies are correctly listed
+        [selectedSpecies, selectedGenomes]
     );
 
 
@@ -84,7 +84,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
     const [selectedGeneId, setSelectedGeneId] = useState<number | null>(null);
-
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
@@ -125,7 +124,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     }).toString();
 
                     try {
-                        // const response = await getData(`/search/gene?${queryString}`);
                         const response = await getData(`/species/${selectedSpecies}/gene/search?${queryString}`);
                         if (response && response.results) {
                             setResults(response.results);

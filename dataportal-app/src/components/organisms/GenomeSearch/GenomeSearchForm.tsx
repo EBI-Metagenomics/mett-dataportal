@@ -9,12 +9,12 @@ interface SearchGenomeFormProps {
     searchQuery: string;
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: () => void;
-    onGenomeSelect: (genome: string) => void;
     selectedSpecies: string;
     results: any[];
     onSortClick: (sortField: string) => void;
-    selectedGenomes: string[];
-    onToggleGenomeSelect: (genome: string) => void;
+    selectedGenomes: { id: number; name: string }[];
+    onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
+    onGenomeSelect: (genome: { id: number; name: string }) => void;
     totalPages: number;
     currentPage: number;
     handlePageClick: (page: number) => void;
@@ -24,8 +24,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                selectedSpecies,
                                                                selectedGenomes,
                                                                onToggleGenomeSelect,
-                                                               searchQuery,
-                                                               onSearchSubmit,
                                                                onGenomeSelect,
                                                                onSortClick
                                                            }) => {
@@ -124,7 +122,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     }).toString();
 
                     try {
-                        // const response = await getData(`/search/genome?${queryString}`);
                         const response = await getData(`/species/${selectedSpecies}/genomes/search?${queryString}`);
                         if (response && response.results) {
                             setResults(response.results);
@@ -170,7 +167,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         setIsolateName(suggestion.isolate_name);
         setSelectedStrainId(suggestion.strain_id);
         setSuggestions([]);
-        onGenomeSelect(suggestion.isolate_name);
+        onGenomeSelect({ id: suggestion.strain_id, name: suggestion.isolate_name });
     };
 
 
