@@ -140,6 +140,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = True  # todo remove later
 APPEND_SLASH = False  # todo verify and remove
 
+DEFAULT_LIMIT = 10
 ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
                               'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
 GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
