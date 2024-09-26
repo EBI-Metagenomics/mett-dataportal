@@ -474,6 +474,7 @@ async def search_genes_by_string(request, query: str, page: int = 1, per_page: i
                 "id": gene.id,
                 "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
                 "description": gene.description if gene.description else None,
+                "locus_tag": gene.locus_tag,
                 "strain": gene.strain.isolate_name,
                 "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
             }
@@ -503,6 +504,7 @@ async def get_gene_by_id(request, gene_id: int):
             "id": gene.id,
             "gene_name": gene.gene_name,
             "description": gene.description if gene.description else None,
+            "locus_tag": gene.locus_tag,
             "strain": gene.strain.isolate_name,
             "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
         }
@@ -531,6 +533,7 @@ async def get_all_genes(request, page: int = 1, per_page: int = 10):
                 "id": gene.id,
                 "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
                 "description": gene.description if gene.description else None,
+                "locus_tag": gene.locus_tag,
                 "strain": gene.strain.isolate_name,
                 "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
             }
@@ -566,6 +569,7 @@ async def get_genes_by_genome(request, genome_id: int, page: int = 1, per_page: 
                 "id": gene.id,
                 "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
                 "description": gene.description if gene.description else None,
+                "locus_tag": gene.locus_tag,
                 "strain": gene.strain.isolate_name,
                 "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
             }
@@ -603,6 +607,7 @@ async def search_genes_by_genome_and_string(request, genome_id: int, query: str,
                 "id": gene.id,
                 "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
                 "description": gene.description if gene.description else None,
+                "locus_tag": gene.locus_tag,
                 "strain": gene.strain.isolate_name,
                 "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
             }
