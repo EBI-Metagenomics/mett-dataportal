@@ -87,11 +87,11 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-        async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
+        async (page = 1, sortField = currentSortField, sortOrder = currentSortOrder) => {
+
             if (selectedGeneId) {
                 try {
                     const response = await getData(`/genes/${selectedGeneId}`);
-                    console.log("response: " + response)
                     if (response) {
                         setResults([response]);
                         setCurrentPage(1);
@@ -115,16 +115,30 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 }
             } else {
                 const gene = geneName.trim() || query.trim();
-                if (gene && selectedSpecies) {
-                    const queryString = new URLSearchParams({
+                if (gene) {
+                    // Build the query parameters dynamically
+                    const params = new URLSearchParams({
                         'query': gene,
                         'page': String(page),
                         'sortField': sortField,
-                        'sortOrder': sortOrder
-                    }).toString();
+                        'sortOrder': sortOrder,
+                    });
+
+                    // Add genome IDs if available
+                    if (selectedGenomes && selectedGenomes.length > 0) {
+                        params.append('genome_ids', selectedGenomes.map((genome: {
+                            id: number;
+                            name: string
+                        }) => genome.id).join(','));
+                    }
+
+                    // Add species ID if available
+                    if (selectedSpecies) {
+                        params.append('species_id', String(selectedSpecies));
+                    }
 
                     try {
-                        const response = await getData(`/species/${selectedSpecies}/gene/search?${queryString}`);
+                        const response = await getData(`/genes/search/filter?${params.toString()}`);
                         if (response && response.results) {
                             setResults(response.results);
                             setCurrentPage(response.page_number);
@@ -149,7 +163,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 }
             }
         },
-        [selectedGeneId, geneName, query, selectedSpecies, currentSortField, currentSortOrder]
+        [selectedGeneId, geneName, query, selectedSpecies, selectedGenomes, currentSortField, currentSortOrder]
     );
 
 
