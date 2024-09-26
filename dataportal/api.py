@@ -23,10 +23,10 @@ api = NinjaAPI(
     csrf=True,
 )
 
-genome_router = Router()
-gene_router = Router()
-species_router = Router()
-jbrowse_router = Router()
+genome_router = Router(tags=["Genomes"])
+gene_router = Router(tags=["Genes"])
+species_router = Router(tags=["Species"])
+jbrowse_router = Router(tags=["JBrowse Viewer"])
 
 
 # Define response schemas
@@ -60,6 +60,7 @@ class GeneResponseSchema(BaseModel):
     description: Optional[str]
     strain: str
     assembly: Optional[str]
+    locus_tag: Optional[str]
 
 
 class GenomePaginationSchema(BaseModel):
@@ -448,7 +449,8 @@ async def search_genomes_by_species_and_string(request, species_id: int, query: 
 
 
 @gene_router.get("/autocomplete", response=List[GeneAutocompleteResponseSchema])
-async def gene_autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None, genome_ids: Optional[str] = None):
+async def gene_autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None,
+                                        genome_ids: Optional[str] = None):
     if not query.strip():
         raise HttpError(400, "Query parameter 'query' cannot be empty")
 
@@ -495,7 +497,6 @@ async def search_genes_by_string(request, query: str, page: int = 1, per_page: i
 @gene_router.get("/{gene_id}", response=GeneResponseSchema)
 async def get_gene_by_id(request, gene_id: int):
     try:
-        # Fetch the gene object in an async-friendly manner
         gene = await sync_to_async(lambda: get_object_or_404(Gene.objects.select_related('strain'), id=gene_id))()
 
         response_data = {
@@ -623,35 +624,43 @@ async def search_genes_by_genome_and_string(request, genome_id: int, query: str,
 
 # API Endpoint to search genes across multiple genome IDs using a gene string
 @gene_router.get("/search/filter", response=GenePaginationSchema)
-async def search_genes_by_multiple_genomes_and_string(request, genome_ids: str = "", query: str = "", page: int = 1,
-                                                      per_page: int = 10):
+async def search_genes_by_multiple_genomes_and_species_and_string(request, genome_ids: str = "",
+                                                                  species_id: Optional[int] = None,
+                                                                  query: str = "", page: int = 1, per_page: int = 10):
     try:
-        if not genome_ids.strip():
-            raise HttpError(400, "No genome IDs provided")
+        # todo discuss if this a possible scenario
+        # if not genome_ids.strip() and not species_id:
+        #     raise HttpError(400, "No genome IDs or species ID provided")
 
-        genome_id_list = [int(gid) for gid in genome_ids.split(",") if gid.strip()]
+        # Process genome IDs
+        genome_id_list = [int(gid) for gid in genome_ids.split(",") if gid.strip()] if genome_ids.strip() else []
+        genes_query = Gene.objects.select_related('strain')
 
-        if not genome_id_list:
-            raise HttpError(400, "Invalid genome IDs provided")
+        if genome_id_list:
+            genes_query = genes_query.filter(strain_id__in=genome_id_list)
 
-        genes = await sync_to_async(lambda: list(
-            Gene.objects.select_related('strain').filter(strain_id__in=genome_id_list, gene_name__icontains=query)
-        ))()
+        if species_id:
+            genes_query = genes_query.filter(strain__species_id=species_id)
 
-        total_results = len(genes)
+        if query.strip():
+            genes_query = genes_query.filter(gene_name__icontains=query)
+
+        total_results = await sync_to_async(genes_query.count)()
         start = (page - 1) * per_page
         end = start + per_page
-        page_results = genes[start:end]
+
+        genes = await sync_to_async(lambda: list(genes_query[start:end]))()
 
         serialized_results = [
             {
                 "id": gene.id,
-                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
+                "gene_name": gene.gene_name if gene.gene_name else "N/A",
                 "description": gene.description if gene.description else None,
                 "strain": gene.strain.isolate_name,
                 "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+                "locus_tag": gene.locus_tag if gene.locus_tag else None  # Include locus_tag
             }
-            for gene in page_results
+            for gene in genes
         ]
 
         return GenePaginationSchema(
