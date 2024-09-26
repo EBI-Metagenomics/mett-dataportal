@@ -90,7 +90,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
             if (selectedGeneId) {
                 try {
-                    const response = await getData(`/gene/${selectedGeneId}`);
+                    const response = await getData(`/genes/${selectedGeneId}`);
                     console.log("response: " + response)
                     if (response) {
                         setResults([response]);
@@ -114,10 +114,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     setHasNext(false);
                 }
             } else {
-                const isolate = geneName.trim() || query.trim();
-                if (isolate && selectedSpecies) {
+                const gene = geneName.trim() || query.trim();
+                if (gene && selectedSpecies) {
                     const queryString = new URLSearchParams({
-                        'query': isolate,
+                        'query': gene,
                         'page': String(page),
                         'sortField': sortField,
                         'sortOrder': sortOrder
