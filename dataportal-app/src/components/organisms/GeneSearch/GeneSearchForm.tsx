@@ -4,12 +4,13 @@ import styles from "@components/organisms/GeneSearch/GeneSearchForm.module.scss"
 import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
 import {getData} from "../../../services/api";
+import {fetchGeneAutocompleteSuggestions} from "../../../services/geneService";
+import selectedGenomes from "@components/organisms/SelectedGenomes";
 
 interface GeneSearchFormProps {
     searchQuery: string;
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: () => void;
-    onGeneSelect: (gene: string) => void;
     selectedSpecies: string;
     results: any[];
     onSortClick: (sortField: string) => void;
@@ -20,16 +21,15 @@ interface GeneSearchFormProps {
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            selectedSpecies,
-                                                           onGeneSelect,
                                                            onSortClick
                                                        }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{
-        strain_id: number,
-        isolate_name: string,
-        assembly_name: string
+        gene_id: number,
+        strain_name: string,
+        gene_name: string
     }[]>([]);
-    const [isolateName, setIsolateName] = useState<string>('');
+    const [geneName, setGeneName] = useState<string>('');
     const [results, setResults] = useState<any[]>([]);
     const [currentSortField, setCurrentSortField] = useState<string>('');
     const [currentSortOrder, setCurrentSortOrder] = useState<string>('');
@@ -42,12 +42,18 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const fetchSuggestions = useCallback(
         async (inputQuery: string) => {
             if (inputQuery.length >= 2) {
+                console.log("selectedGenomes: "  + selectedGenomes)
                 try {
-                    const url = selectedSpecies
-                        ? `/gene/autocomplete?query=${encodeURIComponent(inputQuery)}&species_id=${selectedSpecies}`
-                        : `/gene/autocomplete?query=${encodeURIComponent(inputQuery)}`;
+                    const speciesId = selectedSpecies ? Number(selectedSpecies) : undefined;
 
-                    const response = await getData(url);
+                    const genomeIds = Array.isArray(selectedGenomes) ? selectedGenomes.join(',') : undefined;
+
+                    const response = await fetchGeneAutocompleteSuggestions(
+                        inputQuery,
+                        10,
+                        speciesId,
+                        genomeIds
+                    );
 
                     if (response) {
                         setSuggestions(response);
@@ -59,8 +65,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         },
-        [selectedSpecies]
+        [selectedSpecies, selectedGenomes] // Ensure dependencies are correctly listed
     );
+
 
     // Debounce function to reduce the frequency of API calls
     //todo handle this properly
@@ -76,15 +83,15 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
-    const [selectedStrainId, setSelectedStrainId] = useState<number | null>(null);
+    const [selectedGeneId, setSelectedGeneId] = useState<number | null>(null);
 
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
-            if (selectedStrainId) {
+            if (selectedGeneId) {
                 try {
-                    const response = await getData(`/gene/${selectedStrainId}`);
+                    const response = await getData(`/gene/${selectedGeneId}`);
                     console.log("response: " + response)
                     if (response) {
                         setResults([response]);
@@ -108,7 +115,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     setHasNext(false);
                 }
             } else {
-                const isolate = isolateName.trim() || query.trim();
+                const isolate = geneName.trim() || query.trim();
                 if (isolate && selectedSpecies) {
                     const queryString = new URLSearchParams({
                         'query': isolate,
@@ -144,32 +151,31 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 }
             }
         },
-        [selectedStrainId, isolateName, query, selectedSpecies, currentSortField, currentSortOrder]
+        [selectedGeneId, geneName, query, selectedSpecies, currentSortField, currentSortOrder]
     );
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newQuery = event.target.value;
         setQuery(newQuery);
-        setIsolateName('');
-        setSelectedStrainId(null);
+        setGeneName('');
+        setSelectedGeneId(null);
         debouncedFetchSuggestions(newQuery);
     };
 
-    const handleSuggestionClick = (suggestion: { strain_id: number, isolate_name: string, assembly_name: string }) => {
+    const handleSuggestionClick = (suggestion: { gene_id: number, strain_name: string, gene_name: string }) => {
         console.log('suggestion: ' + suggestion)
-        console.log('isolateName: ' + isolateName)
-        console.log('suggestion.strain_id: ' + suggestion.strain_id)
-        setQuery(suggestion.isolate_name);
-        setIsolateName(suggestion.isolate_name);
-        setSelectedStrainId(suggestion.strain_id);
+        console.log('strain name: ' + suggestion.strain_name)
+        console.log('suggestion.strain_id: ' + suggestion.gene_name)
+        setQuery(suggestion.gene_name);
+        setGeneName(suggestion.gene_name);
+        setSelectedGeneId(suggestion.gene_id);
         setSuggestions([]);
-        onGeneSelect(suggestion.isolate_name);
     };
 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        console.log('selectedStrainId:' + selectedStrainId)
+        console.log('selectedStrainId:' + selectedGeneId)
         event.preventDefault();
         fetchSearchResults();
     };

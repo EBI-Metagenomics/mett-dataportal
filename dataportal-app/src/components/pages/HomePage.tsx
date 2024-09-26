@@ -19,6 +19,7 @@ const HomePage: React.FC = () => {
     const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
     const [genomeResults, setGenomeResults] = useState<any[]>([]);
     const [genomeCurrentPage, setGenomeCurrentPage] = useState(1);
+    const [geneCurrentPage, setGeneCurrentPage] = useState(1);
 
     // State for Gene Search
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
@@ -36,6 +37,12 @@ const HomePage: React.FC = () => {
     const handleGenomeSearch = async () => {
         const response = await fetchGenomesBySearch(genomeSearchQuery, selectedSpecies);
         setGenomeResults(response.results || []);
+        setTotalPages(response.num_pages || 1);
+    };
+
+    const handleGeneSearch = async () => {
+        const response = await fetchGenomesBySearch(geneSearchQuery, selectedSpecies);
+        setGeneResults(response.results || []);
         setTotalPages(response.num_pages || 1);
     };
 
@@ -97,16 +104,15 @@ const HomePage: React.FC = () => {
                 <div className={styles.rightPane}>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GeneSearchForm
-                            searchQuery={genomeSearchQuery}
-                            onSearchQueryChange={e => setGenomeSearchQuery(e.target.value)}
-                            onSearchSubmit={handleGenomeSearch}
-                            onGeneSelect={handleGenomeSelect}
+                            searchQuery={geneSearchQuery}
+                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                            onSearchSubmit={handleGeneSearch}
                             selectedSpecies={selectedSpecies}
-                            results={genomeResults}
+                            results={geneResults}
                             onSortClick={(sortField) => console.log('Sort by:', sortField)}
-                            currentPage={genomeCurrentPage}
+                            currentPage={geneCurrentPage}
                             totalPages={totalPages}
-                            handlePageClick={(page) => setGenomeCurrentPage(page)}
+                            handlePageClick={(page) => setGeneCurrentPage(page)}
                         />
                     )}
 

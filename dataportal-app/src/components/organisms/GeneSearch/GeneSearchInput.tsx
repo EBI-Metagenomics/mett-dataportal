@@ -4,8 +4,8 @@ import styles from "@components/organisms/GeneSearch/GeneSearchInput.module.scss
 interface GeneSearchInputProps {
     query: string;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    suggestions: { strain_id: number; isolate_name: string; assembly_name: string }[];
-    onSuggestionClick: (suggestion: { strain_id: number; isolate_name: string; assembly_name: string }) => void;
+    suggestions: { gene_id: number; strain_name: string; gene_name: string }[];
+    onSuggestionClick: (suggestion: { gene_id: number; strain_name: string; gene_name: string }) => void;
     onSuggestionsClear: () => void;
 }
 
@@ -54,7 +54,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                             onClick={() => onSuggestionClick(suggestion)}
                             role="option"
                         >
-                            {`${suggestion.isolate_name} - (${suggestion.assembly_name})`}
+                            {`${suggestion.strain_name} - (${suggestion.gene_name})`}
                         </div>
                     ))}
                 </div>
