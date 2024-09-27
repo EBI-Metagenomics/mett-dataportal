@@ -4,7 +4,6 @@ from typing import Optional, List
 from asgiref.sync import sync_to_async
 from django.conf import settings
 
-
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -186,4 +185,65 @@ class SearchService:
             return self.paginate_results(genes, page, per_page)
         except Exception as e:
             logger.error(f"Error fetching genes for genome IDs {genome_ids}: {e}")
+            return self.paginate_results([], page, per_page)
+
+    async def search_genes_in_strain(self, strain_id: int, query: str, limit: int = 10):
+        try:
+            gene_filter = Q(strain_id=strain_id, gene_name__icontains=query)
+            genes = await self.fetch_objects(
+                model=Gene,
+                filters=gene_filter,
+                limit=limit
+            )
+            return [{"gene_name": gene.gene_name, "description": gene.description} for gene in genes]
+        except Exception as e:
+            logger.error(f"Error searching genes in strain: {e}")
+            return []
+
+    async def search_genes_globally(self, query: str, limit: int = 10):
+        try:
+            gene_filter = Q(gene_name__icontains=query) | Q(description__icontains=query)
+            genes = await self.fetch_objects(
+                model=Gene,
+                filters=gene_filter,
+                limit=limit
+            )
+            return [
+                {
+                    "gene_name": gene.gene_name,
+                    "strain": gene.strain.isolate_name,
+                    "assembly": gene.strain.assembly_name,
+                    "description": gene.description
+                } for gene in genes
+            ]
+        except Exception as e:
+            logger.error(f"Error searching genes globally: {e}")
+            return []
+
+    async def search_genes(self, query: str = None, genome_id: Optional[int] = None,
+                           genome_ids: Optional[List[int]] = None, page: int = 1, per_page: int = 10):
+        try:
+            filters = Q()
+            if query:
+                filters &= Q(gene_name__icontains=query) | Q(description__icontains=query)
+            if genome_id:
+                filters &= Q(strain_id=genome_id)
+            elif genome_ids:
+                filters &= Q(strain_id__in=genome_ids)
+
+            genes = await self.fetch_objects(model=Gene, filters=filters, select_related=['strain'])
+            serialized_genes = [
+                {
+                    "id": gene.id,
+                    "gene_name": gene.gene_name,
+                    "description": gene.description,
+                    "strain": gene.strain.isolate_name,
+                    "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+                    "locus_tag": gene.locus_tag
+                }
+                for gene in genes
+            ]
+            return self.paginate_results(serialized_genes, page, per_page)
+        except Exception as e:
+            logger.error(f"Error searching genes: {e}")
             return self.paginate_results([], page, per_page)

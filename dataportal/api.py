@@ -249,17 +249,7 @@ jbrowse_api = JBrowseAPI()
 # Map the router to the class methods
 @genome_router.get('/autocomplete', response=List[StrainSuggestionSchema])
 async def autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None):
-    # Convert species_id to None if it's an empty string
-    if species_id == '' or species_id is None:
-        species_id = None
-    else:
-        try:
-            species_id = int(species_id)
-        except ValueError:
-            species_id = None
-
-    logger.info(f'species_id={species_id}')
-    return await search_api.autocomplete_suggestions(query, limit, species_id)
+    return await search_service.search_strains(query, limit, species_id)
 
 
 # API Endpoint to retrieve all species
@@ -449,50 +439,20 @@ async def search_genomes_by_species_and_string(request, species_id: int, query: 
 
 
 @gene_router.get("/autocomplete", response=List[GeneAutocompleteResponseSchema])
-async def gene_autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None,
-                                        genome_ids: Optional[str] = None):
-    if not query.strip():
-        raise HttpError(400, "Query parameter 'query' cannot be empty")
-
-    return await search_api.gene_autocomplete(query, limit, species_id, genome_ids)
+async def gene_autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None, genome_ids: Optional[str] = None):
+    genome_id_list = [int(gid) for gid in genome_ids.split(",") if gid.strip()] if genome_ids else None
+    return await search_service.autocomplete_gene_suggestions(query, limit, species_id, genome_id_list)
 
 
 # API Endpoint to search genes by query string
 @gene_router.get("/search", response=GenePaginationSchema)
 async def search_genes_by_string(request, query: str, page: int = 1, per_page: int = 10):
     try:
-        genes = await sync_to_async(
-            lambda: list(Gene.objects.select_related('strain').filter(gene_name__icontains=query)))()
-
-        total_results = len(genes)
-        start = (page - 1) * per_page
-        end = start + per_page
-        page_results = genes[start:end]
-
-        serialized_results = [
-            {
-                "id": gene.id,
-                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
-                "description": gene.description if gene.description else None,
-                "locus_tag": gene.locus_tag,
-                "strain": gene.strain.isolate_name,
-                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
-            }
-            for gene in page_results
-        ]
-
-        return GenePaginationSchema(
-            results=serialized_results,
-            page_number=page,
-            num_pages=(total_results + per_page - 1) // per_page,
-            has_previous=page > 1,
-            has_next=end < total_results,
-            total_results=total_results,
-        )
+        paginated_results = await search_service.search_genes(query=query, page=page, per_page=per_page)
+        return paginated_results
     except Exception as e:
         logger.error(f"Error in search_genes_by_string: {e}")
         raise HttpError(500, f"Internal Server Error: {str(e)}")
-
 
 # API Endpoint to retrieve gene by ID
 @gene_router.get("/{gene_id}", response=GeneResponseSchema)
