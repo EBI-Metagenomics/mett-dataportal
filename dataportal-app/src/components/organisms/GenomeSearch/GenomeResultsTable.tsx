@@ -49,7 +49,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                         <a href={result.fasta_file || '#'}>{result.assembly_name || 'Unknown Assembly'}</a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}><a href={result.gff_file || '#'}>GFF</a></td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}><a href={`/jbrowse/${result.id}/`}>Browse</a>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}><a href={`/gene-viewer/genome/${result.id}/`}>Browse</a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         <button
