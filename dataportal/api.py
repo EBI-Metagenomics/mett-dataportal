@@ -58,9 +58,20 @@ class GeneResponseSchema(BaseModel):
     id: int
     gene_name: str
     description: Optional[str]
+    strain_id: int
     strain: str
     assembly: Optional[str]
     locus_tag: Optional[str]
+    cog: Optional[str]
+    kegg: Optional[str]
+    pfam: Optional[str]
+    interpro: Optional[str]
+    dbxref: Optional[str]
+    ec_number: Optional[str]
+    product: Optional[str]
+    start_position: Optional[int]
+    end_position: Optional[int]
+    annotations: Optional[dict]
 
 
 class GenomePaginationSchema(BaseModel):
@@ -465,8 +476,19 @@ async def get_gene_by_id(request, gene_id: int):
             "gene_name": gene.gene_name,
             "description": gene.description if gene.description else None,
             "locus_tag": gene.locus_tag,
+            "strain_id": gene.strain.id,  # Added strain_id
             "strain": gene.strain.isolate_name,
             "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+            "cog": gene.cog if gene.cog else None,  # Added cog
+            "kegg": gene.kegg if gene.kegg else None,  # Added kegg
+            "pfam": gene.pfam if gene.pfam else None,  # Added pfam
+            "interpro": gene.interpro if gene.interpro else None,  # Added interpro
+            "dbxref": gene.dbxref if gene.dbxref else None,  # Added dbxref
+            "ec_number": gene.ec_number if gene.ec_number else None,  # Added ec_number
+            "product": gene.product if gene.product else None,  # Added product
+            "start_position": gene.start_position if gene.start_position else None,  # Added start_position
+            "end_position": gene.end_position if gene.end_position else None,  # Added end_position
+            "annotations": gene.annotations if gene.annotations else None  # Added annotations
         }
 
         return response_data
@@ -494,8 +516,19 @@ async def get_all_genes(request, page: int = 1, per_page: int = 10):
                 "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
                 "description": gene.description if gene.description else None,
                 "locus_tag": gene.locus_tag,
+                "strain_id": gene.strain.id,  # Added strain_id
                 "strain": gene.strain.isolate_name,
                 "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+                "cog": gene.cog if gene.cog else None,  # Added cog
+                "kegg": gene.kegg if gene.kegg else None,  # Added kegg
+                "pfam": gene.pfam if gene.pfam else None,  # Added pfam
+                "interpro": gene.interpro if gene.interpro else None,  # Added interpro
+                "dbxref": gene.dbxref if gene.dbxref else None,  # Added dbxref
+                "ec_number": gene.ec_number if gene.ec_number else None,  # Added ec_number
+                "product": gene.product if gene.product else None,  # Added product
+                "start_position": gene.start_position if gene.start_position else None,  # Added start_position
+                "end_position": gene.end_position if gene.end_position else None,  # Added end_position
+                "annotations": gene.annotations if gene.annotations else None,  # Added annotations
             }
             for gene in page_results
         ]
@@ -568,8 +601,19 @@ async def search_genes_by_genome_and_string(request, genome_id: int, query: str,
                 "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
                 "description": gene.description if gene.description else None,
                 "locus_tag": gene.locus_tag,
+                "strain_id": gene.strain.id,  # Added strain_id
                 "strain": gene.strain.isolate_name,
                 "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
+                "cog": gene.cog if gene.cog else None,  # Added cog
+                "kegg": gene.kegg if gene.kegg else None,  # Added kegg
+                "pfam": gene.pfam if gene.pfam else None,  # Added pfam
+                "interpro": gene.interpro if gene.interpro else None,  # Added interpro
+                "dbxref": gene.dbxref if gene.dbxref else None,  # Added dbxref
+                "ec_number": gene.ec_number if gene.ec_number else None,  # Added ec_number
+                "product": gene.product if gene.product else None,  # Added product
+                "start_position": gene.start_position if gene.start_position else None,  # Added start_position
+                "end_position": gene.end_position if gene.end_position else None,  # Added end_position
+                "annotations": gene.annotations if gene.annotations else None,  # Added annotations
             }
             for gene in page_results
         ]
@@ -593,10 +637,6 @@ async def search_genes_by_multiple_genomes_and_species_and_string(request, genom
                                                                   species_id: Optional[int] = None,
                                                                   query: str = "", page: int = 1, per_page: int = 10):
     try:
-        # todo discuss if this a possible scenario
-        # if not genome_ids.strip() and not species_id:
-        #     raise HttpError(400, "No genome IDs or species ID provided")
-
         # Process genome IDs
         genome_id_list = [int(gid) for gid in genome_ids.split(",") if gid.strip()] if genome_ids.strip() else []
         genes_query = Gene.objects.select_related('strain')
@@ -621,9 +661,19 @@ async def search_genes_by_multiple_genomes_and_species_and_string(request, genom
                 "id": gene.id,
                 "gene_name": gene.gene_name if gene.gene_name else "N/A",
                 "description": gene.description if gene.description else None,
+                "strain_id": gene.strain.id,  # Added strain_id
                 "strain": gene.strain.isolate_name,
                 "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
-                "locus_tag": gene.locus_tag if gene.locus_tag else None  # Include locus_tag
+                "cog": gene.cog if gene.cog else None,  # Added cog
+                "kegg": gene.kegg if gene.kegg else None,  # Added kegg
+                "pfam": gene.pfam if gene.pfam else None,  # Added pfam
+                "interpro": gene.interpro if gene.interpro else None,  # Added interpro
+                "dbxref": gene.dbxref if gene.dbxref else None,  # Added dbxref
+                "ec_number": gene.ec_number if gene.ec_number else None,  # Added ec_number
+                "product": gene.product if gene.product else None,  # Added product
+                "start_position": gene.start_position if gene.start_position else None,  # Added start_position
+                "end_position": gene.end_position if gene.end_position else None,  # Added end_position
+                "annotations": gene.annotations if gene.annotations else None,  # Added annotations
             }
             for gene in genes
         ]

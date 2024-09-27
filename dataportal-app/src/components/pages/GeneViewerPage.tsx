@@ -2,25 +2,38 @@ import React, {useEffect, useState} from 'react';
 import {createViewState, JBrowseLinearGenomeView} from '@jbrowse/react-linear-genome-view';
 import {assemblyConfig} from '../organisms/GeneViewer/assemblyConfig';
 import {trackConfig} from '../organisms/GeneViewer/trackConfig';
-import axios from 'axios';
 import {useParams} from 'react-router-dom';
+import {getData} from "../../services/api";
 
 interface GeneMeta {
-    strain: string;
-    geneName: string;
+    id: number;
+    gene_name: string;
     description: string;
-    locusTag: string;
-    enaAccession: string;
-    assemblyLink: string;
-    annotationsLink: string;
+    strain_id: number;
+    strain: string;
+    assembly: string;
+    locus_tag: string;
+    cog: string | null;
+    kegg: string | null;
+    pfam: string | null;
+    interpro: string | null;
+    dbxref: string | null;
+    ec_number: string | null;
+    product: string | null;
+    start_position: number | null;
+    end_position: number | null;
+    annotations: Record<string, any> | null;
 }
 
 interface GenomeMeta {
-    genomeName: string;
-    assemblyName: string;
-    enaAccession: string;
-    fastaLink: string;
-    gffLink: string;
+    species: string;
+    id: number;
+    common_name: string;
+    isolate_name: string;
+    assembly_name: string;
+    assembly_accession: string;
+    fasta_file: string;
+    gff_file: string;
 }
 
 const GeneViewerPage: React.FC = () => {
@@ -35,13 +48,29 @@ const GeneViewerPage: React.FC = () => {
             // Fetch gene meta information along with genome info
             const fetchGeneAndGenomeMeta = async () => {
                 try {
-                    const geneResponse = await axios.get<GeneMeta>(`/api/genes/${geneId}`);
-                    setGeneMeta(geneResponse.data);
+                    const geneResponse = await getData(`/genes/${geneId}`);
+                    console.log("Gene Response:", geneResponse);
+                    const geneData = geneResponse;
 
-                    const genomeResponse = await axios.get<GenomeMeta>(`/api/genomes/${geneResponse.data.strain}`);
-                    setGenomeMeta(genomeResponse.data);
+                    if (!geneData || !geneData.strain_id) {
+                        console.error("Gene data is undefined or missing strain_id.");
+                        return;
+                    }
 
-                    initializeJBrowse(genomeResponse.data.fastaLink, genomeResponse.data.gffLink);
+
+                    setGeneMeta(geneData);
+
+                    const genomeResponse = await getData(`/genomes/${geneData.strain_id}`);
+                    console.log("Genome Response:", genomeResponse);
+                    const genomeData = genomeResponse;
+
+                    if (!genomeData) {
+                        console.error("Genome data is undefined or null.");
+                        return;
+                    }
+                    setGenomeMeta(genomeData);
+
+                    initializeJBrowse(genomeData.fasta_file, genomeData.gff_file);
                 } catch (error) {
                     console.error("Error fetching gene/genome meta information", error);
                 }
@@ -51,10 +80,11 @@ const GeneViewerPage: React.FC = () => {
             // Fetch genome information if only genomeId is provided
             const fetchGenomeMeta = async () => {
                 try {
-                    const response = await axios.get<GenomeMeta>(`/api/genomes/${genomeId}`);
-                    setGenomeMeta(response.data);
+                    const response = await getData(`/genomes/${genomeId}`);
+                    const genomeData = response.data;
+                    setGenomeMeta(genomeData);
 
-                    initializeJBrowse(response.data.fastaLink, response.data.gffLink);
+                    initializeJBrowse(genomeData.fasta_file, genomeData.gff_file);
                 } catch (error) {
                     console.error("Error fetching genome meta information", error);
                 }
@@ -113,25 +143,35 @@ const GeneViewerPage: React.FC = () => {
             <h1>Gene Viewer</h1>
             {geneId && geneMeta ? (
                 <div className="gene-meta-info">
-                    <h2>{geneMeta.strain}: {geneMeta.geneName}</h2>
+                    <h2>{geneMeta.strain}: {geneMeta.gene_name}</h2>
                     <p><strong>Description:</strong> {geneMeta.description}</p>
-                    <p><strong>Locus Tag:</strong> {geneMeta.locusTag}</p>
-                    <p><strong>ENA Accession:</strong> <a href={geneMeta.enaAccession} target="_blank"
-                                                          rel="noopener noreferrer">{geneMeta.enaAccession}</a></p>
-                    <p><strong>Assembly:</strong> <a href={geneMeta.assemblyLink} target="_blank"
-                                                     rel="noopener noreferrer">Download Assembly</a></p>
-                    <p><strong>Annotations:</strong> <a href={geneMeta.annotationsLink} target="_blank"
-                                                        rel="noopener noreferrer">Download Annotations</a></p>
+                    <p><strong>Locus Tag:</strong> {geneMeta.locus_tag}</p>
+                    <p><strong>Assembly:</strong> {geneMeta.assembly}</p>
+                    <p><strong>COG:</strong> {geneMeta.cog || 'N/A'}</p>
+                    <p><strong>KEGG:</strong> {geneMeta.kegg || 'N/A'}</p>
+                    <p><strong>PFAM:</strong> {geneMeta.pfam || 'N/A'}</p>
+                    <p><strong>InterPro:</strong> {geneMeta.interpro || 'N/A'}</p>
+                    <p><strong>DBXref:</strong> {geneMeta.dbxref || 'N/A'}</p>
+                    <p><strong>EC Number:</strong> {geneMeta.ec_number || 'N/A'}</p>
+                    <p><strong>Product:</strong> {geneMeta.product || 'N/A'}</p>
+                    <p><strong>Start
+                        Position:</strong> {geneMeta.start_position !== null ? geneMeta.start_position : 'N/A'}</p>
+                    <p><strong>End Position:</strong> {geneMeta.end_position !== null ? geneMeta.end_position : 'N/A'}
+                    </p>
+                    <p>
+                        <strong>Annotations:</strong> {geneMeta.annotations ? JSON.stringify(geneMeta.annotations) : 'N/A'}
+                    </p>
                 </div>
             ) : genomeId && genomeMeta ? (
                 <div className="genome-meta-info">
-                    <h2>Genome: {genomeMeta.genomeName}</h2>
-                    <p><strong>Assembly Name:</strong> {genomeMeta.assemblyName}</p>
-                    <p><strong>ENA Accession:</strong> <a href={genomeMeta.enaAccession} target="_blank"
-                                                          rel="noopener noreferrer">{genomeMeta.enaAccession}</a></p>
-                    <p><strong>FASTA:</strong> <a href={genomeMeta.fastaLink} target="_blank" rel="noopener noreferrer">Download
-                        FASTA</a></p>
-                    <p><strong>GFF:</strong> <a href={genomeMeta.gffLink} target="_blank" rel="noopener noreferrer">Download
+                    <h2>Genome: {genomeMeta.common_name}</h2>
+                    <p><strong>Species:</strong> {genomeMeta.species}</p>
+                    <p><strong>Isolate Name:</strong> {genomeMeta.isolate_name}</p>
+                    <p><strong>Assembly Name:</strong> {genomeMeta.assembly_name}</p>
+                    <p><strong>Assembly Accession:</strong> {genomeMeta.assembly_accession}</p>
+                    <p><strong>FASTA:</strong> <a href={genomeMeta.fasta_file} target="_blank"
+                                                  rel="noopener noreferrer">Download FASTA</a></p>
+                    <p><strong>GFF:</strong> <a href={genomeMeta.gff_file} target="_blank" rel="noopener noreferrer">Download
                         GFF</a></p>
                 </div>
             ) : (
