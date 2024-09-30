@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from 'react';
-import {createViewState, JBrowseLinearGenomeView} from '@jbrowse/react-linear-genome-view';
-import {assemblyConfig} from '../organisms/GeneViewer/assemblyConfig';
-import {trackConfig} from '../organisms/GeneViewer/trackConfig';
-import {useParams} from 'react-router-dom';
-import {getData} from "../../services/api";
+import React, { useEffect, useRef, useState } from 'react';
+import { createViewState, JBrowseLinearGenomeView } from '@jbrowse/react-linear-genome-view';
+import { useParams } from 'react-router-dom';
+import { getData } from "../../services/api";
+import getAssembly from "@components/organisms/GeneViewer/assembly";
+import getTracks from "@components/organisms/GeneViewer/tracks";
 
 interface GeneMeta {
     id: number;
@@ -25,7 +25,7 @@ interface GeneMeta {
     annotations: Record<string, any> | null;
 }
 
-interface GenomeMeta {
+export interface GenomeMeta {
     species: string;
     id: number;
     common_name: string;
@@ -37,116 +37,136 @@ interface GenomeMeta {
 }
 
 const GeneViewerPage: React.FC = () => {
-    const [viewState, setViewState] = useState<any>(null);
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
+    const [fastaContent, setFastaContent] = useState<string | null>(null);
+    const [gffContent, setGffContent] = useState<string | null>(null);
+    const [viewerReady, setViewerReady] = useState<boolean>(false);
+    const viewStateRef = useRef<any>(null);
 
-    const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
+    const { geneId, genomeId } = useParams<{ geneId?: string; genomeId?: string }>();
 
     useEffect(() => {
-        if (geneId) {
-            // Fetch gene meta information along with genome info
-            const fetchGeneAndGenomeMeta = async () => {
-                try {
+        const fetchGeneAndGenomeMeta = async () => {
+            try {
+                if (geneId) {
                     const geneResponse = await getData(`/genes/${geneId}`);
-                    console.log("Gene Response:", geneResponse);
-                    const geneData = geneResponse;
+                    setGeneMeta(geneResponse);
 
-                    if (!geneData || !geneData.strain_id) {
-                        console.error("Gene data is undefined or missing strain_id.");
-                        return;
-                    }
-
-
-                    setGeneMeta(geneData);
-
-                    const genomeResponse = await getData(`/genomes/${geneData.strain_id}`);
-                    console.log("Genome Response:", genomeResponse);
-                    const genomeData = genomeResponse;
-
-                    if (!genomeData) {
-                        console.error("Genome data is undefined or null.");
-                        return;
-                    }
-                    setGenomeMeta(genomeData);
-
-                    initializeJBrowse(genomeData.fasta_file, genomeData.gff_file);
-                } catch (error) {
-                    console.error("Error fetching gene/genome meta information", error);
+                    const genomeResponse = await getData(`/genomes/${geneResponse.strain_id}`);
+                    setGenomeMeta(genomeResponse);
+                } else if (genomeId) {
+                    const genomeResponse = await getData(`/genomes/${genomeId}`);
+                    setGenomeMeta(genomeResponse);
                 }
-            };
-            fetchGeneAndGenomeMeta();
-        } else if (genomeId) {
-            // Fetch genome information if only genomeId is provided
-            const fetchGenomeMeta = async () => {
-                try {
-                    const response = await getData(`/genomes/${genomeId}`);
-                    const genomeData = response.data;
-                    setGenomeMeta(genomeData);
+            } catch (error) {
+                console.error("Error fetching gene/genome meta information", error);
+            }
+        };
 
-                    initializeJBrowse(genomeData.fasta_file, genomeData.gff_file);
-                } catch (error) {
-                    console.error("Error fetching genome meta information", error);
-                }
-            };
-            fetchGenomeMeta();
-        }
+        fetchGeneAndGenomeMeta();
     }, [geneId, genomeId]);
 
-    const initializeJBrowse = (fastaLink: string, gffLink: string) => {
-        // Set up JBrowse2 configuration with dynamic assembly and track links
-        const config = {
-            assembly: {
-                ...assemblyConfig,
-                sequence: {
-                    ...assemblyConfig.sequence,
-                    adapter: {
-                        ...assemblyConfig.sequence.adapter,
-                        fastaLocation: {uri: fastaLink},
-                        faiLocation: {uri: `${fastaLink}.fai`},
-                    },
-                },
-            },
-            tracks: [
-                {
-                    ...trackConfig[0],
-                    adapter: {
-                        ...trackConfig[0].adapter,
-                        gffGzLocation: {uri: gffLink},
-                        index: {location: {uri: `${gffLink}.tbi`}},
-                    },
-                },
-            ],
+    // Fetch FASTA and GFF content
+    useEffect(() => {
+        if (!genomeMeta) return;
+
+        const fetchFileContent = async (url: string, setContent: React.Dispatch<React.SetStateAction<string | null>>) => {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch file from ${url}`);
+                const text = await response.text();
+                setContent(text.split('\n').slice(0, 10).join('\n'));  // Get first 10 lines of the file
+            } catch (error) {
+                console.error('Error fetching file:', error);
+                setContent('Error fetching file');
+            }
+        };
+
+        const fetchData = async () => {
+            await Promise.all([
+                fetchFileContent(genomeMeta.fasta_file, setFastaContent),
+                fetchFileContent(genomeMeta.gff_file, setGffContent),
+            ]);
+            setViewerReady(true);
+        };
+
+        fetchData();
+    }, [genomeMeta]);
+
+    // Initialize JBrowse when viewer data is ready
+    useEffect(() => {
+    if (!viewerReady || !genomeMeta) return;
+
+    try {
+        const assembly = getAssembly(genomeMeta);
+        const tracks = getTracks(genomeMeta);
+
+        viewStateRef.current = createViewState({
+            assembly,
+            tracks,
+            location: 'all',
             defaultSession: {
-                name: 'My Gene Viewer Session',
+                name: 'Gene Viewer Session',
                 view: {
                     id: 'linearGenomeView',
                     type: 'LinearGenomeView',
+                    tracks: [
+                        {
+                            type: 'FeatureTrack',
+                            trackId: 'annotations',
+                            configuration: 'annotations',
+                            visible: true,
+                        },
+                    ],
                     displayedRegions: [
                         {
-                            assemblyName: assemblyConfig.name,
-                            refName: 'BU_ATCC8492', // Adjust accordingly based on your needs
+                            assemblyName: assembly.name,
+                            refName: assembly.name,
                             start: 0,
-                            end: 50000, // Adjust the range if necessary
+                            end: 50000,
                         },
                     ],
                 },
             },
-        };
+        });
 
-        const newViewState = createViewState(config);
-        setViewState(newViewState);
-    };
+        // setForceRender(true);  // Only if you need to force re-render
+    } catch (error) {
+        console.error('Error initializing JBrowse viewer:', error);
+    }
+}, [viewerReady, genomeMeta]);
 
     return (
-        <div style={{padding: '20px'}}>
-            <h1>Gene Viewer</h1>
-            {geneId && geneMeta ? (
+        <div style={{ padding: '20px' }}>
+            <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
+                <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
+                    <li className="vf-breadcrumbs__item">
+                        <a href="/" className="vf-breadcrumbs__link">Search</a>
+                    </li>
+                    <li className="vf-breadcrumbs__item" aria-current="location">Genome View</li>
+                </ul>
+            </nav>
+
+            {genomeMeta ? (
+                <div className="genome-meta-info">
+                    <div className="vf-box vf-box--primary">
+                        <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
+                        <p><strong>Assembly Name:</strong> {genomeMeta.assembly_name}</p>
+                        <p><strong>Assembly Accession:</strong> {genomeMeta.assembly_accession}</p>
+                        <p><strong>FASTA:</strong> <a href={genomeMeta.fasta_file} target="_blank" rel="noopener noreferrer">Download FASTA</a></p>
+                        <p><strong>GFF:</strong> <a href={genomeMeta.gff_file} target="_blank" rel="noopener noreferrer">Download GFF</a></p>
+                    </div>
+                </div>
+            ) : (
+                <p>Loading genome meta information...</p>
+            )}
+
+            {geneId && geneMeta && (
                 <div className="gene-meta-info">
                     <h2>{geneMeta.strain}: {geneMeta.gene_name}</h2>
                     <p><strong>Description:</strong> {geneMeta.description}</p>
                     <p><strong>Locus Tag:</strong> {geneMeta.locus_tag}</p>
-                    <p><strong>Assembly:</strong> {geneMeta.assembly}</p>
                     <p><strong>COG:</strong> {geneMeta.cog || 'N/A'}</p>
                     <p><strong>KEGG:</strong> {geneMeta.kegg || 'N/A'}</p>
                     <p><strong>PFAM:</strong> {geneMeta.pfam || 'N/A'}</p>
@@ -154,36 +174,22 @@ const GeneViewerPage: React.FC = () => {
                     <p><strong>DBXref:</strong> {geneMeta.dbxref || 'N/A'}</p>
                     <p><strong>EC Number:</strong> {geneMeta.ec_number || 'N/A'}</p>
                     <p><strong>Product:</strong> {geneMeta.product || 'N/A'}</p>
-                    <p><strong>Start
-                        Position:</strong> {geneMeta.start_position !== null ? geneMeta.start_position : 'N/A'}</p>
-                    <p><strong>End Position:</strong> {geneMeta.end_position !== null ? geneMeta.end_position : 'N/A'}
-                    </p>
-                    <p>
-                        <strong>Annotations:</strong> {geneMeta.annotations ? JSON.stringify(geneMeta.annotations) : 'N/A'}
-                    </p>
+                    <p><strong>Start Position:</strong> {geneMeta.start_position !== null ? geneMeta.start_position : 'N/A'}</p>
+                    <p><strong>End Position:</strong> {geneMeta.end_position !== null ? geneMeta.end_position : 'N/A'}</p>
+                    <p><strong>Annotations:</strong> {geneMeta.annotations ? JSON.stringify(geneMeta.annotations) : 'N/A'}</p>
                 </div>
-            ) : genomeId && genomeMeta ? (
-                <div className="genome-meta-info">
-                    <h2>Genome: {genomeMeta.common_name}</h2>
-                    <p><strong>Species:</strong> {genomeMeta.species}</p>
-                    <p><strong>Isolate Name:</strong> {genomeMeta.isolate_name}</p>
-                    <p><strong>Assembly Name:</strong> {genomeMeta.assembly_name}</p>
-                    <p><strong>Assembly Accession:</strong> {genomeMeta.assembly_accession}</p>
-                    <p><strong>FASTA:</strong> <a href={genomeMeta.fasta_file} target="_blank"
-                                                  rel="noopener noreferrer">Download FASTA</a></p>
-                    <p><strong>GFF:</strong> <a href={genomeMeta.gff_file} target="_blank" rel="noopener noreferrer">Download
-                        GFF</a></p>
-                </div>
-            ) : (
-                <p>Loading meta information...</p>
             )}
 
-            {viewState ? (
-                <div style={{width: '100%', height: '600px'}}>
-                    <JBrowseLinearGenomeView viewState={viewState}/>
-                </div>
+            <h2>FASTA File Preview:</h2>
+            <pre>{fastaContent ? fastaContent : 'Loading FASTA file...'}</pre>
+
+            <h2>GFF File Preview:</h2>
+            <pre>{gffContent ? gffContent : 'Loading GFF file...'}</pre>
+
+            {viewerReady && viewStateRef.current ? (
+                <JBrowseLinearGenomeView viewState={viewStateRef.current} />
             ) : (
-                <div>Loading Genome Viewer...</div>
+                <p>Loading Genome Viewer...</p>
             )}
         </div>
     );
