@@ -1,6 +1,6 @@
 import {GenomeMeta} from '../../pages/GeneViewerPage';
 
-const getAssembly = (genomeMeta: GenomeMeta) => ({
+const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
     name: genomeMeta.isolate_name,
     sequence: {
         type: 'ReferenceSequenceTrack',
@@ -8,17 +8,16 @@ const getAssembly = (genomeMeta: GenomeMeta) => ({
         adapter: {
             type: 'BgzipFastaAdapter',
             fastaLocation: {
-                uri: `${genomeMeta.fasta_url}.gz`,
+                uri: `${fastaBaseUrl}/${genomeMeta.fasta_file}.gz`,
             },
             faiLocation: {
-                uri: `${genomeMeta.fasta_url}.gz.fai`,
+                uri: `${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.fai`,
             },
             gziLocation: {
-                uri: `${genomeMeta.fasta_url}.gz.gzi`,
+                uri: `${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.gzi`,
             },
         },
     },
 });
 
 export default getAssembly;
-

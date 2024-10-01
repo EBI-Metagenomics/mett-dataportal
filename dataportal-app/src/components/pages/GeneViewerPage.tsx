@@ -5,7 +5,7 @@ import {getData} from "../../services/api";
 import getAssembly from "@components/organisms/GeneViewer/assembly";
 import getTracks from "@components/organisms/GeneViewer/tracks";
 
-interface GeneMeta {
+export interface GeneMeta {
     id: number;
     gene_name: string;
     description: string;
@@ -41,6 +41,7 @@ export interface GenomeMeta {
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
+    const [gffIxContent, setGffIxContent] = useState<string | null>(null);
     const [viewerReady, setViewerReady] = useState<boolean>(false);
     const viewStateRef = useRef<any>(null);
 
@@ -67,22 +68,34 @@ const GeneViewerPage: React.FC = () => {
         fetchGeneAndGenomeMeta();
     }, [geneId, genomeId]);
 
-
-    // Initialize JBrowse when viewer data is ready
     useEffect(() => {
         if (!genomeMeta) return;
 
+        const gffBaseUrl = genomeMeta.gff_url.replace(/\/[^/]+$/, '');
+        const fastaBaseUrl = genomeMeta.fasta_url.replace(/\/[^/]+$/, '');
+
+        const fetchGffIxContent = async () => {
+            try {
+                const response = await fetch(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`);
+                if (!response.ok) throw new Error('Failed to fetch .ix file');
+                const content = await response.text();
+                setGffIxContent(content.split('\n').slice(0, 10).join('\n')); // Display the first 10 lines
+            } catch (error) {
+                console.error('Error fetching .ix file content:', error);
+                setGffIxContent('Error fetching .ix file content');
+            }
+        };
+
+        fetchGffIxContent();
+
         const initializeViewer = async () => {
             try {
-                const assembly = getAssembly(genomeMeta);
-                const tracks = getTracks(genomeMeta);
+                const assembly = getAssembly(genomeMeta, fastaBaseUrl);
+                const tracks = getTracks(genomeMeta, gffBaseUrl);
 
-                // Ensure the assembly and tracks are properly loaded
                 if (!assembly || tracks.length === 0) {
                     console.warn("Assembly or tracks are not fully loaded yet");
                     return;
-                } else {
-                    console.log('everything loaded successfully...');
                 }
 
                 viewStateRef.current = createViewState({
@@ -172,6 +185,9 @@ const GeneViewerPage: React.FC = () => {
                     </p>
                 </div>
             )}
+
+            <h2>GFF .ix File Preview:</h2>
+            <pre>{gffIxContent ? gffIxContent : 'Loading .ix file...'}</pre>
 
             {viewerReady && viewStateRef.current ? (
                 <JBrowseLinearGenomeView viewState={viewStateRef.current}/>
