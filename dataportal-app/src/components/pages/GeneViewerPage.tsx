@@ -41,7 +41,8 @@ export interface GenomeMeta {
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
-    const [gffIxContent, setGffIxContent] = useState<string | null>(null);
+    const [fastaPreview, setFastaPreview] = useState<string | null>(null);
+    const [ixPreview, setIxPreview] = useState<string | null>(null);
     const [viewerReady, setViewerReady] = useState<boolean>(false);
     const viewStateRef = useRef<any>(null);
 
@@ -68,25 +69,40 @@ const GeneViewerPage: React.FC = () => {
         fetchGeneAndGenomeMeta();
     }, [geneId, genomeId]);
 
+    // Fetch content previews for FASTA and .ix files
+    useEffect(() => {
+        if (!genomeMeta) return;
+
+        const fetchFileContent = async (url: string, setContent: React.Dispatch<React.SetStateAction<string | null>>, fileType: string) => {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch ${fileType} file from ${url}`);
+                const text = await response.text();
+                setContent(text.split('\n').slice(0, 10).join('\n')); // Get first 10 lines of the file
+            } catch (error) {
+                console.error(`Error fetching ${fileType} file:`, error);
+                setContent(`Error fetching ${fileType} file`);
+            }
+        };
+
+        const fetchData = async () => {
+            const gffBaseUrl = genomeMeta.gff_url.replace(/\/[^/]+$/, '');
+            await Promise.all([
+                fetchFileContent(`${genomeMeta.fasta_url}.gz.fai`, setFastaPreview, 'FASTA'),
+                fetchFileContent(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`, setIxPreview, '.ix'),
+            ]);
+            setViewerReady(true);
+        };
+
+        fetchData();
+    }, [genomeMeta]);
+
+    // Initialize JBrowse
     useEffect(() => {
         if (!genomeMeta) return;
 
         const gffBaseUrl = genomeMeta.gff_url.replace(/\/[^/]+$/, '');
         const fastaBaseUrl = genomeMeta.fasta_url.replace(/\/[^/]+$/, '');
-
-        const fetchGffIxContent = async () => {
-            try {
-                const response = await fetch(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`);
-                if (!response.ok) throw new Error('Failed to fetch .ix file');
-                const content = await response.text();
-                setGffIxContent(content.split('\n').slice(0, 10).join('\n')); // Display the first 10 lines
-            } catch (error) {
-                console.error('Error fetching .ix file content:', error);
-                setGffIxContent('Error fetching .ix file content');
-            }
-        };
-
-        fetchGffIxContent();
 
         const initializeViewer = async () => {
             try {
@@ -186,8 +202,11 @@ const GeneViewerPage: React.FC = () => {
                 </div>
             )}
 
-            <h2>GFF .ix File Preview:</h2>
-            <pre>{gffIxContent ? gffIxContent : 'Loading .ix file...'}</pre>
+            <h2>FASTA File Preview:</h2>
+            <pre>{fastaPreview ? fastaPreview : 'Loading FASTA file...'}</pre>
+
+            <h2>.ix File Preview:</h2>
+            <pre>{ixPreview ? ixPreview : 'Loading .ix file...'}</pre>
 
             {viewerReady && viewStateRef.current ? (
                 <JBrowseLinearGenomeView viewState={viewStateRef.current}/>
