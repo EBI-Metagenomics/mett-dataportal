@@ -41,8 +41,6 @@ export interface GenomeMeta {
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
-    const [fastaContent, setFastaContent] = useState<string | null>(null);
-    const [gffContent, setGffContent] = useState<string | null>(null);
     const [viewerReady, setViewerReady] = useState<boolean>(false);
     const viewStateRef = useRef<any>(null);
 
@@ -69,76 +67,62 @@ const GeneViewerPage: React.FC = () => {
         fetchGeneAndGenomeMeta();
     }, [geneId, genomeId]);
 
-    // Fetch FASTA and GFF content
-    useEffect(() => {
-        if (!genomeMeta) return;
-
-        const fetchFileContent = async (url: string, setContent: React.Dispatch<React.SetStateAction<string | null>>) => {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Failed to fetch file from ${url}`);
-                const text = await response.text();
-                setContent(text.split('\n').slice(0, 10).join('\n'));  // Get first 10 lines of the file
-            } catch (error) {
-                console.error('Error fetching file:', error);
-                setContent('Error fetching file');
-            }
-        };
-
-        const fetchData = async () => {
-            console.log("genomeMeta.fasta_url: " + genomeMeta.fasta_url)
-            await Promise.all([
-                fetchFileContent(genomeMeta.fasta_url, setFastaContent),
-                fetchFileContent(genomeMeta.gff_url, setGffContent),
-            ]);
-            setViewerReady(true);
-        };
-
-        fetchData();
-    }, [genomeMeta]);
 
     // Initialize JBrowse when viewer data is ready
     useEffect(() => {
-        if (!viewerReady || !genomeMeta) return;
+        if (!genomeMeta) return;
 
-        try {
-            const assembly = getAssembly(genomeMeta);
-            const tracks = getTracks(genomeMeta);
+        const initializeViewer = async () => {
+            try {
+                const assembly = getAssembly(genomeMeta);
+                const tracks = getTracks(genomeMeta);
 
-            viewStateRef.current = createViewState({
-                assembly,
-                tracks,
-                location: 'all',
-                defaultSession: {
-                    name: 'Gene Viewer Session',
-                    view: {
-                        id: 'linearGenomeView',
-                        type: 'LinearGenomeView',
-                        tracks: [
-                            {
-                                type: 'FeatureTrack',
-                                trackId: 'annotations',
-                                configuration: 'annotations',
-                                visible: true,
-                            },
-                        ],
-                        displayedRegions: [
-                            {
-                                assemblyName: assembly.name,
-                                refName: assembly.name,
-                                start: 0,
-                                end: 50000,
-                            },
-                        ],
+                // Ensure the assembly and tracks are properly loaded
+                if (!assembly || tracks.length === 0) {
+                    console.warn("Assembly or tracks are not fully loaded yet");
+                    return;
+                } else {
+                    console.log('everything loaded successfully...');
+                }
+
+                viewStateRef.current = createViewState({
+                    assembly,
+                    tracks,
+                    location: 'all',
+                    defaultSession: {
+                        name: 'Gene Viewer Session',
+                        view: {
+                            id: 'linearGenomeView',
+                            type: 'LinearGenomeView',
+                            tracks: [
+                                {
+                                    type: 'FeatureTrack',
+                                    trackId: 'structural_annotation',
+                                    configuration: 'structural_annotation',
+                                    visible: true,
+                                },
+                            ],
+                            displayedRegions: [
+                                {
+                                    assemblyName: genomeMeta.assembly_name,
+                                    refName: genomeMeta.assembly_name,
+                                    start: geneMeta?.start_position || 0,
+                                    end: geneMeta?.end_position || 1000,
+                                },
+                            ],
+                        },
                     },
-                },
-            });
+                });
 
-            // setForceRender(true);  // Only if you need to force re-render
-        } catch (error) {
-            console.error('Error initializing JBrowse viewer:', error);
-        }
-    }, [viewerReady, genomeMeta]);
+                setViewerReady(true);
+            } catch (error) {
+                console.error('Error initializing JBrowse viewer:', error);
+            }
+        };
+
+        initializeViewer();
+    }, [genomeMeta]);
+
 
     return (
         <div style={{padding: '20px'}}>
@@ -188,12 +172,6 @@ const GeneViewerPage: React.FC = () => {
                     </p>
                 </div>
             )}
-
-            <h2>FASTA File Preview:</h2>
-            <pre>{fastaContent ? fastaContent : 'Loading FASTA file...'}</pre>
-
-            <h2>GFF File Preview:</h2>
-            <pre>{gffContent ? gffContent : 'Loading GFF file...'}</pre>
 
             {viewerReady && viewStateRef.current ? (
                 <JBrowseLinearGenomeView viewState={viewStateRef.current}/>
