@@ -1,18 +1,20 @@
 import {GenomeMeta} from '../../pages/GeneViewerPage';
 
-const getAssembly = (isolateData: GenomeMeta) => ({
-    name: isolateData.isolate_name,
+const getAssembly = (genomeMeta: GenomeMeta) => ({
+    name: genomeMeta.isolate_name,
     sequence: {
         type: 'ReferenceSequenceTrack',
         trackId: 'reference',
         adapter: {
-            type: 'IndexedFastaAdapter',
+            type: 'BgzipFastaAdapter',
             fastaLocation: {
-                // uri: isolateData.fasta_file,
-                uri: 'http://localhost:3000/BU_2243B_NT5389.1.fa',
+                uri: `${genomeMeta.fasta_url}.gz`,
             },
             faiLocation: {
-                uri: 'http://localhost:3000/BU_2243B_NT5389.1.fa.fai',
+                uri: `${genomeMeta.fasta_url}.gz.fai`,
+            },
+            gziLocation: {
+                uri: `${genomeMeta.fasta_url}.gz.gzi`,
             },
         },
     },

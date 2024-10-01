@@ -1,7 +1,7 @@
 #!/bin/bash
 
 FTP_URL="http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/"
-LIMIT=10  # limit for dev testing
+LIMIT=11  # limit for dev testing
 
 mkdir -p gff3_files
 
@@ -27,15 +27,15 @@ while read -r isolate_name; do
 
   FULL_GFF_FILE_URL="${GFF_FILE_URL}${gff_file}"
   echo "FULL_GFF_FILE_URL: $FULL_GFF_FILE_URL"
-  wget -q "$FULL_GFF_FILE_URL" -O "gff3_files/$isolate_name/${gff_file}"
+  wget -q "$FULL_GFF_FILE_URL" -O "gff3_files/$isolate_name/_orig_${gff_file}"
 
-  if [ ! -s "gff3_files/$isolate_name/${gff_file}" ]; then
+  if [ ! -s "gff3_files/$isolate_name/_orig_${gff_file}" ]; then
     echo "Error: ${gff_file} could not be downloaded or is empty. Skipping."
     continue
   fi
 
   # Triming the GFF file by removing everything after '##FASTA'
-  awk '/##FASTA/{exit}1' "gff3_files/$isolate_name/${gff_file}" > "gff3_files/$isolate_name/trimmed_${isolate_name}.gff"
+  awk '/##FASTA/{exit}1' "gff3_files/$isolate_name/_orig_${gff_file}" > "gff3_files/$isolate_name/trimmed_${isolate_name}.gff"
 
   # Verify
   if [ ! -s "gff3_files/$isolate_name/trimmed_${isolate_name}.gff" ]; then
@@ -44,51 +44,51 @@ while read -r isolate_name; do
   fi
 
   # Generate bgzipped and sorted version of the GFF file
-  jbrowse sort-gff "gff3_files/$isolate_name/trimmed_${isolate_name}.gff" > "gff3_files/$isolate_name/sorted_${isolate_name}.gff"
-  bgzip "gff3_files/$isolate_name/sorted_${isolate_name}.gff"
+  jbrowse sort-gff "gff3_files/$isolate_name/trimmed_${isolate_name}.gff" > "gff3_files/$isolate_name/${gff_file}"
+  bgzip "gff3_files/$isolate_name/${gff_file}"
 
   # Verify
-  if [ ! -s "gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz" ]; then
-    echo "Error: Failed to create sorted_${isolate_name}.gff.gz. Skipping this isolate."
+  if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz" ]; then
+    echo "Error: Failed to create ${gff_file}.gz. Skipping this isolate."
     continue
   fi
 
   # Generate tabix (.tbi) file
-  tabix -p gff "gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz"
+  tabix -p gff "gff3_files/$isolate_name/${gff_file}.gz"
 
   # Verify
-  if [ ! -s "gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz.tbi" ]; then
-    echo "Error: Failed to create sorted_${isolate_name}.gff.gz.tbi. Skipping this isolate."
+  if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz.tbi" ]; then
+    echo "Error: Failed to create ${gff_file}.gz.tbi. Skipping this isolate."
     continue
   fi
 
   # Generate an index file (.ix)
-  jbrowse text-index --file "gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz" --fileId "${isolate_name}_annotations" --out "gff3_files/$isolate_name"
+  jbrowse text-index --file "gff3_files/$isolate_name/${gff_file}.gz" --fileId "${isolate_name}_annotations" --out "gff3_files/$isolate_name"
 
   # Verify  (.ix)
-  if [ ! -s "gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz.ix" ]; then
-    echo "Error: Failed to create sorted_${isolate_name}.gff.gz.ix. Skipping this isolate."
+  if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz.ix" ]; then
+    echo "Error: Failed to create ${gff_file}.gz.ix. Skipping this isolate."
     continue
   fi
 
   # Verify (.ixx)
-  if [ ! -s "gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz.ixx" ]; then
-    echo "Error: Failed to create sorted_${isolate_name}.gff.gz.ixx. Skipping this isolate."
+  if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz.ixx" ]; then
+    echo "Error: Failed to create ${gff_file}.gz.ixx. Skipping this isolate."
     continue
   fi
 
   # Create the metadata file
-  cat <<EOT > "gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz_meta.json"
+  cat <<EOT > "gff3_files/$isolate_name/${gff_file}.gz_meta.json"
 {
-  "fileName": "sorted_${isolate_name}.gff.gz",
+  "fileName": "${gff_file}.gz",
   "description": "GFF3 file for isolate ${isolate_name} with annotations",
   "createdBy": "JBrowse CLI"
 }
 EOT
 
   # Verify
-  if [ ! -s "gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz_meta.json" ]; then
-    echo "Error: Failed to create sorted_${isolate_name}.gff.gz_meta.json. Skipping this isolate."
+  if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz_meta.json" ]; then
+    echo "Error: Failed to create ${gff_file}.gz_meta.json. Skipping this isolate."
     continue
   fi
 
