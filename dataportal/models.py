@@ -92,15 +92,14 @@ class Gene(models.Model):
     # Extracted fields from the annotations JSON
     cog = models.CharField(max_length=10, blank=True, null=True, db_index=True)
     kegg = models.CharField(max_length=255, blank=True, null=True, db_index=True)
-    pfam = models.CharField(max_length=255, blank=True, null=True)  # Multiple values stored as comma-separated
-    interpro = models.TextField(blank=True, null=True)  # Can be multiple values, so stored as text
+    pfam = models.CharField(max_length=255, blank=True, null=True)
+    interpro = models.TextField(blank=True, null=True)
     dbxref = models.CharField(max_length=255, blank=True, null=True)
     ec_number = models.CharField(max_length=20, blank=True, null=True, db_index=True)
     product = models.TextField(blank=True, null=True)
     start_position = models.IntegerField(blank=True, null=True)
     end_position = models.IntegerField(blank=True, null=True)
 
-    # Keeping the annotations JSON for backward compatibility
     annotations = models.JSONField(blank=True, null=True)
 
     class Meta:

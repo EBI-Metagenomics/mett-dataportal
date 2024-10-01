@@ -141,10 +141,15 @@ CORS_ALLOW_ALL_ORIGINS = True  # todo remove later
 APPEND_SLASH = False  # todo verify and remove
 
 DEFAULT_LIMIT = 10
+# todo remove local file paths
+# ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
+#                               'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
+# GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
+#                          'http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/')
 ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
-                              'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
+                              'http://localhost:3000/fasta_files/')
 GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
-                         'http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/')
+                         'http://localhost:3000/gff3_files/{}/')
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'

@@ -12,7 +12,6 @@ from pydantic import BaseModel
 from .models import Species
 from .models import Strain, Gene
 from .services import SearchService
-from .utils import construct_file_urls
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ class StrainSuggestionSchema(BaseModel):
 
 class GeneAutocompleteResponseSchema(BaseModel):
     gene_id: int
-    gene_name: str
+    gene_name: Optional[str]
     strain_name: str
 
 
@@ -52,26 +51,28 @@ class SearchGenomeSchema(BaseModel):
     assembly_accession: Optional[str]
     fasta_file: str
     gff_file: str
+    fasta_url: str
+    gff_url: str
 
 
 class GeneResponseSchema(BaseModel):
     id: int
-    gene_name: str
-    description: Optional[str]
-    strain_id: int
-    strain: str
-    assembly: Optional[str]
-    locus_tag: Optional[str]
-    cog: Optional[str]
-    kegg: Optional[str]
-    pfam: Optional[str]
-    interpro: Optional[str]
-    dbxref: Optional[str]
-    ec_number: Optional[str]
-    product: Optional[str]
-    start_position: Optional[int]
-    end_position: Optional[int]
-    annotations: Optional[dict]
+    gene_name: Optional[str] = None
+    description: Optional[str] = None
+    strain_id: Optional[int] = None
+    strain: Optional[str] = None
+    assembly: Optional[str] = None
+    locus_tag: Optional[str] = None
+    cog: Optional[str] = None
+    kegg: Optional[str] = None
+    pfam: Optional[str] = None
+    interpro: Optional[str] = None
+    dbxref: Optional[str] = None
+    ec_number: Optional[str] = None
+    product: Optional[str] = None
+    start_position: Optional[int] = None
+    end_position: Optional[int] = None
+    annotations: Optional[dict] = None
 
 
 class GenomePaginationSchema(BaseModel):
@@ -90,15 +91,6 @@ class GenePaginationSchema(BaseModel):
     has_previous: bool
     has_next: bool
     total_results: int
-
-
-class JBrowseResponseSchema(BaseModel):
-    species: str
-    isolate_name: str
-    fasta_url: str
-    gff_url: str
-    fasta_file_name: str
-    gff_file_name: str
 
 
 class SpeciesOut(BaseModel):
@@ -210,8 +202,10 @@ class SearchAPI:
                     "isolate_name": strain.isolate_name,
                     "assembly_name": strain.assembly_name,
                     "assembly_accession": strain.assembly_accession,
-                    "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file,
-                    "gff_file": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
+                    "fasta_file": strain.fasta_file,
+                    "gff_file": strain.gff_file,
+                    "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
+                    "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
                 }
                 for strain in full_results
             ])()
@@ -234,27 +228,9 @@ class SearchAPI:
             raise HttpError(500, f"Internal Server Error: {str(e)}")
 
 
-# JBrowseAPI class to handle JBrowse related endpoints
-class JBrowseAPI:
-    @staticmethod
-    def get_jbrowse_data(isolate_id: int):
-        strain = get_object_or_404(Strain, id=isolate_id)
-        fasta_url, gff_url, fasta_file_name, gff_file_name = construct_file_urls(strain)
-
-        return JBrowseResponseSchema(
-            species=strain.species.scientific_name,
-            isolate_name=strain.isolate_name,
-            fasta_url=fasta_url,
-            gff_url=gff_url,
-            fasta_file_name=fasta_file_name,
-            gff_file_name=gff_file_name
-        )
-
-
 # Instantiate SearchAPI and JBrowseAPI
 search_service = SearchService()
 search_api = SearchAPI(search_service)
-jbrowse_api = JBrowseAPI()
 
 
 # Map the router to the class methods
@@ -289,9 +265,10 @@ async def get_all_genomes(request, page: int = 1, per_page: int = 10):
                 "isolate_name": strain.isolate_name,
                 "assembly_name": strain.assembly_name,
                 "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
-                "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
-                "gff_file": settings.GFF_FTP_PATH.format(
-                    strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+                "fasta_file": strain.fasta_file,
+                "gff_file": strain.gff_file,
+                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
+                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
             }
             for strain in page_results
         ]
@@ -329,9 +306,10 @@ async def search_genomes_by_string(request, query: str, page: int = 1, per_page:
                 "isolate_name": strain.isolate_name,
                 "assembly_name": strain.assembly_name,
                 "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
-                "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
-                "gff_file": settings.GFF_FTP_PATH.format(
-                    strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+                "fasta_file": strain.fasta_file,
+                "gff_file": strain.gff_file,
+                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
+                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
             }
             for strain in page_results
         ]
@@ -361,8 +339,10 @@ def get_genome(request, genome_id: int):
             "isolate_name": strain.isolate_name,
             "assembly_name": strain.assembly_name,
             "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
-            "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
-            "gff_file": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+            "fasta_file": strain.fasta_file,
+            "gff_file": strain.gff_file,
+            "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
+            "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
         }
         return response_data
     except Strain.DoesNotExist:
@@ -389,9 +369,10 @@ async def get_genomes_by_species(request, species_id: int, page: int = 1, per_pa
                 "isolate_name": strain.isolate_name,
                 "assembly_name": strain.assembly_name,
                 "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
-                "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
-                "gff_file": settings.GFF_FTP_PATH.format(
-                    strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+                "fasta_file": strain.fasta_file,
+                "gff_file": strain.gff_file,
+                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
+                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
             }
             for strain in page_results
         ]
@@ -429,9 +410,10 @@ async def search_genomes_by_species_and_string(request, species_id: int, query: 
                 "isolate_name": strain.isolate_name,
                 "assembly_name": strain.assembly_name,
                 "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
-                "fasta_file": settings.ASSEMBLY_FTP_PATH + strain.fasta_file if strain.fasta_file else "",
-                "gff_file": settings.GFF_FTP_PATH.format(
-                    strain.isolate_name) + strain.gff_file if strain.gff_file else "",
+                "fasta_file": strain.fasta_file,
+                "gff_file": strain.gff_file,
+                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
+                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
             }
             for strain in page_results
         ]
@@ -450,7 +432,8 @@ async def search_genomes_by_species_and_string(request, species_id: int, query: 
 
 
 @gene_router.get("/autocomplete", response=List[GeneAutocompleteResponseSchema])
-async def gene_autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None, genome_ids: Optional[str] = None):
+async def gene_autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None,
+                                        genome_ids: Optional[str] = None):
     genome_id_list = [int(gid) for gid in genome_ids.split(",") if gid.strip()] if genome_ids else None
     return await search_service.autocomplete_gene_suggestions(query, limit, species_id, genome_id_list)
 
@@ -465,6 +448,7 @@ async def search_genes_by_string(request, query: str, page: int = 1, per_page: i
         logger.error(f"Error in search_genes_by_string: {e}")
         raise HttpError(500, f"Internal Server Error: {str(e)}")
 
+
 # API Endpoint to retrieve gene by ID
 @gene_router.get("/{gene_id}", response=GeneResponseSchema)
 async def get_gene_by_id(request, gene_id: int):
@@ -473,22 +457,22 @@ async def get_gene_by_id(request, gene_id: int):
 
         response_data = {
             "id": gene.id,
-            "gene_name": gene.gene_name,
-            "description": gene.description if gene.description else None,
-            "locus_tag": gene.locus_tag,
-            "strain_id": gene.strain.id,  # Added strain_id
-            "strain": gene.strain.isolate_name,
-            "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
-            "cog": gene.cog if gene.cog else None,  # Added cog
-            "kegg": gene.kegg if gene.kegg else None,  # Added kegg
-            "pfam": gene.pfam if gene.pfam else None,  # Added pfam
-            "interpro": gene.interpro if gene.interpro else None,  # Added interpro
-            "dbxref": gene.dbxref if gene.dbxref else None,  # Added dbxref
-            "ec_number": gene.ec_number if gene.ec_number else None,  # Added ec_number
-            "product": gene.product if gene.product else None,  # Added product
-            "start_position": gene.start_position if gene.start_position else None,  # Added start_position
-            "end_position": gene.end_position if gene.end_position else None,  # Added end_position
-            "annotations": gene.annotations if gene.annotations else None  # Added annotations
+            "gene_name": gene.gene_name or "N/A",
+            "description": gene.description or None,
+            "strain_id": gene.strain.id if gene.strain else None,
+            "strain": gene.strain.isolate_name if gene.strain else "Unknown",
+            "assembly": gene.strain.assembly_name if gene.strain and gene.strain.assembly_name else None,
+            "locus_tag": gene.locus_tag or None,
+            "cog": gene.cog or None,
+            "kegg": gene.kegg or None,
+            "pfam": gene.pfam or None,
+            "interpro": gene.interpro or None,
+            "dbxref": gene.dbxref or None,
+            "ec_number": gene.ec_number or None,
+            "product": gene.product or None,
+            "start_position": gene.start_position or None,
+            "end_position": gene.end_position or None,
+            "annotations": gene.annotations or {}
         }
 
         return response_data
@@ -513,22 +497,22 @@ async def get_all_genes(request, page: int = 1, per_page: int = 10):
         serialized_results = [
             {
                 "id": gene.id,
-                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
-                "description": gene.description if gene.description else None,
-                "locus_tag": gene.locus_tag,
-                "strain_id": gene.strain.id,  # Added strain_id
-                "strain": gene.strain.isolate_name,
-                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
-                "cog": gene.cog if gene.cog else None,  # Added cog
-                "kegg": gene.kegg if gene.kegg else None,  # Added kegg
-                "pfam": gene.pfam if gene.pfam else None,  # Added pfam
-                "interpro": gene.interpro if gene.interpro else None,  # Added interpro
-                "dbxref": gene.dbxref if gene.dbxref else None,  # Added dbxref
-                "ec_number": gene.ec_number if gene.ec_number else None,  # Added ec_number
-                "product": gene.product if gene.product else None,  # Added product
-                "start_position": gene.start_position if gene.start_position else None,  # Added start_position
-                "end_position": gene.end_position if gene.end_position else None,  # Added end_position
-                "annotations": gene.annotations if gene.annotations else None,  # Added annotations
+                "gene_name": gene.gene_name or "N/A",
+                "description": gene.description or None,
+                "strain_id": gene.strain.id if gene.strain else None,
+                "strain": gene.strain.isolate_name if gene.strain else "Unknown",
+                "assembly": gene.strain.assembly_name if gene.strain and gene.strain.assembly_name else None,
+                "locus_tag": gene.locus_tag or None,
+                "cog": gene.cog or None,
+                "kegg": gene.kegg or None,
+                "pfam": gene.pfam or None,
+                "interpro": gene.interpro or None,
+                "dbxref": gene.dbxref or None,
+                "ec_number": gene.ec_number or None,
+                "product": gene.product or None,
+                "start_position": gene.start_position or None,
+                "end_position": gene.end_position or None,
+                "annotations": gene.annotations or {}
             }
             for gene in page_results
         ]
@@ -598,24 +582,24 @@ async def search_genes_by_genome_and_string(request, genome_id: int, query: str,
         serialized_results = [
             {
                 "id": gene.id,
-                "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
-                "description": gene.description if gene.description else None,
-                "locus_tag": gene.locus_tag,
-                "strain_id": gene.strain.id,  # Added strain_id
-                "strain": gene.strain.isolate_name,
-                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
-                "cog": gene.cog if gene.cog else None,  # Added cog
-                "kegg": gene.kegg if gene.kegg else None,  # Added kegg
-                "pfam": gene.pfam if gene.pfam else None,  # Added pfam
-                "interpro": gene.interpro if gene.interpro else None,  # Added interpro
-                "dbxref": gene.dbxref if gene.dbxref else None,  # Added dbxref
-                "ec_number": gene.ec_number if gene.ec_number else None,  # Added ec_number
-                "product": gene.product if gene.product else None,  # Added product
-                "start_position": gene.start_position if gene.start_position else None,  # Added start_position
-                "end_position": gene.end_position if gene.end_position else None,  # Added end_position
-                "annotations": gene.annotations if gene.annotations else None,  # Added annotations
+                "gene_name": gene.gene_name or "N/A",
+                "description": gene.description or None,
+                "strain_id": gene.strain.id if gene.strain else None,
+                "strain": gene.strain.isolate_name if gene.strain else "Unknown",
+                "assembly": gene.strain.assembly_name if gene.strain and gene.strain.assembly_name else None,
+                "locus_tag": gene.locus_tag or None,
+                "cog": gene.cog or None,
+                "kegg": gene.kegg or None,
+                "pfam": gene.pfam or None,
+                "interpro": gene.interpro or None,
+                "dbxref": gene.dbxref or None,
+                "ec_number": gene.ec_number or None,
+                "product": gene.product or None,
+                "start_position": gene.start_position or None,
+                "end_position": gene.end_position or None,
+                "annotations": gene.annotations or {}
             }
-            for gene in page_results
+            for gene in genes
         ]
 
         return GenePaginationSchema(
@@ -659,21 +643,22 @@ async def search_genes_by_multiple_genomes_and_species_and_string(request, genom
         serialized_results = [
             {
                 "id": gene.id,
-                "gene_name": gene.gene_name if gene.gene_name else "N/A",
-                "description": gene.description if gene.description else None,
-                "strain_id": gene.strain.id,  # Added strain_id
-                "strain": gene.strain.isolate_name,
-                "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
-                "cog": gene.cog if gene.cog else None,  # Added cog
-                "kegg": gene.kegg if gene.kegg else None,  # Added kegg
-                "pfam": gene.pfam if gene.pfam else None,  # Added pfam
-                "interpro": gene.interpro if gene.interpro else None,  # Added interpro
-                "dbxref": gene.dbxref if gene.dbxref else None,  # Added dbxref
-                "ec_number": gene.ec_number if gene.ec_number else None,  # Added ec_number
-                "product": gene.product if gene.product else None,  # Added product
-                "start_position": gene.start_position if gene.start_position else None,  # Added start_position
-                "end_position": gene.end_position if gene.end_position else None,  # Added end_position
-                "annotations": gene.annotations if gene.annotations else None,  # Added annotations
+                "gene_name": gene.gene_name or "N/A",
+                "description": gene.description or None,
+                "strain_id": gene.strain.id if gene.strain else None,
+                "strain": gene.strain.isolate_name if gene.strain else "Unknown",
+                "assembly": gene.strain.assembly_name if gene.strain and gene.strain.assembly_name else None,
+                "locus_tag": gene.locus_tag or None,
+                "cog": gene.cog or None,
+                "kegg": gene.kegg or None,
+                "pfam": gene.pfam or None,
+                "interpro": gene.interpro or None,
+                "dbxref": gene.dbxref or None,
+                "ec_number": gene.ec_number or None,
+                "product": gene.product or None,
+                "start_position": gene.start_position or None,
+                "end_position": gene.end_position or None,
+                "annotations": gene.annotations or {}
             }
             for gene in genes
         ]
@@ -696,13 +681,7 @@ async def search_genes_by_multiple_genomes_and_species_and_string(request, genom
         raise HttpError(500, f"Internal Server Error: {str(e)}")
 
 
-@jbrowse_router.get('/search/{isolate_id}')
-def get_jbrowse_data(request, isolate_id: int):
-    return jbrowse_api.get_jbrowse_data(isolate_id)
-
-
 # Register routers with the main API
 api.add_router("/species", species_router)
 api.add_router("/genomes", genome_router)
 api.add_router("/genes", gene_router)
-api.add_router("/jbrowse", jbrowse_router)
