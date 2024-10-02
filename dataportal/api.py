@@ -42,6 +42,11 @@ class GeneAutocompleteResponseSchema(BaseModel):
     strain_name: str
 
 
+class ContigSchema(BaseModel):
+    seq_id: str
+    length: Optional[int] = None
+
+
 class SearchGenomeSchema(BaseModel):
     species: str
     id: int
@@ -53,10 +58,12 @@ class SearchGenomeSchema(BaseModel):
     gff_file: str
     fasta_url: str
     gff_url: str
+    contigs: List[ContigSchema]
 
 
 class GeneResponseSchema(BaseModel):
     id: int
+    seq_id: Optional[str] = None
     gene_name: Optional[str] = None
     description: Optional[str] = None
     strain_id: Optional[int] = None
@@ -246,10 +253,13 @@ def get_all_species(request):
     return [SpeciesOut.from_orm(sp) for sp in species]
 
 
+from asgiref.sync import sync_to_async
+
 # API Endpoint to retrieve all genomes
 @genome_router.get("/", response=GenomePaginationSchema)
 async def get_all_genomes(request, page: int = 1, per_page: int = 10):
     try:
+        # Use sync_to_async to make this query non-blocking in the async context
         strains = await sync_to_async(lambda: list(Strain.objects.select_related('species').all()))()
 
         total_results = len(strains)
@@ -257,8 +267,15 @@ async def get_all_genomes(request, page: int = 1, per_page: int = 10):
         end = start + per_page
         page_results = strains[start:end]
 
-        serialized_results = [
-            {
+        # Initialize the results list
+        serialized_results = []
+
+        # Loop through strains and fetch contigs asynchronously
+        for strain in page_results:
+            contigs = await sync_to_async(lambda: list(strain.contigs.all()))()
+            serialized_contigs = [{"seq_id": contig.seq_id, "length": contig.length} for contig in contigs]
+
+            serialized_results.append({
                 "species": strain.species.scientific_name,
                 "id": strain.id,
                 "common_name": strain.species.common_name if strain.species.common_name else None,
@@ -268,10 +285,9 @@ async def get_all_genomes(request, page: int = 1, per_page: int = 10):
                 "fasta_file": strain.fasta_file,
                 "gff_file": strain.gff_file,
                 "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
-                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
-            }
-            for strain in page_results
-        ]
+                "gff_url": f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}{strain.gff_file}",
+                "contigs": serialized_contigs
+            })
 
         return GenomePaginationSchema(
             results=serialized_results,
@@ -286,10 +302,12 @@ async def get_all_genomes(request, page: int = 1, per_page: int = 10):
         raise HttpError(500, f"Internal Server Error: {str(e)}")
 
 
+
 # API Endpoint to search genomes by query string
 @genome_router.get("/search", response=GenomePaginationSchema)
 async def search_genomes_by_string(request, query: str, page: int = 1, per_page: int = 10):
     try:
+        # Fetch strains asynchronously
         strains = await sync_to_async(lambda: list(Strain.objects.select_related('species')
                                                    .filter(isolate_name__icontains=query)))()
 
@@ -298,21 +316,27 @@ async def search_genomes_by_string(request, query: str, page: int = 1, per_page:
         end = start + per_page
         page_results = strains[start:end]
 
-        serialized_results = [
-            {
+        # Initialize the results list
+        serialized_results = []
+
+        # Fetch contigs asynchronously for each strain
+        for strain in page_results:
+            contigs = await sync_to_async(lambda: list(strain.contigs.all()))()  # Fetch contigs asynchronously
+            serialized_contigs = [{"seq_id": contig.seq_id, "length": contig.length} for contig in contigs]
+
+            serialized_results.append({
                 "species": strain.species.scientific_name,
                 "id": strain.id,
                 "common_name": strain.species.common_name if strain.species.common_name else None,
                 "isolate_name": strain.isolate_name,
                 "assembly_name": strain.assembly_name,
                 "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
-                "fasta_file": strain.fasta_file,
-                "gff_file": strain.gff_file,
-                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
-                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
-            }
-            for strain in page_results
-        ]
+                "fasta_file": strain.fasta_file or "",
+                "gff_file": strain.gff_file or "",
+                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}" if strain.fasta_file else "",
+                "gff_url": f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}{strain.gff_file}" if strain.gff_file else "",
+                "contigs": serialized_contigs  # Include contig data in the response
+            })
 
         return GenomePaginationSchema(
             results=serialized_results,
@@ -322,6 +346,7 @@ async def search_genomes_by_string(request, query: str, page: int = 1, per_page:
             has_next=end < total_results,
             total_results=total_results,
         )
+
     except Exception as e:
         logger.error(f"Error in search_genomes_by_string: {e}")
         raise HttpError(500, f"Internal Server Error: {str(e)}")
@@ -343,6 +368,10 @@ def get_genome(request, genome_id: int):
             "gff_file": strain.gff_file,
             "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
             "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
+            "contigs": [
+                {"seq_id": contig.seq_id, "length": contig.length}
+                for contig in strain.contigs.all()  # Fetch related contigs
+            ]
         }
         return response_data
     except Strain.DoesNotExist:
@@ -353,6 +382,7 @@ def get_genome(request, genome_id: int):
 @species_router.get("/{species_id}/genomes", response=GenomePaginationSchema)
 async def get_genomes_by_species(request, species_id: int, page: int = 1, per_page: int = 10):
     try:
+        # Fetch strains asynchronously
         strains = await sync_to_async(lambda: list(Strain.objects.select_related('species')
                                                    .filter(species_id=species_id)))()
 
@@ -361,21 +391,27 @@ async def get_genomes_by_species(request, species_id: int, page: int = 1, per_pa
         end = start + per_page
         page_results = strains[start:end]
 
-        serialized_results = [
-            {
+        # Initialize the results list
+        serialized_results = []
+
+        # Fetch contigs asynchronously for each strain
+        for strain in page_results:
+            contigs = await sync_to_async(lambda: list(strain.contigs.all()))()  # Fetch contigs asynchronously
+            serialized_contigs = [{"seq_id": contig.seq_id, "length": contig.length} for contig in contigs]
+
+            serialized_results.append({
                 "species": strain.species.scientific_name,
                 "id": strain.id,
                 "common_name": strain.species.common_name if strain.species.common_name else None,
                 "isolate_name": strain.isolate_name,
                 "assembly_name": strain.assembly_name,
                 "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
-                "fasta_file": strain.fasta_file,
-                "gff_file": strain.gff_file,
-                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
-                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
-            }
-            for strain in page_results
-        ]
+                "fasta_file": strain.fasta_file or "",  # Ensure fasta_file is not None
+                "gff_file": strain.gff_file or "",      # Ensure gff_file is not None
+                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}" if strain.fasta_file else "",
+                "gff_url": f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}{strain.gff_file}" if strain.gff_file else "",
+                "contigs": serialized_contigs  # Include contig data in the response
+            })
 
         return GenomePaginationSchema(
             results=serialized_results,
@@ -385,6 +421,7 @@ async def get_genomes_by_species(request, species_id: int, page: int = 1, per_pa
             has_next=end < total_results,
             total_results=total_results,
         )
+
     except Exception as e:
         logger.error(f"Error in get_genomes_by_species: {e}")
         raise HttpError(500, f"Internal Server Error: {str(e)}")
@@ -394,6 +431,7 @@ async def get_genomes_by_species(request, species_id: int, page: int = 1, per_pa
 @species_router.get("/{species_id}/genomes/search", response=GenomePaginationSchema)
 async def search_genomes_by_species_and_string(request, species_id: int, query: str, page: int = 1, per_page: int = 10):
     try:
+        # Fetch strains asynchronously
         strains = await sync_to_async(lambda: list(Strain.objects.select_related('species')
                                                    .filter(species_id=species_id, isolate_name__icontains=query)))()
 
@@ -402,21 +440,27 @@ async def search_genomes_by_species_and_string(request, species_id: int, query: 
         end = start + per_page
         page_results = strains[start:end]
 
-        serialized_results = [
-            {
+        # Initialize the results list
+        serialized_results = []
+
+        # Fetch contigs asynchronously for each strain
+        for strain in page_results:
+            contigs = await sync_to_async(lambda: list(strain.contigs.all()))()  # Fetch contigs asynchronously
+            serialized_contigs = [{"seq_id": contig.seq_id, "length": contig.length} for contig in contigs]
+
+            serialized_results.append({
                 "species": strain.species.scientific_name,
                 "id": strain.id,
                 "common_name": strain.species.common_name if strain.species.common_name else None,
                 "isolate_name": strain.isolate_name,
                 "assembly_name": strain.assembly_name,
                 "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
-                "fasta_file": strain.fasta_file,
-                "gff_file": strain.gff_file,
-                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
-                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
-            }
-            for strain in page_results
-        ]
+                "fasta_file": strain.fasta_file or "",
+                "gff_file": strain.gff_file or "",
+                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}" if strain.fasta_file else "",
+                "gff_url": f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}{strain.gff_file}" if strain.gff_file else "",
+                "contigs": serialized_contigs  # Include fetched contigs
+            })
 
         return GenomePaginationSchema(
             results=serialized_results,
@@ -457,6 +501,7 @@ async def get_gene_by_id(request, gene_id: int):
 
         response_data = {
             "id": gene.id,
+            "seq_id": gene.seq_id,
             "gene_name": gene.gene_name or "N/A",
             "description": gene.description or None,
             "strain_id": gene.strain.id if gene.strain else None,
@@ -497,6 +542,7 @@ async def get_all_genes(request, page: int = 1, per_page: int = 10):
         serialized_results = [
             {
                 "id": gene.id,
+                "seq_id": gene.seq_id,
                 "gene_name": gene.gene_name or "N/A",
                 "description": gene.description or None,
                 "strain_id": gene.strain.id if gene.strain else None,
@@ -544,6 +590,7 @@ async def get_genes_by_genome(request, genome_id: int, page: int = 1, per_page: 
         serialized_results = [
             {
                 "id": gene.id,
+                "seq_id": gene.seq_id,
                 "gene_name": gene.gene_name if gene.gene_name else "N/A",  # Handle None values
                 "description": gene.description if gene.description else None,
                 "locus_tag": gene.locus_tag,
@@ -582,6 +629,7 @@ async def search_genes_by_genome_and_string(request, genome_id: int, query: str,
         serialized_results = [
             {
                 "id": gene.id,
+                "seq_id": gene.seq_id,
                 "gene_name": gene.gene_name or "N/A",
                 "description": gene.description or None,
                 "strain_id": gene.strain.id if gene.strain else None,
@@ -643,6 +691,7 @@ async def search_genes_by_multiple_genomes_and_species_and_string(request, genom
         serialized_results = [
             {
                 "id": gene.id,
+                "seq_id": gene.seq_id,
                 "gene_name": gene.gene_name or "N/A",
                 "description": gene.description or None,
                 "strain_id": gene.strain.id if gene.strain else None,

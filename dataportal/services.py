@@ -211,6 +211,7 @@ class SearchService:
             return [
                 {
                     "gene_name": gene.gene_name,
+                    "seq_id": gene.seq_id,
                     "strain": gene.strain.isolate_name,
                     "assembly": gene.strain.assembly_name,
                     "description": gene.description
@@ -235,6 +236,7 @@ class SearchService:
             serialized_genes = [
                 {
                     "id": gene.id,
+                    "seq_id": gene.seq_id,
                     "gene_name": gene.gene_name,
                     "description": gene.description,
                     "strain": gene.strain.isolate_name,

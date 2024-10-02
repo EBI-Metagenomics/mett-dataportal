@@ -81,6 +81,22 @@ class Strain(models.Model):
         return self.isolate_name
 
 
+class Contig(models.Model):
+    id = models.AutoField(primary_key=True)
+    strain = models.ForeignKey('Strain', on_delete=models.CASCADE, related_name='contigs')
+    seq_id = models.CharField(max_length=255, db_index=True)
+    length = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'contig'
+        indexes = [
+            GinIndex(fields=['seq_id'], name='seq_id_contig_gin_idx', opclasses=['gin_trgm_ops']),
+        ]
+
+    def __str__(self):
+        return self.seq_id
+
+
 # Gene Model (One-to-Many with Strain)
 class Gene(models.Model):
     id = models.AutoField(primary_key=True)
@@ -88,6 +104,7 @@ class Gene(models.Model):
     gene_name = models.CharField(max_length=255, blank=True, null=True, db_index=True)
     locus_tag = models.CharField(max_length=255, unique=True, db_index=True)
     description = models.TextField(blank=True, null=True)
+    seq_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
 
     # Extracted fields from the annotations JSON
     cog = models.CharField(max_length=10, blank=True, null=True, db_index=True)
@@ -111,6 +128,7 @@ class Gene(models.Model):
             GinIndex(fields=['product'], name='product_gin_idx', opclasses=['gin_trgm_ops']),
             GinIndex(fields=['cog'], name='cog_gin_idx', opclasses=['gin_trgm_ops']),
             GinIndex(fields=['kegg'], name='kegg_gin_idx', opclasses=['gin_trgm_ops']),
+            GinIndex(fields=['seq_id'], name='seq_id_gin_idx', opclasses=['gin_trgm_ops']),  # Index for seq_id
         ]
         constraints = [
             models.UniqueConstraint(fields=['locus_tag'], name='unique_locus_tag'),

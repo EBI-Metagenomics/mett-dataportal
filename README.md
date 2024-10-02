@@ -17,7 +17,10 @@ pre-commit install
 ## Use
 ```shell
 python manage.py makemigrations
+python manage.py makemigrations dataportal --empty
 python manage.py migrate
+
+#### not required as of now
 python manage.py import_data
 python manage.py compilescss
 python manage.py collectstatic --noinput
