@@ -1,6 +1,7 @@
 #!/bin/bash
 
 FTP_URL="http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/"
+BASE_URL="http://localhost:3000"
 LIMIT=11  # limit for dev testing
 
 mkdir -p gff3_files
@@ -77,14 +78,14 @@ while read -r isolate_name; do
     continue
   fi
 
-  # Create the metadata file
-  cat <<EOT > "gff3_files/$isolate_name/${gff_file}.gz_meta.json"
-{
-  "fileName": "${gff_file}.gz",
-  "description": "GFF3 file for isolate ${isolate_name} with annotations",
-  "createdBy": "JBrowse CLI"
-}
-EOT
+#   handle the metadata file
+  meta_json="gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz_meta.json"
+
+  if [ -f "$meta_json" ]; then
+    # Replace "localPath" with "uri" and update the location
+    sed -i '' "s|\"localPath\": \".*\"|\"uri\": \"${BASE_URL}/gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz\"|" "$meta_json"
+    sed -i '' 's|"locationType": "LocalPathLocation"|"locationType": "UriLocation"|' "$meta_json"
+  fi
 
   # Verify
   if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz_meta.json" ]; then

@@ -104,6 +104,15 @@ const GeneViewerPage: React.FC = () => {
         const gffBaseUrl = genomeMeta.gff_url.replace(/\/[^/]+$/, '');
         const fastaBaseUrl = genomeMeta.fasta_url.replace(/\/[^/]+$/, '');
 
+        console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz`)
+        console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.fai`)
+        console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.gzi`)
+        console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz`)
+        console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz.tbi`)
+        console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`)
+        console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ixx`)
+        console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz_meta.json`)
+
         const initializeViewer = async () => {
             try {
                 const assembly = getAssembly(genomeMeta, fastaBaseUrl);
@@ -134,9 +143,9 @@ const GeneViewerPage: React.FC = () => {
                             displayedRegions: [
                                 {
                                     assemblyName: genomeMeta.assembly_name,
-                                    refName: genomeMeta.assembly_name,
+                                    refName: geneMeta.,
                                     start: geneMeta?.start_position || 0,
-                                    end: geneMeta?.end_position || 1000,
+                                    end: geneMeta?.end_position || 50000,
                                 },
                             ],
                         },
