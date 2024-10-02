@@ -12,8 +12,10 @@ There is a normal Django Admin panel as well.
 
 ### Steps to bring up the local environment 
 - [ ] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
-- [ ] Jupyter notebook scripts are 
-
+- [ ] Use import scripts to import the data from FTP server. Ref: [How to import](./data-generators/import-scripts/README.md)
+- [ ] Create indexes for Fasta and GFF files. Ref: [How to generate indexes](./data-generators/index-scripts/README.md)
+- [ ] Run djando sever ```python manage.py runserver```
+- [ ] Run react app using ```npm start```
 
 
 ## Development
