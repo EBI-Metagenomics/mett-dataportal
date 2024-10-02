@@ -96,13 +96,8 @@ const HomePage: React.FC = () => {
             </div>
 
             <div className="layout-container">
-                {/* Left Panel - Selected Genomes */}
+                {/* Left Panel - Search Form */}
                 <div className={styles.leftPane}>
-                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
-                </div>
-
-                {/* Right Panel - Search Form */}
-                <div className={styles.rightPane}>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GeneSearchForm
                             searchQuery={geneSearchQuery}
@@ -134,6 +129,10 @@ const HomePage: React.FC = () => {
                             handlePageClick={(page) => setGenomeCurrentPage(page)}
                         />
                     )}
+                </div>
+                {/* Right Panel - Selected Genomes */}
+                <div className={styles.rightPane}>
+                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
                 </div>
             </div>
         </div>
