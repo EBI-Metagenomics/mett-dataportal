@@ -104,6 +104,7 @@ const GeneViewerPage: React.FC = () => {
         const gffBaseUrl = genomeMeta.gff_url.replace(/\/[^/]+$/, '');
         const fastaBaseUrl = genomeMeta.fasta_url.replace(/\/[^/]+$/, '');
 
+        console.log("Initializing with assembly and track information:");
         console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz`)
         console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.fai`)
         console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.gzi`)
@@ -123,6 +124,13 @@ const GeneViewerPage: React.FC = () => {
                     return;
                 }
 
+                console.log({
+                    assemblyName: genomeMeta.assembly_name,
+                    refName: genomeMeta.assembly_name,
+                    start: geneMeta?.start_position || 0,
+                    end: geneMeta?.end_position || 50000,
+                });
+
                 viewStateRef.current = createViewState({
                     assembly,
                     tracks,
@@ -140,14 +148,14 @@ const GeneViewerPage: React.FC = () => {
                                     visible: true,
                                 },
                             ],
-                            displayedRegions: [
-                                {
-                                    assemblyName: genomeMeta.assembly_name,
-                                    refName: geneMeta.,
-                                    start: geneMeta?.start_position || 0,
-                                    end: geneMeta?.end_position || 50000,
-                                },
-                            ],
+                            // displayedRegions: [
+                            //     {
+                            //         assemblyName: genomeMeta.assembly_name,
+                            //         refName: genomeMeta.assembly_name,
+                            //         start: geneMeta?.start_position || 0,
+                            //         end: geneMeta?.end_position || 50000,
+                            //     },
+                            // ],
                         },
                     },
                 });
@@ -159,8 +167,7 @@ const GeneViewerPage: React.FC = () => {
         };
 
         initializeViewer();
-    }, [genomeMeta]);
-
+    }, [genomeMeta, geneMeta]);
 
     return (
         <div style={{padding: '20px'}}>
