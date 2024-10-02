@@ -4,6 +4,7 @@ import logging
 import os
 import csv
 from concurrent.futures import ThreadPoolExecutor
+import time
 import psycopg
 
 # Configure logging
@@ -47,6 +48,21 @@ SET gff_file = %s
 WHERE assembly_name = %s
 """
 
+# Function to reconnect to FTP
+def reconnect_ftp():
+    retries = 3
+    for attempt in range(retries):
+        try:
+            ftp = ftplib.FTP(ftp_server)
+            ftp.login()
+            return ftp
+        except ftplib.all_errors as e:
+            logging.warning(f"Connection failed on attempt {attempt + 1}: {e}")
+            if attempt < retries - 1:
+                time.sleep(2)  # Wait before retrying
+            else:
+                logging.error(f"Failed to reconnect after {retries} attempts.")
+                raise
 
 # Function to list files in the directory and subdirectories
 def list_files(ftp, path):
@@ -62,29 +78,25 @@ def list_files(ftp, path):
             logging.error(f"FTP error listing files in {path}: {resp}")
             raise
 
-
 # Function to process a single GFF file
 def process_gff_file(gff_file, isolate, strain_id):
     logging.info(f"Starting processing of {gff_file} for isolate {isolate}")
     try:
-        with ftplib.FTP(ftp_server) as ftp:
-            ftp.login()
-            local_gff_path = os.path.join('/tmp', os.path.basename(gff_file))
-            with open(local_gff_path, 'wb') as f:
-                ftp.retrbinary(f"RETR {gff_file}", f.write)
-            logging.info(f"Downloaded {gff_file} to {local_gff_path}")
+        ftp = reconnect_ftp()
+        local_gff_path = os.path.join('/tmp', os.path.basename(gff_file))
+        with open(local_gff_path, 'wb') as f:
+            ftp.retrbinary(f"RETR {gff_file}", f.write)
+        logging.info(f"Downloaded {gff_file} to {local_gff_path}")
+        ftp.quit()
 
         genes_to_insert = []
         ontology_terms = []
 
         with open(local_gff_path, 'r') as gff:
-            sequence_started = False
             for line in gff:
                 if line.startswith("##FASTA"):
                     logging.info(f"Ignoring assembly sequence in {gff_file}")
-                    sequence_started = True
                     break
-
                 if line.startswith("#"):
                     continue
                 columns = line.strip().split("\t")
@@ -167,58 +179,70 @@ def process_gff_file(gff_file, isolate, strain_id):
 
     except Exception as e:
         logging.error(f"Error processing GFF file {gff_file}: {e}", exc_info=True)
+        raise  # Propagate the exception to trigger retry
 
 
-# Main function to process isolates
+# Main function to process isolates with retry
 def process_isolate(isolate):
-    logging.info(f"Processing isolate: {isolate}")
-    assembly_name = isolate_to_assembly_map.get(isolate)
-    try:
-        with ftplib.FTP(ftp_server) as ftp:
-            ftp.login()
+    retries = 5
+    for attempt in range(retries):
+        try:
+            logging.info(f"Processing isolate: {isolate}")
+            assembly_name = isolate_to_assembly_map.get(isolate)
+
+            ftp = reconnect_ftp()
             isolate_path = f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
             gff_files_in_isolate = list_files(ftp, isolate_path)
+            ftp.quit()
 
-        if not gff_files_in_isolate:
-            logging.warning(f"No GFF files found for isolate {isolate}")
-            return
+            if not gff_files_in_isolate:
+                logging.warning(f"No GFF files found for isolate {isolate}")
+                return
 
-        with psycopg.connect(
-                dbname="postgres",
-                user="postgres",
-                password="pass123",
-                host="localhost",
-                port="5432"
-        ) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT id FROM Strain WHERE assembly_name = %s", (assembly_name,))
-                strain_id = cursor.fetchone()
+            with psycopg.connect(
+                    dbname="postgres",
+                    user="postgres",
+                    password="pass123",
+                    host="localhost",
+                    port="5432"
+            ) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT id FROM Strain WHERE assembly_name = %s", (assembly_name,))
+                    strain_id = cursor.fetchone()
 
-                if not strain_id:
-                    logging.error(f"No strain_id found for isolate: {isolate}")
-                    return
+                    if not strain_id:
+                        logging.error(f"No strain_id found for isolate: {isolate}")
+                        return
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            futures = []
-            for gff_file in gff_files_in_isolate:
-                if gff_file.endswith('_annotations.gff'):
-                    futures.append(executor.submit(process_gff_file, gff_file, isolate, strain_id))
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = []
+                for gff_file in gff_files_in_isolate:
+                    if gff_file.endswith('_annotations.gff'):
+                        futures.append(executor.submit(process_gff_file, gff_file, isolate, strain_id))
 
-            for future in futures:
-                future.result()
+                for future in futures:
+                    future.result()
 
-    except Exception as e:
-        logging.error(f"Error processing isolate {isolate}: {e}", exc_info=True)
+            logging.info(f"Successfully processed isolate: {isolate}")
+            break  # Exit the retry loop on success
+
+        except Exception as e:
+            logging.error(f"Error processing isolate {isolate} on attempt {attempt + 1}: {e}", exc_info=True)
+            if attempt < retries - 1:
+                logging.info(f"Retrying isolate {isolate} (attempt {attempt + 2})")
+                time.sleep(2)  # Optional delay before retry
+            else:
+                logging.error(f"Failed to process isolate {isolate} after {retries} attempts.")
 
 
 # Main entry point
 if __name__ == "__main__":
     try:
-        with ftplib.FTP(ftp_server) as ftp:
-            ftp.login()
-            ftp.cwd(ftp_directory)
-            isolates = ftp.nlst()
-            logging.info(f"Found isolates: {isolates}")
+        ftp = reconnect_ftp()
+        ftp.cwd(ftp_directory)
+        isolates = ftp.nlst()
+        ftp.quit()
+        logging.info(f"Found isolates: {isolates}")
 
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = [
