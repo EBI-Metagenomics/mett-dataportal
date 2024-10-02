@@ -7,6 +7,7 @@ import getTracks from "@components/organisms/GeneViewer/tracks";
 
 export interface GeneMeta {
     id: number;
+    seq_id: string;
     gene_name: string;
     description: string;
     strain_id: number;
@@ -113,6 +114,7 @@ const GeneViewerPage: React.FC = () => {
         console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`)
         console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ixx`)
         console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz_meta.json`)
+        console.log(geneMeta)
 
         const initializeViewer = async () => {
             try {
@@ -126,41 +128,43 @@ const GeneViewerPage: React.FC = () => {
 
                 console.log({
                     assemblyName: genomeMeta.assembly_name,
-                    refName: genomeMeta.assembly_name,
+                    refName: geneMeta?.seq_id,
                     start: geneMeta?.start_position || 0,
                     end: geneMeta?.end_position || 50000,
                 });
 
-                viewStateRef.current = createViewState({
-                    assembly,
-                    tracks,
-                    location: 'all',
-                    defaultSession: {
-                        name: 'Gene Viewer Session',
-                        view: {
-                            id: 'linearGenomeView',
-                            type: 'LinearGenomeView',
-                            tracks: [
-                                {
-                                    type: 'FeatureTrack',
-                                    trackId: 'structural_annotation',
-                                    configuration: 'structural_annotation',
-                                    visible: true,
-                                },
-                            ],
-                            // displayedRegions: [
-                            //     {
-                            //         assemblyName: genomeMeta.assembly_name,
-                            //         refName: genomeMeta.assembly_name,
-                            //         start: geneMeta?.start_position || 0,
-                            //         end: geneMeta?.end_position || 50000,
-                            //     },
-                            // ],
+                if(geneMeta) {
+                    viewStateRef.current = createViewState({
+                        assembly,
+                        tracks,
+                        location: 'all',
+                        defaultSession: {
+                            name: 'Gene Viewer Session',
+                            view: {
+                                id: 'linearGenomeView',
+                                type: 'LinearGenomeView',
+                                tracks: [
+                                    {
+                                        type: 'FeatureTrack',
+                                        trackId: 'structural_annotation',
+                                        configuration: 'structural_annotation',
+                                        visible: true,
+                                    },
+                                ],
+                                // displayedRegions: [
+                                //     {
+                                //         assemblyName: genomeMeta.assembly_name,
+                                //         refName: geneMeta.seq_id,
+                                //         start: geneMeta.start_position || 0,
+                                //         end: geneMeta?.end_position || 50000,
+                                //     },
+                                // ],
+                            },
                         },
-                    },
-                });
+                    });
 
-                setViewerReady(true);
+                    setViewerReady(true);
+                }
             } catch (error) {
                 console.error('Error initializing JBrowse viewer:', error);
             }
