@@ -4,6 +4,7 @@ import {useParams} from 'react-router-dom';
 import {getData} from "../../services/api";
 import getAssembly from "@components/organisms/GeneViewer/assembly";
 import getTracks from "@components/organisms/GeneViewer/tracks";
+import styles from "@components/pages/GeneViewerPage.module.scss";
 
 export interface GeneMeta {
     id: number;
@@ -133,7 +134,11 @@ const GeneViewerPage: React.FC = () => {
                     end: geneMeta?.end_position || 50000,
                 });
 
-                if(geneMeta) {
+                console.log('Tracks:', tracks);
+                console.log('Assembly:', assembly);
+
+
+                if (geneMeta) {
                     viewStateRef.current = createViewState({
                         assembly,
                         tracks,
@@ -151,14 +156,15 @@ const GeneViewerPage: React.FC = () => {
                                         visible: true,
                                     },
                                 ],
-                                // displayedRegions: [
-                                //     {
-                                //         assemblyName: genomeMeta.assembly_name,
-                                //         refName: geneMeta.seq_id,
-                                //         start: geneMeta.start_position || 0,
-                                //         end: geneMeta?.end_position || 50000,
-                                //     },
-                                // ],
+                                displayedRegions: [
+                                    // {
+                                    //     assemblyName: genomeMeta.assembly_name,
+                                    //     refName: geneMeta.seq_id,
+                                    //     start: geneMeta.start_position || 0,
+                                    //     end: geneMeta?.end_position || 50000,
+                                    // },
+                                    // {assemblyName: 'BU_909_NT5401.1', refName: 'contig_1', start: 1, end: 1386}
+                                ],
                             },
                         },
                     });

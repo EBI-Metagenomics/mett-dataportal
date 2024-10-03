@@ -1,7 +1,7 @@
 import {GenomeMeta} from '../../pages/GeneViewerPage';
 
 const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
-    name: genomeMeta.isolate_name,
+    name: genomeMeta.assembly_name,
     sequence: {
         type: 'ReferenceSequenceTrack',
         trackId: 'reference',

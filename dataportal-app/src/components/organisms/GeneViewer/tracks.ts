@@ -5,7 +5,7 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
         type: 'FeatureTrack',
         trackId: 'structural_annotation',
         name: 'Structural Annotation',
-        assemblyNames: ['b_uniformis'],
+        assemblyNames: [genomeMeta.assembly_name],
         category: ['Annotations'],
         platform: 'jbrowse',
         adapter: {
@@ -32,9 +32,10 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                 metaFilePath: {
                     uri: `${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz_meta.json`,
                 },
-                assemblyNames: ['b_uniformis'],
+                assemblyNames: [genomeMeta.assembly_name],
             },
         },
+        visible: true,
     },
 ];
 
