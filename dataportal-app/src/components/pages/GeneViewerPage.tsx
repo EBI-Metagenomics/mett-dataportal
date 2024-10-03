@@ -1,10 +1,12 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {createViewState, JBrowseLinearGenomeView} from '@jbrowse/react-linear-genome-view';
+import makeWorkerInstance from '@jbrowse/react-linear-genome-view/esm/makeWorkerInstance';
 import {useParams} from 'react-router-dom';
 import {getData} from "../../services/api";
 import getAssembly from "@components/organisms/GeneViewer/assembly";
 import getTracks from "@components/organisms/GeneViewer/tracks";
 import styles from "@components/pages/GeneViewerPage.module.scss";
+
 
 export interface GeneMeta {
     id: number;
@@ -46,7 +48,6 @@ const GeneViewerPage: React.FC = () => {
     const [fastaPreview, setFastaPreview] = useState<string | null>(null);
     const [ixPreview, setIxPreview] = useState<string | null>(null);
     const [viewerReady, setViewerReady] = useState<boolean>(false);
-    const viewStateRef = useRef<any>(null);
 
     const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
 
@@ -99,85 +100,74 @@ const GeneViewerPage: React.FC = () => {
         fetchData();
     }, [genomeMeta]);
 
-    // Initialize JBrowse
+    const [localViewState, setLocalViewState] = useState<any>(null);
+
     useEffect(() => {
-        if (!genomeMeta) return;
-
-        const gffBaseUrl = genomeMeta.gff_url.replace(/\/[^/]+$/, '');
-        const fastaBaseUrl = genomeMeta.fasta_url.replace(/\/[^/]+$/, '');
-
-        console.log("Initializing with assembly and track information:");
-        console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz`)
-        console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.fai`)
-        console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.gzi`)
-        console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz`)
-        console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz.tbi`)
-        console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`)
-        console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ixx`)
-        console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz_meta.json`)
-        console.log(geneMeta)
-
-        const initializeViewer = async () => {
+        if (!genomeMeta || !geneMeta) return;
+        const initializeViewState = async () => {
             try {
+                const gffBaseUrl = genomeMeta.gff_url.replace(/\/[^/]+$/, '');
+                const fastaBaseUrl = genomeMeta.fasta_url.replace(/\/[^/]+$/, '');
                 const assembly = getAssembly(genomeMeta, fastaBaseUrl);
                 const tracks = getTracks(genomeMeta, gffBaseUrl);
 
-                if (!assembly || tracks.length === 0) {
-                    console.warn("Assembly or tracks are not fully loaded yet");
-                    return;
-                }
-
-                console.log({
-                    assemblyName: genomeMeta.assembly_name,
-                    refName: geneMeta?.seq_id,
-                    start: geneMeta?.start_position || 0,
-                    end: geneMeta?.end_position || 50000,
-                });
+                console.log("Initializing with assembly and track information:");
+                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz`)
+                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.fai`)
+                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.gzi`)
+                console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz`)
+                console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz.tbi`)
+                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`)
+                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ixx`)
+                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz_meta.json`)
 
                 console.log('Tracks:', tracks);
                 console.log('Assembly:', assembly);
 
-
-                if (geneMeta) {
-                    viewStateRef.current = createViewState({
-                        assembly,
-                        tracks,
-                        location: 'all',
-                        defaultSession: {
-                            name: 'Gene Viewer Session',
-                            view: {
-                                id: 'linearGenomeView',
-                                type: 'LinearGenomeView',
-                                tracks: [
-                                    {
-                                        type: 'FeatureTrack',
-                                        trackId: 'structural_annotation',
-                                        configuration: 'structural_annotation',
-                                        visible: true,
-                                    },
-                                ],
-                                displayedRegions: [
-                                    // {
-                                    //     assemblyName: genomeMeta.assembly_name,
-                                    //     refName: geneMeta.seq_id,
-                                    //     start: geneMeta.start_position || 0,
-                                    //     end: geneMeta?.end_position || 50000,
-                                    // },
-                                    // {assemblyName: 'BU_909_NT5401.1', refName: 'contig_1', start: 1, end: 1386}
-                                ],
-                            },
+                const state = createViewState({
+                    assembly,
+                    tracks: tracks.filter(track => track.platform === 'jbrowse'),
+                    onChange: (patch: any) => {
+                        console.log(JSON.stringify(patch));
+                    },
+                    configuration: {
+                        rpc: {
+                            defaultDriver: 'WebWorkerRpcDriver',
                         },
-                    });
+                    },
+                    makeWorkerInstance,
+                });
 
-                    setViewerReady(true);
+                setLocalViewState(state);
+
+                const assemblyManager = state.assemblyManager;
+                const assemblyInstance = assemblyManager.get(assembly.name);
+
+                if (assemblyInstance) {
+                    await assemblyInstance.load();
+
+                    if (state.session.view.displayedRegions.length === 0) {
+                        state.session.view.setDisplayedRegions([
+                            {
+                                assemblyName: genomeMeta.assembly_name,
+                                refName: geneMeta.seq_id,
+                                start: geneMeta?.start_position || 0,
+                                end: geneMeta?.end_position || 50000,
+                            }
+                        ]);
+                    }
                 }
             } catch (error) {
-                console.error('Error initializing JBrowse viewer:', error);
+                console.error('Error initializing view state:', error);
             }
         };
 
-        initializeViewer();
+        initializeViewState();
     }, [genomeMeta, geneMeta]);
+
+    if (!localViewState) {
+        return <p>Loading...</p>;
+    }
 
     return (
         <div style={{padding: '20px'}}>
@@ -225,6 +215,7 @@ const GeneViewerPage: React.FC = () => {
                     <p>
                         <strong>Annotations:</strong> {geneMeta.annotations ? JSON.stringify(geneMeta.annotations) : 'N/A'}
                     </p>
+
                 </div>
             )}
 
@@ -234,8 +225,10 @@ const GeneViewerPage: React.FC = () => {
             <h2>.ix File Preview:</h2>
             <pre>{ixPreview ? ixPreview : 'Loading .ix file...'}</pre>
 
-            {viewerReady && viewStateRef.current ? (
-                <JBrowseLinearGenomeView viewState={viewStateRef.current}/>
+            {viewerReady && localViewState ? (
+                <div className={styles.jbrowseContainer}>
+                    <JBrowseLinearGenomeView viewState={localViewState}/>
+                </div>
             ) : (
                 <p>Loading Genome Viewer...</p>
             )}
