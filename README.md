@@ -15,7 +15,7 @@ There is a normal Django Admin panel as well.
 - [ ] Use import scripts to import the data from FTP server. Ref: [How to import](./data-generators/import-scripts/README.md)
 - [ ] Create indexes for Fasta and GFF files. Ref: [How to generate indexes](./data-generators/index-scripts/README.md)
 - [ ] Run djando sever ```python manage.py runserver```
-- [ ] Run react app using ```npm start```
+- [ ] Run react **./dataportal-app** app using ```npm start```
 
 
 ## Development
