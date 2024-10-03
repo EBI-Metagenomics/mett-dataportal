@@ -19,13 +19,7 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                 },
             },
         },
-        // displays: [
-        //     {
-        //         id: 'structured_annotation_display',
-        //         type: 'LinearFeatureDisplay',  // Ensure it's LinearFeatureDisplay
-        //         height: 180,
-        //     },
-        // ],
+        visible: true,
         textSearching: {
             textSearchAdapter: {
                 type: 'TrixTextSearchAdapter',
@@ -42,8 +36,48 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                 assemblyNames: [genomeMeta.assembly_name],
             },
         },
+    },
+    {
+        type: 'FeatureTrack',
+        trackId: 'gene_name_track',
+        name: 'Gene Name',
+        assemblyNames: [genomeMeta.assembly_name],
+        category: ['Annotations'],
+        platform: 'jbrowse',
+        adapter: {
+            type: 'Gff3TabixAdapter',
+            gffGzLocation: {
+                uri: `${gffBaseUrl}/${genomeMeta.gff_file}.gz`,
+            },
+            index: {
+                location: {
+                    uri: `${gffBaseUrl}/${genomeMeta.gff_file}.gz.tbi`,
+                },
+            },
+        },
         visible: true,
     },
+    {
+        type: 'FeatureTrack',
+        trackId: 'product_track',
+        name: 'Product',
+        assemblyNames: [genomeMeta.assembly_name],
+        category: ['Annotations'],
+        platform: 'jbrowse',
+        adapter: {
+            type: 'Gff3TabixAdapter',
+            gffGzLocation: {
+                uri: `${gffBaseUrl}/${genomeMeta.gff_file}.gz`,
+            },
+            index: {
+                location: {
+                    uri: `${gffBaseUrl}/${genomeMeta.gff_file}.gz.tbi`,
+                },
+            },
+        },
+        visible: true,
+    },
+
 ];
 
 export default getTracks;

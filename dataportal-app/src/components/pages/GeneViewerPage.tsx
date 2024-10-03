@@ -135,12 +135,12 @@ const GeneViewerPage: React.FC = () => {
                                     {
                                         id: `${track.trackId}_LinearBasicDisplay`,
                                         type: 'LinearBasicDisplay',
-                                        height: 180,
+                                        height: 50,
                                     },
                                     {
                                         id: `${track.trackId}_LinearArcDisplay`,
                                         type: "LinearArcDisplay",
-                                        height: 180,
+                                        height: 50,
                                     }
                                 ],
                             })),
