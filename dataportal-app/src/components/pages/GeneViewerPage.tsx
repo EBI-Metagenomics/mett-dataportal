@@ -94,12 +94,44 @@ const GeneViewerPage: React.FC = () => {
                 console.log('Tracks:', tracks);
                 console.log('Assembly:', assembly);
 
+                const defaultSession = {
+                    name: 'Gene Viewer Session',
+                    view: {
+                        id: 'linearGenomeView',
+                        type: 'LinearGenomeView',
+                        displayedRegions: [
+                            {
+                                refName: geneMeta.seq_id,
+                                start: geneMeta?.start_position || 0,
+                                end: geneMeta?.end_position || 50000,
+                                assemblyName: genomeMeta.assembly_name,
+                            },
+                        ],
+                        tracks: tracks.map(track => ({
+                            id: track.trackId,
+                            type: track.type,
+                            configuration: track.trackId,
+                            minimized: false,
+                            visible: true,
+                            displays: [
+                                {
+                                    id: track.trackId,
+                                    type: 'LinearReferenceSequenceDisplay',
+                                    height: 180,
+                                },
+                            ],
+                        })),
+                    },
+                };
+
+
                 const state = createViewState({
                     assembly,
                     tracks: tracks.filter(track => track.platform === 'jbrowse'),
                     onChange: (patch: any) => {
                         console.log(JSON.stringify(patch));
                     },
+                    defaultSession,
                     configuration: {
                         rpc: {
                             defaultDriver: 'WebWorkerRpcDriver',
