@@ -122,6 +122,14 @@ const GeneViewerPage: React.FC = () => {
                             ],
                         })),
                     },
+                    hideHeader: false,
+                    hideHeaderOverview: false,
+                    hideNoTracksActive: false,
+                    trackSelectorType: 'hierarchical',
+                    trackLabels: 'overlapping',
+                    showCenterLine: false,
+                    showCytobandsSetting: true,
+                    showGridlines: true,
                 };
 
 
