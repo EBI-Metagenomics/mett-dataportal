@@ -107,20 +107,44 @@ const GeneViewerPage: React.FC = () => {
                                 assemblyName: genomeMeta.assembly_name,
                             },
                         ],
-                        tracks: tracks.map(track => ({
-                            id: track.trackId,
-                            type: track.type,
-                            configuration: track.trackId,
-                            minimized: false,
-                            visible: true,
-                            displays: [
-                                {
-                                    id: track.trackId,
-                                    type: 'LinearReferenceSequenceDisplay',
-                                    height: 180,
-                                },
-                            ],
-                        })),
+                        tracks: [
+                            {
+                                id: assembly.sequence.trackId,
+                                type: assembly.sequence.type,
+                                configuration: 'reference',
+                                minimized: false,
+                                displays: [
+                                    {
+                                        id: assembly.sequence.trackId,
+                                        type: 'LinearReferenceSequenceDisplay',
+                                        height: 180,
+                                        showForward: true,
+                                        showReverse: true,
+                                        showTranslation: true,
+                                    },
+                                ],
+                            },
+                            // Feature/Annotation tracks
+                            ...tracks.map(track => ({
+                                id: track.trackId,
+                                type: track.type,
+                                configuration: track.trackId,
+                                minimized: false,
+                                visible: true,
+                                displays: [
+                                    {
+                                        id: `${track.trackId}_LinearBasicDisplay`,
+                                        type: 'LinearBasicDisplay',
+                                        height: 180,
+                                    },
+                                    {
+                                        id: `${track.trackId}_LinearArcDisplay`,
+                                        type: "LinearArcDisplay",
+                                        height: 180,
+                                    }
+                                ],
+                            })),
+                        ]
                     },
                     hideHeader: false,
                     hideHeaderOverview: false,
@@ -155,17 +179,6 @@ const GeneViewerPage: React.FC = () => {
 
                 if (assemblyInstance) {
                     await assemblyInstance.load();
-
-                    if (state.session.view.displayedRegions.length === 0) {
-                        state.session.view.setDisplayedRegions([
-                            {
-                                assemblyName: genomeMeta.assembly_name,
-                                refName: geneMeta.seq_id,
-                                start: geneMeta?.start_position || 0,
-                                end: geneMeta?.end_position || 50000,
-                            }
-                        ]);
-                    }
                 }
             } catch (error) {
                 console.error('Error initializing view state:', error);
@@ -209,6 +222,7 @@ const GeneViewerPage: React.FC = () => {
             {geneId && geneMeta && (
                 <div className="gene-meta-info">
                     <h2>{geneMeta.strain}: {geneMeta.gene_name}</h2>
+                    <p><strong>Gene:</strong> {geneMeta.gene_name}</p>
                     <p><strong>Description:</strong> {geneMeta.description}</p>
                     <p><strong>Locus Tag:</strong> {geneMeta.locus_tag}</p>
                     <p><strong>COG:</strong> {geneMeta.cog || 'N/A'}</p>

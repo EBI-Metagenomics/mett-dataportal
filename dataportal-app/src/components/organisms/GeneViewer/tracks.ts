@@ -19,6 +19,13 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                 },
             },
         },
+        // displays: [
+        //     {
+        //         id: 'structured_annotation_display',
+        //         type: 'LinearFeatureDisplay',  // Ensure it's LinearFeatureDisplay
+        //         height: 180,
+        //     },
+        // ],
         textSearching: {
             textSearchAdapter: {
                 type: 'TrixTextSearchAdapter',
