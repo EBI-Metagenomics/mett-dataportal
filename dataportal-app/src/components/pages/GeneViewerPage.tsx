@@ -81,15 +81,15 @@ const GeneViewerPage: React.FC = () => {
                 const assembly = getAssembly(genomeMeta, fastaBaseUrl);
                 const tracks = getTracks(genomeMeta, gffBaseUrl);
 
-                console.log("Initializing with assembly and track information:");
-                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz`)
-                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.fai`)
-                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.gzi`)
-                console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz`)
-                console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz.tbi`)
-                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`)
-                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ixx`)
-                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz_meta.json`)
+                console.log('Initializing with assembly and track information:');
+                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz`);
+                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.fai`);
+                console.log(`${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.gzi`);
+                console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz`);
+                console.log(`${gffBaseUrl}/${genomeMeta.gff_file}.gz.tbi`);
+                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`);
+                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ixx`);
+                console.log(`${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz_meta.json`);
 
                 console.log('Tracks:', tracks);
                 console.log('Assembly:', assembly);
@@ -121,6 +121,7 @@ const GeneViewerPage: React.FC = () => {
                                         showForward: true,
                                         showReverse: true,
                                         showTranslation: true,
+                                        showLabels: true,
                                     },
                                 ],
                             },
@@ -136,12 +137,29 @@ const GeneViewerPage: React.FC = () => {
                                         id: `${track.trackId}_LinearBasicDisplay`,
                                         type: 'LinearBasicDisplay',
                                         height: 50,
+                                        showLabels: true,
+                                        getFeatureTooltip: (feature: any) => {
+                                            return "sdfsdfdsfds"
+                                        },
+                                        // getFeatureTooltip: (feature: any) => {
+                                        //     console.log("AAAAAAAAAAAA")
+                                        //     // Dynamically generate tooltip from the feature's attributes
+                                        //     const attributes = feature.get('attributes') || {};
+                                        //     const additionalAnnotations = geneMeta.annotations || {};
+                                        //
+                                        //     // Merge feature attributes with additional annotations if needed
+                                        //     const mergedAttributes = {...attributes, ...additionalAnnotations};
+                                        //
+                                        //     const tooltip = Object.keys(mergedAttributes).map(key => {
+                                        //         const value = Array.isArray(mergedAttributes[key])
+                                        //             ? mergedAttributes[key].join(', ')
+                                        //             : mergedAttributes[key];
+                                        //         return `<strong>${key}:</strong> ${value}`;
+                                        //     }).join('<br>');
+                                        //
+                                        //     return tooltip;
+                                        // },
                                     },
-                                    {
-                                        id: `${track.trackId}_LinearArcDisplay`,
-                                        type: "LinearArcDisplay",
-                                        height: 50,
-                                    }
                                 ],
                             })),
                         ]
@@ -154,6 +172,11 @@ const GeneViewerPage: React.FC = () => {
                     showCenterLine: false,
                     showCytobandsSetting: true,
                     showGridlines: true,
+                };
+
+                const refreshView = (viewState: any) => {
+                    viewState.session.view.updateTracks();
+                    viewState.session.view.showTrackLabels();
                 };
 
 
@@ -172,7 +195,21 @@ const GeneViewerPage: React.FC = () => {
                     makeWorkerInstance,
                 });
 
+                const forceShowLabels = (viewState: any) => {
+                    const {tracks} = viewState.session.view;
+                    tracks.forEach((track: any) => {
+                        // Explicitly set showLabels to true for all tracks
+                        track.displays.forEach((display: any) => {
+                            if (display.setTrackLabelVisibility) {
+                                display.setTrackLabelVisibility(true);
+                            }
+                        });
+                    });
+                };
+
                 setLocalViewState(state);
+                // refreshView(state);
+                forceShowLabels(state);
 
                 const assemblyManager = state.assemblyManager;
                 const assemblyInstance = assemblyManager.get(assembly.name);
