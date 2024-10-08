@@ -7,7 +7,6 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
         name: 'Structural Annotation',
         assemblyNames: [genomeMeta.assembly_name],
         category: ['Annotations'],
-        platform: 'jbrowse',
         adapter: {
             type: 'Gff3TabixAdapter',
             gffGzLocation: {

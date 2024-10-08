@@ -8,7 +8,6 @@ import getTracks from "@components/organisms/GeneViewer/tracks";
 import styles from "@components/pages/GeneViewerPage.module.scss";
 import getDefaultSessionConfig from "@components/organisms/GeneViewer/defaultSessionConfig";
 
-
 export interface GeneMeta {
     id: number;
     seq_id: string;
@@ -46,6 +45,7 @@ export interface GenomeMeta {
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
+    const [localViewState, setLocalViewState] = useState<any>(null);
 
     const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
 
@@ -70,11 +70,9 @@ const GeneViewerPage: React.FC = () => {
         fetchGeneAndGenomeMeta();
     }, [geneId, genomeId]);
 
-
-    const [localViewState, setLocalViewState] = useState<any>(null);
-
     useEffect(() => {
         if (!genomeMeta || !geneMeta) return;
+
         const initializeViewState = async () => {
             try {
                 const gffBaseUrl = genomeMeta.gff_url.replace(/\/[^/]+$/, '');
@@ -97,15 +95,17 @@ const GeneViewerPage: React.FC = () => {
 
                 const defaultSession = getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
 
-                const refreshView = (viewState: any) => {
-                    viewState.session.view.updateTracks();
-                    viewState.session.view.showTrackLabels();
-                };
+                console.log("Tracks being passed: ", tracks);
+                const visibleTracks = tracks.filter(track => track.visible === true);
+                console.log("Visible Tracks: ", visibleTracks);
 
 
                 const state = createViewState({
                     assembly,
-                    tracks: tracks.filter(track => track.platform === 'jbrowse'),
+                    tracks: tracks.map(track => ({
+                        ...track,
+                        visible: true,
+                    })),
                     onChange: (patch: any) => {
                         console.log(JSON.stringify(patch));
                     },
@@ -119,7 +119,6 @@ const GeneViewerPage: React.FC = () => {
                 });
 
                 setLocalViewState(state);
-                refreshView(state);
 
                 const assemblyManager = state.assemblyManager;
                 const assemblyInstance = assemblyManager.get(assembly.name);
@@ -135,12 +134,24 @@ const GeneViewerPage: React.FC = () => {
         initializeViewState();
     }, [genomeMeta, geneMeta]);
 
+    const renderTrackSelector = () => {
+        if (!localViewState?.pluginManager?.rootModel?.views?.length) {
+            return <p>Loading tracks...</p>;
+        }
+
+        const trackSelectorModel = localViewState.pluginManager.rootModel.views[0];
+        const TrackSelectorComponent = trackSelectorModel.trackSelectorType;
+
+        return <TrackSelectorComponent model={trackSelectorModel}/>;
+    };
+
     if (!localViewState) {
         return <p>Loading...</p>;
     }
 
     return (
         <div style={{padding: '20px'}}>
+            {/* Breadcrumb Section */}
             <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
                 <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
                     <li className="vf-breadcrumbs__item">
@@ -150,54 +161,43 @@ const GeneViewerPage: React.FC = () => {
                 </ul>
             </nav>
 
-            {genomeMeta ? (
-                <div className="genome-meta-info">
-                    <div className="vf-box vf-box--primary">
+            {/* Genome Metadata Section */}
+            <section style={{marginTop: '20px'}}>
+                {genomeMeta ? (
+                    <div className="genome-meta-info">
                         <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
                         <p><strong>Assembly Name:</strong> {genomeMeta.assembly_name}</p>
                         <p><strong>Assembly Accession:</strong> {genomeMeta.assembly_accession}</p>
                         <p><strong>FASTA:</strong> <a href={genomeMeta.fasta_url} target="_blank"
                                                       rel="noopener noreferrer">Download FASTA</a></p>
-                        <p><strong>GFF:</strong> <a href={genomeMeta.gff_url} target="_blank"
-                                                    rel="noopener noreferrer">Download GFF</a></p>
+                        <p><strong>GFF:</strong> <a href={genomeMeta.gff_url} target="_blank" rel="noopener noreferrer">Download
+                            GFF</a></p>
                     </div>
-                </div>
-            ) : (
-                <p>Loading genome meta information...</p>
-            )}
+                ) : (
+                    <p>Loading genome meta information...</p>
+                )}
+            </section>
 
-            {geneId && geneMeta && (
-                <div className="gene-meta-info">
-                    <h2>{geneMeta.strain}: {geneMeta.gene_name}</h2>
-                    <p><strong>Gene:</strong> {geneMeta.gene_name}</p>
-                    <p><strong>Description:</strong> {geneMeta.description}</p>
-                    <p><strong>Locus Tag:</strong> {geneMeta.locus_tag}</p>
-                    <p><strong>COG:</strong> {geneMeta.cog || 'N/A'}</p>
-                    <p><strong>KEGG:</strong> {geneMeta.kegg || 'N/A'}</p>
-                    <p><strong>PFAM:</strong> {geneMeta.pfam || 'N/A'}</p>
-                    <p><strong>InterPro:</strong> {geneMeta.interpro || 'N/A'}</p>
-                    <p><strong>DBXref:</strong> {geneMeta.dbxref || 'N/A'}</p>
-                    <p><strong>EC Number:</strong> {geneMeta.ec_number || 'N/A'}</p>
-                    <p><strong>Product:</strong> {geneMeta.product || 'N/A'}</p>
-                    <p><strong>Start
-                        Position:</strong> {geneMeta.start_position !== null ? geneMeta.start_position : 'N/A'}</p>
-                    <p><strong>End Position:</strong> {geneMeta.end_position !== null ? geneMeta.end_position : 'N/A'}
-                    </p>
-                    <p>
-                        <strong>Annotations:</strong> {geneMeta.annotations ? JSON.stringify(geneMeta.annotations) : 'N/A'}
-                    </p>
-
+            {/* JBrowse Component Section */}
+            <section style={{marginTop: '20px'}}>
+                <div className={styles.sidePanel} style={{width: '75%', float: 'left'}}>
+                    {localViewState ? (
+                        <div className={styles.geneViewerPage} style={{width: '100%'}}>
+                            <div className={styles.jbrowseContainer} style={{width: '100%'}}>
+                                <JBrowseLinearGenomeView viewState={localViewState}/>
+                            </div>
+                        </div>
+                    ) : (
+                        <p>Loading Genome Viewer...</p>
+                    )}
                 </div>
-            )}
-
-            {localViewState ? (
-                <div className={styles.jbrowseContainer}>
-                    <JBrowseLinearGenomeView viewState={localViewState}/>
+                <div className={styles.sidePanel} style={{width: '25%', float: 'right'}}>
+                    <h3>Track Selector</h3>
+                    {renderTrackSelector()}
                 </div>
-            ) : (
-                <p>Loading Genome Viewer...</p>
-            )}
+            </section>
         </div>
+
     );
 };
 
