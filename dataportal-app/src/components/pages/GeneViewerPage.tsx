@@ -6,6 +6,7 @@ import {getData} from "../../services/api";
 import getAssembly from "@components/organisms/GeneViewer/assembly";
 import getTracks from "@components/organisms/GeneViewer/tracks";
 import styles from "@components/pages/GeneViewerPage.module.scss";
+import getDefaultSessionConfig from "@components/organisms/GeneViewer/defaultSessionConfig";
 
 
 export interface GeneMeta {
@@ -94,85 +95,7 @@ const GeneViewerPage: React.FC = () => {
                 console.log('Tracks:', tracks);
                 console.log('Assembly:', assembly);
 
-                const defaultSession = {
-                    name: 'Gene Viewer Session',
-                    view: {
-                        id: 'linearGenomeView',
-                        type: 'LinearGenomeView',
-                        displayedRegions: [
-                            {
-                                refName: geneMeta.seq_id,
-                                start: geneMeta?.start_position || 0,
-                                end: geneMeta?.end_position || 50000,
-                                assemblyName: genomeMeta.assembly_name,
-                            },
-                        ],
-                        tracks: [
-                            {
-                                id: assembly.sequence.trackId,
-                                type: assembly.sequence.type,
-                                configuration: 'reference',
-                                minimized: false,
-                                displays: [
-                                    {
-                                        id: assembly.sequence.trackId,
-                                        type: 'LinearReferenceSequenceDisplay',
-                                        height: 180,
-                                        showForward: true,
-                                        showReverse: true,
-                                        showTranslation: true,
-                                        showLabels: true,
-                                    },
-                                ],
-                            },
-                            // Feature/Annotation tracks
-                            ...tracks.map(track => ({
-                                id: track.trackId,
-                                type: track.type,
-                                configuration: track.trackId,
-                                minimized: false,
-                                visible: true,
-                                displays: [
-                                    {
-                                        id: `${track.trackId}_LinearBasicDisplay`,
-                                        type: 'LinearBasicDisplay',
-                                        height: 50,
-                                        showLabels: true,
-                                        getFeatureTooltip: (feature: any) => {
-                                            return "sdfsdfdsfds"
-                                        },
-                                        // getFeatureTooltip: (feature: any) => {
-                                        //     console.log("AAAAAAAAAAAA")
-                                        //     // Dynamically generate tooltip from the feature's attributes
-                                        //     const attributes = feature.get('attributes') || {};
-                                        //     const additionalAnnotations = geneMeta.annotations || {};
-                                        //
-                                        //     // Merge feature attributes with additional annotations if needed
-                                        //     const mergedAttributes = {...attributes, ...additionalAnnotations};
-                                        //
-                                        //     const tooltip = Object.keys(mergedAttributes).map(key => {
-                                        //         const value = Array.isArray(mergedAttributes[key])
-                                        //             ? mergedAttributes[key].join(', ')
-                                        //             : mergedAttributes[key];
-                                        //         return `<strong>${key}:</strong> ${value}`;
-                                        //     }).join('<br>');
-                                        //
-                                        //     return tooltip;
-                                        // },
-                                    },
-                                ],
-                            })),
-                        ]
-                    },
-                    hideHeader: false,
-                    hideHeaderOverview: false,
-                    hideNoTracksActive: false,
-                    trackSelectorType: 'hierarchical',
-                    trackLabels: 'overlapping',
-                    showCenterLine: false,
-                    showCytobandsSetting: true,
-                    showGridlines: true,
-                };
+                const defaultSession = getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
 
                 const refreshView = (viewState: any) => {
                     viewState.session.view.updateTracks();
@@ -195,21 +118,8 @@ const GeneViewerPage: React.FC = () => {
                     makeWorkerInstance,
                 });
 
-                const forceShowLabels = (viewState: any) => {
-                    const {tracks} = viewState.session.view;
-                    tracks.forEach((track: any) => {
-                        // Explicitly set showLabels to true for all tracks
-                        track.displays.forEach((display: any) => {
-                            if (display.setTrackLabelVisibility) {
-                                display.setTrackLabelVisibility(true);
-                            }
-                        });
-                    });
-                };
-
                 setLocalViewState(state);
-                // refreshView(state);
-                forceShowLabels(state);
+                refreshView(state);
 
                 const assemblyManager = state.assemblyManager;
                 const assemblyInstance = assemblyManager.get(assembly.name);
