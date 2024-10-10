@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { JBrowseLinearGenomeView } from '@jbrowse/react-linear-genome-view';
-import { useParams } from 'react-router-dom';
-import { getData } from '../../services/api';
+import React, {useEffect, useMemo, useState} from 'react';
+import {JBrowseLinearGenomeView} from '@jbrowse/react-linear-genome-view';
+import {useParams} from 'react-router-dom';
+import {getData} from '../../services/api';
 import getAssembly from '@components/organisms/GeneViewer/assembly';
 import getTracks from '@components/organisms/GeneViewer/tracks';
 import styles from '@components/pages/GeneViewerPage.module.scss';
 import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSessionConfig';
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
+import ViewerTrackSelector from "@components/organisms/GeneViewer/ViewerTrackSelector";
 
 export interface GeneMeta {
     id: number;
@@ -43,12 +44,10 @@ export interface GenomeMeta {
 }
 
 const GeneViewerPage: React.FC = () => {
-    console.log('GeneViewerPage component rendered');
-
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
 
-    const { geneId, genomeId } = useParams<{ geneId?: string; genomeId?: string }>();
+    const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
 
     // Fetch gene and genome metadata
     useEffect(() => {
@@ -88,13 +87,13 @@ const GeneViewerPage: React.FC = () => {
     }, [genomeMeta]);
 
     const sessionConfig = useMemo(() => {
-        const result = genomeMeta && geneMeta
-            ? getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks)
-            : null;
-        console.log('Session config computed:', result);
-        return result;
+        if (genomeMeta && geneMeta) {
+            const config = getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
+            config.view.trackSelectorType = 'hierarchical';
+            return config;
+        }
+        return null;
     }, [genomeMeta, geneMeta, assembly, tracks]);
-
 
     const localViewState = useGeneViewerState(assembly, tracks, sessionConfig);
     console.log('Local View State:', localViewState);
@@ -104,8 +103,8 @@ const GeneViewerPage: React.FC = () => {
             return <p>Loading tracks...</p>;
         }
 
-        // Placeholder: Track selector logic to be added here
-        return <p>No track selector available</p>;
+        const trackSelectorModel = localViewState.session.views[0]; // Assuming the first view todo verify
+        return <ViewerTrackSelector model={trackSelectorModel}/>;
     };
 
     if (!localViewState) {
@@ -113,7 +112,7 @@ const GeneViewerPage: React.FC = () => {
     }
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div style={{padding: '20px'}}>
             {/* Breadcrumb Section */}
             <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
                 <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
@@ -125,14 +124,16 @@ const GeneViewerPage: React.FC = () => {
             </nav>
 
             {/* Genome Metadata Section */}
-            <section style={{ marginTop: '20px' }}>
+            <section style={{marginTop: '20px'}}>
                 {genomeMeta ? (
                     <div className="genome-meta-info">
                         <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
                         <p><strong>Assembly Name:</strong> {genomeMeta.assembly_name}</p>
                         <p><strong>Assembly Accession:</strong> {genomeMeta.assembly_accession}</p>
-                        <p><strong>FASTA:</strong> <a href={genomeMeta.fasta_url} target="_blank" rel="noopener noreferrer">Download FASTA</a></p>
-                        <p><strong>GFF:</strong> <a href={genomeMeta.gff_url} target="_blank" rel="noopener noreferrer">Download GFF</a></p>
+                        <p><strong>FASTA:</strong> <a href={genomeMeta.fasta_url} target="_blank"
+                                                      rel="noopener noreferrer">Download FASTA</a></p>
+                        <p><strong>GFF:</strong> <a href={genomeMeta.gff_url} target="_blank" rel="noopener noreferrer">Download
+                            GFF</a></p>
                     </div>
                 ) : (
                     <p>Loading genome meta information...</p>
@@ -140,19 +141,19 @@ const GeneViewerPage: React.FC = () => {
             </section>
 
             {/* JBrowse Component Section */}
-            <section style={{ marginTop: '20px' }}>
-                <div className={styles.sidePanel} style={{ width: '75%', float: 'left' }}>
+            <section style={{marginTop: '20px'}}>
+                <div className={styles.sidePanel} style={{width: '75%', float: 'left'}}>
                     {localViewState ? (
-                        <div className={styles.geneViewerPage} style={{ width: '100%' }}>
-                            <div className={styles.jbrowseContainer} style={{ width: '100%' }}>
-                                <JBrowseLinearGenomeView viewState={localViewState} />
+                        <div className={styles.geneViewerPage} style={{width: '100%'}}>
+                            <div className={styles.jbrowseContainer} style={{width: '100%'}}>
+                                <JBrowseLinearGenomeView viewState={localViewState}/>
                             </div>
                         </div>
                     ) : (
                         <p>Loading Genome Viewer...</p>
                     )}
                 </div>
-                <div className={styles.sidePanel} style={{ width: '25%', float: 'right' }}>
+                <div className={styles.sidePanel} style={{width: '25%', float: 'right'}}>
                     <h3>Track Selector</h3>
                     {renderTrackSelector()}
                 </div>
