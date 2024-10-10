@@ -49,7 +49,7 @@ const getDefaultSessionConfig = (
                         {
                             id: `${track.trackId}_LinearBasicDisplay`,
                             type: 'LinearPileupDisplay',
-                            height: 150,
+                            height: 50,
                             showLabels: true,
                         },
                     ],

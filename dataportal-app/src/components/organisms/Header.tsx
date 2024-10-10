@@ -15,8 +15,8 @@ const Header: React.FC = () => {
             Microbial Ecosystems transversal theme - a part of the EMBL Programme "Molecules to Ecosystems”.
           </p>
           <div className="vf-card__heading">
-            <a className="vf-card__link" href="#">
-              Optional call to action link
+            <a className="vf-card__link" href="embl.org/editorhub/wp-content/uploads/2023/11/research-plans-embl-programme-2022-2026.pdf" target="_blank">
+              Microbial Ecosystems Transversal Themes
               <svg
                 aria-hidden="true"
                 className="vf-card__heading__icon | vf-icon vf-icon-arrow--inline-end"
