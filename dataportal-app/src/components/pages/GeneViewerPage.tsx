@@ -9,6 +9,9 @@ import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSes
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
 import PluginManager from '@jbrowse/core/PluginManager';
 import LinearGenomeViewPlugin from '@jbrowse/plugin-linear-genome-view';
+import MyCustomFeaturePanel from "@components/organisms/GeneViewer/MyCustomFeaturePanel";
+import { BaseTrackModel, BaseTrackConfig } from '@jbrowse/core/pluggableElementTypes/models';
+
 
 
 export interface GeneMeta {
@@ -50,16 +53,37 @@ const GeneViewerPage: React.FC = () => {
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
     const [pluginManager, setPluginManager] = useState<PluginManager | null>(null);
 
-    const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
+    const { geneId, genomeId } = useParams<{ geneId?: string; genomeId?: string }>();
 
     // Initialize PluginManager and configure it to use the hierarchical track selector
-    useEffect(() => {
-        const manager = new PluginManager([new LinearGenomeViewPlugin()]);
-        manager.createPluggableElements();
-        manager.configure();
-        // manager.start(); // Start the plugin manager
-        setPluginManager(manager); // Set the initialized PluginManager
-    }, []);
+    // useEffect(() => {
+    //     const manager = new PluginManager([new LinearGenomeViewPlugin()]);
+    //     manager.createPluggableElements();
+    //
+    //     // Add the Core-preProcessTrackConfig extension point
+    //     manager.addToExtensionPoint('Core-preProcessTrackConfig', (snap: BaseTrackConfig) => {
+    //         snap.metadata = {
+    //             ...snap.metadata,
+    //             'custom info': 'Track added via plugin',
+    //         };
+    //         return snap;
+    //     });
+    //
+    //     // Add the Core-extraFeaturePanel extension point
+    //     manager.addToExtensionPoint(
+    //         'Core-extraFeaturePanel',
+    //         (DefaultFeatureExtra, { model }: { model: BaseTrackModel }) => {
+    //             if (model.trackId === 'my_special_track') {
+    //                 // Return the custom panel for the special track
+    //                 return { name: 'Additional Info', Component: MyCustomFeaturePanel };
+    //             }
+    //             return DefaultFeatureExtra;
+    //         },
+    //     );
+    //
+    //     manager.configure();
+    //     setPluginManager(manager); // Set the initialized PluginManager
+    // }, []);
 
     // Fetch gene and genome metadata
     useEffect(() => {
@@ -118,7 +142,6 @@ const GeneViewerPage: React.FC = () => {
         const trackSelectorModel = localViewState.session.views[0]; // Assuming the first view
         console.log('TrackSelectorModel:', trackSelectorModel);
 
-        // Ensure the track selector is configured in the view
         if (trackSelectorModel.trackSelectorType === 'hierarchical') {
             return (
                 <div>
@@ -135,7 +158,7 @@ const GeneViewerPage: React.FC = () => {
     }
 
     return (
-        <div style={{padding: '20px'}}>
+        <div style={{ padding: '20px' }}>
             {/* Breadcrumb Section */}
             <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
                 <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
@@ -147,7 +170,7 @@ const GeneViewerPage: React.FC = () => {
             </nav>
 
             {/* Genome Metadata Section */}
-            <section style={{marginTop: '20px'}}>
+            <section style={{ marginTop: '20px' }}>
                 {genomeMeta ? (
                     <div className="genome-meta-info">
                         <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
@@ -164,19 +187,19 @@ const GeneViewerPage: React.FC = () => {
             </section>
 
             {/* JBrowse Component Section */}
-            <section style={{marginTop: '20px'}}>
-                <div className={styles.sidePanel} style={{width: '75%', float: 'left'}}>
+            <section style={{ marginTop: '20px' }}>
+                <div className={styles.sidePanel} style={{ width: '75%', float: 'left' }}>
                     {localViewState ? (
-                        <div className={styles.geneViewerPage} style={{width: '100%'}}>
-                            <div className={styles.jbrowseContainer} style={{width: '100%'}}>
-                                <JBrowseLinearGenomeView viewState={localViewState}/>
+                        <div className={styles.geneViewerPage} style={{ width: '100%' }}>
+                            <div className={styles.jbrowseContainer} style={{ width: '100%' }}>
+                                <JBrowseLinearGenomeView viewState={localViewState} />
                             </div>
                         </div>
                     ) : (
                         <p>Loading Genome Viewer...</p>
                     )}
                 </div>
-                <div className={styles.sidePanel} style={{width: '25%', float: 'right'}}>
+                <div className={styles.sidePanel} style={{ width: '25%', float: 'right' }}>
                     <h3>Track Selector</h3>
                     {renderTrackSelector()}
                 </div>
