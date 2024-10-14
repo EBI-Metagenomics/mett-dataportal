@@ -7,7 +7,9 @@ import getTracks from '@components/organisms/GeneViewer/tracks';
 import styles from '@components/pages/GeneViewerPage.module.scss';
 import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSessionConfig';
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
-import ViewerTrackSelector from "@components/organisms/GeneViewer/ViewerTrackSelector";
+import PluginManager from '@jbrowse/core/PluginManager';
+import LinearGenomeViewPlugin from '@jbrowse/plugin-linear-genome-view';
+
 
 export interface GeneMeta {
     id: number;
@@ -46,8 +48,18 @@ export interface GenomeMeta {
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
+    const [pluginManager, setPluginManager] = useState<PluginManager | null>(null);
 
     const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
+
+    // Initialize PluginManager and configure it to use the hierarchical track selector
+    useEffect(() => {
+        const manager = new PluginManager([new LinearGenomeViewPlugin()]);
+        manager.createPluggableElements();
+        manager.configure();
+        // manager.start(); // Start the plugin manager
+        setPluginManager(manager); // Set the initialized PluginManager
+    }, []);
 
     // Fetch gene and genome metadata
     useEffect(() => {
@@ -103,8 +115,19 @@ const GeneViewerPage: React.FC = () => {
             return <p>Loading tracks...</p>;
         }
 
-        const trackSelectorModel = localViewState.session.views[0]; // Assuming the first view todo verify
-        return <ViewerTrackSelector model={trackSelectorModel}/>;
+        const trackSelectorModel = localViewState.session.views[0]; // Assuming the first view
+        console.log('TrackSelectorModel:', trackSelectorModel);
+
+        // Ensure the track selector is configured in the view
+        if (trackSelectorModel.trackSelectorType === 'hierarchical') {
+            return (
+                <div>
+                    <p>Using default hierarchical track selector from JBrowse.</p>
+                </div>
+            );
+        }
+
+        return <p>Track Selector not configured.</p>;
     };
 
     if (!localViewState) {

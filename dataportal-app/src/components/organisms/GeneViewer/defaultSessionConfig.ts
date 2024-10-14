@@ -46,13 +46,20 @@ const getDefaultSessionConfig = (
                     minimized: false,
                     visible: true,
                     displays: [
-                        {
-                            id: `${track.trackId}_LinearBasicDisplay`,
-                            type: 'LinearPileupDisplay',
-                            height: 50,
-                            showLabels: true,
-                        },
-                    ],
+            {
+                displayId: `structural_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
+                type: 'LinearBasicDisplay',
+                renderer: {
+                    type: 'SvgFeatureRenderer',
+                    maxHeight: 5000,
+                    labels: {
+                        name: "jexl:get(feature,'locus') || get(feature,'sequence_name')",
+                    },
+                    color3: '#965567',
+                    color1: "jexl:get(feature,'type')!='CDS'?'gray':get(feature,'strand')>0?'violet':'turquoise'",
+                },
+            },
+        ],
                 })),
             ]
         },
