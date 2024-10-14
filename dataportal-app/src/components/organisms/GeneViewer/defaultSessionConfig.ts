@@ -1,4 +1,4 @@
-import {GeneMeta, GenomeMeta} from '../../pages/GeneViewerPage';
+import { GeneMeta, GenomeMeta } from '../../pages/GeneViewerPage';
 
 const getDefaultSessionConfig = (
     geneMeta: GeneMeta,
@@ -38,30 +38,15 @@ const getDefaultSessionConfig = (
                         },
                     ],
                 },
-                // Feature/Annotation tracks
                 ...tracks.map(track => ({
                     id: track.trackId,
                     type: track.type,
                     configuration: track.trackId,
                     minimized: false,
                     visible: true,
-                    displays: [
-            {
-                displayId: `structural_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
-                type: 'LinearBasicDisplay',
-                renderer: {
-                    type: 'SvgFeatureRenderer',
-                    maxHeight: 5000,
-                    labels: {
-                        name: "jexl:get(feature,'locus') || get(feature,'sequence_name')",
-                    },
-                    color3: '#965567',
-                    color1: "jexl:get(feature,'type')!='CDS'?'gray':get(feature,'strand')>0?'violet':'turquoise'",
-                },
-            },
-        ],
+                    displays: track.displays,
                 })),
-            ]
+            ],
         },
         hideHeader: false,
         hideHeaderOverview: false,
