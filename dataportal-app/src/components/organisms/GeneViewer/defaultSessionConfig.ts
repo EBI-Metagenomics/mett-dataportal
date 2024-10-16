@@ -12,6 +12,7 @@ const getDefaultSessionConfig = (
             id: 'linearGenomeView',
             type: 'LinearGenomeView',
             trackSelectorType: 'hierarchical',
+            hideTrackSelector: false,
             displayedRegions: [
                 {
                     refName: geneMeta.seq_id,
