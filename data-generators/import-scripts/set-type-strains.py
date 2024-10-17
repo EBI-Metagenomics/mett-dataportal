@@ -10,7 +10,7 @@ conn = psycopg.connect(
 )
 
 # Define the isolate names that should be updated
-isolate_names = ['BU_ATCC8492VPI0062', 'PV_ATCC8482DSM1447']
+isolate_names = ['BU_ATCC8492', 'PV_ATCC8482']
 
 # Define the update query
 update_query = """
