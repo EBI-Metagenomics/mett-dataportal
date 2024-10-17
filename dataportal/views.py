@@ -1,54 +1,50 @@
 import logging
 
+from asgiref.sync import sync_to_async
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views import View
-from django.views.generic import (
-    TemplateView,
-)
 
-from .models import Species, Strain
+from .models import Strain
+from .services import SearchService
 from .utils import construct_file_urls
 
 logger = logging.getLogger(__name__)
 
 
-class HomeView(TemplateView):
-    template_name = "dataportal/pages/index.html"
-
-
-class SearchResultsView(View):
+class SearchGenomesView(View):
     async def get(self, request, *args, **kwargs):
-        logger.debug('SearchResultsView called')
         query = request.GET.get('query', '').strip()
         isolate_name = request.GET.get('isolate-name', '').strip()
+        gene_id = request.GET.get('gene_id', None)
         search_term = isolate_name or query
-
-        logger.debug(f"Search term: {search_term}")
         results = []
         paginator = None
 
-        if search_term:
-            try:
-                sort_field = request.GET.get('sortField', '')
-                sort_order = request.GET.get('sortOrder', '')
-                page_number = int(request.GET.get('page', 1))
-                per_page = 10  # Number of results per page
+        logger.debug(f"Search term: {search_term}, gene_id: {gene_id}")
 
-                full_results = await Species.objects.search_species(search_term, sort_field, sort_order)
-                # total_results = len(full_results)
+        try:
+            if gene_id:
+                logger.debug(f"Searching by gene_id: {gene_id}")
+                full_results = await SearchService.search_genome_by_gene(gene_id=gene_id)
+            elif search_term:
+                logger.debug(f"Search term exists, proceeding with search")
+                full_results = await SearchService.search_genomes(query=search_term)
 
-                # Paginate the results
-                paginator = Paginator(full_results, per_page)
-                page_obj = paginator.get_page(page_number)
-                results = page_obj.object_list
-
-            except Exception as e:
-                logger.error(f"Error executing async query: {e}")
+            if not full_results:
+                logger.debug(f"No results found for search term: {search_term}")
                 return JsonResponse({
-                    'error': str(e),
-                }, status=500)
+                    'results': [],
+                    'page_number': 1,
+                    'num_pages': 0,
+                    'has_previous': False,
+                    'has_next': False,
+                })
+
+            paginator = await sync_to_async(Paginator)(full_results, 10)
+            page_obj = await sync_to_async(paginator.page)(int(request.GET.get('page', 1)))
+            results = await sync_to_async(lambda: list(page_obj.object_list))()
 
             return JsonResponse({
                 'results': results,
@@ -58,33 +54,27 @@ class SearchResultsView(View):
                 'has_next': page_obj.has_next() if page_obj else False,
             })
 
-        return JsonResponse({
-            'results': [],
-            'page_number': 1,
-            'num_pages': 0,
-            'has_previous': False,
-            'has_next': False,
-        })
+        except Exception as e:
+            logger.error(f"Error in search: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
 
 
 class Autocomplete(View):
     async def get(self, request, *args, **kwargs):
         query = request.GET.get('query', '').strip()
+        species_id = request.GET.get('species_id')  # Get species_id if provided
         if query:
-            suggestions = await Species.objects.autocomplete_suggestions(query)
+            suggestions = await SearchService.search_strains(query, species_id=species_id)
             return JsonResponse({'suggestions': suggestions})
         return JsonResponse({'suggestions': []})
 
-class JBrowseView(TemplateView):
-    template_name = "dataportal/pages/jbrowse_viewer.html"
 
+class JBrowseView(View):
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
         isolate_id = self.kwargs.get('isolate_id')
         strain = get_object_or_404(Strain, id=isolate_id)
         fasta_url, gff_url, fasta_file_name, gff_file_name = construct_file_urls(strain)
-
-        context.update({
+        return {
             'species_name': strain.species.scientific_name,
             'isolate_name': strain.isolate_name,
             'assembly_name': strain.assembly_name,
@@ -93,6 +83,4 @@ class JBrowseView(TemplateView):
             'gff_file_name': gff_file_name,
             'fasta_url': fasta_url,
             'gff_url': gff_url,
-        })
-
-        return context
+        }

@@ -15,16 +15,26 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "gh$rs07@5pgqy18p&a6@x1=x&m@bdl$-c$e
 DEBUG = os.getenv("DJANGO_DEBUG", False)
 
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
         },
     },
-    "root": {
-        "handlers": ["console"],
-        "level": "DEBUG" if DEBUG else "INFO",
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'dataportal': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'django.db.backends': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+        },
     },
 }
 
@@ -85,11 +95,14 @@ WSGI_APPLICATION = "dataportal.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "mett-db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "postgres"),
+        "USER": os.getenv("POSTGRES_USER", "postgres"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "pass123"),
+        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
 }
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -124,7 +137,20 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",  # React app URL
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True  # todo remove later
+APPEND_SLASH = False  # todo verify and remove
+
+DEFAULT_LIMIT = 10
+# todo remove local file paths
+# ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
+#                               'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
+# GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
+#                          'http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/')
 ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
-                              'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
+                              'http://localhost:3000/fasta_files/')
 GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
-                         'http://ftp.ebi.ac.uk//pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/')
+                         'http://localhost:3000/gff3_files/{}/')
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+

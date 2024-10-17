@@ -1,0 +1,12 @@
+
+.selectedGenomesContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px; /* Adjust spacing between chips */
+    padding: 8px;
+    padding-left: 60px;
+}
+
+.genomeChip {
+    margin: 4px;
+}

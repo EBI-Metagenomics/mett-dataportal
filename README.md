@@ -7,19 +7,28 @@ two of the most prevalent and abundant bacterial species of the human microbiome
 
 There is a normal Django Admin panel as well.
 
+
+## In Development - Intermediate Stage 
+
+### Steps to bring up the local environment 
+- [ ] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
+- [ ] Use import scripts to import the data from FTP server. Ref: [How to import](./data-generators/import-scripts/README.md)
+- [ ] Create indexes for Fasta and GFF files. Ref: [How to generate indexes](./data-generators/index-scripts/README.md)
+- [ ] Run djando sever ```python manage.py runserver```
+- [ ] Run react **./dataportal-app** app using ```npm start```
+
+
 ## Development
-Install development tools (including pre-commit hooks to run Black code formatting).
+Dependencies installation -
 ```shell
 pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-## Use
+## Initial Database table setup
 ```shell
 python manage.py makemigrations
+python manage.py makemigrations dataportal --empty
 python manage.py migrate
-python manage.py import_data
-python manage.py compilescss
-python manage.py collectstatic --noinput
-python manage.py runserver
+
 ```
