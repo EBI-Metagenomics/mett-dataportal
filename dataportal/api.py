@@ -304,6 +304,35 @@ async def get_all_genomes(request, page: int = 1, per_page: int = 10):
 
 
 # API Endpoint to search genomes by query string
+@genome_router.get("/type-strains", response=List[SearchGenomeSchema])
+async def get_type_strains(request):
+    # Initialize the results list
+    serialized_results = []
+    try:
+        strains = await sync_to_async(lambda: list(Strain.objects.filter(type_strain=True))())
+        for strain in strains:
+            serialized_results.append({
+                "id": strain.id,
+                "species": strain.species.scientific_name,
+                "common_name": strain.species.common_name if strain.species.common_name else None,
+                "isolate_name": strain.isolate_name,
+                "assembly_name": strain.assembly_name,
+                "assembly_accession": strain.assembly_accession if strain.assembly_accession else None,
+                "fasta_file": strain.fasta_file,
+                "gff_file": strain.gff_file,
+                "fasta_url": f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}",
+                "gff_url": settings.GFF_FTP_PATH.format(strain.isolate_name) + strain.gff_file,
+                "contigs": [
+                    {"seq_id": contig.seq_id, "length": contig.length}
+                    for contig in strain.contigs.all()  # Fetch related contigs
+                ]
+            })
+        return serialized_results
+    except Strain.DoesNotExist:
+        raise HttpError(404, "Genome not found")
+
+
+
 @genome_router.get("/search", response=GenomePaginationSchema)
 async def search_genomes_by_string(request, query: str, page: int = 1, per_page: int = 10):
     try:
@@ -320,7 +349,7 @@ async def search_genomes_by_string(request, query: str, page: int = 1, per_page:
         serialized_results = []
 
         # Fetch contigs asynchronously for each strain
-        for strain in page_results:
+        for strain in strains:
             contigs = await sync_to_async(lambda: list(strain.contigs.all()))()  # Fetch contigs asynchronously
             serialized_contigs = [{"seq_id": contig.seq_id, "length": contig.length} for contig in contigs]
 

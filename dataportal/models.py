@@ -70,6 +70,7 @@ class Strain(models.Model):
     assembly_accession = models.CharField(max_length=20, unique=True, blank=True, null=True)
     fasta_file = models.CharField(max_length=255)
     gff_file = models.CharField(max_length=255, blank=True, null=True)
+    type_strain = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'strain'

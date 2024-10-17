@@ -17,6 +17,7 @@ $ python import-species.py
 
 ```bash
 $ python import-strains-contigs.py
+$ python set-type-strains.py
 ```
 
 #### Import Genes data
