@@ -1,7 +1,6 @@
 import logging
 from typing import List, Optional
 
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404

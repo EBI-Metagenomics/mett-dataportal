@@ -10,12 +10,12 @@
 
 .leftPane {
   text-align: left;
-  width: 70%;
+  width: 25%;
   float: left;
 }
 
 .rightPane {
-  width: 30%;
+  width: 75%;
   float: right;
 }
 
@@ -98,5 +98,10 @@ button, select, input {
 
 .suggestion-item:hover {
   background-color: #f0f0f0;
+}
+
+.typeStrains ul {
+  list-style-type: none;
+  padding-left: 0;
 }
 

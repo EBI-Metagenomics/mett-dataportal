@@ -3,7 +3,7 @@ import TabNavigation from '../molecules/TabNavigation';
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
-import {fetchGenomesBySearch} from '../../services/genomeService';
+import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeService';
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomeIntroSection from "@components/organisms/HomeIntroSection";
@@ -15,6 +15,9 @@ const HomePage: React.FC = () => {
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
     const [selectedGenomes, setSelectedGenomes] = useState<{ id: number; name: string }[]>([]);
     const [totalPages, setTotalPages] = useState(1);
+    const [typeStrains, setTypeStrains] = useState<{ id: number; isolate_name: string }[]>([]); // New state for type strains
+    const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]); // State to store selected type strains
+
     // State for Genome Search
     const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
     const [genomeResults, setGenomeResults] = useState<any[]>([]);
@@ -31,8 +34,22 @@ const HomePage: React.FC = () => {
             setSpeciesList(species || []);
         };
 
+        const fetchTypeStrainsData = async () => {
+            const strains = await fetchTypeStrains(); // Fetch type strains
+            setTypeStrains(strains || []);
+        };
+
         fetchSpecies();
+        fetchTypeStrainsData(); // Fetch type strains on component mount
     }, []);
+
+    const handleTypeStrainSelect = (strainId: number) => {
+        if (selectedTypeStrains.includes(strainId)) {
+            setSelectedTypeStrains(selectedTypeStrains.filter(id => id !== strainId));
+        } else {
+            setSelectedTypeStrains([...selectedTypeStrains, strainId]);
+        }
+    };
 
     const handleGenomeSearch = async () => {
         const response = await fetchGenomesBySearch(genomeSearchQuery, selectedSpecies);
@@ -64,7 +81,6 @@ const HomePage: React.FC = () => {
         }
     };
 
-
     const tabs = [
         {id: 'vf-tabs__section--1', label: 'Search Gene'},
         {id: 'vf-tabs__section--2', label: 'Search Genome'}
@@ -90,14 +106,35 @@ const HomePage: React.FC = () => {
                 <p/>
             </div>
 
-            <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab}/>
-            <div>
-                <p/>
-            </div>
-
             <div className="layout-container">
-                {/* Left Panel - Search Form */}
+                {/* Left Panel */}
                 <div className={styles.leftPane}>
+                    {/* Add Type Strains Above Selected Genomes */}
+                    <div className={styles.typeStrains}>
+                        <h3>Type Strains</h3>
+                        <ul>
+                            {typeStrains.map(strain => (
+                                <li key={strain.id}>
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedTypeStrains.includes(strain.id)}
+                                            onChange={() => handleTypeStrainSelect(strain.id)}
+                                        />
+                                        {strain.isolate_name}
+                                    </label>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Selected Genomes */}
+                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
+                </div>
+
+                {/* Right Panel - Search Form */}
+                <div className={styles.rightPane}>
+                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab}/>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GeneSearchForm
                             searchQuery={geneSearchQuery}
@@ -129,10 +166,6 @@ const HomePage: React.FC = () => {
                             handlePageClick={(page) => setGenomeCurrentPage(page)}
                         />
                     )}
-                </div>
-                {/* Right Panel - Selected Genomes */}
-                <div className={styles.rightPane}>
-                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
                 </div>
             </div>
         </div>
