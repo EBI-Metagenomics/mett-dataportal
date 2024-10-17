@@ -45,7 +45,7 @@ ON CONFLICT DO NOTHING;
 update_strain_query = """
 UPDATE Strain
 SET gff_file = %s
-WHERE assembly_name = %s
+WHERE isolate_name = %s
 """
 
 # Function to reconnect to FTP
@@ -171,9 +171,9 @@ def process_gff_file(gff_file, isolate, strain_id):
                                        (gene_id[0], ontology_type, ontology_id, ontology_description))
                 logging.info(f"Inserted ontology terms for {gff_file}")
 
-                assembly_name = isolate_to_assembly_map.get(isolate)
-                cursor.execute(update_strain_query, (os.path.basename(gff_file), assembly_name))
-                logging.info(f"Updated Strain table with {os.path.basename(gff_file)} for assembly: {assembly_name}")
+                # assembly_name = isolate_to_assembly_map.get(isolate)
+                cursor.execute(update_strain_query, (os.path.basename(gff_file), isolate))
+                logging.info(f"Updated Strain table with {os.path.basename(gff_file)} for isolate: {isolate}")
 
             conn.commit()
 
