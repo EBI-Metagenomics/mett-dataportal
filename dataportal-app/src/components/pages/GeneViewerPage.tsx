@@ -92,36 +92,37 @@ const GeneViewerPage: React.FC = () => {
             manager.createPluggableElements();
             manager.configure();
 
-            manager.addWidgetType(() => {
-                return new WidgetType({
-                    name: 'BaseFeatureWidget',
-                    heading: 'Feature details',
-                    configSchema,
-                    stateModel: stateModelFactory(manager),
-                    ReactComponent: lazy(
-                        () => import('@jbrowse/core/BaseFeatureWidget/BaseFeatureDetail'),
-                    ),
-                });
+            const baseFeatureWidgetType = new WidgetType({
+                name: 'BaseFeatureWidget',
+                heading: 'Feature details',
+                configSchema,
+                stateModel: stateModelFactory(manager),
+                ReactComponent: lazy(
+                    () => import('@jbrowse/core/BaseFeatureWidget/BaseFeatureDetail'),
+                ),
             });
+
+            manager.addWidgetType(() => baseFeatureWidgetType);
 
             // Add the widget to the session
             if (localViewState?.session) {
-                const widget = localViewState.session.addWidget(
-                    'BaseFeatureWidget',
-                    'BaseFeatureWidget',
-                    {
-                        featureData: {
-                            id: geneMeta?.id,
-                            start: geneMeta?.start_position,
-                            end: geneMeta?.end_position,
-                            annotations: geneMeta?.annotations,
-                        },
-                    }
-                );
-
-                localViewState.session.showWidget(widget);
-
+                // Check if widget exists first and add it if not
+                if (!localViewState.session.widgets.has('BaseFeatureWidget')) {
+                    const widget = localViewState.session.addWidget(
+                        'BaseFeatureWidget',
+                        'BaseFeatureWidget',
+                        {
+                            featureData: {
+                                // Add relevant feature data here, if needed
+                            },
+                        }
+                    );
+                    localViewState.session.showWidget(widget); // Make the widget visible
+                }
             }
+
+            console.log('BaseFeatureWidget added:', localViewState?.session.widgets.has('BaseFeatureWidget'));
+
             setPluginManager(manager);
         }, []);
 
@@ -206,15 +207,11 @@ const GeneViewerPage: React.FC = () => {
             }
         };
 
-        // Log the widgets and ensure it's not empty
+        // Log all widgets in the session
         console.log('Session Widgets:', localViewState?.session?.widgets);
 
-        // Convert MSTMap values to array and find the widget
-        const featureWidgetModel = localViewState?.session?.widgets
-            ? Array.from(localViewState?.session?.widgets?.values()).find(
-                (widget: { type: string }) => widget.type === 'BaseFeatureWidget'
-            )
-            : null;
+        // Access the widget directly using the key 'BaseFeatureWidget'
+        const featureWidgetModel = localViewState?.session?.widgets?.get('BaseFeatureWidget');
 
         // Log the result to check if the widget is found
         console.log('featureWidgetModel:', featureWidgetModel);

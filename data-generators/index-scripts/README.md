@@ -15,6 +15,7 @@ $ ./process_gff3.sh
 * bgzip fasta
 * FASTA index file (.fai)
 * bgzip FASTA index file (.fai.gz)
+
 #### GFF Files --
 * Trim the GFF file by removing everything after ‘##FASTA’
 * Generate bgzipped and sorted (jbrowse sort-gff) version of the GFF file
