@@ -349,6 +349,47 @@
 							"response": []
 						},
 						{
+							"name": "Genomes-All-TypeStrains",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"const response = pm.response.json();",
+											"",
+											"pm.test(\"At least one type strain is returned\", function () {",
+											"    pm.expect(response).to.be.an(\"array\").that.is.not.empty;",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8000/api/genomes/type-strains",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"genomes",
+										"type-strains"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Genomes-All-negative",
 							"event": [
 								{
