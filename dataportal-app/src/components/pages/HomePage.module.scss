@@ -100,8 +100,8 @@ button, select, input {
   background-color: #f0f0f0;
 }
 
-.typeStrains ul {
-  list-style-type: none;
-  padding-left: 0;
+.speciesSection ul, .typeStrains ul {
+    list-style-type: none; /* Removes bullets */
+    padding-left: 0;
 }
 
