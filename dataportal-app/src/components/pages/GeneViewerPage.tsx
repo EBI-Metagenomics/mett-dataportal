@@ -228,7 +228,12 @@ const GeneViewerPage: React.FC = () => {
                         <li className="vf-breadcrumbs__item">
                             <a href="/" className="vf-breadcrumbs__link">Search</a>
                         </li>
-                        <li className="vf-breadcrumbs__item" aria-current="location">Genome View</li>
+                        <li className="vf-breadcrumbs__item">
+                            <b>Genome View</b>
+                        </li>
+                        <li className="vf-breadcrumbs__item">
+                            <a href="/" className="vf-breadcrumbs__link">Related Genomes</a>
+                        </li>
                     </ul>
                 </nav>
 
@@ -237,12 +242,22 @@ const GeneViewerPage: React.FC = () => {
                     {genomeMeta ? (
                         <div className="genome-meta-info">
                             <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
-                            <p><strong>Assembly Name:</strong> {genomeMeta.assembly_name}</p>
-                            <p><strong>Assembly Accession:</strong> {genomeMeta.assembly_accession}</p>
-                            <p><strong>FASTA:</strong> <a href={genomeMeta.fasta_url} target="_blank"
-                                                          rel="noopener noreferrer">Download FASTA</a></p>
-                            <p><strong>GFF:</strong> <a href={genomeMeta.gff_url} target="_blank" rel="noopener noreferrer">Download
-                                GFF</a></p>
+                            <p><strong>Assembly Name:</strong>
+                                <a href={genomeMeta.fasta_url} target="_blank"
+                                   rel="noopener noreferrer">{genomeMeta.assembly_name}
+                                </a>
+                            </p>
+                            <p><strong>Annotations:</strong>
+                                <a href={genomeMeta.gff_url} target="_blank"
+                                   rel="noopener noreferrer">{genomeMeta.gff_file}
+                                </a>
+                            </p>
+                            <p><strong>ENA Accession:</strong>
+                                <a href={genomeMeta.gff_url} target="_blank"
+                                   rel="noopener noreferrer">{genomeMeta.assembly_accession}
+                                </a>
+                            </p>
+
                         </div>
                     ) : (
                         <p>Loading genome meta information...</p>
