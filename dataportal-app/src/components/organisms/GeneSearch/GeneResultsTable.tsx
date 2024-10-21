@@ -38,7 +38,8 @@ const GeneResultsTable: React.FC<GenomeResultsTableProps> = ({
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.gene_name || 'Unknown Gene Name'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.description || 'Unknown Description'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.locus_tag || 'Unknown Locus Tag'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}><a href={`/gene-viewer/gene/${result.id}/`}>Browse</a>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>
+                        <a href={`/gene-viewer/gene/${result.id}/?speciesId=${result.species_id}&genomeId=${result.strain_id}`}>Browse</a>
                     </td>
                 </tr>
             ))}

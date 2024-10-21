@@ -1,7 +1,7 @@
 import React, {lazy, useEffect, useMemo, useState} from 'react';
 import {ThemeProvider} from '@mui/material';
 import {makeStyles} from 'tss-react/mui';
-import {useParams} from 'react-router-dom';
+import {useParams, useLocation} from 'react-router-dom';
 import {JBrowseLinearGenomeView} from '@jbrowse/react-linear-genome-view';
 import {getData} from '../../services/api';
 import getAssembly from '@components/organisms/GeneViewer/assembly';
@@ -20,6 +20,9 @@ import {
     HierarchicalTrackSelectorModel
 } from '@jbrowse/plugin-data-management/dist/HierarchicalTrackSelectorWidget/model';
 import styles from "./GeneViewerPage.module.scss";
+import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
+import {fetchGenomesBySearch} from "../../services/genomeService";
+import {fetchGeneBySearch, fetchGenesByGenome} from "../../services/geneService";
 
 
 const DrawerWidget = lazy(() => import('../atoms/DrawerWidget'))
@@ -84,7 +87,16 @@ const GeneViewerPage: React.FC = () => {
         const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
         const [pluginManager, setPluginManager] = useState<PluginManager | null>(null);
 
-        const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
+        // const [selectedGenomeId, setSelectedGenomeId] = useState<number>(); // State to manage selected genome
+        const [geneSearchQuery, setGeneSearchQuery] = useState('');
+        const [geneResults, setGeneResults] = useState<any[]>([]);
+        const [totalPages, setTotalPages] = useState(1);
+
+        const [geneCurrentPage, setGeneCurrentPage] = useState(1);
+
+        const {geneId} = useParams<{ geneId?: string }>();
+        const searchParams = new URLSearchParams(location.search);
+        const genomeId = searchParams.get('genomeId');
 
         // Initialize PluginManager and configure it to use the hierarchical track selector
         useEffect(() => {
@@ -216,6 +228,14 @@ const GeneViewerPage: React.FC = () => {
         // Log the result to check if the widget is found
         console.log('featureWidgetModel:', featureWidgetModel);
 
+        const handleGeneSearch = async () => {
+            if (genomeId) {
+                const response = await fetchGeneBySearch(parseInt(genomeId, 10), geneSearchQuery);
+                setGeneResults(response.results || []);
+                setTotalPages(response.num_pages || 1);
+            }
+        };
+
 
         // const hierarchicalTrackSelectorModel = localViewState.session.views[0].activateTrackSelector() as HierarchicalTrackSelectorModel;
 
@@ -242,17 +262,17 @@ const GeneViewerPage: React.FC = () => {
                     {genomeMeta ? (
                         <div className="genome-meta-info">
                             <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
-                            <p><strong>Assembly Name:</strong>
+                            <p><strong>Assembly Name:&nbsp;</strong>
                                 <a href={genomeMeta.fasta_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.assembly_name}
                                 </a>
                             </p>
-                            <p><strong>Annotations:</strong>
+                            <p><strong>Annotations:&nbsp;</strong>
                                 <a href={genomeMeta.gff_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.gff_file}
                                 </a>
                             </p>
-                            <p><strong>ENA Accession:</strong>
+                            <p><strong>ENA Accession:&nbsp;</strong>
                                 <a href={genomeMeta.gff_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.assembly_accession}
                                 </a>
@@ -263,7 +283,22 @@ const GeneViewerPage: React.FC = () => {
                         <p>Loading genome meta information...</p>
                     )}
                 </section>
-
+                {/* Gene Search Section */}
+                <div style={{padding: '20px'}}>
+                    <section style={{marginTop: '20px'}}>
+                        <GeneSearchForm
+                            searchQuery={geneSearchQuery}
+                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                            onSearchSubmit={handleGeneSearch}
+                            selectedGenomes={genomeId ? [{id: parseInt(genomeId, 10), name: ''}] : []}
+                            results={geneResults}
+                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
+                            currentPage={geneCurrentPage}
+                            totalPages={totalPages}
+                            handlePageClick={(page) => setGeneCurrentPage(page)}
+                        />
+                    </section>
+                </div>
                 {/* JBrowse Component Section */}
                 <section style={{marginTop: '20px'}}>
                     <div className={styles.sidePanel} style={{width: '75%', float: 'left'}}>

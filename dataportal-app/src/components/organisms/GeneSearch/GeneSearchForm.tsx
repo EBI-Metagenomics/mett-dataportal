@@ -10,13 +10,13 @@ interface GeneSearchFormProps {
     searchQuery: string;
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: () => void;
-    selectedSpecies: string;
+    selectedSpecies?: string;
     results: any[];
     onSortClick: (sortField: string) => void;
     totalPages: number;
     currentPage: number;
     handlePageClick: (page: number) => void;
-    selectedGenomes: { id: number; name: string }[];
+    selectedGenomes?: { id: number; name: string }[];
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -44,16 +44,18 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         async (inputQuery: string) => {
             if (inputQuery.length >= 2) {
                 try {
-                    const genomeIds = selectedGenomes.map((genome: {
-                        id: number;
-                        name: string
-                    }) => genome.id).join(',');
-                    const response = await fetchGeneAutocompleteSuggestions(
-                        inputQuery,
-                        10,
-                        selectedSpecies ? Number(selectedSpecies) : undefined,
-                        genomeIds
-                    );
+                    let response;
+
+                    // If species is selected (used in HomePage.tsx)
+                    if (selectedSpecies) {
+                        response = await fetchGeneAutocompleteSuggestions(inputQuery, 10, Number(selectedSpecies));
+                    }
+
+                    // If genome is selected (used in GeneViewerPage.tsx)
+                    else if (selectedGenomes && selectedGenomes.length > 0) {
+                        const genomeIds = selectedGenomes.map(genome => genome.id).join(',');
+                        response = await fetchGeneAutocompleteSuggestions(inputQuery, 10, undefined, genomeIds);
+                    }
 
                     if (response) {
                         setSuggestions(response);
@@ -65,7 +67,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         },
-        [selectedSpecies, selectedGenomes]
+        [selectedSpecies, selectedGenomes] // Dependencies updated based on props
     );
 
 

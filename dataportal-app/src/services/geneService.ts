@@ -1,4 +1,5 @@
 import apiInstance from "./apiInstance";
+import {getData} from "./api";
 
 // Fetch gene autocomplete suggestions
 export const fetchGeneAutocompleteSuggestions = async (query: string, limit: number = 10, speciesId?: number, genomeIds?: string) => {
@@ -14,6 +15,21 @@ export const fetchGeneAutocompleteSuggestions = async (query: string, limit: num
         return response.data;
     } catch (error) {
         console.error('Error fetching gene autocomplete suggestions:', error);
+        throw error;
+    }
+};
+
+export const fetchGeneBySearch = async (genomeId: number, query: string, page: number = 1): Promise<any> => {
+    try {
+        let url = '';
+        const params: any = {query: query, page};
+
+        if (genomeId) {
+            url = `species/${genomeId}/genomes/search`;
+        }
+        return await getData(url, params);
+    } catch (error) {
+        console.error('Error fetching genome search results:', error);
         throw error;
     }
 };
