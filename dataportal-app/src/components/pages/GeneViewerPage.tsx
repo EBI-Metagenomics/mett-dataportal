@@ -250,14 +250,24 @@ const GeneViewerPage: React.FC = () => {
                 {/* Breadcrumb Section */}
                 <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
                     <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
-                        <li className="vf-breadcrumbs__item">
-                            <a href="/" className="vf-breadcrumbs__link">Search</a>
+                        <li className={styles.breadcrumbsItem}>
+                            <a href="/" className="vf-breadcrumbs__link">Home</a>
                         </li>
-                        <li className="vf-breadcrumbs__item">
+                        <span className={styles.separator}> | </span>
+                        <li className={styles.breadcrumbsItem}>
                             <b>Genome View</b>
                         </li>
-                        <li className="vf-breadcrumbs__item">
-                            <a href="/" className="vf-breadcrumbs__link">Related Genomes</a>
+                        <span className={styles.separator}> | </span>
+                        <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
+                            <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
+                                Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
+                            </a>
+                            <ul className={styles.dropdownList}>
+                                <li className={styles.dropdownItem}>
+                                    <a href="/" className={styles.dropdownLink}>Other Strains of Bacteroides
+                                        uniformis</a>
+                                </li>
+                            </ul>
                         </li>
                     </ul>
                 </nav>
