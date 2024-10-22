@@ -50,7 +50,7 @@ export interface GeneMeta {
 }
 
 export interface GenomeMeta {
-    species: string;
+    species: number;
     id: number;
     common_name: string;
     isolate_name: string;
@@ -236,6 +236,11 @@ const GeneViewerPage: React.FC = () => {
             }
         };
 
+        const linkData = {
+            template: '/gene-viewer/gene/${id}/details?genomeId=${strain_id}',
+            alias: 'Select'
+        };
+
 
         // const hierarchicalTrackSelectorModel = localViewState.session.views[0].activateTrackSelector() as HierarchicalTrackSelectorModel;
 
@@ -296,6 +301,7 @@ const GeneViewerPage: React.FC = () => {
                             currentPage={geneCurrentPage}
                             totalPages={totalPages}
                             handlePageClick={(page) => setGeneCurrentPage(page)}
+                            linkData={linkData}
                         />
                     </section>
                 </div>

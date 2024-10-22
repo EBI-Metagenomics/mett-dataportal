@@ -17,12 +17,17 @@ interface GeneSearchFormProps {
     currentPage: number;
     handlePageClick: (page: number) => void;
     selectedGenomes?: { id: number; name: string }[];
+    linkData: {
+        template: string;
+        alias: string;
+    };
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            selectedSpecies,
                                                            onSortClick,
-                                                           selectedGenomes
+                                                           selectedGenomes,
+                                                           linkData
                                                        }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{
@@ -235,6 +240,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     <GeneResultsTable
                         results={results}
                         onSortClick={onSortClick}
+                        linkData={linkData}
                     />
                     {totalPages > 1 && (
                         <Pagination

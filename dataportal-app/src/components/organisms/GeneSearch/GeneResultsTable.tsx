@@ -1,15 +1,28 @@
 import React from 'react';
 import styles from './GeneResultsTable.module.scss';
 
-interface GenomeResultsTableProps {
-    results: any[];
-    onSortClick: (sortField: string) => void;
+interface LinkData {
+    template: string;
+    alias: string;
 }
 
-const GeneResultsTable: React.FC<GenomeResultsTableProps> = ({
-                                                                 results,
-                                                                 onSortClick
-                                                             }) => {
+interface GeneResultsTableProps {
+    results: any[];
+    onSortClick: (sortField: string) => void;
+    linkData: LinkData;
+}
+
+const generateLink = (template: string, result: any) => {
+    return template
+        .replace('${id}', result.id)
+        .replace('${strain_id}', result.strain_id);
+};
+
+const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
+                                                               results,
+                                                               onSortClick,
+                                                               linkData
+                                                           }) => {
     return (
         <table className="vf-table vf-table--sortable">
             <thead className="vf-table__header">
@@ -39,7 +52,7 @@ const GeneResultsTable: React.FC<GenomeResultsTableProps> = ({
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.description || 'Unknown Description'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.locus_tag || 'Unknown Locus Tag'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={`/gene-viewer/gene/${result.id}/?speciesId=${result.species_id}&genomeId=${result.strain_id}`}>Browse</a>
+                        <a href={generateLink(linkData.template, result)}>{linkData.alias}</a>
                     </td>
                 </tr>
             ))}

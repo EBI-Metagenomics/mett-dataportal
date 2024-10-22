@@ -89,6 +89,11 @@ const HomePage: React.FC = () => {
         }
     };
 
+    const linkData = {
+        template: '/gene-viewer/gene/${id}/?genomeId=${strain_id}',
+        alias: 'Browse'
+    };
+
     const tabs = [
         { id: 'vf-tabs__section--1', label: 'Search Gene' },
         { id: 'vf-tabs__section--2', label: 'Search Genome' }
@@ -160,6 +165,7 @@ const HomePage: React.FC = () => {
                             currentPage={geneCurrentPage}
                             totalPages={totalPages}
                             handlePageClick={(page) => setGeneCurrentPage(page)}
+                            linkData={linkData}
                         />
                     )}
 
