@@ -5,29 +5,33 @@ import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable"
 import Pagination from "@components/molecules/Pagination";
 import {getData} from "../../../services/api";
 import {fetchGeneAutocompleteSuggestions} from "../../../services/geneService";
+import { createViewState } from '@jbrowse/react-linear-genome-view';
+type ViewModel = ReturnType<typeof createViewState>;
 
 interface GeneSearchFormProps {
-    searchQuery: string;
-    onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onSearchSubmit: () => void;
-    selectedSpecies?: string;
-    results: any[];
-    onSortClick: (sortField: string) => void;
-    totalPages: number;
-    currentPage: number;
-    handlePageClick: (page: number) => void;
-    selectedGenomes?: { id: number; name: string }[];
+    searchQuery: string,
+    onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    onSearchSubmit: () => void,
+    selectedSpecies?: string,
+    results: any[],
+    onSortClick: (sortField: string) => void,
+    totalPages: number,
+    currentPage: number,
+    handlePageClick: (page: number) => void,
+    selectedGenomes?: { id: number; name: string }[],
     linkData: {
         template: string;
         alias: string;
-    };
+    },
+    viewState?: ViewModel;
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            selectedSpecies,
                                                            onSortClick,
                                                            selectedGenomes,
-                                                           linkData
+                                                           linkData,
+                                                           viewState
                                                        }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{
@@ -241,6 +245,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         results={results}
                         onSortClick={onSortClick}
                         linkData={linkData}
+                        viewState={viewState}
                     />
                     {totalPages > 1 && (
                         <Pagination

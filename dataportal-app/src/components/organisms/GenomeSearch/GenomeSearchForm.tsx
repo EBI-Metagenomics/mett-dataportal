@@ -113,7 +113,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 }
             } else {
                 const isolate = isolateName.trim() || query.trim();
-                if (isolate && selectedSpecies) {
+                if (isolate) {
                     const queryString = new URLSearchParams({
                         'query': isolate,
                         'page': String(page),
@@ -122,7 +122,12 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     }).toString();
 
                     try {
-                        const response = await getData(`/species/${selectedSpecies}/genomes/search?${queryString}`);
+                        const endpoint = (selectedSpecies && selectedSpecies.length === 1)
+                            ? `/species/${selectedSpecies[0]}/genomes/search?${queryString}`
+                            : `/genomes/search?${queryString}`;
+
+                        const response = await getData(endpoint);
+
                         if (response && response.results) {
                             setResults(response.results);
                             setCurrentPage(response.page_number);
@@ -145,6 +150,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         setHasNext(false);
                     }
                 }
+
             }
         },
         [selectedStrainId, isolateName, query, selectedSpecies, currentSortField, currentSortOrder]
@@ -167,7 +173,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         setIsolateName(suggestion.isolate_name);
         setSelectedStrainId(suggestion.strain_id);
         setSuggestions([]);
-        onGenomeSelect({ id: suggestion.strain_id, name: suggestion.isolate_name });
+        onGenomeSelect({id: suggestion.strain_id, name: suggestion.isolate_name});
     };
 
 

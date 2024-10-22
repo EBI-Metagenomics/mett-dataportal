@@ -302,6 +302,7 @@ const GeneViewerPage: React.FC = () => {
                             totalPages={totalPages}
                             handlePageClick={(page) => setGeneCurrentPage(page)}
                             linkData={linkData}
+                            viewState={localViewState}
                         />
                     </section>
                 </div>
