@@ -1,5 +1,4 @@
 import React, {useCallback, useEffect, useState} from 'react';
-// import {getData} from "../../../services/api";
 import Pagination from "../../molecules/Pagination";
 import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
 import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
