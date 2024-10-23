@@ -1,12 +1,11 @@
 import apiInstance from "./apiInstance";
-import { getData } from "./api";
+import {getData} from "./api";
 
 // Define types/interfaces for better type safety
 interface Gene {
     id: number;
     name: string;
     description: string;
-    // other relevant fields
 }
 
 interface AutocompleteResponse {
@@ -38,9 +37,46 @@ export const fetchGeneAutocompleteSuggestions = async (
         const response = await apiInstance.get('genes/autocomplete', {
             params: buildParams(query, 1, limit, speciesId, genomeIds)
         });
-        return response.data; // Return only response data
+        return response.data;
     } catch (error) {
-        console.error('Error fetching gene autocomplete suggestions:', { query, speciesId, genomeIds, error });
+        console.error('Error fetching gene autocomplete suggestions:', {query, speciesId, genomeIds, error});
+        throw error;
+    }
+};
+
+// Fetch gene search results
+export const fetchGeneSearchResults = async (
+    gene: string,
+    page: number,
+    perPage: number,
+    sortField: string,
+    sortOrder: string,
+    selectedGenomes?: { id: number; name: string }[],
+    selectedSpecies?: string,
+) => {
+    try {
+        const params = new URLSearchParams({
+            query: gene,
+            page: String(page),
+            per_page: String(perPage),
+            sortField,
+            sortOrder,
+        });
+
+        // Add genome IDs if available
+        if (selectedGenomes && selectedGenomes.length > 0) {
+            params.append('genome_ids', selectedGenomes.map((genome) => genome.id).join(','));
+        }
+
+        // Add species ID if available
+        if (selectedSpecies && !isNaN(Number(selectedSpecies))) {
+            params.append('species_id', String(selectedSpecies));
+        }
+
+        const response = await apiInstance.get(`/genes/search/filter`, {params});
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching gene search results:', error);
         throw error;
     }
 };
@@ -53,13 +89,13 @@ export const fetchGeneBySearch = async (
 ): Promise<PaginatedResponse<Gene>> => {
     try {
         const url = genomeId ? `species/${genomeId}/genomes/search` : '';
-        const response = await getData(url, { query, page });
+        const response = await getData(url, {query, page});
         return {
-            results: response.data, // Accessing the results from response data
-            num_pages: response.num_pages || 1 // Access num_pages from the data
+            results: response.data,
+            num_pages: response.num_pages || 1
         };
     } catch (error) {
-        console.error('Error fetching genome search results:', { genomeId, query, page, error });
+        console.error('Error fetching genome search results:', {genomeId, query, page, error});
         throw error;
     }
 };
@@ -75,11 +111,11 @@ export const fetchGenesByGenome = async (
             params: buildParams('', page, perPage)
         });
         return {
-            results: response.data, // Accessing the results from response data
-            num_pages: response.data.num_pages || 1 // Access num_pages from response data
+            results: response.data,
+            num_pages: response.data.num_pages || 1
         };
     } catch (error) {
-        console.error('Error fetching genes by genome:', { genomeId, page, perPage, error });
+        console.error('Error fetching genes by genome:', {genomeId, page, perPage, error});
         throw error;
     }
 };
@@ -96,19 +132,19 @@ export const searchGenesAcrossGenomes = async (
             params: buildParams(query, page, perPage, undefined, genomeIds)
         });
         return {
-            results: response.data, // Accessing the results from response data
-            num_pages: response.data.num_pages || 1 // Access num_pages from response data
+            results: response.data,
+            num_pages: response.data.num_pages || 1
         };
     } catch (error) {
-        console.error('Error searching genes across genomes:', { genomeIds, query, page, perPage, error });
+        console.error('Error searching genes across genomes:', {genomeIds, query, page, perPage, error});
         throw error;
     }
 };
 
 // Fetch a specific gene by its ID
-export const fetchGeneById = async (geneId: number): Promise<Gene> => {
+export const fetchGeneById = async (geneId: number) => {
     try {
-        const response = await apiInstance.get(`genes/${geneId}`);
+        const response = await apiInstance.get(`/genes/${geneId}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching gene with ID ${geneId}:`, error);

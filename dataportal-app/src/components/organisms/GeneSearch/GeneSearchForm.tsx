@@ -3,8 +3,7 @@ import GeneSearchInput from './GeneSearchInput';
 import styles from "@components/organisms/GeneSearch/GeneSearchForm.module.scss";
 import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
-import {getData} from "../../../services/api";
-import {fetchGeneAutocompleteSuggestions} from "../../../services/geneService";
+import {fetchGeneAutocompleteSuggestions, fetchGeneById, fetchGeneSearchResults} from "../../../services/geneService";
 import {createViewState} from '@jbrowse/react-linear-genome-view';
 
 type ViewModel = ReturnType<typeof createViewState>;
@@ -115,7 +114,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
             if (selectedGeneId) {
                 try {
-                    const response = await getData(`/genes/${selectedGeneId}`);
+                    const response = await fetchGeneById(selectedGeneId);
                     if (response) {
                         setResults([response]);
                         setCurrentPage(1);
@@ -163,7 +162,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     }
 
                     try {
-                        const response = await getData(`/genes/search/filter?${params.toString()}`);
+                        const response = await fetchGeneSearchResults(
+                            gene, page, pageSize, sortField, sortOrder, selectedGenomes, selectedSpecies
+                        );
+
                         if (response && response.results) {
                             setResults(response.results);
                             setCurrentPage(response.page_number);
