@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import TabNavigation from '../molecules/TabNavigation';
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
-import { fetchGenomesBySearch, fetchTypeStrains } from '../../services/genomeService';
-import { fetchSpeciesList } from "../../services/speciesService";
+import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeService';
+import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomeIntroSection from "@components/organisms/HomeIntroSection";
 
@@ -90,14 +90,14 @@ const HomePage: React.FC = () => {
     };
 
     const tabs = [
-        { id: 'vf-tabs__section--1', label: 'Search Gene' },
-        { id: 'vf-tabs__section--2', label: 'Search Genome' }
+        {id: 'vf-tabs__section--1', label: 'Search Gene'},
+        {id: 'vf-tabs__section--2', label: 'Search Genome'}
     ];
 
     return (
         <div>
             <div>
-                <HomeIntroSection />
+                <HomeIntroSection/>
             </div>
 
             <div className="layout-container">
@@ -142,18 +142,18 @@ const HomePage: React.FC = () => {
                     </div>
 
                     {/* Selected Genomes */}
-                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome} />
+                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
                 </div>
 
                 {/* Right Panel - Search Form */}
                 <div className={styles.rightPane}>
-                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} />
+                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab}/>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GeneSearchForm
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                             onSearchSubmit={handleGeneSearch}
-                            selectedSpecies={selectedSpecies.join(',')}
+                            selectedSpecies={selectedSpecies}
                             selectedGenomes={selectedGenomes}
                             results={geneResults}
                             onSortClick={(sortField) => console.log('Sort by:', sortField)}
@@ -170,7 +170,7 @@ const HomePage: React.FC = () => {
                             onSearchQueryChange={e => setGenomeSearchQuery(e.target.value)}
                             onSearchSubmit={handleGenomeSearch}
                             onGenomeSelect={handleGenomeSelect}
-                            selectedSpecies={selectedSpecies.join(',')}
+                            selectedSpecies={selectedSpecies}
                             results={genomeResults}
                             onSortClick={(sortField) => console.log('Sort by:', sortField)}
                             selectedGenomes={selectedGenomes}

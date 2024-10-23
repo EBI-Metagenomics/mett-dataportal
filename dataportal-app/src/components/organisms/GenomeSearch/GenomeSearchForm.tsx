@@ -1,15 +1,20 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {getData} from "../../../services/api";
+// import {getData} from "../../../services/api";
 import Pagination from "../../molecules/Pagination";
 import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
 import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
 import styles from "@components/organisms/GenomeSearch/GenomeSearchForm.module.scss";
+import {
+    fetchGenomeAutocompleteSuggestions,
+    fetchGenomeByStrainId,
+    fetchGenomeSearchResults
+} from "../../../services/genomeService";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: () => void;
-    selectedSpecies: string;
+    selectedSpecies: number [];
     results: any[];
     onSortClick: (sortField: string) => void;
     selectedGenomes: { id: number; name: string }[];
@@ -57,11 +62,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         async (inputQuery: string) => {
             if (inputQuery.length >= 2) {
                 try {
-                    const url = selectedSpecies
-                        ? `/genomes/autocomplete?query=${encodeURIComponent(inputQuery)}&species_id=${selectedSpecies}`
-                        : `/genomes/autocomplete?query=${encodeURIComponent(inputQuery)}`;
-
-                    const response = await getData(url);
+                    const response = await fetchGenomeAutocompleteSuggestions(inputQuery, selectedSpecies.join(','));
 
                     if (response) {
                         setSuggestions(response);
@@ -98,7 +99,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
             if (selectedStrainId) {
                 try {
-                    const response = await getData(`/genomes/${selectedStrainId}`);
+                    const response = await fetchGenomeByStrainId(selectedStrainId);
                     console.log("response: " + response)
                     if (response) {
                         setResults([response]);
@@ -133,11 +134,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     }).toString();
 
                     try {
-                        const endpoint = (selectedSpecies && selectedSpecies.length === 1)
-                            ? `/species/${selectedSpecies[0]}/genomes/search?${queryString}`
-                            : `/genomes/search?${queryString}`;
+                        const response = await fetchGenomeSearchResults(isolate, page, pageSize, sortField, sortOrder, selectedSpecies);
 
-                        const response = await getData(endpoint);
 
                         if (response && response.results) {
                             setResults(response.results);

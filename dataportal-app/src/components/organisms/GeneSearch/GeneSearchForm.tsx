@@ -12,7 +12,7 @@ interface GeneSearchFormProps {
     searchQuery: string,
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
     onSearchSubmit: () => void,
-    selectedSpecies?: string,
+    selectedSpecies?: number [],
     results: any[],
     onSortClick: (sortField: string) => void,
     totalPages: number,
@@ -66,8 +66,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     let response;
 
                     // If species is selected (used in HomePage.tsx)
-                    if (selectedSpecies && !isNaN(Number(selectedSpecies))) {
-                        response = await fetchGeneAutocompleteSuggestions(inputQuery, 10, Number(selectedSpecies));
+                    if (selectedSpecies && selectedSpecies.length == 1) {
+                        response = await fetchGeneAutocompleteSuggestions(inputQuery, 10, selectedSpecies[0]);
                     }
 
                     // If genome is selected (used in GeneViewerPage.tsx)
@@ -154,11 +154,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             id: number;
                             name: string
                         }) => genome.id).join(','));
-                    }
-
-                    // Add species ID if available
-                    if (selectedSpecies && !isNaN(Number(selectedSpecies))) {
-                        params.append('species_id', String(selectedSpecies));
                     }
 
                     try {

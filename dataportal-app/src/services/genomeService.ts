@@ -15,6 +15,58 @@ interface PaginatedResponse<T> {
     total: number;
 }
 
+export const fetchGenomeAutocompleteSuggestions = async (inputQuery: string, selectedSpecies?: string) => {
+    try {
+        const url = selectedSpecies
+            ? `/genomes/autocomplete?query=${encodeURIComponent(inputQuery)}&species_id=${selectedSpecies}`
+            : `/genomes/autocomplete?query=${encodeURIComponent(inputQuery)}`;
+
+        const response = await getData(url);
+        return response;
+    } catch (error) {
+        console.error('Error fetching genome suggestions:', error);
+        throw error;
+    }
+};
+
+export const fetchGenomeByStrainId = async (strainId: number) => {
+    try {
+        const response = await getData(`/genomes/${strainId}`);
+        return response;
+    } catch (error) {
+        console.error(`Error fetching genome with strain ID ${strainId}:`, error);
+        throw error;
+    }
+};
+
+export const fetchGenomeSearchResults = async (
+    isolate: string,
+    page: number,
+    pageSize: number,
+    sortField: string,
+    sortOrder: string,
+    selectedSpecies?: number []
+) => {
+    const queryString = new URLSearchParams({
+        'query': isolate,
+        'page': String(page),
+        'per_page': String(pageSize),
+        'sortField': sortField,
+        'sortOrder': sortOrder
+    }).toString();
+
+    const endpoint = (selectedSpecies && selectedSpecies.length === 1)
+        ? `/species/${selectedSpecies[0]}/genomes/search?${queryString}`
+        : `/genomes/search?${queryString}`;
+
+    try {
+        const response = await getData(endpoint);
+        return response;
+    } catch (error) {
+        console.error('Error fetching genome search results:', error);
+        throw error;
+    }
+};
 
 // Fetch genomes based on species and genome query
 export const fetchGenomesBySearch = async (
@@ -23,7 +75,7 @@ export const fetchGenomesBySearch = async (
 ): Promise<Genome[]> => {
     try {
         let url = '';
-        const params: any = { query: genome };
+        const params: any = {query: genome};
 
         if (species.length === 1) {
             // If only one species is selected, call the species-specific endpoint
@@ -33,10 +85,10 @@ export const fetchGenomesBySearch = async (
             url = `genomes/search`;
         }
 
-        const response = await apiInstance.get(url, { params });
+        const response = await apiInstance.get(url, {params});
         return response.data; // Assume response is an array of genomes
     } catch (error) {
-        console.error('Error fetching genome search results:', { species, genome, error });
+        console.error('Error fetching genome search results:', {species, genome, error});
         throw error;
     }
 };

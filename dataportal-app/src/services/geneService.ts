@@ -48,7 +48,7 @@ export const fetchGeneSearchResults = async (
     sortField: string,
     sortOrder: string,
     selectedGenomes?: { id: number; name: string }[],
-    selectedSpecies?: string,
+    selectedSpecies?: number [],
 ) => {
     try {
         const params = new URLSearchParams({
@@ -65,7 +65,7 @@ export const fetchGeneSearchResults = async (
         }
 
         // Add species ID if available
-        if (selectedSpecies && !isNaN(Number(selectedSpecies))) {
+        if (selectedSpecies && selectedSpecies.length == 1) {
             params.append('species_id', String(selectedSpecies));
         }
 
