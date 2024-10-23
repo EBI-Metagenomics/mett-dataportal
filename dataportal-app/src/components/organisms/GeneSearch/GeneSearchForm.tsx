@@ -1,11 +1,12 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import GeneSearchInput from './GeneSearchInput';
 import styles from "@components/organisms/GeneSearch/GeneSearchForm.module.scss";
 import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
 import {getData} from "../../../services/api";
 import {fetchGeneAutocompleteSuggestions} from "../../../services/geneService";
-import { createViewState } from '@jbrowse/react-linear-genome-view';
+import {createViewState} from '@jbrowse/react-linear-genome-view';
+
 type ViewModel = ReturnType<typeof createViewState>;
 
 interface GeneSearchFormProps {
@@ -48,6 +49,16 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
 
+    const [pageSize, setPageSize] = useState<number>(10);
+    const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newSize = parseInt(event.target.value, 10);
+        setPageSize(newSize);
+    };
+
+    useEffect(() => {
+        fetchSearchResults(1);
+    }, [pageSize]);
+
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
         async (inputQuery: string) => {
@@ -56,7 +67,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     let response;
 
                     // If species is selected (used in HomePage.tsx)
-                    if (selectedSpecies) {
+                    if (selectedSpecies && !isNaN(Number(selectedSpecies))) {
                         response = await fetchGeneAutocompleteSuggestions(inputQuery, 10, Number(selectedSpecies));
                     }
 
@@ -64,6 +75,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     else if (selectedGenomes && selectedGenomes.length > 0) {
                         const genomeIds = selectedGenomes.map(genome => genome.id).join(',');
                         response = await fetchGeneAutocompleteSuggestions(inputQuery, 10, undefined, genomeIds);
+                    } else {
+                        response = await fetchGeneAutocompleteSuggestions(inputQuery);
                     }
 
                     if (response) {
@@ -131,6 +144,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     const params = new URLSearchParams({
                         'query': gene,
                         'page': String(page),
+                        'per_page': String(pageSize),
                         'sortField': sortField,
                         'sortOrder': sortOrder,
                     });
@@ -144,7 +158,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     }
 
                     // Add species ID if available
-                    if (selectedSpecies) {
+                    if (selectedSpecies && !isNaN(Number(selectedSpecies))) {
                         params.append('species_id', String(selectedSpecies));
                     }
 
@@ -174,7 +188,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 }
             }
         },
-        [selectedGeneId, geneName, query, selectedSpecies, selectedGenomes, currentSortField, currentSortOrder]
+        [selectedGeneId, geneName, query, selectedSpecies, selectedGenomes, currentSortField, currentSortOrder, pageSize]
     );
 
 
@@ -235,28 +249,41 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         onSuggestionsClear={() => setSuggestions([])}
                     />
 
-                </form>
-                <div>
-                    <p>&nbsp;</p>
-                </div>
-                <div className="vf-grid__col--span-3" id="results-table"
-                     style={{display: results.length > 0 ? 'block' : 'none'}}>
-                    <GeneResultsTable
-                        results={results}
-                        onSortClick={onSortClick}
-                        linkData={linkData}
-                        viewState={viewState}
-                    />
-                    {totalPages > 1 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            hasPrevious={hasPrevious}
-                            hasNext={hasNext}
-                            onPageClick={handlePageClick}
+
+                    <div>
+                        <p>&nbsp;</p>
+                    </div>
+                    <div className="vf-grid__col--span-3" id="results-table"
+                         style={{display: results.length > 0 ? 'block' : 'none'}}>
+                        <GeneResultsTable
+                            results={results}
+                            onSortClick={onSortClick}
+                            linkData={linkData}
+                            viewState={viewState}
                         />
-                    )}
-                </div>
+                        {/* Page size dropdown and pagination */}
+                        <div className={styles.paginationContainer}>
+                            <div className={styles.pageSizeDropdown}>
+                                <label htmlFor="pageSize">Page Size: </label>
+                                <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
+                                    <option value={10}>Show 10</option>
+                                    <option value={20}>Show 20</option>
+                                    <option value={50}>Show 50</option>
+                                </select>
+                            </div>
+
+                            {totalPages > 1 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    hasPrevious={hasPrevious}
+                                    hasNext={hasNext}
+                                    onPageClick={handlePageClick}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </form>
             </div>
             <div>
                 <p>&nbsp;</p>

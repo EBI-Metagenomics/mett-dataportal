@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {getData} from "../../../services/api";
 import Pagination from "../../molecules/Pagination";
 import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
@@ -41,6 +41,16 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const [totalPages, setTotalPages] = useState<number>(1);
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
+
+    const [pageSize, setPageSize] = useState<number>(10);
+    const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newSize = parseInt(event.target.value, 10);
+        setPageSize(newSize);
+    };
+
+    useEffect(() => {
+        fetchSearchResults(1);
+    }, [pageSize]);
 
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
@@ -117,6 +127,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     const queryString = new URLSearchParams({
                         'query': isolate,
                         'page': String(page),
+                        'per_page': String(pageSize),
                         'sortField': sortField,
                         'sortOrder': sortOrder
                     }).toString();
@@ -153,7 +164,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
             }
         },
-        [selectedStrainId, isolateName, query, selectedSpecies, currentSortField, currentSortOrder]
+        [selectedStrainId, isolateName, query, selectedSpecies, currentSortField, currentSortOrder, pageSize]
     );
 
 
@@ -215,28 +226,41 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         onSuggestionsClear={() => setSuggestions([])}
                     />
 
-                </form>
-                <div>
-                    <p>&nbsp;</p>
-                </div>
-                <div className="vf-grid__col--span-3" id="results-table"
-                     style={{display: results.length > 0 ? 'block' : 'none'}}>
-                    <GenomeResultsTable
-                        results={results}
-                        onSortClick={onSortClick}
-                        selectedGenomes={selectedGenomes}
-                        onToggleGenomeSelect={onToggleGenomeSelect}
-                    />
-                    {totalPages > 1 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            hasPrevious={hasPrevious}
-                            hasNext={hasNext}
-                            onPageClick={handlePageClick}
+
+                    <div>
+                        <p>&nbsp;</p>
+                    </div>
+                    <div className="vf-grid__col--span-3" id="results-table"
+                         style={{display: results.length > 0 ? 'block' : 'none'}}>
+                        <GenomeResultsTable
+                            results={results}
+                            onSortClick={onSortClick}
+                            selectedGenomes={selectedGenomes}
+                            onToggleGenomeSelect={onToggleGenomeSelect}
                         />
-                    )}
-                </div>
+                        {/* Page size dropdown and pagination */}
+                        <div className={styles.paginationContainer}>
+                            <div className={styles.pageSizeDropdown}>
+                                <label htmlFor="pageSize">Page Size: </label>
+                                <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
+                                    <option value={10}>Show 10</option>
+                                    <option value={20}>Show 20</option>
+                                    <option value={50}>Show 50</option>
+                                </select>
+                            </div>
+
+                            {totalPages > 1 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    hasPrevious={hasPrevious}
+                                    hasNext={hasNext}
+                                    onPageClick={handlePageClick}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </form>
             </div>
             <div>
                 <p>&nbsp;</p>

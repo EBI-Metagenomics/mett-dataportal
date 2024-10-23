@@ -21,3 +21,19 @@
   position: relative;
 }
 
+.paginationContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.pageSizeDropdown {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+}
+
+.pageSizeDropdown label {
+  margin-right: 5px;
+}
