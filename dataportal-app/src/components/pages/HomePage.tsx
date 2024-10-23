@@ -13,15 +13,12 @@ const HomePage: React.FC = () => {
     const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]); // State to manage selected species
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
     const [selectedGenomes, setSelectedGenomes] = useState<{ id: number; name: string }[]>([]);
-    const [totalPages, setTotalPages] = useState(1);
     const [typeStrains, setTypeStrains] = useState<{ id: number; isolate_name: string }[]>([]); // State for type strains
     const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]); // State to store selected type strains
 
     // State for Genome Search
     const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
     const [genomeResults, setGenomeResults] = useState<any[]>([]);
-    const [genomeCurrentPage, setGenomeCurrentPage] = useState(1);
-    const [geneCurrentPage, setGeneCurrentPage] = useState(1);
 
     // State for Gene Search
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
@@ -60,15 +57,13 @@ const HomePage: React.FC = () => {
     };
 
     const handleGenomeSearch = async () => {
-        const response = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery);
-        setGenomeResults(response.results || []);
-        setTotalPages(response.num_pages || 1);
+        const results = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery);
+        setGenomeResults(results || []); // No 'results' property, so we use the array directly
     };
 
     const handleGeneSearch = async () => {
-        const response = await fetchGenomesBySearch(selectedSpecies, geneSearchQuery);
-        setGeneResults(response.results || []);
-        setTotalPages(response.num_pages || 1);
+        const results = await fetchGenomesBySearch(selectedSpecies, geneSearchQuery);
+        setGeneResults(results || []); // No 'results' property, so we use the array directly
     };
 
     const handleGenomeSelect = (genome: { id: number; name: string }) => {
@@ -162,9 +157,9 @@ const HomePage: React.FC = () => {
                             selectedGenomes={selectedGenomes}
                             results={geneResults}
                             onSortClick={(sortField) => console.log('Sort by:', sortField)}
-                            currentPage={geneCurrentPage}
-                            totalPages={totalPages}
-                            handlePageClick={(page) => setGeneCurrentPage(page)}
+                            currentPage={1} // Assuming you want page 1 (if needed for pagination)
+                            totalPages={1}  // Assuming no pagination here (set 1)
+                            handlePageClick={(page) => console.log('Page:', page)}
                             linkData={linkData}
                         />
                     )}
@@ -180,9 +175,9 @@ const HomePage: React.FC = () => {
                             onSortClick={(sortField) => console.log('Sort by:', sortField)}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
-                            currentPage={genomeCurrentPage}
-                            totalPages={totalPages}
-                            handlePageClick={(page) => setGenomeCurrentPage(page)}
+                            currentPage={1} // Assuming page 1
+                            totalPages={1}  // Assuming no pagination
+                            handlePageClick={(page) => console.log('Page:', page)}
                         />
                     )}
                 </div>
