@@ -88,7 +88,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         },
-        [selectedSpecies, selectedGenomes] // Dependencies updated based on props
+        [selectedSpecies, selectedGenomes]
     );
 
 
