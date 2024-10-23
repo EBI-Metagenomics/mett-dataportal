@@ -86,6 +86,8 @@ const GeneViewerPage: React.FC = () => {
         const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
         const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
         const [pluginManager, setPluginManager] = useState<PluginManager | null>(null);
+        const [trackSelectorModel, setTrackSelectorModel] = useState<HierarchicalTrackSelectorModel | null>(null);
+
 
         // const [selectedGenomeId, setSelectedGenomeId] = useState<number>(); // State to manage selected genome
         const [geneSearchQuery, setGeneSearchQuery] = useState('');
@@ -186,25 +188,6 @@ const GeneViewerPage: React.FC = () => {
 
         const localViewState = useGeneViewerState(assembly, tracks, sessionConfig);
         console.log('Local View State:', localViewState);
-
-        const renderTrackSelector = () => {
-            if (!localViewState?.session?.views?.length) {
-                return <p>Loading tracks...</p>;
-            }
-
-            const trackSelectorModel = localViewState.session.views[0]; // Assuming the first view
-            console.log('TrackSelectorModel:', trackSelectorModel);
-
-            if (trackSelectorModel.trackSelectorType === 'hierarchical') {
-                return (
-                    <div>
-                        <p>Using default hierarchical track selector from JBrowse.</p>
-                    </div>
-                );
-            }
-
-            return <p>Track Selector not configured.</p>;
-        };
 
         if (!localViewState) {
             return <p>Loading Genome Viewer...</p>;

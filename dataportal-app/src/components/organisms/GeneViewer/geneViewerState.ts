@@ -1,5 +1,5 @@
-import {useState, useEffect} from 'react';
-import {createViewState} from '@jbrowse/react-linear-genome-view';
+import { useState, useEffect } from 'react';
+import { createViewState } from '@jbrowse/react-linear-genome-view';
 import PluginManager from '@jbrowse/core/PluginManager';
 import LinearGenomeViewPlugin from '@jbrowse/plugin-linear-genome-view';
 import makeWorkerInstance from '@jbrowse/react-linear-genome-view/esm/makeWorkerInstance';
@@ -32,7 +32,6 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
             try {
                 const pluginManager = new PluginManager([
                     new LinearGenomeViewPlugin(),
-                    // Add other necessary plugins here
                 ]);
 
                 pluginManager.createPluggableElements();
@@ -56,6 +55,12 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                             defaultDriver: 'WebWorkerRpcDriver',
                         },
                     },
+                    // locationBoxLength: 0,
+                    // hideControls: {
+                    //     header: {
+                    //         search: true,
+                    //     },
+                    // },
                     makeWorkerInstance,
                 });
 
