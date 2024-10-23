@@ -3,7 +3,6 @@ import {ThemeProvider} from '@mui/material';
 import {makeStyles} from 'tss-react/mui';
 import {useParams, useLocation} from 'react-router-dom';
 import {JBrowseLinearGenomeView} from '@jbrowse/react-linear-genome-view';
-import {getData} from '../../services/api';
 import getAssembly from '@components/organisms/GeneViewer/assembly';
 import getTracks from '@components/organisms/GeneViewer/tracks';
 import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSessionConfig';
@@ -21,8 +20,8 @@ import {
 } from '@jbrowse/plugin-data-management/dist/HierarchicalTrackSelectorWidget/model';
 import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
-import {fetchGenomesBySearch} from "../../services/genomeService";
-import {fetchGeneBySearch, fetchGenesByGenome} from "../../services/geneService";
+import {fetchGenomeById, fetchGenomesBySearch} from "../../services/genomeService";
+import {fetchGeneById, fetchGeneBySearch, fetchGenesByGenome} from "../../services/geneService";
 
 
 const DrawerWidget = lazy(() => import('../atoms/DrawerWidget'))
@@ -145,15 +144,15 @@ const GeneViewerPage: React.FC = () => {
             const fetchGeneAndGenomeMeta = async () => {
                 try {
                     if (geneId) {
-                        const geneResponse = await getData(`/genes/${geneId}`);
+                        const geneResponse = await fetchGeneById(Number(geneId));
                         console.log('Gene data fetched:', geneResponse);
                         setGeneMeta(geneResponse);
 
-                        const genomeResponse = await getData(`/genomes/${geneResponse.strain_id}`);
+                        const genomeResponse = await fetchGenomeById(geneResponse.strain_id);
                         console.log('Genome data fetched:', genomeResponse);
                         setGenomeMeta(genomeResponse);
                     } else if (genomeId) {
-                        const genomeResponse = await getData(`/genomes/${genomeId}`);
+                        const genomeResponse = await fetchGenomeById(Number(genomeId));
                         console.log('Genome data fetched:', genomeResponse);
                         setGenomeMeta(genomeResponse);
                     }

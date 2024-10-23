@@ -135,3 +135,12 @@ export const fetchTypeStrains = async (): Promise<Genome[]> => {
         throw error;
     }
 };
+export const fetchGenomeById = async (genomeId: number) => {
+    try {
+        const response = await getData(`/genomes/${genomeId}`);
+        return response;
+    } catch (error) {
+        console.error(`Error fetching genome with ID ${genomeId}:`, error);
+        throw error;
+    }
+};
