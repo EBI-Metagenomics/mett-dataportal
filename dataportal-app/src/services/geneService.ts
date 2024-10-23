@@ -8,10 +8,6 @@ interface Gene {
     description: string;
 }
 
-interface AutocompleteResponse {
-    suggestions: { gene_id: number; strain_name: string; gene_name: string }[];
-}
-
 interface PaginatedResponse<T> {
     results: T[];
     num_pages: number;
@@ -116,27 +112,6 @@ export const fetchGenesByGenome = async (
         };
     } catch (error) {
         console.error('Error fetching genes by genome:', {genomeId, page, perPage, error});
-        throw error;
-    }
-};
-
-// Search genes across multiple genome IDs
-export const searchGenesAcrossGenomes = async (
-    genomeIds: string,
-    query: string,
-    page: number = 1,
-    perPage: number = 10
-): Promise<PaginatedResponse<Gene>> => {
-    try {
-        const response = await apiInstance.get('genes/search/filter', {
-            params: buildParams(query, page, perPage, undefined, genomeIds)
-        });
-        return {
-            results: response.data,
-            num_pages: response.data.num_pages || 1
-        };
-    } catch (error) {
-        console.error('Error searching genes across genomes:', {genomeIds, query, page, perPage, error});
         throw error;
     }
 };
