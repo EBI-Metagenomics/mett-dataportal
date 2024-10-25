@@ -1,11 +1,9 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {ThemeProvider} from '@mui/material';
 import {useParams} from 'react-router-dom';
 import getAssembly from '@components/organisms/GeneViewer/assembly';
 import getTracks from '@components/organisms/GeneViewer/tracks';
 import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSessionConfig';
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
-import {createJBrowseTheme} from '@jbrowse/core/ui';
 import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
 import {fetchGenomeById} from "../../services/genomeService";
@@ -209,10 +207,8 @@ const GeneViewerPage: React.FC = () => {
                     <div className={styles.sidePanel}>
                         {localViewState ? (
                             <div className={styles.geneViewerPage} style={{width: '100%'}}>
-                                <div className={styles.jbrowseContainer} style={{width: '100%'}}>
-                                    <ThemeProvider theme={createJBrowseTheme()}>
+                                <div className={styles.jbrowseContainer}>
                                         <JBrowseApp viewState={localViewState}/>
-                                    </ThemeProvider>
                                 </div>
                             </div>
                         ) : (

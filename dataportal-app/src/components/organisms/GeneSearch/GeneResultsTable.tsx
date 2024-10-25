@@ -26,12 +26,16 @@ const handleNavigation = (
     viewState: ViewModel,
     contig: string,
     start: number,
-    end: number
+    end: number,
 ) => {
-    const locString = `${contig}:${start}..${end}`;
-    viewState.session.view.navToLocString(locString);
+    const view = viewState?.session?.views?.[0];
+    console.log("View Object:", view);
+    if (view && typeof view.navToLocString === 'function') {
+        view.navToLocString(`${contig}:${start}..${end}`);
+    } else {
+        console.error("navToLocString is not available on the view object");
+    }
 };
-
 const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                                results,
                                                                onSortClick,

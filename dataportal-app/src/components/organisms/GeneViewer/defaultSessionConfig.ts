@@ -20,7 +20,7 @@ const getDefaultSessionConfig = (
                         refName: geneMeta.seq_id,
                         start: geneMeta?.start_position || 0,
                         end: geneMeta?.end_position || 50000,
-                        reversed: false,
+                        reversed: true,
                         assemblyName: genomeMeta.assembly_name,
                     },
                 ],
