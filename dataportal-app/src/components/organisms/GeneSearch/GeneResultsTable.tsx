@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './GeneResultsTable.module.scss';
-import {createViewState} from '@jbrowse/react-linear-genome-view';
+import {createViewState} from '@jbrowse/react-app';
 
 type ViewModel = ReturnType<typeof createViewState>;
 

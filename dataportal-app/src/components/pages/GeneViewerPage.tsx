@@ -1,31 +1,16 @@
-import React, {lazy, useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {ThemeProvider} from '@mui/material';
-import {makeStyles} from 'tss-react/mui';
-import {useParams, useLocation} from 'react-router-dom';
-import {JBrowseLinearGenomeView} from '@jbrowse/react-linear-genome-view';
+import {useParams} from 'react-router-dom';
 import getAssembly from '@components/organisms/GeneViewer/assembly';
 import getTracks from '@components/organisms/GeneViewer/tracks';
 import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSessionConfig';
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
-import PluginManager from '@jbrowse/core/PluginManager';
-import LinearGenomeViewPlugin from '@jbrowse/plugin-linear-genome-view';
-import {configSchema, stateModelFactory} from '@jbrowse/core/BaseFeatureWidget';
-import BaseFeatureDetails from '@jbrowse/core/BaseFeatureWidget/BaseFeatureDetail';
-import WidgetType from '@jbrowse/core/pluggableElementTypes/WidgetType';
 import {createJBrowseTheme} from '@jbrowse/core/ui';
-import HierarchicalTrackSelector
-    from '@jbrowse/plugin-data-management/dist/HierarchicalTrackSelectorWidget/components/HierarchicalTrackSelector';
-import {
-    HierarchicalTrackSelectorModel
-} from '@jbrowse/plugin-data-management/dist/HierarchicalTrackSelectorWidget/model';
 import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
-import {fetchGenomeById, fetchGenomesBySearch} from "../../services/genomeService";
-import {fetchGeneById, fetchGeneBySearch, fetchGenesByGenome} from "../../services/geneService";
-
-
-const DrawerWidget = lazy(() => import('../atoms/DrawerWidget'))
-
+import {fetchGenomeById} from "../../services/genomeService";
+import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
+import {JBrowseApp} from "@jbrowse/react-app";
 
 export interface GeneMeta {
     id: number;
@@ -61,34 +46,11 @@ export interface GenomeMeta {
     gff_url: string;
 }
 
-const useStyles = makeStyles()(theme => ({
-    root: {
-        display: 'grid',
-        height: '100vh',
-        width: '100%',
-        colorScheme: theme.palette.mode,
-    },
-    appContainer: {
-        gridColumn: 'main',
-        display: 'grid',
-        gridTemplateRows: '[menubar] min-content [components] auto',
-        height: '100vh',
-    },
-    appBar: {
-        flexGrow: 1,
-        gridRow: 'menubar',
-    },
-}));
-
 const GeneViewerPage: React.FC = () => {
 
         const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
         const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
-        const [pluginManager, setPluginManager] = useState<PluginManager | null>(null);
-        const [trackSelectorModel, setTrackSelectorModel] = useState<HierarchicalTrackSelectorModel | null>(null);
 
-
-        // const [selectedGenomeId, setSelectedGenomeId] = useState<number>(); // State to manage selected genome
         const [geneSearchQuery, setGeneSearchQuery] = useState('');
         const [geneResults, setGeneResults] = useState<any[]>([]);
         const [totalPages, setTotalPages] = useState(1);
@@ -98,46 +60,6 @@ const GeneViewerPage: React.FC = () => {
         const {geneId} = useParams<{ geneId?: string }>();
         const searchParams = new URLSearchParams(location.search);
         const genomeId = searchParams.get('genomeId');
-
-        // Initialize PluginManager and configure it to use the hierarchical track selector
-        useEffect(() => {
-            const manager = new PluginManager([new LinearGenomeViewPlugin()]);
-            manager.createPluggableElements();
-            manager.configure();
-
-            const baseFeatureWidgetType = new WidgetType({
-                name: 'BaseFeatureWidget',
-                heading: 'Feature details',
-                configSchema,
-                stateModel: stateModelFactory(manager),
-                ReactComponent: lazy(
-                    () => import('@jbrowse/core/BaseFeatureWidget/BaseFeatureDetail'),
-                ),
-            });
-
-            manager.addWidgetType(() => baseFeatureWidgetType);
-
-            // Add the widget to the session
-            if (localViewState?.session) {
-                // Check if widget exists first and add it if not
-                if (!localViewState.session.widgets.has('BaseFeatureWidget')) {
-                    const widget = localViewState.session.addWidget(
-                        'BaseFeatureWidget',
-                        'BaseFeatureWidget',
-                        {
-                            featureData: {
-                                // Add relevant feature data here, if needed
-                            },
-                        }
-                    );
-                    localViewState.session.showWidget(widget); // Make the widget visible
-                }
-            }
-
-            console.log('BaseFeatureWidget added:', localViewState?.session.widgets.has('BaseFeatureWidget'));
-
-            setPluginManager(manager);
-        }, []);
 
         // Fetch gene and genome metadata
         useEffect(() => {
@@ -179,7 +101,8 @@ const GeneViewerPage: React.FC = () => {
         const sessionConfig = useMemo(() => {
             if (genomeMeta && geneMeta) {
                 const config = getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
-                config.view.trackSelectorType = 'hierarchical';
+                console.log("sessionconfig1: " + config);
+                console.log("sessionconfig2: " + config);
                 return config;
             }
             return null;
@@ -188,27 +111,13 @@ const GeneViewerPage: React.FC = () => {
         const localViewState = useGeneViewerState(assembly, tracks, sessionConfig);
         console.log('Local View State:', localViewState);
 
+
         if (!localViewState) {
             return <p>Loading Genome Viewer...</p>;
         }
 
-        const drawerVisible = true;
-        const theme = createJBrowseTheme();
-        const sessionWithFocusedView = {
-            ...localViewState.session,
-            setFocusedWidgetId: (widgetId: string) => {
-                localViewState.session.activeWidgets.set(widgetId, true);
-            }
-        };
-
         // Log all widgets in the session
         console.log('Session Widgets:', localViewState?.session?.widgets);
-
-        // Access the widget directly using the key 'BaseFeatureWidget'
-        const featureWidgetModel = localViewState?.session?.widgets?.get('BaseFeatureWidget');
-
-        // Log the result to check if the widget is found
-        console.log('featureWidgetModel:', featureWidgetModel);
 
         const handleGeneSearch = async () => {
             if (genomeId) {
@@ -222,9 +131,6 @@ const GeneViewerPage: React.FC = () => {
             template: '/gene-viewer/gene/${id}/details?genomeId=${strain_id}',
             alias: 'Select'
         };
-
-
-        // const hierarchicalTrackSelectorModel = localViewState.session.views[0].activateTrackSelector() as HierarchicalTrackSelectorModel;
 
         return (
             <div style={{padding: '20px'}}>
@@ -300,38 +206,19 @@ const GeneViewerPage: React.FC = () => {
                 </div>
                 {/* JBrowse Component Section */}
                 <section style={{marginTop: '20px'}}>
-                    <div className={styles.sidePanel} style={{width: '75%', float: 'left'}}>
+                    <div className={styles.sidePanel}>
                         {localViewState ? (
                             <div className={styles.geneViewerPage} style={{width: '100%'}}>
                                 <div className={styles.jbrowseContainer} style={{width: '100%'}}>
-                                    <JBrowseLinearGenomeView viewState={localViewState}/>
+                                    <ThemeProvider theme={createJBrowseTheme()}>
+                                        <JBrowseApp viewState={localViewState}/>
+                                    </ThemeProvider>
                                 </div>
                             </div>
                         ) : (
                             <p>Loading Genome Viewer...</p>
                         )}
                     </div>
-                    <div className={styles.sidePanel} style={{width: '25%', float: 'right'}}>
-                        <h4>Track Selector</h4>
-
-                        <ThemeProvider theme={createJBrowseTheme()}>
-                            <HierarchicalTrackSelector
-                                model={localViewState.session.views[0].activateTrackSelector() as HierarchicalTrackSelectorModel}
-                                toolbarHeight={500}/>
-
-                            {
-                                featureWidgetModel ? (
-                                    <BaseFeatureDetails model={featureWidgetModel}/>
-                                ) : (
-                                    <p>No feature details available</p>
-                                )
-                            }
-
-                            {/*<BaseFeatureDetails model={model.widget}/>*/}
-                        </ThemeProvider>
-
-                    </div>
-
 
                 </section>
             </div>

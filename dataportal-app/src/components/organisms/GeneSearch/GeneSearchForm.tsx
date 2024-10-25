@@ -4,7 +4,7 @@ import styles from "@components/organisms/GeneSearch/GeneSearchForm.module.scss"
 import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
 import {fetchGeneAutocompleteSuggestions, fetchGeneById, fetchGeneSearchResults} from "../../../services/geneService";
-import {createViewState} from '@jbrowse/react-linear-genome-view';
+import {createViewState} from '@jbrowse/react-app';
 
 type ViewModel = ReturnType<typeof createViewState>;
 

@@ -1,4 +1,4 @@
-import { GenomeMeta } from '../../pages/GeneViewerPage';
+import {GenomeMeta} from '../../pages/GeneViewerPage';
 
 const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
     {
@@ -48,6 +48,10 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                     color3: '#965567',
                     color1: "jexl:get(feature,'type')!='CDS'?'gray':get(feature,'strand')>0?'violet':'turquoise'",
                 },
+                showForward: true,
+                showReverse: true,
+                showTranslation: true,
+                showLabels: true,
             },
         ],
     },
@@ -56,6 +60,7 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
         trackId: 'my_special_track',
         name: 'Special Track',
         assemblyNames: [genomeMeta.assembly_name],
+        category: ['Annotations'],
         adapter: {
             type: 'Gff3TabixAdapter',
             gffGzLocation: {
@@ -81,6 +86,10 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                     color3: '#965567',
                     color1: "jexl:get(feature,'type')!='CDS'?'gray':get(feature,'strand')>0?'violet':'turquoise'",
                 },
+                showForward: true,
+                showReverse: true,
+                showTranslation: true,
+                showLabels: true,
             },
         ],
     },
