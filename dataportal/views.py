@@ -7,10 +7,11 @@ from django.shortcuts import get_object_or_404
 from django.views import View
 
 from .models import Strain
-from .services import SearchService
+from .services.genome_service import GenomeService
 from .utils import construct_file_urls
 
 logger = logging.getLogger(__name__)
+genome_service = GenomeService()
 
 
 class SearchGenomesView(View):
@@ -27,10 +28,10 @@ class SearchGenomesView(View):
         try:
             if gene_id:
                 logger.debug(f"Searching by gene_id: {gene_id}")
-                full_results = await SearchService.search_genome_by_gene(gene_id=gene_id)
+                full_results = await genome_service.search_genome_by_gene(gene_id=gene_id)
             elif search_term:
                 logger.debug(f"Search term exists, proceeding with search")
-                full_results = await SearchService.search_genomes(query=search_term)
+                full_results = await genome_service.search_genomes(query=search_term)
 
             if not full_results:
                 logger.debug(f"No results found for search term: {search_term}")
@@ -64,7 +65,7 @@ class Autocomplete(View):
         query = request.GET.get('query', '').strip()
         species_id = request.GET.get('species_id')  # Get species_id if provided
         if query:
-            suggestions = await SearchService.search_strains(query, species_id=species_id)
+            suggestions = await genome_service.search_strains(query, species_id=species_id)
             return JsonResponse({'suggestions': suggestions})
         return JsonResponse({'suggestions': []})
 
