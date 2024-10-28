@@ -1,7 +1,6 @@
 import logging
 from typing import List, Optional
 
-from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI, Router
@@ -115,82 +114,13 @@ async def search_genes_by_string(request, query: str, page: int = 1, per_page: i
 # API Endpoint to retrieve gene by ID
 @gene_router.get("/{gene_id}", response=GeneResponseSchema)
 async def get_gene_by_id(request, gene_id: int):
-    try:
-        gene = await sync_to_async(lambda: get_object_or_404(Gene.objects.select_related('strain'), id=gene_id))()
-
-        response_data = {
-            "id": gene.id,
-            "seq_id": gene.seq_id,
-            "gene_name": gene.gene_name or "N/A",
-            "description": gene.description or None,
-            "strain_id": gene.strain.id if gene.strain else None,
-            "strain": gene.strain.isolate_name if gene.strain else "Unknown",
-            "assembly": gene.strain.assembly_name if gene.strain and gene.strain.assembly_name else None,
-            "locus_tag": gene.locus_tag or None,
-            "cog": gene.cog or None,
-            "kegg": gene.kegg or None,
-            "pfam": gene.pfam or None,
-            "interpro": gene.interpro or None,
-            "dbxref": gene.dbxref or None,
-            "ec_number": gene.ec_number or None,
-            "product": gene.product or None,
-            "start_position": gene.start_position or None,
-            "end_position": gene.end_position or None,
-            "annotations": gene.annotations or {}
-        }
-
-        return response_data
-    except Http404:
-        raise HttpError(404, f"Gene with id {gene_id} not found")
-    except Exception as e:
-        logger.error(f"Error in get_gene_by_id: {e}")
-        raise HttpError(500, f"Internal Server Error: {str(e)}")
+    return await gene_service.get_gene_by_id(gene_id)
 
 
 # API Endpoint to retrieve all genes
 @gene_router.get("/", response=GenePaginationSchema)
 async def get_all_genes(request, page: int = 1, per_page: int = 10):
-    try:
-        start = (page - 1) * per_page
-        genes = await sync_to_async(lambda: list(Gene.objects.select_related('strain')
-                                                 .order_by('gene_name')[start:start + per_page]))()
-
-        total_results = await sync_to_async(Gene.objects.count)()
-        serialized_results = [
-            {
-                "id": gene.id,
-                "seq_id": gene.seq_id,
-                "gene_name": gene.gene_name or "N/A",
-                "description": gene.description or None,
-                "strain_id": gene.strain.id if gene.strain else None,
-                "strain": gene.strain.isolate_name if gene.strain else "Unknown",
-                "assembly": gene.strain.assembly_name if gene.strain and gene.strain.assembly_name else None,
-                "locus_tag": gene.locus_tag or None,
-                "cog": gene.cog or None,
-                "kegg": gene.kegg or None,
-                "pfam": gene.pfam or None,
-                "interpro": gene.interpro or None,
-                "dbxref": gene.dbxref or None,
-                "ec_number": gene.ec_number or None,
-                "product": gene.product or None,
-                "start_position": gene.start_position or None,
-                "end_position": gene.end_position or None,
-                "annotations": gene.annotations or {}
-            }
-            for gene in genes
-        ]
-
-        return GenePaginationSchema(
-            results=serialized_results,
-            page_number=page,
-            num_pages=(total_results + per_page - 1) // per_page,
-            has_previous=page > 1,
-            has_next=(start + per_page) < total_results,
-            total_results=total_results
-        )
-    except Exception as e:
-        logger.error(f"Error in get_all_genes: {e}")
-        raise HttpError(500, f"Internal Server Error: {str(e)}")
+    return await gene_service.get_all_genes(page, per_page)
 
 
 # API Endpoint to retrieve genes filtered by a single genome ID

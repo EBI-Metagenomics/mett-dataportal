@@ -8,7 +8,6 @@ from ninja.errors import HttpError
 from dataportal import settings
 from dataportal.models import Strain
 from dataportal.schemas import TypeStrainSchema, GenomePaginationSchema, SearchGenomeSchema
-from dataportal.utils import fetch_objects
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +57,15 @@ class GenomeService:
             strain_filter = Q(isolate_name__icontains=query) | Q(assembly_name__icontains=query)
             if species_id:
                 strain_filter &= Q(species_id=species_id)
-            strains = await fetch_objects(
-                model=Strain,
-                filters=strain_filter,
-                select_related=['species'],
-                limit=limit or self.limit
-            )
+            strains = await sync_to_async(lambda: list(
+                Strain.objects.filter(strain_filter).select_related('species')[:limit or self.limit]
+            ))()
             return [
-                {"strain_id": strain.id, "isolate_name": strain.isolate_name, "assembly_name": strain.assembly_name}
+                {
+                    "strain_id": strain.id,
+                    "isolate_name": strain.isolate_name,
+                    "assembly_name": strain.assembly_name
+                }
                 for strain in strains
             ]
         except Exception as e:
