@@ -6,17 +6,15 @@ from dataportal.schemas import SpeciesSchema
 
 @pytest.mark.asyncio
 async def test_get_all_species(mocker):
-    # Define mock return data for Species.objects.all()
     mock_species_data = [
         SpeciesSchema(id=1, scientific_name="Bacteroides uniformis", common_name="Bacteroides", acronym="BU"),
         SpeciesSchema(id=2, scientific_name="Phocaeicola vulgatus", common_name="Bacteroides vulgatus", acronym="PV")
     ]
 
-    # Mock Species.objects.all() to return mock_species_data as if it were from the database
+    # Mock Species.objects.all()
     with patch("dataportal.models.Species.objects.all", return_value=mock_species_data):
-        # Instantiate the service and call the method
         species_service = SpeciesService()
         result = await species_service.get_all_species()
 
-        # Verify that the result matches the mock data
+        # Verify
         assert result == mock_species_data
