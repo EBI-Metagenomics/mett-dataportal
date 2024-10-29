@@ -32,7 +32,7 @@ class SearchGenomesView(View):
                     gene_id=gene_id
                 )
             elif search_term:
-                logger.debug(f"Search term exists, proceeding with search")
+                logger.debug("Search term exists, proceeding with search")
                 full_results = await genome_service.search_genomes(query=search_term)
 
             if not full_results:

@@ -1,7 +1,9 @@
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, AsyncMock
-from dataportal.services.species_service import SpeciesService
+
 from dataportal.schemas import SpeciesSchema
+from dataportal.services.species_service import SpeciesService
 
 
 @pytest.mark.asyncio

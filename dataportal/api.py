@@ -5,7 +5,16 @@ from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
 
 from .models import Strain
-from .schemas import *
+from .schemas import (
+    StrainSuggestionSchema,
+    SpeciesSchema,
+    GenomePaginationSchema,
+    TypeStrainSchema,
+    SearchGenomeSchema,
+    GeneAutocompleteResponseSchema,
+    GenePaginationSchema,
+    GeneResponseSchema,
+)
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
 from .services.species_service import SpeciesService

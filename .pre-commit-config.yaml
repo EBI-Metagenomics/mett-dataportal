@@ -5,7 +5,8 @@ repos:
       hooks:
           - id: black
             language_version: python3.9
-    - repo: https://github.com/Riverside-Healthcare/djLint
-      rev: v1.35.2
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.7.1
       hooks:
-          - id: djlint-django
+        - id: ruff
+          args: ["--fix"]
