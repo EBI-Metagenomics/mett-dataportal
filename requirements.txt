@@ -1,4 +1,4 @@
-django==5.0.7
+django==5.1.2
 requests==2.32.3
 django-filter==24.2
 django-compressor==4.5.1
