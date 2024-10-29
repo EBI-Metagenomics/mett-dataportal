@@ -207,6 +207,15 @@ class GeneService:
             "annotations": gene.annotations or {}
         })
 
+    def _create_pagination_schema(self, serialized_genes, page, per_page, total_results) -> GenePaginationSchema:
+        return GenePaginationSchema(
+            results=serialized_genes,
+            page_number=page,
+            num_pages=(total_results + per_page - 1) // per_page,
+            has_previous=page > 1,
+            has_next=(page * per_page) < total_results,
+            total_results=total_results,
+        )
     async def _fetch_paginated_genes(self, filter_criteria: Q, page: int, per_page: int) -> Tuple[List[Gene], int]:
         start = (page - 1) * per_page
         genes = await sync_to_async(lambda: list(
@@ -214,3 +223,4 @@ class GeneService:
         ))()
         total_results = await sync_to_async(Gene.objects.filter(filter_criteria).count)()
         return genes, total_results
+

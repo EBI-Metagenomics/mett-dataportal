@@ -3,16 +3,19 @@ from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 
 
+class SpeciesSchema(BaseModel):
+    id: int
+    scientific_name: str
+    common_name: str
+    acronym: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class StrainSuggestionSchema(BaseModel):
     strain_id: int
     isolate_name: str
     assembly_name: str
-
-
-class GeneAutocompleteResponseSchema(BaseModel):
-    gene_id: int
-    gene_name: Optional[str]
-    strain_name: str
 
 
 class ContigSchema(BaseModel):
@@ -43,6 +46,21 @@ class TypeStrainSchema(BaseModel):
     gff_file: str
 
 
+class GenomePaginationSchema(BaseModel):
+    results: List[SearchGenomeSchema]
+    page_number: int
+    num_pages: int
+    has_previous: bool
+    has_next: bool
+    total_results: int
+
+
+class GeneAutocompleteResponseSchema(BaseModel):
+    gene_id: int
+    gene_name: Optional[str]
+    strain_name: str
+
+
 class GeneResponseSchema(BaseModel):
     id: int
     seq_id: Optional[str] = None
@@ -63,14 +81,7 @@ class GeneResponseSchema(BaseModel):
     end_position: Optional[int] = None
     annotations: Optional[dict] = None
 
-
-class GenomePaginationSchema(BaseModel):
-    results: List[SearchGenomeSchema]
-    page_number: int
-    num_pages: int
-    has_previous: bool
-    has_next: bool
-    total_results: int
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GenePaginationSchema(BaseModel):
@@ -80,15 +91,6 @@ class GenePaginationSchema(BaseModel):
     has_previous: bool
     has_next: bool
     total_results: int
-
-
-class SpeciesSchema(BaseModel):
-    id: int
-    scientific_name: str
-    common_name: str
-    acronym: str
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 __all__ = [

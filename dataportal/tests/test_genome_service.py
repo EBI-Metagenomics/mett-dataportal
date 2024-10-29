@@ -1,7 +1,9 @@
+from unittest.mock import MagicMock, PropertyMock
+
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+
+from dataportal.schemas import GenomePaginationSchema, SearchGenomeSchema
 from dataportal.services.genome_service import GenomeService
-from dataportal.schemas import TypeStrainSchema, GenomePaginationSchema, SearchGenomeSchema
 
 
 def create_mock_strain1():
@@ -18,7 +20,7 @@ def create_mock_strain1():
     mock_strain.species.scientific_name = "Bacteroides uniformis"
     mock_strain.species.common_name = "Bacteroides"
 
-    # Mock contigs as a related manager with the `all()` method
+    # Mock contigs
     mock_contig = MagicMock()
     type(mock_contig).seq_id = PropertyMock(return_value="contig1")
     type(mock_contig).length = PropertyMock(return_value=1000)
@@ -26,6 +28,7 @@ def create_mock_strain1():
     mock_strain.contigs.all.return_value = [mock_contig]
 
     return mock_strain
+
 
 def create_mock_strain2():
     mock_strain = MagicMock(spec=SearchGenomeSchema)
@@ -41,7 +44,6 @@ def create_mock_strain2():
     mock_strain.species.scientific_name = "Phocaeicola vulgatus"
     mock_strain.species.common_name = "Bacteroides vulgatus"
 
-    # Mock contigs as a related manager with the `all()` method
     mock_contig = MagicMock()
     type(mock_contig).seq_id = PropertyMock(return_value="contig1")
     type(mock_contig).length = PropertyMock(return_value=1000)
@@ -51,13 +53,10 @@ def create_mock_strain2():
     return mock_strain
 
 
-
 @pytest.mark.asyncio
 async def test_get_type_strains(mocker):
     mock_strain_1 = create_mock_strain1()
-
     mock_strain_2 = create_mock_strain2()
-
     mocker.patch("dataportal.models.Strain.objects.filter", return_value=[mock_strain_1, mock_strain_2])
 
     genome_service = GenomeService()
@@ -68,10 +67,7 @@ async def test_get_type_strains(mocker):
 
 @pytest.mark.asyncio
 async def test_search_genomes_by_string(mocker):
-    # Use the helper function to create the mock strain
     mock_strain = create_mock_strain1()
-
-    # Patch the fetch method to return the mock object
     mocker.patch.object(GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1))
 
     genome_service = GenomeService()
@@ -83,9 +79,7 @@ async def test_search_genomes_by_string(mocker):
 
 @pytest.mark.asyncio
 async def test_get_genomes_by_species(mocker):
-    # Use the helper function to create the mock strain
     mock_strain = create_mock_strain1()
-
     mocker.patch.object(GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1))
 
     genome_service = GenomeService()
@@ -97,9 +91,7 @@ async def test_get_genomes_by_species(mocker):
 
 @pytest.mark.asyncio
 async def test_search_genomes_by_species_and_string(mocker):
-    # Use the helper function to create the mock strain
     mock_strain = create_mock_strain1()
-
     mocker.patch.object(GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1))
 
     genome_service = GenomeService()
@@ -113,10 +105,7 @@ async def test_search_genomes_by_species_and_string(mocker):
 @pytest.mark.asyncio
 @pytest.mark.asyncio
 async def test_get_genome_by_id(mocker):
-    # Use the helper function to create the mock strain
     mock_strain = create_mock_strain1()
-
-    # Patch select_related to return a mock strain directly without hitting the database
     mock_get = mocker.patch("dataportal.models.Strain.objects.select_related")
     mock_get.return_value.get.return_value = mock_strain
 
