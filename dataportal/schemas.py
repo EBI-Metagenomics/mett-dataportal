@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class StrainSuggestionSchema(BaseModel):
@@ -88,7 +88,7 @@ class SpeciesSchema(BaseModel):
     common_name: str
     acronym: str
 
-    model_config = {'from_attributes': True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 __all__ = [

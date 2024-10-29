@@ -1,12 +1,10 @@
 import logging
 from typing import List, Optional
 
-from django.http import Http404
-from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
 
-from .models import Strain, Gene
+from .models import Strain
 from .schemas import *
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
@@ -46,9 +44,6 @@ async def get_all_species(request):
     except Exception as e:
         logger.error(f"Error fetching species: {e}")
         raise HttpError(500, "An error occurred while fetching species.")
-
-
-from asgiref.sync import sync_to_async
 
 
 # API Endpoint to retrieve all genomes

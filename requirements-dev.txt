@@ -2,10 +2,11 @@
 pre-commit==3.2.2
 black==23.3.0
 djlint==1.25.0
-requests-mock==1.10.0
+pytest-mock==3.14.0
 django-debug-toolbar==4.0.0
-pytest==7.3.1
-pytest-django==4.5.2
+pytest==8.3.3
+pytest-django==4.9.0
+pytest-asyncio==0.24.0
 pytest-cov==4.0.0
 pytest-html==3.2.0
 pytest-env==0.8.1
