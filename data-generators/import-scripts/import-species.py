@@ -7,12 +7,12 @@ conn = psycopg.connect(
     user="postgres",
     password="pass123",
     host="localhost",
-    port="5432"
+    port="5432",
 )
 
 # Load the CSV file into a DataFrame
-species_df = pd.read_csv('./species.csv')
-print(f'Species DataFrame: \n{species_df}')
+species_df = pd.read_csv("./species.csv")
+print(f"Species DataFrame: \n{species_df}")
 
 # Define insert query
 insert_query = """
@@ -24,7 +24,16 @@ ON CONFLICT (taxonomy_id) DO NOTHING;
 # Insert data into Species table
 with conn.cursor() as cursor:
     for row in species_df.itertuples(index=False):
-        cursor.execute(insert_query, (row.id, row.scientific_name, row.common_name, row.acronym, row.taxonomy_id))
+        cursor.execute(
+            insert_query,
+            (
+                row.id,
+                row.scientific_name,
+                row.common_name,
+                row.acronym,
+                row.taxonomy_id,
+            ),
+        )
     conn.commit()
 
 print("Species data successfully inserted into the database.")

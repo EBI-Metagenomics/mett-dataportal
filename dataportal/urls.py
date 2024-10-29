@@ -15,10 +15,8 @@ urlpatterns = [
     path("jbrowse/<int:isolate_id>/", JBrowseView.as_view(), name="jbrowse_view"),
     path("admin/", admin.site.urls),
     path("404/", page_not_found, {"exception": Exception()}),
-
     path("api/", api.urls),
-
-    re_path(r'^.*$', TemplateView.as_view(template_name='index.html')),
+    re_path(r"^.*$", TemplateView.as_view(template_name="index.html")),
 ]
 
 if settings.DEBUG:

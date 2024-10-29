@@ -9,31 +9,33 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "gh$rs07@5pgqy18p&a6@x1=x&m@bdl$-c$eo+^)3p1^y7wj19p")
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY", "gh$rs07@5pgqy18p&a6@x1=x&m@bdl$-c$eo+^)3p1^y7wj19p"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", False)
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
         },
-        'dataportal': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+        "dataportal": {
+            "handlers": ["console"],
+            "level": "DEBUG",
         },
-        'django.db.backends': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
+        "django.db.backends": {
+            "level": "DEBUG",
+            "handlers": ["console"],
         },
     },
 }
@@ -146,11 +148,8 @@ DEFAULT_LIMIT = 10
 #                               'http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/')
 # GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
 #                          'http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/')
-ASSEMBLY_FTP_PATH = os.getenv('ASSEMBLY_FTP_PATH',
-                              'http://localhost:3000/fasta_files/')
-GFF_FTP_PATH = os.getenv('GFF_FTP_PATH',
-                         'http://localhost:3000/gff3_files/{}/')
+ASSEMBLY_FTP_PATH = os.getenv("ASSEMBLY_FTP_PATH", "http://localhost:3000/fasta_files/")
+GFF_FTP_PATH = os.getenv("GFF_FTP_PATH", "http://localhost:3000/gff3_files/{}/")
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-
+STATIC_URL = "/static/"

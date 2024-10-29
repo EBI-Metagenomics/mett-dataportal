@@ -38,7 +38,9 @@ def create_mock_gene():
 @pytest.mark.asyncio
 async def test_autocomplete_gene_suggestions(mocker):
     mock_gene = create_mock_gene()
-    mocker.patch.object(GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1))
+    mocker.patch.object(
+        GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1)
+    )
 
     gene_service = GeneService()
     results = await gene_service.autocomplete_gene_suggestions(query="geneA", limit=10)
@@ -52,7 +54,9 @@ async def test_autocomplete_gene_suggestions(mocker):
 @pytest.mark.asyncio
 async def test_get_gene_by_id(mocker):
     mock_gene = create_mock_gene()
-    mocker.patch("dataportal.services.gene_service.get_object_or_404", return_value=mock_gene)
+    mocker.patch(
+        "dataportal.services.gene_service.get_object_or_404", return_value=mock_gene
+    )
 
     gene_service = GeneService()
     result = await gene_service.get_gene_by_id(gene_id=1)
@@ -66,7 +70,9 @@ async def test_get_gene_by_id(mocker):
 @pytest.mark.asyncio
 async def test_get_all_genes(mocker):
     mock_gene = create_mock_gene()
-    mocker.patch.object(GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1))
+    mocker.patch.object(
+        GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1)
+    )
 
     gene_service = GeneService()
     result = await gene_service.get_all_genes(page=1, per_page=10)
@@ -80,7 +86,9 @@ async def test_get_all_genes(mocker):
 @pytest.mark.asyncio
 async def test_search_genes(mocker):
     mock_gene = create_mock_gene()
-    mocker.patch.object(GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1))
+    mocker.patch.object(
+        GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1)
+    )
 
     gene_service = GeneService()
     result = await gene_service.search_genes(query="geneA", page=1, per_page=10)
@@ -93,7 +101,9 @@ async def test_search_genes(mocker):
 @pytest.mark.asyncio
 async def test_get_genes_by_genome(mocker):
     mock_gene = create_mock_gene()
-    mocker.patch.object(GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1))
+    mocker.patch.object(
+        GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1)
+    )
 
     gene_service = GeneService()
     result = await gene_service.get_genes_by_genome(genome_id=1, page=1, per_page=10)
@@ -106,10 +116,14 @@ async def test_get_genes_by_genome(mocker):
 @pytest.mark.asyncio
 async def test_get_genes_by_multiple_genomes(mocker):
     mock_gene = create_mock_gene()
-    mocker.patch.object(GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1))
+    mocker.patch.object(
+        GeneService, "_fetch_paginated_genes", return_value=([mock_gene], 1)
+    )
 
     gene_service = GeneService()
-    result = await gene_service.get_genes_by_multiple_genomes(genome_ids=[1, 2], page=1, per_page=10)
+    result = await gene_service.get_genes_by_multiple_genomes(
+        genome_ids=[1, 2], page=1, per_page=10
+    )
 
     # Assertions
     assert isinstance(result, GenePaginationSchema)

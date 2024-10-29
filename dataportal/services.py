@@ -42,9 +42,13 @@ class SearchService:
 
         return await sync_to_async(lambda: list(queryset))()
 
-    async def search_strains(self, query: str, limit: int = None, species_id: Optional[int] = None):
+    async def search_strains(
+        self, query: str, limit: int = None, species_id: Optional[int] = None
+    ):
         try:
-            strain_filter = Q(isolate_name__icontains=query) | Q(assembly_name__icontains=query)
+            strain_filter = Q(isolate_name__icontains=query) | Q(
+                assembly_name__icontains=query
+            )
 
             if species_id:
                 strain_filter &= Q(species_id=species_id)
@@ -52,12 +56,16 @@ class SearchService:
             strains = await self.fetch_objects(
                 model=Strain,
                 filters=strain_filter,
-                select_related=['species'],
-                limit=limit or self.limit
+                select_related=["species"],
+                limit=limit or self.limit,
             )
 
             return [
-                {"strain_id": strain.id, "isolate_name": strain.isolate_name, "assembly_name": strain.assembly_name}
+                {
+                    "strain_id": strain.id,
+                    "isolate_name": strain.isolate_name,
+                    "assembly_name": strain.assembly_name,
+                }
                 for strain in strains
             ]
         except Exception as e:
@@ -66,33 +74,44 @@ class SearchService:
 
     async def get_genomes(self, page: int = 1, per_page: int = 10):
         try:
-            strains = await self.fetch_objects(model=Strain, select_related=['species'])
+            strains = await self.fetch_objects(model=Strain, select_related=["species"])
             return self.paginate_results(strains, page, per_page)
         except Exception as e:
             logger.error(f"Error fetching genomes: {e}")
             return self.paginate_results([], page, per_page)
 
-    async def search_genomes(self, query: str = None, species_id: Optional[int] = None, page: int = 1,
-                             per_page: int = 10):
+    async def search_genomes(
+        self,
+        query: str = None,
+        species_id: Optional[int] = None,
+        page: int = 1,
+        per_page: int = 10,
+    ):
         try:
             filters = Q()
             if query:
-                filters &= Q(isolate_name__icontains=query) | Q(assembly_name__icontains=query)
+                filters &= Q(isolate_name__icontains=query) | Q(
+                    assembly_name__icontains=query
+                )
             if species_id:
                 filters &= Q(species_id=species_id)
 
-            strains = await self.fetch_objects(model=Strain, filters=filters, select_related=['species'])
+            strains = await self.fetch_objects(
+                model=Strain, filters=filters, select_related=["species"]
+            )
             return self.paginate_results(strains, page, per_page)
         except Exception as e:
             logger.error(f"Error searching genomes: {e}")
             return self.paginate_results([], page, per_page)
 
-    async def get_genomes_by_species(self, species_id: int, page: int = 1, per_page: int = 10):
+    async def get_genomes_by_species(
+        self, species_id: int, page: int = 1, per_page: int = 10
+    ):
         try:
             strains = await self.fetch_objects(
                 model=Strain,
                 filters=Q(species_id=species_id),
-                select_related=['species']
+                select_related=["species"],
             )
             return self.paginate_results(strains, page, per_page)
         except Exception as e:
@@ -101,13 +120,20 @@ class SearchService:
 
     async def get_genome_by_id(self, genome_id: int):
         try:
-            return await sync_to_async(lambda: get_object_or_404(Strain, id=genome_id))()
+            return await sync_to_async(
+                lambda: get_object_or_404(Strain, id=genome_id)
+            )()
         except Exception as e:
             logger.error(f"Error fetching genome by ID {genome_id}: {e}")
             return None
 
-    async def autocomplete_gene_suggestions(self, query: str, limit: int = None, species_id: Optional[int] = None,
-                                            genome_ids: Optional[List[int]] = None):
+    async def autocomplete_gene_suggestions(
+        self,
+        query: str,
+        limit: int = None,
+        species_id: Optional[int] = None,
+        genome_ids: Optional[List[int]] = None,
+    ):
         try:
             gene_filter = Q(gene_name__icontains=query)
 
@@ -119,12 +145,16 @@ class SearchService:
             genes = await self.fetch_objects(
                 model=Gene,
                 filters=gene_filter,
-                select_related=['strain'],
-                limit=limit or self.limit
+                select_related=["strain"],
+                limit=limit or self.limit,
             )
 
             return [
-                {"gene_id": gene.id, "gene_name": gene.gene_name, "strain_name": gene.strain.isolate_name}
+                {
+                    "gene_id": gene.id,
+                    "gene_name": gene.gene_name,
+                    "strain_name": gene.strain.isolate_name,
+                }
                 for gene in genes
             ]
         except Exception as e:
@@ -140,47 +170,59 @@ class SearchService:
 
     async def get_genes(self, page: int = 1, per_page: int = 10):
         try:
-            genes = await self.fetch_objects(model=Gene, select_related=['strain'])
+            genes = await self.fetch_objects(model=Gene, select_related=["strain"])
             return self.paginate_results(genes, page, per_page)
         except Exception as e:
             logger.error(f"Error fetching genes: {e}")
             return self.paginate_results([], page, per_page)
 
-    async def search_genes(self, query: str = None, genome_id: Optional[int] = None,
-                           genome_ids: Optional[List[int]] = None, page: int = 1, per_page: int = 10):
+    async def search_genes(
+        self,
+        query: str = None,
+        genome_id: Optional[int] = None,
+        genome_ids: Optional[List[int]] = None,
+        page: int = 1,
+        per_page: int = 10,
+    ):
         try:
             filters = Q()
             if query:
-                filters &= Q(gene_name__icontains=query) | Q(description__icontains=query)
+                filters &= Q(gene_name__icontains=query) | Q(
+                    description__icontains=query
+                )
             if genome_id:
                 filters &= Q(strain_id=genome_id)
             elif genome_ids:
                 filters &= Q(strain_id__in=genome_ids)
 
-            genes = await self.fetch_objects(model=Gene, filters=filters, select_related=['strain'])
+            genes = await self.fetch_objects(
+                model=Gene, filters=filters, select_related=["strain"]
+            )
             return self.paginate_results(genes, page, per_page)
         except Exception as e:
             logger.error(f"Error searching genes: {e}")
             return self.paginate_results([], page, per_page)
 
-    async def get_genes_by_genome(self, genome_id: int, page: int = 1, per_page: int = 10):
+    async def get_genes_by_genome(
+        self, genome_id: int, page: int = 1, per_page: int = 10
+    ):
         try:
             genes = await self.fetch_objects(
-                model=Gene,
-                filters=Q(strain_id=genome_id),
-                select_related=['strain']
+                model=Gene, filters=Q(strain_id=genome_id), select_related=["strain"]
             )
             return self.paginate_results(genes, page, per_page)
         except Exception as e:
             logger.error(f"Error fetching genes for genome ID {genome_id}: {e}")
             return self.paginate_results([], page, per_page)
 
-    async def get_genes_by_multiple_genomes(self, genome_ids: List[int], page: int = 1, per_page: int = 10):
+    async def get_genes_by_multiple_genomes(
+        self, genome_ids: List[int], page: int = 1, per_page: int = 10
+    ):
         try:
             genes = await self.fetch_objects(
                 model=Gene,
                 filters=Q(strain_id__in=genome_ids),
-                select_related=['strain']
+                select_related=["strain"],
             )
             return self.paginate_results(genes, page, per_page)
         except Exception as e:
@@ -191,22 +233,23 @@ class SearchService:
         try:
             gene_filter = Q(strain_id=strain_id, gene_name__icontains=query)
             genes = await self.fetch_objects(
-                model=Gene,
-                filters=gene_filter,
-                limit=limit
+                model=Gene, filters=gene_filter, limit=limit
             )
-            return [{"gene_name": gene.gene_name, "description": gene.description} for gene in genes]
+            return [
+                {"gene_name": gene.gene_name, "description": gene.description}
+                for gene in genes
+            ]
         except Exception as e:
             logger.error(f"Error searching genes in strain: {e}")
             return []
 
     async def search_genes_globally(self, query: str, limit: int = 10):
         try:
-            gene_filter = Q(gene_name__icontains=query) | Q(description__icontains=query)
+            gene_filter = Q(gene_name__icontains=query) | Q(
+                description__icontains=query
+            )
             genes = await self.fetch_objects(
-                model=Gene,
-                filters=gene_filter,
-                limit=limit
+                model=Gene, filters=gene_filter, limit=limit
             )
             return [
                 {
@@ -214,25 +257,36 @@ class SearchService:
                     "seq_id": gene.seq_id,
                     "strain": gene.strain.isolate_name,
                     "assembly": gene.strain.assembly_name,
-                    "description": gene.description
-                } for gene in genes
+                    "description": gene.description,
+                }
+                for gene in genes
             ]
         except Exception as e:
             logger.error(f"Error searching genes globally: {e}")
             return []
 
-    async def search_genes(self, query: str = None, genome_id: Optional[int] = None,
-                           genome_ids: Optional[List[int]] = None, page: int = 1, per_page: int = 10):
+    async def search_genes(
+        self,
+        query: str = None,
+        genome_id: Optional[int] = None,
+        genome_ids: Optional[List[int]] = None,
+        page: int = 1,
+        per_page: int = 10,
+    ):
         try:
             filters = Q()
             if query:
-                filters &= Q(gene_name__icontains=query) | Q(description__icontains=query)
+                filters &= Q(gene_name__icontains=query) | Q(
+                    description__icontains=query
+                )
             if genome_id:
                 filters &= Q(strain_id=genome_id)
             elif genome_ids:
                 filters &= Q(strain_id__in=genome_ids)
 
-            genes = await self.fetch_objects(model=Gene, filters=filters, select_related=['strain'])
+            genes = await self.fetch_objects(
+                model=Gene, filters=filters, select_related=["strain"]
+            )
             serialized_genes = [
                 {
                     "id": gene.id,
@@ -240,8 +294,10 @@ class SearchService:
                     "gene_name": gene.gene_name,
                     "description": gene.description,
                     "strain": gene.strain.isolate_name,
-                    "assembly": gene.strain.assembly_name if gene.strain.assembly_name else None,
-                    "locus_tag": gene.locus_tag
+                    "assembly": (
+                        gene.strain.assembly_name if gene.strain.assembly_name else None
+                    ),
+                    "locus_tag": gene.locus_tag,
                 }
                 for gene in genes
             ]

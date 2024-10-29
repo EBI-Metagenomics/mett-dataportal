@@ -1,0 +1,11 @@
+---
+repos:
+    - repo: https://github.com/psf/black
+      rev: 24.10.0
+      hooks:
+          - id: black
+            language_version: python3.9
+    - repo: https://github.com/Riverside-Healthcare/djLint
+      rev: v1.35.2
+      hooks:
+          - id: djlint-django

@@ -7,8 +7,18 @@ from dataportal.schemas import SpeciesSchema
 @pytest.mark.asyncio
 async def test_get_all_species(mocker):
     mock_species_data = [
-        SpeciesSchema(id=1, scientific_name="Bacteroides uniformis", common_name="Bacteroides", acronym="BU"),
-        SpeciesSchema(id=2, scientific_name="Phocaeicola vulgatus", common_name="Bacteroides vulgatus", acronym="PV")
+        SpeciesSchema(
+            id=1,
+            scientific_name="Bacteroides uniformis",
+            common_name="Bacteroides",
+            acronym="BU",
+        ),
+        SpeciesSchema(
+            id=2,
+            scientific_name="Phocaeicola vulgatus",
+            common_name="Bacteroides vulgatus",
+            acronym="PV",
+        ),
     ]
 
     # Mock Species.objects.all()

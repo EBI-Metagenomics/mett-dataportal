@@ -57,7 +57,10 @@ def create_mock_strain2():
 async def test_get_type_strains(mocker):
     mock_strain_1 = create_mock_strain1()
     mock_strain_2 = create_mock_strain2()
-    mocker.patch("dataportal.models.Strain.objects.filter", return_value=[mock_strain_1, mock_strain_2])
+    mocker.patch(
+        "dataportal.models.Strain.objects.filter",
+        return_value=[mock_strain_1, mock_strain_2],
+    )
 
     genome_service = GenomeService()
     result = await genome_service.get_type_strains()
@@ -68,10 +71,14 @@ async def test_get_type_strains(mocker):
 @pytest.mark.asyncio
 async def test_search_genomes_by_string(mocker):
     mock_strain = create_mock_strain1()
-    mocker.patch.object(GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1))
+    mocker.patch.object(
+        GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1)
+    )
 
     genome_service = GenomeService()
-    result = await genome_service.search_genomes_by_string("Strain", page=1, per_page=10)
+    result = await genome_service.search_genomes_by_string(
+        "Strain", page=1, per_page=10
+    )
 
     assert isinstance(result, GenomePaginationSchema)
     assert result.total_results == 1
@@ -80,10 +87,14 @@ async def test_search_genomes_by_string(mocker):
 @pytest.mark.asyncio
 async def test_get_genomes_by_species(mocker):
     mock_strain = create_mock_strain1()
-    mocker.patch.object(GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1))
+    mocker.patch.object(
+        GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1)
+    )
 
     genome_service = GenomeService()
-    result = await genome_service.get_genomes_by_species(species_id=1, page=1, per_page=10)
+    result = await genome_service.get_genomes_by_species(
+        species_id=1, page=1, per_page=10
+    )
 
     assert isinstance(result, GenomePaginationSchema)
     assert result.total_results == 1
@@ -92,11 +103,14 @@ async def test_get_genomes_by_species(mocker):
 @pytest.mark.asyncio
 async def test_search_genomes_by_species_and_string(mocker):
     mock_strain = create_mock_strain1()
-    mocker.patch.object(GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1))
+    mocker.patch.object(
+        GenomeService, "_fetch_paginated_strains", return_value=([mock_strain], 1)
+    )
 
     genome_service = GenomeService()
-    result = await genome_service.search_genomes_by_species_and_string(species_id=1, query="Strain", page=1,
-                                                                       per_page=10)
+    result = await genome_service.search_genomes_by_species_and_string(
+        species_id=1, query="Strain", page=1, per_page=10
+    )
 
     assert isinstance(result, GenomePaginationSchema)
     assert result.total_results == 1

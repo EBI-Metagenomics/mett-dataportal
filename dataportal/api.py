@@ -30,8 +30,10 @@ jbrowse_router = Router(tags=["JBrowse Viewer"])
 
 
 # Map the router to the class methods
-@genome_router.get('/autocomplete', response=List[StrainSuggestionSchema])
-async def autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None):
+@genome_router.get("/autocomplete", response=List[StrainSuggestionSchema])
+async def autocomplete_suggestions(
+    request, query: str, limit: int = 10, species_id: Optional[int] = None
+):
     return await genome_service.search_strains(query, limit, species_id)
 
 
@@ -63,7 +65,9 @@ async def get_type_strains(request):
 
 
 @genome_router.get("/search", response=GenomePaginationSchema)
-async def search_genomes_by_string(request, query: str, page: int = 1, per_page: int = 10):
+async def search_genomes_by_string(
+    request, query: str, page: int = 1, per_page: int = 10
+):
     return await genome_service.search_genomes_by_string(query, page, per_page)
 
 
@@ -78,28 +82,49 @@ async def get_genome(request, genome_id: int):
 
 # API Endpoint to retrieve genomes filtered by species ID
 @species_router.get("/{species_id}/genomes", response=GenomePaginationSchema)
-async def get_genomes_by_species(request, species_id: int, page: int = 1, per_page: int = 10):
+async def get_genomes_by_species(
+    request, species_id: int, page: int = 1, per_page: int = 10
+):
     return await genome_service.get_genomes_by_species(species_id, page, per_page)
 
 
 # API Endpoint to search genomes by species ID and query string
 @species_router.get("/{species_id}/genomes/search", response=GenomePaginationSchema)
-async def search_genomes_by_species_and_string(request, species_id: int, query: str, page: int = 1, per_page: int = 10):
-    return await genome_service.search_genomes_by_species_and_string(species_id, query, page, per_page)
+async def search_genomes_by_species_and_string(
+    request, species_id: int, query: str, page: int = 1, per_page: int = 10
+):
+    return await genome_service.search_genomes_by_species_and_string(
+        species_id, query, page, per_page
+    )
 
 
 @gene_router.get("/autocomplete", response=List[GeneAutocompleteResponseSchema])
-async def gene_autocomplete_suggestions(request, query: str, limit: int = 10, species_id: Optional[int] = None,
-                                        genome_ids: Optional[str] = None):
-    genome_id_list = [int(gid) for gid in genome_ids.split(",") if gid.strip()] if genome_ids else None
-    return await gene_service.autocomplete_gene_suggestions(query, limit, species_id, genome_id_list)
+async def gene_autocomplete_suggestions(
+    request,
+    query: str,
+    limit: int = 10,
+    species_id: Optional[int] = None,
+    genome_ids: Optional[str] = None,
+):
+    genome_id_list = (
+        [int(gid) for gid in genome_ids.split(",") if gid.strip()]
+        if genome_ids
+        else None
+    )
+    return await gene_service.autocomplete_gene_suggestions(
+        query, limit, species_id, genome_id_list
+    )
 
 
 # API Endpoint to search genes by query string
 @gene_router.get("/search", response=GenePaginationSchema)
-async def search_genes_by_string(request, query: str, page: int = 1, per_page: int = 10):
+async def search_genes_by_string(
+    request, query: str, page: int = 1, per_page: int = 10
+):
     try:
-        paginated_results = await gene_service.search_genes(query=query, page=page, per_page=per_page)
+        paginated_results = await gene_service.search_genes(
+            query=query, page=page, per_page=per_page
+        )
         return paginated_results
     except Exception as e:
         logger.error(f"Error in search_genes_by_string: {e}")
@@ -120,7 +145,9 @@ async def get_all_genes(request, page: int = 1, per_page: int = 10):
 
 # API Endpoint to retrieve genes filtered by a single genome ID
 @genome_router.get("/{genome_id}/genes", response=GenePaginationSchema)
-async def get_genes_by_genome(request, genome_id: int, page: int = 1, per_page: int = 10):
+async def get_genes_by_genome(
+    request, genome_id: int, page: int = 1, per_page: int = 10
+):
     try:
         return await gene_service.get_genes_by_genome(genome_id, page, per_page)
     except Exception as e:
@@ -130,7 +157,9 @@ async def get_genes_by_genome(request, genome_id: int, page: int = 1, per_page: 
 
 # API Endpoint to search genes by genome ID and gene string
 @genome_router.get("/{genome_id}/genes/search", response=GenePaginationSchema)
-async def search_genes_by_genome_and_string(request, genome_id: int, query: str, page: int = 1, per_page: int = 10):
+async def search_genes_by_genome_and_string(
+    request, genome_id: int, query: str, page: int = 1, per_page: int = 10
+):
     try:
         return await gene_service.search_genes(query, genome_id, page, per_page)
     except Exception as e:
@@ -140,12 +169,18 @@ async def search_genes_by_genome_and_string(request, genome_id: int, query: str,
 
 # API Endpoint to search genes across multiple genome IDs using a gene string
 @gene_router.get("/search/filter", response=GenePaginationSchema)
-async def search_genes_by_multiple_genomes_and_species_and_string(request, genome_ids: str = "",
-                                                                  species_id: Optional[int] = None,
-                                                                  query: str = "", page: int = 1, per_page: int = 10):
+async def search_genes_by_multiple_genomes_and_species_and_string(
+    request,
+    genome_ids: str = "",
+    species_id: Optional[int] = None,
+    query: str = "",
+    page: int = 1,
+    per_page: int = 10,
+):
     try:
-        return await gene_service.get_genes_by_multiple_genomes_and_string(genome_ids, species_id, query, page,
-                                                                           per_page)
+        return await gene_service.get_genes_by_multiple_genomes_and_string(
+            genome_ids, species_id, query, page, per_page
+        )
     except HttpError as e:
         raise e
     except ValueError:

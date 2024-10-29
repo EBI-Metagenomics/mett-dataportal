@@ -6,11 +6,11 @@ conn = psycopg.connect(
     user="postgres",
     password="pass123",
     host="localhost",
-    port="5432"
+    port="5432",
 )
 
 # Define the isolate names that should be updated
-isolate_names = ['BU_ATCC8492', 'PV_ATCC8482']
+isolate_names = ["BU_ATCC8492", "PV_ATCC8482"]
 
 # Define the update query
 update_query = """

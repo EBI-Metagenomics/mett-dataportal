@@ -18,7 +18,9 @@ class SpeciesService:
 
     async def get_species_by_id(self, species_id: int) -> SpeciesSchema:
         try:
-            species = await sync_to_async(lambda: get_object_or_404(Species, id=species_id))()
+            species = await sync_to_async(
+                lambda: get_object_or_404(Species, id=species_id)
+            )()
             return SpeciesSchema.model_validate(species)
         except Exception as e:
             raise Exception(f"Error retrieving species by ID: {str(e)}")
