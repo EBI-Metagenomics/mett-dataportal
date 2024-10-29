@@ -1,4 +1,5 @@
 django==5.1.2
+python-decouple==3.8
 requests==2.32.3
 django-filter==24.2
 django-compressor==4.5.1
