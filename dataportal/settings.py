@@ -1,13 +1,15 @@
 import os
 from pathlib import Path
 
-from decouple import config, Csv
+from decouple import Csv, Config, RepositoryEnv
+
+config = Config(RepositoryEnv("./mett.env"))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config("DJANGO_SECRET_KEY", default="replace-this-with-your-secret-key")
+SECRET_KEY = config("DJANGO_SECRET_KEY", default="replace-with-the-secret-key")
 DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 
 LOGGING = {
@@ -28,7 +30,7 @@ LOGGING = {
             "level": "DEBUG",
         },
         "django.db.backends": {
-            "level": "DEBUG",
+            "level": "INFO",
             "handlers": ["console"],
         },
     },
@@ -118,7 +120,6 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = config("TIME_ZONE", default="UTC")
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
