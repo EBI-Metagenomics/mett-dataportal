@@ -9,7 +9,10 @@ const App: React.FC = () => {
     return (
         <Router>
             <Header/>
-            <main className="vf-body | vf-stack vf-stack--200">
+            <main
+                className="vf-body | vf-stack vf-stack--200"
+                style={{'--vf-body-width': '90em'} as React.CSSProperties}
+            >
                 <Routes>
                     <Route path="/" element={<HomePage/>}/>
                     <Route path="/gene-viewer/gene/:geneId" element={<GeneViewerPage/>}/>
