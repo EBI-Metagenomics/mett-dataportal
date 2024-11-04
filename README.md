@@ -7,22 +7,45 @@ two of the most prevalent and abundant bacterial species of the human microbiome
 
 There is a normal Django Admin panel as well.
 
+## Requirements
+
+- **Python Version**: This project requires **Python 3.12**. Please ensure that you have this version installed to avoid compatibility issues. 
+- You can download the latest version [here](https://www.python.org/downloads/).
+
+
 
 ## In Development - Intermediate Stage 
 
 ### Steps to bring up the local environment 
-- [ ] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
-- [ ] Use import scripts to import the data from FTP server. Ref: [How to import](./data-generators/import-scripts/README.md)
-- [ ] Create indexes for Fasta and GFF files. Ref: [How to generate indexes](./data-generators/index-scripts/README.md)
-- [ ] Run djando sever ```python manage.py runserver```
-- [ ] Run react **./dataportal-app** app using ```npm start```
+- [X] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
+- [X] Use import scripts to import the data from FTP server. Ref: [How to import](./data-generators/import-scripts/README.md)
+- [X] Create indexes for Fasta and GFF files. Ref: [How to generate indexes](./data-generators/index-scripts/README.md)
+- [X] Run djando sever ```python manage.py runserver```
+- [X] Run react **./dataportal-app** app using ```npm start```
 
+### Configuration
+We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config files.
+- `config/local.env` as a convenience for env vars.
 
-## Development
+### Development
 Dependencies installation -
 ```shell
 pip install -r requirements-dev.txt
 pre-commit install
+```
+
+### Code style
+Use [Black](https://black.readthedocs.io/en/stable/).
+Use [Ruff](https://docs.astral.sh/ruff/installation/).
+These are both configured if you install the pre-commit tools as above.
+
+To manually run them:
+`black .` and `ruff check --fix`.
+
+## Testing
+```shell
+pip install -r requirements-dev.txt
+pytest
 ```
 
 ## Initial Database table setup
@@ -30,5 +53,5 @@ pre-commit install
 python manage.py makemigrations
 python manage.py makemigrations dataportal --empty
 python manage.py migrate
-
 ```
+
