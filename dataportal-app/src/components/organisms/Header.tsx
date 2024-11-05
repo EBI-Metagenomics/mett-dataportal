@@ -34,7 +34,7 @@ const Header: React.FC = () => {
                         <div className="vf-card__heading">
                             <a
                                 className="vf-card__link"
-                                href="embl.org/editorhub/wp-content/uploads/2023/11/research-plans-embl-programme-2022-2026.pdf"
+                                href="https://www.embl.org/about/programme/research-plans/microbial-ecosystems/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >

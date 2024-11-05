@@ -185,7 +185,7 @@ const GeneViewerPage: React.FC = () => {
                     )}
                 </section>
                 {/* Gene Search Section */}
-                <div style={{padding: '20px'}}>
+                <div style={{paddingLeft: '5px', paddingTop: '20px'}}>
                     <section style={{marginTop: '20px'}}>
                         <GeneSearchForm
                             searchQuery={geneSearchQuery}
