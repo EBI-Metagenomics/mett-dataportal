@@ -12,9 +12,15 @@ There is a normal Django Admin panel as well.
 - **Python Version**: This project requires **Python 3.12**. Please ensure that you have this version installed to avoid compatibility issues. 
 - You can download the latest version [here](https://www.python.org/downloads/).
 
-
-
 ## In Development - Intermediate Stage 
+
+
+### Development Environment
+Dependencies installation -
+```shell
+pip install -r requirements-dev.txt
+pre-commit install
+```
 
 ### Steps to bring up the local environment 
 - [X] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
@@ -27,11 +33,14 @@ There is a normal Django Admin panel as well.
 We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config files.
 - `config/local.env` as a convenience for env vars.
 
-### Development
-Dependencies installation -
+### Import Species, Strains and Annotations
+Scripts -
 ```shell
-pip install -r requirements-dev.txt
-pre-commit install
+$ python manage.py import_species --csv ./species.csv
+$ python manage.py import_strains_contigs --ftp-server "ftp.ebi.ac.uk" --ftp-directory "/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/" --csv "gff-assembly-prefixes.tsv" --assembly-start 123456
+$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --mapping-task-file ./gff-assembly-prefixes.tsv
+$ python manage.py import_strains_contigs --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ --csv gff-assembly-prefixes.tsv --assembly-start 123456 --set-type-strains BU_ATCC8492 PV_ATCC8482
+
 ```
 
 ### Code style
