@@ -15,7 +15,7 @@ logging.basicConfig(
 )
 
 # Mapping task file path
-mapping_task_file = "./gff-assembly-prefixes.tsv"
+mapping_task_file = "../data/gff-assembly-prefixes.tsv"
 
 # Load the mapping task file into a dictionary
 isolate_to_assembly_map = {}
@@ -179,9 +179,9 @@ def process_gff_file(gff_file, isolate, strain_id):
         logging.info(f"Removed local GFF file {local_gff_path}")
 
         with psycopg.connect(
-            dbname="postgres",
-            user="postgres",
-            password="pass123",
+            dbname="mett-dataportal-db",
+            user="mett_dataportal-usr",
+            password="mettpgpass",
             host="localhost",
             port="5432",
         ) as conn:
@@ -251,9 +251,9 @@ def process_isolate(isolate):
                 return
 
             with psycopg.connect(
-                dbname="postgres",
-                user="postgres",
-                password="pass123",
+                dbname="mett-dataportal-db",
+                user="mett_dataportal-usr",
+                password="mettpgpass",
                 host="localhost",
                 port="5432",
             ) as conn:
