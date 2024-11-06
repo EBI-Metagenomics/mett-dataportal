@@ -2,10 +2,7 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
-    dependencies = [
-        ("dataportal", "0001_initial"),
-    ]
+    dependencies = []
 
     operations = [
         migrations.RunSQL(
