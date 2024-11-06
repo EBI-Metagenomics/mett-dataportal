@@ -37,9 +37,8 @@ We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config file
 Scripts -
 ```shell
 $ python manage.py import_species --csv ./species.csv
-$ python manage.py import_strains_contigs --ftp-server "ftp.ebi.ac.uk" --ftp-directory "/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/" --csv "gff-assembly-prefixes.tsv" --assembly-start 123456
-$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --mapping-task-file ./gff-assembly-prefixes.tsv
-$ python manage.py import_strains_contigs --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ --csv gff-assembly-prefixes.tsv --assembly-start 123456 --set-type-strains BU_ATCC8492 PV_ATCC8482
+$ python manage.py import_strains_contigs --ftp-server "ftp.ebi.ac.uk" --ftp-directory "/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/" --set-type-strains BU_ATCC8492 PV_ATCC8482
+$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ 
 
 ```
 
