@@ -103,3 +103,4 @@ spec:
   ports:
     - port: 8000
       targetPort: 8000
+      nodePort: 31025
