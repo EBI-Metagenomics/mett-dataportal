@@ -11,7 +11,7 @@ conn = psycopg.connect(
 )
 
 # Load the CSV file into a DataFrame
-species_df = pd.read_csv("./species.csv")
+species_df = pd.read_csv("species.csv")
 print(f"Species DataFrame: \n{species_df}")
 
 # Define insert query

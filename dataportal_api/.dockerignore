@@ -8,7 +8,7 @@
 db.*
 *.db
 
-data-generators
+../data-generators
 postman
 
 
