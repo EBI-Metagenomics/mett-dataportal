@@ -244,7 +244,7 @@ class Command(BaseCommand):
             with psycopg.connect(
                 dbname="mett-dataportal-db",
                 user="mett_dataportal-usr",
-                password="mettpgpass",
+                password="",
                 host="hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk",
                 port="31508",
                 options="-c statement_timeout=60000",
@@ -308,7 +308,7 @@ class Command(BaseCommand):
                 with psycopg.connect(
                     dbname="mett-dataportal-db",
                     user="mett_dataportal-usr",
-                    password="mettpgpass",
+                    password="",
                     host="hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk",
                     port="31508",
                     options="-c statement_timeout=60000",
