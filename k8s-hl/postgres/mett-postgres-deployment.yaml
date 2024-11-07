@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mett-postgres-dev
+  namespace: mett-dataportal-hl-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mett-postgres-dev
+  template:
+    metadata:
+      labels:
+        app: mett-postgres-dev
+    spec:
+      containers:
+      - name: mett-postgres-dev
+        image: postgres:17
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config-dev
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config-dev
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret-dev
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-storage-dev
+      volumes:
+      - name: postgres-storage-dev
+        persistentVolumeClaim:
+          claimName: mett-postgres-volume-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mett-postgres-service-dev
+  namespace: mett-dataportal-hl-dev
+  labels:
+    app: mett-postgres-service-dev
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: mett-postgres-dev
+  type: NodePort
