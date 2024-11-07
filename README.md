@@ -13,15 +13,17 @@ organised on an FTP directory hosted at EBI and contains structural annotations 
 predictions, etc.) as well as functional annotations (including biosynthetic gene clusters, carbohydrate active enzymes,
 etc.).
 
-## Requirements
+## Data Portal API
+
+### Requirements
 
 - **Python Version**: This project requires **Python 3.12**. Please ensure that you have this version installed to avoid
   compatibility issues.
 - You can download the latest version [here](https://www.python.org/downloads/).
 
-## In Development - Intermediate Stage
+### In Development - Intermediate Stage
 
-### Development Environment
+#### Development Environment
 
 Dependencies installation -
 
@@ -30,7 +32,7 @@ pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-### Steps to bring up the local environment
+#### Steps to bring up the local environment
 
 - [X] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
 - [X] Use import scripts to import the data from FTP server.
@@ -40,13 +42,13 @@ pre-commit install
 - [X] Run djando sever ```python manage.py runserver```
 - [X] Run react **./dataportal-app** app using ```npm start```
 
-### Configuration
+#### Configuration
 
 We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config files.
 
 - `config/local.env` as a convenience for env vars.
 
-### Import Species, Strains and Annotations
+#### Import Species, Strains and Annotations
 
 Scripts -
 
@@ -57,7 +59,7 @@ $ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory
 
 ```
 
-### Code style
+#### Code style
 
 Use [Black](https://black.readthedocs.io/en/stable/).
 Use [Ruff](https://docs.astral.sh/ruff/installation/).
@@ -66,14 +68,14 @@ These are both configured if you install the pre-commit tools as above.
 To manually run them:
 `black .` and `ruff check --fix`.
 
-## Testing
+#### Testing
 
 ```shell
 pip install -r requirements-dev.txt
 pytest
 ```
 
-## Initial Database table setup
+#### Initial Database table setup
 
 ```shell
 python manage.py makemigrations
@@ -81,3 +83,6 @@ python manage.py makemigrations dataportal --empty
 python manage.py migrate
 ```
 
+## Data Portal APP (React based application)
+
+### Requirements
