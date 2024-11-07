@@ -53,11 +53,19 @@ class Command(BaseCommand):
             type=str,
             default="./data-generators/data/gff-assembly-prefixes.tsv",
         )
+        parser.add_argument(
+            "--isolate", type=str, help="Specific isolate to import", required=False
+        )
+        parser.add_argument(
+            "--assembly", type=str, help="Specific assembly to import", required=False
+        )
 
     def handle(self, *args, **options):
         ftp_server = options["ftp_server"]
         ftp_directory = options["ftp_directory"]
         mapping_task_file = options["mapping_task_file"]
+        target_isolate = options.get("isolate")
+        target_assembly = options.get("assembly")
 
         logging.debug("Starting import process.")
 
@@ -74,12 +82,27 @@ class Command(BaseCommand):
                 f"Loaded mapping for {len(isolate_to_assembly_map)} isolates."
             )
 
-            # FTP connection
-            ftp = self.reconnect_ftp(ftp_server)
-            ftp.cwd(ftp_directory)
-            isolates = ftp.nlst()
-            ftp.quit()
-            logging.info(f"Found {len(isolates)} isolates in FTP directory.")
+            # Check if specific isolate or assembly is requested
+            if target_isolate:
+                isolates = [target_isolate]
+            elif target_assembly:
+                isolates = [
+                    iso
+                    for iso, asm in isolate_to_assembly_map.items()
+                    if asm == target_assembly
+                ]
+                if not isolates:
+                    logging.warning(
+                        f"No isolates found for assembly: {target_assembly}"
+                    )
+                    return
+            else:
+                ftp = self.reconnect_ftp(ftp_server)
+                ftp.cwd(ftp_directory)
+                isolates = ftp.nlst()
+                ftp.quit()
+
+            logging.info(f"Found {len(isolates)} isolates to process.")
 
             # Process each isolate
             with ThreadPoolExecutor(max_workers=2) as executor:
@@ -221,7 +244,7 @@ class Command(BaseCommand):
             with psycopg.connect(
                 dbname="mett-dataportal-db",
                 user="mett_dataportal-usr",
-                password="",
+                password="mettpgpass",
                 host="hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk",
                 port="31508",
                 options="-c statement_timeout=60000",
@@ -285,7 +308,7 @@ class Command(BaseCommand):
                 with psycopg.connect(
                     dbname="mett-dataportal-db",
                     user="mett_dataportal-usr",
-                    password="",
+                    password="mettpgpass",
                     host="hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk",
                     port="31508",
                     options="-c statement_timeout=60000",
