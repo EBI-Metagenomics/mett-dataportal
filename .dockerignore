@@ -8,8 +8,9 @@
 db.*
 *.db
 
-# need to see if database can be hosted somehwere or bundled.
-#data-generators
+data-generators
+postman
+
 
 staticfiles
 static/scss/*.css
