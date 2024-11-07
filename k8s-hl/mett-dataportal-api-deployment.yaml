@@ -18,10 +18,6 @@ spec:
       securityContext:
         runAsUser: 7123
         runAsGroup: 1347
-      volumes:
-        - name: mett-dataportal-api-storage
-          persistentVolumeClaim:
-            claimName: mett-dataportal-volume-claim
       containers:
         - image: quay.io/microbiome-informatics/mett-dataportal-api:latest
           imagePullPolicy: Always
@@ -55,12 +51,8 @@ spec:
           ports:
             - containerPort: 8000
               name: gunicorn
-          volumeMounts:
-            - mountPath: "/app/data"
-              name: mett-dataportal-api-storage
       imagePullSecrets:
         - name: quay-pull-secret
-
 
 ---
 
