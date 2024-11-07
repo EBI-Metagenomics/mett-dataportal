@@ -1,16 +1,10 @@
 import os
 from pathlib import Path
 
-from decouple import Csv, Config, RepositoryEnv
-
-config = Config(RepositoryEnv("./mett.env"))
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config("DJANGO_SECRET_KEY", default="replace-with-the-secret-key")
-DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "replace-with-the-secret-key")
+DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
 
 LOGGING = {
     "version": 1,
@@ -36,10 +30,10 @@ LOGGING = {
     },
 }
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost", cast=Csv())
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 CSRF_TRUSTED_ORIGINS = [
-    "https://" + os.getenv("DATA_PORTAL_URL", "127.0.0.1"),
-    "http://" + os.getenv("DATA_PORTAL_URL", "127.0.0.1"),
+    f"https://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
+    f"http://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
 ]
 
 # Application definition
@@ -94,13 +88,11 @@ WSGI_APPLICATION = "dataportal.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", config("DB_NAME", default="postgres")),
-        "USER": os.environ.get("DB_USER", config("DB_USER", default="postgres")),
-        "PASSWORD": os.environ.get(
-            "DB_PASSWORD", config("DB_PASSWORD", default="pass123")
-        ),
-        "HOST": os.environ.get("DB_HOST", config("DB_HOST", default="localhost")),
-        "PORT": os.environ.get("DB_PORT", config("DB_PORT", default="5432")),
+        "NAME": os.environ.get("DB_NAME", "postgres"),
+        "USER": os.environ.get("DB_USER", "postgres"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "pass123"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
 
@@ -120,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = config("TIME_ZONE", default="UTC")
+TIME_ZONE = os.environ.get("TIME_ZONE", "Europe/London")
 USE_I18N = True
 USE_TZ = True
 
@@ -137,18 +129,18 @@ if DEBUG:
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000",  # React app URL
+    "http://127.0.0.1:3000",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True  # todo remove later
 APPEND_SLASH = False  # todo verify and remove
 
 DEFAULT_LIMIT = 10
-ASSEMBLY_FTP_PATH = config(
+ASSEMBLY_FTP_PATH = os.environ.get(
     "ASSEMBLY_FTP_PATH",
-    default="http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
+    "http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
 )
-GFF_FTP_PATH = config(
+GFF_FTP_PATH = os.environ.get(
     "GFF_FTP_PATH",
-    default="http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/",
+    "http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/",
 )

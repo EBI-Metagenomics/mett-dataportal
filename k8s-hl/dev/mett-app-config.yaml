@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mett-app-config-dev
+  namespace: mett-dataportal-hl-dev
+data:
+  DJANGO_DEBUG: "True"
+  TIME_ZONE: "Europe/London"
+  ALLOWED_HOSTS: "ebi.ac.uk,localhost,127.0.0.1"
+  DATA_PORTAL_URL: "127.0.0.1"
+  ASSEMBLY_FTP_PATH: "http://localhost:3000/fasta_files/"
+  GFF_FTP_PATH: "http://localhost:3000/gff3_files/{}/"

@@ -23,6 +23,7 @@ spec:
           imagePullPolicy: Always
           name: mett-dataportal-api
           env:
+            # Database configuration
             - name: DB_HOST
               valueFrom:
                 configMapKeyRef:
@@ -48,6 +49,38 @@ spec:
                 secretKeyRef:
                   name: postgres-secret-dev
                   key: POSTGRES_PASSWORD
+
+            # Application-specific environment variables
+            - name: DJANGO_DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: DJANGO_DEBUG
+            - name: TIME_ZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: TIME_ZONE
+            - name: ALLOWED_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: ALLOWED_HOSTS
+            - name: DATA_PORTAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: DATA_PORTAL_URL
+            - name: ASSEMBLY_FTP_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: ASSEMBLY_FTP_PATH
+            - name: GFF_FTP_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: GFF_FTP_PATH
           ports:
             - containerPort: 8000
               name: gunicorn
