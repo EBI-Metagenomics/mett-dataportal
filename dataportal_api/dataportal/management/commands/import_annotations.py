@@ -8,7 +8,6 @@ import time
 import psycopg
 from django.core.management.base import BaseCommand
 
-# Configure logging
 logging.basicConfig(
     filename="process_gff.log",
     level=logging.DEBUG,  # Set to DEBUG for detailed information
@@ -17,7 +16,8 @@ logging.basicConfig(
 
 # Database query templates
 gene_insert_query = """
-INSERT INTO Gene (strain_id, gene_name, locus_tag, description, seq_id, cog, kegg, pfam, interpro, dbxref, ec_number, product, start_position, end_position, annotations)
+INSERT INTO Gene (strain_id, gene_name, locus_tag, description, seq_id, cog, kegg, pfam, interpro, dbxref, 
+ec_number, product, start_position, end_position, annotations)
 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
 ON CONFLICT (locus_tag) DO NOTHING;
 """
@@ -33,6 +33,9 @@ UPDATE Strain
 SET gff_file = %s
 WHERE isolate_name = %s
 """
+
+# batch size for inserts
+BATCH_SIZE = 1000
 
 
 class Command(BaseCommand):
@@ -71,7 +74,7 @@ class Command(BaseCommand):
                 f"Loaded mapping for {len(isolate_to_assembly_map)} isolates."
             )
 
-            # FTP connection and isolate list retrieval
+            # FTP connection
             ftp = self.reconnect_ftp(ftp_server)
             ftp.cwd(ftp_directory)
             isolates = ftp.nlst()
@@ -79,7 +82,7 @@ class Command(BaseCommand):
             logging.info(f"Found {len(isolates)} isolates in FTP directory.")
 
             # Process each isolate
-            with ThreadPoolExecutor(max_workers=3) as executor:
+            with ThreadPoolExecutor(max_workers=2) as executor:
                 futures = [
                     executor.submit(
                         self.process_isolate,
@@ -144,7 +147,7 @@ class Command(BaseCommand):
             ontology_terms = []
 
             with open(local_gff_path, "r") as gff:
-                line_count = 0  # Track number of lines read
+                line_count = 0
                 for line in gff:
                     line_count += 1
                     if line.startswith("##FASTA"):
@@ -218,30 +221,33 @@ class Command(BaseCommand):
             with psycopg.connect(
                 dbname="mett-dataportal-db",
                 user="mett_dataportal-usr",
-                password="mettpgpass",
-                host="localhost",
-                port="5432",
+                password="",
+                host="hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk",
+                port="31508",
+                options="-c statement_timeout=60000",
             ) as conn:
                 with conn.cursor() as cursor:
-                    if genes_to_insert:
-                        cursor.executemany(gene_insert_query, genes_to_insert)
-                        logging.info(
-                            f"Inserted {len(genes_to_insert)} genes from {gff_file}"
-                        )
+                    for i in range(0, len(genes_to_insert), BATCH_SIZE):
+                        batch = genes_to_insert[i : i + BATCH_SIZE]
+                        logging.info(f"Inserting batch of {len(batch)} genes...")
+                        cursor.executemany(gene_insert_query, batch)
+                        conn.commit()
+                        logging.info(f"Inserted {len(batch)} genes in this batch.")
 
-                    for locus_tag, ontology_type, ontology_id, _ in ontology_terms:
-                        cursor.execute(
-                            "SELECT id FROM Gene WHERE locus_tag = %s", (locus_tag,)
-                        )
-                        gene_id = cursor.fetchone()
-                        if gene_id:
-                            cursor.execute(
-                                ontology_insert_query,
-                                (gene_id[0], ontology_type, ontology_id, None),
-                            )
-                    logging.info(
-                        f"Inserted {len(ontology_terms)} ontology terms for {gff_file}"
-                    )
+                    # todo Insert ontology terms
+                    # for locus_tag, ontology_type, ontology_id, _ in ontology_terms:
+                    #     cursor.execute(
+                    #         "SELECT id FROM Gene WHERE locus_tag = %s", (locus_tag,)
+                    #     )
+                    #     gene_id = cursor.fetchone()
+                    #     if gene_id:
+                    #         cursor.execute(
+                    #             ontology_insert_query,
+                    #             (gene_id[0], ontology_type, ontology_id, None),
+                    #         )
+                    # logging.info(
+                    #     f"Inserted {len(ontology_terms)} ontology terms for {gff_file}"
+                    # )
 
                     cursor.execute(
                         update_strain_query, (os.path.basename(gff_file), isolate)
@@ -251,6 +257,7 @@ class Command(BaseCommand):
                     )
 
                 conn.commit()
+                logging.info("Transaction committed.")
 
         except Exception as e:
             logging.error(f"Error processing GFF file {gff_file}: {e}", exc_info=True)
@@ -278,9 +285,10 @@ class Command(BaseCommand):
                 with psycopg.connect(
                     dbname="mett-dataportal-db",
                     user="mett_dataportal-usr",
-                    password="mettpgpass",
-                    host="localhost",
-                    port="5432",
+                    password="",
+                    host="hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk",
+                    port="31508",
+                    options="-c statement_timeout=60000",
                 ) as conn:
                     with conn.cursor() as cursor:
                         cursor.execute(

@@ -4,10 +4,10 @@ metadata:
   name: mett-postgres-volume-claim
   namespace: mett-dataportal-hl-dev
 spec:
-  storageClassName: ""
+  storageClassName: standard-nfs-production
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 5Gi
-  volumeName: mett-postgres-vol-1
+
