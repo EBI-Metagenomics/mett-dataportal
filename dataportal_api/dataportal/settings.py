@@ -66,7 +66,7 @@ MIDDLEWARE = [
 if DEBUG:
     MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
 
-ROOT_URLCONF = "dataportal_api.dataportal.urls"
+ROOT_URLCONF = "dataportal.urls"
 
 TEMPLATES = [
     {
