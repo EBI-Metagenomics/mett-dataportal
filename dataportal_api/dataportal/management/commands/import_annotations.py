@@ -1,12 +1,16 @@
+import csv
 import ftplib
 import json
 import logging
 import os
-import csv
-from concurrent.futures import ThreadPoolExecutor
 import time
+from concurrent.futures import ThreadPoolExecutor
+
 import psycopg
+from decouple import Config, RepositoryEnv
 from django.core.management.base import BaseCommand
+
+config = Config(RepositoryEnv("./mett.env"))
 
 logging.basicConfig(
     filename="process_gff.log",
@@ -242,11 +246,11 @@ class Command(BaseCommand):
 
             # Perform bulk insertions using psycopg
             with psycopg.connect(
-                dbname="mett-dataportal-db",
-                user="mett_dataportal-usr",
-                password="",
-                host="hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk",
-                port="31508",
+                dbname=config("DB_NAME"),
+                user=config("DB_USER"),
+                password=config("DB_PASSWORD"),
+                host=config("DB_HOST"),
+                port=config("DB_PORT"),
                 options="-c statement_timeout=60000",
             ) as conn:
                 with conn.cursor() as cursor:
@@ -306,11 +310,11 @@ class Command(BaseCommand):
                     return
 
                 with psycopg.connect(
-                    dbname="mett-dataportal-db",
-                    user="mett_dataportal-usr",
-                    password="",
-                    host="hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk",
-                    port="31508",
+                    dbname=config("DB_NAME"),
+                    user=config("DB_USER"),
+                    password=config("DB_PASSWORD"),
+                    host=config("DB_HOST"),
+                    port=config("DB_PORT"),
                     options="-c statement_timeout=60000",
                 ) as conn:
                     with conn.cursor() as cursor:
