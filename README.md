@@ -36,9 +36,9 @@ pre-commit install
 
 - [X] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
 - [X] Use import scripts to import the data from FTP server.
-  Ref: [How to import](dataportal_api/data-generators/import-scripts/README.md)
+  Ref: [How to import](data-generators/import-scripts/README.md)
 - [X] Create indexes for Fasta and GFF files.
-  Ref: [How to generate indexes](dataportal_api/data-generators/index-scripts/README.md)
+  Ref: [How to generate indexes](data-generators/index-scripts/README.md)
 - [X] Run djando sever ```python manage.py runserver```
 - [X] Run react **./dataportal-app** app using ```npm start```
 
