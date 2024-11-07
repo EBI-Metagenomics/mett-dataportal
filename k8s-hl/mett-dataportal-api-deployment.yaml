@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mett-dataportal-api
+  namespace: mett-dataportal-hl-dev
+  labels:
+    app: mett-dataportal-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mett-dataportal-api
+  template:
+    metadata:
+      labels:
+        app: mett-dataportal-api
+    spec:
+      securityContext:
+        runAsUser: 7123
+        runAsGroup: 1347
+      volumes:
+        - name: mett-dataportal-api-storage
+          persistentVolumeClaim:
+            claimName: mett-dataportal-volume-claim
+      containers:
+        - image: quay.io/microbiome-informatics/mett-dataportal-api:latest
+          imagePullPolicy: Always
+          name: mett-dataportal-api
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config-dev
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config-dev
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config-dev
+                  key: POSTGRES_DB
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config-dev
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret-dev
+                  key: POSTGRES_PASSWORD
+          ports:
+            - containerPort: 8000
+              name: gunicorn
+          volumeMounts:
+            - mountPath: "/app/data"
+              name: mett-dataportal-api-storage
+      imagePullSecrets:
+        - name: quay-pull-secret
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mett-dataportal-api
+  namespace: mett-dataportal-hl-dev
+  labels:
+    app: mett-dataportal-api
+spec:
+  type: NodePort
+  selector:
+    app: mett-dataportal-api
+  ports:
+    - port: 8000
+      targetPort: 8000

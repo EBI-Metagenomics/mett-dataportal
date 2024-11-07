@@ -4,5 +4,7 @@ metadata:
   name: postgres-config-dev
   namespace: mett-dataportal-hl-dev
 data:
-  POSTGRES_DB: mett-dataportal-db
-  POSTGRES_USER: mett_dataportal-usr
+  DB_HOST: "hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk"
+  DB_PORT: "31508"  # Wrapped in quotes to ensure it's treated as a string
+  POSTGRES_DB: "mett-dataportal-db"
+  POSTGRES_USER: "mett_dataportal-usr"

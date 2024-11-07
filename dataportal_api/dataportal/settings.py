@@ -94,11 +94,13 @@ WSGI_APPLICATION = "dataportal.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
+        "NAME": os.environ.get("DB_NAME", config("DB_NAME", default="postgres")),
+        "USER": os.environ.get("DB_USER", config("DB_USER", default="postgres")),
+        "PASSWORD": os.environ.get(
+            "DB_PASSWORD", config("DB_PASSWORD", default="pass123")
+        ),
+        "HOST": os.environ.get("DB_HOST", config("DB_HOST", default="localhost")),
+        "PORT": os.environ.get("DB_PORT", config("DB_PORT", default="5432")),
     }
 }
 
