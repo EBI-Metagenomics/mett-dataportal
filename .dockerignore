@@ -2,16 +2,16 @@
 .DS_Store
 
 # PyCharm
-../.idea
+.idea
 
 # Artefacts
-.env.local
+**/.env.local
 
 # Artefacts
 db.*
 *.db
 
-../data-generators
+data-generators
 postman
 
 staticfiles
