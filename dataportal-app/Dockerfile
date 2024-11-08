@@ -15,6 +15,16 @@ FROM nginx:stable-alpine
 
 COPY --from=build /app/build /usr/share/nginx/html
 
+RUN echo 'server { \
+    listen 80; \
+    server_name localhost; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
 
 CMD /bin/sh -c "sed -i 's|REACT_APP_API_BASE_URL_PLACEHOLDER|$REACT_APP_API_BASE_URL|g' /usr/share/nginx/html/static/js/*.js && nginx -g 'daemon off;'"
