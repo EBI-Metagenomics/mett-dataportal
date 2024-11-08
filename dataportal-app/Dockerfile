@@ -7,14 +7,15 @@ COPY dataportal-app/package.json /app/
 COPY dataportal-app/package-lock.json /app/
 RUN npm install
 
+ARG REACT_APP_API_BASE_URL
+ENV REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
+
 COPY dataportal-app /app
 RUN npm run build
 
 # Production stage
 FROM nginx:stable-alpine
 
-# Copy build files to NGINX's default public directory
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Expose port 80
 EXPOSE 80
