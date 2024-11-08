@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# PyCharm
+../.idea
+
+# Artefacts
+.env.local
+
+../data-generators
+postman
+
+
+# repository
+.github
+.git

@@ -10,3 +10,4 @@ data:
   DATA_PORTAL_URL: "127.0.0.1"
   ASSEMBLY_FTP_PATH: "http://localhost:3000/fasta_files/"
   GFF_FTP_PATH: "http://localhost:3000/gff3_files/{}/"
+  REACT_APP_API_BASE_URL: "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:31025/"
