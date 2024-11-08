@@ -5,12 +5,14 @@
 ../.idea
 
 # Artefacts
+.env.local
+
+# Artefacts
 db.*
 *.db
 
 ../data-generators
 postman
-
 
 staticfiles
 static/scss/*.css
