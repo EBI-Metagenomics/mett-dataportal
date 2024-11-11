@@ -49,12 +49,28 @@ const HomePage: React.FC = () => {
     };
 
     const handleTypeStrainSelect = (strainId: number) => {
+        let updatedSelectedTypeStrains: number[];
+
         if (selectedTypeStrains.includes(strainId)) {
-            setSelectedTypeStrains(selectedTypeStrains.filter(id => id !== strainId));
+            // If the strain is already selected, remove it from the selection
+            updatedSelectedTypeStrains = selectedTypeStrains.filter(id => id !== strainId);
         } else {
-            setSelectedTypeStrains([...selectedTypeStrains, strainId]);
+            // Add the strain to the selected type strains
+            updatedSelectedTypeStrains = [...selectedTypeStrains, strainId];
         }
+
+        // Update selected type strains state
+        setSelectedTypeStrains(updatedSelectedTypeStrains);
+
+        // Update selected genomes based on the updated selected type strains
+        const updatedTypeStrains = typeStrains
+            .filter(strain => updatedSelectedTypeStrains.includes(strain.id))
+            .map(strain => ({id: strain.id, name: strain.isolate_name}));
+
+        // Set selected genomes
+        setSelectedGenomes(updatedTypeStrains);
     };
+
 
     const handleGenomeSearch = async () => {
         const results = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery);
