@@ -1,25 +1,36 @@
 #!/bin/bash
 
 FTP_URL="http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/"
-LIMIT=10  # limit genomes to process for dev testing
 
 mkdir -p fasta_files
 
 echo "Fetching list of FASTA files from FTP server..."
-curl -s $FTP_URL | grep -o 'href="[^"]*.fa"' | sed 's/href="//' | head -n $LIMIT > fasta_files_list.txt
+curl -s $FTP_URL | grep -o 'href="[^"]*.fa"' | sed 's/href="//' > fasta_files_list.txt
 
 # process FASTA files
 while read -r fasta_file; do
   fasta_file=$(echo "$fasta_file" | tr -d '"')
   isolate_name="${fasta_file%.fa}"
+  retries=3  # Number of retry attempts
 
   echo "Processing $fasta_file for isolate $isolate_name..."
   mkdir -p "fasta_files/$isolate_name"
-  wget -q "${FTP_URL}${fasta_file}" -O "fasta_files/$isolate_name/$fasta_file"
 
-  # Check if the file was downloaded successfully and is not empty
+  # Attempt to download with retries
+  for attempt in $(seq 1 $retries); do
+    wget -q "${FTP_URL}${fasta_file}" -O "fasta_files/$isolate_name/$fasta_file"
+    if [ -s "fasta_files/$isolate_name/$fasta_file" ]; then
+      echo "Downloaded $fasta_file successfully on attempt $attempt."
+      break
+    else
+      echo "Attempt $attempt: Failed to download $fasta_file. Retrying in 5 seconds..."
+      sleep 5
+    fi
+  done
+
+  # Final check to skip if download failed after retries
   if [ ! -s "fasta_files/$isolate_name/$fasta_file" ]; then
-    echo "Error: $fasta_file could not be downloaded or is empty. Skipping."
+    echo "Error: $fasta_file could not be downloaded after $retries attempts. Skipping."
     continue
   fi
 
@@ -51,8 +62,10 @@ while read -r fasta_file; do
   fi
 
   echo "Processed $fasta_file for isolate $isolate_name successfully."
-  echo "Files created:"
-  ls -lh "fasta_files/$isolate_name"
+#  echo "Files created:"
+#  ls -lh "fasta_files/$isolate_name"
+
+  sleep 2
 
 done < fasta_files_list.txt
 
