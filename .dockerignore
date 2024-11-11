@@ -6,6 +6,9 @@
 
 # Artefacts
 **/.env.local
+**/fasta_files/*
+**/gff3_files/*
+
 
 # Artefacts
 db.*
