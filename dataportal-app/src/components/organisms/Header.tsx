@@ -13,10 +13,10 @@ const Header: React.FC = () => {
                     className="vf-hero__container"
                     style={{
                         display: 'flex',
-                        justifyContent: 'flex-start', // Aligns to the left
+                        justifyContent: 'flex-start',
                         padding: '0 1rem',
-                        maxWidth: '90em', // Same width as the body for consistent alignment
-                        margin: '0 auto', // Centers the whole container in the page
+                        maxWidth: '80em',
+                        margin: '0 auto',
                     }}
                 >
                     <div

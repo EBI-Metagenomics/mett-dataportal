@@ -11,7 +11,7 @@ const App: React.FC = () => {
             <Header/>
             <main
                 className="vf-body | vf-stack vf-stack--200"
-                style={{'--vf-body-width': '90em'} as React.CSSProperties}
+                style={{'--vf-body-width': '80em'} as React.CSSProperties}
             >
                 <Routes>
                     <Route path="/" element={<HomePage/>}/>
