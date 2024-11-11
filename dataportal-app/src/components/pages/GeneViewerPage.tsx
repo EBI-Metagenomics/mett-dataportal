@@ -45,182 +45,196 @@ export interface GenomeMeta {
 }
 
 const GeneViewerPage: React.FC = () => {
+    const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
+    const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
+    const [geneSearchQuery, setGeneSearchQuery] = useState('');
+    const [geneResults, setGeneResults] = useState<any[]>([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [geneCurrentPage, setGeneCurrentPage] = useState(1);
 
-        const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
-        const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
+    const { geneId, genomeId } = useParams<{ geneId?: string; genomeId?: string }>();
+    const searchParams = new URLSearchParams(location.search);
+    // const genomeId = searchParams.get('genomeId');
 
-        const [geneSearchQuery, setGeneSearchQuery] = useState('');
-        const [geneResults, setGeneResults] = useState<any[]>([]);
-        const [totalPages, setTotalPages] = useState(1);
+    useEffect(() => {
+        const fetchGeneAndGenomeMeta = async () => {
+            try {
+                if (geneId) {
+                    const geneResponse = await fetchGeneById(Number(geneId));
+                    setGeneMeta(geneResponse);
 
-        const [geneCurrentPage, setGeneCurrentPage] = useState(1);
-
-        const {geneId} = useParams<{ geneId?: string }>();
-        const searchParams = new URLSearchParams(location.search);
-        const genomeId = searchParams.get('genomeId');
-
-        // Fetch gene and genome metadata
-        useEffect(() => {
-            const fetchGeneAndGenomeMeta = async () => {
-                try {
-                    if (geneId) {
-                        const geneResponse = await fetchGeneById(Number(geneId));
-                        console.log('Gene data fetched:', geneResponse);
-                        setGeneMeta(geneResponse);
-
-                        const genomeResponse = await fetchGenomeById(geneResponse.strain_id);
-                        console.log('Genome data fetched:', genomeResponse);
-                        setGenomeMeta(genomeResponse);
-                    } else if (genomeId) {
-                        const genomeResponse = await fetchGenomeById(Number(genomeId));
-                        console.log('Genome data fetched:', genomeResponse);
-                        setGenomeMeta(genomeResponse);
-                    }
-                } catch (error) {
-                    console.error('Error fetching gene/genome meta information', error);
+                    const genomeResponse = await fetchGenomeById(geneResponse.strain_id);
+                    setGenomeMeta(genomeResponse);
+                } else if (genomeId) {
+                    const genomeResponse = await fetchGenomeById(Number(genomeId));
+                    setGenomeMeta(genomeResponse);
                 }
-            };
-
-            fetchGeneAndGenomeMeta();
-        }, [geneId, genomeId]);
-
-        const assembly = useMemo(() => {
-            const result = genomeMeta ? getAssembly(genomeMeta, genomeMeta.fasta_url.replace(/\/[^/]+$/, '')) : null;
-            console.log('Assembly computed:', result);
-            return result;
-        }, [genomeMeta]);
-
-        const tracks = useMemo(() => {
-            const result = genomeMeta ? getTracks(genomeMeta, genomeMeta.gff_url.replace(/\/[^/]+$/, '')) : [];
-            console.log('Tracks computed:', result);
-            return result;
-        }, [genomeMeta]);
-
-        const sessionConfig = useMemo(() => {
-            if (genomeMeta && geneMeta) {
-                const config = getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
-                console.log("sessionconfig1: " + config);
-                console.log("sessionconfig2: " + config);
-                return config;
+            } catch (error) {
+                console.error('Error fetching gene/genome meta information', error);
             }
-            return null;
-        }, [genomeMeta, geneMeta, assembly, tracks]);
+        };
 
-        const localViewState = useGeneViewerState(assembly, tracks, sessionConfig);
-        console.log('Local View State:', localViewState);
+        fetchGeneAndGenomeMeta();
+    }, [geneId, genomeId]);
 
-
-        if (!localViewState) {
-            return <p>Loading Genome Viewer...</p>;
+    const assembly = useMemo(() => {
+        if (genomeMeta) {
+            return getAssembly(genomeMeta, genomeMeta.fasta_url.replace(/\/[^/]+$/, ''));
         }
+        return null; // return null if genomeMeta is missing
+    }, [genomeMeta]);
 
-        // Log all widgets in the session
-        console.log('Session Widgets:', localViewState?.session?.widgets);
+    const tracks = useMemo(() => {
+        return genomeMeta ? getTracks(genomeMeta, genomeMeta.gff_url.replace(/\/[^/]+$/, '')) : [];
+    }, [genomeMeta]);
 
-        const handleGeneSearch = async () => {
-            if (genomeId) {
-                const response = await fetchGeneBySearch(parseInt(genomeId, 10), geneSearchQuery);
-                setGeneResults(response.results || []);
-                setTotalPages(response.num_pages || 1);
+    const sessionConfig = useMemo(() => {
+         console.log('sdfghjkkjmhngbfv: ' + genomeMeta)
+        if (genomeMeta && geneMeta) {
+            console.log('1234567890')
+            return getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
+        } else if (genomeMeta) {
+            console.log('12345098765432167890')
+            // Default session configuration if only genomeMeta is available
+            return {
+                name: "Default Genome View",
+                views: [
+                    {
+                        type: "LinearGenomeView",
+                        bpPerPx: 1,
+                        tracks: tracks,
+                        displayedRegions: [
+                            {
+                                refName: genomeMeta.assembly_name,
+                                start: 0,
+                                end: 5000000  // Adjust as needed
+                            }
+                        ]
+                    }
+                ]
+            };
+        }
+        return null;
+    }, [genomeMeta, geneMeta, assembly, tracks]);
+
+    // wait until `assembly` is ready
+    useEffect(() => {
+        const checkAssemblyReady = setInterval(() => {
+            if (assembly) {
+                clearInterval(checkAssemblyReady); // Clear
             }
-        };
+        }, 100); // Check every 100 milliseconds
 
-        const linkData = {
-            template: '/gene-viewer/gene/${id}/details?genomeId=${strain_id}',
-            alias: 'Select'
-        };
+        return () => clearInterval(checkAssemblyReady);
+    }, [assembly]);
 
-        return (
-            <div style={{padding: '20px'}}>
+    const localViewState = useGeneViewerState(assembly, tracks, sessionConfig);
 
-                {/* Breadcrumb Section */}
-                <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
-                    <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
-                        <li className={styles.breadcrumbsItem}>
-                            <a href="/" className="vf-breadcrumbs__link">Home</a>
-                        </li>
-                        <span className={styles.separator}> | </span>
-                        <li className={styles.breadcrumbsItem}>
-                            <b>Genome View</b>
-                        </li>
-                        <span className={styles.separator}> | </span>
-                        <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
-                            <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
-                                Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
+    if (!localViewState) {
+        return <p>Loading Genome Viewer...</p>;
+    }
+
+    const handleGeneSearch = async () => {
+        if (genomeId) {
+            const response = await fetchGeneBySearch(parseInt(genomeId, 10), geneSearchQuery);
+            setGeneResults(response.results || []);
+            setTotalPages(response.num_pages || 1);
+        }
+    };
+
+    const linkData = {
+        template: '/gene-viewer/gene/${id}/details?genomeId=${strain_id}',
+        alias: 'Select'
+    };
+
+    return (
+        <div style={{ padding: '20px' }}>
+            {/* Breadcrumb Section */}
+            <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
+                <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
+                    <li className={styles.breadcrumbsItem}>
+                        <a href="/" className="vf-breadcrumbs__link">Home</a>
+                    </li>
+                    <span className={styles.separator}> | </span>
+                    <li className={styles.breadcrumbsItem}>
+                        <b>Genome View</b>
+                    </li>
+                    <span className={styles.separator}> | </span>
+                    <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
+                        <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
+                            Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
+                        </a>
+                        <ul className={styles.dropdownList}>
+                            <li className={styles.dropdownItem}>
+                                <a href="/" className={styles.dropdownLink}>Other Strains of Bacteroides uniformis</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+
+            {/* Genome Metadata Section */}
+            <section style={{ marginTop: '20px' }}>
+                {genomeMeta ? (
+                    <div className="genome-meta-info">
+                        <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
+                        <p><strong>Assembly Name:&nbsp;</strong>
+                            <a href={genomeMeta.fasta_url} target="_blank"
+                               rel="noopener noreferrer">{genomeMeta.assembly_name}
                             </a>
-                            <ul className={styles.dropdownList}>
-                                <li className={styles.dropdownItem}>
-                                    <a href="/" className={styles.dropdownLink}>Other Strains of Bacteroides
-                                        uniformis</a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                </nav>
-
-                {/* Genome Metadata Section */}
-                <section style={{marginTop: '20px'}}>
-                    {genomeMeta ? (
-                        <div className="genome-meta-info">
-                            <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
-                            <p><strong>Assembly Name:&nbsp;</strong>
-                                <a href={genomeMeta.fasta_url} target="_blank"
-                                   rel="noopener noreferrer">{genomeMeta.assembly_name}
-                                </a>
-                            </p>
-                            <p><strong>Annotations:&nbsp;</strong>
-                                <a href={genomeMeta.gff_url} target="_blank"
-                                   rel="noopener noreferrer">{genomeMeta.gff_file}
-                                </a>
-                            </p>
-                            <p><strong>ENA Accession:&nbsp;</strong>
-                                <a href={genomeMeta.gff_url} target="_blank"
-                                   rel="noopener noreferrer">{genomeMeta.assembly_accession}
-                                </a>
-                            </p>
-
-                        </div>
-                    ) : (
-                        <p>Loading genome meta information...</p>
-                    )}
-                </section>
-                {/* Gene Search Section */}
-                <div style={{paddingLeft: '5px', paddingTop: '20px'}}>
-                    <section style={{marginTop: '20px'}}>
-                        <GeneSearchForm
-                            searchQuery={geneSearchQuery}
-                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                            onSearchSubmit={handleGeneSearch}
-                            selectedGenomes={genomeId ? [{id: parseInt(genomeId, 10), name: ''}] : []}
-                            results={geneResults}
-                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
-                            currentPage={geneCurrentPage}
-                            totalPages={totalPages}
-                            handlePageClick={(page) => setGeneCurrentPage(page)}
-                            linkData={linkData}
-                            viewState={localViewState}
-                        />
-                    </section>
-                </div>
-                {/* JBrowse Component Section */}
-                <section style={{marginTop: '20px'}}>
-                    <div className={styles.sidePanel}>
-                        {localViewState ? (
-                            <div className={styles.geneViewerPage} style={{width: '100%'}}>
-                                <div className={styles.jbrowseContainer}>
-                                        <JBrowseApp viewState={localViewState}/>
-                                </div>
-                            </div>
-                        ) : (
-                            <p>Loading Genome Viewer...</p>
-                        )}
+                        </p>
+                        <p><strong>Annotations:&nbsp;</strong>
+                            <a href={genomeMeta.gff_url} target="_blank"
+                               rel="noopener noreferrer">{genomeMeta.gff_file}
+                            </a>
+                        </p>
+                        <p><strong>ENA Accession:&nbsp;</strong>
+                            <a href={genomeMeta.gff_url} target="_blank"
+                               rel="noopener noreferrer">{genomeMeta.assembly_accession}
+                            </a>
+                        </p>
                     </div>
+                ) : (
+                    <p>Loading genome meta information...</p>
+                )}
+            </section>
 
+            {/* Gene Search Section */}
+            <div style={{ paddingLeft: '5px', paddingTop: '20px' }}>
+                <section style={{ marginTop: '20px' }}>
+                    <GeneSearchForm
+                        searchQuery={geneSearchQuery}
+                        onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                        onSearchSubmit={handleGeneSearch}
+                        selectedGenomes={genomeId ? [{ id: parseInt(genomeId, 10), name: '' }] : []}
+                        results={geneResults}
+                        onSortClick={(sortField) => console.log('Sort by:', sortField)}
+                        currentPage={geneCurrentPage}
+                        totalPages={totalPages}
+                        handlePageClick={(page) => setGeneCurrentPage(page)}
+                        linkData={linkData}
+                        viewState={localViewState}
+                    />
                 </section>
             </div>
-        )
-            ;
-    }
-;
+
+            {/* JBrowse Component Section */}
+            <section style={{ marginTop: '20px' }}>
+                <div className={styles.sidePanel}>
+                    {localViewState ? (
+                        <div className={styles.geneViewerPage} style={{ width: '100%' }}>
+                            <div className={styles.jbrowseContainer}>
+                                <JBrowseApp viewState={localViewState} />
+                            </div>
+                        </div>
+                    ) : (
+                        <p>Loading Genome Viewer...</p>
+                    )}
+                </div>
+            </section>
+        </div>
+    );
+};
 
 export default GeneViewerPage;
+

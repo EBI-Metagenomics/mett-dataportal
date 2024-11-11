@@ -14,15 +14,15 @@ const App: React.FC = () => {
                 style={{'--vf-body-width': '80em'} as React.CSSProperties}
             >
                 <Routes>
-                    <Route path="/" element={<HomePage/>}/>
-                    <Route path="/gene-viewer/gene/:geneId" element={<GeneViewerPage/>}/>
+                    <Route path="/" element={<HomePage />} />
+                    {/* Route for gene and genome */}
+                    <Route path="/gene-viewer/gene/:geneId/genome/:genomeId" element={<GeneViewerPage />} />
+                    {/* Route for genome only */}
                     <Route path="/gene-viewer/genome/:genomeId" element={
                         <ErrorBoundary>
-                            <GeneViewerPage/>
+                            <GeneViewerPage />
                         </ErrorBoundary>
-                    }/>
-
-                    {/* Add other routes here */}
+                    } />
                 </Routes>
             </main>
             {/*<Footer />*/}

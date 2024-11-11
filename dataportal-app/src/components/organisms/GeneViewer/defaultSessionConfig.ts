@@ -1,11 +1,34 @@
-import {GeneMeta, GenomeMeta} from '../../pages/GeneViewerPage';
+import { GeneMeta, GenomeMeta } from '../../pages/GeneViewerPage';
 
 const getDefaultSessionConfig = (
-    geneMeta: GeneMeta,
-    genomeMeta: GenomeMeta,
+    geneMeta: GeneMeta | null,
+    genomeMeta: GenomeMeta | null,
     assembly: any,
     tracks: any[]
 ) => {
+    if (!genomeMeta) {
+        console.log("Genome meta information not found");
+        return null; // Return null if genomeMeta is missing
+    }
+
+    const displayedRegions = geneMeta
+        ? [
+            {
+                refName: geneMeta.seq_id,
+                start: geneMeta.start_position || 0,
+                end: geneMeta.end_position || 50000,
+                reversed: true,
+                assemblyName: genomeMeta.assembly_name,
+            },
+        ]
+        : [
+            {
+                refName: genomeMeta.assembly_name,
+                start: 0,
+                end: 5000000, // Adjust this default range
+            },
+        ];
+
     return {
         name: 'Gene Viewer Session',
         margin: 0,
@@ -15,15 +38,7 @@ const getDefaultSessionConfig = (
                 minimized: false,
                 type: 'LinearGenomeView',
                 hideTrackSelector: false,
-                displayedRegions: [
-                    {
-                        refName: geneMeta.seq_id,
-                        start: geneMeta?.start_position || 0,
-                        end: geneMeta?.end_position || 50000,
-                        reversed: true,
-                        assemblyName: genomeMeta.assembly_name,
-                    },
-                ],
+                displayedRegions: displayedRegions,
                 tracks: [
                     {
                         id: assembly.sequence.trackId,
@@ -59,7 +74,8 @@ const getDefaultSessionConfig = (
                 showCenterLine: false,
                 showCytobandsSetting: true,
                 showGridlines: true,
-            },],
+            },
+        ],
     };
 };
 
