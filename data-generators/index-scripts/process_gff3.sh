@@ -2,12 +2,11 @@
 
 FTP_URL="http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/"
 BASE_URL="http://localhost:3000"
-LIMIT=11  # limit for dev testing
 
 mkdir -p gff3_files
 
 echo "Fetching list of GFF3 isolate names from FTP server..."
-curl -s $FTP_URL | grep -oE 'href="([^"]+/)"' | sed 's|href="||; s|/"||' | head -n $LIMIT > isolate_list.txt
+curl -s $FTP_URL | grep -oE 'href="([^"]+/)"' | sed 's|href="||; s|/"||' > isolate_list.txt
 
 if [ ! -s isolate_list.txt ]; then
   echo "Error: No isolate directories found at the FTP location."
@@ -18,27 +17,49 @@ while read -r isolate_name; do
   echo "Processing isolate: $isolate_name..."
   mkdir -p "gff3_files/$isolate_name"
   GFF_FILE_URL="${FTP_URL}${isolate_name}/functional_annotation/merged_gff/"
-  gff_file=$(curl -s $GFF_FILE_URL | grep -oE 'href="[^"]*_annotations\.gff"' | sed 's|href="||')
-  gff_file=$(echo "$gff_file" | tr -d '"')
-  echo "GFF file: $gff_file"
+
+  # Fetch the GFF file name with retries
+  retries=3
+  for attempt in $(seq 1 $retries); do
+    gff_file=$(curl -s $GFF_FILE_URL | grep -oE 'href="[^"]*_annotations\.gff"' | sed 's|href="||' | tr -d '"')
+    if [ -n "$gff_file" ]; then
+      echo "Found GFF file: $gff_file on attempt $attempt."
+      break
+    else
+      echo "Attempt $attempt: No GFF file found for isolate $isolate_name. Retrying in 5 seconds..."
+      sleep 5
+    fi
+  done
+
   if [ -z "$gff_file" ]; then
-    echo "Error: No GFF file found for isolate $isolate_name. Skipping."
+    echo "Error: No GFF file found for isolate $isolate_name after $retries attempts. Skipping."
     continue
   fi
 
   FULL_GFF_FILE_URL="${GFF_FILE_URL}${gff_file}"
-  echo "FULL_GFF_FILE_URL: $FULL_GFF_FILE_URL"
-  wget -q "$FULL_GFF_FILE_URL" -O "gff3_files/$isolate_name/_orig_${gff_file}"
+  echo "Downloading from FULL_GFF_FILE_URL: $FULL_GFF_FILE_URL"
+
+  # Download the GFF file with retries
+  for attempt in $(seq 1 $retries); do
+    wget -q "$FULL_GFF_FILE_URL" -O "gff3_files/$isolate_name/_orig_${gff_file}"
+    if [ -s "gff3_files/$isolate_name/_orig_${gff_file}" ]; then
+      echo "Downloaded ${gff_file} successfully on attempt $attempt."
+      break
+    else
+      echo "Attempt $attempt: Failed to download ${gff_file}. Retrying in 5 seconds..."
+      sleep 5
+    fi
+  done
 
   if [ ! -s "gff3_files/$isolate_name/_orig_${gff_file}" ]; then
-    echo "Error: ${gff_file} could not be downloaded or is empty. Skipping."
+    echo "Error: ${gff_file} could not be downloaded after $retries attempts or is empty. Skipping."
     continue
   fi
 
-  # Triming the GFF file by removing everything after '##FASTA'
+  # Trim the GFF file
   awk '/##FASTA/{exit}1' "gff3_files/$isolate_name/_orig_${gff_file}" > "gff3_files/$isolate_name/trimmed_${isolate_name}.gff"
 
-  # Verify
+  # Verify the trimmed file
   if [ ! -s "gff3_files/$isolate_name/trimmed_${isolate_name}.gff" ]; then
     echo "Error: Failed to trim ${gff_file}. Skipping this isolate."
     continue
@@ -48,47 +69,43 @@ while read -r isolate_name; do
   jbrowse sort-gff "gff3_files/$isolate_name/trimmed_${isolate_name}.gff" > "gff3_files/$isolate_name/${gff_file}"
   bgzip "gff3_files/$isolate_name/${gff_file}"
 
-  # Verify
+  # Verify the bgzipped GFF file
   if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz" ]; then
     echo "Error: Failed to create ${gff_file}.gz. Skipping this isolate."
     continue
   fi
 
-  # Generate tabix (.tbi) file
+  # Generate tabix index file (.tbi)
   tabix -p gff "gff3_files/$isolate_name/${gff_file}.gz"
 
-  # Verify
+  # Verify the tabix file
   if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz.tbi" ]; then
     echo "Error: Failed to create ${gff_file}.gz.tbi. Skipping this isolate."
     continue
   fi
 
-  # Generate an index file (.ix)
+  # Generate text index files (.ix and .ixx)
   jbrowse text-index --file "gff3_files/$isolate_name/${gff_file}.gz" --fileId "${isolate_name}_annotations" --out "gff3_files/$isolate_name"
 
-  # Verify  (.ix)
-  if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz.ix" ]; then
+  # Verify text index files
+  if [ ! -s "gff3_files/$isolate_name/trix/${gff_file}.gz.ix" ]; then
     echo "Error: Failed to create ${gff_file}.gz.ix. Skipping this isolate."
     continue
   fi
-
-  # Verify (.ixx)
-  if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz.ixx" ]; then
+  if [ ! -s "gff3_files/$isolate_name/trix/${gff_file}.gz.ixx" ]; then
     echo "Error: Failed to create ${gff_file}.gz.ixx. Skipping this isolate."
     continue
   fi
 
-#   handle the metadata file
+  # Handle the metadata file
   meta_json="gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz_meta.json"
-
   if [ -f "$meta_json" ]; then
-    # Replace "localPath" with "uri" and update the location
     sed -i '' "s|\"localPath\": \".*\"|\"uri\": \"${BASE_URL}/gff3_files/$isolate_name/sorted_${isolate_name}.gff.gz\"|" "$meta_json"
     sed -i '' 's|"locationType": "LocalPathLocation"|"locationType": "UriLocation"|' "$meta_json"
   fi
 
-  # Verify
-  if [ ! -s "gff3_files/$isolate_name/${gff_file}.gz_meta.json" ]; then
+  # Verify metadata file
+  if [ ! -s "gff3_files/$isolate_name/trix/${gff_file}.gz_meta.json" ]; then
     echo "Error: Failed to create ${gff_file}.gz_meta.json. Skipping this isolate."
     continue
   fi
@@ -96,6 +113,9 @@ while read -r isolate_name; do
   echo "Processed isolate $isolate_name successfully."
   echo "Files created:"
   ls -lh "gff3_files/$isolate_name"
+
+  # Optional delay to avoid server rate limiting
+  sleep 2
 
 done < isolate_list.txt
 
