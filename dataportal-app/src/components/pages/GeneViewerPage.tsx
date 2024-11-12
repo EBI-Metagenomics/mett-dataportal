@@ -52,7 +52,7 @@ const GeneViewerPage: React.FC = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [geneCurrentPage, setGeneCurrentPage] = useState(1);
 
-    const { geneId, genomeId } = useParams<{ geneId?: string; genomeId?: string }>();
+    const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
     const searchParams = new URLSearchParams(location.search);
     // const genomeId = searchParams.get('genomeId');
 
@@ -89,12 +89,9 @@ const GeneViewerPage: React.FC = () => {
     }, [genomeMeta]);
 
     const sessionConfig = useMemo(() => {
-         console.log('sdfghjkkjmhngbfv: ' + genomeMeta)
         if (genomeMeta && geneMeta) {
-            console.log('1234567890')
             return getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
         } else if (genomeMeta) {
-            console.log('12345098765432167890')
             // Default session configuration if only genomeMeta is available
             return {
                 name: "Default Genome View",
@@ -107,7 +104,7 @@ const GeneViewerPage: React.FC = () => {
                             {
                                 refName: genomeMeta.assembly_name,
                                 start: 0,
-                                end: 5000000  // Adjust as needed
+                                end: 5000000
                             }
                         ]
                     }
@@ -148,7 +145,7 @@ const GeneViewerPage: React.FC = () => {
     };
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div style={{padding: '20px'}}>
             {/* Breadcrumb Section */}
             <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
                 <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
@@ -174,7 +171,7 @@ const GeneViewerPage: React.FC = () => {
             </nav>
 
             {/* Genome Metadata Section */}
-            <section style={{ marginTop: '20px' }}>
+            <section style={{marginTop: '20px'}}>
                 {genomeMeta ? (
                     <div className="genome-meta-info">
                         <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
@@ -189,8 +186,15 @@ const GeneViewerPage: React.FC = () => {
                             </a>
                         </p>
                         <p><strong>ENA Accession:&nbsp;</strong>
-                            <a href={genomeMeta.gff_url} target="_blank"
-                               rel="noopener noreferrer">{genomeMeta.assembly_accession}
+                            <a
+                                href={
+                                    genomeMeta.assembly_accession
+                                        ? `${process.env.REACT_APP_ENA_BASE_URL}${genomeMeta.assembly_accession}`
+                                        : undefined
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer">
+                                {genomeMeta.assembly_accession ? `XX000000${genomeMeta.assembly_accession}` : "Not Available"}
                             </a>
                         </p>
                     </div>
@@ -200,13 +204,13 @@ const GeneViewerPage: React.FC = () => {
             </section>
 
             {/* Gene Search Section */}
-            <div style={{ paddingLeft: '5px', paddingTop: '20px' }}>
-                <section style={{ marginTop: '20px' }}>
+            <div style={{paddingLeft: '5px', paddingTop: '20px'}}>
+                <section style={{marginTop: '20px'}}>
                     <GeneSearchForm
                         searchQuery={geneSearchQuery}
                         onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                         onSearchSubmit={handleGeneSearch}
-                        selectedGenomes={genomeId ? [{ id: parseInt(genomeId, 10), name: '' }] : []}
+                        selectedGenomes={genomeId ? [{id: parseInt(genomeId, 10), name: ''}] : []}
                         results={geneResults}
                         onSortClick={(sortField) => console.log('Sort by:', sortField)}
                         currentPage={geneCurrentPage}
@@ -219,12 +223,12 @@ const GeneViewerPage: React.FC = () => {
             </div>
 
             {/* JBrowse Component Section */}
-            <section style={{ marginTop: '20px' }}>
+            <section style={{marginTop: '20px'}}>
                 <div className={styles.sidePanel}>
                     {localViewState ? (
-                        <div className={styles.geneViewerPage} style={{ width: '100%' }}>
+                        <div className={styles.geneViewerPage} style={{width: '100%'}}>
                             <div className={styles.jbrowseContainer}>
-                                <JBrowseApp viewState={localViewState} />
+                                <JBrowseApp viewState={localViewState}/>
                             </div>
                         </div>
                     ) : (

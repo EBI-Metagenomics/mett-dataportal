@@ -16,7 +16,7 @@ spec:
         app: mett-dataportal-react-app-dev
     spec:
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-react-app:v0.0.18
+        - image: quay.io/microbiome-informatics/mett-dataportal-react-app:v0.0.19
           imagePullPolicy: Always
           name: mett-dataportal-react-app-dev
           env:
@@ -25,6 +25,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-dev
                   key: REACT_APP_API_BASE_URL
+            - name: REACT_APP_ENA_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: REACT_APP_ENA_BASE_URL
           ports:
             - containerPort: 80
               name: react-app
