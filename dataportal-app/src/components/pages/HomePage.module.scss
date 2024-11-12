@@ -101,7 +101,35 @@ button, select, input {
 }
 
 .speciesSection ul, .typeStrains ul {
-    list-style-type: none; /* Removes bullets */
-    padding-left: 0;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+
+.tabs-container {
+  display: flex;
+  border-bottom: 2px solid #ccc;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #666;
+  outline: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.3s, border-bottom 0.3s;
+}
+
+.tab:hover {
+  color: #333;
+}
+
+.tab.active {
+  color: #0072ce;
+  border-bottom: 2px solid #0072ce;
 }
 

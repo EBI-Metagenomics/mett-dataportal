@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from 'react';
-import TabNavigation from '../molecules/TabNavigation';
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
@@ -8,13 +7,41 @@ import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomeIntroSection from "@components/organisms/HomeIntroSection";
 
+// Define the type for each tab
+interface Tab {
+    id: string;
+    label: string;
+}
+
+// Define the props for TabNavigation component
+interface TabNavigationProps {
+    tabs: Tab[];
+    activeTab: string;
+    onTabClick: (tabId: string) => void;
+}
+
+const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClick}) => (
+    <div className={styles["tabs-container"]}>
+        {tabs.map((tab) => (
+            <button
+                key={tab.id}
+                onClick={() => onTabClick(tab.id)}
+                className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
+            >
+                {tab.label}
+            </button>
+        ))}
+    </div>
+);
+
+
 const HomePage: React.FC = () => {
-    const [speciesList, setSpeciesList] = useState<{ id: number; scientific_name: string }[]>([]); // Updated state type for species
-    const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]); // State to manage selected species
+    const [speciesList, setSpeciesList] = useState<{ id: number; scientific_name: string }[]>([]);
+    const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
     const [selectedGenomes, setSelectedGenomes] = useState<{ id: number; name: string }[]>([]);
-    const [typeStrains, setTypeStrains] = useState<{ id: number; isolate_name: string }[]>([]); // State for type strains
-    const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]); // State to store selected type strains
+    const [typeStrains, setTypeStrains] = useState<{ id: number; isolate_name: string }[]>([]);
+    const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]);
 
     // State for Genome Search
     const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
@@ -31,15 +58,14 @@ const HomePage: React.FC = () => {
         };
 
         const fetchTypeStrainsData = async () => {
-            const strains = await fetchTypeStrains(); // Fetch type strains
+            const strains = await fetchTypeStrains();
             setTypeStrains(strains || []);
         };
 
         fetchSpecies();
-        fetchTypeStrainsData(); // Fetch type strains on component mount
+        fetchTypeStrainsData();
     }, []);
 
-    // Handle species selection
     const handleSpeciesSelect = (speciesId: number) => {
         if (selectedSpecies.includes(speciesId)) {
             setSelectedSpecies(selectedSpecies.filter(id => id !== speciesId));
@@ -52,34 +78,28 @@ const HomePage: React.FC = () => {
         let updatedSelectedTypeStrains: number[];
 
         if (selectedTypeStrains.includes(strainId)) {
-            // If the strain is already selected, remove it from the selection
             updatedSelectedTypeStrains = selectedTypeStrains.filter(id => id !== strainId);
         } else {
-            // Add the strain to the selected type strains
             updatedSelectedTypeStrains = [...selectedTypeStrains, strainId];
         }
 
-        // Update selected type strains state
         setSelectedTypeStrains(updatedSelectedTypeStrains);
 
-        // Update selected genomes based on the updated selected type strains
         const updatedTypeStrains = typeStrains
             .filter(strain => updatedSelectedTypeStrains.includes(strain.id))
             .map(strain => ({id: strain.id, name: strain.isolate_name}));
 
-        // Set selected genomes
         setSelectedGenomes(updatedTypeStrains);
     };
 
-
     const handleGenomeSearch = async () => {
         const results = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery);
-        setGenomeResults(results || []); // No 'results' property, so we use the array directly
+        setGenomeResults(results || []);
     };
 
     const handleGeneSearch = async () => {
         const results = await fetchGenomesBySearch(selectedSpecies, geneSearchQuery);
-        setGeneResults(results || []); // No 'results' property, so we use the array directly
+        setGeneResults(results || []);
     };
 
     const handleGenomeSelect = (genome: { id: number; name: string }) => {
@@ -100,14 +120,18 @@ const HomePage: React.FC = () => {
         }
     };
 
+    const handleTabClick = (tabId: string) => {
+        setActiveTab(tabId);
+    };
+
     const linkData = {
         template: '/gene-viewer/gene/${id}/genome/${strain_id}',
         alias: 'Browse'
     };
 
-    const tabs = [
-        {id: 'vf-tabs__section--1', label: 'Search Gene'},
-        {id: 'vf-tabs__section--2', label: 'Search Genome'}
+    const tabs: Tab[] = [
+        {id: 'vf-tabs__section--1', label: 'Search Genome'},
+        {id: 'vf-tabs__section--2', label: 'Search Gene'}
     ];
 
     return (
@@ -119,7 +143,7 @@ const HomePage: React.FC = () => {
             <div className="layout-container">
                 {/* Left Panel */}
                 <div className={styles.leftPane}>
-                    {/* Add Species Section */}
+                    {/* Species Section */}
                     <div className={styles.speciesSection}>
                         <h3>Species</h3>
                         <ul>
@@ -138,7 +162,7 @@ const HomePage: React.FC = () => {
                         </ul>
                     </div>
 
-                    {/* Add Type Strains Section */}
+                    {/* Type Strains Section */}
                     <div className={styles.typeStrains}>
                         <h3>Type Strains</h3>
                         <ul>
@@ -157,30 +181,13 @@ const HomePage: React.FC = () => {
                         </ul>
                     </div>
 
-                    {/* Selected Genomes */}
                     <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
                 </div>
 
                 {/* Right Panel - Search Form */}
                 <div className={styles.rightPane}>
-                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab}/>
+                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick}/>
                     {activeTab === 'vf-tabs__section--1' && (
-                        <GeneSearchForm
-                            searchQuery={geneSearchQuery}
-                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                            onSearchSubmit={handleGeneSearch}
-                            selectedSpecies={selectedSpecies}
-                            selectedGenomes={selectedGenomes}
-                            results={geneResults}
-                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
-                            currentPage={1} // Assuming you want page 1 (if needed for pagination)
-                            totalPages={1}  // Assuming no pagination here (set 1)
-                            handlePageClick={(page) => console.log('Page:', page)}
-                            linkData={linkData}
-                        />
-                    )}
-
-                    {activeTab === 'vf-tabs__section--2' && (
                         <GenomeSearchForm
                             searchQuery={genomeSearchQuery}
                             onSearchQueryChange={e => setGenomeSearchQuery(e.target.value)}
@@ -191,9 +198,25 @@ const HomePage: React.FC = () => {
                             onSortClick={(sortField) => console.log('Sort by:', sortField)}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
-                            currentPage={1} // Assuming page 1
-                            totalPages={1}  // Assuming no pagination
+                            currentPage={1}
+                            totalPages={1}
                             handlePageClick={(page) => console.log('Page:', page)}
+                        />
+                    )}
+
+                    {activeTab === 'vf-tabs__section--2' && (
+                        <GeneSearchForm
+                            searchQuery={geneSearchQuery}
+                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                            onSearchSubmit={handleGeneSearch}
+                            selectedSpecies={selectedSpecies}
+                            selectedGenomes={selectedGenomes}
+                            results={geneResults}
+                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
+                            currentPage={1}
+                            totalPages={1}
+                            handlePageClick={(page) => console.log('Page:', page)}
+                            linkData={linkData}
                         />
                     )}
                 </div>
