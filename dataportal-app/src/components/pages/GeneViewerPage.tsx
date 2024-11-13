@@ -145,93 +145,103 @@ const GeneViewerPage: React.FC = () => {
     };
 
     return (
-        <div style={{padding: '20px'}}>
-            {/* Breadcrumb Section */}
-            <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
-                <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
-                    <li className={styles.breadcrumbsItem}>
-                        <a href="/" className="vf-breadcrumbs__link">Home</a>
-                    </li>
-                    <span className={styles.separator}> | </span>
-                    <li className={styles.breadcrumbsItem}>
-                        <b>Genome View</b>
-                    </li>
-                    <span className={styles.separator}> | </span>
-                    {genomeMeta ? (
-                        <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
-                            <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
-                                Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
-                            </a>
-                            <ul className={styles.dropdownList}>
-                                <li className={styles.dropdownItem}>
-                                    <a href="/" className={styles.dropdownLink}>Other Strains
-                                        of {genomeMeta.species}</a>
-                                </li>
-                            </ul>
-                        </li>
-                    ) : (
-                        <p>Loading genome meta information...</p>)}
-                </ul>
-            </nav>
-
-            {/* Genome Metadata Section */}
-            <section style={{marginTop: '20px'}}>
-                {genomeMeta ? (
-                    <div className="genome-meta-info">
-                        <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
-                        <p><strong>Assembly Name:&nbsp;</strong>
-                            <a href={genomeMeta.fasta_url} target="_blank"
-                               rel="noopener noreferrer">{genomeMeta.assembly_name}
-                            </a>
-                        </p>
-                        <p><strong>Annotations:&nbsp;</strong>
-                            <a href={genomeMeta.gff_url} target="_blank"
-                               rel="noopener noreferrer">{genomeMeta.gff_file}
-                            </a>
-                        </p>
-                        <p><strong>ENA Accession:&nbsp;</strong>
-                            <a
-                                href={
-                                    genomeMeta.assembly_accession
-                                        ? `${process.env.REACT_APP_ENA_BASE_URL}${genomeMeta.assembly_accession}`
-                                        : undefined
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer">
-                                {genomeMeta.assembly_accession ? `XX000000${genomeMeta.assembly_accession}` : "Not Available"}
-                            </a>
-                        </p>
-                    </div>
-                ) : (
-                    <p>Loading genome meta information...</p>
-                )}
-            </section>
-
-            {/* Gene Search Section */}
-            <div style={{paddingLeft: '5px', paddingTop: '20px'}}>
-                <section style={{marginTop: '20px'}}>
-                    <GeneSearchForm
-                        searchQuery={geneSearchQuery}
-                        onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                        onSearchSubmit={handleGeneSearch}
-                        selectedGenomes={genomeId ? [{id: parseInt(genomeId, 10), name: ''}] : []}
-                        results={geneResults}
-                        onSortClick={(sortField) => console.log('Sort by:', sortField)}
-                        currentPage={geneCurrentPage}
-                        totalPages={totalPages}
-                        handlePageClick={(page) => setGeneCurrentPage(page)}
-                        linkData={linkData}
-                        viewState={localViewState}
-                    />
-                </section>
+        <div>
+            <div className={`vf-content ${styles.vfContent}`}>
+                <div style={{height: '20px'}}></div>
+            </div>
+            <div className={`vf-content ${styles.vfContent}`}>
+                <span style={{display: 'none'}}><p>
+                placeholder
+            </p></span>
             </div>
 
-            {/* JBrowse Component Section */}
-            <section style={{marginTop: '20px'}}>
-                <div className={styles.sidePanel}>
+            <section className="vf-u-fullbleed">
+                {/* Breadcrumb Section */}
+                <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
+                    <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
+                        <li className={styles.breadcrumbsItem}>
+                            <a href="/" className="vf-breadcrumbs__link">Home</a>
+                        </li>
+                        <span className={styles.separator}> | </span>
+                        <li className={styles.breadcrumbsItem}>
+                            <b>Genome View</b>
+                        </li>
+                        <span className={styles.separator}> | </span>
+                        {genomeMeta ? (
+                            <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
+                                <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
+                                    Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
+                                </a>
+                                <ul className={styles.dropdownList}>
+                                    <li className={styles.dropdownItem}>
+                                        <a href="/" className={styles.dropdownLink}>Other Strains
+                                            of {genomeMeta.species}</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        ) : (
+                            <p>Loading genome meta information...</p>)}
+                    </ul>
+                </nav>
+
+                {/* Genome Metadata Section */}
+                <section>
+                    {genomeMeta ? (
+                        <div className="genome-meta-info">
+                            <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
+                            <p><strong>Assembly Name:&nbsp;</strong>
+                                <a href={genomeMeta.fasta_url} target="_blank"
+                                   rel="noopener noreferrer">{genomeMeta.assembly_name}
+                                </a>
+                            </p>
+                            <p><strong>Annotations:&nbsp;</strong>
+                                <a href={genomeMeta.gff_url} target="_blank"
+                                   rel="noopener noreferrer">{genomeMeta.gff_file}
+                                </a>
+                            </p>
+                            <p><strong>ENA Accession:&nbsp;</strong>
+                                <a
+                                    href={
+                                        genomeMeta.assembly_accession
+                                            ? `${process.env.REACT_APP_ENA_BASE_URL}${genomeMeta.assembly_accession}`
+                                            : undefined
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer">
+                                    {genomeMeta.assembly_accession ? `XX000000${genomeMeta.assembly_accession}` : "Not Available"}
+                                </a>
+                            </p>
+                        </div>
+                    ) : (
+                        <p>Loading genome meta information...</p>
+                    )}
+                </section>
+
+
+                {/* Gene Search Section */}
+                <div style={{paddingLeft: '5px', paddingTop: '20px'}}>
+                    <section style={{marginTop: '20px'}}>
+                        <GeneSearchForm
+                            searchQuery={geneSearchQuery}
+                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                            onSearchSubmit={handleGeneSearch}
+                            selectedGenomes={genomeId ? [{id: parseInt(genomeId, 10), name: ''}] : []}
+                            results={geneResults}
+                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
+                            currentPage={geneCurrentPage}
+                            totalPages={totalPages}
+                            handlePageClick={(page) => setGeneCurrentPage(page)}
+                            linkData={linkData}
+                            viewState={localViewState}
+                        />
+                    </section>
+                </div>
+
+                {/* JBrowse Component Section */}
+                <div>
                     {localViewState ? (
-                        <div className={styles.geneViewerPage} style={{width: '100%'}}>
-                            <div className={styles.jbrowseContainer}>
+                        <div className={styles.jbrowseViewer}>
+                            <div className={styles.jbrowseContainer} style={{width: '100%', height: '100%'}}>
                                 <JBrowseApp viewState={localViewState}/>
                             </div>
                         </div>

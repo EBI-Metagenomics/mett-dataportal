@@ -1,6 +1,34 @@
+.mainContainer {
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.vfContent {
+  width: 100% !important;
+  min-width: 800px;
+  float: left !important;
+  padding-right: 20px;
+  justify-content: normal;
+}
+
+.jbrowseViewer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-width: 800px;
+    margin: 0 auto;
+}
+
 .jbrowse-container {
   width: 100%;
-  height: 600px;
+  height: 100%;
+  overflow: hidden;
+  min-width: 800px;
 }
 
 .breadcrumbsItem {

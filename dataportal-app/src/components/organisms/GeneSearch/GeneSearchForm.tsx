@@ -110,56 +110,54 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-    async (page = 1, sortField = currentSortField, sortOrder = currentSortOrder) => {
-        const params = new URLSearchParams({
-            'query': query.trim() || '',
-            'page': String(page),
-            'per_page': String(pageSize),
-            'sortField': sortField,
-            'sortOrder': sortOrder,
-        });
+        async (page = 1, sortField = currentSortField, sortOrder = currentSortOrder) => {
+            const params = new URLSearchParams({
+                'query': query.trim() || '',
+                'page': String(page),
+                'per_page': String(pageSize),
+                'sortField': sortField,
+                'sortOrder': sortOrder,
+            });
 
-        // Ensure genomeFilter is an array of objects with id and name
-        const genomeFilter = selectedGenomes && selectedGenomes.length > 0
-            ? selectedGenomes.map((genome) => ({ id: genome.id, name: genome.name }))
-            : undefined;
+            // Ensure genomeFilter is an array of objects with id and name
+            const genomeFilter = selectedGenomes && selectedGenomes.length > 0
+                ? selectedGenomes.map((genome) => ({id: genome.id, name: genome.name}))
+                : undefined;
 
-        // Use selectedSpecies directly if only one species is selected, or undefined otherwise
-        const speciesFilter = selectedSpecies && selectedSpecies.length === 1
-            ? selectedSpecies
-            : undefined;
+            // Use selectedSpecies directly if only one species is selected, or undefined otherwise
+            const speciesFilter = selectedSpecies && selectedSpecies.length === 1
+                ? selectedSpecies
+                : undefined;
 
-        try {
-            const response = await fetchGeneSearchResults(
-                query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter
-            );
+            try {
+                const response = await fetchGeneSearchResults(
+                    query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter
+                );
 
-            if (response && response.results) {
-                setResults(response.results);
-                setCurrentPage(response.page_number);
-                setTotalPages(response.num_pages);
-                setHasPrevious(response.has_previous);
-                setHasNext(response.has_next);
-            } else {
+                if (response && response.results) {
+                    setResults(response.results);
+                    setCurrentPage(response.page_number);
+                    setTotalPages(response.num_pages);
+                    setHasPrevious(response.has_previous);
+                    setHasNext(response.has_next);
+                } else {
+                    setResults([]);
+                    setCurrentPage(1);
+                    setTotalPages(1);
+                    setHasPrevious(false);
+                    setHasNext(false);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
                 setResults([]);
                 setCurrentPage(1);
                 setTotalPages(1);
                 setHasPrevious(false);
                 setHasNext(false);
             }
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            setResults([]);
-            setCurrentPage(1);
-            setTotalPages(1);
-            setHasPrevious(false);
-            setHasNext(false);
-        }
-    },
-    [query, selectedSpecies, selectedGenomes, currentSortField, currentSortOrder, pageSize]
-);
-
-
+        },
+        [query, selectedSpecies, selectedGenomes, currentSortField, currentSortOrder, pageSize]
+    );
 
 
     useEffect(() => {
@@ -205,61 +203,58 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     return (
-        <section id="vf-tabs__section--1">
+        <section id="vf-tabs__section--2">
             <div>
                 <p/>
             </div>
-            <div className={`vf-grid__col--span-3 ${styles.vfGeneSection}`}>
-                <form onSubmit={handleSubmit}
-                      className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
-                    <h2 className={`vf-section-header__subheading ${styles.vfGeneSubHeading}`}>Search Gene</h2>
-                    <div>
-                        <p/>
-                    </div>
-                    <GeneSearchInput
-                        query={query}
-                        onInputChange={handleInputChange}
-                        suggestions={suggestions}
-                        onSuggestionClick={handleSuggestionClick}
-                        onSuggestionsClear={() => setSuggestions([])}
+            <form onSubmit={handleSubmit}
+                  className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
+                <h2 className={`vf-section-header__subheading ${styles.vfGeneSubHeading}`}>Search Gene</h2>
+                <div>
+                    <p/>
+                </div>
+                <GeneSearchInput
+                    query={query}
+                    onInputChange={handleInputChange}
+                    suggestions={suggestions}
+                    onSuggestionClick={handleSuggestionClick}
+                    onSuggestionsClear={() => setSuggestions([])}
+                />
+                <div>
+                    <p>&nbsp;</p>
+                </div>
+                <div className="vf-grid__col--span-3" id="results-table"
+                     style={{display: results.length > 0 ? 'block' : 'none'}}>
+                    <GeneResultsTable
+                        results={results}
+                        onSortClick={onSortClick}
+                        linkData={linkData}
+                        viewState={viewState}
                     />
-
-
-                    <div>
-                        <p>&nbsp;</p>
-                    </div>
-                    <div className="vf-grid__col--span-3" id="results-table"
-                         style={{display: results.length > 0 ? 'block' : 'none'}}>
-                        <GeneResultsTable
-                            results={results}
-                            onSortClick={onSortClick}
-                            linkData={linkData}
-                            viewState={viewState}
-                        />
-                        {/* Page size dropdown and pagination */}
-                        <div className={styles.paginationContainer}>
-                            <div className={styles.pageSizeDropdown}>
-                                <label htmlFor="pageSize">Page Size: </label>
-                                <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
-                                    <option value={10}>Show 10</option>
-                                    <option value={20}>Show 20</option>
-                                    <option value={50}>Show 50</option>
-                                </select>
-                            </div>
-
-                            {totalPages > 1 && (
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    hasPrevious={hasPrevious}
-                                    hasNext={hasNext}
-                                    onPageClick={handlePageClick}
-                                />
-                            )}
+                    {/* Page size dropdown and pagination */}
+                    <div className={styles.paginationContainer}>
+                        <div className={styles.pageSizeDropdown}>
+                            <label htmlFor="pageSize">Page Size: </label>
+                            <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
+                                <option value={10}>Show 10</option>
+                                <option value={20}>Show 20</option>
+                                <option value={50}>Show 50</option>
+                            </select>
                         </div>
+
+                        {totalPages > 1 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                hasPrevious={hasPrevious}
+                                hasNext={hasNext}
+                                onPageClick={handlePageClick}
+                            />
+                        )}
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
+
             <div>
                 <p>&nbsp;</p>
                 <p>&nbsp;</p>
