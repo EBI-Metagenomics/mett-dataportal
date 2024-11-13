@@ -96,73 +96,39 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
         async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
-            if (selectedStrainId) {
-                try {
-                    const response = await fetchGenomeByStrainId(selectedStrainId);
-                    console.log("response: " + response)
-                    if (response) {
-                        setResults([response]);
-                        setCurrentPage(1);
-                        setTotalPages(1);
-                        setHasPrevious(false);
-                        setHasNext(false);
-                    } else {
-                        setResults([]);
-                        setCurrentPage(1);
-                        setTotalPages(1);
-                        setHasPrevious(false);
-                        setHasNext(false);
-                    }
-                } catch (error) {
-                    console.error('Error fetching data:', error);
+            const isolate = isolateName.trim() || query.trim();
+            const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
+            try {
+                const response = await fetchGenomeSearchResults(isolate, page, pageSize, sortField, sortOrder, speciesFilter);
+
+                if (response && response.results) {
+                    setResults(response.results);
+                    setCurrentPage(response.page_number);
+                    setTotalPages(response.num_pages);
+                    setHasPrevious(response.has_previous);
+                    setHasNext(response.has_next);
+                } else {
                     setResults([]);
                     setCurrentPage(1);
                     setTotalPages(1);
                     setHasPrevious(false);
                     setHasNext(false);
                 }
-            } else {
-                const isolate = isolateName.trim() || query.trim();
-                if (isolate) {
-                    const queryString = new URLSearchParams({
-                        'query': isolate,
-                        'page': String(page),
-                        'per_page': String(pageSize),
-                        'sortField': sortField,
-                        'sortOrder': sortOrder
-                    }).toString();
-
-                    try {
-                        const response = await fetchGenomeSearchResults(isolate, page, pageSize, sortField, sortOrder, selectedSpecies);
-
-
-                        if (response && response.results) {
-                            setResults(response.results);
-                            setCurrentPage(response.page_number);
-                            setTotalPages(response.num_pages);
-                            setHasPrevious(response.has_previous);
-                            setHasNext(response.has_next);
-                        } else {
-                            setResults([]);
-                            setCurrentPage(1);
-                            setTotalPages(1);
-                            setHasPrevious(false);
-                            setHasNext(false);
-                        }
-                    } catch (error) {
-                        console.error('Error fetching data:', error);
-                        setResults([]);
-                        setCurrentPage(1);
-                        setTotalPages(1);
-                        setHasPrevious(false);
-                        setHasNext(false);
-                    }
-                }
-
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                setResults([]);
+                setCurrentPage(1);
+                setTotalPages(1);
+                setHasPrevious(false);
+                setHasNext(false);
             }
         },
-        [selectedStrainId, isolateName, query, selectedSpecies, currentSortField, currentSortOrder, pageSize]
+        [query, selectedSpecies, currentSortField, currentSortOrder, pageSize]
     );
+
+    useEffect(() => {
+        fetchSearchResults(); // Trigger fetch when component mounts or species selection changes
+    }, [selectedSpecies, pageSize]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -110,83 +110,61 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-        async (page = 1, sortField = currentSortField, sortOrder = currentSortOrder) => {
+    async (page = 1, sortField = currentSortField, sortOrder = currentSortOrder) => {
+        const params = new URLSearchParams({
+            'query': query.trim() || '',
+            'page': String(page),
+            'per_page': String(pageSize),
+            'sortField': sortField,
+            'sortOrder': sortOrder,
+        });
 
-            if (selectedGeneId) {
-                try {
-                    const response = await fetchGeneById(selectedGeneId);
-                    if (response) {
-                        setResults([response]);
-                        setCurrentPage(1);
-                        setTotalPages(1);
-                        setHasPrevious(false);
-                        setHasNext(false);
-                    } else {
-                        setResults([]);
-                        setCurrentPage(1);
-                        setTotalPages(1);
-                        setHasPrevious(false);
-                        setHasNext(false);
-                    }
-                } catch (error) {
-                    console.error('Error fetching data:', error);
-                    setResults([]);
-                    setCurrentPage(1);
-                    setTotalPages(1);
-                    setHasPrevious(false);
-                    setHasNext(false);
-                }
+        // Ensure genomeFilter is an array of objects with id and name
+        const genomeFilter = selectedGenomes && selectedGenomes.length > 0
+            ? selectedGenomes.map((genome) => ({ id: genome.id, name: genome.name }))
+            : undefined;
+
+        // Use selectedSpecies directly if only one species is selected, or undefined otherwise
+        const speciesFilter = selectedSpecies && selectedSpecies.length === 1
+            ? selectedSpecies
+            : undefined;
+
+        try {
+            const response = await fetchGeneSearchResults(
+                query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter
+            );
+
+            if (response && response.results) {
+                setResults(response.results);
+                setCurrentPage(response.page_number);
+                setTotalPages(response.num_pages);
+                setHasPrevious(response.has_previous);
+                setHasNext(response.has_next);
             } else {
-                const gene = geneName.trim() || query.trim();
-                if (gene) {
-                    // Build the query parameters dynamically
-                    const params = new URLSearchParams({
-                        'query': gene,
-                        'page': String(page),
-                        'per_page': String(pageSize),
-                        'sortField': sortField,
-                        'sortOrder': sortOrder,
-                    });
-
-                    // Add genome IDs if available
-                    if (selectedGenomes && selectedGenomes.length > 0) {
-                        params.append('genome_ids', selectedGenomes.map((genome: {
-                            id: number;
-                            name: string
-                        }) => genome.id).join(','));
-                    }
-
-                    try {
-                        const response = await fetchGeneSearchResults(
-                            gene, page, pageSize, sortField, sortOrder, selectedGenomes, selectedSpecies
-                        );
-
-                        if (response && response.results) {
-                            setResults(response.results);
-                            setCurrentPage(response.page_number);
-                            setTotalPages(response.num_pages);
-                            setHasPrevious(response.has_previous);
-                            setHasNext(response.has_next);
-                        } else {
-                            setResults([]);
-                            setCurrentPage(1);
-                            setTotalPages(1);
-                            setHasPrevious(false);
-                            setHasNext(false);
-                        }
-                    } catch (error) {
-                        console.error('Error fetching data:', error);
-                        setResults([]);
-                        setCurrentPage(1);
-                        setTotalPages(1);
-                        setHasPrevious(false);
-                        setHasNext(false);
-                    }
-                }
+                setResults([]);
+                setCurrentPage(1);
+                setTotalPages(1);
+                setHasPrevious(false);
+                setHasNext(false);
             }
-        },
-        [selectedGeneId, geneName, query, selectedSpecies, selectedGenomes, currentSortField, currentSortOrder, pageSize]
-    );
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setResults([]);
+            setCurrentPage(1);
+            setTotalPages(1);
+            setHasPrevious(false);
+            setHasNext(false);
+        }
+    },
+    [query, selectedSpecies, selectedGenomes, currentSortField, currentSortOrder, pageSize]
+);
+
+
+
+
+    useEffect(() => {
+        fetchSearchResults();
+    }, [selectedSpecies, selectedGenomes, pageSize]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
