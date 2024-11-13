@@ -157,16 +157,20 @@ const GeneViewerPage: React.FC = () => {
                         <b>Genome View</b>
                     </li>
                     <span className={styles.separator}> | </span>
-                    <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
-                        <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
-                            Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
-                        </a>
-                        <ul className={styles.dropdownList}>
-                            <li className={styles.dropdownItem}>
-                                <a href="/" className={styles.dropdownLink}>Other Strains of Bacteroides uniformis</a>
-                            </li>
-                        </ul>
-                    </li>
+                    {genomeMeta ? (
+                        <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
+                            <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
+                                Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
+                            </a>
+                            <ul className={styles.dropdownList}>
+                                <li className={styles.dropdownItem}>
+                                    <a href="/" className={styles.dropdownLink}>Other Strains
+                                        of {genomeMeta.species}</a>
+                                </li>
+                            </ul>
+                        </li>
+                    ) : (
+                        <p>Loading genome meta information...</p>)}
                 </ul>
             </nav>
 
