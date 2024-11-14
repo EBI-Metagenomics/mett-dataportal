@@ -155,7 +155,7 @@ const HomePage: React.FC = () => {
                                             checked={selectedSpecies.includes(species.id)}
                                             onChange={() => handleSpeciesSelect(species.id)}
                                         />
-                                        {species.scientific_name}
+                                        <i>{species.scientific_name}</i>
                                     </label>
                                 </li>
                             ))}

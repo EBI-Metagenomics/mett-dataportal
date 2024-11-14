@@ -175,7 +175,7 @@ const GeneViewerPage: React.FC = () => {
                                 <ul className={styles.dropdownList}>
                                     <li className={styles.dropdownItem}>
                                         <a href="/" className={styles.dropdownLink}>Other Strains
-                                            of {genomeMeta.species}</a>
+                                            of <i>{genomeMeta.species}</i></a>
                                     </li>
                                 </ul>
                             </li>
@@ -188,15 +188,19 @@ const GeneViewerPage: React.FC = () => {
                 <section>
                     {genomeMeta ? (
                         <div className="genome-meta-info">
-                            <h2>{genomeMeta.species}: {genomeMeta.isolate_name}</h2>
+                            <h2><i>{genomeMeta.species}</i>: {genomeMeta.isolate_name}</h2>
                             <p><strong>Assembly Name:&nbsp;</strong>
                                 <a href={genomeMeta.fasta_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.assembly_name}
+                                    <span className="icon icon-common icon-download"
+                                          style={{paddingLeft: '5px'}}></span>
                                 </a>
                             </p>
                             <p><strong>Annotations:&nbsp;</strong>
                                 <a href={genomeMeta.gff_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.gff_file}
+                                    <span className="icon icon-common icon-download"
+                                          style={{paddingLeft: '5px'}}></span>
                                 </a>
                             </p>
                             <p><strong>ENA Accession:&nbsp;</strong>
@@ -209,6 +213,8 @@ const GeneViewerPage: React.FC = () => {
                                     target="_blank"
                                     rel="noopener noreferrer">
                                     {genomeMeta.assembly_accession ? `XX000000${genomeMeta.assembly_accession}` : "Not Available"}
+                                    <span className="icon icon-common icon-external-link-alt"
+                                          style={{paddingLeft: '5px'}}></span>
                                 </a>
                             </p>
                         </div>

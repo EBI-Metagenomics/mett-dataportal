@@ -43,13 +43,18 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
             <tbody className="vf-table__body">
             {results.map((result, index) => (
                 <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.species || 'Unknown Species'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}><i>{result.species || 'Unknown Species'}</i></td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.isolate_name || 'Unknown Isolate'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={result.fasta_file || '#'}>{result.assembly_name || 'Unknown Assembly'}</a>
+                        <a href={result.fasta_file || '#'}>{result.assembly_name || 'Unknown Assembly'}<span
+                            className="icon icon-common icon-download"
+                            style={{paddingLeft: '5px'}}></span></a>
                     </td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}><a href={result.gff_file || '#'}>GFF</a></td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}><a href={`/gene-viewer/genome/${result.id}/`}>Browse</a>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}><a href={result.gff_file || '#'}>GFF<span
+                        className="icon icon-common icon-download"
+                        style={{paddingLeft: '5px'}}></span></a></td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}><a
+                        href={`/gene-viewer/genome/${result.id}/`}>Browse</a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         <button
