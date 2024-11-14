@@ -156,11 +156,20 @@ async def gene_autocomplete_suggestions(
 # API Endpoint to search genes by query string
 @gene_router.get("/search", response=GenePaginationSchema)
 async def search_genes_by_string(
-    request, query: str, page: int = 1, per_page: int = 10
+    request,
+    query: str,
+    page: int = 1,
+    per_page: int = 10,
+    sort_field: Optional[str] = None,
+    sort_order: Optional[str] = "asc",
 ):
     try:
         paginated_results = await gene_service.search_genes(
-            query=query, page=page, per_page=per_page
+            query=query,
+            page=page,
+            per_page=per_page,
+            sort_field=sort_field,
+            sort_order=sort_order,
         )
         return paginated_results
     except Exception as e:
@@ -176,17 +185,30 @@ async def get_gene_by_id(request, gene_id: int):
 
 # API Endpoint to retrieve all genes
 @gene_router.get("/", response=GenePaginationSchema)
-async def get_all_genes(request, page: int = 1, per_page: int = 10):
-    return await gene_service.get_all_genes(page, per_page)
+async def get_all_genes(
+    request,
+    page: int = 1,
+    per_page: int = 10,
+    sort_field: Optional[str] = None,
+    sort_order: Optional[str] = "asc",
+):
+    return await gene_service.get_all_genes(page, per_page, sort_field, sort_order)
 
 
 # API Endpoint to retrieve genes filtered by a single genome ID
 @genome_router.get("/{genome_id}/genes", response=GenePaginationSchema)
 async def get_genes_by_genome(
-    request, genome_id: int, page: int = 1, per_page: int = 10
+    request,
+    genome_id: int,
+    page: int = 1,
+    per_page: int = 10,
+    sort_field: Optional[str] = None,
+    sort_order: Optional[str] = "asc",
 ):
     try:
-        return await gene_service.get_genes_by_genome(genome_id, page, per_page)
+        return await gene_service.get_genes_by_genome(
+            genome_id, page, per_page, sort_field, sort_order
+        )
     except Exception as e:
         logger.error(f"Error in get_genes_by_genome: {e}")
         raise HttpError(500, f"Internal Server Error: {str(e)}")
@@ -195,10 +217,18 @@ async def get_genes_by_genome(
 # API Endpoint to search genes by genome ID and gene string
 @genome_router.get("/{genome_id}/genes/search", response=GenePaginationSchema)
 async def search_genes_by_genome_and_string(
-    request, genome_id: int, query: str, page: int = 1, per_page: int = 10
+    request,
+    genome_id: int,
+    query: str,
+    page: int = 1,
+    per_page: int = 10,
+    sort_field: Optional[str] = None,
+    sort_order: Optional[str] = "asc",
 ):
     try:
-        return await gene_service.search_genes(query, genome_id, page, per_page)
+        return await gene_service.search_genes(
+            query, genome_id, page, per_page, sort_field, sort_order
+        )
     except Exception as e:
         logger.error(f"Error in search_genes_by_genome_and_string: {e}")
         raise HttpError(500, f"Internal Server Error: {str(e)}")
@@ -213,10 +243,12 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
     query: str = "",
     page: int = 1,
     per_page: int = 10,
+    sort_field: Optional[str] = None,
+    sort_order: Optional[str] = "asc",
 ):
     try:
         return await gene_service.get_genes_by_multiple_genomes_and_string(
-            genome_ids, species_id, query, page, per_page
+            genome_ids, species_id, query, page, per_page, sort_field, sort_order
         )
     except HttpError as e:
         raise e

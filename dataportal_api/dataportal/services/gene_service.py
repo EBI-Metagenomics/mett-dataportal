@@ -61,21 +61,19 @@ class GeneService:
             raise HttpError(500, "Internal Server Error")
 
     async def get_all_genes(
-        self, page: int = 1, per_page: int = 10
+        self,
+        page: int = 1,
+        per_page: int = 10,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = "asc",
     ) -> GenePaginationSchema:
         try:
             genes, total_results = await self._fetch_paginated_genes(
-                Q(), page, per_page
+                Q(), page, per_page, sort_field, sort_order
             )
             serialized_genes = [self._serialize_gene(gene) for gene in genes]
-
-            return GenePaginationSchema(
-                results=serialized_genes,
-                page_number=page,
-                num_pages=(total_results + per_page - 1) // per_page,
-                has_previous=page > 1,
-                has_next=(page * per_page) < total_results,
-                total_results=total_results,
+            return self._create_pagination_schema(
+                serialized_genes, page, per_page, total_results
             )
         except Exception as e:
             logger.error(f"Error fetching all genes: {e}")
@@ -87,7 +85,9 @@ class GeneService:
         genome_id: Optional[int] = None,
         page: int = 1,
         per_page: int = 10,
-    ):
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = "asc",
+    ) -> GenePaginationSchema:
         try:
             filters = Q()
             if query:
@@ -98,38 +98,31 @@ class GeneService:
                 filters &= Q(strain_id=genome_id)
 
             genes, total_results = await self._fetch_paginated_genes(
-                filters, page, per_page
+                filters, page, per_page, sort_field, sort_order
             )
             serialized_genes = [self._serialize_gene(gene) for gene in genes]
-
-            return GenePaginationSchema(
-                results=serialized_genes,
-                page_number=page,
-                num_pages=(total_results + per_page - 1) // per_page,
-                has_previous=page > 1,
-                has_next=(page * per_page) < total_results,
-                total_results=total_results,
+            return self._create_pagination_schema(
+                serialized_genes, page, per_page, total_results
             )
         except Exception as e:
             logger.error(f"Error searching genes: {e}")
             raise HttpError(500, "Internal Server Error")
 
     async def get_genes_by_genome(
-        self, genome_id: int, page: int = 1, per_page: int = 10
-    ):
+        self,
+        genome_id: int,
+        page: int = 1,
+        per_page: int = 10,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = "asc",
+    ) -> GenePaginationSchema:
         try:
             genes, total_results = await self._fetch_paginated_genes(
-                Q(strain_id=genome_id), page, per_page
+                Q(strain_id=genome_id), page, per_page, sort_field, sort_order
             )
             serialized_genes = [self._serialize_gene(gene) for gene in genes]
-
-            return GenePaginationSchema(
-                results=serialized_genes,
-                page_number=page,
-                num_pages=(total_results + per_page - 1) // per_page,
-                has_previous=page > 1,
-                has_next=(page * per_page) < total_results,
-                total_results=total_results,
+            return self._create_pagination_schema(
+                serialized_genes, page, per_page, total_results
             )
         except Exception as e:
             logger.error(f"Error fetching genes for genome ID {genome_id}: {e}")
@@ -158,6 +151,8 @@ class GeneService:
         query: str = None,
         page: int = 1,
         per_page: int = 10,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = "asc",
     ) -> GenePaginationSchema:
         try:
             genome_id_list = (
@@ -175,17 +170,11 @@ class GeneService:
                 filters &= Q(gene_name__icontains=query.strip())
 
             genes, total_results = await self._fetch_paginated_genes(
-                filters, page, per_page
+                filters, page, per_page, sort_field, sort_order
             )
             serialized_genes = [self._serialize_gene(gene) for gene in genes]
-
-            return GenePaginationSchema(
-                results=serialized_genes,
-                page_number=page,
-                num_pages=(total_results + per_page - 1) // per_page,
-                has_previous=page > 1,
-                has_next=(page * per_page) < total_results,
-                total_results=total_results,
+            return self._create_pagination_schema(
+                serialized_genes, page, per_page, total_results
             )
         except ValueError:
             logger.error("Invalid genome ID provided")
@@ -278,14 +267,22 @@ class GeneService:
         )
 
     async def _fetch_paginated_genes(
-        self, filter_criteria: Q, page: int, per_page: int
+        self,
+        filter_criteria: Q,
+        page: int,
+        per_page: int,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = "asc",
     ) -> Tuple[List[Gene], int]:
         start = (page - 1) * per_page
+        order_prefix = "-" if sort_order == "desc" else ""
+        sort_by = f"{order_prefix}{sort_field}" if sort_field else "gene_name"
+
         genes = await sync_to_async(
             lambda: list(
                 Gene.objects.select_related("strain")
                 .filter(filter_criteria)
-                .order_by("gene_name")[start : start + per_page]
+                .order_by(sort_by)[start : start + per_page]
             )
         )()
         total_results = await sync_to_async(
