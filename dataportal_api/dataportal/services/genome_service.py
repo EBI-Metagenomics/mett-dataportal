@@ -2,9 +2,6 @@ import logging
 from typing import Optional, List
 
 from asgiref.sync import sync_to_async
-from django.db.models import Q
-from ninja.errors import HttpError
-
 from dataportal import settings
 from dataportal.models import Strain
 from dataportal.schemas import (
@@ -12,6 +9,8 @@ from dataportal.schemas import (
     GenomePaginationSchema,
     SearchGenomeSchema,
 )
+from django.db.models import Q
+from ninja.errors import HttpError
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +30,16 @@ class GenomeService:
             raise HttpError(500, "Internal Server Error")
 
     async def search_genomes_by_string(
-        self, query: str, page: int = 1, per_page: int = 10
+        self,
+        query: str,
+        page: int = 1,
+        per_page: int = 10,
+        sortField: str = "isolate_name",
+        sortOrder: str = "asc",
     ) -> GenomePaginationSchema:
         try:
             strains, total_results = await self._fetch_paginated_strains(
-                Q(isolate_name__icontains=query), page, per_page
+                Q(isolate_name__icontains=query), page, per_page, sortField, sortOrder
             )
             return await self._create_pagination_schema(
                 strains, total_results, page, per_page
@@ -45,11 +49,16 @@ class GenomeService:
             raise HttpError(500, "Internal Server Error")
 
     async def get_genomes_by_species(
-        self, species_id: int, page: int = 1, per_page: int = 10
+        self,
+        species_id: int,
+        page: int = 1,
+        per_page: int = 10,
+        sortField: str = "isolate_name",
+        sortOrder: str = "asc",
     ) -> GenomePaginationSchema:
         try:
             strains, total_results = await self._fetch_paginated_strains(
-                Q(species_id=species_id), page, per_page
+                Q(species_id=species_id), page, per_page, sortField, sortOrder
             )
             return await self._create_pagination_schema(
                 strains, total_results, page, per_page
@@ -59,12 +68,18 @@ class GenomeService:
             raise HttpError(500, "Internal Server Error")
 
     async def search_genomes_by_species_and_string(
-        self, species_id: int, query: str, page: int = 1, per_page: int = 10
+        self,
+        species_id: int,
+        query: str,
+        page: int = 1,
+        per_page: int = 10,
+        sortField: str = "isolate_name",
+        sortOrder: str = "asc",
     ) -> GenomePaginationSchema:
         try:
             filter_criteria = Q(species_id=species_id, isolate_name__icontains=query)
             strains, total_results = await self._fetch_paginated_strains(
-                filter_criteria, page, per_page
+                filter_criteria, page, per_page, sortField, sortOrder
             )
             return await self._create_pagination_schema(
                 strains, total_results, page, per_page
@@ -102,12 +117,16 @@ class GenomeService:
             return []
 
     async def get_genomes(
-        self, page: int = 1, per_page: int = 10
+        self,
+        page: int = 1,
+        per_page: int = 10,
+        sortField: str = "isolate_name",
+        sortOrder: str = "asc",
     ) -> GenomePaginationSchema:
         try:
             # Fetch paginated strains
             strains, total_results = await self._fetch_paginated_strains(
-                Q(), page, per_page
+                Q(), page, per_page, sortField, sortOrder
             )
             return await self._create_pagination_schema(
                 strains, total_results, page, per_page
@@ -177,14 +196,27 @@ class GenomeService:
 
     # Helper Methods
     async def _fetch_paginated_strains(
-        self, filter_criteria: Q, page: int, per_page: int
+        self,
+        filter_criteria: Q,
+        page: int,
+        per_page: int,
+        sortField: str = "isolate_name",
+        sortOrder: str = "asc",
     ):
+        if not sortField:
+            sortField = "isolate_name"
+        if sortOrder not in ("asc", "desc"):
+            sortOrder = "asc"
+
+        # Apply sorting
+        ordering = f"{'-' if sortOrder == 'desc' else ''}{sortField}"
         start = (page - 1) * per_page
+
         strains = await sync_to_async(
             lambda: list(
                 Strain.objects.select_related("species")
                 .filter(filter_criteria)
-                .order_by("isolate_name")[start : start + per_page]
+                .order_by(ordering)[start : start + per_page]
             )
         )()
         total_results = await sync_to_async(

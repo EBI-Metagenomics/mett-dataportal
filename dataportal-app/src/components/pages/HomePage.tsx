@@ -51,6 +51,9 @@ const HomePage: React.FC = () => {
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
     const [geneResults, setGeneResults] = useState<any[]>([]);
 
+    const [sortField, setSortField] = useState<string>('species');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
     useEffect(() => {
         const fetchSpecies = async () => {
             const species = await fetchSpeciesList();
@@ -65,6 +68,19 @@ const HomePage: React.FC = () => {
         fetchSpecies();
         fetchTypeStrainsData();
     }, []);
+
+    useEffect(() => {
+        console.log('Updated genomeResults in HomePage:', genomeResults);
+    }, [genomeResults]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const response = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
+            console.log('Fetched results:', response.results);
+            setGenomeResults(response.results);
+        };
+        fetchData();
+    }, [genomeSearchQuery, selectedSpecies]);
 
     const handleSpeciesSelect = (speciesId: number) => {
         if (selectedSpecies.includes(speciesId)) {
@@ -92,14 +108,14 @@ const HomePage: React.FC = () => {
         setSelectedGenomes(updatedTypeStrains);
     };
 
-    const handleGenomeSearch = async () => {
-        const results = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery);
-        setGenomeResults(results || []);
+    const handleGenomeSearch = async (field = sortField, order = sortOrder) => {
+        const response = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
+        setGenomeResults(response.results);
     };
 
     const handleGeneSearch = async () => {
-        const results = await fetchGenomesBySearch(selectedSpecies, geneSearchQuery);
-        setGeneResults(results || []);
+        const response = await fetchGenomesBySearch(selectedSpecies, geneSearchQuery, sortField, sortOrder);
+        setGenomeResults(response.results);
     };
 
     const handleGenomeSelect = (genome: { id: number; name: string }) => {
@@ -122,6 +138,20 @@ const HomePage: React.FC = () => {
 
     const handleTabClick = (tabId: string) => {
         setActiveTab(tabId);
+    };
+
+    const handleGenomeSortClick = async (field: string) => {
+        const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
+        setSortField(field);
+        setSortOrder(newSortOrder);
+        console.log('Sorting Genomes by:', {field, order: newSortOrder});
+    };
+
+    const handleGeneSortClick = async (field: string) => {
+        const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
+        setSortField(field);
+        setSortOrder(newSortOrder);
+        console.log('Sorting Genes by:', {field, order: newSortOrder});
     };
 
     const linkData = {
@@ -189,17 +219,20 @@ const HomePage: React.FC = () => {
                     <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick}/>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GenomeSearchForm
+                            // key={`${genomeResults.length}-${sortField}-${sortOrder}`}
                             searchQuery={genomeSearchQuery}
                             onSearchQueryChange={e => setGenomeSearchQuery(e.target.value)}
                             onSearchSubmit={handleGenomeSearch}
                             onGenomeSelect={handleGenomeSelect}
                             selectedSpecies={selectedSpecies}
+                            onSortClick={handleGenomeSortClick}
                             results={genomeResults}
-                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
                             currentPage={1}
                             totalPages={1}
+                            sortField={sortField}
+                            sortOrder={sortOrder}
                             handlePageClick={(page) => console.log('Page:', page)}
                         />
                     )}
@@ -212,7 +245,7 @@ const HomePage: React.FC = () => {
                             selectedSpecies={selectedSpecies}
                             selectedGenomes={selectedGenomes}
                             results={geneResults}
-                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
+                            onSortClick={handleGeneSortClick}
                             currentPage={1}
                             totalPages={1}
                             handlePageClick={(page) => console.log('Page:', page)}

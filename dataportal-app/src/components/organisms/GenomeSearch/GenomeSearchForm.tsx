@@ -12,10 +12,12 @@ import {
 interface SearchGenomeFormProps {
     searchQuery: string;
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onSearchSubmit: () => void;
+    onSearchSubmit: (field: string) => void;
+    onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     selectedSpecies: number [];
     results: any[];
-    onSortClick: (sortField: string) => void;
+    sortField: string,
+    sortOrder: 'asc' | 'desc';
     selectedGenomes: { id: number; name: string }[];
     onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
     onGenomeSelect: (genome: { id: number; name: string }) => void;
@@ -29,7 +31,9 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                selectedGenomes,
                                                                onToggleGenomeSelect,
                                                                onGenomeSelect,
-                                                               onSortClick
+                                                               onSortClick,
+                                                               sortField,
+                                                               sortOrder
                                                            }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{
@@ -39,8 +43,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     }[]>([]);
     const [isolateName, setIsolateName] = useState<string>('');
     const [results, setResults] = useState<any[]>([]);
-    const [currentSortField, setCurrentSortField] = useState<string>('');
-    const [currentSortOrder, setCurrentSortOrder] = useState<string>('');
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(1);
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
@@ -51,6 +53,10 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         const newSize = parseInt(event.target.value, 10);
         setPageSize(newSize);
     };
+
+    useEffect(() => {
+        console.log('Updated results in GenomeSearchForm:', results);
+    }, [results]);
 
     useEffect(() => {
         fetchSearchResults(1);
@@ -95,7 +101,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-        async (page: number = 1, sortField: string = currentSortField, sortOrder: string = currentSortOrder) => {
+        async (page: number = 1, sortField: string = 'isolate_name', sortOrder: string = 'asc') => {
             const isolate = isolateName.trim() || query.trim();
             const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
             try {
@@ -123,12 +129,12 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 setHasNext(false);
             }
         },
-        [query, selectedSpecies, currentSortField, currentSortOrder, pageSize]
+        [query, selectedSpecies, sortField, sortOrder, pageSize]
     );
 
     useEffect(() => {
-        fetchSearchResults(); // Trigger fetch when component mounts or species selection changes
-    }, [selectedSpecies, pageSize]);
+        fetchSearchResults(currentPage, sortField, sortOrder); // Trigger fetch when component mounts or species selection changes
+    }, [selectedSpecies, pageSize, sortField, sortOrder]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,19 +160,17 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         console.log('selectedStrainId:' + selectedStrainId)
         event.preventDefault();
-        fetchSearchResults();
+        fetchSearchResults(1, sortField, sortOrder);
     };
 
-    const handleSortClick = (sortField: string) => {
-        const newSortOrder = currentSortField === sortField ? (currentSortOrder === 'asc' ? 'desc' : 'asc') : 'asc';
-        setCurrentSortField(sortField);
-        setCurrentSortOrder(newSortOrder);
-        fetchSearchResults(1, sortField, newSortOrder);
+    const handleGenomeSortClick = async (field: string, order: any) => {
+        console.log('Sorting Genomes by:', {field, sortOrder});
     };
+
 
     const handlePageClick = (page: number) => {
         setCurrentPage(page);
-        fetchSearchResults(page);
+        fetchSearchResults(page, sortField, sortOrder);
     };
 
     return (

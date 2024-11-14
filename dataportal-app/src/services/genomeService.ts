@@ -1,5 +1,6 @@
 import {getData} from './api';
 import apiInstance from "./apiInstance";
+import {GenomeResponse} from "@components/interfaces/Genome";
 
 interface Genome {
     id: number;
@@ -71,24 +72,33 @@ export const fetchGenomeSearchResults = async (
 // Fetch genomes based on species and genome query
 export const fetchGenomesBySearch = async (
     species: number[],
-    genome: string
-): Promise<Genome[]> => {
+    genome: string,
+    sortField: string,
+    sortOrder: string
+): Promise<GenomeResponse> => {
     try {
-        let url = '';
-        const params: any = {query: genome};
+        // Initialize the base URL and query parameters
+        const baseUrl = species.length === 1 ? `species/${species[0]}/genomes/search` : `genomes/search`;
 
-        if (species.length === 1) {
-            // If only one species is selected, call the species-specific endpoint
-            url = `species/${species[0]}/genomes/search`;
-        } else {
-            // Call default genome search endpoint
-            url = `genomes/search`;
-        }
+        // Construct query parameters
+        const params = new URLSearchParams({
+            query: genome,
+            sortField,
+            sortOrder,
+        });
 
-        const response = await apiInstance.get(url, {params});
-        return response.data; // Assume response is an array of genomes
+        // Make API request with the constructed URL and parameters
+        const response = await apiInstance.get(`${baseUrl}?${params.toString()}`);
+
+        return response.data;
     } catch (error) {
-        console.error('Error fetching genome search results:', {species, genome, error});
+        console.error('Error fetching genome search results:', {
+            species,
+            genome,
+            sortField,
+            sortOrder,
+            error,
+        });
         throw error;
     }
 };

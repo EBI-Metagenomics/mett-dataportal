@@ -59,9 +59,15 @@ async def get_all_species(request):
 
 # API Endpoint to retrieve all genomes
 @genome_router.get("/", response=GenomePaginationSchema)
-async def get_all_genomes(request, page: int = 1, per_page: int = 10):
+async def get_all_genomes(
+    request,
+    page: int = 1,
+    per_page: int = 10,
+    sortField: Optional[str] = "isolate_name",
+    sortOrder: Optional[str] = "asc",
+):
     try:
-        return await genome_service.get_genomes(page, per_page)
+        return await genome_service.get_genomes(page, per_page, sortField, sortOrder)
     except Exception as e:
         logger.error(f"Error in get_all_genomes: {e}")
         raise HttpError(500, f"Internal Server Error: {str(e)}")
@@ -75,9 +81,18 @@ async def get_type_strains(request):
 
 @genome_router.get("/search", response=GenomePaginationSchema)
 async def search_genomes_by_string(
-    request, query: str, page: int = 1, per_page: int = 10
+    request,
+    query: str,
+    page: int = 1,
+    per_page: int = 10,
+    sortField: Optional[str] = "isolate_name",
+    sortOrder: Optional[str] = "asc",
 ):
-    return await genome_service.search_genomes_by_string(query, page, per_page)
+    sortField = sortField or "isolate_name"
+    sortOrder = sortOrder or "asc"
+    return await genome_service.search_genomes_by_string(
+        query, page, per_page, sortField, sortOrder
+    )
 
 
 # API Endpoint to retrieve genome by ID
@@ -92,18 +107,31 @@ async def get_genome(request, genome_id: int):
 # API Endpoint to retrieve genomes filtered by species ID
 @species_router.get("/{species_id}/genomes", response=GenomePaginationSchema)
 async def get_genomes_by_species(
-    request, species_id: int, page: int = 1, per_page: int = 10
+    request,
+    species_id: int,
+    page: int = 1,
+    per_page: int = 10,
+    sortField: Optional[str] = "isolate_name",
+    sortOrder: Optional[str] = "asc",
 ):
-    return await genome_service.get_genomes_by_species(species_id, page, per_page)
+    return await genome_service.get_genomes_by_species(
+        species_id, page, per_page, sortField, sortOrder
+    )
 
 
 # API Endpoint to search genomes by species ID and query string
 @species_router.get("/{species_id}/genomes/search", response=GenomePaginationSchema)
 async def search_genomes_by_species_and_string(
-    request, species_id: int, query: str, page: int = 1, per_page: int = 10
+    request,
+    species_id: int,
+    query: str,
+    page: int = 1,
+    per_page: int = 10,
+    sortField: Optional[str] = "isolate_name",
+    sortOrder: Optional[str] = "asc",
 ):
     return await genome_service.search_genomes_by_species_and_string(
-        species_id, query, page, per_page
+        species_id, query, page, per_page, sortField, sortOrder
     )
 
 
