@@ -1,10 +1,10 @@
 .mainContainer {
-    max-width: 800px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 0 16px;
-    display: flex;
-    flex-direction: column;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .vfContent {
@@ -16,12 +16,12 @@
 }
 
 .jbrowseViewer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    min-width: 800px;
-    margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 800px;
+  margin: 0 auto;
 }
 
 .jbrowse-container {
@@ -89,5 +89,9 @@
 }
 
 div[class*="css-1m091n1-MuiPaper-root-paper"] {
-    height: 525px !important;
+  height: 525px !important;
+}
+
+div[class*="css-1un22rt-paper"] {
+  height: 525px !important;
 }
