@@ -151,7 +151,7 @@ const HomePage: React.FC = () => {
         const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
         setSortField(field);
         setSortOrder(newSortOrder);
-        console.log('Sorting Genes by:', {field, order: newSortOrder});
+        console.log('HomePage Sorting Genes by:', {field, order: newSortOrder});
     };
 
     const linkData = {
@@ -226,13 +226,13 @@ const HomePage: React.FC = () => {
                             onGenomeSelect={handleGenomeSelect}
                             selectedSpecies={selectedSpecies}
                             onSortClick={handleGenomeSortClick}
+                            sortField={sortField}
+                            sortOrder={sortOrder}
                             results={genomeResults}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
                             currentPage={1}
                             totalPages={1}
-                            sortField={sortField}
-                            sortOrder={sortOrder}
                             handlePageClick={(page) => console.log('Page:', page)}
                         />
                     )}
@@ -246,6 +246,8 @@ const HomePage: React.FC = () => {
                             selectedGenomes={selectedGenomes}
                             results={geneResults}
                             onSortClick={handleGeneSortClick}
+                            sortField={sortField}
+                            sortOrder={sortOrder}
                             currentPage={1}
                             totalPages={1}
                             handlePageClick={(page) => console.log('Page:', page)}

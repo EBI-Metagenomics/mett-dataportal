@@ -53,6 +53,10 @@ const GeneViewerPage: React.FC = () => {
     const [geneCurrentPage, setGeneCurrentPage] = useState(1);
 
     const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
+
+    const [sortField, setSortField] = useState<string>('species');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
     const searchParams = new URLSearchParams(location.search);
     // const genomeId = searchParams.get('genomeId');
 
@@ -233,7 +237,9 @@ const GeneViewerPage: React.FC = () => {
                             onSearchSubmit={handleGeneSearch}
                             selectedGenomes={genomeId ? [{id: parseInt(genomeId, 10), name: ''}] : []}
                             results={geneResults}
-                            onSortClick={(sortField) => console.log('Sort by:', sortField)}
+                            onSortClick={handleGeneSearch}
+                            sortField={sortField}
+                            sortOrder={sortOrder}
                             currentPage={geneCurrentPage}
                             totalPages={totalPages}
                             handlePageClick={(page) => setGeneCurrentPage(page)}

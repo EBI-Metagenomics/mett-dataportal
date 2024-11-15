@@ -14,7 +14,9 @@ interface GeneSearchFormProps {
     onSearchSubmit: () => void,
     selectedSpecies?: number [],
     results: any[],
-    onSortClick: (sortField: string) => void,
+    onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
+    sortField: string,
+    sortOrder: 'asc' | 'desc';
     totalPages: number,
     currentPage: number,
     handlePageClick: (page: number) => void,
@@ -31,7 +33,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            onSortClick,
                                                            selectedGenomes,
                                                            linkData,
-                                                           viewState
+                                                           viewState,
+                                                           sortField,
+                                                           sortOrder
                                                        }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{
@@ -41,8 +45,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     }[]>([]);
     const [geneName, setGeneName] = useState<string>('');
     const [results, setResults] = useState<any[]>([]);
-    const [currentSortField, setCurrentSortField] = useState<string>('');
-    const [currentSortOrder, setCurrentSortOrder] = useState<string>('');
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(1);
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
@@ -55,7 +57,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     useEffect(() => {
-        fetchSearchResults(1);
+        fetchSearchResults(1, sortField, sortOrder);
     }, [pageSize]);
 
     // Fetch suggestions for autocomplete based on the query and selected species
@@ -110,7 +112,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-        async (page = 1, sortField = currentSortField, sortOrder = currentSortOrder) => {
+        async (page = 1, sortField: string, sortOrder: string) => {
+            console.log('111111111111')
             const params = new URLSearchParams({
                 'query': query.trim() || '',
                 'page': String(page),
@@ -156,13 +159,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setHasNext(false);
             }
         },
-        [query, selectedSpecies, selectedGenomes, currentSortField, currentSortOrder, pageSize]
+        [query, selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize]
     );
 
 
     useEffect(() => {
-        fetchSearchResults();
-    }, [selectedSpecies, selectedGenomes, pageSize]);
+        fetchSearchResults(1, sortField, sortOrder);
+    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,19 +190,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         console.log('selectedStrainId:' + selectedGeneId)
         event.preventDefault();
-        fetchSearchResults();
+        fetchSearchResults(currentPage, sortField, sortOrder);
     };
 
-    const handleSortClick = (sortField: string) => {
-        const newSortOrder = currentSortField === sortField ? (currentSortOrder === 'asc' ? 'desc' : 'asc') : 'asc';
-        setCurrentSortField(sortField);
-        setCurrentSortOrder(newSortOrder);
-        fetchSearchResults(1, sortField, newSortOrder);
-    };
 
     const handlePageClick = (page: number) => {
         setCurrentPage(page);
-        fetchSearchResults(page);
+        fetchSearchResults(page, sortField, sortOrder);
     };
 
     return (

@@ -169,10 +169,33 @@ class GeneService:
             if query:
                 filters &= Q(gene_name__icontains=query.strip())
 
-            genes, total_results = await self._fetch_paginated_genes(
-                filters, page, per_page, sort_field, sort_order
+            valid_sort_fields = {
+                "gene_name": "gene_name",
+                "strain": "strain__isolate_name",
+                "description": "description",
+                "locus_tag": "locus_tag",
+                "product": "product",
+            }
+
+            # Validate and map sort_field
+            sort_field_mapped = valid_sort_fields.get(sort_field, "gene_name")
+            if sort_field not in valid_sort_fields:
+                logger.warning(
+                    f"Invalid sort_field '{sort_field}', defaulting to 'gene_name'"
+                )
+                sort_field_mapped = "gene_name"
+
+            logger.info(
+                f"Fetching genes with sort_field='{sort_field_mapped}', sort_order='{sort_order}'"
             )
+
+            # Fetch paginated genes with sorting
+            genes, total_results = await self._fetch_paginated_genes(
+                filters, page, per_page, sort_field_mapped, sort_order
+            )
+
             serialized_genes = [self._serialize_gene(gene) for gene in genes]
+
             return self._create_pagination_schema(
                 serialized_genes, page, per_page, total_results
             )
@@ -182,47 +205,6 @@ class GeneService:
         except Exception as e:
             logger.error(f"Error in search_genes_by_multiple_genomes_and_string: {e}")
             raise HttpError(500, "Internal Server Error")
-
-    async def search_genes_in_strain(self, strain_id: int, query: str, limit: int = 10):
-        try:
-            gene_filter = Q(strain_id=strain_id, gene_name__icontains=query)
-            genes = await sync_to_async(
-                lambda: list(
-                    Gene.objects.filter(gene_filter).select_related("strain")[:limit]
-                )
-            )()
-            return [
-                {"gene_name": gene.gene_name, "description": gene.description}
-                for gene in genes
-            ]
-        except Exception as e:
-            logger.error(f"Error searching genes in strain: {e}")
-            return []
-
-    async def search_genes_globally(self, query: str, limit: int = 10):
-        try:
-            gene_filter = Q(gene_name__icontains=query) | Q(
-                description__icontains=query
-            )
-            genes = await sync_to_async(
-                lambda: list(
-                    Gene.objects.filter(gene_filter).select_related("strain")[:limit]
-                )
-            )()
-            return [
-                {
-                    "gene_name": gene.gene_name,
-                    "seq_id": gene.seq_id,
-                    "strain": gene.strain.isolate_name if gene.strain else "Unknown",
-                    "assembly": gene.strain.assembly_name if gene.strain else None,
-                    "description": gene.description,
-                }
-                for gene in genes
-            ]
-
-        except Exception as e:
-            logger.error(f"Error searching genes globally: {e}")
-            return []
 
     # helper methods
 
@@ -278,14 +260,18 @@ class GeneService:
         order_prefix = "-" if sort_order == "desc" else ""
         sort_by = f"{order_prefix}{sort_field}" if sort_field else "gene_name"
 
-        genes = await sync_to_async(
-            lambda: list(
-                Gene.objects.select_related("strain")
-                .filter(filter_criteria)
-                .order_by(sort_by)[start : start + per_page]
-            )
-        )()
-        total_results = await sync_to_async(
-            Gene.objects.filter(filter_criteria).count
-        )()
-        return genes, total_results
+        try:
+            genes = await sync_to_async(
+                lambda: list(
+                    Gene.objects.select_related("strain")
+                    .filter(filter_criteria)
+                    .order_by(sort_by)[start : start + per_page]
+                )
+            )()
+            total_results = await sync_to_async(
+                Gene.objects.filter(filter_criteria).count
+            )()
+            return genes, total_results
+        except Exception as e:
+            logger.error(f"Error in _fetch_paginated_genes: {e}")
+            raise

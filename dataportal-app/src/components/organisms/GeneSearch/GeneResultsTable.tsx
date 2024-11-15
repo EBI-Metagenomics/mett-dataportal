@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './GeneResultsTable.module.scss';
-import {createViewState} from '@jbrowse/react-app';
+import { createViewState } from '@jbrowse/react-app';
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -11,7 +11,7 @@ interface LinkData {
 
 interface GeneResultsTableProps {
     results: any[];
-    onSortClick: (sortField: string) => void;
+    onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     linkData: LinkData;
     viewState?: ViewModel;
 }
@@ -37,29 +37,59 @@ const handleNavigation = (
     }
 };
 const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
-                                                               results,
-                                                               onSortClick,
-                                                               linkData,
-                                                               viewState
-                                                           }) => {
+    results,
+    onSortClick,
+    linkData,
+    viewState,
+}) => {
+    const [sortField, setSortField] = useState<string | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    const handleSort = (field: string) => {
+        const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
+        setSortField(field);
+        setSortOrder(newSortOrder);
+        onSortClick(field, newSortOrder);
+    };
+
     return (
         <table className="vf-table vf-table--sortable">
             <thead className="vf-table__header">
             <tr className="vf-table__row">
-                <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Strain
-                    <button
-                        className="vf-button vf-button--sm vf-button--icon vf-table__button vf-table__button--sortable"
-                        onClick={() => onSortClick('species')}
-                    />
+                <th onClick={() => handleSort('strain')}
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
+                    Strain
+                    {sortField === 'strain' ? (
+                        <span className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                              style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
-                <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Gene
-                    <button
-                        className="vf-button vf-button--sm vf-button--icon vf-table__button vf-table__button--sortable"
-                        onClick={() => onSortClick('isolate_name')}
-                    />
+                <th onClick={() => handleSort('gene_name')}
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
+                    Gene
+                    {sortField === 'gene_name' ? (
+                        <span className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                              style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
-                <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Product</th>
-                <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Locus Tag</th>
+                <th onClick={() => handleSort('locus_tag')}
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
+                    Locus Tag
+                    {sortField === 'locus_tag' ? (
+                        <span className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                              style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
+                </th>
+                <th onClick={() => handleSort('product')}
+                    className={`vf-table__heading ${styles.vfTableHeading}`}>
+                    Product
+                </th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
             </tr>
             </thead>
@@ -68,8 +98,8 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 <tr key={index} className="vf-table__row">
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.strain || 'Unknown Strain'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.gene_name || 'Unknown Gene Name'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.description || ''}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.locus_tag || 'Unknown Locus Tag'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.description || ''}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         {viewState ? (
                             <a

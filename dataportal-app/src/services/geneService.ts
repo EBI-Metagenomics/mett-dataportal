@@ -51,12 +51,13 @@ export const fetchGeneSearchResults = async (
     selectedSpecies?: number [],
 ) => {
     try {
+        console.log('2222222222')
         const params = new URLSearchParams({
             query: gene,
             page: String(page),
             per_page: String(perPage),
-            sortField,
-            sortOrder,
+            sort_field: sortField,
+            sort_order: sortOrder,
         });
 
         // Add genome IDs if available
