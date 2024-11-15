@@ -67,12 +67,12 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.isolate_name || 'Unknown Isolate'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={result.fasta_file || '#'}>{result.assembly_name || 'Unknown Assembly'}<span
+                        <a href={result.fasta_url || '#'}>{result.assembly_name || 'Unknown Assembly'}<span
                             className="icon icon-common icon-download"
                             style={{paddingLeft: '5px'}}></span></a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={result.gff_file || '#'}>GFF<span
+                        <a href={result.gff_url || '#'}>GFF<span
                             className="icon icon-common icon-download"
                             style={{paddingLeft: '5px'}}></span></a>
                     </td>
