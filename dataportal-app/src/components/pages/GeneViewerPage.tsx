@@ -51,6 +51,7 @@ const GeneViewerPage: React.FC = () => {
 
     const assembly = useMemo(() => {
         if (genomeMeta) {
+            console.log("base fasta indexes path: " + process.env.REACT_APP_ASSEMBLY_INDEXES_PATH)
             return getAssembly(genomeMeta, process.env.REACT_APP_ASSEMBLY_INDEXES_PATH
                 ? process.env.REACT_APP_ASSEMBLY_INDEXES_PATH : '');
         }
@@ -58,17 +59,16 @@ const GeneViewerPage: React.FC = () => {
     }, [genomeMeta]);
 
     const tracks = useMemo(() => {
+        console.log("base gff indexes path: " + process.env.REACT_APP_GFF_INDEXES_PATH)
         return genomeMeta ? getTracks(genomeMeta, process.env.REACT_APP_GFF_INDEXES_PATH
             ? process.env.REACT_APP_GFF_INDEXES_PATH : '') : [];
     }, [genomeMeta]);
 
     const sessionConfig = useMemo(() => {
         if (genomeMeta) {
-            console.log('22222222222');
             return getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
         } else {
             // Default session configuration if only genomeMeta is available
-            console.log('111111111111');
             return {
                 name: "Default Genome View",
                 views: [
