@@ -10,11 +10,11 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
         adapter: {
             type: 'Gff3TabixAdapter',
             gffGzLocation: {
-                uri: `${gffBaseUrl}/${genomeMeta.gff_file}.gz`,
+                uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz`,
             },
             index: {
                 location: {
-                    uri: `${gffBaseUrl}/${genomeMeta.gff_file}.gz.tbi`,
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz.tbi`,
                 },
             },
         },
@@ -24,13 +24,13 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                 type: 'TrixTextSearchAdapter',
                 textSearchAdapterId: 'gff3tabix_genes-index',
                 ixFilePath: {
-                    uri: `${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ix`,
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz.ix`,
                 },
                 ixxFilePath: {
-                    uri: `${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz.ixx`,
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz.ixx`,
                 },
                 metaFilePath: {
-                    uri: `${gffBaseUrl}/trix/${genomeMeta.gff_file}.gz_meta.json`,
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz_meta.json`,
                 },
                 assemblyNames: [genomeMeta.assembly_name],
             },

@@ -51,13 +51,15 @@ const GeneViewerPage: React.FC = () => {
 
     const assembly = useMemo(() => {
         if (genomeMeta) {
-            return getAssembly(genomeMeta, genomeMeta.fasta_url.replace(/\/[^/]+$/, ''));
+            return getAssembly(genomeMeta, process.env.REACT_APP_ASSEMBLY_INDEXES_PATH
+                ? process.env.REACT_APP_ASSEMBLY_INDEXES_PATH : '');
         }
         return null; // return null if genomeMeta is missing
     }, [genomeMeta]);
 
     const tracks = useMemo(() => {
-        return genomeMeta ? getTracks(genomeMeta, genomeMeta.gff_url.replace(/\/[^/]+$/, '')) : [];
+        return genomeMeta ? getTracks(genomeMeta, process.env.REACT_APP_GFF_INDEXES_PATH
+            ? process.env.REACT_APP_GFF_INDEXES_PATH : '') : [];
     }, [genomeMeta]);
 
     const sessionConfig = useMemo(() => {

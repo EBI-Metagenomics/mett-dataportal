@@ -8,13 +8,13 @@ const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
         adapter: {
             type: 'BgzipFastaAdapter',
             fastaLocation: {
-                uri: `${fastaBaseUrl}/${genomeMeta.fasta_file}.gz`,
+                uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz`,
             },
             faiLocation: {
-                uri: `${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.fai`,
+                uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz.fai`,
             },
             gziLocation: {
-                uri: `${fastaBaseUrl}/${genomeMeta.fasta_file}.gz.gzi`,
+                uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz.gzi`,
             },
         },
     },

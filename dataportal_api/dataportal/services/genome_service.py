@@ -170,12 +170,12 @@ class GenomeService:
                     "fasta_file": strain.fasta_file,
                     "gff_file": strain.gff_file,
                     "fasta_url": (
-                        f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}"
+                        f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
                         if strain.fasta_file
                         else None
                     ),
                     "gff_url": (
-                        f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}{strain.gff_file}"
+                        f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
                         if strain.gff_file
                         else None
                     ),
@@ -241,12 +241,12 @@ class GenomeService:
                         else None
                     ),
                     "fasta_url": (
-                        f"{settings.ASSEMBLY_FTP_PATH}{strain.assembly_name}/{strain.fasta_file}"
+                        f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
                         if strain.fasta_file
                         else None
                     ),
                     "gff_url": (
-                        f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}{strain.gff_file}"
+                        f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
                         if strain.gff_file
                         else None
                     ),

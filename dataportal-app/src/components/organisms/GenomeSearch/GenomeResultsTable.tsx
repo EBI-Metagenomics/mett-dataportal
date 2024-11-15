@@ -33,7 +33,8 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
         <table className="vf-table vf-table--sortable">
             <thead className="vf-table__header">
             <tr className="vf-table__row">
-                <th onClick={() => handleSort('species')} className="{`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}">
+                <th onClick={() => handleSort('species')}
+                    className="{`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}">
                     Species
                     {sortField === 'species' ? (
                         <span
@@ -67,12 +68,13 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.isolate_name || 'Unknown Isolate'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={result.fasta_url || '#'}>{result.assembly_name || 'Unknown Assembly'}<span
+                        <a href={result.fasta_url || '#'} target="_blank"
+                           rel="noreferrer">{result.assembly_name || 'Unknown Assembly'}<span
                             className="icon icon-common icon-download"
                             style={{paddingLeft: '5px'}}></span></a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={result.gff_url || '#'}>GFF<span
+                        <a href={result.gff_url || '#'} target="_blank" rel="noreferrer">GFF<span
                             className="icon icon-common icon-download"
                             style={{paddingLeft: '5px'}}></span></a>
                     </td>
