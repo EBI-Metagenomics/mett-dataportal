@@ -113,7 +113,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
         async (page = 1, sortField: string, sortOrder: string) => {
-            console.log('111111111111')
             const params = new URLSearchParams({
                 'query': query.trim() || '',
                 'page': String(page),

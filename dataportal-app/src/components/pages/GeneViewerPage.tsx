@@ -9,40 +9,8 @@ import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
 import {fetchGenomeById} from "../../services/genomeService";
 import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
 import {JBrowseApp} from "@jbrowse/react-app";
-
-export interface GeneMeta {
-    id: number;
-    seq_id: string;
-    gene_name: string;
-    description: string;
-    strain_id: number;
-    strain: string;
-    assembly: string;
-    locus_tag: string;
-    cog: string | null;
-    kegg: string | null;
-    pfam: string | null;
-    interpro: string | null;
-    dbxref: string | null;
-    ec_number: string | null;
-    product: string | null;
-    start_position: number | null;
-    end_position: number | null;
-    annotations: Record<string, any> | null;
-}
-
-export interface GenomeMeta {
-    species: number;
-    id: number;
-    common_name: string;
-    isolate_name: string;
-    assembly_name: string;
-    assembly_accession: string;
-    fasta_file: string;
-    gff_file: string;
-    fasta_url: string;
-    gff_url: string;
-}
+import {GenomeMeta} from "@components/interfaces/Genome";
+import {GeneMeta} from "@components/interfaces/Gene";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -93,10 +61,12 @@ const GeneViewerPage: React.FC = () => {
     }, [genomeMeta]);
 
     const sessionConfig = useMemo(() => {
-        if (genomeMeta && geneMeta) {
+        if (genomeMeta) {
+            console.log('22222222222');
             return getDefaultSessionConfig(geneMeta, genomeMeta, assembly, tracks);
-        } else if (genomeMeta) {
+        } else {
             // Default session configuration if only genomeMeta is available
+            console.log('111111111111');
             return {
                 name: "Default Genome View",
                 views: [
@@ -106,7 +76,7 @@ const GeneViewerPage: React.FC = () => {
                         tracks: tracks,
                         displayedRegions: [
                             {
-                                refName: genomeMeta.assembly_name,
+                                refName: 'Default assembly',
                                 start: 0,
                                 end: 5000000
                             }

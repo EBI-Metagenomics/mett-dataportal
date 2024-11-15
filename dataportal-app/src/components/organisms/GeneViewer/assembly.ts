@@ -1,4 +1,4 @@
-import {GenomeMeta} from '../../pages/GeneViewerPage';
+import {GenomeMeta} from "@components/interfaces/Genome";
 
 const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
     name: genomeMeta.assembly_name,

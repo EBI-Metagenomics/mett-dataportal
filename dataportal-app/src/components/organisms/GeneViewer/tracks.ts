@@ -1,4 +1,4 @@
-import {GenomeMeta} from '../../pages/GeneViewerPage';
+import {GenomeMeta} from "@components/interfaces/Genome";
 
 const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
     {

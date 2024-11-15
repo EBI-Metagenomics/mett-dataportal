@@ -3,7 +3,7 @@ export interface Contig {
     length: number;
 }
 
-export interface Genome {
+export interface GenomeMeta {
     species: string;
     id: number;
     common_name: string;
@@ -18,10 +18,24 @@ export interface Genome {
 }
 
 export interface GenomeResponse {
-    results: Genome[];
+    results: GenomeMeta[];
     page_number: number;
     num_pages: number;
     has_previous: boolean;
     has_next: boolean;
     total_results: number;
+}
+
+
+export interface Genome11Meta {
+    species: number;
+    id: number;
+    common_name: string;
+    isolate_name: string;
+    assembly_name: string;
+    assembly_accession: string;
+    fasta_file: string;
+    gff_file: string;
+    fasta_url: string;
+    gff_url: string;
 }

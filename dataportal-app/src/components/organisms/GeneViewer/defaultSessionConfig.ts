@@ -1,4 +1,6 @@
-import { GeneMeta, GenomeMeta } from '../../pages/GeneViewerPage';
+import {GeneMeta} from "@components/interfaces/Gene";
+import {GenomeMeta} from "@components/interfaces/Genome";
+
 
 const getDefaultSessionConfig = (
     geneMeta: GeneMeta | null,
@@ -8,7 +10,7 @@ const getDefaultSessionConfig = (
 ) => {
     if (!genomeMeta) {
         console.log("Genome meta information not found");
-        return null; // Return null if genomeMeta is missing
+        return null;
     }
 
     const displayedRegions = geneMeta
@@ -16,16 +18,18 @@ const getDefaultSessionConfig = (
             {
                 refName: geneMeta.seq_id,
                 start: geneMeta.start_position || 0,
-                end: geneMeta.end_position || 50000,
+                end: geneMeta.end_position || 1000,
                 reversed: true,
                 assemblyName: genomeMeta.assembly_name,
             },
         ]
         : [
             {
-                refName: genomeMeta.assembly_name,
+                refName: genomeMeta.contigs[0].seq_id,
                 start: 0,
-                end: 5000000, // Adjust this default range
+                end: 1000,
+                reversed: true,
+                assemblyName: genomeMeta.assembly_name,
             },
         ];
 
