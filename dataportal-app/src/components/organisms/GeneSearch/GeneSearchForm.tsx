@@ -173,9 +173,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const handleSuggestionClick = (suggestion: { gene_id: number, strain_name: string, gene_name: string }) => {
-        console.log('suggestion: ' + suggestion)
-        console.log('strain name: ' + suggestion.strain_name)
-        console.log('suggestion.strain_id: ' + suggestion.gene_name)
+        // console.log('suggestion: ' + suggestion)
+        // console.log('strain name: ' + suggestion.strain_name)
+        // console.log('suggestion.gene_name: ' + suggestion.gene_name)
+        // console.log('suggestion.gene_id: ' + suggestion.gene_id)
         setQuery(suggestion.gene_name);
         setGeneName(suggestion.gene_name);
         setSelectedGeneId(suggestion.gene_id);
@@ -184,7 +185,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        console.log('selectedStrainId:' + selectedGeneId)
+        console.log('selectedGeneId:' + selectedGeneId)
         event.preventDefault();
         fetchSearchResults(1, sortField, sortOrder);
     };

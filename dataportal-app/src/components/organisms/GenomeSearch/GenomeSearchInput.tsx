@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, {useEffect, useRef} from 'react';
 import styles from "./GenomeSearchInput.module.scss";
+import {Autocomplete, TextField} from "@mui/material";
 
 interface GenomeSearchInputProps {
     query: string;
@@ -10,12 +11,12 @@ interface GenomeSearchInputProps {
 }
 
 const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
-    query,
-    onInputChange,
-    suggestions,
-    onSuggestionClick,
-    onSuggestionsClear
-}) => {
+                                                                 query,
+                                                                 onInputChange,
+                                                                 suggestions,
+                                                                 onSuggestionClick,
+                                                                 onSuggestionsClear
+                                                             }) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -33,32 +34,41 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
 
     return (
         <div ref={wrapperRef} className={`vf-form__item ${styles.vfFormItem}`}>
-            <input
-                type="search"
-                value={query}
-                onChange={onInputChange}
-                placeholder="Search..."
-                className="vf-form__input"
-                autoComplete="off"
-                aria-autocomplete="list"
-                aria-controls="suggestions"
-                role="combobox"
-                aria-expanded={suggestions.length > 0}
+            <Autocomplete
+                disablePortal
+                options={suggestions}
+                getOptionLabel={(option) => `${option.isolate_name} - (${option.assembly_name})`}
+                sx={{
+                    width: '100%',
+                    '& .MuiInputBase-root': {
+                        height: '41px',
+                    },
+                    '& .MuiAutocomplete-listbox': {
+                        maxHeight: 300,
+                        overflowY: 'auto',
+                    },
+                    '& .MuiAutocomplete-input': {
+                        fontSize: '14px',
+                    },
+                    '& .MuiAutocomplete-option': {
+                        fontSize: '12px',
+                    },
+                }}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        // label="Search Genome"
+                        value={query}
+                        onChange={onInputChange}
+                        variant="outlined"
+                    />
+                )}
+                onChange={(event, value) => {
+                    if (value) {
+                        onSuggestionClick(value);
+                    }
+                }}
             />
-            {suggestions.length > 0 && (
-                <div id="suggestions" className={`vf-dropdown__menu ${styles.vfDropdownMenu}`} role="listbox">
-                    {suggestions.map((suggestion, index) => (
-                        <div
-                            key={index}
-                            className={styles.suggestionItem}
-                            onClick={() => onSuggestionClick(suggestion)}
-                            role="option"
-                        >
-                            {`${suggestion.isolate_name} - (${suggestion.assembly_name})`}
-                        </div>
-                    ))}
-                </div>
-            )}
             <button
                 type="submit"
                 className="vf-button vf-button--primary vf-button--sm"

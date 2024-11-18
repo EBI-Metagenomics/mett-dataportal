@@ -1,5 +1,6 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import styles from "@components/organisms/GeneSearch/GeneSearchInput.module.scss";
+import {Autocomplete, TextField} from "@mui/material";
 
 interface GeneSearchInputProps {
     query: string;
@@ -17,6 +18,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                                                              onSuggestionsClear
                                                          }) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
+    const [isSelecting, setIsSelecting] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -33,32 +35,48 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
 
     return (
         <div ref={wrapperRef} className={`vf-form__item ${styles.vfFormItem}`}>
-            <input
-                type="search"
-                value={query}
-                onChange={onInputChange}
-                placeholder="Search..."
-                className="vf-form__input"
-                autoComplete="off"
-                aria-autocomplete="list"
-                aria-controls="suggestions"
-                role="combobox"
-                aria-expanded={suggestions.length > 0}
+            <Autocomplete
+                disablePortal
+                freeSolo
+                options={suggestions}
+                getOptionLabel={(option) =>
+                    typeof option === 'string' ? option : `${option.strain_name} - (${option.gene_name})`
+                }
+                inputValue={query}
+                onInputChange={(event, newValue, reason) => {
+                    if (!isSelecting) {
+                        onInputChange({
+                            target: {value: newValue || ''},
+                        } as React.ChangeEvent<HTMLInputElement>);
+                    }
+                    if (reason === 'reset') {
+                        setIsSelecting(false);
+                    }
+                }}
+                onChange={(event, value) => {
+                    if (value && typeof value !== 'string') {
+                        setIsSelecting(true);
+                        onSuggestionClick(value);
+                    }
+                }}
+                isOptionEqualToValue={(option, value) =>
+                    typeof option !== 'string' &&
+                    typeof value !== 'string' &&
+                    option.gene_id === value.gene_id
+                }
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        // label="Search Gene"
+                        variant="outlined"
+                        sx={{
+                            '& .MuiInputBase-root': {
+                                height: '41px',
+                            },
+                        }}
+                    />
+                )}
             />
-            {suggestions.length > 0 && (
-                <div id="suggestions" className={`vf-dropdown__menu ${styles.vfDropdownMenu}`} role="listbox">
-                    {suggestions.map((suggestion, index) => (
-                        <div
-                            key={index}
-                            className={styles.suggestionItem}
-                            onClick={() => onSuggestionClick(suggestion)}
-                            role="option"
-                        >
-                            {`${suggestion.strain_name} - (${suggestion.gene_name})`}
-                        </div>
-                    ))}
-                </div>
-            )}
             <button
                 type="submit"
                 className="vf-button vf-button--primary vf-button--sm"

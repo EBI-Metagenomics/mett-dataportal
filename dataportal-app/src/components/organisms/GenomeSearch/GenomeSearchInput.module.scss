@@ -20,6 +20,7 @@
 
 .vfFormItem {
   width: 100% !important;
+  position: relative;
 }
 
 .vf-form__input {
@@ -28,26 +29,4 @@
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
-}
-
-.vfDropdownMenu {
-  position: absolute;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-top: 5px;
-  max-height: 200px;
-  overflow-y: auto;
-  width: calc(100% - 100px);
-  z-index: 1000;
-}
-
-
-.suggestionItem {
-  padding: 8px 12px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #f0f0f0;
-  }
 }
