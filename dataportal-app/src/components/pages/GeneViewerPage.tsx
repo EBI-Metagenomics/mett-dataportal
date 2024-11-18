@@ -150,7 +150,7 @@ const GeneViewerPage: React.FC = () => {
                                 </a>
                                 <ul className={styles.dropdownList}>
                                     <li className={styles.dropdownItem}>
-                                        <a href="/" className={styles.dropdownLink}>Other Strains
+                                        <a href={`/home?speciesId=${genomeMeta.species}`} className={styles.dropdownLink}>Other Strains
                                             of <i>{genomeMeta.species}</i></a>
                                     </li>
                                 </ul>
@@ -212,9 +212,6 @@ const GeneViewerPage: React.FC = () => {
                             onSortClick={handleGeneSearch}
                             sortField={sortField}
                             sortOrder={sortOrder}
-                            currentPage={geneCurrentPage}
-                            totalPages={totalPages}
-                            handlePageClick={(page) => setGeneCurrentPage(page)}
                             linkData={linkData}
                             viewState={localViewState}
                         />

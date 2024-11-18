@@ -3,11 +3,7 @@ import Pagination from "../../molecules/Pagination";
 import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
 import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
 import styles from "@components/organisms/GenomeSearch/GenomeSearchForm.module.scss";
-import {
-    fetchGenomeAutocompleteSuggestions,
-    fetchGenomeByStrainId,
-    fetchGenomeSearchResults
-} from "../../../services/genomeService";
+import {fetchGenomeAutocompleteSuggestions, fetchGenomeSearchResults} from "../../../services/genomeService";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -21,9 +17,7 @@ interface SearchGenomeFormProps {
     selectedGenomes: { id: number; name: string }[];
     onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
     onGenomeSelect: (genome: { id: number; name: string }) => void;
-    totalPages: number;
-    currentPage: number;
-    handlePageClick: (page: number) => void;
+    // handlePageClick: (page: number) => void;
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
@@ -47,20 +41,15 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const [totalPages, setTotalPages] = useState<number>(1);
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
-
     const [pageSize, setPageSize] = useState<number>(10);
+
+    const [resetFlag, setResetFlag] = useState<boolean>(false);
+
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, 10);
         setPageSize(newSize);
+        setResetFlag(true);
     };
-
-    useEffect(() => {
-        console.log('Updated results in GenomeSearchForm:', results);
-    }, [results]);
-
-    useEffect(() => {
-        fetchSearchResults(1);
-    }, [pageSize]);
 
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
@@ -103,19 +92,20 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const fetchSearchResults = useCallback(
         async (page: number = 1, sortField: string = 'isolate_name', sortOrder: string = 'asc') => {
             const isolate = isolateName.trim() || query.trim();
+            console.log("fetchSearchResults called with page:", page);
             const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
             try {
                 const response = await fetchGenomeSearchResults(isolate, page, pageSize, sortField, sortOrder, speciesFilter);
 
                 if (response && response.results) {
                     setResults(response.results);
-                    setCurrentPage(response.page_number);
+                    // setCurrentPage(response.page_number);
                     setTotalPages(response.num_pages);
-                    setHasPrevious(response.has_previous);
+                    setHasPrevious(response.has_previous ?? page > 1);
                     setHasNext(response.has_next);
                 } else {
                     setResults([]);
-                    setCurrentPage(1);
+                    // setCurrentPage(1);
                     setTotalPages(1);
                     setHasPrevious(false);
                     setHasNext(false);
@@ -123,7 +113,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             } catch (error) {
                 console.error('Error fetching data:', error);
                 setResults([]);
-                setCurrentPage(1);
+                // setCurrentPage(1);
                 setTotalPages(1);
                 setHasPrevious(false);
                 setHasNext(false);
@@ -133,8 +123,9 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     );
 
     useEffect(() => {
-        fetchSearchResults(currentPage, sortField, sortOrder); // Trigger fetch when component mounts or species selection changes
-    }, [selectedSpecies, pageSize, sortField, sortOrder]);
+        setCurrentPage(1);
+        fetchSearchResults(1, sortField, sortOrder);
+    }, [selectedSpecies, sortField, sortOrder, pageSize]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,10 +151,11 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         console.log('selectedStrainId:' + selectedStrainId)
         event.preventDefault();
-        fetchSearchResults(currentPage, sortField, sortOrder);
+        fetchSearchResults(1, sortField, sortOrder);
     };
 
     const handlePageClick = (page: number) => {
+        if (page < 1 || page > totalPages) return;
         setCurrentPage(page);
         fetchSearchResults(page, sortField, sortOrder);
     };
@@ -188,41 +180,41 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         onSuggestionsClear={() => setSuggestions([])}
                     />
 
-
-                    <div>
-                        <p>&nbsp;</p>
-                    </div>
-                    <div className="vf-grid__col--span-3" id="results-table"
-                         style={{display: results.length > 0 ? 'block' : 'none'}}>
-                        <GenomeResultsTable
-                            results={results}
-                            onSortClick={onSortClick}
-                            selectedGenomes={selectedGenomes}
-                            onToggleGenomeSelect={onToggleGenomeSelect}
-                        />
-                        {/* Page size dropdown and pagination */}
-                        <div className={styles.paginationContainer}>
-                            <div className={styles.pageSizeDropdown}>
-                                <label htmlFor="pageSize">Page Size: </label>
-                                <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
-                                    <option value={10}>Show 10</option>
-                                    <option value={20}>Show 20</option>
-                                    <option value={50}>Show 50</option>
-                                </select>
-                            </div>
-
-                            {totalPages > 1 && (
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    hasPrevious={hasPrevious}
-                                    hasNext={hasNext}
-                                    onPageClick={handlePageClick}
-                                />
-                            )}
-                        </div>
-                    </div>
                 </form>
+                <div>
+                    <p>&nbsp;</p>
+                </div>
+                <div className="vf-grid__col--span-3" id="results-table"
+                     style={{display: results.length > 0 ? 'block' : 'none'}}>
+                    <GenomeResultsTable
+                        results={results}
+                        onSortClick={onSortClick}
+                        selectedGenomes={selectedGenomes}
+                        onToggleGenomeSelect={onToggleGenomeSelect}
+                    />
+                    {/* Page size dropdown and pagination */}
+                    <div className={styles.paginationContainer}>
+                        <div className={styles.pageSizeDropdown}>
+                            <label htmlFor="pageSize">Page Size: </label>
+                            <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
+                                <option value={10}>Show 10</option>
+                                <option value={20}>Show 20</option>
+                                <option value={50}>Show 50</option>
+                            </select>
+                        </div>
+
+                        {totalPages > 1 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                hasPrevious={hasPrevious}
+                                hasNext={hasNext}
+                                onPageClick={handlePageClick}
+                            />
+                        )}
+                    </div>
+                </div>
+
             </div>
             <div>
                 <p>&nbsp;</p>

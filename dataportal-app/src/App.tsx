@@ -20,6 +20,7 @@ const App: React.FC = () => {
                 >
                     <Routes>
                         <Route path="/" element={<HomePage/>}/>
+                        <Route path="/home" element={<HomePage />} />
                         {/* Route for gene and genome */}
                         <Route path="/gene-viewer/gene/:geneId/genome/:genomeId" element={<GeneViewerPage/>}/>
                         {/* Route for genome only */}

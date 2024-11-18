@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
@@ -36,6 +37,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClic
 
 
 const HomePage: React.FC = () => {
+    const location = useLocation();
     const [speciesList, setSpeciesList] = useState<{ id: number; scientific_name: string }[]>([]);
     const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
@@ -70,8 +72,16 @@ const HomePage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        console.log('Updated genomeResults in HomePage:', genomeResults);
-    }, [genomeResults]);
+        const params = new URLSearchParams(location.search);
+        const speciesId = params.get('speciesId');
+
+        if (speciesId) {
+            const id = parseInt(speciesId, 10);
+            if (!selectedSpecies.includes(id)) {
+                setSelectedSpecies([...selectedSpecies, id]);
+            }
+        }
+    }, [location.search]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -231,9 +241,6 @@ const HomePage: React.FC = () => {
                             results={genomeResults}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
-                            currentPage={1}
-                            totalPages={1}
-                            handlePageClick={(page) => console.log('Page:', page)}
                         />
                     )}
 
@@ -248,9 +255,6 @@ const HomePage: React.FC = () => {
                             onSortClick={handleGeneSortClick}
                             sortField={sortField}
                             sortOrder={sortOrder}
-                            currentPage={1}
-                            totalPages={1}
-                            handlePageClick={(page) => console.log('Page:', page)}
                             linkData={linkData}
                         />
                     )}

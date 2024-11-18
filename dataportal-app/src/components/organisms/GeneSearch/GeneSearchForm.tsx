@@ -17,9 +17,6 @@ interface GeneSearchFormProps {
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     sortField: string,
     sortOrder: 'asc' | 'desc';
-    totalPages: number,
-    currentPage: number,
-    handlePageClick: (page: number) => void,
     selectedGenomes?: { id: number; name: string }[],
     linkData: {
         template: string;
@@ -189,7 +186,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         console.log('selectedStrainId:' + selectedGeneId)
         event.preventDefault();
-        fetchSearchResults(currentPage, sortField, sortOrder);
+        fetchSearchResults(1, sortField, sortOrder);
     };
 
 
@@ -215,41 +212,41 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     suggestions={suggestions}
                     onSuggestionClick={handleSuggestionClick}
                     onSuggestionsClear={() => setSuggestions([])}
+                /></form>
+            <div>
+                <p>&nbsp;</p>
+            </div>
+            <div className="vf-grid__col--span-3" id="results-table"
+                 style={{display: results.length > 0 ? 'block' : 'none'}}>
+                <GeneResultsTable
+                    results={results}
+                    onSortClick={onSortClick}
+                    linkData={linkData}
+                    viewState={viewState}
                 />
-                <div>
-                    <p>&nbsp;</p>
-                </div>
-                <div className="vf-grid__col--span-3" id="results-table"
-                     style={{display: results.length > 0 ? 'block' : 'none'}}>
-                    <GeneResultsTable
-                        results={results}
-                        onSortClick={onSortClick}
-                        linkData={linkData}
-                        viewState={viewState}
-                    />
-                    {/* Page size dropdown and pagination */}
-                    <div className={styles.paginationContainer}>
-                        <div className={styles.pageSizeDropdown}>
-                            <label htmlFor="pageSize">Page Size: </label>
-                            <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
-                                <option value={10}>Show 10</option>
-                                <option value={20}>Show 20</option>
-                                <option value={50}>Show 50</option>
-                            </select>
-                        </div>
-
-                        {totalPages > 1 && (
-                            <Pagination
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                hasPrevious={hasPrevious}
-                                hasNext={hasNext}
-                                onPageClick={handlePageClick}
-                            />
-                        )}
+                {/* Page size dropdown and pagination */}
+                <div className={styles.paginationContainer}>
+                    <div className={styles.pageSizeDropdown}>
+                        <label htmlFor="pageSize">Page Size: </label>
+                        <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
+                            <option value={10}>Show 10</option>
+                            <option value={20}>Show 20</option>
+                            <option value={50}>Show 50</option>
+                        </select>
                     </div>
+
+                    {totalPages > 1 && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            hasPrevious={hasPrevious}
+                            hasNext={hasNext}
+                            onPageClick={handlePageClick}
+                        />
+                    )}
                 </div>
-            </form>
+            </div>
+
 
             <div>
                 <p>&nbsp;</p>
