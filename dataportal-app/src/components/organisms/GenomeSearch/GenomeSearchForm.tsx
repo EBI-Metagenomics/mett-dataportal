@@ -160,13 +160,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         console.log('selectedStrainId:' + selectedStrainId)
         event.preventDefault();
-        fetchSearchResults(1, sortField, sortOrder);
+        fetchSearchResults(currentPage, sortField, sortOrder);
     };
-
-    const handleGenomeSortClick = async (field: string, order: any) => {
-        console.log('Sorting Genomes by:', {field, sortOrder});
-    };
-
 
     const handlePageClick = (page: number) => {
         setCurrentPage(page);
