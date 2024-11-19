@@ -6,7 +6,7 @@ import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSes
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
 import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
-import {fetchGenomeById} from "../../services/genomeService";
+import {fetchGenomeById, fetchGenomeByStrainName} from "../../services/genomeService";
 import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
 import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "@components/interfaces/Genome";
@@ -18,15 +18,13 @@ const GeneViewerPage: React.FC = () => {
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
     const [geneResults, setGeneResults] = useState<any[]>([]);
     const [totalPages, setTotalPages] = useState(1);
-    const [geneCurrentPage, setGeneCurrentPage] = useState(1);
-
-    const {geneId, genomeId} = useParams<{ geneId?: string; genomeId?: string }>();
 
     const [sortField, setSortField] = useState<string>('species');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
+    const {strainName} = useParams<{ strainName?: string }>();
     const searchParams = new URLSearchParams(location.search);
-    // const genomeId = searchParams.get('genomeId');
+    const geneId = searchParams.get('gene_id');
 
     useEffect(() => {
         const fetchGeneAndGenomeMeta = async () => {
@@ -37,8 +35,8 @@ const GeneViewerPage: React.FC = () => {
 
                     const genomeResponse = await fetchGenomeById(geneResponse.strain_id);
                     setGenomeMeta(genomeResponse);
-                } else if (genomeId) {
-                    const genomeResponse = await fetchGenomeById(Number(genomeId));
+                } else if (strainName) {
+                    const genomeResponse = await fetchGenomeByStrainName(strainName);
                     setGenomeMeta(genomeResponse);
                 }
             } catch (error) {
@@ -47,7 +45,7 @@ const GeneViewerPage: React.FC = () => {
         };
 
         fetchGeneAndGenomeMeta();
-    }, [geneId, genomeId]);
+    }, [geneId, strainName]);
 
     const assembly = useMemo(() => {
         if (genomeMeta) {
@@ -108,8 +106,8 @@ const GeneViewerPage: React.FC = () => {
     }
 
     const handleGeneSearch = async () => {
-        if (genomeId) {
-            const response = await fetchGeneBySearch(parseInt(genomeId, 10), geneSearchQuery);
+        if (genomeMeta?.id) {
+            const response = await fetchGeneBySearch(genomeMeta.id, geneSearchQuery);
             setGeneResults(response.results || []);
             setTotalPages(response.num_pages || 1);
         }
@@ -226,7 +224,7 @@ const GeneViewerPage: React.FC = () => {
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                             onSearchSubmit={handleGeneSearch}
-                            selectedGenomes={genomeId ? [{id: parseInt(genomeId, 10), name: ''}] : []}
+                            selectedGenomes={genomeMeta?.id ? [{id: genomeMeta.id, name: ''}] : []}
                             results={geneResults}
                             onSortClick={handleGeneSortClick}
                             sortField={sortField}

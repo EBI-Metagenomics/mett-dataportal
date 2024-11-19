@@ -106,6 +106,12 @@ async def get_genome(request, genome_id: int):
         raise HttpError(404, "Genome not found")
 
 
+# Fetch genome by strain_name
+@genome_router.get("/strain/{strain_name}", response=SearchGenomeSchema)
+async def get_genome_by_strain_name(request, strain_name: str):
+    return await genome_service.get_genome_by_strain_name(strain_name)
+
+
 # API Endpoint to retrieve genomes filtered by species ID
 @species_router.get("/{species_id}/genomes", response=GenomePaginationSchema)
 async def get_genomes_by_species(

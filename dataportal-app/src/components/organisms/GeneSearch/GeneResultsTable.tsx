@@ -18,8 +18,8 @@ interface GeneResultsTableProps {
 
 const generateLink = (template: string, result: any) => {
     return template
-        .replace('${id}', result.id)
-        .replace('${strain_id}', result.strain_id);
+        .replace('${strain_name}', result.strain)
+        .replace('${gene_id}', result.id);
 };
 
 const handleNavigation = (

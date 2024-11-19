@@ -194,6 +194,52 @@ class GenomeService:
             logger.error(f"Error fetching genome by ID {genome_id}: {e}")
             raise HttpError(500, "Internal Server Error")
 
+    async def get_genome_by_strain_name(self, strain_name: str):
+        try:
+            strain = await sync_to_async(
+                lambda: Strain.objects.select_related("species").get(
+                    isolate_name__iexact=strain_name
+                )
+            )()
+            return SearchGenomeSchema.model_validate(
+                {
+                    "id": strain.id,
+                    "species": strain.species.scientific_name,
+                    "common_name": (
+                        strain.species.common_name
+                        if strain.species.common_name
+                        else None
+                    ),
+                    "isolate_name": strain.isolate_name,
+                    "assembly_name": strain.assembly_name,
+                    "assembly_accession": strain.assembly_accession,
+                    "fasta_file": strain.fasta_file,
+                    "gff_file": strain.gff_file,
+                    "fasta_url": (
+                        f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
+                        if strain.fasta_file
+                        else None
+                    ),
+                    "gff_url": (
+                        f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
+                        if strain.gff_file
+                        else None
+                    ),
+                    "contigs": await sync_to_async(
+                        lambda: [
+                            {"seq_id": contig.seq_id, "length": contig.length}
+                            for contig in strain.contigs.all()
+                        ]
+                    )(),
+                }
+            )
+        except Strain.DoesNotExist:
+            logger.error(f"Genome with strain name {strain_name} not found")
+            raise HttpError(404, f"Genome with strain name {strain_name} not found")
+        except Exception as e:
+            logger.error(f"Error fetching genome by strain name {strain_name}: {e}")
+            raise HttpError(500, "Internal Server Error")
+
     # Helper Methods
     async def _fetch_paginated_strains(
         self,

@@ -154,3 +154,14 @@ export const fetchGenomeById = async (genomeId: number) => {
         throw error;
     }
 };
+
+
+export const fetchGenomeByStrainName = async (strain_name: string) => {
+    try {
+        const response = await getData(`/genomes/strain/${strain_name}`);
+        return response;
+    } catch (error) {
+        console.error(`Error fetching genome with strain name ${strain_name}:`, error);
+        throw error;
+    }
+}
