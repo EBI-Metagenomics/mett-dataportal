@@ -207,10 +207,10 @@ const GeneViewerPage: React.FC = () => {
                     )}
                 </section>
                 {/* JBrowse Component Section */}
-                <div style={{paddingTop: '20px'}}>
+                <div style={{paddingTop: '20px', height: '425px'}}>
                     {localViewState ? (
                         <div className={styles.jbrowseViewer}>
-                            <div className={styles.jbrowseContainer} style={{width: '100%', height: '100%'}}>
+                            <div className={styles.jbrowseContainer}>
                                 <JBrowseApp viewState={localViewState}/>
                             </div>
                         </div>
@@ -220,8 +220,8 @@ const GeneViewerPage: React.FC = () => {
                 </div>
 
                 {/* Gene Search Section */}
-                <div style={{paddingLeft: '5px', paddingTop: '5px'}}>
-                    <section style={{marginTop: '10px'}}>
+                <div className={styles.geneSearchContainer}>
+                    <section>
                         <GeneSearchForm
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
