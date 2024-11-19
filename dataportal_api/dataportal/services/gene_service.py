@@ -25,23 +25,57 @@ class GeneService:
         genome_ids: Optional[List[int]] = None,
     ) -> List[Dict]:
         try:
-            gene_filter = Q(gene_name__icontains=query)
+            # Build the filter criteria
+            gene_filter = (
+                Q(gene_name__iexact=query)
+                | Q(gene_name__icontains=query)
+                | Q(product__icontains=query)
+                | Q(locus_tag__icontains=query)
+                | Q(kegg__icontains=query)
+                | Q(pfam__icontains=query)
+                | Q(interpro__icontains=query)
+                | Q(dbxref__icontains=query)
+            )
+
+            # Add optional filters for species_id and genome_ids
             if species_id:
                 gene_filter &= Q(strain__species_id=species_id)
             if genome_ids:
                 gene_filter &= Q(strain_id__in=genome_ids)
 
-            genes, _ = await self._fetch_paginated_genes(
-                gene_filter, page=1, per_page=limit or self.limit
+            # Log the filter criteria for debugging
+            logger.debug(
+                f"Query: {query}, Species ID: {species_id}, Genome IDs: {genome_ids}"
             )
-            return [
+            logger.debug(f"Gene Filter: {gene_filter}")
+
+            # Fetch the paginated and sorted genes
+            genes, total_results = await self._fetch_paginated_genes(
+                filter_criteria=gene_filter,
+                page=1,
+                per_page=limit or self.limit,
+                sort_field="gene_name",  # Default sorting by gene name
+                sort_order="asc",  # Change to "desc" if required
+            )
+
+            # Build and return the response
+            response = [
                 {
                     "gene_id": gene.id,
                     "gene_name": gene.gene_name,
                     "strain_name": gene.strain.isolate_name,
+                    "product": gene.product,
+                    "locus_tag": gene.locus_tag,
+                    "kegg": gene.kegg,
+                    "pfam": gene.pfam,
+                    "interpro": gene.interpro,
+                    "dbxref": gene.dbxref,
                 }
                 for gene in genes
             ]
+
+            logger.debug(f"API Response: {response}")
+            return response
         except Exception as e:
             logger.error(f"Error fetching gene autocomplete suggestions: {e}")
             return []
@@ -155,6 +189,7 @@ class GeneService:
         sort_order: Optional[str] = "asc",
     ) -> GenePaginationSchema:
         try:
+            # Parse genome IDs
             genome_id_list = (
                 [int(gid) for gid in genome_ids.split(",") if gid.strip()]
                 if genome_ids
@@ -162,13 +197,27 @@ class GeneService:
             )
             filters = Q()
 
+            # Add filters for genome IDs and species ID
             if genome_id_list:
                 filters &= Q(strain_id__in=genome_id_list)
             if species_id:
                 filters &= Q(strain__species_id=species_id)
-            if query:
-                filters &= Q(gene_name__icontains=query.strip())
 
+            # Add gene search filters if query is provided
+            if query:
+                gene_filter = (
+                    Q(gene_name__iexact=query.strip())
+                    | Q(gene_name__icontains=query.strip())
+                    | Q(product__icontains=query.strip())
+                    | Q(locus_tag__icontains=query.strip())
+                    | Q(kegg__icontains=query.strip())
+                    | Q(pfam__icontains=query.strip())
+                    | Q(interpro__icontains=query.strip())
+                    | Q(dbxref__icontains=query.strip())
+                )
+                filters &= gene_filter
+
+            # Valid sorting fields and their mappings
             valid_sort_fields = {
                 "gene_name": "gene_name",
                 "strain": "strain__isolate_name",
@@ -194,6 +243,7 @@ class GeneService:
                 filters, page, per_page, sort_field_mapped, sort_order
             )
 
+            # Serialize genes for the response
             serialized_genes = [self._serialize_gene(gene) for gene in genes]
 
             return self._create_pagination_schema(
@@ -203,7 +253,7 @@ class GeneService:
             logger.error("Invalid genome ID provided")
             raise HttpError(400, "Invalid genome ID provided")
         except Exception as e:
-            logger.error(f"Error in search_genes_by_multiple_genomes_and_string: {e}")
+            logger.error(f"Error in get_genes_by_multiple_genomes_and_string: {e}")
             raise HttpError(500, "Internal Server Error")
 
     # helper methods
@@ -261,6 +311,11 @@ class GeneService:
         sort_by = f"{order_prefix}{sort_field}" if sort_field else "gene_name"
 
         try:
+            logger.debug(f"Filter criteria: {filter_criteria}")
+            logger.debug(f"Sorting by: {sort_by}")
+            logger.debug(f"Pagination: start={start}, end={start + per_page}")
+
+            # paginated and sorted gene list
             genes = await sync_to_async(
                 lambda: list(
                     Gene.objects.select_related("strain")
@@ -268,9 +323,14 @@ class GeneService:
                     .order_by(sort_by)[start : start + per_page]
                 )
             )()
+
             total_results = await sync_to_async(
                 Gene.objects.filter(filter_criteria).count
             )()
+
+            logger.debug(f"Fetched genes: {[gene.gene_name for gene in genes]}")
+            logger.debug(f"Total matching genes: {total_results}")
+
             return genes, total_results
         except Exception as e:
             logger.error(f"Error in _fetch_paginated_genes: {e}")

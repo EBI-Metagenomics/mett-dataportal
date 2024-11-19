@@ -59,6 +59,12 @@ class GeneAutocompleteResponseSchema(BaseModel):
     gene_id: int
     gene_name: Optional[str]
     strain_name: str
+    product: Optional[str] = None
+    locus_tag: Optional[str] = None
+    kegg: Optional[str] = None
+    pfam: Optional[str] = None
+    interpro: Optional[str] = None
+    dbxref: Optional[str] = None
 
 
 class GeneResponseSchema(BaseModel):

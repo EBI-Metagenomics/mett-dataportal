@@ -41,7 +41,7 @@ const getDefaultSessionConfig = (
                 id: 'linearGenomeView',
                 minimized: false,
                 type: 'LinearGenomeView',
-                hideTrackSelector: false,
+                hideTrackSelector: true,
                 displayedRegions: displayedRegions,
                 tracks: [
                     {
@@ -78,6 +78,9 @@ const getDefaultSessionConfig = (
                 showCenterLine: false,
                 showCytobandsSetting: true,
                 showGridlines: true,
+                scale: 1,
+                bpPerPx: 0.5
+
             },
         ],
     };

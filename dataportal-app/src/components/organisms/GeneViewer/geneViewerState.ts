@@ -52,7 +52,7 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                 });
 
                 const model = state.session.views[0];
-                model.activateTrackSelector();
+                //model.activateTrackSelector(); //uncomment to show trackselector at start
                 setViewState(state);
 
                 const assemblyManager = state.assemblyManager;

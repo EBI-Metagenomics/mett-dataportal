@@ -18,3 +18,15 @@ export interface GeneMeta {
     end_position: number | null;
     annotations: Record<string, any> | null;
 }
+
+export interface GeneSuggestion {
+    gene_id: number;
+    gene_name: string | '';
+    strain_name: string;
+    product: string | null;
+    locus_tag: string;
+    kegg: string | null;
+    pfam: string | null;
+    interpro: string | null;
+    dbxref: string | null;
+}

@@ -1,12 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
 import styles from "@components/organisms/GeneSearch/GeneSearchInput.module.scss";
 import {Autocomplete, TextField} from "@mui/material";
+import {GeneSuggestion} from "@components/interfaces/Gene";
 
 interface GeneSearchInputProps {
     query: string;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    suggestions: { gene_id: number; strain_name: string; gene_name: string }[];
-    onSuggestionClick: (suggestion: { gene_id: number; strain_name: string; gene_name: string }) => void;
+    suggestions: GeneSuggestion[];
+    onSuggestionClick: (suggestion: GeneSuggestion) => void;
     onSuggestionsClear: () => void;
 }
 
@@ -39,8 +40,9 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                 disablePortal
                 freeSolo
                 options={suggestions}
+                style={{zIndex: 1000}}
                 getOptionLabel={(option) =>
-                    typeof option === 'string' ? option : `${option.strain_name} - (${option.gene_name})`
+                    typeof option === 'string' ? option : `${option.strain_name} - ${option.gene_name} - (${option.product} - ${option.locus_tag})`
                 }
                 inputValue={query}
                 onInputChange={(event, newValue, reason) => {

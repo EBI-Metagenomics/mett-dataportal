@@ -1,5 +1,6 @@
 import apiInstance from "./apiInstance";
 import {getData} from "./api";
+import {GeneSuggestion} from "@components/interfaces/Gene";
 
 // Define types/interfaces for better type safety
 interface Gene {
@@ -28,7 +29,7 @@ export const fetchGeneAutocompleteSuggestions = async (
     limit: number = 10,
     speciesId?: number,
     genomeIds?: string
-): Promise<{ gene_id: number; strain_name: string; gene_name: string }[]> => {
+): Promise<GeneSuggestion[]> => {
     try {
         const response = await apiInstance.get('genes/autocomplete', {
             params: buildParams(query, 1, limit, speciesId, genomeIds)

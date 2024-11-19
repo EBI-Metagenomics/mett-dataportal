@@ -150,7 +150,8 @@ const GeneViewerPage: React.FC = () => {
                                 </a>
                                 <ul className={styles.dropdownList}>
                                     <li className={styles.dropdownItem}>
-                                        <a href={`/home?speciesId=${genomeMeta.species}`} className={styles.dropdownLink}>Other Strains
+                                        <a href={`/home?speciesId=${genomeMeta.species}`}
+                                           className={styles.dropdownLink}>Other Strains
                                             of <i>{genomeMeta.species}</i></a>
                                     </li>
                                 </ul>
@@ -198,11 +199,22 @@ const GeneViewerPage: React.FC = () => {
                         <p>Loading genome meta information...</p>
                     )}
                 </section>
-
+                {/* JBrowse Component Section */}
+                <div style={{paddingTop: '20px'}}>
+                    {localViewState ? (
+                        <div className={styles.jbrowseViewer}>
+                            <div className={styles.jbrowseContainer} style={{width: '100%', height: '100%'}}>
+                                <JBrowseApp viewState={localViewState}/>
+                            </div>
+                        </div>
+                    ) : (
+                        <p>Loading Genome Viewer...</p>
+                    )}
+                </div>
 
                 {/* Gene Search Section */}
-                <div style={{paddingLeft: '5px', paddingTop: '20px'}}>
-                    <section style={{marginTop: '20px'}}>
+                <div style={{paddingLeft: '5px', paddingTop: '5px'}}>
+                    <section style={{marginTop: '10px'}}>
                         <GeneSearchForm
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
@@ -218,18 +230,7 @@ const GeneViewerPage: React.FC = () => {
                     </section>
                 </div>
 
-                {/* JBrowse Component Section */}
-                <div>
-                    {localViewState ? (
-                        <div className={styles.jbrowseViewer}>
-                            <div className={styles.jbrowseContainer} style={{width: '100%', height: '100%'}}>
-                                <JBrowseApp viewState={localViewState}/>
-                            </div>
-                        </div>
-                    ) : (
-                        <p>Loading Genome Viewer...</p>
-                    )}
-                </div>
+
             </section>
         </div>
     );

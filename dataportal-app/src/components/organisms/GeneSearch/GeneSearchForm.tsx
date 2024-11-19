@@ -5,6 +5,7 @@ import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable"
 import Pagination from "@components/molecules/Pagination";
 import {fetchGeneAutocompleteSuggestions, fetchGeneById, fetchGeneSearchResults} from "../../../services/geneService";
 import {createViewState} from '@jbrowse/react-app';
+import {GeneSuggestion} from "@components/interfaces/Gene";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -35,11 +36,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            sortOrder
                                                        }) => {
     const [query, setQuery] = useState<string>('');
-    const [suggestions, setSuggestions] = useState<{
-        gene_id: number,
-        strain_name: string,
-        gene_name: string
-    }[]>([]);
+    const [suggestions, setSuggestions] = useState<GeneSuggestion[]>([]);
     const [geneName, setGeneName] = useState<string>('');
     const [results, setResults] = useState<any[]>([]);
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -172,7 +169,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         debouncedFetchSuggestions(newQuery);
     };
 
-    const handleSuggestionClick = (suggestion: { gene_id: number, strain_name: string, gene_name: string }) => {
+    const handleSuggestionClick = (suggestion: GeneSuggestion) => {
         // console.log('suggestion: ' + suggestion)
         // console.log('strain name: ' + suggestion.strain_name)
         // console.log('suggestion.gene_name: ' + suggestion.gene_name)
