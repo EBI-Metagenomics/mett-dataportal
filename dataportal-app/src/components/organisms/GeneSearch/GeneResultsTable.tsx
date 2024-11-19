@@ -85,7 +85,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                     )}
                 </th>
                 <th onClick={() => handleSort('product')}
-                    className={`vf-table__heading ${styles.vfTableHeading}`}>
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Product
                     {sortField === 'product' ? (
                         <span className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}

@@ -42,7 +42,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
             <thead className="vf-table__header">
             <tr className="vf-table__row">
                 <th onClick={() => handleSort('species')}
-                    className="{`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}">
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Species
                     {sortField === 'species' ? (
                         <span
@@ -53,7 +53,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     )}
                 </th>
                 <th onClick={() => handleSort('isolate_name')}
-                    className="{`vf-table__heading ${styles.vfTableHeading}`} ${styles.clickableHeader}">
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Strain
                     {sortField === 'isolate_name' ? (
                         <span
@@ -63,10 +63,10 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                         <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
                     )}
                 </th>
-                <th className="{`vf-table__heading ${styles.vfTableHeading}`}">Assembly</th>
-                <th className="{`vf-table__heading ${styles.vfTableHeading}`}">Annotations</th>
-                <th className="{`vf-table__heading ${styles.vfTableHeading}`}">Actions</th>
-                <th className="{`vf-table__heading ${styles.vfTableHeading}`}">Add to Gene Search</th>
+                <th className={`vf-table__heading ${styles.vfTableHeading}`}>Assembly</th>
+                <th className={`vf-table__heading ${styles.vfTableHeading}`}>Annotations</th>
+                <th className={`vf-table__heading ${styles.vfTableHeading}`}>Actions</th>
+                <th className={`vf-table__heading ${styles.vfTableHeading}`}>Add to Gene Search</th>
             </tr>
             </thead>
             <tbody className="vf-table__body">

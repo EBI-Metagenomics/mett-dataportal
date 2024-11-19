@@ -26,7 +26,7 @@
 
 .clickableHeader {
   cursor: pointer;
-  background-color: #61dafb;
+  transition: background-color 0.2s ease;
 }
 
 .toggleButton {

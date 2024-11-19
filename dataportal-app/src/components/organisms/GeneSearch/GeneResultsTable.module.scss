@@ -24,6 +24,11 @@
   background-color: #ffffff !important;
 }
 
+.clickableHeader {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
 .toggleButton {
   width: 25px;
   height: 25px;
