@@ -18,6 +18,7 @@ from .schemas import (
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
 from .services.species_service import SpeciesService
+from .utils.decorators import log_endpoint_access
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ jbrowse_router = Router(tags=["JBrowse Viewer"])
 
 # Map the router to the class methods
 @genome_router.get("/autocomplete", response=List[StrainSuggestionSchema])
+@log_endpoint_access("genome_autocomplete_suggestions")
 async def autocomplete_suggestions(
     request, query: str, limit: int = 10, species_id: Optional[int] = None
 ):
