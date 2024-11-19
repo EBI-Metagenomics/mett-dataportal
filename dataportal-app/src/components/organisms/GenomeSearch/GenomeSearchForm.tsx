@@ -4,6 +4,7 @@ import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchIn
 import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
 import styles from "@components/organisms/GenomeSearch/GenomeSearchForm.module.scss";
 import {fetchGenomeAutocompleteSuggestions, fetchGenomeSearchResults} from "../../../services/genomeService";
+import {LinkData} from "@components/interfaces/Auxiliary";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -17,10 +18,7 @@ interface SearchGenomeFormProps {
     selectedGenomes: { id: number; name: string }[];
     onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
     onGenomeSelect: (genome: { id: number; name: string }) => void;
-    linkData: {
-        template: string;
-        alias: string;
-    };
+    linkData: LinkData;
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({

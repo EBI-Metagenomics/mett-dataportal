@@ -3,9 +3,10 @@ import GeneSearchInput from './GeneSearchInput';
 import styles from "@components/organisms/GeneSearch/GeneSearchForm.module.scss";
 import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
-import {fetchGeneAutocompleteSuggestions, fetchGeneById, fetchGeneSearchResults} from "../../../services/geneService";
+import {fetchGeneAutocompleteSuggestions, fetchGeneSearchResults} from "../../../services/geneService";
 import {createViewState} from '@jbrowse/react-app';
-import {GeneSuggestion} from "@components/interfaces/Gene";
+import {GeneMeta, GeneSuggestion} from "@components/interfaces/Gene";
+import {LinkData} from "@components/interfaces/Auxiliary";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -19,10 +20,7 @@ interface GeneSearchFormProps {
     sortField: string,
     sortOrder: 'asc' | 'desc';
     selectedGenomes?: { id: number; name: string }[],
-    linkData: {
-        template: string;
-        alias: string;
-    },
+    linkData: LinkData,
     viewState?: ViewModel;
 }
 
@@ -38,7 +36,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<GeneSuggestion[]>([]);
     const [geneName, setGeneName] = useState<string>('');
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState<GeneMeta[]>([]);
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(1);
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);

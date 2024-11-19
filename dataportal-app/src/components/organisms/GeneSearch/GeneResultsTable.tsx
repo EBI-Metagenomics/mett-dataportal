@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import styles from './GeneResultsTable.module.scss';
-import { createViewState } from '@jbrowse/react-app';
+import {createViewState} from '@jbrowse/react-app';
+import {LinkData} from "@components/interfaces/Auxiliary";
+import {GeneMeta} from "@components/interfaces/Gene";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
-interface LinkData {
-    template: string;
-    alias: string;
-}
-
 interface GeneResultsTableProps {
-    results: any[];
+    results: GeneMeta[];
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     linkData: LinkData;
     viewState?: ViewModel;
@@ -37,11 +34,11 @@ const handleNavigation = (
     }
 };
 const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
-    results,
-    onSortClick,
-    linkData,
-    viewState,
-}) => {
+                                                               results,
+                                                               onSortClick,
+                                                               linkData,
+                                                               viewState,
+                                                           }) => {
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -101,12 +98,12 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
             </tr>
             </thead>
             <tbody className="vf-table__body">
-            {results.map((result, index) => (
+            {results.map((geneMeta, index) => (
                 <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.strain || 'Unknown Strain'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.gene_name || 'Unknown Gene Name'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.locus_tag || 'Unknown Locus Tag'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.description || ''}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.strain || 'Unknown Strain'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || 'Unknown Gene Name'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.locus_tag || 'Unknown Locus Tag'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.description || ''}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         {viewState ? (
                             <a
@@ -114,13 +111,15 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                 className="vf-link"
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    handleNavigation(viewState, result.seq_id, result.start_position, result.end_position);
+                                    handleNavigation(viewState, geneMeta.seq_id,
+                                        geneMeta.start_position ? geneMeta.start_position : 0,
+                                        geneMeta.end_position ? geneMeta.end_position : 1000);
                                 }}
                             >
                                 {linkData.alias}
                             </a>
                         ) : (
-                            <a href={generateLink(linkData.template, result)}>
+                            <a href={generateLink(linkData.template, geneMeta)}>
                                 {linkData.alias}
                             </a>
                         )}

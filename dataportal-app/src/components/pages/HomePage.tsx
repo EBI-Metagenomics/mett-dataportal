@@ -165,7 +165,7 @@ const HomePage: React.FC = () => {
     };
 
     const geneLinkData = {
-        template: '/genome/${strain_name}?gene=${gene_id}',
+        template: '/genome/${strain_name}?gene_id=${gene_id}',
         alias: 'Browse'
     };
 

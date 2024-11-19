@@ -29,6 +29,7 @@ const GeneViewerPage: React.FC = () => {
     useEffect(() => {
         const fetchGeneAndGenomeMeta = async () => {
             try {
+                console.log('11111111 gene_id: ' + geneId);
                 if (geneId) {
                     const geneResponse = await fetchGeneById(Number(geneId));
                     setGeneMeta(geneResponse);
@@ -121,7 +122,7 @@ const GeneViewerPage: React.FC = () => {
     };
 
     const linkData = {
-        template: '/gene-viewer/gene/${id}/details?genomeId=${strain_id}',
+        template: '/genome/${strain_name}',
         alias: 'Select'
     };
 
@@ -185,20 +186,21 @@ const GeneViewerPage: React.FC = () => {
                                           style={{paddingLeft: '5px'}}></span>
                                 </a>
                             </p>
-                            <p><strong>ENA Accession:&nbsp;</strong>
-                                <a
-                                    href={
-                                        genomeMeta.assembly_accession
-                                            ? `${process.env.REACT_APP_ENA_BASE_URL}${genomeMeta.assembly_accession}`
-                                            : undefined
-                                    }
-                                    target="_blank"
-                                    rel="noopener noreferrer">
-                                    {genomeMeta.assembly_accession ? `XX000000${genomeMeta.assembly_accession}` : "Not Available"}
-                                    <span className="icon icon-common icon-external-link-alt"
-                                          style={{paddingLeft: '5px'}}></span>
-                                </a>
-                            </p>
+                            {/* commented ENA link for now till the assemblies become public */}
+                            {/*<p><strong>ENA Accession:&nbsp;</strong>*/}
+                            {/*    <a*/}
+                            {/*        href={*/}
+                            {/*            genomeMeta.assembly_accession*/}
+                            {/*                ? `${process.env.REACT_APP_ENA_BASE_URL}${genomeMeta.assembly_accession}`*/}
+                            {/*                : undefined*/}
+                            {/*        }*/}
+                            {/*        target="_blank"*/}
+                            {/*        rel="noopener noreferrer">*/}
+                            {/*        {genomeMeta.assembly_accession ? `XX000000${genomeMeta.assembly_accession}` : "Not Available"}*/}
+                            {/*        <span className="icon icon-common icon-external-link-alt"*/}
+                            {/*              style={{paddingLeft: '5px'}}></span>*/}
+                            {/*    </a>*/}
+                            {/*</p>*/}
                         </div>
                     ) : (
                         <p>Loading genome meta information...</p>
