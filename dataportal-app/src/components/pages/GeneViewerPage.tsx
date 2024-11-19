@@ -115,6 +115,13 @@ const GeneViewerPage: React.FC = () => {
         }
     };
 
+    const handleGeneSortClick = async (field: string) => {
+        const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
+        setSortField(field);
+        setSortOrder(newSortOrder);
+        console.log('Geneviewer Sorting Genes by:', {field, order: newSortOrder});
+    };
+
     const linkData = {
         template: '/gene-viewer/gene/${id}/details?genomeId=${strain_id}',
         alias: 'Select'
@@ -221,7 +228,7 @@ const GeneViewerPage: React.FC = () => {
                             onSearchSubmit={handleGeneSearch}
                             selectedGenomes={genomeId ? [{id: parseInt(genomeId, 10), name: ''}] : []}
                             results={geneResults}
-                            onSortClick={handleGeneSearch}
+                            onSortClick={handleGeneSortClick}
                             sortField={sortField}
                             sortOrder={sortOrder}
                             linkData={linkData}
