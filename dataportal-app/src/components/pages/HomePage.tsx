@@ -164,8 +164,13 @@ const HomePage: React.FC = () => {
         console.log('HomePage Sorting Genes by:', {field, order: newSortOrder});
     };
 
-    const linkData = {
+    const geneLinkData = {
         template: '/genome/${strain_name}?gene=${gene_id}',
+        alias: 'Browse'
+    };
+
+    const genomeLinkData = {
+        template: '/genome/${strain_name}',
         alias: 'Browse'
     };
 
@@ -241,6 +246,7 @@ const HomePage: React.FC = () => {
                             results={genomeResults}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
+                            linkData={genomeLinkData}
                         />
                     )}
 
@@ -255,7 +261,7 @@ const HomePage: React.FC = () => {
                             onSortClick={handleGeneSortClick}
                             sortField={sortField}
                             sortOrder={sortOrder}
-                            linkData={linkData}
+                            linkData={geneLinkData}
                         />
                     )}
                 </div>

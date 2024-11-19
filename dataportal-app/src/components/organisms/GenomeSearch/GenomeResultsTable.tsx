@@ -1,18 +1,25 @@
 import React, {useEffect, useState} from 'react';
 import styles from './GenomeResultsTable.module.scss';
 
+interface LinkData {
+    template: string;
+    alias: string;
+}
+
 interface GenomeResultsTableProps {
     results: any[];
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     selectedGenomes: { id: number; name: string }[];
     onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
+    linkData: LinkData;
 }
 
 const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                                                                    results,
                                                                    onSortClick,
                                                                    selectedGenomes,
-                                                                   onToggleGenomeSelect
+                                                                   onToggleGenomeSelect,
+                                                                   linkData
                                                                }) => {
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -27,6 +34,11 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
         setSortOrder(newSortOrder);
         console.log("sort originated with sort order - " + sortOrder);
         onSortClick(field, newSortOrder);
+    };
+
+    const generateLink = (template: string, result: any) => {
+        return template
+            .replace('${strain_name}', result.isolate_name)
     };
 
     return (
@@ -79,7 +91,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                             style={{paddingLeft: '5px'}}></span></a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={`/gene-viewer/genome/${result.id}/`}>Browse</a>
+                        <a href={generateLink(linkData.template, result)}>{linkData.alias}</a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         <button

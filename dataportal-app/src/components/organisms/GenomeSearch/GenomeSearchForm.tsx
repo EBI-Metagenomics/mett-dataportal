@@ -17,7 +17,10 @@ interface SearchGenomeFormProps {
     selectedGenomes: { id: number; name: string }[];
     onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
     onGenomeSelect: (genome: { id: number; name: string }) => void;
-    // handlePageClick: (page: number) => void;
+    linkData: {
+        template: string;
+        alias: string;
+    };
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
@@ -27,7 +30,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                onGenomeSelect,
                                                                onSortClick,
                                                                sortField,
-                                                               sortOrder
+                                                               sortOrder,
+                                                               linkData
                                                            }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<{
@@ -191,6 +195,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         onSortClick={onSortClick}
                         selectedGenomes={selectedGenomes}
                         onToggleGenomeSelect={onToggleGenomeSelect}
+                        linkData={linkData}
                     />
                     {/* Page size dropdown and pagination */}
                     <div className={styles.paginationContainer}>
