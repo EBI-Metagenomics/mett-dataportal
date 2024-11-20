@@ -25,6 +25,7 @@ class ContigSchema(BaseModel):
 
 class SearchGenomeSchema(BaseModel):
     species: str
+    species_id: int
     id: int
     common_name: Optional[str]
     isolate_name: str

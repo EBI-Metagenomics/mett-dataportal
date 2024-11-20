@@ -5,6 +5,7 @@ export interface Contig {
 
 export interface GenomeMeta {
     species: string;
+    species_id: number;
     id: number;
     common_name: string;
     isolate_name: string;
@@ -26,16 +27,3 @@ export interface GenomeResponse {
     total_results: number;
 }
 
-
-export interface Genome11Meta {
-    species: number;
-    id: number;
-    common_name: string;
-    isolate_name: string;
-    assembly_name: string;
-    assembly_accession: string;
-    fasta_file: string;
-    gff_file: string;
-    fasta_url: string;
-    gff_url: string;
-}

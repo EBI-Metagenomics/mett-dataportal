@@ -159,6 +159,7 @@ class GenomeService:
                 {
                     "id": strain.id,
                     "species": strain.species.scientific_name,
+                    "species_id": strain.species.id,
                     "common_name": (
                         strain.species.common_name
                         if strain.species.common_name
@@ -205,6 +206,7 @@ class GenomeService:
                 {
                     "id": strain.id,
                     "species": strain.species.scientific_name,
+                    "species_id": strain.species.id,
                     "common_name": (
                         strain.species.common_name
                         if strain.species.common_name
@@ -281,6 +283,7 @@ class GenomeService:
                     "fasta_file": strain.fasta_file,
                     "gff_file": strain.gff_file,
                     "species": strain.species.scientific_name,
+                    "species_id": strain.species.id,
                     "common_name": (
                         strain.species.common_name
                         if strain.species.common_name
