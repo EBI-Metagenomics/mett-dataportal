@@ -9,6 +9,26 @@ from dataportal.schemas import (
     GenomePaginationSchema,
     SearchGenomeSchema,
 )
+from dataportal.utils.constants import (
+    FIELD_ID,
+    STRAIN_FIELD_STRAIN_ID,
+    STRAIN_FIELD_ISOLATE_NAME,
+    STRAIN_FIELD_ASSEMBLY_NAME,
+    STRAIN_FIELD_ASSEMBLY_ACCESSION,
+    STRAIN_FIELD_FASTA_FILE,
+    STRAIN_FIELD_GFF_FILE,
+    STRAIN_FIELD_SPECIES,
+    STRAIN_FIELD_SPECIES_ID,
+    STRAIN_FIELD_COMMON_NAME,
+    STRAIN_FIELD_FASTA_URL,
+    STRAIN_FIELD_GFF_URL,
+    STRAIN_FIELD_CONTIGS,
+    STRAIN_FIELD_CONTIG_SEQ_ID,
+    STRAIN_FIELD_CONTIG_LEN,
+    SORT_ASC,
+    SORT_DESC,
+    DEFAULT_PER_PAGE_CNT,
+)
 from django.db.models import Q
 from ninja.errors import HttpError
 
@@ -33,9 +53,9 @@ class GenomeService:
         self,
         query: str,
         page: int = 1,
-        per_page: int = 10,
-        sortField: str = "isolate_name",
-        sortOrder: str = "asc",
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         try:
             strains, total_results = await self._fetch_paginated_strains(
@@ -52,9 +72,9 @@ class GenomeService:
         self,
         species_id: int,
         page: int = 1,
-        per_page: int = 10,
-        sortField: str = "isolate_name",
-        sortOrder: str = "asc",
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         try:
             strains, total_results = await self._fetch_paginated_strains(
@@ -72,9 +92,9 @@ class GenomeService:
         species_id: int,
         query: str,
         page: int = 1,
-        per_page: int = 10,
-        sortField: str = "isolate_name",
-        sortOrder: str = "asc",
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         try:
             filter_criteria = Q(species_id=species_id, isolate_name__icontains=query)
@@ -99,16 +119,16 @@ class GenomeService:
                 strain_filter &= Q(species_id=species_id)
             strains = await sync_to_async(
                 lambda: list(
-                    Strain.objects.filter(strain_filter).select_related("species")[
-                        : limit or self.limit
-                    ]
+                    Strain.objects.filter(strain_filter).select_related(
+                        STRAIN_FIELD_SPECIES
+                    )[: limit or self.limit]
                 )
             )()
             return [
                 {
-                    "strain_id": strain.id,
-                    "isolate_name": strain.isolate_name,
-                    "assembly_name": strain.assembly_name,
+                    STRAIN_FIELD_STRAIN_ID: strain.id,
+                    STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
+                    STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
                 }
                 for strain in strains
             ]
@@ -119,9 +139,9 @@ class GenomeService:
     async def get_genomes(
         self,
         page: int = 1,
-        per_page: int = 10,
-        sortField: str = "isolate_name",
-        sortOrder: str = "asc",
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         try:
             # Fetch paginated strains
@@ -136,7 +156,7 @@ class GenomeService:
             raise HttpError(500, "Internal Server Error")
 
     async def search_genomes(
-        self, query: str, page: int = 1, per_page: int = 10
+        self, query: str, page: int = 1, per_page: int = DEFAULT_PER_PAGE_CNT
     ) -> GenomePaginationSchema:
         try:
             # Fetch paginated strains matching the search query
@@ -153,36 +173,41 @@ class GenomeService:
     async def get_genome_by_id(self, genome_id: int):
         try:
             strain = await sync_to_async(
-                lambda: Strain.objects.select_related("species").get(id=genome_id)
+                lambda: Strain.objects.select_related(STRAIN_FIELD_SPECIES).get(
+                    id=genome_id
+                )
             )()
             return SearchGenomeSchema.model_validate(
                 {
-                    "id": strain.id,
-                    "species": strain.species.scientific_name,
-                    "species_id": strain.species.id,
-                    "common_name": (
+                    FIELD_ID: strain.id,
+                    STRAIN_FIELD_SPECIES: strain.species.scientific_name,
+                    STRAIN_FIELD_SPECIES_ID: strain.species.id,
+                    STRAIN_FIELD_COMMON_NAME: (
                         strain.species.common_name
                         if strain.species.common_name
                         else None
                     ),
-                    "isolate_name": strain.isolate_name,
-                    "assembly_name": strain.assembly_name,
-                    "assembly_accession": strain.assembly_accession,
-                    "fasta_file": strain.fasta_file,
-                    "gff_file": strain.gff_file,
-                    "fasta_url": (
+                    STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
+                    STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
+                    STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
+                    STRAIN_FIELD_FASTA_FILE: strain.fasta_file,
+                    STRAIN_FIELD_GFF_FILE: strain.gff_file,
+                    STRAIN_FIELD_FASTA_URL: (
                         f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
                         if strain.fasta_file
                         else None
                     ),
-                    "gff_url": (
+                    STRAIN_FIELD_GFF_URL: (
                         f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
                         if strain.gff_file
                         else None
                     ),
-                    "contigs": await sync_to_async(
+                    STRAIN_FIELD_CONTIGS: await sync_to_async(
                         lambda: [
-                            {"seq_id": contig.seq_id, "length": contig.length}
+                            {
+                                STRAIN_FIELD_CONTIG_SEQ_ID: contig.seq_id,
+                                STRAIN_FIELD_CONTIG_LEN: contig.length,
+                            }
                             for contig in strain.contigs.all()
                         ]
                     )(),
@@ -204,32 +229,35 @@ class GenomeService:
             )()
             return SearchGenomeSchema.model_validate(
                 {
-                    "id": strain.id,
-                    "species": strain.species.scientific_name,
-                    "species_id": strain.species.id,
-                    "common_name": (
+                    FIELD_ID: strain.id,
+                    STRAIN_FIELD_SPECIES: strain.species.scientific_name,
+                    STRAIN_FIELD_SPECIES_ID: strain.species.id,
+                    STRAIN_FIELD_COMMON_NAME: (
                         strain.species.common_name
                         if strain.species.common_name
                         else None
                     ),
-                    "isolate_name": strain.isolate_name,
-                    "assembly_name": strain.assembly_name,
-                    "assembly_accession": strain.assembly_accession,
-                    "fasta_file": strain.fasta_file,
-                    "gff_file": strain.gff_file,
-                    "fasta_url": (
+                    STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
+                    STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
+                    STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
+                    STRAIN_FIELD_FASTA_FILE: strain.fasta_file,
+                    STRAIN_FIELD_GFF_FILE: strain.gff_file,
+                    STRAIN_FIELD_FASTA_URL: (
                         f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
                         if strain.fasta_file
                         else None
                     ),
-                    "gff_url": (
+                    STRAIN_FIELD_GFF_URL: (
                         f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
                         if strain.gff_file
                         else None
                     ),
-                    "contigs": await sync_to_async(
+                    STRAIN_FIELD_CONTIGS: await sync_to_async(
                         lambda: [
-                            {"seq_id": contig.seq_id, "length": contig.length}
+                            {
+                                STRAIN_FIELD_CONTIG_SEQ_ID: contig.seq_id,
+                                STRAIN_FIELD_CONTIG_LEN: contig.length,
+                            }
                             for contig in strain.contigs.all()
                         ]
                     )(),
@@ -247,22 +275,22 @@ class GenomeService:
         self,
         filter_criteria: Q,
         page: int,
-        per_page: int,
-        sortField: str = "isolate_name",
-        sortOrder: str = "asc",
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
     ):
         if not sortField:
-            sortField = "isolate_name"
-        if sortOrder not in ("asc", "desc"):
-            sortOrder = "asc"
+            sortField = STRAIN_FIELD_ISOLATE_NAME
+        if sortOrder not in (SORT_ASC, SORT_DESC):
+            sortOrder = SORT_ASC
 
         # Apply sorting
-        ordering = f"{'-' if sortOrder == 'desc' else ''}{sortField}"
+        ordering = f"{'-' if sortOrder == SORT_DESC else ''}{sortField}"
         start = (page - 1) * per_page
 
         strains = await sync_to_async(
             lambda: list(
-                Strain.objects.select_related("species")
+                Strain.objects.select_related(STRAIN_FIELD_SPECIES)
                 .filter(filter_criteria)
                 .order_by(ordering)[start : start + per_page]
             )
@@ -276,32 +304,35 @@ class GenomeService:
         serialized_strains = [
             SearchGenomeSchema.model_validate(
                 {
-                    "id": strain.id,
-                    "isolate_name": strain.isolate_name,
-                    "assembly_name": strain.assembly_name,
-                    "assembly_accession": strain.assembly_accession,
-                    "fasta_file": strain.fasta_file,
-                    "gff_file": strain.gff_file,
-                    "species": strain.species.scientific_name,
-                    "species_id": strain.species.id,
-                    "common_name": (
+                    FIELD_ID: strain.id,
+                    STRAIN_FIELD_SPECIES: strain.species.scientific_name,
+                    STRAIN_FIELD_SPECIES_ID: strain.species.id,
+                    STRAIN_FIELD_COMMON_NAME: (
                         strain.species.common_name
                         if strain.species.common_name
                         else None
                     ),
-                    "fasta_url": (
+                    STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
+                    STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
+                    STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
+                    STRAIN_FIELD_FASTA_FILE: strain.fasta_file,
+                    STRAIN_FIELD_GFF_FILE: strain.gff_file,
+                    STRAIN_FIELD_FASTA_URL: (
                         f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
                         if strain.fasta_file
                         else None
                     ),
-                    "gff_url": (
+                    STRAIN_FIELD_GFF_URL: (
                         f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
                         if strain.gff_file
                         else None
                     ),
-                    "contigs": await sync_to_async(
+                    STRAIN_FIELD_CONTIGS: await sync_to_async(
                         lambda: [
-                            {"seq_id": contig.seq_id, "length": contig.length}
+                            {
+                                STRAIN_FIELD_CONTIG_SEQ_ID: contig.seq_id,
+                                STRAIN_FIELD_CONTIG_LEN: contig.length,
+                            }
                             for contig in strain.contigs.all()
                         ]
                     )(),

@@ -14,10 +14,10 @@ from dataportal.utils.constants import (
     FIELD_ID,
     GENE_FIELD_ID,
     GENE_FIELD_NAME,
-    GENE_FIELD_STRAIN_ID,
-    GENE_FIELD_STRAIN_NAME,
-    GENE_FIELD_ASSEMBLY,
-    GENE_FIELD_SEQ_ID,
+    STRAIN_FIELD_STRAIN_NAME,
+    STRAIN_FIELD_STRAIN_ID,
+    FIELD_ASSEMBLY,
+    FIELD_SEQ_ID,
     GENE_FIELD_PRODUCT,
     GENE_FIELD_LOCUS_TAG,
     GENE_FIELD_COG,
@@ -33,7 +33,7 @@ from dataportal.utils.constants import (
     GENE_SORT_FIELD_STRAIN_ISO,
     GENE_FIELD_DESCRIPTION,
     GENE_DEFAULT_SORT_FIELD,
-    GENE_DEFAULT_SORT_ORDER,
+    DEFAULT_SORT,
 )
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ class GeneService:
                 {
                     GENE_FIELD_ID: gene.id,
                     GENE_FIELD_NAME: gene.gene_name,
-                    GENE_FIELD_STRAIN_NAME: gene.strain.isolate_name,
+                    STRAIN_FIELD_STRAIN_NAME: gene.strain.isolate_name,
                     GENE_FIELD_PRODUCT: gene.product,
                     GENE_FIELD_LOCUS_TAG: gene.locus_tag,
                     GENE_FIELD_KEGG: gene.kegg,
@@ -288,14 +288,14 @@ class GeneService:
         return GeneResponseSchema.model_validate(
             {
                 FIELD_ID: gene.id,
-                GENE_FIELD_SEQ_ID: gene.seq_id,
+                FIELD_SEQ_ID: gene.seq_id,
                 GENE_FIELD_NAME: gene.gene_name or "N/A",
                 GENE_FIELD_DESCRIPTION: gene.description or None,
-                GENE_FIELD_STRAIN_ID: gene.strain.id if gene.strain else None,
+                STRAIN_FIELD_STRAIN_ID: gene.strain.id if gene.strain else None,
                 GENE_SORT_FIELD_STRAIN: (
                     gene.strain.isolate_name if gene.strain else "Unknown"
                 ),
-                GENE_FIELD_ASSEMBLY: (
+                FIELD_ASSEMBLY: (
                     gene.strain.assembly_name
                     if gene.strain and gene.strain.assembly_name
                     else None
@@ -332,7 +332,7 @@ class GeneService:
         page: int,
         per_page: int,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = GENE_DEFAULT_SORT_ORDER,
+        sort_order: Optional[str] = DEFAULT_SORT,
     ) -> Tuple[List[Gene], int]:
         start = (page - 1) * per_page
         order_prefix = "-" if sort_order == "desc" else ""
