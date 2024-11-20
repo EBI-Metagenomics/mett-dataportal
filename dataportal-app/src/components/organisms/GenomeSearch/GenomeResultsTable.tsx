@@ -93,8 +93,31 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                         <button
                             className={styles.toggleButton}
                             onClick={() => onToggleGenomeSelect({id: result.id, name: result.isolate_name})}
+                            style={{
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "8px",
+                                fontSize: "16px",
+                                border: "none",
+                                background: "transparent",
+                            }}
                         >
-                            {selectedGenomes.some(genome => genome.id === result.id) ? '−' : '+'}
+                            <i
+                                className={`icon icon-common ${
+                                    selectedGenomes.some(genome => genome.id === result.id)
+                                        ? "icon-minus-circle"
+                                        : "icon-plus-circle"
+                                }`}
+                                style={{
+                                    color: selectedGenomes.some(genome => genome.id === result.id)
+                                        ? "#B0B0B0"
+                                        : "#007BFF",
+                                    fontSize: "18px",
+                                }}
+                                aria-hidden="true"
+                            ></i>
                         </button>
                     </td>
                 </tr>
