@@ -10,6 +10,32 @@ from ninja.errors import HttpError
 from dataportal.models import Gene
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
 
+from dataportal.utils.constants import (
+    FIELD_ID,
+    GENE_FIELD_ID,
+    GENE_FIELD_NAME,
+    GENE_FIELD_STRAIN_ID,
+    GENE_FIELD_STRAIN_NAME,
+    GENE_FIELD_ASSEMBLY,
+    GENE_FIELD_SEQ_ID,
+    GENE_FIELD_PRODUCT,
+    GENE_FIELD_LOCUS_TAG,
+    GENE_FIELD_COG,
+    GENE_FIELD_KEGG,
+    GENE_FIELD_PFAM,
+    GENE_FIELD_INTERPRO,
+    GENE_FIELD_DBXREF,
+    GENE_FIELD_EC_NUMBER,
+    GENE_FIELD_START_POS,
+    GENE_FIELD_END_POS,
+    GENE_FIELD_ANNOTATIONS,
+    GENE_SORT_FIELD_STRAIN,
+    GENE_SORT_FIELD_STRAIN_ISO,
+    GENE_FIELD_DESCRIPTION,
+    GENE_DEFAULT_SORT_FIELD,
+    GENE_DEFAULT_SORT_ORDER,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,14 +53,14 @@ class GeneService:
         try:
             # Build the filter criteria
             gene_filter = (
-                Q(gene_name__iexact=query)
-                | Q(gene_name__icontains=query)
-                | Q(product__icontains=query)
-                | Q(locus_tag__icontains=query)
-                | Q(kegg__icontains=query)
-                | Q(pfam__icontains=query)
-                | Q(interpro__icontains=query)
-                | Q(dbxref__icontains=query)
+                Q(**{f"{GENE_FIELD_NAME}__iexact": query})
+                | Q(**{f"{GENE_FIELD_NAME}__icontains": query})
+                | Q(**{f"{GENE_FIELD_PRODUCT}__icontains": query})
+                | Q(**{f"{GENE_FIELD_LOCUS_TAG}__icontains": query})
+                | Q(**{f"{GENE_FIELD_KEGG}__icontains": query})
+                | Q(**{f"{GENE_FIELD_PFAM}__icontains": query})
+                | Q(**{f"{GENE_FIELD_INTERPRO}__icontains": query})
+                | Q(**{f"{GENE_FIELD_DBXREF}__icontains": query})
             )
 
             # Add optional filters for species_id and genome_ids
@@ -61,15 +87,15 @@ class GeneService:
             # Build and return the response
             response = [
                 {
-                    "gene_id": gene.id,
-                    "gene_name": gene.gene_name,
-                    "strain_name": gene.strain.isolate_name,
-                    "product": gene.product,
-                    "locus_tag": gene.locus_tag,
-                    "kegg": gene.kegg,
-                    "pfam": gene.pfam,
-                    "interpro": gene.interpro,
-                    "dbxref": gene.dbxref,
+                    GENE_FIELD_ID: gene.id,
+                    GENE_FIELD_NAME: gene.gene_name,
+                    GENE_FIELD_STRAIN_NAME: gene.strain.isolate_name,
+                    GENE_FIELD_PRODUCT: gene.product,
+                    GENE_FIELD_LOCUS_TAG: gene.locus_tag,
+                    GENE_FIELD_KEGG: gene.kegg,
+                    GENE_FIELD_PFAM: gene.pfam,
+                    GENE_FIELD_INTERPRO: gene.interpro,
+                    GENE_FIELD_DBXREF: gene.dbxref,
                 }
                 for gene in genes
             ]
@@ -219,11 +245,11 @@ class GeneService:
 
             # Valid sorting fields and their mappings
             valid_sort_fields = {
-                "gene_name": "gene_name",
-                "strain": "strain__isolate_name",
-                "description": "description",
-                "locus_tag": "locus_tag",
-                "product": "product",
+                GENE_FIELD_NAME: GENE_FIELD_NAME,
+                GENE_SORT_FIELD_STRAIN: GENE_SORT_FIELD_STRAIN_ISO,
+                GENE_FIELD_DESCRIPTION: GENE_FIELD_DESCRIPTION,
+                GENE_FIELD_LOCUS_TAG: GENE_FIELD_LOCUS_TAG,
+                GENE_FIELD_PRODUCT: GENE_FIELD_PRODUCT,
             }
 
             # Validate and map sort_field
@@ -261,28 +287,30 @@ class GeneService:
     def _serialize_gene(self, gene: Gene) -> dict:
         return GeneResponseSchema.model_validate(
             {
-                "id": gene.id,
-                "seq_id": gene.seq_id,
-                "gene_name": gene.gene_name or "N/A",
-                "description": gene.description or None,
-                "strain_id": gene.strain.id if gene.strain else None,
-                "strain": gene.strain.isolate_name if gene.strain else "Unknown",
-                "assembly": (
+                FIELD_ID: gene.id,
+                GENE_FIELD_SEQ_ID: gene.seq_id,
+                GENE_FIELD_NAME: gene.gene_name or "N/A",
+                GENE_FIELD_DESCRIPTION: gene.description or None,
+                GENE_FIELD_STRAIN_ID: gene.strain.id if gene.strain else None,
+                GENE_SORT_FIELD_STRAIN: (
+                    gene.strain.isolate_name if gene.strain else "Unknown"
+                ),
+                GENE_FIELD_ASSEMBLY: (
                     gene.strain.assembly_name
                     if gene.strain and gene.strain.assembly_name
                     else None
                 ),
-                "locus_tag": gene.locus_tag or None,
-                "cog": gene.cog or None,
-                "kegg": gene.kegg or None,
-                "pfam": gene.pfam or None,
-                "interpro": gene.interpro or None,
-                "dbxref": gene.dbxref or None,
-                "ec_number": gene.ec_number or None,
-                "product": gene.product or None,
-                "start_position": gene.start_position or None,
-                "end_position": gene.end_position or None,
-                "annotations": gene.annotations or {},
+                GENE_FIELD_LOCUS_TAG: gene.locus_tag or None,
+                GENE_FIELD_COG: gene.cog or None,
+                GENE_FIELD_KEGG: gene.kegg or None,
+                GENE_FIELD_PFAM: gene.pfam or None,
+                GENE_FIELD_INTERPRO: gene.interpro or None,
+                GENE_FIELD_DBXREF: gene.dbxref or None,
+                GENE_FIELD_EC_NUMBER: gene.ec_number or None,
+                GENE_FIELD_PRODUCT: gene.product or None,
+                GENE_FIELD_START_POS: gene.start_position or None,
+                GENE_FIELD_END_POS: gene.end_position or None,
+                GENE_FIELD_ANNOTATIONS: gene.annotations or {},
             }
         )
 
@@ -304,11 +332,11 @@ class GeneService:
         page: int,
         per_page: int,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = "asc",
+        sort_order: Optional[str] = GENE_DEFAULT_SORT_ORDER,
     ) -> Tuple[List[Gene], int]:
         start = (page - 1) * per_page
         order_prefix = "-" if sort_order == "desc" else ""
-        sort_by = f"{order_prefix}{sort_field}" if sort_field else "gene_name"
+        sort_by = f"{order_prefix}{sort_field or GENE_DEFAULT_SORT_FIELD}"
 
         try:
             logger.debug(f"Filter criteria: {filter_criteria}")
@@ -333,5 +361,5 @@ class GeneService:
 
             return genes, total_results
         except Exception as e:
-            logger.error(f"Error in _fetch_paginated_genes: {e}")
-            raise
+            logger.error(f"Error in _fetch_paginated_genes: {str(e)}")
+            raise HttpError(500, "Error fetching paginated genes.")
