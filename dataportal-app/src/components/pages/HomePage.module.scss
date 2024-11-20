@@ -114,19 +114,19 @@ button, select, input {
 .speciesSection label,
 .typeStrains label {
   display: flex;
-  align-items: center; /* Align checkbox and text vertically */
-  gap: 8px; /* Spacing between checkbox and text */
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
-  white-space: nowrap; /* Prevent wrapping of text */
+  white-space: nowrap;
 }
 
 .speciesSection input[type="checkbox"],
 .typeStrains input[type="checkbox"] {
-  margin: 0; /* Remove default margins */
+  margin: 0;
   padding: 0;
-  height: 16px; /* Explicit height for checkboxes */
-  width: 16px; /* Explicit width for checkboxes */
-  box-sizing: border-box; /* Ensure consistent sizing */
+  height: 16px;
+  width: 16px;
+  box-sizing: border-box;
 }
 
 .speciesSection label:hover,
@@ -144,7 +144,7 @@ button, select, input {
 @supports (-webkit-appearance: none) {
   .speciesSection input[type="checkbox"],
   .typeStrains input[type="checkbox"] {
-    -webkit-appearance: checkbox; /* Ensure Safari renders checkboxes properly */
+    -webkit-appearance: checkbox;
     appearance: checkbox;
   }
 }

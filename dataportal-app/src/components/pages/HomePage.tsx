@@ -214,17 +214,35 @@ const HomePage: React.FC = () => {
                             {typeStrains.map(strain => (
                                 <li key={strain.id}>
                                     <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedTypeStrains.includes(strain.id)}
-                                            onChange={() => handleTypeStrainSelect(strain.id)}
-                                        />
+                                        <span onClick={() => handleTypeStrainSelect(strain.id)}
+                                              style={{
+                                                  cursor: "pointer",
+                                                  display: "inline-flex",
+                                                  alignItems: "center",
+                                              }}
+                                        >
+                                            <i className={`icon icon-common ${
+                                                selectedTypeStrains.includes(strain.id)
+                                                    ? "icon-times-circle"
+                                                    : "icon-plus-circle"
+                                            }`}
+                                               style={{
+                                                   color: selectedTypeStrains.includes(strain.id)
+                                                       ? "#B0B0B0"
+                                                       : "#007BFF",
+                                                   fontSize: "18px",
+                                                   marginRight: "8px",
+                                               }}
+                                               aria-hidden="true"
+                                            ></i>
+                                        </span>
                                         {strain.isolate_name}
                                     </label>
                                 </li>
                             ))}
                         </ul>
                     </div>
+
 
                     <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
                 </div>
