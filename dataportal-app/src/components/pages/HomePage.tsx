@@ -136,6 +136,7 @@ const HomePage: React.FC = () => {
 
     const handleRemoveGenome = (genomeId: number) => {
         setSelectedGenomes(selectedGenomes.filter(g => g.id !== genomeId));
+        setSelectedTypeStrains(selectedTypeStrains.filter(id => id !== genomeId));
     };
 
     const handleToggleGenomeSelect = (genome: { id: number; name: string }) => {
@@ -223,7 +224,7 @@ const HomePage: React.FC = () => {
                                         >
                                             <i className={`icon icon-common ${
                                                 selectedTypeStrains.includes(strain.id)
-                                                    ? "icon-times-circle"
+                                                    ? "icon-minus-circle"
                                                     : "icon-plus-circle"
                                             }`}
                                                style={{
