@@ -148,9 +148,9 @@ APPEND_SLASH = False  # todo verify and remove
 DEFAULT_LIMIT = 10
 ASSEMBLY_FTP_PATH = os.environ.get(
     "ASSEMBLY_FTP_PATH",
-    "http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
+    "https://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
 )
 GFF_FTP_PATH = os.environ.get(
     "GFF_FTP_PATH",
-    "http://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/",
+    "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/",
 )
