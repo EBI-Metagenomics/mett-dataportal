@@ -20,6 +20,8 @@ from .services.genome_service import GenomeService
 from .services.species_service import SpeciesService
 from .utils.constants import DEFAULT_PER_PAGE_CNT, DEFAULT_SORT
 from .utils.decorators import log_endpoint_access
+from .utils.errors import raise_http_error
+from .utils.exceptions import GeneNotFoundError, ServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +60,8 @@ async def get_all_species(request):
     try:
         species = await species_service.get_all_species()
         return species
-    except Exception as e:
-        logger.error(f"Error fetching species: {e}")
-        raise HttpError(500, "An error occurred while fetching species.")
+    except Exception:
+        raise_http_error(500, "An error occurred while fetching species.")
 
 
 # API Endpoint to retrieve all genomes
@@ -75,8 +76,7 @@ async def get_all_genomes(
     try:
         return await genome_service.get_genomes(page, per_page, sortField, sortOrder)
     except Exception as e:
-        logger.error(f"Error in get_all_genomes: {e}")
-        raise HttpError(500, f"Internal Server Error: {str(e)}")
+        raise_http_error(500, f"Internal Server Error: {str(e)}")
 
 
 # API Endpoint to search genomes by query string
@@ -107,7 +107,7 @@ async def get_genome(request, genome_id: int):
     try:
         return await genome_service.get_genome_by_id(genome_id)
     except Strain.DoesNotExist:
-        raise HttpError(404, "Genome not found")
+        raise_http_error(404, "Genome not found")
 
 
 # Fetch genome by strain_name
@@ -184,15 +184,26 @@ async def search_genes_by_string(
             sort_order=sort_order,
         )
         return paginated_results
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(500, f"Failed to fetch the gene information for - {query}")
     except Exception as e:
-        logger.error(f"Error in search_genes_by_string: {e}")
-        raise HttpError(500, f"Internal Server Error: {str(e)}")
+        raise_http_error(500, f"Internal Server Error: {str(e)}")
 
 
 # API Endpoint to retrieve gene by ID
 @gene_router.get("/{gene_id}", response=GeneResponseSchema)
 async def get_gene_by_id(request, gene_id: int):
-    return await gene_service.get_gene_by_id(gene_id)
+    try:
+        return await gene_service.get_gene_by_id(gene_id)
+    except GeneNotFoundError as e:
+        logger.error(f"Gene not found: {e.gene_id}")
+        raise HttpError(404, str(e))
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(
+            500, f"Failed to fetch the gene information for gene_id - {gene_id}"
+        )
 
 
 # API Endpoint to retrieve all genes
@@ -204,7 +215,11 @@ async def get_all_genes(
     sort_field: Optional[str] = None,
     sort_order: Optional[str] = DEFAULT_SORT,
 ):
-    return await gene_service.get_all_genes(page, per_page, sort_field, sort_order)
+    try:
+        return await gene_service.get_all_genes(page, per_page, sort_field, sort_order)
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(500, "Failed to fetch the genes information")
 
 
 # API Endpoint to retrieve genes filtered by a single genome ID
@@ -222,8 +237,7 @@ async def get_genes_by_genome(
             genome_id, page, per_page, sort_field, sort_order
         )
     except Exception as e:
-        logger.error(f"Error in get_genes_by_genome: {e}")
-        raise HttpError(500, f"Internal Server Error: {str(e)}")
+        raise_http_error(500, f"Internal Server Error: {str(e)}")
 
 
 # API Endpoint to search genes by genome ID and gene string
@@ -241,9 +255,14 @@ async def search_genes_by_genome_and_string(
         return await gene_service.search_genes(
             query, genome_id, page, per_page, sort_field, sort_order
         )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(
+            500,
+            f"Failed to fetch the genes information for genome_id - {genome_id} and query - {query}",
+        )
     except Exception as e:
-        logger.error(f"Error in search_genes_by_genome_and_string: {e}")
-        raise HttpError(500, f"Internal Server Error: {str(e)}")
+        raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
 
 
 # API Endpoint to search genes across multiple genome IDs using a gene string
@@ -268,11 +287,12 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
     except HttpError as e:
         raise e
     except ValueError:
-        logger.error("Invalid genome ID provided")
-        raise HttpError(400, "Invalid genome ID provided")
+        raise_http_error(400, "Invalid genome ID provided")
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
     except Exception as e:
-        logger.error(f"Error in search_genes_by_multiple_genomes_and_string: {e}")
-        raise HttpError(500, f"Internal Server Error: {str(e)}")
+        raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
 
 
 # Register routers with the main API

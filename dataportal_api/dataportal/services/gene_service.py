@@ -9,7 +9,6 @@ from ninja.errors import HttpError
 
 from dataportal.models import Gene
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
-
 from dataportal.utils.constants import (
     FIELD_ID,
     GENE_FIELD_ID,
@@ -34,7 +33,11 @@ from dataportal.utils.constants import (
     GENE_FIELD_DESCRIPTION,
     GENE_DEFAULT_SORT_FIELD,
     DEFAULT_SORT,
+    DEFAULT_PER_PAGE_CNT,
+    SORT_DESC,
+    SORT_ASC,
 )
+from dataportal.utils.exceptions import GeneNotFoundError, ServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -69,19 +72,17 @@ class GeneService:
             if genome_ids:
                 gene_filter &= Q(strain_id__in=genome_ids)
 
-            # Log the filter criteria for debugging
             logger.debug(
                 f"Query: {query}, Species ID: {species_id}, Genome IDs: {genome_ids}"
             )
             logger.debug(f"Gene Filter: {gene_filter}")
 
-            # Fetch the paginated and sorted genes
             genes, total_results = await self._fetch_paginated_genes(
                 filter_criteria=gene_filter,
                 page=1,
                 per_page=limit or self.limit,
-                sort_field="gene_name",  # Default sorting by gene name
-                sort_order="asc",  # Change to "desc" if required
+                sort_field=GENE_FIELD_NAME,
+                sort_order=SORT_ASC,
             )
 
             # Build and return the response
@@ -115,17 +116,17 @@ class GeneService:
             )()
             return self._serialize_gene(gene)
         except Http404:
-            raise HttpError(404, f"Gene with id {gene_id} not found")
+            raise GeneNotFoundError(gene_id)
         except Exception as e:
             logger.error(f"Error in get_gene_by_id: {e}")
-            raise HttpError(500, "Internal Server Error")
+            raise ServiceError(e)
 
     async def get_all_genes(
         self,
         page: int = 1,
-        per_page: int = 10,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = "asc",
+        sort_order: Optional[str] = DEFAULT_SORT,
     ) -> GenePaginationSchema:
         try:
             genes, total_results = await self._fetch_paginated_genes(
@@ -136,17 +137,17 @@ class GeneService:
                 serialized_genes, page, per_page, total_results
             )
         except Exception as e:
-            logger.error(f"Error fetching all genes: {e}")
-            raise HttpError(500, "Internal Server Error")
+            logger.error(f"Error in get_all_genes: {e}")
+            raise ServiceError(e)
 
     async def search_genes(
         self,
         query: str = None,
         genome_id: Optional[int] = None,
         page: int = 1,
-        per_page: int = 10,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = "asc",
+        sort_order: Optional[str] = DEFAULT_SORT,
     ) -> GenePaginationSchema:
         try:
             filters = Q()
@@ -166,15 +167,15 @@ class GeneService:
             )
         except Exception as e:
             logger.error(f"Error searching genes: {e}")
-            raise HttpError(500, "Internal Server Error")
+            raise ServiceError(e)
 
     async def get_genes_by_genome(
         self,
         genome_id: int,
         page: int = 1,
-        per_page: int = 10,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = "asc",
+        sort_order: Optional[str] = SORT_ASC,
     ) -> GenePaginationSchema:
         try:
             genes, total_results = await self._fetch_paginated_genes(
@@ -210,9 +211,9 @@ class GeneService:
         species_id: Optional[int] = None,
         query: str = None,
         page: int = 1,
-        per_page: int = 10,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = "asc",
+        sort_order: Optional[str] = SORT_ASC,
     ) -> GenePaginationSchema:
         try:
             # Parse genome IDs
@@ -243,7 +244,7 @@ class GeneService:
                 )
                 filters &= gene_filter
 
-            # Valid sorting fields and their mappings
+            # Valid sorting fields
             valid_sort_fields = {
                 GENE_FIELD_NAME: GENE_FIELD_NAME,
                 GENE_SORT_FIELD_STRAIN: GENE_SORT_FIELD_STRAIN_ISO,
@@ -253,12 +254,12 @@ class GeneService:
             }
 
             # Validate and map sort_field
-            sort_field_mapped = valid_sort_fields.get(sort_field, "gene_name")
+            sort_field_mapped = valid_sort_fields.get(sort_field, GENE_FIELD_NAME)
             if sort_field not in valid_sort_fields:
                 logger.warning(
-                    f"Invalid sort_field '{sort_field}', defaulting to 'gene_name'"
+                    f"Invalid sort_field '{sort_field}', defaulting to '{GENE_FIELD_NAME}'"
                 )
-                sort_field_mapped = "gene_name"
+                sort_field_mapped = GENE_FIELD_NAME
 
             logger.info(
                 f"Fetching genes with sort_field='{sort_field_mapped}', sort_order='{sort_order}'"
@@ -335,7 +336,7 @@ class GeneService:
         sort_order: Optional[str] = DEFAULT_SORT,
     ) -> Tuple[List[Gene], int]:
         start = (page - 1) * per_page
-        order_prefix = "-" if sort_order == "desc" else ""
+        order_prefix = "-" if sort_order == SORT_DESC else ""
         sort_by = f"{order_prefix}{sort_field or GENE_DEFAULT_SORT_FIELD}"
 
         try:
@@ -361,5 +362,5 @@ class GeneService:
 
             return genes, total_results
         except Exception as e:
-            logger.error(f"Error in _fetch_paginated_genes: {str(e)}")
-            raise HttpError(500, "Error fetching paginated genes.")
+            logger.error(f"Error fetching paginated genes: {str(e)}")
+            raise ServiceError(e)
