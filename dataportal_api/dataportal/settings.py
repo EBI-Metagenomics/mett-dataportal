@@ -9,23 +9,33 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "console": {
+            "level": "DEBUG",
             "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
     },
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG",
+            "propagate": False,
         },
-        "dataportal": {
+        "my_custom_logger": {
             "handlers": ["console"],
             "level": "DEBUG",
-        },
-        "django.db.backends": {
-            "level": "INFO",
-            "handlers": ["console"],
+            "propagate": False,
         },
     },
 }

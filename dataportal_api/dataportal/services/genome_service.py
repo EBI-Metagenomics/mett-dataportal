@@ -2,6 +2,9 @@ import logging
 from typing import Optional, List
 
 from asgiref.sync import sync_to_async
+from django.db.models import Q
+from ninja.errors import HttpError
+
 from dataportal import settings
 from dataportal.models import Strain
 from dataportal.schemas import (
@@ -29,8 +32,6 @@ from dataportal.utils.constants import (
     SORT_DESC,
     DEFAULT_PER_PAGE_CNT,
 )
-from django.db.models import Q
-from ninja.errors import HttpError
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +41,11 @@ class GenomeService:
         self.limit = limit
 
     async def get_type_strains(self) -> List[TypeStrainSchema]:
-        try:
-            strains = await sync_to_async(list)(Strain.objects.filter(type_strain=True))
-            return [
-                TypeStrainSchema.model_validate(strain.__dict__) for strain in strains
-            ]
-        except Exception as e:
-            logger.error(f"Error fetching type strains: {e}")
-            raise HttpError(500, "Internal Server Error")
+        return await self._fetch_and_validate_strains(
+            filter_criteria=Q(type_strain=True),
+            schema=TypeStrainSchema,
+            error_message="Error fetching type strains",
+        )
 
     async def search_genomes_by_string(
         self,
@@ -57,16 +55,14 @@ class GenomeService:
         sortField: str = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
-        try:
-            strains, total_results = await self._fetch_paginated_strains(
-                Q(isolate_name__icontains=query), page, per_page, sortField, sortOrder
-            )
-            return await self._create_pagination_schema(
-                strains, total_results, page, per_page
-            )
-        except Exception as e:
-            logger.error(f"Error searching genomes by string: {e}")
-            raise HttpError(500, "Internal Server Error")
+        return await self._search_paginated_strains(
+            filter_criteria=Q(isolate_name__icontains=query),
+            page=page,
+            per_page=per_page,
+            sortField=sortField,
+            sortOrder=sortOrder,
+            error_message="Error searching genomes by string",
+        )
 
     async def get_genomes_by_species(
         self,
@@ -76,16 +72,14 @@ class GenomeService:
         sortField: str = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
-        try:
-            strains, total_results = await self._fetch_paginated_strains(
-                Q(species_id=species_id), page, per_page, sortField, sortOrder
-            )
-            return await self._create_pagination_schema(
-                strains, total_results, page, per_page
-            )
-        except Exception as e:
-            logger.error(f"Error fetching genomes by species: {e}")
-            raise HttpError(500, "Internal Server Error")
+        return await self._search_paginated_strains(
+            filter_criteria=Q(species_id=species_id),
+            page=page,
+            per_page=per_page,
+            sortField=sortField,
+            sortOrder=sortOrder,
+            error_message="Error fetching genomes by species",
+        )
 
     async def search_genomes_by_species_and_string(
         self,
@@ -96,17 +90,15 @@ class GenomeService:
         sortField: str = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
-        try:
-            filter_criteria = Q(species_id=species_id, isolate_name__icontains=query)
-            strains, total_results = await self._fetch_paginated_strains(
-                filter_criteria, page, per_page, sortField, sortOrder
-            )
-            return await self._create_pagination_schema(
-                strains, total_results, page, per_page
-            )
-        except Exception as e:
-            logger.error(f"Error searching genomes by species and string: {e}")
-            raise HttpError(500, "Internal Server Error")
+        filter_criteria = Q(species_id=species_id, isolate_name__icontains=query)
+        return await self._search_paginated_strains(
+            filter_criteria=filter_criteria,
+            page=page,
+            per_page=per_page,
+            sortField=sortField,
+            sortOrder=sortOrder,
+            error_message="Error searching genomes by species and string",
+        )
 
     async def search_strains(
         self, query: str, limit: int = None, species_id: Optional[int] = None
@@ -143,134 +135,112 @@ class GenomeService:
         sortField: str = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
-        try:
-            # Fetch paginated strains
-            strains, total_results = await self._fetch_paginated_strains(
-                Q(), page, per_page, sortField, sortOrder
-            )
-            return await self._create_pagination_schema(
-                strains, total_results, page, per_page
-            )
-        except Exception as e:
-            logger.error(f"Error fetching genomes: {e}")
-            raise HttpError(500, "Internal Server Error")
-
-    async def search_genomes(
-        self, query: str, page: int = 1, per_page: int = DEFAULT_PER_PAGE_CNT
-    ) -> GenomePaginationSchema:
-        try:
-            # Fetch paginated strains matching the search query
-            strains, total_results = await self._fetch_paginated_strains(
-                Q(isolate_name__icontains=query), page, per_page
-            )
-            return await self._create_pagination_schema(
-                strains, total_results, page, per_page
-            )
-        except Exception as e:
-            logger.error(f"Error searching genomes: {e}")
-            raise HttpError(500, "Internal Server Error")
+        return await self._search_paginated_strains(
+            filter_criteria=Q(),
+            page=page,
+            per_page=per_page,
+            sortField=sortField,
+            sortOrder=sortOrder,
+            error_message="Error fetching genomes",
+        )
 
     async def get_genome_by_id(self, genome_id: int):
+        logger.debug("Entering get_genome_by_id method")
         try:
-            strain = await sync_to_async(
-                lambda: Strain.objects.select_related(STRAIN_FIELD_SPECIES).get(
-                    id=genome_id
-                )
-            )()
-            return SearchGenomeSchema.model_validate(
-                {
-                    FIELD_ID: strain.id,
-                    STRAIN_FIELD_SPECIES: strain.species.scientific_name,
-                    STRAIN_FIELD_SPECIES_ID: strain.species.id,
-                    STRAIN_FIELD_COMMON_NAME: (
-                        strain.species.common_name
-                        if strain.species.common_name
-                        else None
-                    ),
-                    STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
-                    STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
-                    STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
-                    STRAIN_FIELD_FASTA_FILE: strain.fasta_file,
-                    STRAIN_FIELD_GFF_FILE: strain.gff_file,
-                    STRAIN_FIELD_FASTA_URL: (
-                        f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
-                        if strain.fasta_file
-                        else None
-                    ),
-                    STRAIN_FIELD_GFF_URL: (
-                        f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
-                        if strain.gff_file
-                        else None
-                    ),
-                    STRAIN_FIELD_CONTIGS: await sync_to_async(
-                        lambda: [
-                            {
-                                STRAIN_FIELD_CONTIG_SEQ_ID: contig.seq_id,
-                                STRAIN_FIELD_CONTIG_LEN: contig.length,
-                            }
-                            for contig in strain.contigs.all()
-                        ]
-                    )(),
-                }
+            result = await self._fetch_single_genome(
+                filter_criteria=Q(id=genome_id),
+                error_message=f"Error fetching genome by ID {genome_id}",
             )
-        except Strain.DoesNotExist:
-            logger.error(f"Genome with ID {genome_id} not found")
-            raise HttpError(404, f"Genome with ID {genome_id} not found")
+            logger.debug(f"Fetched genome successfully: {result}")
+            return result
         except Exception as e:
-            logger.error(f"Error fetching genome by ID {genome_id}: {e}")
-            raise HttpError(500, "Internal Server Error")
+            logger.error(f"Error in get_genome_by_id: {e}", exc_info=True)
+            raise
 
     async def get_genome_by_strain_name(self, strain_name: str):
+        return await self._fetch_single_genome(
+            filter_criteria=Q(isolate_name__iexact=strain_name),
+            error_message=f"Error fetching genome by strain name {strain_name}",
+        )
+
+    async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         try:
-            strain = await sync_to_async(
-                lambda: Strain.objects.select_related("species").get(
-                    isolate_name__iexact=strain_name
-                )
-            )()
-            return SearchGenomeSchema.model_validate(
-                {
-                    FIELD_ID: strain.id,
-                    STRAIN_FIELD_SPECIES: strain.species.scientific_name,
-                    STRAIN_FIELD_SPECIES_ID: strain.species.id,
-                    STRAIN_FIELD_COMMON_NAME: (
-                        strain.species.common_name
-                        if strain.species.common_name
-                        else None
-                    ),
-                    STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
-                    STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
-                    STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
-                    STRAIN_FIELD_FASTA_FILE: strain.fasta_file,
-                    STRAIN_FIELD_GFF_FILE: strain.gff_file,
-                    STRAIN_FIELD_FASTA_URL: (
-                        f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
-                        if strain.fasta_file
-                        else None
-                    ),
-                    STRAIN_FIELD_GFF_URL: (
-                        f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
-                        if strain.gff_file
-                        else None
-                    ),
-                    STRAIN_FIELD_CONTIGS: await sync_to_async(
-                        lambda: [
-                            {
-                                STRAIN_FIELD_CONTIG_SEQ_ID: contig.seq_id,
-                                STRAIN_FIELD_CONTIG_LEN: contig.length,
-                            }
-                            for contig in strain.contigs.all()
-                        ]
-                    )(),
-                }
-            )
-        except Strain.DoesNotExist:
-            logger.error(f"Genome with strain name {strain_name} not found")
-            raise HttpError(404, f"Genome with strain name {strain_name} not found")
+            strains = await sync_to_async(list)(Strain.objects.filter(filter_criteria))
+            return [schema.model_validate(strain.__dict__) for strain in strains]
         except Exception as e:
-            logger.error(f"Error fetching genome by strain name {strain_name}: {e}")
+            logger.error(f"{error_message}: {e}")
             raise HttpError(500, "Internal Server Error")
 
-    # Helper Methods
+    async def _search_paginated_strains(
+        self, filter_criteria, page, per_page, sortField, sortOrder, error_message
+    ):
+        try:
+            strains, total_results = await self._fetch_paginated_strains(
+                filter_criteria, page, per_page, sortField, sortOrder
+            )
+            return await self._create_pagination_schema(
+                strains, total_results, page, per_page
+            )
+        except Exception as e:
+            logger.error(f"{error_message}: {e}")
+            raise HttpError(500, "Internal Server Error")
+
+    async def _fetch_single_genome(self, filter_criteria, error_message):
+        try:
+            if isinstance(filter_criteria, Q):
+                filter_kwargs = {
+                    child[0]: child[1] for child in filter_criteria.children
+                }
+            else:
+                filter_kwargs = filter_criteria
+
+            strain = await sync_to_async(
+                lambda: Strain.objects.select_related(STRAIN_FIELD_SPECIES).get(
+                    **filter_kwargs
+                )
+            )()
+
+            serialized_strain = await self._serialize_strain(strain)
+            return SearchGenomeSchema.model_validate(serialized_strain)
+
+        except Strain.DoesNotExist:
+            raise HttpError(404, "Genome not found")
+        except Exception as e:
+            logger.error(f"{error_message}: {e}", exc_info=True)
+            raise HttpError(500, "Internal Server Error")
+
+    async def _serialize_strain(self, strain):
+        contigs = await sync_to_async(
+            lambda: list(
+                strain.contigs.values(
+                    STRAIN_FIELD_CONTIG_SEQ_ID, STRAIN_FIELD_CONTIG_LEN
+                )
+            )
+        )()
+
+        return {
+            FIELD_ID: strain.id,
+            STRAIN_FIELD_SPECIES: strain.species.scientific_name,
+            STRAIN_FIELD_SPECIES_ID: strain.species.id,
+            STRAIN_FIELD_COMMON_NAME: strain.species.common_name or None,
+            STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
+            STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
+            STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
+            STRAIN_FIELD_FASTA_FILE: strain.fasta_file,
+            STRAIN_FIELD_GFF_FILE: strain.gff_file,
+            STRAIN_FIELD_FASTA_URL: (
+                f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
+                if strain.fasta_file
+                else None
+            ),
+            STRAIN_FIELD_GFF_URL: (
+                f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
+                if strain.gff_file
+                else None
+            ),
+            STRAIN_FIELD_CONTIGS: contigs,
+        }
+
     async def _fetch_paginated_strains(
         self,
         filter_criteria: Q,
@@ -284,7 +254,6 @@ class GenomeService:
         if sortOrder not in (SORT_ASC, SORT_DESC):
             sortOrder = SORT_ASC
 
-        # Apply sorting
         ordering = f"{'-' if sortOrder == SORT_DESC else ''}{sortField}"
         start = (page - 1) * per_page
 
@@ -296,48 +265,14 @@ class GenomeService:
             )
         )()
         total_results = await sync_to_async(
-            Strain.objects.filter(filter_criteria).count
+            lambda: Strain.objects.filter(filter_criteria).count()
         )()
+
         return strains, total_results
 
     async def _create_pagination_schema(self, strains, total_results, page, per_page):
         serialized_strains = [
-            SearchGenomeSchema.model_validate(
-                {
-                    FIELD_ID: strain.id,
-                    STRAIN_FIELD_SPECIES: strain.species.scientific_name,
-                    STRAIN_FIELD_SPECIES_ID: strain.species.id,
-                    STRAIN_FIELD_COMMON_NAME: (
-                        strain.species.common_name
-                        if strain.species.common_name
-                        else None
-                    ),
-                    STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
-                    STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
-                    STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
-                    STRAIN_FIELD_FASTA_FILE: strain.fasta_file,
-                    STRAIN_FIELD_GFF_FILE: strain.gff_file,
-                    STRAIN_FIELD_FASTA_URL: (
-                        f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
-                        if strain.fasta_file
-                        else None
-                    ),
-                    STRAIN_FIELD_GFF_URL: (
-                        f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
-                        if strain.gff_file
-                        else None
-                    ),
-                    STRAIN_FIELD_CONTIGS: await sync_to_async(
-                        lambda: [
-                            {
-                                STRAIN_FIELD_CONTIG_SEQ_ID: contig.seq_id,
-                                STRAIN_FIELD_CONTIG_LEN: contig.length,
-                            }
-                            for contig in strain.contigs.all()
-                        ]
-                    )(),
-                }
-            )
+            SearchGenomeSchema.model_validate(await self._serialize_strain(strain))
             for strain in strains
         ]
 
