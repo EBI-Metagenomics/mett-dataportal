@@ -17,10 +17,14 @@ class StrainSuggestionSchema(BaseModel):
     isolate_name: str
     assembly_name: str
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ContigSchema(BaseModel):
     seq_id: str
     length: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SearchGenomeSchema(BaseModel):
@@ -37,6 +41,8 @@ class SearchGenomeSchema(BaseModel):
     gff_url: str
     contigs: List[ContigSchema]
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class TypeStrainSchema(BaseModel):
     id: int
@@ -46,14 +52,7 @@ class TypeStrainSchema(BaseModel):
     fasta_file: str
     gff_file: str
 
-
-class GenomePaginationSchema(BaseModel):
-    results: List[SearchGenomeSchema]
-    page_number: int
-    num_pages: int
-    has_previous: bool
-    has_next: bool
-    total_results: int
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GeneAutocompleteResponseSchema(BaseModel):
@@ -66,6 +65,8 @@ class GeneAutocompleteResponseSchema(BaseModel):
     pfam: Optional[str] = None
     interpro: Optional[str] = None
     dbxref: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GeneResponseSchema(BaseModel):
@@ -91,13 +92,22 @@ class GeneResponseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class GenePaginationSchema(BaseModel):
-    results: List[GeneResponseSchema]
+class BasePaginationSchema(BaseModel):
     page_number: int
     num_pages: int
     has_previous: bool
     has_next: bool
     total_results: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GenomePaginationSchema(BasePaginationSchema):
+    results: List[SearchGenomeSchema]
+
+
+class GenePaginationSchema(BasePaginationSchema):
+    results: List[GeneResponseSchema]
 
 
 __all__ = [

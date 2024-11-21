@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -105,6 +106,18 @@ DATABASES = {
         "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
+
+if "pytest" in sys.argv[0]:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
+
+    MIGRATION_MODULES = {
+        "dataportal": None,  # Disable migrations
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
