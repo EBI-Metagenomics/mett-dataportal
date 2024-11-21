@@ -18,6 +18,7 @@ from .schemas import (
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
 from .services.species_service import SpeciesService
+from .utils.constants import DEFAULT_PER_PAGE_CNT, DEFAULT_SORT
 from .utils.decorators import log_endpoint_access
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,10 @@ jbrowse_router = Router(tags=["JBrowse Viewer"])
 @genome_router.get("/autocomplete", response=List[StrainSuggestionSchema])
 @log_endpoint_access("genome_autocomplete_suggestions")
 async def autocomplete_suggestions(
-    request, query: str, limit: int = 10, species_id: Optional[int] = None
+    request,
+    query: str,
+    limit: int = DEFAULT_PER_PAGE_CNT,
+    species_id: Optional[int] = None,
 ):
     return await genome_service.search_strains(query, limit, species_id)
 
@@ -64,9 +68,9 @@ async def get_all_species(request):
 async def get_all_genomes(
     request,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sortField: Optional[str] = "isolate_name",
-    sortOrder: Optional[str] = "asc",
+    sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await genome_service.get_genomes(page, per_page, sortField, sortOrder)
@@ -86,12 +90,12 @@ async def search_genomes_by_string(
     request,
     query: str,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sortField: Optional[str] = "isolate_name",
-    sortOrder: Optional[str] = "asc",
+    sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     sortField = sortField or "isolate_name"
-    sortOrder = sortOrder or "asc"
+    sortOrder = sortOrder or DEFAULT_SORT
     return await genome_service.search_genomes_by_string(
         query, page, per_page, sortField, sortOrder
     )
@@ -118,9 +122,9 @@ async def get_genomes_by_species(
     request,
     species_id: int,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sortField: Optional[str] = "isolate_name",
-    sortOrder: Optional[str] = "asc",
+    sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     return await genome_service.get_genomes_by_species(
         species_id, page, per_page, sortField, sortOrder
@@ -134,9 +138,9 @@ async def search_genomes_by_species_and_string(
     species_id: int,
     query: str,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sortField: Optional[str] = "isolate_name",
-    sortOrder: Optional[str] = "asc",
+    sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     return await genome_service.search_genomes_by_species_and_string(
         species_id, query, page, per_page, sortField, sortOrder
@@ -147,7 +151,7 @@ async def search_genomes_by_species_and_string(
 async def gene_autocomplete_suggestions(
     request,
     query: str,
-    limit: int = 10,
+    limit: int = DEFAULT_PER_PAGE_CNT,
     species_id: Optional[int] = None,
     genome_ids: Optional[str] = None,
 ):
@@ -167,9 +171,9 @@ async def search_genes_by_string(
     request,
     query: str,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sort_field: Optional[str] = None,
-    sort_order: Optional[str] = "asc",
+    sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         paginated_results = await gene_service.search_genes(
@@ -196,9 +200,9 @@ async def get_gene_by_id(request, gene_id: int):
 async def get_all_genes(
     request,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sort_field: Optional[str] = None,
-    sort_order: Optional[str] = "asc",
+    sort_order: Optional[str] = DEFAULT_SORT,
 ):
     return await gene_service.get_all_genes(page, per_page, sort_field, sort_order)
 
@@ -209,9 +213,9 @@ async def get_genes_by_genome(
     request,
     genome_id: int,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sort_field: Optional[str] = None,
-    sort_order: Optional[str] = "asc",
+    sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await gene_service.get_genes_by_genome(
@@ -229,9 +233,9 @@ async def search_genes_by_genome_and_string(
     genome_id: int,
     query: str,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sort_field: Optional[str] = None,
-    sort_order: Optional[str] = "asc",
+    sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await gene_service.search_genes(
@@ -250,9 +254,9 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
     species_id: Optional[int] = None,
     query: str = "",
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = DEFAULT_PER_PAGE_CNT,
     sort_field: Optional[str] = None,
-    sort_order: Optional[str] = "asc",
+    sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         logger.debug(
