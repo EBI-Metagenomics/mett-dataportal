@@ -74,6 +74,16 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                         <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
                     )}
                 </th>
+                <th onClick={() => handleSort('seq_id')}
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
+                    Seq Id
+                    {sortField === 'seq_id' ? (
+                        <span className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                              style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
+                </th>
                 <th onClick={() => handleSort('locus_tag')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Locus Tag
@@ -102,6 +112,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 <tr key={index} className="vf-table__row">
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.strain || 'Unknown Strain'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || 'Unknown Gene Name'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.seq_id || 'Unknown'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.locus_tag || 'Unknown Locus Tag'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.description || ''}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
