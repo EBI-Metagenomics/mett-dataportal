@@ -3,7 +3,6 @@ from typing import Optional, List
 
 from asgiref.sync import sync_to_async
 from django.db.models import Q
-from ninja.errors import HttpError
 
 from dataportal import settings
 from dataportal.models import Strain
@@ -31,7 +30,9 @@ from dataportal.utils.constants import (
     SORT_ASC,
     SORT_DESC,
     DEFAULT_PER_PAGE_CNT,
+    STRAIN_FIELD_TYPE_STRAIN,
 )
+from dataportal.utils.exceptions import ServiceError, GenomeNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -146,16 +147,16 @@ class GenomeService:
 
     async def get_genome_by_id(self, genome_id: int):
         logger.debug("Entering get_genome_by_id method")
-        try:
-            result = await self._fetch_single_genome(
-                filter_criteria=Q(id=genome_id),
-                error_message=f"Error fetching genome by ID {genome_id}",
-            )
-            logger.debug(f"Fetched genome successfully: {result}")
-            return result
-        except Exception as e:
-            logger.error(f"Error in get_genome_by_id: {e}", exc_info=True)
-            raise
+        # try:
+        result = await self._fetch_single_genome(
+            filter_criteria=Q(id=genome_id),
+            error_message=f"Error fetching genome by ID {genome_id}",
+        )
+        logger.debug(f"Fetched genome successfully: {result}")
+        return result
+        # except Exception as e:
+        #     logger.error(f"Error in get_genome_by_id: {e}", exc_info=True)
+        #     raise
 
     async def get_genome_by_strain_name(self, strain_name: str):
         return await self._fetch_single_genome(
@@ -169,7 +170,7 @@ class GenomeService:
             return [schema.model_validate(strain.__dict__) for strain in strains]
         except Exception as e:
             logger.error(f"{error_message}: {e}")
-            raise HttpError(500, "Internal Server Error")
+            raise ServiceError(e)
 
     async def _search_paginated_strains(
         self, filter_criteria, page, per_page, sortField, sortOrder, error_message
@@ -183,7 +184,7 @@ class GenomeService:
             )
         except Exception as e:
             logger.error(f"{error_message}: {e}")
-            raise HttpError(500, "Internal Server Error")
+            raise ServiceError(e)
 
     async def _fetch_single_genome(self, filter_criteria, error_message):
         try:
@@ -204,10 +205,11 @@ class GenomeService:
             return SearchGenomeSchema.model_validate(serialized_strain)
 
         except Strain.DoesNotExist:
-            raise HttpError(404, "Genome not found")
+            logger.error(error_message)
+            raise GenomeNotFoundError(error_message)
         except Exception as e:
             logger.error(f"{error_message}: {e}", exc_info=True)
-            raise HttpError(500, "Internal Server Error")
+            raise ServiceError(e)
 
     async def _serialize_strain(self, strain):
         contigs = await sync_to_async(
@@ -238,6 +240,7 @@ class GenomeService:
                 if strain.gff_file
                 else None
             ),
+            STRAIN_FIELD_TYPE_STRAIN: strain.type_strain,
             STRAIN_FIELD_CONTIGS: contigs,
         }
 

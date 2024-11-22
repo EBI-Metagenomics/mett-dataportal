@@ -39,6 +39,7 @@ class SearchGenomeSchema(BaseModel):
     gff_file: str
     fasta_url: str
     gff_url: str
+    type_strain: bool
     contigs: List[ContigSchema]
 
     model_config = ConfigDict(from_attributes=True)
@@ -51,6 +52,7 @@ class TypeStrainSchema(BaseModel):
     assembly_accession: Optional[str]
     fasta_file: str
     gff_file: str
+    type_strain: bool
 
     model_config = ConfigDict(from_attributes=True)
 

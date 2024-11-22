@@ -4,7 +4,6 @@ from typing import List, Optional
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
 
-from .models import Strain
 from .schemas import (
     StrainSuggestionSchema,
     SpeciesSchema,
@@ -21,7 +20,12 @@ from .services.species_service import SpeciesService
 from .utils.constants import DEFAULT_PER_PAGE_CNT, DEFAULT_SORT
 from .utils.decorators import log_endpoint_access
 from .utils.errors import raise_http_error
-from .utils.exceptions import GeneNotFoundError, ServiceError
+from .utils.exceptions import (
+    GeneNotFoundError,
+    ServiceError,
+    GenomeNotFoundError,
+    InvalidGenomeIdError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +64,8 @@ async def get_all_species(request):
     try:
         species = await species_service.get_all_species()
         return species
+    except ServiceError:
+        raise HttpError(500, "An error occurred while fetching species.")
     except Exception:
         raise_http_error(500, "An error occurred while fetching species.")
 
@@ -75,14 +81,19 @@ async def get_all_genomes(
 ):
     try:
         return await genome_service.get_genomes(page, per_page, sortField, sortOrder)
-    except Exception as e:
-        raise_http_error(500, f"Internal Server Error: {str(e)}")
+    except ServiceError:
+        raise HttpError(500, "An error occurred while fetching genomes.")
+    except Exception:
+        raise_http_error(500, "An error occurred while fetching genomes.")
 
 
 # API Endpoint to search genomes by query string
 @genome_router.get("/type-strains", response=List[TypeStrainSchema])
 async def get_type_strains(request):
-    return await genome_service.get_type_strains()
+    try:
+        return await genome_service.get_type_strains()
+    except ServiceError:
+        raise HttpError(500, "An error occurred while fetching type strains.")
 
 
 @genome_router.get("/search", response=GenomePaginationSchema)
@@ -96,9 +107,14 @@ async def search_genomes_by_string(
 ):
     sortField = sortField or "isolate_name"
     sortOrder = sortOrder or DEFAULT_SORT
-    return await genome_service.search_genomes_by_string(
-        query, page, per_page, sortField, sortOrder
-    )
+    try:
+        return await genome_service.search_genomes_by_string(
+            query, page, per_page, sortField, sortOrder
+        )
+    except ServiceError:
+        raise HttpError(
+            500, f"An error occurred while fetching genomes by query: {query}"
+        )
 
 
 # API Endpoint to retrieve genome by ID
@@ -106,14 +122,25 @@ async def search_genomes_by_string(
 async def get_genome(request, genome_id: int):
     try:
         return await genome_service.get_genome_by_id(genome_id)
-    except Strain.DoesNotExist:
-        raise_http_error(404, "Genome not found")
+    except GenomeNotFoundError:
+        raise_http_error(404, f"Genome not found for id: {genome_id}")
+    except ServiceError:
+        raise HttpError(
+            500, f"An error occurred while fetching genomes by id: {genome_id}"
+        )
 
 
 # Fetch genome by strain_name
 @genome_router.get("/strain/{strain_name}", response=SearchGenomeSchema)
 async def get_genome_by_strain_name(request, strain_name: str):
-    return await genome_service.get_genome_by_strain_name(strain_name)
+    try:
+        return await genome_service.get_genome_by_strain_name(strain_name)
+    except GenomeNotFoundError:
+        raise_http_error(404, f"Genome not found for name: {strain_name}")
+    except ServiceError:
+        raise HttpError(
+            500, f"An error occurred while fetching genomes by name: {strain_name}"
+        )
 
 
 # API Endpoint to retrieve genomes filtered by species ID
@@ -126,9 +153,14 @@ async def get_genomes_by_species(
     sortField: Optional[str] = "isolate_name",
     sortOrder: Optional[str] = DEFAULT_SORT,
 ):
-    return await genome_service.get_genomes_by_species(
-        species_id, page, per_page, sortField, sortOrder
-    )
+    try:
+        return await genome_service.get_genomes_by_species(
+            species_id, page, per_page, sortField, sortOrder
+        )
+    except ServiceError:
+        raise HttpError(
+            500, f"An error occurred while fetching genomes by species: {species_id}"
+        )
 
 
 # API Endpoint to search genomes by species ID and query string
@@ -142,9 +174,15 @@ async def search_genomes_by_species_and_string(
     sortField: Optional[str] = "isolate_name",
     sortOrder: Optional[str] = DEFAULT_SORT,
 ):
-    return await genome_service.search_genomes_by_species_and_string(
-        species_id, query, page, per_page, sortField, sortOrder
-    )
+    try:
+        return await genome_service.search_genomes_by_species_and_string(
+            species_id, query, page, per_page, sortField, sortOrder
+        )
+    except ServiceError:
+        raise HttpError(
+            500,
+            f"An error occurred while fetching genomes by species: {species_id} and query: {query}",
+        )
 
 
 @gene_router.get("/autocomplete", response=List[GeneAutocompleteResponseSchema])
@@ -236,6 +274,12 @@ async def get_genes_by_genome(
         return await gene_service.get_genes_by_genome(
             genome_id, page, per_page, sort_field, sort_order
         )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(
+            500,
+            f"Failed to fetch the genes information for genome_id - {genome_id}",
+        )
     except Exception as e:
         raise_http_error(500, f"Internal Server Error: {str(e)}")
 
@@ -284,10 +328,8 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
         return await gene_service.get_genes_by_multiple_genomes_and_string(
             genome_ids, species_id, query, page, per_page, sort_field, sort_order
         )
-    except HttpError as e:
-        raise e
-    except ValueError:
-        raise_http_error(400, "Invalid genome ID provided")
+    except InvalidGenomeIdError:
+        raise_http_error(400, f"Invalid genome ID provided: {genome_ids}")
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")

@@ -5,7 +5,6 @@ from asgiref.sync import sync_to_async
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from ninja.errors import HttpError
 
 from dataportal.models import Gene
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
@@ -37,7 +36,11 @@ from dataportal.utils.constants import (
     SORT_DESC,
     SORT_ASC,
 )
-from dataportal.utils.exceptions import GeneNotFoundError, ServiceError
+from dataportal.utils.exceptions import (
+    GeneNotFoundError,
+    ServiceError,
+    InvalidGenomeIdError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +190,7 @@ class GeneService:
             )
         except Exception as e:
             logger.error(f"Error fetching genes for genome ID {genome_id}: {e}")
-            raise HttpError(500, "Internal Server Error")
+            raise ServiceError(e)
 
     async def get_genes_by_multiple_genomes(
         self, genome_ids: List[int], page: int = 1, per_page: int = 10
@@ -203,7 +206,7 @@ class GeneService:
             )
         except Exception as e:
             logger.error(f"Error fetching genes for genome IDs {genome_ids}: {e}")
-            raise HttpError(500, "Internal Server Error")
+            raise ServiceError(e)
 
     async def get_genes_by_multiple_genomes_and_string(
         self,
@@ -278,10 +281,10 @@ class GeneService:
             )
         except ValueError:
             logger.error("Invalid genome ID provided")
-            raise HttpError(400, "Invalid genome ID provided")
+            raise InvalidGenomeIdError(genome_ids)
         except Exception as e:
             logger.error(f"Error in get_genes_by_multiple_genomes_and_string: {e}")
-            raise HttpError(500, "Internal Server Error")
+            raise ServiceError(e)
 
     # helper methods
 

@@ -28,12 +28,7 @@ class SpeciesFactory(factory.django.DjangoModelFactory):
         ]
     )
 
-    taxonomy_id = factory.Iterator(
-        [
-            820,
-            821,
-        ]
-    )
+    taxonomy_id = factory.Sequence(lambda n: n + 100)
 
     @factory.post_generation
     def customize_species(obj, create, extracted, **kwargs):

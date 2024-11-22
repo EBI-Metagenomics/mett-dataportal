@@ -15,6 +15,7 @@ export interface GenomeMeta {
     gff_file: string;
     fasta_url: string;
     gff_url: string;
+    type_strain: boolean;
     contigs: Contig[];
 }
 
