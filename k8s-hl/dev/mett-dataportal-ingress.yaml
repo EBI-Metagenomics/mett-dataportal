@@ -1,19 +1,19 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: mett-dataportal-ingress
-  namespace: mett-dataportal-hl-prod
+  name: gutmicrobes-hl-ingress-dev
+  namespace: mett-dataportal-hl-dev
   annotations:
-    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
 spec:
   rules:
-    - host: www.mett-dataportal.org
+    - host: www.gut-microbes.org
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: mett-dataportal
+                name: mett-dataportal-react-app-svc-dev
                 port:
-                  number: 8000
+                  number: 80
