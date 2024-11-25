@@ -1,10 +1,10 @@
 import React from 'react';
 import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
-import Header from './components/organisms/Header';
+import Header from '@components/organisms/Header/Header';
 import HomePage from './components/pages/HomePage';
 import GeneViewerPage from './components/pages/GeneViewerPage';
 import ErrorBoundary from "@components/atoms/ErrorBoundary";
-import Footer from "@components/organisms/Footer";
+import Footer from "@components/organisms/Footer/Footer";
 
 const App: React.FC = () => {
     return (

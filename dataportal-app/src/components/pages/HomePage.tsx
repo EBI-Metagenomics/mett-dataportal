@@ -176,8 +176,8 @@ const HomePage: React.FC = () => {
     };
 
     const tabs: Tab[] = [
-        {id: 'vf-tabs__section--1', label: 'Search Genome'},
-        {id: 'vf-tabs__section--2', label: 'Search Gene'}
+        {id: 'vf-tabs__section--1', label: 'Genome Search'},
+        {id: 'vf-tabs__section--2', label: 'Gene Search'}
     ];
 
     return (

@@ -22,13 +22,13 @@ const Header: React.FC = () => {
                     <div
                         className="vf-hero__content | vf-box | vf-stack vf-stack--400"
                         style={{
-                            maxWidth: '50em',
+                            maxWidth: '55em',
                             width: '100%',
                         }}
                     >
-                        <h2 className="vf-hero__heading">Microbial Ecosystems TT - Data Portal</h2>
+                        <h2 className="vf-hero__heading" style={{ maxWidth: "50ch" }}>Microbial Ecosystems Transversal Themes</h2>
                         <p className="vf-hero__subheading">
-                            Microbial Ecosystems transversal theme - a part of the EMBL Programme "Molecules to
+                            Transversal Themes Data Portal - a part of the EMBL Programme "Molecules to
                             Ecosystems”.
                         </p>
                         <div className="vf-card__heading">

@@ -198,7 +198,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             </div>
             <form onSubmit={handleSubmit}
                   className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
-                <h2 className={`vf-section-header__subheading ${styles.vfGeneSubHeading}`}>Search Gene</h2>
+                <h2 className={`vf-section-header__subheading ${styles.vfGeneSubHeading}`}>Gene Search</h2>
                 <div>
                     <p/>
                 </div>

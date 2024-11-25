@@ -58,6 +58,7 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
                     <TextField
                         {...params}
                         // label="Search Genome"
+                        placeholder="BU_909, PV_CCUG ..."
                         value={query}
                         onChange={onInputChange}
                         variant="outlined"

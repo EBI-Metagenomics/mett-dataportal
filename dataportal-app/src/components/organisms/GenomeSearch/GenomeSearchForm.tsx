@@ -170,7 +170,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             <div className={`vf-grid__col--span-3 ${styles.vfGenomeSection}`}>
                 <form onSubmit={handleSubmit}
                       className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
-                    <h2 className={`vf-section-header__subheading ${styles.vfGenomeSubHeading}`}>Search Genome</h2>
+                    <h2 className={`vf-section-header__subheading ${styles.vfGenomeSubHeading}`}>Genome Search</h2>
                     <div>
                         <p/>
                     </div>
