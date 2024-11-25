@@ -254,6 +254,7 @@ class GeneService:
                 GENE_FIELD_DESCRIPTION: GENE_FIELD_DESCRIPTION,
                 GENE_FIELD_LOCUS_TAG: GENE_FIELD_LOCUS_TAG,
                 GENE_FIELD_PRODUCT: GENE_FIELD_PRODUCT,
+                FIELD_SEQ_ID: FIELD_SEQ_ID,
             }
 
             # Validate and map sort_field

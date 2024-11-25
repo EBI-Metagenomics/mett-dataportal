@@ -7,6 +7,10 @@ const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
         trackId: 'reference',
         adapter: {
             type: 'BgzipFastaAdapter',
+            sequences: genomeMeta.contigs.map(contig => ({
+                name: contig.seq_id,
+                length: contig.length,
+            })),
             fastaLocation: {
                 uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz`,
             },
