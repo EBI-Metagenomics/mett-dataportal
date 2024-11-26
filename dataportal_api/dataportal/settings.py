@@ -157,9 +157,13 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 CORS_ALLOWED_ORIGINS = [f"http://{h}" for h in ALLOWED_HOSTS] + [
     f"https://{h}" for h in ALLOWED_HOSTS
 ]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS += [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 logger.info("ALLOWED_HOSTS: %s", ALLOWED_HOSTS)
 logger.info("CORS_ALLOWED_ORIGINS: %s", CORS_ALLOWED_ORIGINS)
-
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
