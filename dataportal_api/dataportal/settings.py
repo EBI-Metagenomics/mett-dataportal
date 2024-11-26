@@ -1,6 +1,9 @@
 import os
 import sys
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -31,7 +34,7 @@ LOGGING = {
         "django": {
             "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": False,
+            "propagate": True,
         },
         "my_custom_logger": {
             "handlers": ["console"],
@@ -41,7 +44,6 @@ LOGGING = {
     },
 }
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 CSRF_TRUSTED_ORIGINS = [
     f"https://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
     f"http://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
@@ -150,12 +152,25 @@ if DEBUG:
         "127.0.0.1",
     ]
 
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS", "http://localhost:3000"
-).split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 
-CORS_ALLOW_ALL_ORIGINS = True  # todo remove later
-APPEND_SLASH = False  # todo verify and remove
+CORS_ALLOWED_ORIGINS = [f"http://{h}" for h in ALLOWED_HOSTS] + [
+    f"https://{h}" for h in ALLOWED_HOSTS
+]
+logger.info("ALLOWED_HOSTS: %s", ALLOWED_HOSTS)
+logger.info("CORS_ALLOWED_ORIGINS: %s", CORS_ALLOWED_ORIGINS)
+logger.handlers[0].flush()
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+else:
+    SECURE_SSL_REDIRECT = False
+
+CORS_ALLOW_PRIVATE_NETWORK = True
+
+APPEND_SLASH = False
 
 DEFAULT_LIMIT = 10
 ASSEMBLY_FTP_PATH = os.environ.get(
