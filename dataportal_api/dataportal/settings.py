@@ -159,7 +159,7 @@ CORS_ALLOWED_ORIGINS = [f"http://{h}" for h in ALLOWED_HOSTS] + [
 ]
 logger.info("ALLOWED_HOSTS: %s", ALLOWED_HOSTS)
 logger.info("CORS_ALLOWED_ORIGINS: %s", CORS_ALLOWED_ORIGINS)
-logger.handlers[0].flush()
+
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True

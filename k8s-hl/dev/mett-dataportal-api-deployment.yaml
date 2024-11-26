@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mett-dataportal-api-dev
+  name: test-dataportal-api-dev
   namespace: mett-dataportal-hl-dev
   labels:
-    app: mett-dataportal-api-dev
+    app: test-dataportal-api-dev
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mett-dataportal-api-dev
+      app: test-dataportal-api-dev
   template:
     metadata:
       labels:
-        app: mett-dataportal-api-dev
+        app: test-dataportal-api-dev
     spec:
       securityContext:
         runAsUser: 7123
         runAsGroup: 1347
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.59
+        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.59a
           imagePullPolicy: Always
-          name: mett-dataportal-api-dev
+          name: test-dataportal-api-dev
           env:
             # Database configuration
             - name: DB_HOST
@@ -54,32 +54,32 @@ spec:
             - name: DJANGO_DEBUG
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: test-app-config-dev
                   key: DJANGO_DEBUG
             - name: TIME_ZONE
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: test-app-config-dev
                   key: TIME_ZONE
             - name: ALLOWED_HOSTS
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: test-app-config-dev
                   key: ALLOWED_HOSTS
             - name: DATA_PORTAL_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: test-app-config-dev
                   key: DATA_PORTAL_URL
             - name: ASSEMBLY_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: test-app-config-dev
                   key: ASSEMBLY_FTP_PATH
             - name: GFF_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: test-app-config-dev
                   key: GFF_FTP_PATH
           ports:
             - containerPort: 8000
@@ -92,15 +92,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mett-dataportal-api-svc-dev
+  name: test-dataportal-api-svc-dev
   namespace: mett-dataportal-hl-dev
   labels:
-    app: mett-dataportal-api-dev
+    app: test-dataportal-api-dev
 spec:
   type: NodePort
   selector:
-    app: mett-dataportal-api-dev
+    app: test-dataportal-api-dev
   ports:
     - port: 8000
       targetPort: 8000
-      nodePort: 31025
+      nodePort: 31027
