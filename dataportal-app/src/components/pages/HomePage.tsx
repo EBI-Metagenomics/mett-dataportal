@@ -6,7 +6,7 @@ import SelectedGenomes from '../organisms/SelectedGenomes';
 import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeService';
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
-import HomeIntroSection from "@components/organisms/HomeIntroSection";
+import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 
 // Define the type for each tab
 interface Tab {
@@ -183,7 +183,7 @@ const HomePage: React.FC = () => {
     return (
         <div>
             <div>
-                <HomeIntroSection/>
+                <HomePageHeadBand/>
             </div>
 
             <div className="layout-container">
