@@ -7,6 +7,7 @@ import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeServi
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
+import {GenomeMeta} from "@components/interfaces/Genome";
 
 // Define the type for each tab
 interface Tab {
@@ -42,7 +43,7 @@ const HomePage: React.FC = () => {
     const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
     const [selectedGenomes, setSelectedGenomes] = useState<{ id: number; name: string }[]>([]);
-    const [typeStrains, setTypeStrains] = useState<TypeStrain[]>([]);
+    const [typeStrains, setTypeStrains] = useState<GenomeMeta[]>([]);
     const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]);
 
     // State for Genome Search
@@ -113,7 +114,7 @@ const HomePage: React.FC = () => {
 
         const updatedTypeStrains = typeStrains
             .filter(strain => updatedSelectedTypeStrains.includes(strain.id))
-            .map(strain => ({id: strain.id, name: strain.name}));
+            .map(strain => ({id: strain.id, name: strain.isolate_name}));
 
         setSelectedGenomes(updatedTypeStrains);
     };
@@ -240,7 +241,7 @@ const HomePage: React.FC = () => {
                                                aria-hidden="true"
                                             ></i>
                                         </span>
-                                        {strain.name}
+                                        {strain.isolate_name}
                                     </label>
                                 </li>
                             ))}

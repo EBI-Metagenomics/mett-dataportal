@@ -1,10 +1,10 @@
 import React from 'react';
 import styles from './HomePageHeadBand.module.scss';
-import {TypeStrain} from "@components/interfaces/Genome";
+import {GenomeMeta} from "@components/interfaces/Genome";
 
 
 interface HomePageHeadBandProps {
-    typeStrains: TypeStrain[];
+    typeStrains: GenomeMeta[];
     linkTemplate: string;
 }
 
@@ -78,7 +78,7 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({typeStrains, linkTem
                     {typeStrains.map((strain) => (
                         <a
                             key={strain.id}
-                            href={generateLink(strain.name)}
+                            href={generateLink(strain.isolate_name)}
                             className="vf-link"
                             style={{
                                 display: 'inline-flex',
@@ -91,7 +91,7 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({typeStrains, linkTem
                                 overflow: 'visible',
                             }}
                         >
-                            {strain.name}
+                            {strain.isolate_name}
                             <svg
                                 aria-hidden="true"
                                 className="vf-icon vf-icon-arrow--inline-end"
