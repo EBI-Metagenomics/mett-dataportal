@@ -7,6 +7,7 @@ import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeServi
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
+import {TypeStrain} from "@components/interfaces/Genome";
 
 // Define the type for each tab
 interface Tab {
@@ -42,7 +43,7 @@ const HomePage: React.FC = () => {
     const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
     const [selectedGenomes, setSelectedGenomes] = useState<{ id: number; name: string }[]>([]);
-    const [typeStrains, setTypeStrains] = useState<{ id: number; isolate_name: string }[]>([]);
+    const [typeStrains, setTypeStrains] = useState<TypeStrain[]>([]);
     const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]);
 
     // State for Genome Search
@@ -113,7 +114,7 @@ const HomePage: React.FC = () => {
 
         const updatedTypeStrains = typeStrains
             .filter(strain => updatedSelectedTypeStrains.includes(strain.id))
-            .map(strain => ({id: strain.id, name: strain.isolate_name}));
+            .map(strain => ({id: strain.id, name: strain.name}));
 
         setSelectedGenomes(updatedTypeStrains);
     };
@@ -183,7 +184,10 @@ const HomePage: React.FC = () => {
     return (
         <div>
             <div>
-                <HomePageHeadBand/>
+                <HomePageHeadBand
+                    typeStrains={typeStrains}
+                    linkTemplate="http://localhost:3000/genome/$strain_name"
+                />
             </div>
 
             <div className="layout-container">
@@ -237,7 +241,7 @@ const HomePage: React.FC = () => {
                                                aria-hidden="true"
                                             ></i>
                                         </span>
-                                        {strain.isolate_name}
+                                        {strain.name}
                                     </label>
                                 </li>
                             ))}

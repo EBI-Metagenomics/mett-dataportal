@@ -1,12 +1,23 @@
 import React from 'react';
 import styles from './HomePageHeadBand.module.scss';
+import {TypeStrain} from "@components/interfaces/Genome";
 
-const HomePageHeadBand: React.FC = () => {
+
+interface HomePageHeadBandProps {
+    typeStrains: TypeStrain[];
+    linkTemplate: string;
+}
+
+const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({typeStrains, linkTemplate}) => {
+    const generateLink = (strainName: string) => linkTemplate.replace('$strain_name', strainName);
+
+    console.log(typeStrains)
+
     return (
         <section className="vf-grid vf-grid__col-3 | vf-card-container | vf-u-fullbleed">
             <div className="vf-section-header vf-grid__col--span-3">
                 <div className="vf-grid__col--span-2">
-                    <div className={`vf-content ${styles.vfContent}`} style={{textAlign: 'justify'}}> {}
+                    <div className={`vf-content ${styles.vfContent}`} style={{textAlign: 'justify'}}>
                         <p>
                             The transversal theme aims at mechanistically understanding the complex role that
                             human-associated
@@ -35,108 +46,74 @@ const HomePageHeadBand: React.FC = () => {
                 <div>&nbsp;</div>
                 <hr className="vf-divider"></hr>
             </div>
+
             {/* Type Strains Section */}
             <div
                 className="vf-section-header vf-grid__col--span-3 | vf-u-fullbleed"
                 style={{
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: "1.1rem",
-                    padding: "0.5rem 0",
-                    gap: "1rem",
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '1.1rem',
+                    padding: '0.5rem 0',
+                    gap: '1rem',
                 }}
             >
                 <h3
                     className="vf-section-header__heading"
                     style={{
-                        fontSize: "1.1rem",
-                        fontWeight: "bold",
-                        margin: "0",
+                        fontSize: '1.1rem',
+                        fontWeight: 'bold',
+                        margin: '0',
                     }}
                 >
                     Browse Type Strains:
                 </h3>
                 <div
                     style={{
-                        display: "flex",
-                        gap: "1.5rem",
-                        alignItems: "center",
+                        display: 'flex',
+                        gap: '1.5rem',
+                        alignItems: 'center',
                     }}
                 >
-                    {/* BU_ATCC8492 */}
-                    <a
-                        href="JavaScript:Void(0);"
-                        className="vf-link"
-                        style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            color: "#005ea5",
-                            textDecoration: "none",
-                            transition: "color 0.2s ease",
-                            gap: "0.4rem",
-                            lineHeight: "1",
-                            overflow: "visible",
-                        }}
-                    >
-                        BU_ATCC8492
-                        <svg
-                            aria-hidden="true"
-                            className="vf-icon vf-icon-arrow--inline-end"
+                    {typeStrains.map((strain) => (
+                        <a
+                            key={strain.id}
+                            href={generateLink(strain.name)}
+                            className="vf-link"
                             style={{
-                                verticalAlign: "middle",
-                                display: "block",
-                                overflow: "visible",
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                color: '#005ea5',
+                                textDecoration: 'none',
+                                transition: 'color 0.2s ease',
+                                gap: '0.4rem',
+                                lineHeight: '1',
+                                overflow: 'visible',
                             }}
-                            width="1.3em"
-                            height="1.3em"
-                            xmlns="http://www.w3.org/2000/svg"
                         >
-                            <path
-                                d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12S18.627 0 12 0C5.376.008.008 5.376 0 12zm13.707-5.209l4.5 4.5a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414l2.366-2.367a.25.25 0 00-.177-.424H6a1 1 0 010-2h8.482a.25.25 0 00.177-.427l-2.366-2.368a1 1 0 011.414-1.414z"
-                                fill="currentColor"
-                                fillRule="nonzero"
-                            ></path>
-                        </svg>
-                    </a>
-
-                    {/* PV_ATCC8482 */}
-                    <a
-                        href="JavaScript:Void(0);"
-                        className="vf-link"
-                        style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            color: "#005ea5",
-                            textDecoration: "none",
-                            transition: "color 0.2s ease",
-                            gap: "0.4rem",
-                            lineHeight: "1",
-                            overflow: "visible",
-                        }}
-                    >
-                        PV_ATCC8482
-                        <svg
-                            aria-hidden="true"
-                            className="vf-icon vf-icon-arrow--inline-end"
-                            style={{
-                                verticalAlign: "middle",
-                                display: "block",
-                                overflow: "visible",
-                            }}
-                            width="1.3em"
-                            height="1.3em"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12S18.627 0 12 0C5.376.008.008 5.376 0 12zm13.707-5.209l4.5 4.5a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414l2.366-2.367a.25.25 0 00-.177-.424H6a1 1 0 010-2h8.482a.25.25 0 00.177-.427l-2.366-2.368a1 1 0 011.414-1.414z"
-                                fill="currentColor"
-                                fillRule="nonzero"
-                            ></path>
-                        </svg>
-                    </a>
+                            {strain.name}
+                            <svg
+                                aria-hidden="true"
+                                className="vf-icon vf-icon-arrow--inline-end"
+                                style={{
+                                    verticalAlign: 'middle',
+                                    display: 'block',
+                                    overflow: 'visible',
+                                }}
+                                width="1.3em"
+                                height="1.3em"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12S18.627 0 12 0C5.376.008.008 5.376 0 12zm13.707-5.209l4.5 4.5a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414l2.366-2.367a.25.25 0 00-.177-.424H6a1 1 0 010-2h8.482a.25.25 0 00.177-.427l-2.366-2.368a1 1 0 011.414-1.414z"
+                                    fill="currentColor"
+                                    fillRule="nonzero"
+                                ></path>
+                            </svg>
+                        </a>
+                    ))}
                 </div>
             </div>
-
         </section>
     );
 };
