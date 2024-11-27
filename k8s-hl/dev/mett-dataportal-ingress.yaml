@@ -5,6 +5,8 @@ metadata:
   namespace: mett-dataportal-hl-dev
   annotations:
     nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
     - host: www.gut-microbes.org
@@ -17,3 +19,14 @@ spec:
                 name: test-dataportal-react-app-svc-dev
                 port:
                   number: 80
+    - host: api.gut-microbes.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dtest-dataportal-api-svc-dev
+                port:
+                  number: 8000
+

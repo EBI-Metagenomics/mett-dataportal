@@ -19,7 +19,7 @@ spec:
         runAsUser: 7123
         runAsGroup: 1347
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.59b
+        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.59c
           imagePullPolicy: Always
           name: test-dataportal-api-dev
           env:

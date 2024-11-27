@@ -48,6 +48,8 @@ LOGGING = {
 CSRF_TRUSTED_ORIGINS = [
     f"https://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
     f"http://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
+    "http://www.gut-microbes.org",
+    "http://api.gut-microbes.org",
 ]
 
 # Application definition
