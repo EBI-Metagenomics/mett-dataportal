@@ -1,6 +1,6 @@
 import {getData} from './api';
 import apiInstance from "./apiInstance";
-import {GenomeResponse, TypeStrain} from "@components/interfaces/Genome";
+import {GenomeResponse} from "@components/interfaces/Genome";
 
 interface AutocompleteResponse {
     data: string[];
@@ -114,7 +114,7 @@ export const fetchFuzzyIsolateSuggestions = async (
 };
 
 // Fetch all type strains
-export const fetchTypeStrains = async (): Promise<TypeStrain[]> => {
+export const fetchTypeStrains = async (): Promise<GenomeResponse[]> => {
     try {
         const response = await apiInstance.get('/genomes/type-strains');
         return response.data.map((item: any) => ({
