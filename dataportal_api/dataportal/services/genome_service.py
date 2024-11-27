@@ -7,9 +7,8 @@ from django.db.models import Q
 from dataportal import settings
 from dataportal.models import Strain
 from dataportal.schemas import (
-    TypeStrainSchema,
     GenomePaginationSchema,
-    SearchGenomeSchema,
+    GenomeResponseSchema,
 )
 from dataportal.utils.constants import (
     FIELD_ID,
@@ -41,10 +40,10 @@ class GenomeService:
     def __init__(self, limit: int = 10):
         self.limit = limit
 
-    async def get_type_strains(self) -> List[TypeStrainSchema]:
+    async def get_type_strains(self) -> List[GenomeResponseSchema]:
         return await self._fetch_and_validate_strains(
             filter_criteria=Q(type_strain=True),
-            schema=TypeStrainSchema,
+            schema=GenomeResponseSchema,
             error_message="Error fetching type strains",
         )
 
@@ -166,8 +165,15 @@ class GenomeService:
 
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         try:
-            strains = await sync_to_async(list)(Strain.objects.filter(filter_criteria))
-            return [schema.model_validate(strain.__dict__) for strain in strains]
+            strains = await sync_to_async(list)(
+                Strain.objects.filter(filter_criteria).select_related(
+                    STRAIN_FIELD_SPECIES
+                )
+            )
+            return [
+                schema.model_validate(await self._serialize_strain(strain))
+                for strain in strains
+            ]
         except Exception as e:
             logger.error(f"{error_message}: {e}")
             raise ServiceError(e)
@@ -202,7 +208,7 @@ class GenomeService:
             )()
 
             serialized_strain = await self._serialize_strain(strain)
-            return SearchGenomeSchema.model_validate(serialized_strain)
+            return GenomeResponseSchema.model_validate(serialized_strain)
 
         except Strain.DoesNotExist:
             logger.error(error_message)
@@ -275,7 +281,7 @@ class GenomeService:
 
     async def _create_pagination_schema(self, strains, total_results, page, per_page):
         serialized_strains = [
-            SearchGenomeSchema.model_validate(await self._serialize_strain(strain))
+            GenomeResponseSchema.model_validate(await self._serialize_strain(strain))
             for strain in strains
         ]
 

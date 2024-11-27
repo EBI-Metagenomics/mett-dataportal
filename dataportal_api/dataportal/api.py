@@ -8,8 +8,7 @@ from .schemas import (
     StrainSuggestionSchema,
     SpeciesSchema,
     GenomePaginationSchema,
-    TypeStrainSchema,
-    SearchGenomeSchema,
+    GenomeResponseSchema,
     GeneAutocompleteResponseSchema,
     GenePaginationSchema,
     GeneResponseSchema,
@@ -88,7 +87,7 @@ async def get_all_genomes(
 
 
 # API Endpoint to search genomes by query string
-@genome_router.get("/type-strains", response=List[TypeStrainSchema])
+@genome_router.get("/type-strains", response=List[GenomeResponseSchema])
 async def get_type_strains(request):
     try:
         return await genome_service.get_type_strains()
@@ -118,7 +117,7 @@ async def search_genomes_by_string(
 
 
 # API Endpoint to retrieve genome by ID
-@genome_router.get("/{genome_id}", response=SearchGenomeSchema)
+@genome_router.get("/{genome_id}", response=GenomeResponseSchema)
 async def get_genome(request, genome_id: int):
     try:
         return await genome_service.get_genome_by_id(genome_id)
@@ -131,7 +130,7 @@ async def get_genome(request, genome_id: int):
 
 
 # Fetch genome by strain_name
-@genome_router.get("/strain/{strain_name}", response=SearchGenomeSchema)
+@genome_router.get("/strain/{strain_name}", response=GenomeResponseSchema)
 async def get_genome_by_strain_name(request, strain_name: str):
     try:
         return await genome_service.get_genome_by_strain_name(strain_name)
