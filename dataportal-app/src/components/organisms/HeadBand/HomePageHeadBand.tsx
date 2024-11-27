@@ -43,7 +43,7 @@ const HomePageHeadBand: React.FC = () => {
                     alignItems: "center",
                     fontSize: "1.1rem",
                     padding: "0.5rem 0",
-                    gap: "1rem", // Space between label and links
+                    gap: "1rem",
                 }}
             >
                 <h3
@@ -75,6 +75,7 @@ const HomePageHeadBand: React.FC = () => {
                             transition: "color 0.2s ease",
                             gap: "0.4rem",
                             lineHeight: "1",
+                            overflow: "visible",
                         }}
                     >
                         BU_ATCC8492
@@ -82,10 +83,11 @@ const HomePageHeadBand: React.FC = () => {
                             aria-hidden="true"
                             className="vf-icon vf-icon-arrow--inline-end"
                             style={{
-                                verticalAlign: "middle", // Ensures alignment with text
-                                display: "block", // Prevent inline clipping
+                                verticalAlign: "middle",
+                                display: "block",
+                                overflow: "visible",
                             }}
-                            width="1.3em" // Adjusted for better visual fit
+                            width="1.3em"
                             height="1.3em"
                             xmlns="http://www.w3.org/2000/svg"
                         >
@@ -109,6 +111,7 @@ const HomePageHeadBand: React.FC = () => {
                             transition: "color 0.2s ease",
                             gap: "0.4rem",
                             lineHeight: "1",
+                            overflow: "visible",
                         }}
                     >
                         PV_ATCC8482
@@ -118,6 +121,7 @@ const HomePageHeadBand: React.FC = () => {
                             style={{
                                 verticalAlign: "middle",
                                 display: "block",
+                                overflow: "visible",
                             }}
                             width="1.3em"
                             height="1.3em"
@@ -132,6 +136,7 @@ const HomePageHeadBand: React.FC = () => {
                     </a>
                 </div>
             </div>
+
         </section>
     );
 };
