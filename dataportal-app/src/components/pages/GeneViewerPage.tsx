@@ -6,7 +6,7 @@ import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSes
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
 import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
-import {fetchGenomeById, fetchGenomeByStrainName} from "../../services/genomeService";
+import {fetchGenomeByIsolateNames, fetchGenomeByStrainIds} from "../../services/genomeService";
 import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
 import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "@components/interfaces/Genome";
@@ -34,11 +34,11 @@ const GeneViewerPage: React.FC = () => {
                     const geneResponse = await fetchGeneById(Number(geneId));
                     setGeneMeta(geneResponse);
 
-                    const genomeResponse = await fetchGenomeById(geneResponse.strain_id);
-                    setGenomeMeta(genomeResponse);
+                    const genomeResponse = await fetchGenomeByStrainIds([geneResponse.strain_id]);
+                    setGenomeMeta(genomeResponse[0]); // Access the first item
                 } else if (strainName) {
-                    const genomeResponse = await fetchGenomeByStrainName(strainName);
-                    setGenomeMeta(genomeResponse);
+                    const genomeResponse = await fetchGenomeByIsolateNames([strainName]);
+                    setGenomeMeta(genomeResponse[0]); // Access the first item
                 }
             } catch (error) {
                 console.error('Error fetching gene/genome meta information', error);

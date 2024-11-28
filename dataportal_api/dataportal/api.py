@@ -22,7 +22,6 @@ from .utils.errors import raise_http_error
 from .utils.exceptions import (
     GeneNotFoundError,
     ServiceError,
-    GenomeNotFoundError,
     InvalidGenomeIdError,
 )
 
@@ -116,30 +115,29 @@ async def search_genomes_by_string(
         )
 
 
-# API Endpoint to retrieve genome by ID
-@genome_router.get("/{genome_id}", response=GenomeResponseSchema)
-async def get_genome(request, genome_id: int):
+@genome_router.get("/by-ids", response=List[GenomeResponseSchema])
+async def get_genomes_by_ids(request, ids: str):
     try:
-        return await genome_service.get_genome_by_id(genome_id)
-    except GenomeNotFoundError:
-        raise_http_error(404, f"Genome not found for id: {genome_id}")
-    except ServiceError:
-        raise HttpError(
-            500, f"An error occurred while fetching genomes by id: {genome_id}"
-        )
+        if not ids:
+            raise_http_error(400, "Genome IDs list is empty.")
+
+        genome_id_list = [
+            int(id.strip()) for id in ids.split(",") if id.strip().isdigit()
+        ]
+        return await genome_service.get_genomes_by_ids(genome_id_list)
+    except ServiceError as e:
+        raise_http_error(500, f"An error occurred: {str(e)}")
 
 
-# Fetch genome by strain_name
-@genome_router.get("/strain/{strain_name}", response=GenomeResponseSchema)
-async def get_genome_by_strain_name(request, strain_name: str):
+@genome_router.get("/by-isolate-names", response=List[GenomeResponseSchema])
+async def get_genomes_by_isolate_names(request, names: str):
     try:
-        return await genome_service.get_genome_by_strain_name(strain_name)
-    except GenomeNotFoundError:
-        raise_http_error(404, f"Genome not found for name: {strain_name}")
-    except ServiceError:
-        raise HttpError(
-            500, f"An error occurred while fetching genomes by name: {strain_name}"
-        )
+        if not names:
+            raise_http_error(400, "Isolate names list is empty.")
+        isolate_names_list = [id.strip() for id in names.split(",")]
+        return await genome_service.get_genomes_by_isolate_names(isolate_names_list)
+    except ServiceError as e:
+        raise_http_error(500, f"An error occurred: {str(e)}")
 
 
 # API Endpoint to retrieve genomes filtered by species ID

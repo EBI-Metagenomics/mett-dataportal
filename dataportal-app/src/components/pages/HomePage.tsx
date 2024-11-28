@@ -284,6 +284,7 @@ const HomePage: React.FC = () => {
                             onSearchSubmit={handleGenomeSearch}
                             onGenomeSelect={handleGenomeSelect}
                             selectedSpecies={selectedSpecies}
+                            selectedTypeStrains={selectedTypeStrains}
                             onSortClick={handleGenomeSortClick}
                             sortField={sortField}
                             sortOrder={sortOrder}

@@ -145,23 +145,52 @@ class GenomeService:
         )
 
     async def get_genome_by_id(self, genome_id: int):
-        logger.debug("Entering get_genome_by_id method")
-        # try:
         result = await self._fetch_single_genome(
             filter_criteria=Q(id=genome_id),
             error_message=f"Error fetching genome by ID {genome_id}",
         )
         logger.debug(f"Fetched genome successfully: {result}")
         return result
-        # except Exception as e:
-        #     logger.error(f"Error in get_genome_by_id: {e}", exc_info=True)
-        #     raise
 
     async def get_genome_by_strain_name(self, strain_name: str):
         return await self._fetch_single_genome(
             filter_criteria=Q(isolate_name__iexact=strain_name),
             error_message=f"Error fetching genome by strain name {strain_name}",
         )
+
+    async def get_genomes_by_ids(
+        self, genome_ids: List[int]
+    ) -> List[GenomeResponseSchema]:
+        if not genome_ids:
+            return []
+        filter_criteria = Q(id__in=genome_ids)
+        try:
+            strains = await self._fetch_and_validate_strains(
+                filter_criteria=filter_criteria,
+                schema=GenomeResponseSchema,
+                error_message="Error fetching genomes by IDs",
+            )
+            return strains
+        except Exception as e:
+            logger.error(f"Error in get_genomes_by_ids: {e}", exc_info=True)
+            raise ServiceError(f"Could not fetch genomes by IDs: {e}")
+
+    async def get_genomes_by_isolate_names(
+        self, isolate_names: List[str]
+    ) -> List[GenomeResponseSchema]:
+        if not isolate_names:
+            return []
+        filter_criteria = Q(isolate_name__in=isolate_names)
+        try:
+            strains = await self._fetch_and_validate_strains(
+                filter_criteria=filter_criteria,
+                schema=GenomeResponseSchema,
+                error_message="Error fetching genomes by isolate names",
+            )
+            return strains
+        except Exception as e:
+            logger.error(f"Error in get_genomes_by_isolate_names: {e}", exc_info=True)
+            raise ServiceError(f"Could not fetch genomes by isolate names: {e}")
 
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         try:

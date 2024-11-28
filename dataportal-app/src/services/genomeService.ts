@@ -6,11 +6,6 @@ interface AutocompleteResponse {
     data: string[];
 }
 
-interface PaginatedResponse<T> {
-    data: T[];
-    total: number;
-}
-
 export const fetchGenomeAutocompleteSuggestions = async (inputQuery: string, selectedSpecies?: string) => {
     try {
         const url = selectedSpecies
@@ -25,18 +20,28 @@ export const fetchGenomeAutocompleteSuggestions = async (inputQuery: string, sel
     }
 };
 
-export const fetchGenomeByStrainId = async (strainId: number) => {
+export const fetchGenomeByStrainIds = async (strainIds: number[]) => {
     try {
-        const response = await getData(`/genomes/${strainId}`);
+        const response = await getData(`/genomes/by-ids?ids=${strainIds}`);
         return response;
     } catch (error) {
-        console.error(`Error fetching genome with strain ID ${strainId}:`, error);
+        console.error(`Error fetching genome with strain IDs ${strainIds}:`, error);
+        throw error;
+    }
+};
+
+export const fetchGenomeByIsolateNames = async (isolateNames: string[]) => {
+    try {
+        const response = await getData(`/genomes/by-isolate-names?names=${isolateNames}`);
+        return response;
+    } catch (error) {
+        console.error(`Error fetching genome by isolate names ${isolateNames}:`, error);
         throw error;
     }
 };
 
 export const fetchGenomeSearchResults = async (
-    isolate: string,
+    query: string,
     page: number,
     pageSize: number,
     sortField: string,
@@ -44,7 +49,7 @@ export const fetchGenomeSearchResults = async (
     selectedSpecies?: number []
 ) => {
     const queryString = new URLSearchParams({
-        'query': isolate,
+        'query': query,
         'page': String(page),
         'per_page': String(pageSize),
         'sortField': sortField,
@@ -123,23 +128,3 @@ export const fetchTypeStrains = async (): Promise<GenomeMeta[]> => {
         throw error;
     }
 };
-export const fetchGenomeById = async (genomeId: number) => {
-    try {
-        const response = await getData(`/genomes/${genomeId}`);
-        return response;
-    } catch (error) {
-        console.error(`Error fetching genome with ID ${genomeId}:`, error);
-        throw error;
-    }
-};
-
-
-export const fetchGenomeByStrainName = async (strain_name: string) => {
-    try {
-        const response = await getData(`/genomes/strain/${strain_name}`);
-        return response;
-    } catch (error) {
-        console.error(`Error fetching genome with strain name ${strain_name}:`, error);
-        throw error;
-    }
-}
