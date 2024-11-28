@@ -70,7 +70,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                     <TextField
                         {...params}
                         // label="Search Gene"
-                        placeholder="dnaA, BU_909_00003, Vitamin ..."
+                        placeholder="Try Vitamin B12 transporter or a gene locus as dnaA ..."
                         variant="outlined"
                         sx={{
                             '& .MuiInputBase-root': {
