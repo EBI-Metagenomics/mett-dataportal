@@ -13,23 +13,13 @@ const getDefaultSessionConfig = (
         return null;
     }
 
-    const displayedRegions = geneMeta
-        ? [
-            {
-                refName: geneMeta.seq_id,
-                start: geneMeta.start_position || 0,
-                end: geneMeta.end_position || genomeMeta.contigs[0].seq_id,
-                reversed: true,
-                assemblyName: genomeMeta.assembly_name,
-            },
-        ]
-        : genomeMeta.contigs.map(contig => ({
-            refName: contig.seq_id,
-            start: 0,
-            end: contig.length,
-            reversed: false,
-            assemblyName: genomeMeta.assembly_name,
-        }));
+    const displayedRegions = genomeMeta.contigs.map(contig => ({
+        refName: contig.seq_id,
+        start: 0,
+        end: contig.length,
+        reversed: false,
+        assemblyName: genomeMeta.assembly_name,
+    }));
 
     return {
         name: 'Gene Viewer Session',

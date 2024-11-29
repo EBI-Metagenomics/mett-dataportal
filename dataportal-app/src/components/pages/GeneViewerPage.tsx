@@ -29,16 +29,15 @@ const GeneViewerPage: React.FC = () => {
     useEffect(() => {
         const fetchGeneAndGenomeMeta = async () => {
             try {
-                console.log('11111111 gene_id: ' + geneId);
                 if (geneId) {
                     const geneResponse = await fetchGeneById(Number(geneId));
                     setGeneMeta(geneResponse);
 
                     const genomeResponse = await fetchGenomeByStrainIds([geneResponse.strain_id]);
-                    setGenomeMeta(genomeResponse[0]); // Access the first item
+                    setGenomeMeta(genomeResponse[0]);
                 } else if (strainName) {
                     const genomeResponse = await fetchGenomeByIsolateNames([strainName]);
-                    setGenomeMeta(genomeResponse[0]); // Access the first item
+                    setGenomeMeta(genomeResponse[0]);
                 }
             } catch (error) {
                 console.error('Error fetching gene/genome meta information', error);
@@ -102,9 +101,23 @@ const GeneViewerPage: React.FC = () => {
 
     const localViewState = useGeneViewerState(assembly, tracks, sessionConfig);
 
+    useEffect(() => {
+        if (localViewState && geneMeta) {
+            const linearGenomeView = localViewState.session.views[0];
+
+            if (linearGenomeView && linearGenomeView.type === 'LinearGenomeView') {
+                const locationString = `${geneMeta.seq_id}:${geneMeta.start_position}..${geneMeta.end_position}`;
+
+                // Navigate to the gene location
+                linearGenomeView.navToLocString(locationString);
+            }
+        }
+    }, [localViewState, geneMeta]);
+
     if (!localViewState) {
         return <p>Loading Genome Viewer...</p>;
     }
+
 
     const handleGeneSearch = async () => {
         if (genomeMeta?.id) {
