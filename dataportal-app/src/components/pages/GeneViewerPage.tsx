@@ -108,7 +108,7 @@ const GeneViewerPage: React.FC = () => {
             try {
                 // const {pluginManager} = viewState.jbrowse;
 
-                const widgetType = viewState?.pluginManager.getWidgetType('EnhancedFeatureDetailsWidget');
+                const widgetType = viewState?.pluginManager.getWidgetType('BaseFeatureWidget');
                 console.log('****Widget Type:', widgetType);
                 console.log('****Loaded plugins:', viewState.pluginManager.plugins);
 

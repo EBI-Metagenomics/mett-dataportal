@@ -2,7 +2,10 @@ import {useEffect, useState} from 'react';
 import {createViewState} from '@jbrowse/react-app';
 import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
 import {createRoot, hydrateRoot} from 'react-dom/client';
-import CustomFeatureDetailsPlugin from '@components/organisms/GeneViewer/CustomFeatureDetailsPlugin';
+import CustomAMRDetailsPlugin from '@components/organisms/GeneViewer/CustomAMRDetailsPlugin';
+import CustomFeatureDetailsPlugin from "@components/organisms/GeneViewer/CustomFeatureDetailsPlugin";
+import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
+import Plugin from '@jbrowse/core/Plugin';
 
 
 interface Track {
@@ -17,6 +20,13 @@ interface Track {
 
     [key: string]: any;
 }
+
+type PluginConstructor = new (...args: any[]) => Plugin;
+
+function isPluginConstructor(value: any): value is typeof Plugin {
+    return value && value.prototype instanceof Plugin;
+}
+
 
 // Custom hook for initializing JBrowse state
 const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any) => {
@@ -39,14 +49,16 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                     defaultSession: defaultSession || undefined,
                 };
 
+                const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
+                    .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
+
                 const state = createViewState({
                     config,
-                    plugins: [CustomFeatureDetailsPlugin],
+                    plugins: [CustomFeatureDetailsPlugin, CustomAMRDetailsPlugin, ...corePluginConstructors],
                     hydrateFn: hydrateRoot,
                     createRootFn: createRoot,
                     makeWorkerInstance,
                     onChange: (patch, reversePatch) => {
-                        // Optional: handle state changes
                         console.log('State changed', patch);
                     }
                 });
@@ -56,7 +68,7 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                 const session = state.session;
 
                 // Add the widget manually for testing //todo important implementation for new widget plugin
-                // const testWidget = session.addWidget('EnhancedFeatureDetailsWidget', 'enhancedFeatureDetailsWidget', {
+                // const testWidget = session.addWidget('AMRDetailsWidget', 'amrDetailsWidget', {
                 //     featureData: {testKey: 'testValue'},
                 // });
                 // session.showWidget(testWidget);
