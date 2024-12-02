@@ -1,7 +1,9 @@
 import {useEffect, useState} from 'react';
-import {createViewState} from '@jbrowse/react-app'
-import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance'
-import {createRoot, hydrateRoot} from "react-dom/client";
+import {createViewState} from '@jbrowse/react-app';
+import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
+import {createRoot, hydrateRoot} from 'react-dom/client';
+import CustomFeatureDetailsPlugin from '@components/organisms/GeneViewer/CustomFeatureDetailsPlugin';
+
 
 interface Track {
     type: string;
@@ -16,45 +18,50 @@ interface Track {
     [key: string]: any;
 }
 
-// GenStateViewer custom hook
+// Custom hook for initializing JBrowse state
 const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any) => {
     const [viewState, setViewState] = useState<ReturnType<typeof createViewState> | null>(null);
+    const [initializationError, setInitializationError] = useState<Error | null>(null);
 
     useEffect(() => {
         const initialize = async () => {
             try {
-                console.log('Initializing JBrowse with assembly:', assembly);
-                console.log('Tracks before initializing state:', tracks);
-                console.log('DefaultSession before initializing state:', defaultSession);
-
                 if (!assembly) {
-                    throw new Error("Assembly configuration is missing.");
+                    throw new Error('Assembly configuration is missing.');
                 }
 
-                const config: any = {
+                const config = {
                     assemblies: [assembly],
-                    tracks: tracks.map((track: Track) => ({
+                    tracks: tracks.map((track) => ({
                         ...track,
                         visible: true,
                     })),
+                    defaultSession: defaultSession || undefined,
                 };
-
-                // Conditionally add defaultSession if available
-                if (defaultSession) {
-                    config.defaultSession = defaultSession;
-                }
 
                 const state = createViewState({
                     config,
+                    plugins: [CustomFeatureDetailsPlugin],
                     hydrateFn: hydrateRoot,
                     createRootFn: createRoot,
                     makeWorkerInstance,
+                    onChange: (patch, reversePatch) => {
+                        // Optional: handle state changes
+                        console.log('State changed', patch);
+                    }
                 });
 
-                const model = state.session.views[0];
-                //model.activateTrackSelector(); //uncomment to show trackselector at start
                 setViewState(state);
 
+                const session = state.session;
+
+                // Add the widget manually for testing //todo important implementation for new widget plugin
+                // const testWidget = session.addWidget('EnhancedFeatureDetailsWidget', 'enhancedFeatureDetailsWidget', {
+                //     featureData: {testKey: 'testValue'},
+                // });
+                // session.showWidget(testWidget);
+
+                // Assembly loading
                 const assemblyManager = state.assemblyManager;
                 const assemblyInstance = assemblyManager.get(assembly.name);
 
@@ -62,14 +69,15 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                     await assemblyInstance.load();
                 }
             } catch (error) {
-                console.error('Error during JBrowse initialization:', error);
+                console.error('Comprehensive JBrowse initialization error:', error);
+                setInitializationError(error instanceof Error ? error : new Error(String(error)));
             }
         };
 
         initialize();
     }, [assembly, tracks, defaultSession]);
 
-    return viewState;
+    return {viewState, initializationError};
 };
 
 export default useGeneViewerState;

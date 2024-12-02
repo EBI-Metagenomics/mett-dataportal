@@ -11,6 +11,7 @@ import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
 import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "@components/interfaces/Genome";
 import {GeneMeta} from "@components/interfaces/Gene";
+import EnhancedFeatureDetails from "@components/organisms/GeneViewer/EnhancedFeatureDetails";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -99,22 +100,35 @@ const GeneViewerPage: React.FC = () => {
         return () => clearInterval(checkAssemblyReady);
     }, [assembly]);
 
-    const localViewState = useGeneViewerState(assembly, tracks, sessionConfig);
+    // const localViewState = useGeneViewerState(assembly, tracks, sessionConfig).viewState;
+    const {viewState, initializationError} = useGeneViewerState(assembly, tracks, sessionConfig);
 
     useEffect(() => {
-        if (localViewState && geneMeta) {
-            const linearGenomeView = localViewState.session.views[0];
+        if (viewState && geneMeta) {
+            try {
+                // const {pluginManager} = viewState.jbrowse;
 
-            if (linearGenomeView && linearGenomeView.type === 'LinearGenomeView') {
-                const locationString = `${geneMeta.seq_id}:${geneMeta.start_position}..${geneMeta.end_position}`;
+                const widgetType = viewState?.pluginManager.getWidgetType('EnhancedFeatureDetailsWidget');
+                console.log('****Widget Type:', widgetType);
+                console.log('****Loaded plugins:', viewState.pluginManager.plugins);
 
-                // Navigate to the gene location
-                linearGenomeView.navToLocString(locationString);
+                // Navigation logic
+                const linearGenomeView = viewState.session.views[0];
+                if (linearGenomeView?.type === 'LinearGenomeView') {
+                    try {
+                        const locationString = `${geneMeta.seq_id}:${geneMeta.start_position}..${geneMeta.end_position}`;
+                        linearGenomeView.navToLocString(locationString);
+                    } catch (navError) {
+                        console.error('Navigation error:', navError);
+                    }
+                }
+            } catch (error) {
+                console.error('Error setting up feature details:', error);
             }
         }
-    }, [localViewState, geneMeta]);
+    }, [viewState, geneMeta]);
 
-    if (!localViewState) {
+    if (!viewState) {
         return <p>Loading Genome Viewer...</p>;
     }
 
@@ -221,10 +235,12 @@ const GeneViewerPage: React.FC = () => {
                 </section>
                 {/* JBrowse Component Section */}
                 <div style={{paddingTop: '20px', height: '425px'}}>
-                    {localViewState ? (
+                    {viewState ? (
                         <div className={styles.jbrowseViewer}>
                             <div className={styles.jbrowseContainer}>
-                                <JBrowseApp viewState={localViewState}/>
+                                <JBrowseApp viewState={viewState}
+
+                                />
                             </div>
                         </div>
                     ) : (
@@ -245,7 +261,7 @@ const GeneViewerPage: React.FC = () => {
                             sortField={sortField}
                             sortOrder={sortOrder}
                             linkData={linkData}
-                            viewState={localViewState}
+                            viewState={viewState}
                         />
                     </section>
                 </div>
