@@ -176,7 +176,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         setIsolateName(suggestion.isolate_name);
         setSelectedStrainId(suggestion.strain_id);
         setSuggestions([]);
-        onGenomeSelect({id: suggestion.strain_id, name: suggestion.isolate_name});
+        // EMG-7006 - no auto selection of filters
+        //onGenomeSelect({id: suggestion.strain_id, name: suggestion.isolate_name});
     };
 
 

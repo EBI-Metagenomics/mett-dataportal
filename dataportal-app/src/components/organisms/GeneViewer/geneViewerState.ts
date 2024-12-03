@@ -54,7 +54,7 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
 
                 const state = createViewState({
                     config,
-                    plugins: [CustomFeatureDetailsPlugin, CustomAMRDetailsPlugin, ...corePluginConstructors],
+                    // plugins: [CustomFeatureDetailsPlugin, CustomAMRDetailsPlugin, ...corePluginConstructors],
                     hydrateFn: hydrateRoot,
                     createRootFn: createRoot,
                     makeWorkerInstance,
