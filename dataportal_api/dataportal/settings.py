@@ -79,6 +79,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+MIDDLEWARE += ["dataportal.middleware.RemoveCOOPHeaderMiddleware"]
+
 if DEBUG:
     MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
 

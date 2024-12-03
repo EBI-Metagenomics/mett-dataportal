@@ -6,7 +6,7 @@ metadata:
 data:
   DJANGO_DEBUG: "False"
   TIME_ZONE: "Europe/London"
-  ALLOWED_HOSTS: "www.gut-microbes.org,api.gut-microbes.org,ebi.ac.uk,hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk,localhost,127.0.0.1"
+  ALLOWED_HOSTS: "www.gut-microbes.org,ebi.ac.uk,hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk"
   DATA_PORTAL_URL: "127.0.0.1"
   ASSEMBLY_FTP_PATH: "https://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies"
   GFF_FTP_PATH: "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff"
@@ -14,3 +14,4 @@ data:
   REACT_APP_ENA_BASE_URL: "https://www.ebi.ac.uk/ena/browser/view/"
   REACT_APP_ASSEMBLY_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/fasta_files"
   REACT_APP_GFF_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/gff3_files"
+  HTTPS: "false"

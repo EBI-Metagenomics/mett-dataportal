@@ -1,8 +1,18 @@
-from datetime import datetime
-from ninja.middleware import Middleware
 import logging
+from datetime import datetime
+
+from django.middleware.common import MiddlewareMixin
+from ninja.middleware import Middleware
 
 logger = logging.getLogger(__name__)
+
+
+class RemoveCOOPHeaderMiddleware(MiddlewareMixin):
+    def process_response(self, request, response):
+        # Remove the Cross-Origin-Opener-Policy header if it exists
+        if "Cross-Origin-Opener-Policy" in response:
+            del response["Cross-Origin-Opener-Policy"]
+        return response
 
 
 class LoggingMiddleware(Middleware):
