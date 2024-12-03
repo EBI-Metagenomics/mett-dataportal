@@ -4,16 +4,23 @@ metadata:
   name: gutmicrobes-hl-ingress-dev
   namespace: mett-dataportal-hl-dev
   annotations:
-    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
-    - host: www.gut-microbes.org
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: mett-dataportal-react-app-svc-dev
-                port:
-                  number: 80
+  - host: www.gut-microbes.org
+    http:
+      paths:
+      - path: /api(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: mett-dataportal-api-svc-dev
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mett-dataportal-react-app-svc-dev
+            port:
+              number: 80
