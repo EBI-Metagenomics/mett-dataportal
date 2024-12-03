@@ -1,8 +1,6 @@
 import logging
 from datetime import datetime
-
 from django.middleware.common import MiddlewareMixin
-from ninja.middleware import Middleware
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +13,25 @@ class RemoveCOOPHeaderMiddleware(MiddlewareMixin):
         return response
 
 
-class LoggingMiddleware(Middleware):
-    def __init__(self):
-        pass
-
-    async def __call__(self, request, call_next):
+class LoggingMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        # Log the request details
         start_time = datetime.now()
-        logger.info(f"API accessed: {request.method} {request.url} at {start_time}")
-        response = await call_next(request)
-        end_time = datetime.now()
+        request.start_time = start_time
         logger.info(
-            f"API response: {response.status_code} {request.url} took {end_time - start_time}"
+            f"API accessed: {request.method} {request.get_full_path()} at {start_time}"
+        )
+
+    def process_response(self, request, response):
+        # Log the response details
+        end_time = datetime.now()
+        start_time = getattr(request, "start_time", None)
+        if start_time:
+            duration = end_time - start_time
+        else:
+            duration = "unknown"
+
+        logger.info(
+            f"API response: {response.status_code} {request.get_full_path()} took {duration}"
         )
         return response
