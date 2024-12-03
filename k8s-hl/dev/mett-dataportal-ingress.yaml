@@ -4,7 +4,6 @@ metadata:
   name: gutmicrobes-hl-ingress-dev
   namespace: mett-dataportal-hl-dev
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
