@@ -38,12 +38,49 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/species/",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/species/",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
+									"path": [
+										"api",
+										"species",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Species-List-Positive Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Array length is greater than or equal to 2\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.be.at.least(2); ",
+											"});",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/species/",
+									"host": [
+										"{{mett-current}}"
+									],
 									"path": [
 										"api",
 										"species",
@@ -89,12 +126,10 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/autocomplete?query=bu&limit=5",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/autocomplete?query=bu&limit=5",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -141,12 +176,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/autocomplete?query=bu&limit=10",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/autocomplete?query=bu&limit=10",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -193,12 +226,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/autocomplete?query=bu&species_id=1&limit=5",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/autocomplete?query=bu&species_id=1&limit=5",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -236,7 +267,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].isolate_name).to.eql(\"BU_2243B\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -248,16 +279,98 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/1",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/by-ids?ids=1",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
-										"1"
+										"by-ids"
+									],
+									"query": [
+										{
+											"key": "ids",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genome-by-genome-Name-positive",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genomes/by-isolate-names?names=BU_909",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genomes",
+										"by-isolate-names"
+									],
+									"query": [
+										{
+											"key": "names",
+											"value": "BU_909"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genome-by-genome-Name-negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genomes/strain/CU_909",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genomes",
+										"strain",
+										"CU_909"
 									]
 								}
 							},
@@ -283,16 +396,243 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/9999",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/9999",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
 										"9999"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genome-multple-by-genome-IDs-positive",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Size of array\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.be.an(\"array\").lengthOf(3)",
+											"});",
+											"",
+											"pm.test(\"Name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{mett-current}}/api/genomes/by-ids?ids=1,2,3",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genomes",
+										"by-ids"
+									],
+									"query": [
+										{
+											"key": "ids",
+											"value": "1,2,3"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genome-multple-by-genome-IDs-single-positive",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{mett-current}}/api/genomes/by-ids?ids=1",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genomes",
+										"by-ids"
+									],
+									"query": [
+										{
+											"key": "ids",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genome-multple-by-isolate-names-positive",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{mett-current}}/api/genomes/by-isolate-names?names=BU_ATCC8492,PV_ATCC8482",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genomes",
+										"by-isolate-names"
+									],
+									"query": [
+										{
+											"key": "names",
+											"value": "BU_ATCC8492,PV_ATCC8482"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genome-multple-by-isolate-names-single-positive",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{mett-current}}/api/genomes/by-isolate-names?names=BU_ATCC8492",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genomes",
+										"by-isolate-names"
+									],
+									"query": [
+										{
+											"key": "names",
+											"value": "BU_ATCC8492"
+										}
 									]
 								}
 							},
@@ -323,12 +663,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/?page=1&per_page=25",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/?page=1&per_page=5",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -341,7 +679,7 @@
 										},
 										{
 											"key": "per_page",
-											"value": "25"
+											"value": "5"
 										}
 									]
 								}
@@ -374,12 +712,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/type-strains",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/type-strains",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -414,12 +750,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/?page=-1&per_page=-1",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/?page=-1&per_page=-1",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -464,12 +798,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/search?query=bu",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/search?query=bu",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -510,12 +842,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/search?query=xxx",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/search?query=xxx",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -556,12 +886,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/species/1/genomes",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/species/1/genomes",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"species",
@@ -597,12 +925,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/species/9999/genomes",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/species/9999/genomes",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"species",
@@ -638,12 +964,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/species/2/genomes/search?query=pv&page=3",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/species/2/genomes/search?query=pv&page=3",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"species",
@@ -690,12 +1014,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/species/1/genomes/search?query=pv",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/species/1/genomes/search?query=pv",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"species",
@@ -738,12 +1060,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/species/999/genomes/search?query=pv",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/species/999/genomes/search?query=pv",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"species",
@@ -791,12 +1111,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/autocomplete?species_id=1&query=dnaA",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&query=dnaA",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -841,12 +1159,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/autocomplete?genome_ids=1,2,3&query=dnaA",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/autocomplete?genome_ids=1,2,3&query=dnaA",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -891,12 +1207,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/autocomplete?species_id=1&genome_ids=2,5,7,10&query=dnaA",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=2,5,7,10&query=dnaA",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -945,12 +1259,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/431",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/431",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -980,12 +1292,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/-1",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/-1",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -1020,12 +1330,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/?page=1&per_page=10",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/?page=1&per_page=10",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -1070,12 +1378,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/search?query=dnaA",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/search?query=dnaA",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -1116,12 +1422,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/1/genes",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/1/genes",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -1157,12 +1461,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/9999/genes",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/9999/genes",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -1199,12 +1501,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/1/genes/search?query=dnaA",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/1/genes/search?query=dnaA",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -1216,6 +1516,68 @@
 										{
 											"key": "query",
 											"value": "dnaA"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "GeneSort-by-SEQID-GeneString-positive",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Results array contains exactly one record\", function () {",
+											"    const jsonData = pm.response.json(); ",
+											"    pm.expect(jsonData.results).to.be.an('array').with.lengthOf(10); ",
+											"});",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/search/filter?query=&per_page=10&sort_field=seq_id&sort_order=asc&genome_ids=4",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"search",
+										"filter"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": ""
+										},
+										{
+											"key": "per_page",
+											"value": "10"
+										},
+										{
+											"key": "sort_field",
+											"value": "seq_id"
+										},
+										{
+											"key": "sort_order",
+											"value": "asc"
+										},
+										{
+											"key": "genome_ids",
+											"value": "4"
 										}
 									]
 								}
@@ -1247,12 +1609,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genomes/999/genes/search?query=",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genomes/999/genes/search?query=",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genomes",
@@ -1295,12 +1655,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/search/filter?genome_ids=1,2,3,4,5&query=dnaA",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/search/filter?genome_ids=1,2,3,4,5&query=dnaA",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -1346,12 +1704,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/search/filter?genome_ids=1,2,3,4,5&query=",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/search/filter?genome_ids=1,2,3,4,5&query=",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -1397,12 +1753,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/search/filter?genome_ids=&query=",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/search/filter?genome_ids=&query=",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -1448,12 +1802,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/search/filter?species_id=1&genome_ids=1,2,3,4,5&query=dnaA",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/search/filter?species_id=1&genome_ids=1,2,3,4,5&query=dnaA",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -1503,12 +1855,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/search/filter?species_id=1&query=dna",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/search/filter?species_id=1&query=dna",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
@@ -1554,12 +1904,10 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8000/api/genes/search/filter?query=dna",
-									"protocol": "http",
+									"raw": "{{mett-current}}/api/genes/search/filter?query=dna",
 									"host": [
-										"localhost"
+										"{{mett-current}}"
 									],
-									"port": "8000",
 									"path": [
 										"api",
 										"genes",
