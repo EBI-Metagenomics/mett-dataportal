@@ -218,7 +218,7 @@ const HomePage: React.FC = () => {
             <div>
                 <HomePageHeadBand
                     typeStrains={typeStrains}
-                    linkTemplate="http://localhost:3000/genome/$strain_name"
+                    linkTemplate="/genome/$strain_name"
                 />
             </div>
 
