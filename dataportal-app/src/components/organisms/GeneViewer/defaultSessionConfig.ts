@@ -1,7 +1,6 @@
 import {GeneMeta} from "@components/interfaces/Gene";
 import {GenomeMeta} from "@components/interfaces/Genome";
 
-
 const getDefaultSessionConfig = (
     geneMeta: GeneMeta | null,
     genomeMeta: GenomeMeta | null,
@@ -23,12 +22,26 @@ const getDefaultSessionConfig = (
 
     return {
         name: 'Gene Viewer Session',
+        configuration: {
+            header: {
+                disable: true,
+                hidden: true,
+            },
+        },
         margin: 0,
         views: [
             {
                 id: 'linearGenomeView',
                 minimized: false,
                 type: 'LinearGenomeView',
+                hideHeader: true,
+                configuration: {
+                    // Add an extra configuration to hide header
+                    header: {
+                        hidden: true,
+                        disable: true
+                    }
+                },
                 hideTrackSelector: true,
                 displayedRegions: displayedRegions,
                 tracks: [
@@ -58,8 +71,7 @@ const getDefaultSessionConfig = (
                         displays: track.displays,
                     })),
                 ],
-                hideHeader: true,
-                hideHeaderOverview: false,
+                hideHeaderOverview: true,
                 hideNoTracksActive: false,
                 trackSelectorType: 'hierarchical',
                 trackLabels: 'offset',
@@ -67,8 +79,7 @@ const getDefaultSessionConfig = (
                 showCytobandsSetting: true,
                 showGridlines: true,
                 scale: 1,
-                bpPerPx: 2
-
+                bpPerPx: 2,
             },
         ],
     };
