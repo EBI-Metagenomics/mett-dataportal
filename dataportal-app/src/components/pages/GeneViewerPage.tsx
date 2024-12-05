@@ -73,7 +73,7 @@ const GeneViewerPage: React.FC = () => {
                 views: [
                     {
                         type: "LinearGenomeView",
-                        bpPerPx: 1,
+                        bpPerPx: 2,
                         tracks: tracks,
                         displayedRegions: [
                             {
@@ -109,8 +109,8 @@ const GeneViewerPage: React.FC = () => {
                 // const {pluginManager} = viewState.jbrowse;
 
                 const widgetType = viewState?.pluginManager.getWidgetType('BaseFeatureWidget');
-                console.log('****Widget Type:', widgetType);
-                console.log('****Loaded plugins:', viewState.pluginManager.plugins);
+                // console.log('****Widget Type:', widgetType);
+                // console.log('****Loaded plugins:', viewState.pluginManager.plugins);
 
                 // Navigation logic
                 const linearGenomeView = viewState.session.views[0];
@@ -164,7 +164,7 @@ const GeneViewerPage: React.FC = () => {
             </p></span>
             </div>
 
-            <section className="vf-u-fullbleed">
+            <section>
                 {/* Breadcrumb Section */}
                 <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
                     <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
@@ -175,22 +175,22 @@ const GeneViewerPage: React.FC = () => {
                         <li className={styles.breadcrumbsItem}>
                             <b>Genome View</b>
                         </li>
-                        <span className={styles.separator}> | </span>
-                        {genomeMeta ? (
-                            <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
-                                <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
-                                    Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
-                                </a>
-                                <ul className={styles.dropdownList}>
-                                    <li className={styles.dropdownItem}>
-                                        <a href={`/home?speciesId=${genomeMeta.species_id}`}
-                                           className={styles.dropdownLink}>Other Strains
-                                            of <i>{genomeMeta.species}</i></a>
-                                    </li>
-                                </ul>
-                            </li>
-                        ) : (
-                            <p>Loading genome meta information...</p>)}
+                        {/*<span className={styles.separator}> | </span>*/}
+                        {/*{genomeMeta ? (*/}
+                        {/*    <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>*/}
+                        {/*        <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">*/}
+                        {/*            Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>*/}
+                        {/*        </a>*/}
+                        {/*        <ul className={styles.dropdownList}>*/}
+                        {/*            <li className={styles.dropdownItem}>*/}
+                        {/*                <a href={`/home?speciesId=${genomeMeta.species_id}`}*/}
+                        {/*                   className={styles.dropdownLink}>Other Strains*/}
+                        {/*                    of <i>{genomeMeta.species}</i></a>*/}
+                        {/*            </li>*/}
+                        {/*        </ul>*/}
+                        {/*    </li>*/}
+                        {/*) : (*/}
+                        {/*    <p>Loading genome meta information...</p>)}*/}
                     </ul>
                 </nav>
 

@@ -67,7 +67,7 @@ const getDefaultSessionConfig = (
                 showCytobandsSetting: true,
                 showGridlines: true,
                 scale: 1,
-                bpPerPx: 0.5
+                bpPerPx: 2
 
             },
         ],

@@ -58,9 +58,9 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                     hydrateFn: hydrateRoot,
                     createRootFn: createRoot,
                     makeWorkerInstance,
-                    onChange: (patch, reversePatch) => {
-                        console.log('State changed', patch);
-                    }
+                    // onChange: (patch, reversePatch) => {
+                    //     console.log('State changed', patch);
+                    // }
                 });
 
                 setViewState(state);
