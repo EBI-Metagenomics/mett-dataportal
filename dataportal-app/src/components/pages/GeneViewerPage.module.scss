@@ -113,25 +113,46 @@ div[class*="css-1r54kk3-root"] {
   height: 40vh !important;
 }
 
-.jbrowse-header {
+//.jbrowse-header {
+//    display: none !important;
+//}
+//div[class*="css-b6etru-MuiPaper-root-MuiAppBar-root-appBar"] {
+//  display: none !important;
+//}
+//div[class*="MuiToolbar-dense css-1900r1d-MuiToolbar-root"] {
+//  display: none !important;
+//}
+//
+//div[class*="css-b6etru-MuiPaper-root-MuiAppBar-root-appBar"] {
+//  display: none !important;
+//}
+//div[class*="css-1900r1d-MuiToolbar-root"] {
+//  display: none !important;
+//}
+//
+//div[class*="css-1uljxew-appBar"] {
+//  display: none !important;
+//}
+
+
+header.MuiAppBar-root {
     display: none !important;
 }
-div[class*="css-b6etru-MuiPaper-root-MuiAppBar-root-appBar"] {
-  display: none !important;
-}
-div[class*="MuiToolbar-dense css-1900r1d-MuiToolbar-root"] {
-  display: none !important;
+
+header[data-testid="jbrowse-header"] {
+    display: none !important;
 }
 
-div[class*="css-b6etru-MuiPaper-root-MuiAppBar-root-appBar"] {
-  display: none !important;
-}
-div[class*="css-1900r1d-MuiToolbar-root"] {
-  display: none !important;
+header {
+    display: none !important;
 }
 
-div[class*="css-1uljxew-appBar"] {
-  display: none !important;
+.MuiAppBar-root {
+    display: none !important;
+}
+
+div.MuiToolbar-root {
+    display: none !important;
 }
 
 

@@ -5,6 +5,7 @@ import getTracks from '@components/organisms/GeneViewer/tracks';
 import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSessionConfig';
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
 import styles from "./GeneViewerPage.module.scss";
+import "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
 import {fetchGenomeByIsolateNames, fetchGenomeByStrainIds} from "../../services/genomeService";
 import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
