@@ -3,6 +3,7 @@ import styles from './GeneResultsTable.module.scss';
 import {createViewState} from '@jbrowse/react-app';
 import {LinkData} from "@components/interfaces/Auxiliary";
 import {GeneMeta} from "@components/interfaces/Gene";
+import {ZOOM_LEVELS} from "../../../utils/appConstants";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -29,6 +30,10 @@ const handleNavigation = (
     console.log("View Object:", view);
     if (view && typeof view.navToLocString === 'function') {
         view.navToLocString(`${contig}:${start}..${end}`);
+        setTimeout(() => {
+            view.zoomTo(ZOOM_LEVELS.DEFAULT);
+            console.log('Zoom applied');
+        }, 200);
     } else {
         console.error("navToLocString is not available on the view object");
     }

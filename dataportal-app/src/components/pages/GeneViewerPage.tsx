@@ -12,7 +12,8 @@ import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
 import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "@components/interfaces/Genome";
 import {GeneMeta} from "@components/interfaces/Gene";
-import EnhancedFeatureDetails from "@components/organisms/GeneViewer/EnhancedFeatureDetails";
+import {DisplayedRegion} from "@components/interfaces/jbrowse";
+import {ZOOM_LEVELS} from "../../utils/appConstants";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -101,33 +102,67 @@ const GeneViewerPage: React.FC = () => {
         return () => clearInterval(checkAssemblyReady);
     }, [assembly]);
 
+
     // const localViewState = useGeneViewerState(assembly, tracks, sessionConfig).viewState;
     const {viewState, initializationError} = useGeneViewerState(assembly, tracks, sessionConfig);
 
     useEffect(() => {
-        if (viewState && geneMeta) {
-            try {
-                // const {pluginManager} = viewState.jbrowse;
-
-                const widgetType = viewState?.pluginManager.getWidgetType('BaseFeatureWidget');
-                // console.log('****Widget Type:', widgetType);
-                // console.log('****Loaded plugins:', viewState.pluginManager.plugins);
-
-                // Navigation logic
+        const waitForInitialization = async () => {
+            if (viewState && geneMeta) {
                 const linearGenomeView = viewState.session.views[0];
+
                 if (linearGenomeView?.type === 'LinearGenomeView') {
-                    try {
-                        const locationString = `${geneMeta.seq_id}:${geneMeta.start_position}..${geneMeta.end_position}`;
-                        linearGenomeView.navToLocString(locationString);
-                    } catch (navError) {
-                        console.error('Navigation error:', navError);
-                    }
+                    console.log('Waiting for LinearGenomeView to initialize...');
+
+                    // Wait until linearGenomeView.initialized
+                    const waitForReady = async () => {
+                        const maxRetries = 1; // Retry for a maximum of 2 times (200 milliseconds)
+                        let retries = 0;
+
+                        while (!linearGenomeView.initialized && retries < maxRetries) {
+                            console.log(`Retry ${retries + 1}: LinearGenomeView not initialized yet.`);
+                            await new Promise(resolve => setTimeout(resolve, 200)); // Wait 100ms
+                            retries++;
+                        }
+
+                        if (!linearGenomeView.initialized) {
+                            console.error('LinearGenomeView failed to initialize within the timeout period.');
+                            return;
+                        }
+
+                        // Once initialized, execute the navigation and zoom logic
+                        console.log('LinearGenomeView initialized:', linearGenomeView.initialized);
+
+                        try {
+                            const locationString = `${geneMeta.seq_id}:${geneMeta.start_position}..${geneMeta.end_position}`;
+                            // console.log('Navigating to:', locationString);
+
+                            // Perform navigation
+                            linearGenomeView.navToLocString(locationString);
+
+                            // Apply zoom with a delay
+                            setTimeout(() => {
+                                linearGenomeView.zoomTo(ZOOM_LEVELS.DEFAULT);
+                                console.log('Zoom applied');
+                            }, 200);
+
+                        } catch (error) {
+                            console.error('Error during navigation or zoom:', error);
+                        }
+                    };
+
+                    await waitForReady();
+                } else {
+                    console.error('LinearGenomeView not found or of incorrect type.');
                 }
-            } catch (error) {
-                console.error('Error setting up feature details:', error);
+            } else {
+                console.log('viewState or geneMeta not ready.');
             }
-        }
+        };
+
+        waitForInitialization();
     }, [viewState, geneMeta]);
+
 
     if (!viewState) {
         return <p>Loading Genome Viewer...</p>;
