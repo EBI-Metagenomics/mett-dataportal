@@ -11,7 +11,7 @@ class Command(BaseCommand):
             "--csv",
             type=str,
             help="Path to the CSV file containing species data",
-            default="./data-generators/data/species.csv",
+            default="../data-generators/data/species.csv",
         )
 
     def handle(self, *args, **kwargs):

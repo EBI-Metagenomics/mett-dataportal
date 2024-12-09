@@ -24,7 +24,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--csv",
             type=str,
-            default="./data-generators/data/gff-assembly-prefixes.tsv",
+            default="../data-generators/data/gff-assembly-prefixes.tsv",
         )
         parser.add_argument(
             "--set-type-strains",
