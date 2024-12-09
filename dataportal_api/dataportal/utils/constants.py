@@ -22,6 +22,7 @@ GENE_FIELD_EC_NUMBER = "ec_number"
 GENE_FIELD_START_POS = "start_position"
 GENE_FIELD_END_POS = "end_position"
 GENE_FIELD_ANNOTATIONS = "annotations"
+GENE_ESSENTIALITY_DATA = "essentiality_data"
 
 GENE_DEFAULT_SORT_FIELD = "gene_name"
 GENE_SORT_FIELD_STRAIN = "strain"

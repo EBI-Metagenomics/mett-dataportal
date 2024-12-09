@@ -59,6 +59,11 @@ class GeneAutocompleteResponseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class GeneEssentialitySchema(BaseModel):
+    media: str
+    essentiality: str
+
+
 class GeneResponseSchema(BaseModel):
     id: int
     seq_id: Optional[str] = None
@@ -78,6 +83,7 @@ class GeneResponseSchema(BaseModel):
     start_position: Optional[int] = None
     end_position: Optional[int] = None
     annotations: Optional[dict] = None
+    essentiality_data: Optional[List[GeneEssentialitySchema]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
