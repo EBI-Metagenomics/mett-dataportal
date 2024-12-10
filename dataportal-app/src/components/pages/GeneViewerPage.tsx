@@ -10,9 +10,9 @@ import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
 import {fetchGenomeByIsolateNames, fetchGenomeByStrainIds} from "../../services/genomeService";
 import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
 import {JBrowseApp} from "@jbrowse/react-app";
-import {GenomeMeta} from "@components/interfaces/Genome";
-import {GeneMeta} from "@components/interfaces/Gene";
-import {DisplayedRegion} from "@components/interfaces/jbrowse";
+import {GenomeMeta} from "../../interfaces/Genome";
+import {GeneMeta} from "../../interfaces/Gene";
+import {DisplayedRegion} from "../../interfaces/jbrowse";
 import {ZOOM_LEVELS} from "../../utils/appConstants";
 
 const GeneViewerPage: React.FC = () => {

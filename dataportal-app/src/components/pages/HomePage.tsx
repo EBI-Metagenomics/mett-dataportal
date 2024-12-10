@@ -7,7 +7,7 @@ import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeServi
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
-import {GenomeMeta} from "@components/interfaces/Genome";
+import {GenomeMeta} from "../../interfaces/Genome";
 
 // Define the type for each tab
 interface Tab {

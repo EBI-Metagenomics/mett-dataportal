@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import styles from "@components/organisms/GeneSearch/GeneSearchInput.module.scss";
 import {Autocomplete, TextField} from "@mui/material";
-import {GeneSuggestion} from "@components/interfaces/Gene";
+import {GeneSuggestion} from "../../../interfaces/Gene";
 
 interface GeneSearchInputProps {
     query: string;

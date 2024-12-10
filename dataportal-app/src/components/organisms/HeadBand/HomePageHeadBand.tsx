@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './HomePageHeadBand.module.scss';
-import {GenomeMeta} from "@components/interfaces/Genome";
+import {GenomeMeta} from "../../../interfaces/Genome";
 
 
 interface HomePageHeadBandProps {

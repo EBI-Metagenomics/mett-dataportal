@@ -25,6 +25,12 @@ export interface GeneMeta {
     essentiality_data: GeneEssentiality[] | null;
 }
 
+export interface Gene {
+    id: number;
+    name: string;
+    description: string;
+}
+
 export interface GeneSuggestion {
     gene_id: number;
     gene_name: string | '';

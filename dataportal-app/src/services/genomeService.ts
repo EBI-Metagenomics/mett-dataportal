@@ -1,6 +1,6 @@
 import {getData} from './api';
 import apiInstance from "./apiInstance";
-import {GenomeMeta, GenomeResponse} from "@components/interfaces/Genome";
+import {GenomeMeta, GenomeResponse} from "../interfaces/Genome";
 
 interface AutocompleteResponse {
     data: string[];

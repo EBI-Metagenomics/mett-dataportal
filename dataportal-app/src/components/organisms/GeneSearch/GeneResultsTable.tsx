@@ -1,8 +1,8 @@
 import React, {useState} from 'react';
 import styles from './GeneResultsTable.module.scss';
 import {createViewState} from '@jbrowse/react-app';
-import {LinkData} from "@components/interfaces/Auxiliary";
-import {GeneMeta} from "@components/interfaces/Gene";
+import {LinkData} from "../../../interfaces/Auxiliary";
+import {GeneMeta} from "../../../interfaces/Gene";
 import {ZOOM_LEVELS} from "../../../utils/appConstants";
 
 type ViewModel = ReturnType<typeof createViewState>;

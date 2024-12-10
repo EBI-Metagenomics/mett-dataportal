@@ -1,5 +1,5 @@
-import {GeneMeta} from "@components/interfaces/Gene";
-import {GenomeMeta} from "@components/interfaces/Genome";
+import {GeneMeta} from "../../../interfaces/Gene";
+import {GenomeMeta} from "../../../interfaces/Genome";
 
 const getDefaultSessionConfig = (
     geneMeta: GeneMeta | null,

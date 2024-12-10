@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import styles from './GenomeResultsTable.module.scss';
-import {LinkData} from "@components/interfaces/Auxiliary";
+import {LinkData} from "../../../interfaces/Auxiliary";
 
 interface GenomeResultsTableProps {
     results: any[];

@@ -53,6 +53,7 @@ class GeneService:
     async def autocomplete_gene_suggestions(
         self,
         query: str,
+        filter: Optional[str] = None,
         limit: int = None,
         species_id: Optional[int] = None,
         genome_ids: Optional[List[int]] = None,
@@ -69,12 +70,16 @@ class GeneService:
                 | Q(**{f"{GENE_FIELD_INTERPRO}__icontains": query})
                 | Q(**{f"{GENE_FIELD_DBXREF}__icontains": query})
             )
-
-            # Add optional filters for species_id and genome_ids
             if species_id:
                 gene_filter &= Q(strain__species_id=species_id)
             if genome_ids:
                 gene_filter &= Q(strain_id__in=genome_ids)
+
+            # Parse additional filters and apply only if strain is a type strain
+            parsed_filters = self._parse_filters(filter)
+            gene_filter = self._apply_filters_for_type_strain(
+                gene_filter, parsed_filters
+            )
 
             logger.debug(
                 f"Query: {query}, Species ID: {species_id}, Genome IDs: {genome_ids}"
@@ -147,9 +152,10 @@ class GeneService:
             logger.error(f"Error in get_all_genes: {e}")
             raise ServiceError(e)
 
-    async def search_genes(
+    async def search_genes_by_genome_and_string(
         self,
         query: str = None,
+        filter: Optional[str] = None,
         genome_id: Optional[int] = None,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
@@ -179,14 +185,23 @@ class GeneService:
     async def get_genes_by_genome(
         self,
         genome_id: int,
+        filter: Optional[str] = None,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
         sort_field: Optional[str] = None,
         sort_order: Optional[str] = SORT_ASC,
     ) -> GenePaginationSchema:
         try:
+            gene_filter = Q(strain_id=genome_id)
+
+            # Parse additional filters and apply only if strain is a type strain
+            parsed_filters = self._parse_filters(filter)
+            gene_filter = self._apply_filters_for_type_strain(
+                gene_filter, parsed_filters
+            )
+
             genes, total_results = await self._fetch_paginated_genes(
-                Q(strain_id=genome_id), page, per_page, sort_field, sort_order
+                gene_filter, page, per_page, sort_field, sort_order
             )
             serialized_genes = [self._serialize_gene(gene) for gene in genes]
             return self._create_pagination_schema(
@@ -217,6 +232,7 @@ class GeneService:
         genome_ids: str = None,
         species_id: Optional[int] = None,
         query: str = None,
+        filter: Optional[str] = None,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
         sort_field: Optional[str] = None,
@@ -236,6 +252,10 @@ class GeneService:
                 filters &= Q(strain_id__in=genome_id_list)
             if species_id:
                 filters &= Q(strain__species_id=species_id)
+
+            # Parse additional filters and apply only if strain is a type strain
+            parsed_filters = self._parse_filters(filter)
+            filters = self._apply_filters_for_type_strain(filters, parsed_filters)
 
             # Add gene search filters if query is provided
             if query:
@@ -328,6 +348,41 @@ class GeneService:
                 GENE_ESSENTIALITY_DATA: essentiality_data,
             }
         )
+
+    def _parse_filters(self, filter_str: Optional[str]) -> Dict[str, str]:
+        if not filter_str:
+            return {}
+
+        filters = {}
+        try:
+            for pair in filter_str.split(","):
+                key, value = pair.split(":", 1)
+                filters[key.strip()] = value.strip()
+        except ValueError:
+            logger.error(f"Invalid filter format: {filter_str}")
+            raise ServiceError(
+                "Invalid filter format. Use 'key:value' pairs separated by commas."
+            )
+
+        return filters
+
+    def _apply_essentiality_filter(self, query: Q, essentiality_value: str) -> Q:
+        return query & Q(
+            essentiality_data__media="solid",
+            essentiality_data__essentiality=essentiality_value,
+        )
+
+    def _apply_filters_for_type_strain(self, query: Q, filters: Dict[str, str]) -> Q:
+        if filters:
+            query &= Q(strain__type_strain=True)
+
+            for key, value in filters.items():
+                if key == "essentiality":
+                    query = self._apply_essentiality_filter(query, value)
+                else:
+                    query &= Q(**{f"{key}__icontains": value})
+
+        return query
 
     def _create_pagination_schema(
         self, serialized_genes, page, per_page, total_results

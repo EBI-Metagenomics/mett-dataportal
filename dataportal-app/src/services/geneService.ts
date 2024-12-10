@@ -1,13 +1,6 @@
 import apiInstance from "./apiInstance";
 import {getData} from "./api";
-import {GeneSuggestion} from "@components/interfaces/Gene";
-
-// Define types/interfaces for better type safety
-interface Gene {
-    id: number;
-    name: string;
-    description: string;
-}
+import {GeneSuggestion, Gene} from "../interfaces/Gene";
 
 interface PaginatedResponse<T> {
     results: T[];
@@ -70,7 +63,7 @@ export const fetchGeneSearchResults = async (
             params.append('species_id', String(selectedSpecies));
         }
 
-        const response = await apiInstance.get(`/genes/search/filter`, {params});
+        const response = await apiInstance.get(`/genes/search/advanced`, {params});
         return response.data;
     } catch (error) {
         console.error('Error fetching gene search results:', error);

@@ -8,7 +8,7 @@ import {
     fetchGenomeByStrainIds,
     fetchGenomeSearchResults
 } from "../../../services/genomeService";
-import {LinkData} from "@components/interfaces/Auxiliary";
+import {LinkData} from "../../../interfaces/Auxiliary";
 
 interface SearchGenomeFormProps {
     searchQuery: string;

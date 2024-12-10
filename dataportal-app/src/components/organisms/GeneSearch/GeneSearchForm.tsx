@@ -5,8 +5,8 @@ import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable"
 import Pagination from "@components/molecules/Pagination";
 import {fetchGeneAutocompleteSuggestions, fetchGeneSearchResults} from "../../../services/geneService";
 import {createViewState} from '@jbrowse/react-app';
-import {GeneMeta, GeneSuggestion} from "@components/interfaces/Gene";
-import {LinkData} from "@components/interfaces/Auxiliary";
+import {GeneMeta, GeneSuggestion} from "../../../interfaces/Gene";
+import {LinkData} from "../../../interfaces/Auxiliary";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
