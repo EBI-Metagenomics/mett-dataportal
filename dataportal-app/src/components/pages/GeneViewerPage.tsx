@@ -109,6 +109,7 @@ const GeneViewerPage: React.FC = () => {
     useEffect(() => {
         const waitForInitialization = async () => {
             if (viewState && geneMeta) {
+                console.log("geneMeta view state", geneMeta);
                 const linearGenomeView = viewState.session.views[0];
 
                 if (linearGenomeView?.type === 'LinearGenomeView') {
@@ -143,7 +144,7 @@ const GeneViewerPage: React.FC = () => {
                             // Apply zoom with a delay
                             setTimeout(() => {
                                 linearGenomeView.zoomTo(ZOOM_LEVELS.DEFAULT);
-                                console.log('Zoom applied');
+                                // console.log('Zoom applied');
                             }, 200);
 
                         } catch (error) {

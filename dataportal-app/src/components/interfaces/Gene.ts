@@ -1,3 +1,8 @@
+export interface GeneEssentiality {
+    media: string;
+    essentiality: string;
+}
+
 export interface GeneMeta {
     id: number;
     seq_id: string;
@@ -17,6 +22,7 @@ export interface GeneMeta {
     start_position: number | null;
     end_position: number | null;
     annotations: Record<string, any> | null;
+    essentiality_data: GeneEssentiality[] | null;
 }
 
 export interface GeneSuggestion {

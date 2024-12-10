@@ -32,7 +32,7 @@ const handleNavigation = (
         view.navToLocString(`${contig}:${start}..${end}`);
         setTimeout(() => {
             view.zoomTo(ZOOM_LEVELS.DEFAULT);
-            console.log('Zoom applied');
+            // console.log('Zoom applied');
         }, 200);
     } else {
         console.error("navToLocString is not available on the view object");
