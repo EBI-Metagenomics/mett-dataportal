@@ -10,7 +10,7 @@ import psycopg
 from decouple import Config, RepositoryEnv
 from django.core.management.base import BaseCommand
 
-config = Config(RepositoryEnv("./mett.env"))
+config = Config(RepositoryEnv("../mett.env"))
 
 logging.basicConfig(
     filename="process_gff.log",
@@ -55,7 +55,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--mapping-task-file",
             type=str,
-            default="./data-generators/data/gff-assembly-prefixes.tsv",
+            default="../data-generators/data/gff-assembly-prefixes.tsv",
         )
         parser.add_argument(
             "--isolate", type=str, help="Specific isolate to import", required=False

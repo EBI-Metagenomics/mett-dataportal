@@ -6,7 +6,8 @@ import SelectedGenomes from '../organisms/SelectedGenomes';
 import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeService';
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
-import HomeIntroSection from "@components/organisms/HomeIntroSection";
+import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
+import {GenomeMeta} from "@components/interfaces/Genome";
 
 // Define the type for each tab
 interface Tab {
@@ -42,7 +43,7 @@ const HomePage: React.FC = () => {
     const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
     const [selectedGenomes, setSelectedGenomes] = useState<{ id: number; name: string }[]>([]);
-    const [typeStrains, setTypeStrains] = useState<{ id: number; isolate_name: string }[]>([]);
+    const [typeStrains, setTypeStrains] = useState<GenomeMeta[]>([]);
     const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]);
 
     // State for Genome Search
@@ -93,30 +94,62 @@ const HomePage: React.FC = () => {
     }, [genomeSearchQuery, selectedSpecies]);
 
     const handleSpeciesSelect = (speciesId: number) => {
+        let updatedSelectedSpecies: number[];
         if (selectedSpecies.includes(speciesId)) {
-            setSelectedSpecies(selectedSpecies.filter(id => id !== speciesId));
+            updatedSelectedSpecies = selectedSpecies.filter((id) => id !== speciesId);
         } else {
-            setSelectedSpecies([...selectedSpecies, speciesId]);
+            updatedSelectedSpecies = [...selectedSpecies, speciesId];
+        }
+
+        setSelectedSpecies(updatedSelectedSpecies);
+
+        if (updatedSelectedSpecies.length === 0) {
+            setSelectedTypeStrains([]);
+        } else {
+            const validTypeStrains = typeStrains.filter((strain) =>
+                updatedSelectedSpecies.includes(strain.species_id)
+            );
+
+            // Keep only the type strains that are both valid and already selected
+            const updatedSelectedTypeStrains = selectedTypeStrains.filter((strainId) =>
+                validTypeStrains.some((strain) => strain.id === strainId)
+            );
+
+            setSelectedTypeStrains(updatedSelectedTypeStrains);
+
+            if (updatedSelectedTypeStrains.length > 0) {
+                const filteredResults = genomeResults.filter((result) =>
+                    updatedSelectedTypeStrains.includes(result.strain_id)
+                );
+                setGenomeResults(filteredResults);
+            } else {
+                handleGenomeSearch();
+            }
         }
     };
 
-    const handleTypeStrainSelect = (strainId: number) => {
+
+    const handleTypeStrainToggle = (strainId: number) => {
         let updatedSelectedTypeStrains: number[];
 
         if (selectedTypeStrains.includes(strainId)) {
-            updatedSelectedTypeStrains = selectedTypeStrains.filter(id => id !== strainId);
+            updatedSelectedTypeStrains = selectedTypeStrains.filter((id) => id !== strainId);
         } else {
             updatedSelectedTypeStrains = [...selectedTypeStrains, strainId];
         }
 
         setSelectedTypeStrains(updatedSelectedTypeStrains);
 
-        const updatedTypeStrains = typeStrains
-            .filter(strain => updatedSelectedTypeStrains.includes(strain.id))
-            .map(strain => ({id: strain.id, name: strain.isolate_name}));
-
-        setSelectedGenomes(updatedTypeStrains);
+        if (updatedSelectedTypeStrains.length > 0) {
+            const filteredResults = genomeResults.filter((result) =>
+                updatedSelectedTypeStrains.includes(result.strain_id)
+            );
+            setGenomeResults(filteredResults);
+        } else {
+            handleGenomeSearch();
+        }
     };
+
 
     const handleGenomeSearch = async (field = sortField, order = sortOrder) => {
         const response = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
@@ -183,7 +216,10 @@ const HomePage: React.FC = () => {
     return (
         <div>
             <div>
-                <HomeIntroSection/>
+                <HomePageHeadBand
+                    typeStrains={typeStrains}
+                    linkTemplate="/genome/$strain_name"
+                />
             </div>
 
             <div className="layout-container">
@@ -212,35 +248,24 @@ const HomePage: React.FC = () => {
                     <div className={styles.typeStrains}>
                         <h3>Type Strains</h3>
                         <ul>
-                            {typeStrains.map(strain => (
-                                <li key={strain.id}>
-                                    <label>
-                                        <span onClick={() => handleTypeStrainSelect(strain.id)}
-                                              style={{
-                                                  cursor: "pointer",
-                                                  display: "inline-flex",
-                                                  alignItems: "center",
-                                              }}
-                                        >
-                                            <i className={`icon icon-common ${
-                                                selectedTypeStrains.includes(strain.id)
-                                                    ? "icon-minus-circle"
-                                                    : "icon-plus-circle"
-                                            }`}
-                                               style={{
-                                                   color: selectedTypeStrains.includes(strain.id)
-                                                       ? "#B0B0B0"
-                                                       : "#007BFF",
-                                                   fontSize: "18px",
-                                                   marginRight: "8px",
-                                               }}
-                                               aria-hidden="true"
-                                            ></i>
-                                        </span>
-                                        {strain.isolate_name}
-                                    </label>
-                                </li>
-                            ))}
+                            {typeStrains.map((strain) => {
+                                const isStrainEnabled =
+                                    selectedSpecies.length === 0 || selectedSpecies.includes(strain.species_id); // Check if strain belongs to selected species
+
+                                return (
+                                    <li key={strain.id}>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedTypeStrains.includes(strain.id)}
+                                                disabled={!isStrainEnabled} // Disable checkboxes not matching selected species
+                                                onChange={() => handleTypeStrainToggle(strain.id)}
+                                            />
+                                            {strain.isolate_name}
+                                        </label>
+                                    </li>
+                                );
+                            })}
                         </ul>
                     </div>
 
@@ -259,6 +284,7 @@ const HomePage: React.FC = () => {
                             onSearchSubmit={handleGenomeSearch}
                             onGenomeSelect={handleGenomeSelect}
                             selectedSpecies={selectedSpecies}
+                            selectedTypeStrains={selectedTypeStrains}
                             onSortClick={handleGenomeSortClick}
                             sortField={sortField}
                             sortOrder={sortOrder}

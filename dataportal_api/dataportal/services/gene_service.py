@@ -30,6 +30,7 @@ from dataportal.utils.constants import (
     GENE_SORT_FIELD_STRAIN,
     GENE_SORT_FIELD_STRAIN_ISO,
     GENE_FIELD_DESCRIPTION,
+    GENE_ESSENTIALITY_DATA,
     GENE_DEFAULT_SORT_FIELD,
     DEFAULT_SORT,
     DEFAULT_PER_PAGE_CNT,
@@ -114,7 +115,10 @@ class GeneService:
         try:
             gene = await sync_to_async(
                 lambda: get_object_or_404(
-                    Gene.objects.select_related("strain"), id=gene_id
+                    Gene.objects.select_related(
+                        GENE_SORT_FIELD_STRAIN
+                    ).prefetch_related(GENE_ESSENTIALITY_DATA),
+                    id=gene_id,
                 )
             )()
             return self._serialize_gene(gene)
@@ -290,6 +294,11 @@ class GeneService:
     # helper methods
 
     def _serialize_gene(self, gene: Gene) -> dict:
+        essentiality_data = [
+            {"media": e.media, "essentiality": e.essentiality}
+            for e in gene.essentiality_data.all()
+        ]
+
         return GeneResponseSchema.model_validate(
             {
                 FIELD_ID: gene.id,
@@ -316,6 +325,7 @@ class GeneService:
                 GENE_FIELD_START_POS: gene.start_position or None,
                 GENE_FIELD_END_POS: gene.end_position or None,
                 GENE_FIELD_ANNOTATIONS: gene.annotations or {},
+                GENE_ESSENTIALITY_DATA: essentiality_data,
             }
         )
 
@@ -351,7 +361,8 @@ class GeneService:
             # paginated and sorted gene list
             genes = await sync_to_async(
                 lambda: list(
-                    Gene.objects.select_related("strain")
+                    Gene.objects.select_related(GENE_SORT_FIELD_STRAIN)
+                    .prefetch_related(GENE_ESSENTIALITY_DATA)
                     .filter(filter_criteria)
                     .order_by(sort_by)[start : start + per_page]
                 )

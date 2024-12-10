@@ -5,12 +5,15 @@ import getTracks from '@components/organisms/GeneViewer/tracks';
 import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSessionConfig';
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
 import styles from "./GeneViewerPage.module.scss";
+import "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
-import {fetchGenomeById, fetchGenomeByStrainName} from "../../services/genomeService";
+import {fetchGenomeByIsolateNames, fetchGenomeByStrainIds} from "../../services/genomeService";
 import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
 import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "@components/interfaces/Genome";
 import {GeneMeta} from "@components/interfaces/Gene";
+import {DisplayedRegion} from "@components/interfaces/jbrowse";
+import {ZOOM_LEVELS} from "../../utils/appConstants";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -29,16 +32,15 @@ const GeneViewerPage: React.FC = () => {
     useEffect(() => {
         const fetchGeneAndGenomeMeta = async () => {
             try {
-                console.log('11111111 gene_id: ' + geneId);
                 if (geneId) {
                     const geneResponse = await fetchGeneById(Number(geneId));
                     setGeneMeta(geneResponse);
 
-                    const genomeResponse = await fetchGenomeById(geneResponse.strain_id);
-                    setGenomeMeta(genomeResponse);
+                    const genomeResponse = await fetchGenomeByStrainIds([geneResponse.strain_id]);
+                    setGenomeMeta(genomeResponse[0]);
                 } else if (strainName) {
-                    const genomeResponse = await fetchGenomeByStrainName(strainName);
-                    setGenomeMeta(genomeResponse);
+                    const genomeResponse = await fetchGenomeByIsolateNames([strainName]);
+                    setGenomeMeta(genomeResponse[0]);
                 }
             } catch (error) {
                 console.error('Error fetching gene/genome meta information', error);
@@ -73,7 +75,7 @@ const GeneViewerPage: React.FC = () => {
                 views: [
                     {
                         type: "LinearGenomeView",
-                        bpPerPx: 1,
+                        bpPerPx: 2,
                         tracks: tracks,
                         displayedRegions: [
                             {
@@ -100,11 +102,73 @@ const GeneViewerPage: React.FC = () => {
         return () => clearInterval(checkAssemblyReady);
     }, [assembly]);
 
-    const localViewState = useGeneViewerState(assembly, tracks, sessionConfig);
 
-    if (!localViewState) {
+    // const localViewState = useGeneViewerState(assembly, tracks, sessionConfig).viewState;
+    const {viewState, initializationError} = useGeneViewerState(assembly, tracks, sessionConfig);
+
+    useEffect(() => {
+        const waitForInitialization = async () => {
+            if (viewState && geneMeta) {
+                console.log("geneMeta view state", geneMeta);
+                const linearGenomeView = viewState.session.views[0];
+
+                if (linearGenomeView?.type === 'LinearGenomeView') {
+                    console.log('Waiting for LinearGenomeView to initialize...');
+
+                    // Wait until linearGenomeView.initialized
+                    const waitForReady = async () => {
+                        const maxRetries = 1; // Retry for a maximum of 2 times (200 milliseconds)
+                        let retries = 0;
+
+                        while (!linearGenomeView.initialized && retries < maxRetries) {
+                            console.log(`Retry ${retries + 1}: LinearGenomeView not initialized yet.`);
+                            await new Promise(resolve => setTimeout(resolve, 200)); // Wait 100ms
+                            retries++;
+                        }
+
+                        if (!linearGenomeView.initialized) {
+                            console.error('LinearGenomeView failed to initialize within the timeout period.');
+                            return;
+                        }
+
+                        // Once initialized, execute the navigation and zoom logic
+                        console.log('LinearGenomeView initialized:', linearGenomeView.initialized);
+
+                        try {
+                            const locationString = `${geneMeta.seq_id}:${geneMeta.start_position}..${geneMeta.end_position}`;
+                            // console.log('Navigating to:', locationString);
+
+                            // Perform navigation
+                            linearGenomeView.navToLocString(locationString);
+
+                            // Apply zoom with a delay
+                            setTimeout(() => {
+                                linearGenomeView.zoomTo(ZOOM_LEVELS.DEFAULT);
+                                // console.log('Zoom applied');
+                            }, 200);
+
+                        } catch (error) {
+                            console.error('Error during navigation or zoom:', error);
+                        }
+                    };
+
+                    await waitForReady();
+                } else {
+                    console.error('LinearGenomeView not found or of incorrect type.');
+                }
+            } else {
+                console.log('viewState or geneMeta not ready.');
+            }
+        };
+
+        waitForInitialization();
+    }, [viewState, geneMeta]);
+
+
+    if (!viewState) {
         return <p>Loading Genome Viewer...</p>;
     }
+
 
     const handleGeneSearch = async () => {
         if (genomeMeta?.id) {
@@ -137,7 +201,7 @@ const GeneViewerPage: React.FC = () => {
             </p></span>
             </div>
 
-            <section className="vf-u-fullbleed">
+            <section>
                 {/* Breadcrumb Section */}
                 <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
                     <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
@@ -148,22 +212,22 @@ const GeneViewerPage: React.FC = () => {
                         <li className={styles.breadcrumbsItem}>
                             <b>Genome View</b>
                         </li>
-                        <span className={styles.separator}> | </span>
-                        {genomeMeta ? (
-                            <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>
-                                <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">
-                                    Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>
-                                </a>
-                                <ul className={styles.dropdownList}>
-                                    <li className={styles.dropdownItem}>
-                                        <a href={`/home?speciesId=${genomeMeta.species_id}`}
-                                           className={styles.dropdownLink}>Other Strains
-                                            of <i>{genomeMeta.species}</i></a>
-                                    </li>
-                                </ul>
-                            </li>
-                        ) : (
-                            <p>Loading genome meta information...</p>)}
+                        {/*<span className={styles.separator}> | </span>*/}
+                        {/*{genomeMeta ? (*/}
+                        {/*    <li className={`${styles.breadcrumbsItem} ${styles.dropdown}`}>*/}
+                        {/*        <a href="#" className="vf-breadcrumbs__link vf-dropdown__trigger">*/}
+                        {/*            Related <span className={`${styles.icon} ${styles.iconDownTriangle}`}></span>*/}
+                        {/*        </a>*/}
+                        {/*        <ul className={styles.dropdownList}>*/}
+                        {/*            <li className={styles.dropdownItem}>*/}
+                        {/*                <a href={`/home?speciesId=${genomeMeta.species_id}`}*/}
+                        {/*                   className={styles.dropdownLink}>Other Strains*/}
+                        {/*                    of <i>{genomeMeta.species}</i></a>*/}
+                        {/*            </li>*/}
+                        {/*        </ul>*/}
+                        {/*    </li>*/}
+                        {/*) : (*/}
+                        {/*    <p>Loading genome meta information...</p>)}*/}
                     </ul>
                 </nav>
 
@@ -208,10 +272,12 @@ const GeneViewerPage: React.FC = () => {
                 </section>
                 {/* JBrowse Component Section */}
                 <div style={{paddingTop: '20px', height: '425px'}}>
-                    {localViewState ? (
+                    {viewState ? (
                         <div className={styles.jbrowseViewer}>
                             <div className={styles.jbrowseContainer}>
-                                <JBrowseApp viewState={localViewState}/>
+                                <JBrowseApp viewState={viewState}
+
+                                />
                             </div>
                         </div>
                     ) : (
@@ -232,7 +298,7 @@ const GeneViewerPage: React.FC = () => {
                             sortField={sortField}
                             sortOrder={sortOrder}
                             linkData={linkData}
-                            viewState={localViewState}
+                            viewState={viewState}
                         />
                     </section>
                 </div>

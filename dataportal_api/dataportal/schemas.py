@@ -27,7 +27,7 @@ class ContigSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class SearchGenomeSchema(BaseModel):
+class GenomeResponseSchema(BaseModel):
     species: str
     species_id: int
     id: int
@@ -45,18 +45,6 @@ class SearchGenomeSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class TypeStrainSchema(BaseModel):
-    id: int
-    isolate_name: str
-    assembly_name: Optional[str]
-    assembly_accession: Optional[str]
-    fasta_file: str
-    gff_file: str
-    type_strain: bool
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class GeneAutocompleteResponseSchema(BaseModel):
     gene_id: int
     gene_name: Optional[str]
@@ -69,6 +57,11 @@ class GeneAutocompleteResponseSchema(BaseModel):
     dbxref: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GeneEssentialitySchema(BaseModel):
+    media: str
+    essentiality: str
 
 
 class GeneResponseSchema(BaseModel):
@@ -90,6 +83,7 @@ class GeneResponseSchema(BaseModel):
     start_position: Optional[int] = None
     end_position: Optional[int] = None
     annotations: Optional[dict] = None
+    essentiality_data: Optional[List[GeneEssentialitySchema]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -105,7 +99,7 @@ class BasePaginationSchema(BaseModel):
 
 
 class GenomePaginationSchema(BasePaginationSchema):
-    results: List[SearchGenomeSchema]
+    results: List[GenomeResponseSchema]
 
 
 class GenePaginationSchema(BasePaginationSchema):
@@ -116,8 +110,7 @@ __all__ = [
     "StrainSuggestionSchema",
     "GeneAutocompleteResponseSchema",
     "ContigSchema",
-    "SearchGenomeSchema",
-    "TypeStrainSchema",
+    "GenomeResponseSchema",
     "GenePaginationSchema",
     "GeneResponseSchema",
     "GenomePaginationSchema",

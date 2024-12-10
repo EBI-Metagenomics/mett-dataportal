@@ -35,7 +35,7 @@ LOGGING = {
         "django": {
             "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": True,
+            "propagate": False,
         },
         "my_custom_logger": {
             "handlers": ["console"],

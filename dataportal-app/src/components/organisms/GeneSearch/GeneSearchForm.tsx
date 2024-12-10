@@ -105,13 +105,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
         async (page = 1, sortField: string, sortOrder: string) => {
-            const params = new URLSearchParams({
-                'query': query.trim() || '',
-                'page': String(page),
-                'per_page': String(pageSize),
-                'sortField': sortField,
-                'sortOrder': sortOrder,
-            });
+            // const params = new URLSearchParams({
+            //     'query': query.trim() || '',
+            //     'page': String(page),
+            //     'per_page': String(pageSize),
+            //     'sortField': sortField,
+            //     'sortOrder': sortOrder,
+            // });
 
             // Ensure genomeFilter is an array of objects with id and name
             const genomeFilter = selectedGenomes && selectedGenomes.length > 0
@@ -168,11 +168,12 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
-        // console.log('suggestion: ' + suggestion)
-        // console.log('strain name: ' + suggestion.strain_name)
-        // console.log('suggestion.gene_name: ' + suggestion.gene_name)
-        // console.log('suggestion.gene_id: ' + suggestion.gene_id)
-        setQuery(suggestion.gene_name);
+        console.log('suggestion: ' + suggestion)
+        console.log('strain name: ' + suggestion.strain_name)
+        console.log('suggestion.gene_id: ' + suggestion.gene_id)
+        console.log('suggestion.gene_name: ' + suggestion.gene_name)
+        console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
+        setQuery(suggestion.gene_name || suggestion.locus_tag);
         setGeneName(suggestion.gene_name);
         setSelectedGeneId(suggestion.gene_id);
         setSuggestions([]);

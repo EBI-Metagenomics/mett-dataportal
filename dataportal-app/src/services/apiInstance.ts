@@ -1,11 +1,11 @@
 import axios from 'axios';
+import {API_BASE_URL} from "../utils/appConstants";
 
-const baseURL = process.env.REACT_APP_API_BASE_URL;
 
-console.log('API Base URL:', baseURL);
+console.log('API Base URL:', API_BASE_URL);
 
 const apiInstance = axios.create({
-    baseURL: baseURL,
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },

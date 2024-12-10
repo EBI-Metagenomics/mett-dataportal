@@ -177,6 +177,27 @@ class Gene(models.Model):
         return self.gene_name or self.locus_tag
 
 
+class GeneEssentiality(models.Model):
+    gene = models.ForeignKey(
+        "Gene", on_delete=models.CASCADE, related_name="essentiality_data"
+    )
+    media = models.CharField(max_length=50)
+    essentiality = models.CharField(max_length=50)
+
+    class Meta:
+        db_table = "gene_essentiality"
+        indexes = [
+            models.Index(fields=["media"], name="media_idx"),
+            models.Index(fields=["essentiality"], name="essentiality_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=["gene", "media"], name="unique_gene_media"),
+        ]
+
+    def __str__(self):
+        return f"{self.gene.locus_tag} - {self.media}"
+
+
 # GeneOntologyTerm Model
 class GeneOntologyTerm(models.Model):
     gene = models.ForeignKey(

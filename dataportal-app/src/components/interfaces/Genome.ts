@@ -28,3 +28,7 @@ export interface GenomeResponse {
     total_results: number;
 }
 
+// export interface TypeStrain {
+//     name: string;
+//     id: number;
+// }

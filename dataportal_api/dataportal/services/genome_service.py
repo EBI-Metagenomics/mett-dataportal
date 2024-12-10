@@ -7,9 +7,8 @@ from django.db.models import Q
 from dataportal import settings
 from dataportal.models import Strain
 from dataportal.schemas import (
-    TypeStrainSchema,
     GenomePaginationSchema,
-    SearchGenomeSchema,
+    GenomeResponseSchema,
 )
 from dataportal.utils.constants import (
     FIELD_ID,
@@ -41,10 +40,10 @@ class GenomeService:
     def __init__(self, limit: int = 10):
         self.limit = limit
 
-    async def get_type_strains(self) -> List[TypeStrainSchema]:
+    async def get_type_strains(self) -> List[GenomeResponseSchema]:
         return await self._fetch_and_validate_strains(
             filter_criteria=Q(type_strain=True),
-            schema=TypeStrainSchema,
+            schema=GenomeResponseSchema,
             error_message="Error fetching type strains",
         )
 
@@ -146,17 +145,12 @@ class GenomeService:
         )
 
     async def get_genome_by_id(self, genome_id: int):
-        logger.debug("Entering get_genome_by_id method")
-        # try:
         result = await self._fetch_single_genome(
             filter_criteria=Q(id=genome_id),
             error_message=f"Error fetching genome by ID {genome_id}",
         )
         logger.debug(f"Fetched genome successfully: {result}")
         return result
-        # except Exception as e:
-        #     logger.error(f"Error in get_genome_by_id: {e}", exc_info=True)
-        #     raise
 
     async def get_genome_by_strain_name(self, strain_name: str):
         return await self._fetch_single_genome(
@@ -164,10 +158,51 @@ class GenomeService:
             error_message=f"Error fetching genome by strain name {strain_name}",
         )
 
+    async def get_genomes_by_ids(
+        self, genome_ids: List[int]
+    ) -> List[GenomeResponseSchema]:
+        if not genome_ids:
+            return []
+        filter_criteria = Q(id__in=genome_ids)
+        try:
+            strains = await self._fetch_and_validate_strains(
+                filter_criteria=filter_criteria,
+                schema=GenomeResponseSchema,
+                error_message="Error fetching genomes by IDs",
+            )
+            return strains
+        except Exception as e:
+            logger.error(f"Error in get_genomes_by_ids: {e}", exc_info=True)
+            raise ServiceError(f"Could not fetch genomes by IDs: {e}")
+
+    async def get_genomes_by_isolate_names(
+        self, isolate_names: List[str]
+    ) -> List[GenomeResponseSchema]:
+        if not isolate_names:
+            return []
+        filter_criteria = Q(isolate_name__in=isolate_names)
+        try:
+            strains = await self._fetch_and_validate_strains(
+                filter_criteria=filter_criteria,
+                schema=GenomeResponseSchema,
+                error_message="Error fetching genomes by isolate names",
+            )
+            return strains
+        except Exception as e:
+            logger.error(f"Error in get_genomes_by_isolate_names: {e}", exc_info=True)
+            raise ServiceError(f"Could not fetch genomes by isolate names: {e}")
+
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         try:
-            strains = await sync_to_async(list)(Strain.objects.filter(filter_criteria))
-            return [schema.model_validate(strain.__dict__) for strain in strains]
+            strains = await sync_to_async(list)(
+                Strain.objects.filter(filter_criteria).select_related(
+                    STRAIN_FIELD_SPECIES
+                )
+            )
+            return [
+                schema.model_validate(await self._serialize_strain(strain))
+                for strain in strains
+            ]
         except Exception as e:
             logger.error(f"{error_message}: {e}")
             raise ServiceError(e)
@@ -202,7 +237,7 @@ class GenomeService:
             )()
 
             serialized_strain = await self._serialize_strain(strain)
-            return SearchGenomeSchema.model_validate(serialized_strain)
+            return GenomeResponseSchema.model_validate(serialized_strain)
 
         except Strain.DoesNotExist:
             logger.error(error_message)
@@ -275,7 +310,7 @@ class GenomeService:
 
     async def _create_pagination_schema(self, strains, total_results, page, per_page):
         serialized_strains = [
-            SearchGenomeSchema.model_validate(await self._serialize_strain(strain))
+            GenomeResponseSchema.model_validate(await self._serialize_strain(strain))
             for strain in strains
         ]
 

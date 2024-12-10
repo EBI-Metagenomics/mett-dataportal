@@ -16,7 +16,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                                                              onInputChange,
                                                              suggestions,
                                                              onSuggestionClick,
-                                                             onSuggestionsClear
+                                                             onSuggestionsClear,
                                                          }) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const [isSelecting, setIsSelecting] = useState(false);
@@ -39,12 +39,18 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
             <Autocomplete
                 disablePortal
                 freeSolo
-                options={suggestions}
+                options={suggestions || []}
                 style={{zIndex: 1000}}
-                getOptionLabel={(option) =>
-                    typeof option === 'string' ? option : `${option.strain_name} - ${option.gene_name} - (${option.product} - ${option.locus_tag})`
-                }
-                inputValue={query}
+                getOptionLabel={(option) => {
+                    if (typeof option === 'string') return option;
+                    const strainName = option.strain_name || 'Unknown strain';
+                    const product = option.product || 'Unknown product';
+                    const locusTag = option.locus_tag || 'Unknown locus tag';
+                    const geneNamePart = option.gene_name ? ` - ${option.gene_name}` : '';
+
+                    return `${strainName}${geneNamePart} - (${product} - ${locusTag})`;
+                }}
+                inputValue={query || ''}
                 onInputChange={(event, newValue, reason) => {
                     if (!isSelecting) {
                         onInputChange({
@@ -58,10 +64,16 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                 onChange={(event, value) => {
                     if (value && typeof value !== 'string') {
                         setIsSelecting(true);
+                        const displayValue = value.gene_name ? value.gene_name : value.locus_tag || 'Unknown locus tag';
+                        onInputChange({
+                            target: {value: displayValue || ''},
+                        } as React.ChangeEvent<HTMLInputElement>);
                         onSuggestionClick(value);
                     }
                 }}
                 isOptionEqualToValue={(option, value) =>
+                    option &&
+                    value &&
                     typeof option !== 'string' &&
                     typeof value !== 'string' &&
                     option.gene_id === value.gene_id
@@ -69,8 +81,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                 renderInput={(params) => (
                     <TextField
                         {...params}
-                        // label="Search Gene"
-                        placeholder="dnaA, BU_909_00003, Vitamin ..."
+                        placeholder="Try Vitamin B12 transporter or a gene locus as dnaA ..."
                         variant="outlined"
                         sx={{
                             '& .MuiInputBase-root': {

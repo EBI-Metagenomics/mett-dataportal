@@ -3,7 +3,11 @@ import Pagination from "../../molecules/Pagination";
 import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
 import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
 import styles from "@components/organisms/GenomeSearch/GenomeSearchForm.module.scss";
-import {fetchGenomeAutocompleteSuggestions, fetchGenomeSearchResults} from "../../../services/genomeService";
+import {
+    fetchGenomeAutocompleteSuggestions,
+    fetchGenomeByStrainIds,
+    fetchGenomeSearchResults
+} from "../../../services/genomeService";
 import {LinkData} from "@components/interfaces/Auxiliary";
 
 interface SearchGenomeFormProps {
@@ -12,6 +16,7 @@ interface SearchGenomeFormProps {
     onSearchSubmit: (field: string) => void;
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     selectedSpecies: number [];
+    selectedTypeStrains: number[];
     results: any[];
     sortField: string,
     sortOrder: 'asc' | 'desc';
@@ -23,6 +28,7 @@ interface SearchGenomeFormProps {
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                selectedSpecies,
+                                                               selectedTypeStrains,
                                                                selectedGenomes,
                                                                onToggleGenomeSelect,
                                                                onGenomeSelect,
@@ -90,44 +96,68 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const [selectedStrainId, setSelectedStrainId] = useState<number | null>(null);
 
 
-    // Fetch search results based on the query, selected species, page, sort field, and sort order
+    // Fetch search results
     const fetchSearchResults = useCallback(
-        async (page: number = 1, sortField: string = 'isolate_name', sortOrder: string = 'asc') => {
-            const isolate = isolateName.trim() || query.trim();
-            console.log("fetchSearchResults called with page:", page);
-            const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
-            try {
-                const response = await fetchGenomeSearchResults(isolate, page, pageSize, sortField, sortOrder, speciesFilter);
+    async (
+        page: number = 1,
+        sortField: string = "isolate_name",
+        sortOrder: string = "asc"
+    ) => {
+        const qry = isolateName.trim() || query.trim();
+        console.log("fetchSearchResults called with page:", page);
+
+        const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
+        const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : null;
+
+        try {
+            let response;
+
+            if (typeStrainFilter) {
+                console.log("Fetching genomes by type strain IDs:", typeStrainFilter);
+                response = await fetchGenomeByStrainIds(typeStrainFilter);
+                setResults(response);
+                setTotalPages(1);
+                setHasPrevious(false);
+                setHasNext(false);
+            } else {
+                console.log("Fetching genomes using standard search");
+                response = await fetchGenomeSearchResults(
+                    qry,
+                    page,
+                    pageSize,
+                    sortField,
+                    sortOrder,
+                    speciesFilter
+                );
 
                 if (response && response.results) {
                     setResults(response.results);
-                    // setCurrentPage(response.page_number);
                     setTotalPages(response.num_pages);
                     setHasPrevious(response.has_previous ?? page > 1);
                     setHasNext(response.has_next);
                 } else {
                     setResults([]);
-                    // setCurrentPage(1);
                     setTotalPages(1);
                     setHasPrevious(false);
                     setHasNext(false);
                 }
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                setResults([]);
-                // setCurrentPage(1);
-                setTotalPages(1);
-                setHasPrevious(false);
-                setHasNext(false);
             }
-        },
-        [query, selectedSpecies, sortField, sortOrder, pageSize]
-    );
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            setResults([]);
+            setTotalPages(1);
+            setHasPrevious(false);
+            setHasNext(false);
+        }
+    },
+    [query, isolateName, selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize]
+);
+
 
     useEffect(() => {
         setCurrentPage(1);
         fetchSearchResults(1, sortField, sortOrder);
-    }, [selectedSpecies, sortField, sortOrder, pageSize]);
+    }, [selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,7 +176,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         setIsolateName(suggestion.isolate_name);
         setSelectedStrainId(suggestion.strain_id);
         setSuggestions([]);
-        onGenomeSelect({id: suggestion.strain_id, name: suggestion.isolate_name});
+        // EMG-7006 - no auto selection of filters
+        //onGenomeSelect({id: suggestion.strain_id, name: suggestion.isolate_name});
     };
 
 
