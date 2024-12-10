@@ -29,6 +29,12 @@
     <link rel="stylesheet" href="//ebi.emblstatic.net/web_guidelines/EBI-Icon-fonts/v1.3/fonts.css" type="text/css"
           media="all"/>
     <script defer="defer" src="//ebi.emblstatic.net/web_guidelines/EBI-Framework/v1.4/js/script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Hide the JBrowse header
+            document.querySelectorAll('header.MuiAppBar-root').forEach(el => el.style.display = 'none');
+        });
+    </script>
     <link rel="stylesheet" href="https://assets.emblstatic.net/vf/v2/assets/ebi-header-footer/ebi-header-footer.css"
           type="text/css" media="all"/>
 </head>

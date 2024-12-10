@@ -117,12 +117,13 @@ header[data-testid="jbrowse-header"] {
     display: none !important;
 }
 
-header[class*="MuiAppBar-root"][class*="css-b6etru"] {
-    display: none !important;
-}
-
 header.MuiPaper-root.MuiAppBar-root[class*="css-"] {
     display: none !important;
 }
+
+header[class*="MuiAppBar-root"][class*="css-"] {
+    display: none !important;
+}
+
 
 
