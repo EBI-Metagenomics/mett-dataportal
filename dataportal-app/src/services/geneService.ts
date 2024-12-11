@@ -126,3 +126,13 @@ export const fetchGeneById = async (geneId: number) => {
         throw error;
     }
 };
+
+
+export const fetchEssentialityTags = async () => {
+    try {
+        return await apiInstance.get(`/genes/essentiality/tags`);
+    } catch (error) {
+        console.error(`Error fetching essentiality/tags:`, error);
+        throw error;
+    }
+};

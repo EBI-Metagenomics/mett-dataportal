@@ -1359,7 +1359,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.strain).to.eql(\"BU_3537\");",
+											"    pm.expect(jsonData.strain).to.eql(\"BU_2243B\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -2145,6 +2145,48 @@
 											"key": "query",
 											"value": "dna"
 										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genes-Essentiality-Tags-Master",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"",
+											"pm.test(\"Results array contains exactly one record\", function () {",
+											"    const jsonData = pm.response.json(); ",
+											"    pm.expect(jsonData).to.be.an('array').with.lengthOf(5); ",
+											"});",
+											"",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/essentiality/tags",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"essentiality",
+										"tags"
 									]
 								}
 							},

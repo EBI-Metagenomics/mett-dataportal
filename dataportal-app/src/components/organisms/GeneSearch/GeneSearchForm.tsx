@@ -3,7 +3,11 @@ import GeneSearchInput from './GeneSearchInput';
 import styles from "@components/organisms/GeneSearch/GeneSearchForm.module.scss";
 import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
-import {fetchGeneAutocompleteSuggestions, fetchGeneSearchResults} from "../../../services/geneService";
+import {
+    fetchEssentialityTags,
+    fetchGeneAutocompleteSuggestions,
+    fetchGeneSearchResults
+} from "../../../services/geneService";
 import {createViewState} from '@jbrowse/react-app';
 import {GeneMeta, GeneSuggestion} from "../../../interfaces/Gene";
 import {LinkData} from "../../../interfaces/Auxiliary";
@@ -44,11 +48,26 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(10);
     const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
+    const [essentialityTags, setEssentialityTags] = useState<string[]>([]);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, 10);
         setPageSize(newSize);
     };
+
+    useEffect(() => {
+    const essentialityTags = async () => {
+        try {
+            const response = await fetchEssentialityTags();
+            console.log("*****response",response);
+            setEssentialityTags(response.data.map((tag: any) => tag.name));
+        } catch (error) {
+            console.error('Error fetching essentiality tags:', error);
+        }
+    };
+
+    fetchEssentialityTags();
+}, []);
 
     useEffect(() => {
         fetchSearchResults(1, sortField, sortOrder, essentialityFilter);

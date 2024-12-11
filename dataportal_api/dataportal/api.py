@@ -4,6 +4,7 @@ from typing import List, Optional
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
 
+from .models import EssentialityTag
 from .schemas import (
     StrainSuggestionSchema,
     SpeciesSchema,
@@ -12,6 +13,7 @@ from .schemas import (
     GeneAutocompleteResponseSchema,
     GenePaginationSchema,
     GeneResponseSchema,
+    EssentialityTagSchema,
 )
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
@@ -334,6 +336,12 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
+
+
+@gene_router.get("/essentiality/tags", response=list[EssentialityTagSchema])
+def list_essentiality_tags(request):
+    tags = EssentialityTag.objects.all()
+    return tags
 
 
 # Register routers with the main API
