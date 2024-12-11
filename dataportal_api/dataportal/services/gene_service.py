@@ -152,7 +152,7 @@ class GeneService:
             logger.error(f"Error in get_all_genes: {e}")
             raise ServiceError(e)
 
-    async def search_genes_by_genome_and_string(
+    async def search_genes(
         self,
         query: str = None,
         genome_id: Optional[int] = None,
@@ -312,11 +312,17 @@ class GeneService:
 
     # helper methods
 
+    def _serialize_gene_essentiality(self, gene_essentiality):
+        return {
+            "media": gene_essentiality.media,
+            "essentiality": (
+                gene_essentiality.essentiality.name
+                if gene_essentiality.essentiality
+                else None
+            ),
+        }
+
     def _serialize_gene(self, gene: Gene) -> dict:
-        essentiality_data = [
-            {"media": e.media, "essentiality": e.essentiality}
-            for e in gene.essentiality_data.all()
-        ]
 
         return GeneResponseSchema.model_validate(
             {
@@ -344,7 +350,10 @@ class GeneService:
                 GENE_FIELD_START_POS: gene.start_position or None,
                 GENE_FIELD_END_POS: gene.end_position or None,
                 GENE_FIELD_ANNOTATIONS: gene.annotations or {},
-                GENE_ESSENTIALITY_DATA: essentiality_data,
+                GENE_ESSENTIALITY_DATA: [
+                    self._serialize_gene_essentiality(ge)
+                    for ge in gene.essentiality_data.all()
+                ],
             }
         )
 
@@ -412,24 +421,26 @@ class GeneService:
             logger.debug(f"Sorting by: {sort_by}")
             logger.debug(f"Pagination: start={start}, end={start + per_page}")
 
-            # paginated and sorted gene list
+            # Fetch paginated gene list
             genes = await sync_to_async(
                 lambda: list(
                     Gene.objects.select_related(GENE_SORT_FIELD_STRAIN)
-                    .prefetch_related(GENE_ESSENTIALITY_DATA)
+                    .prefetch_related("essentiality_data__essentiality")
                     .filter(filter_criteria)
                     .order_by(sort_by)[start : start + per_page]
                 )
             )()
 
+            # Count total results
             total_results = await sync_to_async(
-                Gene.objects.filter(filter_criteria).count
+                lambda: Gene.objects.filter(filter_criteria).count()
             )()
 
             logger.debug(f"Fetched genes: {[gene.gene_name for gene in genes]}")
             logger.debug(f"Total matching genes: {total_results}")
 
             return genes, total_results
+
         except Exception as e:
             logger.error(f"Error fetching paginated genes: {str(e)}")
             raise ServiceError(e)

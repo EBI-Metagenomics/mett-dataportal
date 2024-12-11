@@ -1,7 +1,8 @@
 import logging
+
+from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.db import models
-from django.contrib.postgres.indexes import GinIndex
 
 logger = logging.getLogger(__name__)
 
@@ -177,12 +178,27 @@ class Gene(models.Model):
         return self.gene_name or self.locus_tag
 
 
+class EssentialityTag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        db_table = "essentiality_tag"
+
+    def __str__(self):
+        return self.name
+
+
 class GeneEssentiality(models.Model):
     gene = models.ForeignKey(
         "Gene", on_delete=models.CASCADE, related_name="essentiality_data"
     )
     media = models.CharField(max_length=50)
-    essentiality = models.CharField(max_length=50)
+    essentiality = models.ForeignKey(
+        "EssentialityTag",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="gene_essentialities",
+    )
 
     class Meta:
         db_table = "gene_essentiality"
@@ -195,7 +211,7 @@ class GeneEssentiality(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.gene.locus_tag} - {self.media}"
+        return f"{self.gene.locus_tag} - {self.media} - {self.essentiality_tag.name}"
 
 
 # GeneOntologyTerm Model

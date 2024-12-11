@@ -195,38 +195,38 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         <section id="vf-tabs__section--2">
             <div>
                 <p/>
-                {selectedGenomes && selectedGenomes[0].type_strain && (
-                <div className={styles.essentialityFilterContainer}>
-                    <h3>Essentiality</h3>
-                    <label>
-                        <input
-                            type="checkbox"
-                            value="Essential"
-                            checked={essentialityFilter.includes("Essential")}
-                            onChange={handleEssentialityFilterChange}
-                        />
-                        Essential
-                    </label>
-                    <label>
-                        <input
-                            type="checkbox"
-                            value="Not Essential"
-                            checked={essentialityFilter.includes("Not Essential")}
-                            onChange={handleEssentialityFilterChange}
-                        />
-                        Not Essential
-                    </label>
-                    <label>
-                        <input
-                            type="checkbox"
-                            value="Not Clear"
-                            checked={essentialityFilter.includes("Not Clear")}
-                            onChange={handleEssentialityFilterChange}
-                        />
-                        Not Clear
-                    </label>
-                </div>
-                )}
+                {/*{selectedGenomes && selectedGenomes[0].type_strain && (*/}
+                {/*<div className={styles.essentialityFilterContainer}>*/}
+                {/*    <h3>Essentiality</h3>*/}
+                {/*    <label>*/}
+                {/*        <input*/}
+                {/*            type="checkbox"*/}
+                {/*            value="Essential"*/}
+                {/*            checked={essentialityFilter.includes("Essential")}*/}
+                {/*            onChange={handleEssentialityFilterChange}*/}
+                {/*        />*/}
+                {/*        Essential*/}
+                {/*    </label>*/}
+                {/*    <label>*/}
+                {/*        <input*/}
+                {/*            type="checkbox"*/}
+                {/*            value="Not Essential"*/}
+                {/*            checked={essentialityFilter.includes("Not Essential")}*/}
+                {/*            onChange={handleEssentialityFilterChange}*/}
+                {/*        />*/}
+                {/*        Not Essential*/}
+                {/*    </label>*/}
+                {/*    <label>*/}
+                {/*        <input*/}
+                {/*            type="checkbox"*/}
+                {/*            value="Not Clear"*/}
+                {/*            checked={essentialityFilter.includes("Not Clear")}*/}
+                {/*            onChange={handleEssentialityFilterChange}*/}
+                {/*        />*/}
+                {/*        Not Clear*/}
+                {/*    </label>*/}
+                {/*</div>*/}
+                {/*)}*/}
             </div>
             <form onSubmit={handleSubmit}
                   className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">

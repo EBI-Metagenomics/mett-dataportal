@@ -10,7 +10,7 @@ import psycopg
 from decouple import Config, RepositoryEnv
 from django.core.management.base import BaseCommand
 
-config = Config(RepositoryEnv("../mett.env"))
+config = Config(RepositoryEnv("./mett.env"))
 
 logging.basicConfig(
     filename="process_gff.log",

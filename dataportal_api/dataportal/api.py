@@ -212,19 +212,15 @@ async def search_genes_by_string(
     sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
-        paginated_results = await gene_service.search_genes_by_genome_and_string(
-            query=query,
-            page=page,
-            per_page=per_page,
-            sort_field=sort_field,
-            sort_order=sort_order,
+        return await gene_service.search_genes(
+            query, "", "", page, per_page, sort_field, sort_order
         )
-        return paginated_results
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to fetch the gene information for - {query}")
-    except Exception as e:
-        raise_http_error(500, f"Internal Server Error: {str(e)}")
+        raise HttpError(
+            500,
+            f"Failed to fetch the genes information for gene query - {query}",
+        )
 
 
 # API Endpoint to retrieve gene by ID
@@ -293,7 +289,7 @@ async def search_genes_by_genome_and_string(
     sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
-        return await gene_service.search_genes_by_genome_and_string(
+        return await gene_service.search_genes(
             query, genome_id, filter, page, per_page, sort_field, sort_order
         )
     except ServiceError as e:
@@ -302,6 +298,8 @@ async def search_genes_by_genome_and_string(
             500,
             f"Failed to fetch the genes information for genome_id - {genome_id} and query - {query}",
         )
+    except Exception as e:
+        raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
 
 
 # API Endpoint to search genes across multiple genome IDs using a gene string
