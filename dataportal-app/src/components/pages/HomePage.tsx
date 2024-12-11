@@ -7,7 +7,7 @@ import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeServi
 import {fetchSpeciesList} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
-import {GenomeMeta} from "../../interfaces/Genome";
+import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
 
 // Define the type for each tab
 interface Tab {
@@ -42,7 +42,7 @@ const HomePage: React.FC = () => {
     const [speciesList, setSpeciesList] = useState<{ id: number; scientific_name: string }[]>([]);
     const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
-    const [selectedGenomes, setSelectedGenomes] = useState<{ id: number; name: string }[]>([]);
+    const [selectedGenomes, setSelectedGenomes] = useState<BaseGenome[]>([]);
     const [typeStrains, setTypeStrains] = useState<GenomeMeta[]>([]);
     const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]);
 
@@ -161,7 +161,7 @@ const HomePage: React.FC = () => {
         setGenomeResults(response.results);
     };
 
-    const handleGenomeSelect = (genome: { id: number; name: string }) => {
+    const handleGenomeSelect = (genome: BaseGenome) => {
         if (!selectedGenomes.some(g => g.id === genome.id)) {
             setSelectedGenomes([...selectedGenomes, genome]);
         }
@@ -172,7 +172,7 @@ const HomePage: React.FC = () => {
         setSelectedTypeStrains(selectedTypeStrains.filter(id => id !== genomeId));
     };
 
-    const handleToggleGenomeSelect = (genome: { id: number; name: string }) => {
+    const handleToggleGenomeSelect = (genome: BaseGenome) => {
         if (selectedGenomes.some(g => g.id === genome.id)) {
             handleRemoveGenome(genome.id);
         } else {
@@ -282,7 +282,7 @@ const HomePage: React.FC = () => {
                             searchQuery={genomeSearchQuery}
                             onSearchQueryChange={e => setGenomeSearchQuery(e.target.value)}
                             onSearchSubmit={handleGenomeSearch}
-                            onGenomeSelect={handleGenomeSelect}
+                            // onGenomeSelect={handleGenomeSelect}
                             selectedSpecies={selectedSpecies}
                             selectedTypeStrains={selectedTypeStrains}
                             onSortClick={handleGenomeSortClick}

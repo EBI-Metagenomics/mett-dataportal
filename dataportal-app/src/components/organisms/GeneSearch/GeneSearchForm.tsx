@@ -7,6 +7,7 @@ import {fetchGeneAutocompleteSuggestions, fetchGeneSearchResults} from "../../..
 import {createViewState} from '@jbrowse/react-app';
 import {GeneMeta, GeneSuggestion} from "../../../interfaces/Gene";
 import {LinkData} from "../../../interfaces/Auxiliary";
+import {BaseGenome} from "../../../interfaces/Genome";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -19,7 +20,7 @@ interface GeneSearchFormProps {
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     sortField: string,
     sortOrder: 'asc' | 'desc';
-    selectedGenomes?: { id: number; name: string }[],
+    selectedGenomes?: BaseGenome[],
     linkData: LinkData,
     viewState?: ViewModel;
 }
@@ -41,15 +42,16 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [totalPages, setTotalPages] = useState<number>(1);
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
-
     const [pageSize, setPageSize] = useState<number>(10);
+    const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
+
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, 10);
         setPageSize(newSize);
     };
 
     useEffect(() => {
-        fetchSearchResults(1, sortField, sortOrder);
+        fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
     }, [pageSize]);
 
     // Fetch suggestions for autocomplete based on the query and selected species
@@ -104,28 +106,18 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-        async (page = 1, sortField: string, sortOrder: string) => {
-            // const params = new URLSearchParams({
-            //     'query': query.trim() || '',
-            //     'page': String(page),
-            //     'per_page': String(pageSize),
-            //     'sortField': sortField,
-            //     'sortOrder': sortOrder,
-            // });
+        async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
 
-            // Ensure genomeFilter is an array of objects with id and name
             const genomeFilter = selectedGenomes && selectedGenomes.length > 0
-                ? selectedGenomes.map((genome) => ({id: genome.id, name: genome.name}))
+                ? selectedGenomes.map((genome) => ({id: genome.id, name: genome.isolate_name}))
                 : undefined;
-
-            // Use selectedSpecies directly if only one species is selected, or undefined otherwise
             const speciesFilter = selectedSpecies && selectedSpecies.length === 1
                 ? selectedSpecies
                 : undefined;
 
             try {
                 const response = await fetchGeneSearchResults(
-                    query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter
+                    query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter, essentialityFilter
                 );
 
                 if (response && response.results) {
@@ -155,8 +147,15 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
 
     useEffect(() => {
-        fetchSearchResults(1, sortField, sortOrder);
+        fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
     }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize]);
+
+    const handleEssentialityFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        setEssentialityFilter((prev) =>
+            prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+        );
+    };
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,19 +182,51 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         console.log('selectedGeneId:' + selectedGeneId)
         event.preventDefault();
-        fetchSearchResults(1, sortField, sortOrder);
+        fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
     };
 
 
     const handlePageClick = (page: number) => {
         setCurrentPage(page);
-        fetchSearchResults(page, sortField, sortOrder);
+        fetchSearchResults(page, sortField, sortOrder, essentialityFilter);
     };
 
     return (
         <section id="vf-tabs__section--2">
             <div>
                 <p/>
+                {selectedGenomes && selectedGenomes[0].type_strain && (
+                <div className={styles.essentialityFilterContainer}>
+                    <h3>Essentiality</h3>
+                    <label>
+                        <input
+                            type="checkbox"
+                            value="Essential"
+                            checked={essentialityFilter.includes("Essential")}
+                            onChange={handleEssentialityFilterChange}
+                        />
+                        Essential
+                    </label>
+                    <label>
+                        <input
+                            type="checkbox"
+                            value="Not Essential"
+                            checked={essentialityFilter.includes("Not Essential")}
+                            onChange={handleEssentialityFilterChange}
+                        />
+                        Not Essential
+                    </label>
+                    <label>
+                        <input
+                            type="checkbox"
+                            value="Not Clear"
+                            checked={essentialityFilter.includes("Not Clear")}
+                            onChange={handleEssentialityFilterChange}
+                        />
+                        Not Clear
+                    </label>
+                </div>
+                )}
             </div>
             <form onSubmit={handleSubmit}
                   className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">

@@ -9,6 +9,7 @@ import {
     fetchGenomeSearchResults
 } from "../../../services/genomeService";
 import {LinkData} from "../../../interfaces/Auxiliary";
+import {BaseGenome} from "../../../interfaces/Genome";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -20,9 +21,9 @@ interface SearchGenomeFormProps {
     results: any[];
     sortField: string,
     sortOrder: 'asc' | 'desc';
-    selectedGenomes: { id: number; name: string }[];
-    onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
-    onGenomeSelect: (genome: { id: number; name: string }) => void;
+    selectedGenomes: BaseGenome[];
+    onToggleGenomeSelect: (genome: BaseGenome) => void;
+    // onGenomeSelect: (genome: { id: number; name: string }) => void;
     linkData: LinkData;
 }
 
@@ -31,7 +32,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                selectedTypeStrains,
                                                                selectedGenomes,
                                                                onToggleGenomeSelect,
-                                                               onGenomeSelect,
+                                                               // onGenomeSelect,
                                                                onSortClick,
                                                                sortField,
                                                                sortOrder,
@@ -98,60 +99,60 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
     // Fetch search results
     const fetchSearchResults = useCallback(
-    async (
-        page: number = 1,
-        sortField: string = "isolate_name",
-        sortOrder: string = "asc"
-    ) => {
-        const qry = isolateName.trim() || query.trim();
-        console.log("fetchSearchResults called with page:", page);
+        async (
+            page: number = 1,
+            sortField: string = "isolate_name",
+            sortOrder: string = "asc"
+        ) => {
+            const qry = isolateName.trim() || query.trim();
+            console.log("fetchSearchResults called with page:", page);
 
-        const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
-        const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : null;
+            const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
+            const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : null;
 
-        try {
-            let response;
+            try {
+                let response;
 
-            if (typeStrainFilter) {
-                console.log("Fetching genomes by type strain IDs:", typeStrainFilter);
-                response = await fetchGenomeByStrainIds(typeStrainFilter);
-                setResults(response);
-                setTotalPages(1);
-                setHasPrevious(false);
-                setHasNext(false);
-            } else {
-                console.log("Fetching genomes using standard search");
-                response = await fetchGenomeSearchResults(
-                    qry,
-                    page,
-                    pageSize,
-                    sortField,
-                    sortOrder,
-                    speciesFilter
-                );
-
-                if (response && response.results) {
-                    setResults(response.results);
-                    setTotalPages(response.num_pages);
-                    setHasPrevious(response.has_previous ?? page > 1);
-                    setHasNext(response.has_next);
-                } else {
-                    setResults([]);
+                if (typeStrainFilter) {
+                    console.log("Fetching genomes by type strain IDs:", typeStrainFilter);
+                    response = await fetchGenomeByStrainIds(typeStrainFilter);
+                    setResults(response);
                     setTotalPages(1);
                     setHasPrevious(false);
                     setHasNext(false);
+                } else {
+                    console.log("Fetching genomes using standard search");
+                    response = await fetchGenomeSearchResults(
+                        qry,
+                        page,
+                        pageSize,
+                        sortField,
+                        sortOrder,
+                        speciesFilter
+                    );
+
+                    if (response && response.results) {
+                        setResults(response.results);
+                        setTotalPages(response.num_pages);
+                        setHasPrevious(response.has_previous ?? page > 1);
+                        setHasNext(response.has_next);
+                    } else {
+                        setResults([]);
+                        setTotalPages(1);
+                        setHasPrevious(false);
+                        setHasNext(false);
+                    }
                 }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setResults([]);
+                setTotalPages(1);
+                setHasPrevious(false);
+                setHasNext(false);
             }
-        } catch (error) {
-            console.error("Error fetching data:", error);
-            setResults([]);
-            setTotalPages(1);
-            setHasPrevious(false);
-            setHasNext(false);
-        }
-    },
-    [query, isolateName, selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize]
-);
+        },
+        [query, isolateName, selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize]
+    );
 
 
     useEffect(() => {

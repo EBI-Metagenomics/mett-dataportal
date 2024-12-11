@@ -1,9 +1,10 @@
 import React from 'react';
 import {Chip} from '@mui/material';
 import styles from './SelectedGenomes.module.scss';
+import {BaseGenome} from "../../interfaces/Genome";
 
 interface SelectedGenomesProps {
-    selectedGenomes: { id: number; name: string }[];
+    selectedGenomes: BaseGenome[];
     onRemoveGenome: (genomeId: number) => void;
 }
 
@@ -17,7 +18,7 @@ const SelectedGenomes: React.FC<SelectedGenomesProps> = ({selectedGenomes, onRem
                 {selectedGenomes.map((genome) => (
                     <Chip
                         key={genome.id}
-                        label={genome.name}
+                        label={genome.isolate_name}
                         variant="outlined"
                         onDelete={() => onRemoveGenome(genome.id)}
                         className={styles.genomeChip}

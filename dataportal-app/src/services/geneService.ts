@@ -1,6 +1,6 @@
 import apiInstance from "./apiInstance";
 import {getData} from "./api";
-import {GeneSuggestion, Gene} from "../interfaces/Gene";
+import {Gene, GeneSuggestion} from "../interfaces/Gene";
 
 interface PaginatedResponse<T> {
     results: T[];
@@ -43,6 +43,7 @@ export const fetchGeneSearchResults = async (
     sortOrder: string,
     selectedGenomes?: { id: number; name: string }[],
     selectedSpecies?: number [],
+    essentialityFilter?: string[]
 ) => {
     try {
         const params = new URLSearchParams({
@@ -61,6 +62,11 @@ export const fetchGeneSearchResults = async (
         // Add species ID if available
         if (selectedSpecies && selectedSpecies.length == 1) {
             params.append('species_id', String(selectedSpecies));
+        }
+
+        //essentiality
+        if (essentialityFilter && essentialityFilter.length > 0) {
+            params.append('essentiality', essentialityFilter.join(','));
         }
 
         const response = await apiInstance.get(`/genes/search/advanced`, {params});

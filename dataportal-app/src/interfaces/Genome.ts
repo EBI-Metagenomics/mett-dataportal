@@ -19,6 +19,12 @@ export interface GenomeMeta {
     contigs: Contig[];
 }
 
+export interface BaseGenome {
+    id: number;
+    isolate_name: string;
+    type_strain: boolean;
+}
+
 export interface GenomeResponse {
     results: GenomeMeta[];
     page_number: number;

@@ -292,7 +292,13 @@ const GeneViewerPage: React.FC = () => {
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                             onSearchSubmit={handleGeneSearch}
-                            selectedGenomes={genomeMeta?.id ? [{id: genomeMeta.id, name: ''}] : []}
+                            selectedGenomes={
+                                genomeMeta ? [{
+                                    id: genomeMeta.id,
+                                    isolate_name: genomeMeta.isolate_name,
+                                    type_strain: genomeMeta.type_strain
+                                }] : []
+                            }
                             results={geneResults}
                             onSortClick={handleGeneSortClick}
                             sortField={sortField}

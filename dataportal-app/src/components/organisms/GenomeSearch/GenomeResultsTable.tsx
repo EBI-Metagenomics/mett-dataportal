@@ -1,12 +1,13 @@
 import React, {useEffect, useState} from 'react';
 import styles from './GenomeResultsTable.module.scss';
 import {LinkData} from "../../../interfaces/Auxiliary";
+import {BaseGenome} from "../../../interfaces/Genome";
 
 interface GenomeResultsTableProps {
     results: any[];
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
-    selectedGenomes: { id: number; name: string }[];
-    onToggleGenomeSelect: (genome: { id: number; name: string }) => void;
+    selectedGenomes: BaseGenome[];
+    onToggleGenomeSelect: (genome: BaseGenome) => void;
     linkData: LinkData;
 }
 
@@ -92,7 +93,11 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         <button
                             className={styles.toggleButton}
-                            onClick={() => onToggleGenomeSelect({id: result.id, name: result.isolate_name})}
+                            onClick={() => onToggleGenomeSelect({
+                                id: result.id,
+                                isolate_name: result.isolate_name,
+                                type_strain: result.type_strain
+                            })}
                             style={{
                                 cursor: "pointer",
                                 display: "inline-flex",
