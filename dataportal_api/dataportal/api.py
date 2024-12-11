@@ -212,7 +212,7 @@ async def search_genes_by_string(
     sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
-        paginated_results = await gene_service.search_genes(
+        paginated_results = await gene_service.search_genes_by_genome_and_string(
             query=query,
             page=page,
             per_page=per_page,

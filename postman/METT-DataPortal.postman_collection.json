@@ -1235,6 +1235,118 @@
 							"response": []
 						},
 						{
+							"name": "Gene-Autocomplete-Essentiality-TypeStrain",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(10); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=6&query=pr&filter=essentiality:essential",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "species_id",
+											"value": "1"
+										},
+										{
+											"key": "genome_ids",
+											"value": "6"
+										},
+										{
+											"key": "query",
+											"value": "pr"
+										},
+										{
+											"key": "filter",
+											"value": "essentiality:essential"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Autocomplete-Essentiality-Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(0); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=1&query=pr&filter=essentiality:essential",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "species_id",
+											"value": "1"
+										},
+										{
+											"key": "genome_ids",
+											"value": "1"
+										},
+										{
+											"key": "query",
+											"value": "pr"
+										},
+										{
+											"key": "filter",
+											"value": "essentiality:essential"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Gene-by-GeneID-positive",
 							"event": [
 								{
@@ -1422,14 +1534,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/1/genes",
+									"raw": "{{mett-current}}/api/genomes/6/genes",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genomes",
-										"1",
+										"6",
 										"genes"
 									]
 								}
@@ -1548,7 +1660,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/filter?query=&per_page=10&sort_field=seq_id&sort_order=asc&genome_ids=4",
+									"raw": "{{mett-current}}/api/genes/search/advanced?query=&per_page=10&sort_field=seq_id&sort_order=asc&genome_ids=4",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1556,7 +1668,7 @@
 										"api",
 										"genes",
 										"search",
-										"filter"
+										"advanced"
 									],
 									"query": [
 										{
@@ -1655,7 +1767,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/filter?genome_ids=1,2,3,4,5&query=dnaA",
+									"raw": "{{mett-current}}/api/genes/search/advanced?genome_ids=1,2,3,4,5&query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1663,7 +1775,7 @@
 										"api",
 										"genes",
 										"search",
-										"filter"
+										"advanced"
 									],
 									"query": [
 										{
@@ -1704,7 +1816,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/filter?genome_ids=1,2,3,4,5&query=",
+									"raw": "{{mett-current}}/api/genes/search/advanced?genome_ids=1,2,3,4,5&query=",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1712,7 +1824,7 @@
 										"api",
 										"genes",
 										"search",
-										"filter"
+										"advanced"
 									],
 									"query": [
 										{
@@ -1753,7 +1865,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/filter?genome_ids=&query=",
+									"raw": "{{mett-current}}/api/genes/search/advanced?genome_ids=&query=",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1761,7 +1873,7 @@
 										"api",
 										"genes",
 										"search",
-										"filter"
+										"advanced"
 									],
 									"query": [
 										{
@@ -1802,7 +1914,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/filter?species_id=1&genome_ids=1,2,3,4,5&query=dnaA",
+									"raw": "{{mett-current}}/api/genes/search/advanced?species_id=1&genome_ids=1,2,3,4,5&query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1810,7 +1922,7 @@
 										"api",
 										"genes",
 										"search",
-										"filter"
+										"advanced"
 									],
 									"query": [
 										{
@@ -1824,6 +1936,120 @@
 										{
 											"key": "query",
 											"value": "dnaA"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genes-by-Species-TypeStrain-GeneString-Essentiality-Positive",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.num_pages).to.be.at.least(30);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/search/advanced?species_id=1&genome_ids=6&query=pr&filter=essentiality:essential",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"search",
+										"advanced"
+									],
+									"query": [
+										{
+											"key": "species_id",
+											"value": "1"
+										},
+										{
+											"key": "genome_ids",
+											"value": "6"
+										},
+										{
+											"key": "query",
+											"value": "pr"
+										},
+										{
+											"key": "filter",
+											"value": "essentiality:essential"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genes-by-Species-TypeStrain-GeneString-Essentiality-Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Results array is empty\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.results).to.be.an('array').that.is.empty;",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/search/advanced?species_id=1&genome_ids=1&query=pr&filter=essentiality:essential",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"search",
+										"advanced"
+									],
+									"query": [
+										{
+											"key": "species_id",
+											"value": "1"
+										},
+										{
+											"key": "genome_ids",
+											"value": "1"
+										},
+										{
+											"key": "query",
+											"value": "pr"
+										},
+										{
+											"key": "filter",
+											"value": "essentiality:essential"
 										}
 									]
 								}
@@ -1855,7 +2081,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/filter?species_id=1&query=dna",
+									"raw": "{{mett-current}}/api/genes/search/advanced?species_id=1&query=dna",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1863,7 +2089,7 @@
 										"api",
 										"genes",
 										"search",
-										"filter"
+										"advanced"
 									],
 									"query": [
 										{
@@ -1904,7 +2130,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/filter?query=dna",
+									"raw": "{{mett-current}}/api/genes/search/advanced?query=dna",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1912,7 +2138,7 @@
 										"api",
 										"genes",
 										"search",
-										"filter"
+										"advanced"
 									],
 									"query": [
 										{

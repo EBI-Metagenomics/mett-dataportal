@@ -155,8 +155,8 @@ class GeneService:
     async def search_genes_by_genome_and_string(
         self,
         query: str = None,
-        filter: Optional[str] = None,
         genome_id: Optional[int] = None,
+        filter: Optional[str] = None,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
         sort_field: Optional[str] = None,
@@ -170,7 +170,6 @@ class GeneService:
                 )
             if genome_id:
                 filters &= Q(strain_id=genome_id)
-
             genes, total_results = await self._fetch_paginated_genes(
                 filters, page, per_page, sort_field, sort_order
             )
