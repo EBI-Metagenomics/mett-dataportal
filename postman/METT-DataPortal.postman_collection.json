@@ -1291,6 +1291,118 @@
 							"response": []
 						},
 						{
+							"name": "Gene-Autocomplete-Essentiality-TypeStrain-Ess_Liquid",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(10); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=6&query=pr&filter=essentiality:essential_liquid",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "species_id",
+											"value": "1"
+										},
+										{
+											"key": "genome_ids",
+											"value": "6"
+										},
+										{
+											"key": "query",
+											"value": "pr"
+										},
+										{
+											"key": "filter",
+											"value": "essentiality:essential_liquid"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Autocomplete-Essentiality-TypeStrain-Ess_Liquid,Unclear",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(10); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=6&query=pr&filter=essentiality:essential_liquid,unclear",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "species_id",
+											"value": "1"
+										},
+										{
+											"key": "genome_ids",
+											"value": "6"
+										},
+										{
+											"key": "query",
+											"value": "pr"
+										},
+										{
+											"key": "filter",
+											"value": "essentiality:essential_liquid,unclear"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Gene-Autocomplete-Essentiality-Negative",
 							"event": [
 								{

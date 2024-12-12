@@ -35,7 +35,7 @@ export class GeneService {
         try {
             const params = this.buildParams(query, 1, limit, speciesId, genomeIds);
             if (essentialityFilter && essentialityFilter.length > 0) {
-                const filterValue = essentialityFilter.map(value => `essentiality:${value}`).join(",");
+                const filterValue = `essentiality:${essentialityFilter.join(",")}`;
                 params.append("filter", filterValue);
             }
             const response = await ApiService.get("genes/autocomplete", params);
@@ -82,7 +82,7 @@ export class GeneService {
             }
 
             if (essentialityFilter && essentialityFilter.length > 0) {
-                const filterValue = essentialityFilter.map(value => `essentiality:${value}`).join(",");
+                const filterValue = `essentiality:${essentialityFilter.join(",")}`;
                 params.append("filter", filterValue);
             }
 

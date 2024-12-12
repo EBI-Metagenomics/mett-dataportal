@@ -357,49 +357,61 @@ class GeneService:
             }
         )
 
-    def _parse_filters(self, filter_str: Optional[str]) -> Dict[str, str]:
+    def _parse_filters(self, filter_str: Optional[str]) -> Dict[str, List[str]]:
         if not filter_str:
             return {}
 
         filters = {}
         try:
-            for pair in filter_str.split(","):
-                key, value = pair.split(":", 1)
-                filters[key.strip()] = value.strip()
+            # Match key:values where values can contain commas
+            key, values_str = filter_str.split(":", 1)
+            key = key.strip()
+            values = [v.strip() for v in values_str.split(",")]
+            filters[key] = values
         except ValueError:
             logger.error(f"Invalid filter format: {filter_str}")
             raise ServiceError(
                 "Invalid filter format. Use 'key:value' pairs separated by commas."
             )
 
+        logger.debug(f"Parsed filters: {filters}")
         return filters
 
-    async def _apply_essentiality_filter(self, query: Q, essentiality_value: str) -> Q:
+    async def _apply_essentiality_filter(
+        self, query: Q, essentiality_values: List[str]
+    ) -> Q:
         from dataportal.models import EssentialityTag
 
         try:
-            tag = await sync_to_async(EssentialityTag.objects.get)(
-                name=essentiality_value
+            tags = await sync_to_async(list)(
+                EssentialityTag.objects.filter(name__in=essentiality_values)
             )
-            # todo - for now applying filter for the tag and "solid" media type
-            return query & Q(
-                essentiality_data__essentiality=tag, essentiality_data__media="solid"
-            )
-        except EssentialityTag.DoesNotExist:
-            logger.error(f"Essentiality tag '{essentiality_value}' does not exist.")
+            if tags:
+                return query & Q(
+                    essentiality_data__essentiality__in=tags,
+                    essentiality_data__media="solid",
+                )
+            else:
+                logger.error(
+                    f"No matching essentiality tags found for values: {essentiality_values}"
+                )
+                return query
+        except Exception as e:
+            logger.error(f"Error applying essentiality filter: {e}")
             return query
 
     async def _apply_filters_for_type_strain(
-        self, query: Q, filters: Dict[str, str]
+        self, query: Q, filters: Dict[str, list]
     ) -> Q:
         if filters:
             query &= Q(strain__type_strain=True)
 
-            for key, value in filters.items():
+            for key, values in filters.items():
                 if key == "essentiality":
-                    query = await self._apply_essentiality_filter(query, value)
+                    query = await self._apply_essentiality_filter(query, values)
                 else:
-                    query &= Q(**{f"{key}__icontains": value})
+                    for value in values:
+                        query &= Q(**{f"{key}__icontains": value})
 
         return query
 
