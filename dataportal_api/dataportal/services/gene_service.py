@@ -116,16 +116,19 @@ class GeneService:
             logger.error(f"Error fetching gene autocomplete suggestions: {e}")
             return []
 
+    def fetch_gene_by_id(self, gene_id: int):
+        return get_object_or_404(
+            Gene.objects.select_related("strain").prefetch_related(
+                "essentiality_data__essentiality"
+            ),
+            id=gene_id,
+        )
+
     async def get_gene_by_id(self, gene_id: int) -> GeneResponseSchema:
         try:
-            gene = await sync_to_async(
-                lambda: get_object_or_404(
-                    Gene.objects.select_related(
-                        GENE_SORT_FIELD_STRAIN
-                    ).prefetch_related(GENE_ESSENTIALITY_DATA),
-                    id=gene_id,
-                )
-            )()
+            gene = await sync_to_async(self.fetch_gene_by_id, thread_sensitive=False)(
+                gene_id
+            )
             return self._serialize_gene(gene)
         except Http404:
             raise GeneNotFoundError(gene_id)
