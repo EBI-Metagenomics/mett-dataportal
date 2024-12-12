@@ -8,6 +8,8 @@ import {SpeciesService} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
+import SpeciesFilter from '../organisms/Filters/SpeciesFilter';
+import TypeStrainsFilter from '../organisms/Filters/TypeStrainsFilter';
 
 // Define the type for each tab
 interface Tab {
@@ -54,8 +56,12 @@ const HomePage: React.FC = () => {
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
     const [geneResults, setGeneResults] = useState<any[]>([]);
 
-    const [sortField, setSortField] = useState<string>('species');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    // sorting state
+    const [genomeSortField, setGenomeSortField] = useState<string>('species');
+    const [genomeSortOrder, setGenomeSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [geneSortField, setGeneSortField] = useState<string>('gene_name');
+    const [geneSortOrder, setGeneSortOrder] = useState<'asc' | 'desc'>('asc');
+
 
     useEffect(() => {
         const fetchSpecies = async () => {
@@ -86,7 +92,7 @@ const HomePage: React.FC = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
+            const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, genomeSortField, genomeSortOrder);
             console.log('Fetched results:', response.results);
             setGenomeResults(response.results);
         };
@@ -151,13 +157,14 @@ const HomePage: React.FC = () => {
     };
 
 
-    const handleGenomeSearch = async (field = sortField, order = sortOrder) => {
-        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
+    const handleGenomeSearch = async (field = genomeSortField, order = genomeSortOrder) => {
+        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, field, order);
         setGenomeResults(response.results);
     };
 
-    const handleGeneSearch = async () => {
-        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, geneSearchQuery, sortField, sortOrder);
+
+    const handleGeneSearch = async (field = geneSortField, order = geneSortOrder) => {
+        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, geneSearchQuery, field, order);
         setGenomeResults(response.results);
     };
 
@@ -185,18 +192,22 @@ const HomePage: React.FC = () => {
     };
 
     const handleGenomeSortClick = async (field: string) => {
-        const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
-        setSortField(field);
-        setSortOrder(newSortOrder);
+        const newSortOrder = genomeSortField === field && genomeSortOrder === 'asc' ? 'desc' : 'asc';
+        setGenomeSortField(field);
+        setGenomeSortOrder(newSortOrder);
         console.log('Sorting Genomes by:', {field, order: newSortOrder});
+        handleGenomeSearch(field, newSortOrder);
     };
 
+
     const handleGeneSortClick = async (field: string) => {
-        const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
-        setSortField(field);
-        setSortOrder(newSortOrder);
-        console.log('HomePage Sorting Genes by:', {field, order: newSortOrder});
+        const newSortOrder = geneSortField === field && geneSortOrder === 'asc' ? 'desc' : 'asc';
+        setGeneSortField(field);
+        setGeneSortOrder(newSortOrder);
+        console.log('Sorting Genes by:', {field, order: newSortOrder});
+        //handleGeneSearch(field, newSortOrder);
     };
+
 
     const geneLinkData = {
         template: '/genome/${strain_name}?gene_id=${gene_id}',
@@ -225,50 +236,20 @@ const HomePage: React.FC = () => {
             <div className="layout-container">
                 {/* Left Panel */}
                 <div className={styles.leftPane}>
-                    {/* Species Section */}
-                    <div className={styles.speciesSection}>
-                        <h3>Species</h3>
-                        <ul>
-                            {speciesList.map(species => (
-                                <li key={species.id}>
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedSpecies.includes(species.id)}
-                                            onChange={() => handleSpeciesSelect(species.id)}
-                                        />
-                                        <i>{species.scientific_name}</i>
-                                    </label>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                    {/* Species Filter */}
+                    <SpeciesFilter
+                        speciesList={speciesList}
+                        selectedSpecies={selectedSpecies}
+                        onSpeciesSelect={handleSpeciesSelect}
+                    />
 
-                    {/* Type Strains Section */}
-                    <div className={styles.typeStrains}>
-                        <h3>Type Strains</h3>
-                        <ul>
-                            {typeStrains.map((strain) => {
-                                const isStrainEnabled =
-                                    selectedSpecies.length === 0 || selectedSpecies.includes(strain.species_id); // Check if strain belongs to selected species
-
-                                return (
-                                    <li key={strain.id}>
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedTypeStrains.includes(strain.id)}
-                                                disabled={!isStrainEnabled} // Disable checkboxes not matching selected species
-                                                onChange={() => handleTypeStrainToggle(strain.id)}
-                                            />
-                                            {strain.isolate_name}
-                                        </label>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </div>
-
+                    {/* Type Strains Filter */}
+                    <TypeStrainsFilter
+                        typeStrains={typeStrains}
+                        selectedTypeStrains={selectedTypeStrains}
+                        selectedSpecies={selectedSpecies}
+                        onTypeStrainToggle={handleTypeStrainToggle}
+                    />
 
                     <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
                 </div>
@@ -286,8 +267,8 @@ const HomePage: React.FC = () => {
                             selectedSpecies={selectedSpecies}
                             selectedTypeStrains={selectedTypeStrains}
                             onSortClick={handleGenomeSortClick}
-                            sortField={sortField}
-                            sortOrder={sortOrder}
+                            sortField={genomeSortField}
+                            sortOrder={genomeSortOrder}
                             results={genomeResults}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
@@ -304,8 +285,8 @@ const HomePage: React.FC = () => {
                             selectedGenomes={selectedGenomes}
                             results={geneResults}
                             onSortClick={handleGeneSortClick}
-                            sortField={sortField}
-                            sortOrder={sortOrder}
+                            sortField={geneSortField}
+                            sortOrder={geneSortOrder}
                             linkData={geneLinkData}
                         />
                     )}
