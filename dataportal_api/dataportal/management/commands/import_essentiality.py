@@ -18,23 +18,29 @@ class Command(BaseCommand):
         csv_file = kwargs["csv"]
         valid_strains = ["BU_ATCC8492", "PV_ATCC8482"]
 
-        # Preload or create essentiality tags
+        # Define valid essentiality categories with their corresponding labels
+        valid_essentiality_categories = {
+            "unclear": "Unclear",
+            "essential": "Essential",
+            "not essential": "Not Essential",
+            "essential_liquid": "Essential Liquid",
+            "essential_solid": "Essential Solid",
+        }
+
+        # Preload or create essentiality tags with names and labels
         essentiality_tags = {
             tag.name.lower(): tag for tag in EssentialityTag.objects.all()
         }
-        valid_essentiality_categories = [
-            "unclear",
-            "essential",
-            "not essential",
-            "essential_liquid",
-            "essential_solid",
-        ]
 
-        for category in valid_essentiality_categories:
-            if category not in essentiality_tags:
-                essentiality_tags[category] = EssentialityTag.objects.create(
-                    name=category
+        for name, label in valid_essentiality_categories.items():
+            if name not in essentiality_tags:
+                essentiality_tags[name] = EssentialityTag.objects.create(
+                    name=name, label=label
                 )
+            elif essentiality_tags[name].label != label:
+                # Update the label if it has changed
+                essentiality_tags[name].label = label
+                essentiality_tags[name].save()
 
         gene_essentiality_batch = []
         batch_size = 500

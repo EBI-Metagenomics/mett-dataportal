@@ -15,7 +15,7 @@ const EssentialityFilter: React.FC<EssentialityFilterProps> = ({ essentialityFil
         const fetchEssentialityTags = async () => {
             try {
                 const response = await GeneService.fetchEssentialityTags();
-                setEssentialityTags(response.map((tag: any) => tag.name));
+                setEssentialityTags(response.map((tag: any) => tag.label));
             } catch (error) {
                 console.error('Error fetching essentiality tags:', error);
             }

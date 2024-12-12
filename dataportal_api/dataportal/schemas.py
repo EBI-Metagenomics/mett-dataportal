@@ -62,6 +62,7 @@ class GeneAutocompleteResponseSchema(BaseModel):
 class EssentialityTagSchema(BaseModel):
     id: int
     name: str
+    label: str
 
     model_config = ConfigDict(from_attributes=True)
 

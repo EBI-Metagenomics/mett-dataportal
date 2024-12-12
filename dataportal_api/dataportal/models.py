@@ -180,12 +180,13 @@ class Gene(models.Model):
 
 class EssentialityTag(models.Model):
     name = models.CharField(max_length=50, unique=True)
+    label = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
         db_table = "essentiality_tag"
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.label}"
 
 
 class GeneEssentiality(models.Model):

@@ -51,5 +51,6 @@ export interface PaginatedResponse<T> {
 
 export interface GeneEssentialityTag {
     id: number;
-    essentiality: string;
+    name: string;
+    label: string;
 }
