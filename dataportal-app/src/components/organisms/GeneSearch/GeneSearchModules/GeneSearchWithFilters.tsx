@@ -64,6 +64,7 @@ const GeneSearchWithFilters: React.FC<GeneSearchWithFiltersProps> = ({
                     selectedGenomes={selectedGenomes}
                     linkData={linkData}
                     viewState={viewState}
+                    essentialityFilter={essentialityFilter}
                 />
             </div>
         </div>

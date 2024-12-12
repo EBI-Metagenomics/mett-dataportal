@@ -288,6 +288,7 @@ const HomePage: React.FC = () => {
                             sortField={geneSortField}
                             sortOrder={geneSortOrder}
                             linkData={geneLinkData}
+                            essentialityFilter={[]}
                         />
                     )}
                 </div>

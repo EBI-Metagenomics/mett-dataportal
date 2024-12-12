@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { GeneService } from '../../../services/geneService';
+import React, {useEffect, useState} from 'react';
+import {GeneService} from '../../../services/geneService';
 import styles from './EssentialityFilter.module.scss';
+import {GeneEssentialityTag} from "../../../interfaces/Gene";
 
 interface EssentialityFilterProps {
     essentialityFilter: string[];
@@ -8,14 +9,18 @@ interface EssentialityFilterProps {
     hasTypeStrains: boolean;
 }
 
-const EssentialityFilter: React.FC<EssentialityFilterProps> = ({ essentialityFilter, onEssentialityFilterChange, hasTypeStrains }) => {
-    const [essentialityTags, setEssentialityTags] = useState<string[]>([]);
+const EssentialityFilter: React.FC<EssentialityFilterProps> = ({
+                                                                   essentialityFilter,
+                                                                   onEssentialityFilterChange,
+                                                                   hasTypeStrains
+                                                               }) => {
+    const [essentialityTags, setEssentialityTags] = useState<GeneEssentialityTag[]>([]);
 
     useEffect(() => {
         const fetchEssentialityTags = async () => {
             try {
                 const response = await GeneService.fetchEssentialityTags();
-                setEssentialityTags(response.map((tag: any) => tag.label));
+                setEssentialityTags(response);
             } catch (error) {
                 console.error('Error fetching essentiality tags:', error);
             }
@@ -29,20 +34,23 @@ const EssentialityFilter: React.FC<EssentialityFilterProps> = ({ essentialityFil
     return (
         <div className={styles.container}>
             <h3>Essentiality</h3>
-            {essentialityTags.length === 0 && !hasTypeStrains && <p className={styles.disabledMessage}>Filters available for type strains only</p>}
+            {essentialityTags.length === 0 && !hasTypeStrains && (
+                <p className={styles.disabledMessage}>Filters available for type strains only</p>
+            )}
             {essentialityTags.map(tag => (
-                <label key={tag} className={styles.filterItem}>
+                <label key={tag.name} className={styles.filterItem}>
                     <input
                         type="checkbox"
-                        value={tag}
-                        checked={essentialityFilter.includes(tag)}
+                        value={tag.name}
+                        checked={essentialityFilter.includes(tag.name)}
                         onChange={onEssentialityFilterChange}
                         disabled={!hasTypeStrains}
                     />
-                    {tag}
+                    {tag.label}
                 </label>
             ))}
         </div>
+
     );
 };
 

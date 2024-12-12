@@ -22,7 +22,8 @@ interface GeneSearchFormProps {
     sortOrder: 'asc' | 'desc';
     selectedGenomes?: BaseGenome[],
     linkData: LinkData,
-    viewState?: ViewModel;
+    viewState?: ViewModel,
+    essentialityFilter: string[];
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -32,7 +33,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            linkData,
                                                            viewState,
                                                            sortField,
-                                                           sortOrder
+                                                           sortOrder,
+                                                           essentialityFilter
                                                        }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<GeneSuggestion[]>([]);
@@ -43,7 +45,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(10);
-    const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
+    // const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
     const [essentialityTags, setEssentialityTags] = useState<GeneEssentialityTag[]>([]);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -76,16 +78,33 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     let response;
 
                     // If species is selected (used in HomePage.tsx)
-                    if (selectedSpecies && selectedSpecies.length == 1) {
-                        response = await GeneService.fetchGeneAutocompleteSuggestions(inputQuery, 10, selectedSpecies[0]);
+                    if (selectedSpecies && selectedSpecies.length === 1) {
+                        response = await GeneService.fetchGeneAutocompleteSuggestions(
+                            inputQuery,
+                            10,
+                            selectedSpecies[0],
+                            undefined,
+                            essentialityFilter
+                        );
                     }
-
                     // If genome is selected (used in GeneViewerPage.tsx)
                     else if (selectedGenomes && selectedGenomes.length > 0) {
                         const genomeIds = selectedGenomes.map(genome => genome.id).join(',');
-                        response = await GeneService.fetchGeneAutocompleteSuggestions(inputQuery, 10, undefined, genomeIds);
+                        response = await GeneService.fetchGeneAutocompleteSuggestions(
+                            inputQuery,
+                            10,
+                            undefined,
+                            genomeIds,
+                            essentialityFilter
+                        );
                     } else {
-                        response = await GeneService.fetchGeneAutocompleteSuggestions(inputQuery);
+                        response = await GeneService.fetchGeneAutocompleteSuggestions(
+                            inputQuery,
+                            10,
+                            undefined,
+                            undefined,
+                            essentialityFilter
+                        );
                     }
 
                     if (response) {
@@ -98,7 +117,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         },
-        [selectedSpecies, selectedGenomes]
+        [selectedSpecies, selectedGenomes, essentialityFilter]
     );
 
 
@@ -128,7 +147,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             const speciesFilter = selectedSpecies && selectedSpecies.length === 1
                 ? selectedSpecies
                 : undefined;
-            console.log("11111111", page)
             try {
                 const response = await GeneService.fetchGeneSearchResults(
                     query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter, essentialityFilter
@@ -161,14 +179,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     useEffect(() => {
         fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
-    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize]);
-
-    const handleEssentialityFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const value = event.target.value;
-        setEssentialityFilter((prev) =>
-            prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
-        );
-    };
+    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize,essentialityFilter]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {

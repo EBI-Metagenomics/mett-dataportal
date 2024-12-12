@@ -29,10 +29,15 @@ export class GeneService {
         query: string,
         limit: number = 10,
         speciesId?: number,
-        genomeIds?: string
+        genomeIds?: string,
+        essentialityFilter?: string[]
     ): Promise<GeneSuggestion[]> {
         try {
             const params = this.buildParams(query, 1, limit, speciesId, genomeIds);
+            if (essentialityFilter && essentialityFilter.length > 0) {
+                const filterValue = essentialityFilter.map(value => `essentiality:${value}`).join(",");
+                params.append("filter", filterValue);
+            }
             const response = await ApiService.get("genes/autocomplete", params);
             return response;
         } catch (error) {
@@ -77,8 +82,10 @@ export class GeneService {
             }
 
             if (essentialityFilter && essentialityFilter.length > 0) {
-                params.append("essentiality", essentialityFilter.join(","));
+                const filterValue = essentialityFilter.map(value => `essentiality:${value}`).join(",");
+                params.append("filter", filterValue);
             }
+
 
             const response = await ApiService.get("/genes/search/advanced", params);
             return response;
