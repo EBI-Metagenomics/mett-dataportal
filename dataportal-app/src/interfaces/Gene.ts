@@ -1,4 +1,5 @@
 export interface GeneEssentiality {
+    id: number;
     media: string;
     essentiality: string;
 }
@@ -46,4 +47,9 @@ export interface GeneSuggestion {
 export interface PaginatedResponse<T> {
     results: T[];
     num_pages: number;
+}
+
+export interface GeneEssentialityTag {
+    id: number;
+    essentiality: string;
 }

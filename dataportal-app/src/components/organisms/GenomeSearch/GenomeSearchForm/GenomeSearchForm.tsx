@@ -1,11 +1,11 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import Pagination from "../../molecules/Pagination";
-import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
-import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
-import styles from "@components/organisms/GenomeSearch/GenomeSearchForm.module.scss";
-import {GenomeService} from "../../../services/genomeService";
-import {LinkData} from "../../../interfaces/Auxiliary";
-import {BaseGenome} from "../../../interfaces/Genome";
+import Pagination from "../../../molecules/Pagination";
+import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchForm/GenomeSearchInput";
+import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsHandler/GenomeResultsTable";
+import styles from "@components/organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm.module.scss";
+import {GenomeService} from "../../../../services/genomeService";
+import {LinkData} from "../../../../interfaces/Auxiliary";
+import {BaseGenome} from "../../../../interfaces/Genome";
 
 interface SearchGenomeFormProps {
     searchQuery: string;

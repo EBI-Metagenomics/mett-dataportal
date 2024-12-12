@@ -6,7 +6,7 @@ import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSes
 import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
 import styles from "./GeneViewerPage.module.scss";
 import "./GeneViewerPage.module.scss";
-import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
+import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm/GeneSearchForm";
 import {GenomeService} from "../../services/genomeService";
 import { GeneService } from '../../services/geneService';
 import {JBrowseApp} from "@jbrowse/react-app";
@@ -14,6 +14,7 @@ import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
 import {DisplayedRegion} from "../../interfaces/jbrowse";
 import {ZOOM_LEVELS} from "../../utils/appConstants";
+import GeneSearchWithFilters from "@components/organisms/GeneSearch/GeneSearchModules/GeneSearchWithFilters";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -288,7 +289,7 @@ const GeneViewerPage: React.FC = () => {
                 {/* Gene Search Section */}
                 <div className={styles.geneSearchContainer}>
                     <section>
-                        <GeneSearchForm
+                        <GeneSearchWithFilters
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                             onSearchSubmit={handleGeneSearch}

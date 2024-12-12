@@ -1,5 +1,5 @@
 import {ApiService} from "./api";
-import {Gene, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
+import {Gene, GeneEssentialityTag, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
 import {cacheResponse} from "./cachingDecorator";
 
 export class GeneService {
@@ -151,7 +151,7 @@ export class GeneService {
      * Fetch essentiality tags with caching enabled.
      */
     @cacheResponse(60 * 60 * 1000) // Cache for 60 minutes
-    static async fetchEssentialityTags() {
+    static async fetchEssentialityTags(): Promise<GeneEssentialityTag[]> {
         try {
             return await ApiService.get(`/genes/essentiality/tags`);
         } catch (error) {

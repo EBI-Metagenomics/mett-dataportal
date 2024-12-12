@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {useLocation} from 'react-router-dom'
-import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm';
-import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm';
+import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm/GeneSearchForm';
+import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
 import {GenomeService} from '../../services/genomeService';
 import {SpeciesService} from "../../services/speciesService";

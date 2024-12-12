@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import styles from './GenomeResultsTable.module.scss';
-import {LinkData} from "../../../interfaces/Auxiliary";
-import {BaseGenome} from "../../../interfaces/Genome";
+import {LinkData} from "../../../../interfaces/Auxiliary";
+import {BaseGenome} from "../../../../interfaces/Genome";
 
 interface GenomeResultsTableProps {
     results: any[];

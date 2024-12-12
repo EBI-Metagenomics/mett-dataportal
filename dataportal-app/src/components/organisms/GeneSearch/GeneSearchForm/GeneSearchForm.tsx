@@ -1,13 +1,13 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import GeneSearchInput from './GeneSearchInput';
-import styles from "@components/organisms/GeneSearch/GeneSearchForm.module.scss";
-import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsTable";
+import styles from "@components/organisms/GeneSearch/GeneSearchForm/GeneSearchForm.module.scss";
+import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsHandler/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
-import {GeneService} from '../../../services/geneService';
+import {GeneService} from '../../../../services/geneService';
 import {createViewState} from '@jbrowse/react-app';
-import {GeneMeta, GeneSuggestion} from "../../../interfaces/Gene";
-import {LinkData} from "../../../interfaces/Auxiliary";
-import {BaseGenome} from "../../../interfaces/Genome";
+import {GeneEssentialityTag, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
+import {LinkData} from "../../../../interfaces/Auxiliary";
+import {BaseGenome} from "../../../../interfaces/Genome";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -44,7 +44,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(10);
     const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
-    const [essentialityTags, setEssentialityTags] = useState<string[]>([]);
+    const [essentialityTags, setEssentialityTags] = useState<GeneEssentialityTag[]>([]);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, 10);
@@ -55,7 +55,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         const essentialityTags = async () => {
             try {
                 const response = await GeneService.fetchEssentialityTags();
-                setEssentialityTags(response.map((tag: any) => tag.name));
+                setEssentialityTags(response);
             } catch (error) {
                 console.error('Error fetching essentiality tags:', error);
             }

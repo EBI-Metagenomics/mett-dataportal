@@ -1,0 +1,14 @@
+.container {
+    display: flex;
+    gap: 1rem;
+}
+
+.leftPane {
+    flex: 1;
+    max-width: 250px;
+}
+
+.rightPane {
+    flex: 3;
+    width: 100%;
+}
