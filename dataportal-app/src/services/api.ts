@@ -1,41 +1,73 @@
-import apiInstance from './apiInstance';
+import apiInstance from "./apiInstance";
 
 type ParamsType = Record<string, any>;
 
-export const getData = (endpoint: string, params: ParamsType = {}): Promise<any> => {
-  return apiInstance.get(endpoint, { params })
-    .then(response => response.data)
-    .catch(error => {
-      console.error('Error fetching data:', error.message);
-      throw error;
-    });
-};
+export class ApiService {
+    /**
+     * Handle generic GET requests.
+     */
+    static async get(endpoint: string, params: ParamsType = {}): Promise<any> {
+        try {
+            const response = await apiInstance.get(endpoint, {params});
+            return response.data;
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error("Error fetching data:", error.message);
+            } else {
+                console.error("Error fetching data:", error);
+            }
+            throw error;
+        }
+    }
 
-export const postData = (endpoint: string, data: ParamsType): Promise<any> => {
-  return apiInstance.post(endpoint, data)
-    .then(response => response.data)
-    .catch(error => {
-      console.error('Error posting data:', error.message);
-      throw error;
-    });
-};
+    /**
+     * Handle generic POST requests.
+     */
+    static async post(endpoint: string, data: ParamsType): Promise<any> {
+        try {
+            const response = await apiInstance.post(endpoint, data);
+            return response.data;
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error("Error posting data:", error.message);
+            } else {
+                console.error("Error posting data:", error);
+            }
+            throw error;
+        }
+    }
 
-// Function to handle generic PUT requests
-export const putData = (endpoint: string, data: ParamsType): Promise<any> => {
-  return apiInstance.put(endpoint, data)
-    .then(response => response.data)
-    .catch(error => {
-      console.error('Error putting data:', error.message);
-      throw error;
-    });
-};
+    /**
+     * Handle generic PUT requests.
+     */
+    static async put(endpoint: string, data: ParamsType): Promise<any> {
+        try {
+            const response = await apiInstance.put(endpoint, data);
+            return response.data;
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error("Error putting data:", error.message);
+            } else {
+                console.error("Error putting data:", error);
+            }
+            throw error;
+        }
+    }
 
-// Function to handle generic DELETE requests
-export const deleteData = (endpoint: string): Promise<any> => {
-  return apiInstance.delete(endpoint)
-    .then(response => response.data)
-    .catch(error => {
-      console.error('Error deleting data:', error.message);
-      throw error;
-    });
-};
+    /**
+     * Handle generic DELETE requests.
+     */
+    static async delete(endpoint: string): Promise<any> {
+        try {
+            const response = await apiInstance.delete(endpoint);
+            return response.data;
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error("Error deleting data:", error.message);
+            } else {
+                console.error("Error deleting data:", error);
+            }
+            throw error;
+        }
+    }
+}

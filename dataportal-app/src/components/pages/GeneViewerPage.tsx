@@ -7,8 +7,8 @@ import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState
 import styles from "./GeneViewerPage.module.scss";
 import "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm";
-import {fetchGenomeByIsolateNames, fetchGenomeByStrainIds} from "../../services/genomeService";
-import {fetchGeneById, fetchGeneBySearch} from "../../services/geneService";
+import {GenomeService} from "../../services/genomeService";
+import { GeneService } from '../../services/geneService';
 import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
@@ -33,13 +33,13 @@ const GeneViewerPage: React.FC = () => {
         const fetchGeneAndGenomeMeta = async () => {
             try {
                 if (geneId) {
-                    const geneResponse = await fetchGeneById(Number(geneId));
+                    const geneResponse = await GeneService.fetchGeneById(Number(geneId));
                     setGeneMeta(geneResponse);
 
-                    const genomeResponse = await fetchGenomeByStrainIds([geneResponse.strain_id]);
+                    const genomeResponse = await GenomeService.fetchGenomeByStrainIds([geneResponse.strain_id]);
                     setGenomeMeta(genomeResponse[0]);
                 } else if (strainName) {
-                    const genomeResponse = await fetchGenomeByIsolateNames([strainName]);
+                    const genomeResponse = await GenomeService.fetchGenomeByIsolateNames([strainName]);
                     setGenomeMeta(genomeResponse[0]);
                 }
             } catch (error) {
@@ -172,7 +172,7 @@ const GeneViewerPage: React.FC = () => {
 
     const handleGeneSearch = async () => {
         if (genomeMeta?.id) {
-            const response = await fetchGeneBySearch(genomeMeta.id, geneSearchQuery);
+            const response = await GeneService.fetchGeneBySearch(genomeMeta.id, geneSearchQuery);
             setGeneResults(response.results || []);
             setTotalPages(response.num_pages || 1);
         }

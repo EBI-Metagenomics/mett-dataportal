@@ -42,3 +42,8 @@ export interface GeneSuggestion {
     interpro: string | null;
     dbxref: string | null;
 }
+
+export interface PaginatedResponse<T> {
+    results: T[];
+    num_pages: number;
+}

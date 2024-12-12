@@ -3,8 +3,8 @@ import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm';
 import SelectedGenomes from '../organisms/SelectedGenomes';
-import {fetchGenomesBySearch, fetchTypeStrains} from '../../services/genomeService';
-import {fetchSpeciesList} from "../../services/speciesService";
+import {GenomeService} from '../../services/genomeService';
+import {SpeciesService} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
@@ -59,12 +59,12 @@ const HomePage: React.FC = () => {
 
     useEffect(() => {
         const fetchSpecies = async () => {
-            const species = await fetchSpeciesList();
+            const species = await SpeciesService.fetchSpeciesList();
             setSpeciesList(species || []);
         };
 
         const fetchTypeStrainsData = async () => {
-            const strains = await fetchTypeStrains();
+            const strains = await GenomeService.fetchTypeStrains();
             setTypeStrains(strains || []);
         };
 
@@ -86,7 +86,7 @@ const HomePage: React.FC = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
+            const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
             console.log('Fetched results:', response.results);
             setGenomeResults(response.results);
         };
@@ -152,12 +152,12 @@ const HomePage: React.FC = () => {
 
 
     const handleGenomeSearch = async (field = sortField, order = sortOrder) => {
-        const response = await fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
+        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, sortField, sortOrder);
         setGenomeResults(response.results);
     };
 
     const handleGeneSearch = async () => {
-        const response = await fetchGenomesBySearch(selectedSpecies, geneSearchQuery, sortField, sortOrder);
+        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, geneSearchQuery, sortField, sortOrder);
         setGenomeResults(response.results);
     };
 

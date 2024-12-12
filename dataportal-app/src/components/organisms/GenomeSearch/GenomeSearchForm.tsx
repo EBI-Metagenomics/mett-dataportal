@@ -3,11 +3,7 @@ import Pagination from "../../molecules/Pagination";
 import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchInput";
 import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsTable";
 import styles from "@components/organisms/GenomeSearch/GenomeSearchForm.module.scss";
-import {
-    fetchGenomeAutocompleteSuggestions,
-    fetchGenomeByStrainIds,
-    fetchGenomeSearchResults
-} from "../../../services/genomeService";
+import {GenomeService} from "../../../services/genomeService";
 import {LinkData} from "../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../interfaces/Genome";
 
@@ -65,7 +61,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         async (inputQuery: string) => {
             if (inputQuery.length >= 2) {
                 try {
-                    const response = await fetchGenomeAutocompleteSuggestions(inputQuery, selectedSpecies.join(','));
+                    const response = await GenomeService.fetchGenomeAutocompleteSuggestions(inputQuery, selectedSpecies.join(','));
 
                     if (response) {
                         setSuggestions(response);
@@ -115,14 +111,14 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
                 if (typeStrainFilter) {
                     console.log("Fetching genomes by type strain IDs:", typeStrainFilter);
-                    response = await fetchGenomeByStrainIds(typeStrainFilter);
+                    response = await GenomeService.fetchGenomeByStrainIds(typeStrainFilter);
                     setResults(response);
                     setTotalPages(1);
                     setHasPrevious(false);
                     setHasNext(false);
                 } else {
                     console.log("Fetching genomes using standard search");
-                    response = await fetchGenomeSearchResults(
+                    response = await GenomeService.fetchGenomeSearchResults(
                         qry,
                         page,
                         pageSize,
