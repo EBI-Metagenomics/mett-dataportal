@@ -77,7 +77,7 @@ class GeneService:
 
             # Parse additional filters and apply only if strain is a type strain
             parsed_filters = self._parse_filters(filter)
-            gene_filter = self._apply_filters_for_type_strain(
+            gene_filter = await self._apply_filters_for_type_strain(
                 gene_filter, parsed_filters
             )
 
@@ -195,7 +195,7 @@ class GeneService:
 
             # Parse additional filters and apply only if strain is a type strain
             parsed_filters = self._parse_filters(filter)
-            gene_filter = self._apply_filters_for_type_strain(
+            gene_filter = await self._apply_filters_for_type_strain(
                 gene_filter, parsed_filters
             )
 
@@ -254,7 +254,7 @@ class GeneService:
 
             # Parse additional filters and apply only if strain is a type strain
             parsed_filters = self._parse_filters(filter)
-            filters = self._apply_filters_for_type_strain(filters, parsed_filters)
+            filters = await self._apply_filters_for_type_strain(filters, parsed_filters)
 
             # Add gene search filters if query is provided
             if query:
@@ -374,19 +374,30 @@ class GeneService:
 
         return filters
 
-    def _apply_essentiality_filter(self, query: Q, essentiality_value: str) -> Q:
-        return query & Q(
-            essentiality_data__media="solid",
-            essentiality_data__essentiality=essentiality_value,
-        )
+    async def _apply_essentiality_filter(self, query: Q, essentiality_value: str) -> Q:
+        from dataportal.models import EssentialityTag
 
-    def _apply_filters_for_type_strain(self, query: Q, filters: Dict[str, str]) -> Q:
+        try:
+            tag = await sync_to_async(EssentialityTag.objects.get)(
+                name=essentiality_value
+            )
+            # todo - for now applying filter for the tag and "solid" media type
+            return query & Q(
+                essentiality_data__essentiality=tag, essentiality_data__media="solid"
+            )
+        except EssentialityTag.DoesNotExist:
+            logger.error(f"Essentiality tag '{essentiality_value}' does not exist.")
+            return query
+
+    async def _apply_filters_for_type_strain(
+        self, query: Q, filters: Dict[str, str]
+    ) -> Q:
         if filters:
             query &= Q(strain__type_strain=True)
 
             for key, value in filters.items():
                 if key == "essentiality":
-                    query = self._apply_essentiality_filter(query, value)
+                    query = await self._apply_essentiality_filter(query, value)
                 else:
                     query &= Q(**{f"{key}__icontains": value})
 

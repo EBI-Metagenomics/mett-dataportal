@@ -1,5 +1,7 @@
 import csv
+
 from django.core.management.base import BaseCommand
+
 from dataportal.models import Gene, GeneEssentiality, EssentialityTag
 
 
@@ -22,7 +24,7 @@ class Command(BaseCommand):
         valid_essentiality_categories = {
             "unclear": "Unclear",
             "essential": "Essential",
-            "not essential": "Not Essential",
+            "not_essential": "Not Essential",
             "essential_liquid": "Essential Liquid",
             "essential_solid": "Essential Solid",
         }
@@ -54,10 +56,13 @@ class Command(BaseCommand):
 
                 for row in reader:
                     locus_tag = row["locus_tag"].strip()
+                    # print(f"Locus Tag: {locus_tag}")
                     strain_id = "_".join(locus_tag.split("_")[:2])
+                    # print(f"Strain ID: {strain_id}")
                     essentiality_value = (
                         row["unified_final_call_240817"].strip().lower()
                     )
+                    # print(f"Essentiality Value: {essentiality_value}")
 
                     if (
                         strain_id in valid_strains
@@ -88,6 +93,11 @@ class Command(BaseCommand):
                             )
                     else:
                         skipped_count += 1
+
+                    # if strain_id not in valid_strains:
+                    #     self.stderr.write(f"Skipping: Invalid strain '{strain_id}'")
+                    # elif essentiality_value not in essentiality_tags:
+                    #     self.stderr.write(f"Skipping: Invalid essentiality '{essentiality_value}'")
 
                 # Insert any remaining records
                 if gene_essentiality_batch:

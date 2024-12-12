@@ -206,13 +206,16 @@ class GeneEssentiality(models.Model):
         indexes = [
             models.Index(fields=["media"], name="media_idx"),
             models.Index(fields=["essentiality"], name="essentiality_idx"),
+            models.Index(
+                fields=["essentiality", "media"], name="essentiality_media_idx"
+            ),
         ]
         constraints = [
             models.UniqueConstraint(fields=["gene", "media"], name="unique_gene_media"),
         ]
 
     def __str__(self):
-        return f"{self.gene.locus_tag} - {self.media} - {self.essentiality_tag.name}"
+        return f"{self.gene.locus_tag} - {self.media} - {self.essentiality.name if self.essentiality else 'No Tag'}"
 
 
 # GeneOntologyTerm Model
