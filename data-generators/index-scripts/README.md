@@ -23,3 +23,11 @@ $ ./process_gff3.sh
 *  Generate an index file (.ix)
 * Generate an auxiliary index file (.ixx)
 * Generate the metadata file (.gff.gz_meta.json)
+
+### Additional Tracks
+
+#### Essentiality
+```bash
+$ python ./generate_essentiality_gff3.py
+
+```
