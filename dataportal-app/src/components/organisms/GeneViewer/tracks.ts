@@ -1,6 +1,7 @@
 import {GenomeMeta} from "../../../interfaces/Genome";
 
 const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
+    // Structural Annotation Track
     {
         type: 'FeatureTrack',
         trackId: 'structural_annotation',
@@ -51,6 +52,44 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                 showForward: true,
                 showReverse: true,
                 showTranslation: true,
+                showLabels: true,
+            },
+        ],
+    },
+
+    // Essentiality Track
+    {
+        type: 'FeatureTrack',
+        trackId: 'essentiality_annotation',
+        name: 'Essentiality Annotation',
+        assemblyNames: [genomeMeta.assembly_name],
+        category: ['Essentiality'],
+        adapter: {
+            type: 'Gff3TabixAdapter',
+            gffGzLocation: {
+                uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/essentiality/${genomeMeta.isolate_name}_essentiality.gff3.gz`,
+            },
+            index: {
+                location: {
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/essentiality/${genomeMeta.isolate_name}_essentiality.gff3.gz.tbi`,
+                },
+            },
+        },
+        visible: true,
+        displays: [
+            {
+                displayId: `essentiality_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
+                type: 'LinearBasicDisplay',
+                renderer: {
+                    type: 'SvgFeatureRenderer',
+                    color: "jexl:get(feature, 'Essentiality') == 'essential' ? 'red' : " +
+                        "get(feature, 'Essentiality') == 'not_essential' ? 'blue' : " +
+                        "get(feature, 'Essentiality').includes('liquid') ? 'orange' : " +
+                        "get(feature, 'Essentiality').includes('solid') ? 'green' : 'gray'",
+                    labels: {
+                        name: "jexl:get(feature, 'Name') || get(feature, 'ID')",
+                    },
+                },
                 showLabels: true,
             },
         ],

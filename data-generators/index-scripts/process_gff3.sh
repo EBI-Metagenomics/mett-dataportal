@@ -119,4 +119,7 @@ while read -r isolate_name; do
 
 done < isolate_list.txt
 
+echo "Starting essentiality GFF3 processing..."
+bash ./process_essentiality.sh
+
 echo "GFF3 processing completed."

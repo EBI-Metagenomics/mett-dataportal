@@ -2,7 +2,7 @@
 
 ESSENTIALITY_OUTPUT_DIR="gff3_files/essentiality"
 ESSENTIALITY_SCRIPT="generate_essentiality_gff3.py"  # Your existing Python script
-BASE_URL="http://localhost:3000"
+
 
 mkdir -p "$ESSENTIALITY_OUTPUT_DIR"
 

@@ -2,13 +2,13 @@ import pandas as pd
 import requests
 import os
 
-# URLs for the FTP server GFF files
+# FTP URLs
 ftp_urls = {
     "BU_ATCC8492": "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/BU_ATCC8492/functional_annotation/merged_gff/BU_ATCC8492_annotations.gff",
     "PV_ATCC8482": "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/PV_ATCC8482/functional_annotation/merged_gff/PV_ATCC8482_annotations.gff",
 }
 
-# Load the essentiality CSV file
+# essentiality CSV file
 essentiality_df = pd.read_csv(
     "../data/essentiality_table_all_libraries_240818_14102024.csv"
 )
@@ -24,7 +24,7 @@ def download_gff(strain, url):
     return filename
 
 
-# Function to parse the GFF file and create a mapping of locus_tag to seqid
+#  parse the GFF file and create a mapping of locus_tag to seqid
 def get_seqid_mapping(gff_filename):
     seqid_mapping = {}
     with open(gff_filename, "r") as file:
@@ -45,22 +45,59 @@ def get_seqid_mapping(gff_filename):
 
 # Function to create essentiality GFF3 DataFrame with correct seqid
 def create_essentiality_gff(df, seqid_mapping):
+    # Group by 'locus_tag', 'gene_name', 'start', and 'end'
+    grouped_df = (
+        df.groupby(["locus_tag", "gene_name", "start", "end"])
+        .agg(
+            {
+                "final_essentiality_call_agreement": lambda x: list(x),
+                "media": lambda x: list(x),
+                "confidence_score_HMM": lambda x: list(x),
+            }
+        )
+        .reset_index()
+    )
+
+    def combine_essentiality_and_confidence(row):
+        essentiality_dict = {}
+        confidence_dict = {}
+
+        for essentiality, media, confidence in zip(
+            row["final_essentiality_call_agreement"],
+            row["media"],
+            row["confidence_score_HMM"],
+        ):
+            media_key = media.capitalize()
+            essentiality_dict[f"Essentiality_{media_key}"] = essentiality
+            confidence_dict[f"Confidence_{media_key}"] = confidence
+
+        combined_attributes = [
+            f"{key}={value}"
+            for key, value in {**essentiality_dict, **confidence_dict}.items()
+        ]
+        return ";".join(combined_attributes)
+
+    grouped_df["combined_attributes"] = grouped_df.apply(
+        combine_essentiality_and_confidence, axis=1
+    )
+
     gff_df = pd.DataFrame(
         {
-            "seqid": df["locus_tag"].map(seqid_mapping),
+            "seqid": grouped_df["locus_tag"].map(seqid_mapping),
             "source": "essentiality_analysis",
             "type": "gene",
-            "start": df["start"],
-            "end": df["end"],
-            "score": df["confidence_score_HMM"],  # Use confidence score if available
+            "start": grouped_df["start"],
+            "end": grouped_df["end"],
+            "score": ".",  # Set to '.' since we have multiple confidence scores
             "strand": ".",  # Set to '.' if strand is not known
             "phase": ".",
-            "attributes": df.apply(
-                lambda row: f"ID={row['locus_tag']};Name={row['gene_name']};Essentiality={row['final_essentiality_call_agreement']}_{row['media']};Confidence={row['confidence_score_HMM']}",
+            "attributes": grouped_df.apply(
+                lambda row: f"ID={row['locus_tag']};Name={'' if row['gene_name'] == 'blank' else row['gene_name']};{row['combined_attributes']}",
                 axis=1,
             ),
         }
     )
+
     return gff_df
 
 
