@@ -272,7 +272,7 @@ const GeneViewerPage: React.FC = () => {
                     )}
                 </section>
                 {/* JBrowse Component Section */}
-                <div style={{paddingTop: '20px', height: '425px'}}>
+                <div style={{paddingTop: '20px', height: '525px'}}>
                     {viewState ? (
                         <div className={styles.jbrowseViewer}>
                             <div className={styles.jbrowseContainer}>

@@ -87,7 +87,7 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                         "get(feature, 'Essentiality').includes('liquid') ? 'orange' : " +
                         "get(feature, 'Essentiality').includes('solid') ? 'green' : 'gray'",
                     labels: {
-                        name: "jexl:get(feature, 'Name') || get(feature, 'ID')",
+                        name: "jexl:get(feature, 'ID') + ' (' + get(feature, 'Essentiality_Liquid') + ', ' + get(feature, 'Essentiality_Solid') + ')'",
                     },
                 },
                 showLabels: true,
