@@ -27,6 +27,7 @@ const GeneViewerPage: React.FC = () => {
     const {strainName} = useParams<{ strainName?: string }>();
     const searchParams = new URLSearchParams(location.search);
     const geneId = searchParams.get('gene_id');
+    const [height, setHeight] = useState(400);
 
     useEffect(() => {
         const fetchGeneAndGenomeMeta = async () => {
@@ -130,6 +131,13 @@ const GeneViewerPage: React.FC = () => {
                             return;
                         }
 
+                        // component height
+                        if (genomeMeta?.type_strain) {
+                            setHeight(525);
+                        } else {
+                            setHeight(400);
+                        }
+
                         // Once initialized, execute the navigation and zoom logic
                         console.log('LinearGenomeView initialized:', linearGenomeView.initialized);
 
@@ -198,6 +206,7 @@ const GeneViewerPage: React.FC = () => {
         template: '/genome/${strain_name}',
         alias: 'Select'
     };
+
 
     return (
         <div>
@@ -280,7 +289,7 @@ const GeneViewerPage: React.FC = () => {
                     )}
                 </section>
                 {/* JBrowse Component Section */}
-                <div style={{paddingTop: '20px', height: '525px'}}>
+                <div style={{paddingTop: '20px', height: `${height}px`}}>
                     {viewState ? (
                         <div className={styles.jbrowseViewer}>
                             <div className={styles.jbrowseContainer}>
