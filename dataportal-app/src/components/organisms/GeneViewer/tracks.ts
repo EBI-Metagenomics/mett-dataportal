@@ -82,13 +82,14 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => [
                 type: 'LinearBasicDisplay',
                 renderer: {
                     type: 'SvgFeatureRenderer',
-                    color: "jexl:get(feature, 'Essentiality') == 'essential' ? 'red' : " +
-                        "get(feature, 'Essentiality') == 'not_essential' ? 'blue' : " +
-                        "get(feature, 'Essentiality').includes('liquid') ? 'orange' : " +
-                        "get(feature, 'Essentiality').includes('solid') ? 'green' : 'gray'",
+                    color1: "jexl: (get(feature, 'essentiality_solid') == 'essential' && 'red') || " +
+                        "(get(feature, 'essentiality_solid') == 'not_essential' && 'blue') || " +
+                        "(get(feature, 'essentiality_solid').includes('liquid') && 'orange') || " +
+                        "(get(feature, 'essentiality_solid').includes('solid') && 'green') || 'gray'",
                     labels: {
-                        name: "jexl:get(feature, 'ID') + ' (' + get(feature, 'Essentiality_Liquid') + ', ' + get(feature, 'Essentiality_Solid') + ')'",
+                        name: "jexl:get(feature, 'id') + ' (' + get(feature, 'essentiality_solid') + ')'",
                     },
+
                 },
                 showLabels: true,
             },
