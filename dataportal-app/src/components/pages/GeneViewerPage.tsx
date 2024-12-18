@@ -27,7 +27,7 @@ const GeneViewerPage: React.FC = () => {
     const {strainName} = useParams<{ strainName?: string }>();
     const searchParams = new URLSearchParams(location.search);
     const geneId = searchParams.get('gene_id');
-    const [height, setHeight] = useState(400);
+    const [height, setHeight] = useState(500);
 
     useEffect(() => {
         const fetchGeneAndGenomeMeta = async () => {
@@ -42,6 +42,13 @@ const GeneViewerPage: React.FC = () => {
                     const genomeResponse = await GenomeService.fetchGenomeByIsolateNames([strainName]);
                     setGenomeMeta(genomeResponse[0]);
                 }
+                // Adjust height if the essentiality track is present
+                if (genomeMeta?.type_strain) {
+                    setHeight(500);
+                } else {
+                    setHeight(500);
+                }
+
             } catch (error) {
                 console.error('Error fetching gene/genome meta information', error);
             }
@@ -131,13 +138,6 @@ const GeneViewerPage: React.FC = () => {
                             return;
                         }
 
-                        // component height
-                        if (genomeMeta?.type_strain) {
-                            setHeight(525);
-                        } else {
-                            setHeight(400);
-                        }
-
                         // Once initialized, execute the navigation and zoom logic
                         console.log('LinearGenomeView initialized:', linearGenomeView.initialized);
 
@@ -175,6 +175,7 @@ const GeneViewerPage: React.FC = () => {
     if (!viewState) {
         return <p>Loading Genome Viewer...</p>;
     } else {
+
         //refresh essentiality track
         const view = viewState.session.views?.[0];
         viewState.session.tracks.forEach((track: any) => {
