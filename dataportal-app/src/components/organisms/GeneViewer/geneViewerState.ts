@@ -6,6 +6,7 @@ import CustomAMRDetailsPlugin from '@components/organisms/GeneViewer/CustomAMRDe
 import CustomFeatureDetailsPlugin from "@components/organisms/GeneViewer/CustomFeatureDetailsPlugin";
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
+import CustomSvgFeatureRendererPlugin from "../../../plugins/CustomSvgRenderer/CustomSvgFeatureRendererPlugin";
 
 
 interface Track {
@@ -55,6 +56,7 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                 const state = createViewState({
                     config,
                     // plugins: [CustomFeatureDetailsPlugin, CustomAMRDetailsPlugin, ...corePluginConstructors],
+                    // plugins: [CustomSvgFeatureRendererPlugin, ...corePluginConstructors],
                     hydrateFn: hydrateRoot,
                     createRootFn: createRoot,
                     makeWorkerInstance,
