@@ -2,12 +2,9 @@ import {useEffect, useState} from 'react';
 import {createViewState} from '@jbrowse/react-app';
 import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
 import {createRoot, hydrateRoot} from 'react-dom/client';
-import CustomAMRDetailsPlugin from '@components/organisms/GeneViewer/CustomAMRDetailsPlugin';
-import CustomFeatureDetailsPlugin from "@components/organisms/GeneViewer/CustomFeatureDetailsPlugin";
+import CustomSvgFeatureRendererPlugin from "../../../plugins/CustomSvgRenderer";
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
-import CustomSvgFeatureRendererPlugin from "../../../plugins/CustomSvgRenderer/CustomSvgFeatureRendererPlugin";
-
 
 interface Track {
     type: string;
@@ -28,8 +25,6 @@ function isPluginConstructor(value: any): value is typeof Plugin {
     return value && value.prototype instanceof Plugin;
 }
 
-
-// Custom hook for initializing JBrowse state
 const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any) => {
     const [viewState, setViewState] = useState<ReturnType<typeof createViewState> | null>(null);
     const [initializationError, setInitializationError] = useState<Error | null>(null);
@@ -41,6 +36,17 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                     throw new Error('Assembly configuration is missing.');
                 }
 
+                // const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
+                //   .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
+                console.log('CorePlugins:', CorePlugins);
+                const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
+                    .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
+
+                console.log('corePluginConstructors:', corePluginConstructors);
+                const plugins: PluginConstructor[] = [CustomSvgFeatureRendererPlugin, ...corePluginConstructors];
+
+                console.log('Registered Plugins:', plugins);
+
                 const config = {
                     assemblies: [assembly],
                     tracks: tracks.map((track) => ({
@@ -50,35 +56,26 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                     defaultSession: defaultSession || undefined,
                 };
 
-                const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
-                    .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
-
                 const state = createViewState({
                     config,
-                    // plugins: [CustomFeatureDetailsPlugin, CustomAMRDetailsPlugin, ...corePluginConstructors],
-                    // plugins: [CustomSvgFeatureRendererPlugin, ...corePluginConstructors],
+                    plugins,
                     hydrateFn: hydrateRoot,
                     createRootFn: createRoot,
                     makeWorkerInstance,
-                    // onChange: (patch, reversePatch) => {
-                    //     console.log('State changed', patch);
-                    // }
                 });
 
+                console.log('state.pluginManager:', state.pluginManager);
+                console.log('Plugins:', state.pluginManager.plugins.map((p: any) => p.name))
+
+
                 setViewState(state);
+                state.session.views[0].tracks.forEach((track: any) => {
+                    console.log(state.session.views[0])
+                    console.log(`Track ${track.configuration.trackId}:`,  track.configuration.displays)
+                })
 
-                const session = state.session;
-
-                // Add the widget manually for testing //todo important implementation for new widget plugin
-                // const testWidget = session.addWidget('AMRDetailsWidget', 'amrDetailsWidget', {
-                //     featureData: {testKey: 'testValue'},
-                // });
-                // session.showWidget(testWidget);
-
-                // Assembly loading
                 const assemblyManager = state.assemblyManager;
                 const assemblyInstance = assemblyManager.get(assembly.name);
-
                 if (assemblyInstance) {
                     await assemblyInstance.load();
                 }

@@ -180,7 +180,7 @@ const GeneViewerPage: React.FC = () => {
         const view = viewState.session.views?.[0];
         viewState.session.tracks.forEach((track: any) => {
             const trackId = track.trackId || track.get('trackId');
-            if (trackId === 'essentiality_annotation') {
+            if (trackId === 'structural_annotation') {
                 view.hideTrack(trackId);
                 view.showTrack(trackId);
             }
