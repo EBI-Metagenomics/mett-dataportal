@@ -45,11 +45,11 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => {
                 renderer: {
                     type: 'CustomSvgFeatureRenderer',
                     // maxHeight: 5000,
-                    labels: {
-                        name: "jexl:get(feature,'locus_tag') || get(feature,'sequence')",
-                    },
-                    color3: '#965567',
-                    color1: "jexl:get(feature,'type')!='CDS'?'gray':get(feature,'strand')>0?'violet':'turquoise'",
+                    // labels: {
+                    //     name: "jexl:get(feature,'locus_tag') || get(feature,'sequence')",
+                    // },
+                    // color3: '#965567',
+                    // color1: "jexl:get(feature,'type')!='CDS'?'gray':get(feature,'strand')>0?'violet':'turquoise'",
                 },
                 showForward: true,
                 showReverse: true,
