@@ -54,6 +54,9 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
           tracks: tracks.map((track) => ({
             ...track,
             visible: true,
+            renderer: {
+              type: 'CustomSvgFeatureRenderer',
+            },
           })),
           defaultSession: defaultSession || undefined,
         };
@@ -85,7 +88,7 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
         state.session.views[0]?.tracks.forEach((track: any) => {
           track.displays.forEach((display: any) => {
             console.log(`Refreshing display ${display.id}`);
-            display.refresh();
+            // display.refresh();
           });
         });
 

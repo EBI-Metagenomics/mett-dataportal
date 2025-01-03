@@ -2,10 +2,9 @@ import BoxRendererType, {
     RenderArgsDeserialized,
     RenderResults,
 } from '@jbrowse/core/pluggableElementTypes/renderers/BoxRendererType';
-import {Feature} from '@jbrowse/core/util/simpleFeature';
+import { Feature } from '@jbrowse/core/util/simpleFeature';
 import React from 'react';
-import {BaseLayout} from '@jbrowse/core/util/layouts/BaseLayout';
-
+import { BaseLayout } from '@jbrowse/core/util/layouts/BaseLayout';
 
 export default class CustomSvgFeatureRenderer extends BoxRendererType {
     supportsSVG = true;
@@ -18,7 +17,7 @@ export default class CustomSvgFeatureRenderer extends BoxRendererType {
     async render(renderProps: RenderArgsDeserialized): Promise<RenderResults> {
         console.log('Rendering with CustomSvgFeatureRenderer');
 
-        const {features, regions, bpPerPx, width, height, layout: layoutUnknown} = renderProps;
+        const { features, regions, bpPerPx, width, height, layout: layoutUnknown } = renderProps;
 
         // Explicitly cast layout to BaseLayout<Feature>
         const layout = layoutUnknown as BaseLayout<Feature>;
@@ -67,7 +66,6 @@ export default class CustomSvgFeatureRenderer extends BoxRendererType {
             reactElement,
         };
     }
-
 
     private getColorBasedOnEssentiality(essentiality: string): string {
         const colorMap: Record<string, string> = {
