@@ -116,6 +116,16 @@ class GenePaginationSchema(BasePaginationSchema):
     results: List[GeneResponseSchema]
 
 
+class EssentialityDataSchema(BaseModel):
+    media: str
+    essentiality: str
+
+
+class EssentialityResponseSchema(BaseModel):
+    locus_tag: str
+    essentiality_data: List[EssentialityDataSchema]
+
+
 __all__ = [
     "StrainSuggestionSchema",
     "GeneAutocompleteResponseSchema",
@@ -125,4 +135,5 @@ __all__ = [
     "GeneResponseSchema",
     "GenomePaginationSchema",
     "SpeciesSchema",
+    "EssentialityResponseSchema",
 ]

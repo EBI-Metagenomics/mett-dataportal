@@ -2,11 +2,12 @@ import logging
 from typing import Optional, List, Tuple, Dict
 
 from asgiref.sync import sync_to_async
+from cachetools import LRUCache
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
-from dataportal.models import Gene
+from dataportal.models import Gene, GeneEssentiality
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
 from dataportal.utils.constants import (
     FIELD_ID,
@@ -47,28 +48,86 @@ logger = logging.getLogger(__name__)
 
 
 class GeneService:
-    def __init__(self, limit: int = 10):
+    def __init__(self, limit: int = 10, cache_size: int = 10000):
         self.limit = limit
+        self.essentiality_cache = LRUCache(maxsize=cache_size)
+
+    async def load_essentiality_data_by_strain(self) -> Dict[int, Dict[str, List[Dict[str, str]]]]:
+        if self.essentiality_cache:
+            return self.essentiality_cache
+
+        logger.info("Loading essentiality data into cache...")
+        try:
+            essentiality_data = await sync_to_async(list)(
+                GeneEssentiality.objects.select_related("essentiality", "gene__strain")
+                .values("gene__strain_id", "gene_id", "gene__locus_tag", "media", "essentiality__name")
+            )
+
+            cache_data = {}
+            for entry in essentiality_data:
+                strain_id = entry["gene__strain_id"]
+                gene_id = entry["gene_id"]
+                locus_tag = entry["gene__locus_tag"]
+                media = entry["media"]
+                essentiality = entry["essentiality__name"] or "Unknown"
+
+                if strain_id not in cache_data:
+                    cache_data[strain_id] = {}
+
+                if gene_id not in cache_data[strain_id]:
+                    cache_data[strain_id][gene_id] = {
+                        "locus_tag": locus_tag,
+                        "essentiality_data": []
+                    }
+
+                cache_data[strain_id][gene_id]["essentiality_data"].append({
+                    "media": media,
+                    "essentiality": essentiality
+                })
+
+            # Store the data in the cache
+            self.essentiality_cache.update(cache_data)
+
+            logger.info(f"Loaded {len(essentiality_data)} essentiality records into cache.")
+            return cache_data
+        except Exception as e:
+            logger.error(f"Error loading essentiality data: {e}")
+            return {}
+
+    async def get_essentiality_data_by_strain(self, strain_id: int) -> Dict[str, Dict[str, List[Dict[str, str]]]]:
+        if not self.essentiality_cache:
+            await self.load_essentiality_data_by_strain()
+
+        cache_data = self.essentiality_cache.get(strain_id, {})
+        response = {}
+
+        for gene_id, gene_data in cache_data.items():
+            response[str(gene_id)] = {
+                "locus_tag": gene_data["locus_tag"],
+                "essentiality_data": gene_data["essentiality_data"]
+            }
+
+        return response
 
     async def autocomplete_gene_suggestions(
-        self,
-        query: str,
-        filter: Optional[str] = None,
-        limit: int = None,
-        species_id: Optional[int] = None,
-        genome_ids: Optional[List[int]] = None,
+            self,
+            query: str,
+            filter: Optional[str] = None,
+            limit: int = None,
+            species_id: Optional[int] = None,
+            genome_ids: Optional[List[int]] = None,
     ) -> List[Dict]:
         try:
             # Build the filter criteria
             gene_filter = (
-                Q(**{f"{GENE_FIELD_NAME}__iexact": query})
-                | Q(**{f"{GENE_FIELD_NAME}__icontains": query})
-                | Q(**{f"{GENE_FIELD_PRODUCT}__icontains": query})
-                | Q(**{f"{GENE_FIELD_LOCUS_TAG}__icontains": query})
-                | Q(**{f"{GENE_FIELD_KEGG}__icontains": query})
-                | Q(**{f"{GENE_FIELD_PFAM}__icontains": query})
-                | Q(**{f"{GENE_FIELD_INTERPRO}__icontains": query})
-                | Q(**{f"{GENE_FIELD_DBXREF}__icontains": query})
+                    Q(**{f"{GENE_FIELD_NAME}__iexact": query})
+                    | Q(**{f"{GENE_FIELD_NAME}__icontains": query})
+                    | Q(**{f"{GENE_FIELD_PRODUCT}__icontains": query})
+                    | Q(**{f"{GENE_FIELD_LOCUS_TAG}__icontains": query})
+                    | Q(**{f"{GENE_FIELD_KEGG}__icontains": query})
+                    | Q(**{f"{GENE_FIELD_PFAM}__icontains": query})
+                    | Q(**{f"{GENE_FIELD_INTERPRO}__icontains": query})
+                    | Q(**{f"{GENE_FIELD_DBXREF}__icontains": query})
             )
             if species_id:
                 gene_filter &= Q(strain__species_id=species_id)
@@ -137,11 +196,11 @@ class GeneService:
             raise ServiceError(e)
 
     async def get_all_genes(
-        self,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+            self,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sort_field: Optional[str] = None,
+            sort_order: Optional[str] = DEFAULT_SORT,
     ) -> GenePaginationSchema:
         try:
             genes, total_results = await self._fetch_paginated_genes(
@@ -156,14 +215,14 @@ class GeneService:
             raise ServiceError(e)
 
     async def search_genes(
-        self,
-        query: str = None,
-        genome_id: Optional[int] = None,
-        filter: Optional[str] = None,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+            self,
+            query: str = None,
+            genome_id: Optional[int] = None,
+            filter: Optional[str] = None,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sort_field: Optional[str] = None,
+            sort_order: Optional[str] = DEFAULT_SORT,
     ) -> GenePaginationSchema:
         try:
             filters = Q()
@@ -185,13 +244,13 @@ class GeneService:
             raise ServiceError(e)
 
     async def get_genes_by_genome(
-        self,
-        genome_id: int,
-        filter: Optional[str] = None,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = SORT_ASC,
+            self,
+            genome_id: int,
+            filter: Optional[str] = None,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sort_field: Optional[str] = None,
+            sort_order: Optional[str] = SORT_ASC,
     ) -> GenePaginationSchema:
         try:
             gene_filter = Q(strain_id=genome_id)
@@ -214,7 +273,7 @@ class GeneService:
             raise ServiceError(e)
 
     async def get_genes_by_multiple_genomes(
-        self, genome_ids: List[int], page: int = 1, per_page: int = 10
+            self, genome_ids: List[int], page: int = 1, per_page: int = 10
     ):
         try:
             filter_criteria = Q(strain_id__in=genome_ids)
@@ -230,15 +289,15 @@ class GeneService:
             raise ServiceError(e)
 
     async def get_genes_by_multiple_genomes_and_string(
-        self,
-        genome_ids: str = None,
-        species_id: Optional[int] = None,
-        query: str = None,
-        filter: Optional[str] = None,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = SORT_ASC,
+            self,
+            genome_ids: str = None,
+            species_id: Optional[int] = None,
+            query: str = None,
+            filter: Optional[str] = None,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sort_field: Optional[str] = None,
+            sort_order: Optional[str] = SORT_ASC,
     ) -> GenePaginationSchema:
         try:
             # Parse genome IDs
@@ -262,14 +321,14 @@ class GeneService:
             # Add gene search filters if query is provided
             if query:
                 gene_filter = (
-                    Q(gene_name__iexact=query.strip())
-                    | Q(gene_name__icontains=query.strip())
-                    | Q(product__icontains=query.strip())
-                    | Q(locus_tag__icontains=query.strip())
-                    | Q(kegg__icontains=query.strip())
-                    | Q(pfam__icontains=query.strip())
-                    | Q(interpro__icontains=query.strip())
-                    | Q(dbxref__icontains=query.strip())
+                        Q(gene_name__iexact=query.strip())
+                        | Q(gene_name__icontains=query.strip())
+                        | Q(product__icontains=query.strip())
+                        | Q(locus_tag__icontains=query.strip())
+                        | Q(kegg__icontains=query.strip())
+                        | Q(pfam__icontains=query.strip())
+                        | Q(interpro__icontains=query.strip())
+                        | Q(dbxref__icontains=query.strip())
                 )
                 filters &= gene_filter
 
@@ -381,7 +440,7 @@ class GeneService:
         return filters
 
     async def _apply_essentiality_filter(
-        self, query: Q, essentiality_values: List[str]
+            self, query: Q, essentiality_values: List[str]
     ) -> Q:
         from dataportal.models import EssentialityTag
 
@@ -404,7 +463,7 @@ class GeneService:
             return query
 
     async def _apply_filters_for_type_strain(
-        self, query: Q, filters: Dict[str, list]
+            self, query: Q, filters: Dict[str, list]
     ) -> Q:
         if filters:
             query &= Q(strain__type_strain=True)
@@ -419,7 +478,7 @@ class GeneService:
         return query
 
     def _create_pagination_schema(
-        self, serialized_genes, page, per_page, total_results
+            self, serialized_genes, page, per_page, total_results
     ) -> GenePaginationSchema:
         return GenePaginationSchema(
             results=serialized_genes,
@@ -431,12 +490,12 @@ class GeneService:
         )
 
     async def _fetch_paginated_genes(
-        self,
-        filter_criteria: Q,
-        page: int,
-        per_page: int,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+            self,
+            filter_criteria: Q,
+            page: int,
+            per_page: int,
+            sort_field: Optional[str] = None,
+            sort_order: Optional[str] = DEFAULT_SORT,
     ) -> Tuple[List[Gene], int]:
         start = (page - 1) * per_page
         order_prefix = "-" if sort_order == SORT_DESC else ""
@@ -453,7 +512,7 @@ class GeneService:
                     Gene.objects.select_related(GENE_SORT_FIELD_STRAIN)
                     .prefetch_related("essentiality_data__essentiality")
                     .filter(filter_criteria)
-                    .order_by(sort_by)[start : start + per_page]
+                    .order_by(sort_by)[start: start + per_page]
                 )
             )()
 

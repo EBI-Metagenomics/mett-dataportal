@@ -17,3 +17,4 @@ gunicorn==22.0.0
 biopython==1.84
 pandas==2.2.3
 django-debug-toolbar==4.4.6
+cachetools==5.5.0
