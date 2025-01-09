@@ -42,6 +42,7 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string) => {
             {
                 displayId: `structural_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
                 type: 'LinearBasicDisplay',
+                rendererTypeName: 'CustomSvgFeatureRenderer',
                 renderer: {
                     type: 'CustomSvgFeatureRenderer',
                     // maxHeight: 5000,
