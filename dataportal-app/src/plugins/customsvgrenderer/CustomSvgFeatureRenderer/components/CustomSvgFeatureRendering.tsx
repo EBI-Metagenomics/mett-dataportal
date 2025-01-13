@@ -21,7 +21,7 @@ export default function CustomSvgFeatureRendering({
                         y={0}
                         width={feature.get('end') - feature.get('start')}
                         height={10}
-                        fill="red"
+                        fill="blue"
                     />
                 ))}
             </g>
