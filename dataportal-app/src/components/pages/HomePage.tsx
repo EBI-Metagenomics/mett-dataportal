@@ -8,8 +8,8 @@ import {SpeciesService} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
-import SpeciesFilter from '../organisms/Filters/SpeciesFilter';
-import TypeStrainsFilter from '../organisms/Filters/TypeStrainsFilter';
+import SpeciesFilter from '@components/Filters/SpeciesFilter';
+import TypeStrainsFilter from '@components/Filters/TypeStrainsFilter';
 
 // Define the type for each tab
 interface Tab {

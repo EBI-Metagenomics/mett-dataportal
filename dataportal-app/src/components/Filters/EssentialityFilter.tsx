@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
-import {GeneService} from '../../../services/geneService';
+import {GeneService} from '../../services/geneService';
 import styles from './EssentialityFilter.module.scss';
-import {GeneEssentialityTag} from "../../../interfaces/Gene";
+import {GeneEssentialityTag} from "../../interfaces/Gene";
 
 interface EssentialityFilterProps {
     essentialityFilter: string[];

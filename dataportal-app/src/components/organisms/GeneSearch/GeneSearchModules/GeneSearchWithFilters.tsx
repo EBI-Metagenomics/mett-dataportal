@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import GeneSearchForm from '../../GeneSearch/GeneSearchForm/GeneSearchForm';
-import EssentialityFilter from '../../Filters/EssentialityFilter';
+import EssentialityFilter from '@components/Filters/EssentialityFilter';
 import styles from '@components/organisms/GeneSearch/GeneSearchModules/GeneSearchWithFilters.module.scss'
 
 interface GeneSearchWithFiltersProps {

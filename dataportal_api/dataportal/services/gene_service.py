@@ -53,6 +53,9 @@ class GeneService:
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
     async def load_essentiality_data_by_strain(self) -> Dict[int, Dict[str, List[Dict[str, str]]]]:
+        """
+        Load essentiality data from the database and cache it by strain ID, with locus_tag as the key.
+        """
         if self.essentiality_cache:
             return self.essentiality_cache
 
@@ -60,13 +63,12 @@ class GeneService:
         try:
             essentiality_data = await sync_to_async(list)(
                 GeneEssentiality.objects.select_related("essentiality", "gene__strain")
-                .values("gene__strain_id", "gene_id", "gene__locus_tag", "media", "essentiality__name")
+                .values("gene__strain_id", "gene__locus_tag", "media", "essentiality__name")
             )
 
             cache_data = {}
             for entry in essentiality_data:
                 strain_id = entry["gene__strain_id"]
-                gene_id = entry["gene_id"]
                 locus_tag = entry["gene__locus_tag"]
                 media = entry["media"]
                 essentiality = entry["essentiality__name"] or "Unknown"
@@ -74,18 +76,17 @@ class GeneService:
                 if strain_id not in cache_data:
                     cache_data[strain_id] = {}
 
-                if gene_id not in cache_data[strain_id]:
-                    cache_data[strain_id][gene_id] = {
+                if locus_tag not in cache_data[strain_id]:
+                    cache_data[strain_id][locus_tag] = {
                         "locus_tag": locus_tag,
                         "essentiality_data": []
                     }
 
-                cache_data[strain_id][gene_id]["essentiality_data"].append({
+                cache_data[strain_id][locus_tag]["essentiality_data"].append({
                     "media": media,
                     "essentiality": essentiality
                 })
 
-            # Store the data in the cache
             self.essentiality_cache.update(cache_data)
 
             logger.info(f"Loaded {len(essentiality_data)} essentiality records into cache.")
@@ -95,15 +96,18 @@ class GeneService:
             return {}
 
     async def get_essentiality_data_by_strain(self, strain_id: int) -> Dict[str, Dict[str, List[Dict[str, str]]]]:
+        """
+        Retrieve essentiality data for a specific strain ID from the cache, structured with locus_tag as the key.
+        """
         if not self.essentiality_cache:
             await self.load_essentiality_data_by_strain()
 
         cache_data = self.essentiality_cache.get(strain_id, {})
         response = {}
 
-        for gene_id, gene_data in cache_data.items():
-            response[str(gene_id)] = {
-                "locus_tag": gene_data["locus_tag"],
+        for gene_data in cache_data.values():
+            locus_tag = gene_data["locus_tag"]
+            response[locus_tag] = {
                 "essentiality_data": gene_data["essentiality_data"]
             }
 

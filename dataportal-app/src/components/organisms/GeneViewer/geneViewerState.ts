@@ -4,7 +4,8 @@ import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
 import {createRoot, hydrateRoot} from 'react-dom/client';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
-import CustomSVGPlugin from "../../../plugins/customsvgrenderer";
+import CustomSVGPlugin from "../../../plugins/CustomSVGRenderer";
+import CustomEssentialityPlugin from "../../../plugins/CustomEssentialityPlugin";
 
 interface Track {
     type: string;
@@ -28,7 +29,8 @@ function isPluginConstructor(value: unknown): value is typeof Plugin {
 const useGeneViewerState = (
     assembly: any,
     tracks: Track[],
-    defaultSession: any
+    defaultSession: any,
+    apiUrl: string
 ) => {
     const [viewState, setViewState] = useState<ReturnType<typeof createViewState> | null>(null);
     const [initializationError, setInitializationError] = useState<Error | null>(null);
@@ -43,16 +45,17 @@ const useGeneViewerState = (
                 const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
                     .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
 
-                const plugins: PluginConstructor[] = [CustomSVGPlugin, ...corePluginConstructors];
+                const plugins: PluginConstructor[] = [CustomSVGPlugin, CustomEssentialityPlugin, ...corePluginConstructors];
 
                 const config = {
                     assemblies: [assembly],
                     tracks: tracks.map((track) => ({
                         ...track,
                         visible: true,
-                        renderer: {
-                            type: 'CustomSvgFeatureRenderer',
-                        },
+                        apiUrl: apiUrl,
+                        // renderer: {
+                        //     type: 'CustomSvgFeatureRenderer',
+                        // },
                     })),
                     defaultSession: defaultSession ? {...defaultSession, name: 'defaultSession'} : undefined,
                 };
@@ -64,6 +67,9 @@ const useGeneViewerState = (
                     createRootFn: createRoot,
                     makeWorkerInstance,
                 });
+
+                console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
+                console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
 
                 const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
 

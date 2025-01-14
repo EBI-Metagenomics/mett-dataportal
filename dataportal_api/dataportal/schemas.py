@@ -122,7 +122,6 @@ class EssentialityDataSchema(BaseModel):
 
 
 class EssentialityResponseSchema(BaseModel):
-    locus_tag: str
     essentiality_data: List[EssentialityDataSchema]
 
 
