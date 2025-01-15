@@ -1119,7 +1119,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/6/essentiality",
+									"raw": "{{mett-current}}/api/genomes/6/essentiality/contig_1",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1127,7 +1127,8 @@
 										"api",
 										"genomes",
 										"6",
-										"essentiality"
+										"essentiality",
+										"contig_1"
 									]
 								}
 							},
@@ -1171,7 +1172,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/62/essentiality",
+									"raw": "{{mett-current}}/api/genomes/62/essentiality/contig_1",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1179,7 +1180,8 @@
 										"api",
 										"genomes",
 										"62",
-										"essentiality"
+										"essentiality",
+										"contig_1"
 									]
 								}
 							},

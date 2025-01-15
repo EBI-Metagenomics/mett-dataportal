@@ -13,7 +13,8 @@ from .schemas import (
     GeneAutocompleteResponseSchema,
     GenePaginationSchema,
     GeneResponseSchema,
-    EssentialityTagSchema, EssentialityResponseSchema,
+    EssentialityTagSchema,
+    EssentialityByContigSchema,
 )
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
@@ -345,14 +346,25 @@ def list_essentiality_tags(request):
 
 
 # API endpoint to retrieve essentiality data from cache for a specific strain ID.
-@genome_router.get("/{strain_id}/essentiality", response=Dict[str, EssentialityResponseSchema])
-async def get_essentiality_data_by_strain(request, strain_id: int):
+@genome_router.get("/{strain_id}/essentiality/{ref_name}", response=Dict[str, EssentialityByContigSchema])
+async def get_essentiality_data_by_contig(request, strain_id: int, ref_name: str):
     try:
-        essentiality_data = await gene_service.get_essentiality_data_by_strain(strain_id)
+        essentiality_data = await gene_service.get_essentiality_data_by_strain_and_ref(
+            strain_id, ref_name
+        )
+        if not essentiality_data:
+            return {}
+
         return essentiality_data
     except Exception as e:
-        logger.error(f"Error retrieving essentiality data for strain {strain_id}: {e}")
-        raise HttpError(500, f"Failed to retrieve essentiality data for strain {strain_id}.")
+        logger.error(
+            f"Error retrieving essentiality data for strain_id={strain_id}, ref_name={ref_name}: {e}",
+            exc_info=True,
+        )
+        raise HttpError(
+            500,
+            f"Failed to retrieve essentiality data for strain {strain_id} and refName {ref_name}.",
+        )
 
 
 # Register routers with the main API

@@ -52,10 +52,7 @@ class GeneService:
         self.limit = limit
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
-    async def load_essentiality_data_by_strain(self) -> Dict[int, Dict[str, List[Dict[str, str]]]]:
-        """
-        Load essentiality data from the database and cache it by strain ID, with locus_tag as the key.
-        """
+    async def load_essentiality_data_by_strain(self) -> Dict[int, Dict[str, Dict[str, List[Dict[str, str]]]]]:
         if self.essentiality_cache:
             return self.essentiality_cache
 
@@ -63,52 +60,74 @@ class GeneService:
         try:
             essentiality_data = await sync_to_async(list)(
                 GeneEssentiality.objects.select_related("essentiality", "gene__strain")
-                .values("gene__strain_id", "gene__locus_tag", "media", "essentiality__name")
+                .values(
+                    "gene__strain_id",
+                    "gene__seq_id",
+                    "gene__locus_tag",
+                    "gene__start_position",
+                    "gene__end_position",
+                    "media",
+                    "essentiality__name",
+                )
             )
 
             cache_data = {}
             for entry in essentiality_data:
                 strain_id = entry["gene__strain_id"]
+                ref_name = entry["gene__seq_id"]
                 locus_tag = entry["gene__locus_tag"]
+                start = entry["gene__start_position"]
+                end = entry["gene__end_position"]
                 media = entry["media"]
                 essentiality = entry["essentiality__name"] or "Unknown"
 
                 if strain_id not in cache_data:
                     cache_data[strain_id] = {}
 
-                if locus_tag not in cache_data[strain_id]:
-                    cache_data[strain_id][locus_tag] = {
+                if ref_name not in cache_data[strain_id]:
+                    cache_data[strain_id][ref_name] = {}
+
+                if locus_tag not in cache_data[strain_id][ref_name]:
+                    cache_data[strain_id][ref_name][locus_tag] = {
                         "locus_tag": locus_tag,
-                        "essentiality_data": []
+                        "start_position": start,
+                        "end_position": end,
+                        "essentiality_data": [],
                     }
 
-                cache_data[strain_id][locus_tag]["essentiality_data"].append({
-                    "media": media,
-                    "essentiality": essentiality
-                })
+                cache_data[strain_id][ref_name][locus_tag]["essentiality_data"].append(
+                    {"media": media, "essentiality": essentiality}
+                )
 
             self.essentiality_cache.update(cache_data)
-
             logger.info(f"Loaded {len(essentiality_data)} essentiality records into cache.")
             return cache_data
+
         except Exception as e:
             logger.error(f"Error loading essentiality data: {e}")
             return {}
 
-    async def get_essentiality_data_by_strain(self, strain_id: int) -> Dict[str, Dict[str, List[Dict[str, str]]]]:
-        """
-        Retrieve essentiality data for a specific strain ID from the cache, structured with locus_tag as the key.
-        """
+    async def get_essentiality_data_by_strain_and_ref(self, strain_id: int, ref_name: str) -> Dict[str, Dict]:
         if not self.essentiality_cache:
             await self.load_essentiality_data_by_strain()
 
-        cache_data = self.essentiality_cache.get(strain_id, {})
-        response = {}
+        strain_data = self.essentiality_cache.get(strain_id, {})
+        contig_data = strain_data.get(ref_name, {})
 
-        for gene_data in cache_data.values():
+        response = {}
+        for gene_data in contig_data.values():
             locus_tag = gene_data["locus_tag"]
             response[locus_tag] = {
-                "essentiality_data": gene_data["essentiality_data"]
+                "locus_tag": locus_tag,
+                "start": gene_data.get("start_position"),
+                "end": gene_data.get("end_position"),
+                "essentiality_data": [
+                    {
+                        "media": record["media"],
+                        "essentiality": record["essentiality"]
+                    }
+                    for record in gene_data["essentiality_data"]
+                ]
             }
 
         return response
