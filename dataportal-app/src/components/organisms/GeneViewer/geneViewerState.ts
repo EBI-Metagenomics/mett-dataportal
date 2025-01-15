@@ -52,10 +52,7 @@ const useGeneViewerState = (
                     tracks: tracks.map((track) => ({
                         ...track,
                         visible: true,
-                        apiUrl: apiUrl,
-                        // renderer: {
-                        //     type: 'CustomSvgFeatureRenderer',
-                        // },
+                        apiUrl: apiUrl
                     })),
                     defaultSession: defaultSession ? {...defaultSession, name: 'defaultSession'} : undefined,
                 };
