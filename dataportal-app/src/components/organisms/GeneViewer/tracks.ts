@@ -15,6 +15,7 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) =
             gffGzLocation: {
                 uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz`,
             },
+            apiUrl: apiUrl,
             index: {
                 location: {
                     uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz.tbi`,
@@ -22,6 +23,42 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) =
             },
         },
         visible: true,
+        textSearching: {
+            textSearchAdapter: {
+                type: 'TrixTextSearchAdapter',
+                textSearchAdapterId: 'gff3tabix_genes-index',
+                ixFilePath: {
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz.ix`,
+                },
+                ixxFilePath: {
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz.ixx`,
+                },
+                metaFilePath: {
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz_meta.json`,
+                },
+                assemblyNames: [genomeMeta.assembly_name],
+            },
+        },
+        displays: [
+            {
+                displayId: `structural_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
+                type: 'LinearBasicDisplay',
+                rendererTypeName: 'CustomSvgFeatureRenderer',
+                renderer: {
+                    type: 'CustomSvgFeatureRenderer',
+                    // maxHeight: 5000,
+                    // labels: {
+                    //     name: "jexl:get(feature,'locus_tag') || get(feature,'sequence')",
+                    // },
+                    // color3: '#965567',
+                    // color1: "jexl:get(feature,'type')!='CDS'?'gray':get(feature,'strand')>0?'violet':'turquoise'",
+                },
+                showForward: true,
+                showReverse: true,
+                showTranslation: true,
+                showLabels: true,
+            },
+        ],
     });
 
     return tracks;
