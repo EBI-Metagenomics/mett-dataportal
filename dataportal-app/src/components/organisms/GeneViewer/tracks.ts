@@ -1,4 +1,5 @@
 import {GenomeMeta} from "../../../interfaces/Genome";
+import {Feature} from '@jbrowse/core/util';
 
 const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) => {
     const tracks = [];
@@ -43,15 +44,14 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) =
             {
                 displayId: `structural_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
                 type: 'LinearBasicDisplay',
-                rendererTypeName: 'CustomSvgFeatureRenderer',
                 renderer: {
                     type: 'CustomSvgFeatureRenderer',
-                    // maxHeight: 5000,
-                    // labels: {
-                    //     name: "jexl:get(feature,'locus_tag') || get(feature,'sequence')",
-                    // },
-                    // color3: '#965567',
-                    // color1: "jexl:get(feature,'type')!='CDS'?'gray':get(feature,'strand')>0?'violet':'turquoise'",
+                    color1: 'goldenrod',
+                    color2: '#008000',
+                    color3: '#FF0000',
+                    height: 10,
+                    showLabels: true,
+                    showDescriptions: true,
                 },
                 showForward: true,
                 showReverse: true,
