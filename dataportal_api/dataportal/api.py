@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
@@ -14,6 +14,7 @@ from .schemas import (
     GenePaginationSchema,
     GeneResponseSchema,
     EssentialityTagSchema,
+    EssentialityByContigSchema,
 )
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
@@ -50,10 +51,10 @@ jbrowse_router = Router(tags=["JBrowse Viewer"])
 @genome_router.get("/autocomplete", response=List[StrainSuggestionSchema])
 @log_endpoint_access("genome_autocomplete_suggestions")
 async def autocomplete_suggestions(
-    request,
-    query: str,
-    limit: int = DEFAULT_PER_PAGE_CNT,
-    species_id: Optional[int] = None,
+        request,
+        query: str,
+        limit: int = DEFAULT_PER_PAGE_CNT,
+        species_id: Optional[int] = None,
 ):
     return await genome_service.search_strains(query, limit, species_id)
 
@@ -73,11 +74,11 @@ async def get_all_species(request):
 # API Endpoint to retrieve all genomes
 @genome_router.get("/", response=GenomePaginationSchema)
 async def get_all_genomes(
-    request,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sortField: Optional[str] = "isolate_name",
-    sortOrder: Optional[str] = DEFAULT_SORT,
+        request,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: Optional[str] = "isolate_name",
+        sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await genome_service.get_genomes(page, per_page, sortField, sortOrder)
@@ -98,12 +99,12 @@ async def get_type_strains(request):
 
 @genome_router.get("/search", response=GenomePaginationSchema)
 async def search_genomes_by_string(
-    request,
-    query: str,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sortField: Optional[str] = "isolate_name",
-    sortOrder: Optional[str] = DEFAULT_SORT,
+        request,
+        query: str,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: Optional[str] = "isolate_name",
+        sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     sortField = sortField or "isolate_name"
     sortOrder = sortOrder or DEFAULT_SORT
@@ -145,12 +146,12 @@ async def get_genomes_by_isolate_names(request, names: str):
 # API Endpoint to retrieve genomes filtered by species ID
 @species_router.get("/{species_id}/genomes", response=GenomePaginationSchema)
 async def get_genomes_by_species(
-    request,
-    species_id: int,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sortField: Optional[str] = "isolate_name",
-    sortOrder: Optional[str] = DEFAULT_SORT,
+        request,
+        species_id: int,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: Optional[str] = "isolate_name",
+        sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await genome_service.get_genomes_by_species(
@@ -165,13 +166,13 @@ async def get_genomes_by_species(
 # API Endpoint to search genomes by species ID and query string
 @species_router.get("/{species_id}/genomes/search", response=GenomePaginationSchema)
 async def search_genomes_by_species_and_string(
-    request,
-    species_id: int,
-    query: str,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sortField: Optional[str] = "isolate_name",
-    sortOrder: Optional[str] = DEFAULT_SORT,
+        request,
+        species_id: int,
+        query: str,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: Optional[str] = "isolate_name",
+        sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await genome_service.search_genomes_by_species_and_string(
@@ -186,12 +187,12 @@ async def search_genomes_by_species_and_string(
 
 @gene_router.get("/autocomplete", response=List[GeneAutocompleteResponseSchema])
 async def gene_autocomplete_suggestions(
-    request,
-    query: str,
-    filter: Optional[str] = None,
-    limit: int = DEFAULT_PER_PAGE_CNT,
-    species_id: Optional[int] = None,
-    genome_ids: Optional[str] = None,
+        request,
+        query: str,
+        filter: Optional[str] = None,
+        limit: int = DEFAULT_PER_PAGE_CNT,
+        species_id: Optional[int] = None,
+        genome_ids: Optional[str] = None,
 ):
     genome_id_list = (
         [int(gid) for gid in genome_ids.split(",") if gid.strip()]
@@ -206,12 +207,12 @@ async def gene_autocomplete_suggestions(
 # API Endpoint to search genes by query string
 @gene_router.get("/search", response=GenePaginationSchema)
 async def search_genes_by_string(
-    request,
-    query: str,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sort_field: Optional[str] = None,
-    sort_order: Optional[str] = DEFAULT_SORT,
+        request,
+        query: str,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await gene_service.search_genes(
@@ -243,11 +244,11 @@ async def get_gene_by_id(request, gene_id: int):
 # API Endpoint to retrieve all genes
 @gene_router.get("/", response=GenePaginationSchema)
 async def get_all_genes(
-    request,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sort_field: Optional[str] = None,
-    sort_order: Optional[str] = DEFAULT_SORT,
+        request,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await gene_service.get_all_genes(page, per_page, sort_field, sort_order)
@@ -259,13 +260,13 @@ async def get_all_genes(
 # API Endpoint to retrieve genes filtered by a single genome ID
 @genome_router.get("/{genome_id}/genes", response=GenePaginationSchema)
 async def get_genes_by_genome(
-    request,
-    genome_id: int,
-    filter: Optional[str] = None,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sort_field: Optional[str] = None,
-    sort_order: Optional[str] = DEFAULT_SORT,
+        request,
+        genome_id: int,
+        filter: Optional[str] = None,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await gene_service.get_genes_by_genome(
@@ -281,14 +282,14 @@ async def get_genes_by_genome(
 # API Endpoint to search genes by genome ID and gene string
 @genome_router.get("/{genome_id}/genes/search", response=GenePaginationSchema)
 async def search_genes_by_genome_and_string(
-    request,
-    genome_id: int,
-    query: str,
-    filter: Optional[str] = None,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sort_field: Optional[str] = None,
-    sort_order: Optional[str] = DEFAULT_SORT,
+        request,
+        genome_id: int,
+        query: str,
+        filter: Optional[str] = None,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         return await gene_service.search_genes(
@@ -307,15 +308,15 @@ async def search_genes_by_genome_and_string(
 # API Endpoint to search genes across multiple genome IDs using a gene string
 @gene_router.get("/search/advanced", response=GenePaginationSchema)
 async def search_genes_by_multiple_genomes_and_species_and_string(
-    request,
-    genome_ids: str = "",
-    species_id: Optional[int] = None,
-    query: str = "",
-    filter: Optional[str] = None,
-    page: int = 1,
-    per_page: int = DEFAULT_PER_PAGE_CNT,
-    sort_field: Optional[str] = None,
-    sort_order: Optional[str] = DEFAULT_SORT,
+        request,
+        genome_ids: str = "",
+        species_id: Optional[int] = None,
+        query: str = "",
+        filter: Optional[str] = None,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = DEFAULT_SORT,
 ):
     try:
         logger.debug(
@@ -342,6 +343,28 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
 def list_essentiality_tags(request):
     tags = EssentialityTag.objects.all()
     return tags
+
+
+# API endpoint to retrieve essentiality data from cache for a specific strain ID.
+@genome_router.get("/{strain_id}/essentiality/{ref_name}", response=Dict[str, EssentialityByContigSchema])
+async def get_essentiality_data_by_contig(request, strain_id: int, ref_name: str):
+    try:
+        essentiality_data = await gene_service.get_essentiality_data_by_strain_and_ref(
+            strain_id, ref_name
+        )
+        if not essentiality_data:
+            return {}
+
+        return essentiality_data
+    except Exception as e:
+        logger.error(
+            f"Error retrieving essentiality data for strain_id={strain_id}, ref_name={ref_name}: {e}",
+            exc_info=True,
+        )
+        raise HttpError(
+            500,
+            f"Failed to retrieve essentiality data for strain {strain_id} and refName {ref_name}.",
+        )
 
 
 # Register routers with the main API

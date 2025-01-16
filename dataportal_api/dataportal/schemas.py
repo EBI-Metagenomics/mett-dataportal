@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from pydantic import BaseModel, ConfigDict
 
@@ -116,6 +116,18 @@ class GenePaginationSchema(BasePaginationSchema):
     results: List[GeneResponseSchema]
 
 
+class EssentialityDataSchema(BaseModel):
+    media: str
+    essentiality: str
+
+
+class EssentialityByContigSchema(BaseModel):
+    locus_tag: str
+    start: Optional[int]
+    end: Optional[int]
+    essentiality_data: List[EssentialityDataSchema]
+
+
 __all__ = [
     "StrainSuggestionSchema",
     "GeneAutocompleteResponseSchema",
@@ -125,4 +137,5 @@ __all__ = [
     "GeneResponseSchema",
     "GenomePaginationSchema",
     "SpeciesSchema",
+    "EssentialityDataSchema",
 ]

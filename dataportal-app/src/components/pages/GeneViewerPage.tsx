@@ -11,7 +11,7 @@ import {GeneService} from '../../services/geneService';
 import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
-import {ZOOM_LEVELS} from "../../utils/appConstants";
+import {getEssentialityDataUrl, ZOOM_LEVELS} from "../../utils/appConstants";
 import GeneSearchWithFilters from "@components/organisms/GeneSearch/GeneSearchModules/GeneSearchWithFilters";
 
 const GeneViewerPage: React.FC = () => {
@@ -59,7 +59,7 @@ const GeneViewerPage: React.FC = () => {
 
     const assembly = useMemo(() => {
         if (genomeMeta) {
-            console.log("base fasta indexes path: " + process.env.REACT_APP_ASSEMBLY_INDEXES_PATH)
+            // console.log("base fasta indexes path: " + process.env.REACT_APP_ASSEMBLY_INDEXES_PATH)
             return getAssembly(genomeMeta, process.env.REACT_APP_ASSEMBLY_INDEXES_PATH
                 ? process.env.REACT_APP_ASSEMBLY_INDEXES_PATH : '');
         }
@@ -67,9 +67,9 @@ const GeneViewerPage: React.FC = () => {
     }, [genomeMeta]);
 
     const tracks = useMemo(() => {
-        console.log("base gff indexes path: " + process.env.REACT_APP_GFF_INDEXES_PATH)
+        // console.log("base gff indexes path: " + process.env.REACT_APP_GFF_INDEXES_PATH)
         return genomeMeta ? getTracks(genomeMeta, process.env.REACT_APP_GFF_INDEXES_PATH
-            ? process.env.REACT_APP_GFF_INDEXES_PATH : '') : [];
+            ? process.env.REACT_APP_GFF_INDEXES_PATH : '', getEssentialityDataUrl(genomeMeta.id)) : [];
     }, [genomeMeta]);
 
     const sessionConfig = useMemo(() => {
@@ -111,7 +111,11 @@ const GeneViewerPage: React.FC = () => {
 
 
     // const localViewState = useGeneViewerState(assembly, tracks, sessionConfig).viewState;
-    const {viewState, initializationError} = useGeneViewerState(assembly, tracks, sessionConfig);
+    const {viewState, initializationError} = useGeneViewerState(
+        assembly,
+        tracks,
+        sessionConfig,
+        getEssentialityDataUrl(genomeMeta?.id || 0));
 
     useEffect(() => {
         const waitForInitialization = async () => {
@@ -180,7 +184,7 @@ const GeneViewerPage: React.FC = () => {
         const view = viewState.session.views?.[0];
         viewState.session.tracks.forEach((track: any) => {
             const trackId = track.trackId || track.get('trackId');
-            if (trackId === 'essentiality_annotation') {
+            if (trackId === 'structural_annotation') {
                 view.hideTrack(trackId);
                 view.showTrack(trackId);
             }

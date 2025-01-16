@@ -2,11 +2,9 @@ import {useEffect, useState} from 'react';
 import {createViewState} from '@jbrowse/react-app';
 import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
 import {createRoot, hydrateRoot} from 'react-dom/client';
-import CustomAMRDetailsPlugin from '@components/organisms/GeneViewer/CustomAMRDetailsPlugin';
-import CustomFeatureDetailsPlugin from "@components/organisms/GeneViewer/CustomFeatureDetailsPlugin";
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
-
+import CustomEssentialityPlugin from "../../../plugins/CustomEssentialityPlugin";
 
 interface Track {
     type: string;
@@ -21,15 +19,18 @@ interface Track {
     [key: string]: any;
 }
 
-type PluginConstructor = new (...args: any[]) => Plugin;
+type PluginConstructor = new (...args: unknown[]) => Plugin;
 
-function isPluginConstructor(value: any): value is typeof Plugin {
-    return value && value.prototype instanceof Plugin;
+function isPluginConstructor(value: unknown): value is typeof Plugin {
+    return typeof value === 'function' && value.prototype instanceof Plugin;
 }
 
-
-// Custom hook for initializing JBrowse state
-const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any) => {
+const useGeneViewerState = (
+    assembly: any,
+    tracks: Track[],
+    defaultSession: any,
+    apiUrl: string
+) => {
     const [viewState, setViewState] = useState<ReturnType<typeof createViewState> | null>(null);
     const [initializationError, setInitializationError] = useState<Error | null>(null);
 
@@ -40,43 +41,38 @@ const useGeneViewerState = (assembly: any, tracks: Track[], defaultSession: any)
                     throw new Error('Assembly configuration is missing.');
                 }
 
+                const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
+                    .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
+
+                const plugins: PluginConstructor[] = [CustomEssentialityPlugin, ...corePluginConstructors];
+
                 const config = {
                     assemblies: [assembly],
                     tracks: tracks.map((track) => ({
                         ...track,
                         visible: true,
+                        apiUrl: apiUrl
                     })),
-                    defaultSession: defaultSession || undefined,
+                    defaultSession: defaultSession ? {...defaultSession, name: 'defaultSession'} : undefined,
                 };
-
-                const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
-                    .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
 
                 const state = createViewState({
                     config,
-                    // plugins: [CustomFeatureDetailsPlugin, CustomAMRDetailsPlugin, ...corePluginConstructors],
+                    plugins,
                     hydrateFn: hydrateRoot,
                     createRootFn: createRoot,
                     makeWorkerInstance,
-                    // onChange: (patch, reversePatch) => {
-                    //     console.log('State changed', patch);
-                    // }
                 });
+
+                // console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
+                // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
+
+                const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
 
                 setViewState(state);
 
-                const session = state.session;
-
-                // Add the widget manually for testing //todo important implementation for new widget plugin
-                // const testWidget = session.addWidget('AMRDetailsWidget', 'amrDetailsWidget', {
-                //     featureData: {testKey: 'testValue'},
-                // });
-                // session.showWidget(testWidget);
-
-                // Assembly loading
                 const assemblyManager = state.assemblyManager;
                 const assemblyInstance = assemblyManager.get(assembly.name);
-
                 if (assemblyInstance) {
                     await assemblyInstance.load();
                 }

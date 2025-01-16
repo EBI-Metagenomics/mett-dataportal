@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from '@components/pages/HomePage.module.scss';
-import { GenomeMeta } from '../../../interfaces/Genome';
+import { GenomeMeta } from '../../interfaces/Genome';
 
 interface TypeStrainsFilterProps {
     typeStrains: GenomeMeta[];
