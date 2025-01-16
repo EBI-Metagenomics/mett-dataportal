@@ -157,12 +157,13 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
 
         const mergedFeatures = gffFeatures.map((serializedFeature) => {
             const feature = new SimpleFeature(serializedFeature);
-            const locusTag = feature.get('attributes')?.locus_tag;
+            const attributes = feature.get('attributes') || {};
+            const locusTag = attributes.locus_tag;
 
             // Extract essentiality data
             const essentialityArray = essentialityData[locusTag]?.essentiality_data || [];
             const essentiality = essentialityArray.length
-                ? essentialityArray[0]?.essentiality.toLowerCase() // Use the first essentiality as primary
+                ? essentialityArray[0]?.essentiality.toLowerCase()
                 : 'unclear';
 
             if (essentiality !== 'unclear') {
@@ -171,18 +172,19 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 console.warn(`No essentiality data found or unclear for ${locusTag}`);
             }
 
-            // Flatten essentiality and add it to the feature
+            // Flatten attributes and add essentiality
+            const { attributes: _, ...featureWithoutAttributes } = feature.toJSON();
             return new SimpleFeature({
-                ...feature.toJSON(),
-                essentiality, // Flattened essentiality field
-                attributes: {
-                    ...feature.get('attributes'),
-                    essentiality, // Ensure essentiality is also part of attributes for side panel use
-                },
-            });
+            ...featureWithoutAttributes,
+            ...attributes,
+            essentiality,
         });
+        });
+
+        // console.log('Final merged features count:', mergedFeatures.length);
         // console.log('Final merged features:', mergedFeatures);
         return mergedFeatures;
     }
+
 
 }
