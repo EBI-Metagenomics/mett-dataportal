@@ -4,6 +4,7 @@ import SimpleFeature, {SimpleFeatureSerialized} from '@jbrowse/core/util/simpleF
 import {from, Observable} from 'rxjs';
 import {mergeMap} from 'rxjs/operators';
 import {unzip} from '@gmod/bgzf-filehandle';
+import {getIconForEssentiality} from "../../utils/appConstants";
 
 export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     static type = 'EssentialityAdapter';
@@ -180,27 +181,24 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
 
             // Extract essentiality data
             const essentialityArray = essentialityData[locusTag]?.essentiality_data || [];
-            const essentiality = essentialityArray.length
+            const Essentiality = essentialityArray.length
                 ? essentialityArray[0]?.essentiality.toLowerCase()
                 : '';
 
-            if (essentiality !== 'unclear') {
-                // console.log(`Essentiality for ${locusTag}:`, essentiality);
-            } else {
-                console.warn(`No essentiality data found or unclear for ${locusTag}`);
-            }
+            const EssentialityVisual = getIconForEssentiality(Essentiality);
 
             // Flatten attributes and add essentiality
             const {attributes: _, ...featureWithoutAttributes} = feature.toJSON();
             return new SimpleFeature({
                 ...featureWithoutAttributes,
                 ...attributes,
-                essentiality,
+                Essentiality,
+                EssentialityVisual,
             });
         });
 
-        console.log('Final merged features count:', mergedFeatures.length);
-        console.log('Final merged features:', mergedFeatures);
+        // console.log('Final merged features count:', mergedFeatures.length);
+        // console.log('Final merged features:', mergedFeatures);
         return mergedFeatures;
     }
 

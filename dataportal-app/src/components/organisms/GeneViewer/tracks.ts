@@ -1,5 +1,4 @@
 import {GenomeMeta} from "../../../interfaces/Genome";
-import {Feature} from '@jbrowse/core/util';
 
 const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) => {
         const tracks = [];
@@ -47,21 +46,10 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) =
                     type: 'LinearBasicDisplay',
                     renderer: {
                         type: 'SvgFeatureRenderer',
-                        color1: `jexl:
-                            get(feature, 'essentiality') == 'essential' ? '#FF0000' :
-                            get(feature, 'essentiality') == 'not_essential' ? '#008000' :
-                            get(feature, 'essentiality') == 'essential_liquid' ? '#FFA500' :
-                            get(feature, 'essentiality') == 'essential_solid' ? '#800080' :
-                            get(feature, 'essentiality') == 'unclear' ? '#808080' :
-                            '#DAA520'`,
+                        color1: `jexl:getColorForEssentiality(get(feature, 'Essentiality'))`,
                         labels: {
                             name: `jexl:
-                                get(feature, 'locus_tag') + ' ' +
-                                (get(feature, 'essentiality') == 'essential' ? '🔴' :
-                                get(feature, 'essentiality') == 'not_essential' ? '🟢' :
-                                get(feature, 'essentiality') == 'essential_liquid' ? '🟠' :
-                                get(feature, 'essentiality') == 'essential_solid' ? '🟣' : 
-                                get(feature, 'essentiality') == 'unclear' ? '⚪️' : '')
+                                get(feature, 'locus_tag') + ' ' + get(feature, 'EssentialityVisual')
                             `,
                         },
                         showForward: true,

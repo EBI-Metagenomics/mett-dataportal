@@ -4,7 +4,6 @@ import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
 import {createRoot, hydrateRoot} from 'react-dom/client';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
-import CustomSVGPlugin from "../../../plugins/CustomSVGRenderer";
 import CustomEssentialityPlugin from "../../../plugins/CustomEssentialityPlugin";
 
 interface Track {
@@ -45,7 +44,7 @@ const useGeneViewerState = (
                 const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
                     .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
 
-                const plugins: PluginConstructor[] = [CustomSVGPlugin, CustomEssentialityPlugin, ...corePluginConstructors];
+                const plugins: PluginConstructor[] = [CustomEssentialityPlugin, ...corePluginConstructors];
 
                 const config = {
                     assemblies: [assembly],
@@ -65,14 +64,10 @@ const useGeneViewerState = (
                     makeWorkerInstance,
                 });
 
-                console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
-                console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
+                // console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
+                // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
 
                 const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
-
-                if (!registeredRenderers.includes('CustomSvgFeatureRenderer')) {
-                    throw new Error('CustomSvgFeatureRenderer not found in registered renderers.');
-                }
 
                 setViewState(state);
 
