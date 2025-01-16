@@ -16,6 +16,10 @@ const essentialityAdapterConfigSchema = ConfigurationSchema('EssentialityAdapter
             type: 'string',
             defaultValue: '',
         },
+        isTypeStrain: {
+            type: 'boolean',
+            defaultValue: false,
+        },
 
         index: ConfigurationSchema('Gff3TabixIndex', {
             /**

@@ -10,6 +10,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
 
     private gffLocation: string;
     private apiUrl: string;
+    private isTypeStrain: boolean;
 
     private cache: Map<string, SimpleFeature[]> = new Map(); // Cache for features by region key
 
@@ -22,6 +23,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         super(config);
         this.gffLocation = config.gffGzLocation.value.uri;
         this.apiUrl = config.apiUrl.value;
+        this.isTypeStrain = config.isTypeStrain.value;
         // console.log('EssentialityAdapter initialized with config:', config);
     }
 
@@ -44,14 +46,30 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         }
 
         // Fetch and process features if not cached
-        const featuresPromise = this.fetchGFF(region)
-            .then((gffFeatures) => {
-                // console.log('Fetched GFF features:', gffFeatures.length);
-                return this.fetchEssentialityData(region.refName).then((essentialityData) => {
-                    // console.log('Fetched essentiality data:', Object.keys(essentialityData).length);
-                    return this.mergeAnnotationsWithEssentiality(gffFeatures, essentialityData);
+        const featuresPromise = this.fetchGFF(region).then((gffFeatures) => {
+            if (this.isTypeStrain) {
+                return this.fetchEssentialityData(region.refName).then((essentialityData) =>
+                    this.mergeAnnotationsWithEssentiality(gffFeatures, essentialityData),
+                );
+            }
+            // For non-type strains, flatten attributes
+            return gffFeatures.map((serializedFeature) => {
+                const feature = new SimpleFeature(serializedFeature);
+                const featureData = feature.toJSON();
+
+                // Ensure attributes is an object before spreading
+                const attributes = featureData.attributes && typeof featureData.attributes === 'object'
+                    ? featureData.attributes
+                    : {};
+
+                const {attributes: _, ...featureWithoutAttributes} = featureData;
+
+                return new SimpleFeature({
+                    ...featureWithoutAttributes,
+                    ...attributes, // Flatten attributes
                 });
-            })
+            });
+        })
             .catch((error) => {
                 console.error('Error in getFeatures pipeline:', error);
                 return [];
@@ -173,12 +191,12 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
             }
 
             // Flatten attributes and add essentiality
-            const { attributes: _, ...featureWithoutAttributes } = feature.toJSON();
+            const {attributes: _, ...featureWithoutAttributes} = feature.toJSON();
             return new SimpleFeature({
-            ...featureWithoutAttributes,
-            ...attributes,
-            essentiality,
-        });
+                ...featureWithoutAttributes,
+                ...attributes,
+                essentiality,
+            });
         });
 
         console.log('Final merged features count:', mergedFeatures.length);

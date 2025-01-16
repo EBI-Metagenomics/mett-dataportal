@@ -17,6 +17,7 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) =
                     uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz`,
                 },
                 apiUrl: apiUrl,
+                isTypeStrain: genomeMeta.type_strain,
                 index: {
                     location: {
                         uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz.tbi`,
