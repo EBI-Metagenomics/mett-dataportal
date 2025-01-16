@@ -7,7 +7,7 @@ export default class CustomEssentialityPlugin extends Plugin {
     name = 'CustomEssentialityPlugin';
 
     install(pluginManager: PluginManager) {
-        console.log("install called");
+        // console.log("install called");
         pluginManager.addAdapterType(
             () =>
                 new AdapterType({

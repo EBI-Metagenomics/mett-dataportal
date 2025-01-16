@@ -22,33 +22,33 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         super(config);
         this.gffLocation = config.gffGzLocation.value.uri;
         this.apiUrl = config.apiUrl.value;
-        console.log('EssentialityAdapter initialized with config:', config);
+        // console.log('EssentialityAdapter initialized with config:', config);
     }
 
     async freeResources(): Promise<void> {
-        console.log('EssentialityAdapter - freeResources called');
+        // console.log('EssentialityAdapter - freeResources called');
     }
 
     async getRefNames(): Promise<string[]> {
-        console.log('EssentialityAdapter - getRefNames called');
+        // console.log('EssentialityAdapter - getRefNames called');
         return [];
     }
 
     getFeatures(region: any): Observable<SimpleFeature> {
         const cacheKey = this.getCacheKey(region);
-        console.log('EssentialityAdapter - getFeatures called for region:', region);
+        // console.log('EssentialityAdapter - getFeatures called for region:', region);
 
         if (this.cache.has(cacheKey)) {
-            console.log('Using cached features for region:', cacheKey);
+            // console.log('Using cached features for region:', cacheKey);
             return from(this.cache.get(cacheKey)!);
         }
 
         // Fetch and process features if not cached
         const featuresPromise = this.fetchGFF(region)
             .then((gffFeatures) => {
-                console.log('Fetched GFF features:', gffFeatures.length);
+                // console.log('Fetched GFF features:', gffFeatures.length);
                 return this.fetchEssentialityData(region.refName).then((essentialityData) => {
-                    console.log('Fetched essentiality data:', Object.keys(essentialityData).length);
+                    // console.log('Fetched essentiality data:', Object.keys(essentialityData).length);
                     return this.mergeAnnotationsWithEssentiality(gffFeatures, essentialityData);
                 });
             })
@@ -59,7 +59,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
 
         return from(featuresPromise).pipe(
             mergeMap((features) => {
-                console.log('Features ready to emit:', features.length);
+                // console.log('Features ready to emit:', features.length);
 
                 // Cache the features for this region
                 this.cache.set(cacheKey, features);
@@ -70,7 +70,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     }
 
     async fetchGFF(region: any): Promise<SimpleFeatureSerialized[]> {
-        console.log('Fetching GFF file from:', this.gffLocation);
+        // console.log('Fetching GFF file from:', this.gffLocation);
 
         try {
             const gffFile = await openLocation({
@@ -81,7 +81,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
             const compressedData = await unzip(gffFile);
             const gffContents = new TextDecoder('utf-8').decode(compressedData);
 
-            console.log('GFF file successfully decompressed.');
+            // console.log('GFF file successfully decompressed.');
 
             const features: SimpleFeatureSerialized[] = [];
             const lines = gffContents.split('\n');
@@ -116,12 +116,12 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                             attributes,
                         });
 
-                        console.log(`Parsed GFF feature: ${attributes.locus_tag}`);
+                        // console.log(`Parsed GFF feature: ${attributes.locus_tag}`);
                     }
                 }
             }
 
-            console.log('Total GFF features parsed:', features.length);
+            // console.log('Total GFF features parsed:', features.length);
             return features;
         } catch (error) {
             console.error('Error fetching GFF file:', error);
@@ -130,7 +130,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     }
 
     async fetchEssentialityData(refName: string): Promise<Record<string, any>> {
-        console.log('Fetching essentiality data for:', refName);
+        // console.log('Fetching essentiality data for:', refName);
 
         try {
             const response = await fetch(`${this.apiUrl}/${refName}`);
@@ -139,7 +139,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
             }
 
             const data = await response.json();
-            console.log(`Essentiality data fetched for ${refName}:`, Object.keys(data).length);
+            // console.log(`Essentiality data fetched for ${refName}:`, Object.keys(data).length);
             return data;
         } catch (error) {
             console.error('Error fetching essentiality data:', error);
@@ -151,28 +151,38 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         gffFeatures: SimpleFeatureSerialized[],
         essentialityData: Record<string, any>,
     ): SimpleFeature[] {
-        console.log('Merging annotations with essentiality data...');
-        console.log('Number of GFF features:', gffFeatures.length);
-        console.log('Number of essentiality entries:', Object.keys(essentialityData).length);
+        // console.log('Merging annotations with essentiality data...');
+        // console.log('Number of GFF features:', gffFeatures.length);
+        // console.log('Number of essentiality entries:', Object.keys(essentialityData).length);
 
         const mergedFeatures = gffFeatures.map((serializedFeature) => {
             const feature = new SimpleFeature(serializedFeature);
             const locusTag = feature.get('attributes')?.locus_tag;
 
-            const essentiality = essentialityData[locusTag]?.essentiality_data || [];
-            if (essentiality.length > 0) {
-                console.log(`Merging essentiality data for ${locusTag}:`, essentiality);
+            // Extract essentiality data
+            const essentialityArray = essentialityData[locusTag]?.essentiality_data || [];
+            const essentiality = essentialityArray.length
+                ? essentialityArray[0]?.essentiality.toLowerCase() // Use the first essentiality as primary
+                : 'unclear';
+
+            if (essentiality !== 'unclear') {
+                // console.log(`Essentiality for ${locusTag}:`, essentiality);
             } else {
-                console.warn(`No essentiality data found for ${locusTag}`);
+                console.warn(`No essentiality data found or unclear for ${locusTag}`);
             }
 
+            // Flatten essentiality and add it to the feature
             return new SimpleFeature({
                 ...feature.toJSON(),
-                essentiality,
+                essentiality, // Flattened essentiality field
+                attributes: {
+                    ...feature.get('attributes'),
+                    essentiality, // Ensure essentiality is also part of attributes for side panel use
+                },
             });
         });
-
-        console.log('Final merged features count:', mergedFeatures.length);
+        // console.log('Final merged features:', mergedFeatures);
         return mergedFeatures;
     }
+
 }

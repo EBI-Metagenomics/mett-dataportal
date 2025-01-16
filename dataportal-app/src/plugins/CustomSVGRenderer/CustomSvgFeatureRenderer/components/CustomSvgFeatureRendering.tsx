@@ -1,5 +1,5 @@
 import React from 'react';
-import { Feature } from '@jbrowse/core/util';
+import {Feature} from '@jbrowse/core/util';
 
 interface CustomSvgFeatureRenderingProps {
     features: Map<string, Feature>;
@@ -8,13 +8,10 @@ interface CustomSvgFeatureRenderingProps {
 }
 
 export default function CustomSvgFeatureRendering({
-    features,
-    regions,
-    onFeatureClick,
-}: CustomSvgFeatureRenderingProps) {
-    console.log('✅ CustomSvgFeatureRendering regions:', regions);
-    console.log('✅ Features passed to CustomSvgFeatureRendering:', Array.from(features.values()));
-
+                                                      features,
+                                                      regions,
+                                                      onFeatureClick,
+                                                  }: CustomSvgFeatureRenderingProps) {
     const featureHeight = 15;
     const featureSpacing = 20;
 
@@ -26,51 +23,53 @@ export default function CustomSvgFeatureRendering({
         essential_solid: '#800080',
     };
 
-    const svgHeight = features.size * featureSpacing + 50; // Add padding
-    const svgWidth = regions[0]?.end - regions[0]?.start || 1000; // Adjust width dynamically
+    const regionStart = regions[0]?.start || 0;
+    const regionEnd = regions[0]?.end || 0;
+    const regionWidth = regionEnd - regionStart;
 
     return (
-        <svg height={svgHeight} width={svgWidth}>
+        <svg
+            height={features.size * featureSpacing + 50}
+            width={regionWidth}
+        >
             <g>
                 {Array.from(features.values()).map((feature, index) => {
-                    const x = feature.get('start') - regions[0].start; // Adjust to align with region
-                    const y = index * featureSpacing;
-                    const width = Math.max(1, feature.get('end') - feature.get('start')); // Ensure width > 0
+                    const featureStart = feature.get('start');
+                    const featureEnd = feature.get('end');
+
+                    // Map the genomic coordinates to pixel coordinates
+                    const x = Math.max(0, (featureStart - regionStart)); // Clip x to the visible region
+                    const width = Math.max(
+                        1,
+                        Math.min(featureEnd, regionEnd) - Math.max(featureStart, regionStart),
+                    ); // Clip width to the visible region
+
+                    // Skip rendering if the feature is outside the region
+                    if (featureEnd < regionStart || featureStart > regionEnd) {
+                        return null;
+                    }
+
                     const essentialityArray = feature.get('essentiality') || [];
                     const essentialityType =
                         essentialityArray[0]?.essentiality?.toLowerCase() || 'unclear';
                     const fillColor = essentialityColors[essentialityType] || '#000000';
 
-                    console.log(`Rendering feature ${index}:`, {
-                        x,
-                        y,
-                        width,
-                        height: featureHeight,
-                        essentialityType,
-                        fillColor,
-                    });
-
-                    if (feature.get('end') < regions[0].start || feature.get('start') > regions[0].end) {
-                        console.warn(`Feature ${feature.id()} is outside the visible region.`);
-                        return null; // Skip rendering
-                    }
-
                     return (
                         <g key={feature.id()}>
                             <rect
                                 x={x}
-                                y={y}
+                                y={index * featureSpacing}
                                 width={width}
                                 height={featureHeight}
                                 fill={fillColor}
                                 stroke="black"
                                 onClick={() => {
-                                    console.log('Feature clicked:', feature.toJSON());
+                                    // console.log('Feature clicked:', feature.toJSON());
                                     if (onFeatureClick) {
                                         onFeatureClick(feature.toJSON());
                                     } else {
                                         const event = new CustomEvent('featureClick', {
-                                            detail: { feature: feature.toJSON() },
+                                            detail: {feature: feature.toJSON()},
                                         });
                                         window.dispatchEvent(event);
                                     }
@@ -78,10 +77,11 @@ export default function CustomSvgFeatureRendering({
                             />
                             <text
                                 x={x + 2}
-                                y={y + featureHeight / 2}
-                                fontSize="10"
+                                y={index * featureSpacing + featureHeight / 2}
+                                fontSize="12"
                                 fill="black"
                                 dominantBaseline="middle"
+                                style={{fontWeight: 'bold'}}
                             >
                                 {feature.get('attributes')?.locus_tag || feature.id()}
                             </text>
