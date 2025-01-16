@@ -23,10 +23,11 @@ GENE_FIELD_START_POS = "start_position"
 GENE_FIELD_END_POS = "end_position"
 GENE_FIELD_ANNOTATIONS = "annotations"
 GENE_ESSENTIALITY_DATA = "essentiality_data"
-
 GENE_DEFAULT_SORT_FIELD = "gene_name"
 GENE_SORT_FIELD_STRAIN = "strain"
 GENE_SORT_FIELD_STRAIN_ISO = "strain__isolate_name"
+GENE_ESSENTIALITY = "essentiality"
+GENE_ESSENTIALITY_MEDIA = "media"
 
 # Strain-related constants
 STRAIN_FIELD_STRAIN_ID = "strain_id"
@@ -45,3 +46,10 @@ STRAIN_FIELD_CONTIGS = "contigs"
 STRAIN_FIELD_CONTIG_SEQ_ID = "seq_id"
 STRAIN_FIELD_CONTIG_LEN = "length"
 STRAIN_FIELD_TYPE_STRAIN = "type_strain"
+
+FILTER_MAPPING = {
+    "essentiality": "essentiality_data__essentiality__name",
+    "media": "essentiality_data__media",
+    "product": GENE_FIELD_PRODUCT,
+    "description": GENE_FIELD_DESCRIPTION,
+}
