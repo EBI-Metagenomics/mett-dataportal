@@ -164,7 +164,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
             const essentialityArray = essentialityData[locusTag]?.essentiality_data || [];
             const essentiality = essentialityArray.length
                 ? essentialityArray[0]?.essentiality.toLowerCase()
-                : 'unclear';
+                : '';
 
             if (essentiality !== 'unclear') {
                 // console.log(`Essentiality for ${locusTag}:`, essentiality);
@@ -181,8 +181,8 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         });
         });
 
-        // console.log('Final merged features count:', mergedFeatures.length);
-        // console.log('Final merged features:', mergedFeatures);
+        console.log('Final merged features count:', mergedFeatures.length);
+        console.log('Final merged features:', mergedFeatures);
         return mergedFeatures;
     }
 

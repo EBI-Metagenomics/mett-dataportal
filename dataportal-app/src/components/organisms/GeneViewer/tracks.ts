@@ -51,9 +51,17 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) =
                             get(feature, 'essentiality') == 'not_essential' ? '#008000' :
                             get(feature, 'essentiality') == 'essential_liquid' ? '#FFA500' :
                             get(feature, 'essentiality') == 'essential_solid' ? '#800080' :
-                            '#808080'`,
+                            get(feature, 'essentiality') == 'unclear' ? '#808080' :
+                            '#DAA520'`,
                         labels: {
-                            name: `jexl:get(feature, 'uniqueId') + ' (' + get(feature, 'essentiality') + ')'`,
+                            name: `jexl:
+                                get(feature, 'locus_tag') + ' ' +
+                                (get(feature, 'essentiality') == 'essential' ? '🔴' :
+                                get(feature, 'essentiality') == 'not_essential' ? '🟢' :
+                                get(feature, 'essentiality') == 'essential_liquid' ? '🟠' :
+                                get(feature, 'essentiality') == 'essential_solid' ? '🟣' : 
+                                get(feature, 'essentiality') == 'unclear' ? '⚪️' : '')
+                            `,
                         },
                         showForward: true,
                         showReverse: true,
