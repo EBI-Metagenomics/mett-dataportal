@@ -297,10 +297,8 @@ const GeneViewerPage: React.FC = () => {
                 <div style={{paddingTop: '20px', height: `${height}px`}}>
                     {viewState ? (
                         <div className={styles.jbrowseViewer}>
-                            <div className={styles.jbrowseContainer}>
-                                <JBrowseApp viewState={viewState}
-
-                                />
+                            <div className={`${styles.jbrowseContainer} ${styles.sidePanel}`}>
+                                <JBrowseApp viewState={viewState}/>
                             </div>
                         </div>
                     ) : (
@@ -311,7 +309,7 @@ const GeneViewerPage: React.FC = () => {
                 {/* Gene Search Section */}
                 <div className={styles.geneSearchContainer}>
                     <section>
-                        <GeneSearchWithFilters
+                    <GeneSearchWithFilters
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                             onSearchSubmit={handleGeneSearch}
