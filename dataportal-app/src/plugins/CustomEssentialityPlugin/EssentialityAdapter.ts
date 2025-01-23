@@ -64,10 +64,14 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                     : {};
 
                 const {attributes: _, ...featureWithoutAttributes} = featureData;
+                const Essentiality = '';
+                const EssentialityVisual = '';
 
                 return new SimpleFeature({
                     ...featureWithoutAttributes,
                     ...attributes, // Flatten attributes
+                    Essentiality,
+                    EssentialityVisual
                 });
             });
         })
