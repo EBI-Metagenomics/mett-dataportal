@@ -5,6 +5,7 @@ import {createRoot, hydrateRoot} from 'react-dom/client';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
 import CustomEssentialityPlugin from "../../../plugins/CustomEssentialityPlugin";
+import StartStopCodonPlugin from "../../../plugins/StartStopCodonPlugin";
 
 interface Track {
     type: string;
@@ -35,55 +36,71 @@ const useGeneViewerState = (
     const [initializationError, setInitializationError] = useState<Error | null>(null);
 
     useEffect(() => {
-        const initialize = async () => {
-            try {
-                if (!assembly) {
-                    throw new Error('Assembly configuration is missing.');
-                }
+    let isMounted = true; // Track whether the component is still mounted
 
-                const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
-                    .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
+    const initialize = async () => {
+        try {
+            if (!assembly) {
+                throw new Error('Assembly configuration is missing.');
+            }
 
-                const plugins: PluginConstructor[] = [CustomEssentialityPlugin, ...corePluginConstructors];
+            const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
+                .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
 
-                const config = {
-                    assemblies: [assembly],
-                    tracks: tracks.map((track) => ({
-                        ...track,
-                        visible: true,
-                        apiUrl: apiUrl
-                    })),
-                    defaultSession: defaultSession ? {...defaultSession, name: 'defaultSession'} : undefined,
-                };
+            const plugins: PluginConstructor[] = [CustomEssentialityPlugin, StartStopCodonPlugin, ...corePluginConstructors];
 
-                const state = createViewState({
-                    config,
-                    plugins,
-                    hydrateFn: hydrateRoot,
-                    createRootFn: createRoot,
-                    makeWorkerInstance,
-                });
+            console.log('Track configurations:', tracks)
 
-                // console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
-                // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
+            const config = {
+                assemblies: [assembly],
+                tracks: tracks.map((track) => ({
+                    ...track,
+                    visible: true,
+                    apiUrl: apiUrl
+                })),
+                defaultSession: defaultSession ? {...defaultSession, name: 'defaultSession'} : undefined,
+            };
 
-                const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
+            const state = createViewState({
+                config,
+                plugins,
+                hydrateFn: hydrateRoot,
+                createRootFn: createRoot,
+                makeWorkerInstance,
+            });
 
-                setViewState(state);
+            console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
+            console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
 
-                const assemblyManager = state.assemblyManager;
-                const assemblyInstance = assemblyManager.get(assembly.name);
-                if (assemblyInstance) {
-                    await assemblyInstance.load();
-                }
-            } catch (error) {
-                console.error('Comprehensive JBrowse initialization error:', error);
+            const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
+            console.log('✅ registeredRenderers:', registeredRenderers)
+
+            console.log('✅ state.session.views:', state.session.views[0])
+
+            const assemblyManager = state.assemblyManager;
+            const assemblyInstance = assemblyManager.get(assembly.name);
+
+            if (assemblyInstance) {
+                await assemblyInstance.load();
+            }
+
+            if (isMounted) {
+                setViewState(state); // Only update state if the component is still mounted
+            }
+        } catch (error) {
+            console.error('Comprehensive JBrowse initialization error:', error);
+            if (isMounted) {
                 setInitializationError(error instanceof Error ? error : new Error(String(error)));
             }
-        };
+        }
+    };
 
-        initialize();
-    }, [assembly, tracks, defaultSession]);
+    initialize();
+
+    return () => {
+        isMounted = false; // Cleanup function to prevent state updates on unmounted components
+    };
+}, [assembly, tracks, defaultSession]);
 
     return {viewState, initializationError};
 };

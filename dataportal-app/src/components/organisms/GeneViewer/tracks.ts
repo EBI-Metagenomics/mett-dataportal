@@ -61,6 +61,35 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) =
             ],
         });
 
+        tracks.push({
+            type: 'FeatureTrack',
+            trackId: 'start_stop_codons',
+            name: 'Start/Stop Codons',
+            assemblyNames: [genomeMeta.assembly_name],
+            adapter: {
+                type: 'Gff3TabixAdapter',
+                gffGzLocation: {
+                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz`,
+                },
+                index: {
+                    location: {
+                        uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz.tbi`,
+                    },
+                },
+            },
+            visible: true,
+            displays: [
+                {
+                    displayId: `start_stop_codons-${genomeMeta.assembly_name}-LinearBasicDisplay`,
+                    type: 'LinearBasicDisplay',
+                    rendererTypeName: 'StartStopCodonRenderer',
+                    renderer: {
+                        type: 'StartStopCodonRenderer',
+                    },
+                }
+            ],
+        });
+
         return tracks;
     }
 ;
