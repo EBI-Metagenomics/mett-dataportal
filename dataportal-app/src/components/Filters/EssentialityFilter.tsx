@@ -1,7 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import {GeneService} from '../../services/geneService';
 import styles from './EssentialityFilter.module.scss';
-import {GeneEssentialityTag} from "../../interfaces/Gene";
+import {GeneEssentialityTag} from '../../interfaces/Gene';
+import {getIconForEssentiality} from '../../utils/appConstants';
 
 interface EssentialityFilterProps {
     essentialityFilter: string[];
@@ -12,7 +13,7 @@ interface EssentialityFilterProps {
 const EssentialityFilter: React.FC<EssentialityFilterProps> = ({
                                                                    essentialityFilter,
                                                                    onEssentialityFilterChange,
-                                                                   hasTypeStrains
+                                                                   hasTypeStrains,
                                                                }) => {
     const [essentialityTags, setEssentialityTags] = useState<GeneEssentialityTag[]>([]);
 
@@ -37,7 +38,7 @@ const EssentialityFilter: React.FC<EssentialityFilterProps> = ({
             {essentialityTags.length === 0 && !hasTypeStrains && (
                 <p className={styles.disabledMessage}>Filters available for type strains only</p>
             )}
-            {essentialityTags.map(tag => (
+            {essentialityTags.map((tag) => (
                 <label key={tag.name} className={styles.filterItem}>
                     <input
                         type="checkbox"
@@ -46,11 +47,11 @@ const EssentialityFilter: React.FC<EssentialityFilterProps> = ({
                         onChange={onEssentialityFilterChange}
                         disabled={!hasTypeStrains}
                     />
-                    {tag.label}
+                    <span className={styles.icon}>{getIconForEssentiality(tag.name)}</span>
+                    <span className={styles.label}>{tag.label}</span>
                 </label>
             ))}
         </div>
-
     );
 };
 
