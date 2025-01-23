@@ -11,6 +11,11 @@
   height: 100%;
 }
 
+.vfTableCellIcon {
+    text-align: center;
+    vertical-align: middle;
+}
+
 .vfTableHeading {
   font-size: 15px !important;
   text-align: left !important;
@@ -45,4 +50,11 @@
 
 .toggleButton:hover {
   background-color: darkblue;
+}
+
+.essentialityIcon {
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+    justify-content: center;
+    cursor: pointer;
 }
