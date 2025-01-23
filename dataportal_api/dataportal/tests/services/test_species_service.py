@@ -6,6 +6,14 @@ from dataportal.tests.factories.species_factory import SpeciesFactory
 
 @pytest.mark.django_db
 @pytest.mark.asyncio
+async def test_get_all_species_empty():
+    service = SpeciesService()
+    result = await service.get_all_species()
+    assert len(result) == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.asyncio
 async def test_get_all_species():
     await sync_to_async(SpeciesFactory.create_batch)(2)
 
@@ -16,12 +24,6 @@ async def test_get_all_species():
     assert result[0].scientific_name == "Bacteroides uniformis"
     assert result[1].scientific_name == "Phocaeicola vulgatus"
 
-@pytest.mark.django_db
-@pytest.mark.asyncio
-async def test_get_all_species_empty():
-    service = SpeciesService()
-    result = await service.get_all_species()
-    assert len(result) == 0
 
 @pytest.mark.django_db
 @pytest.mark.asyncio
