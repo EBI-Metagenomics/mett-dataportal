@@ -1,7 +1,7 @@
 import pytest
 from asgiref.sync import sync_to_async
 
-from dataportal.schemas import GenomePaginationSchema, TypeStrainSchema
+from dataportal.schemas import GenomePaginationSchema, GenomeResponseSchema
 from dataportal.services.genome_service import GenomeService
 from dataportal.tests.factories.species_factory import SpeciesFactory
 from dataportal.tests.factories.strain_factory import StrainFactory
@@ -21,7 +21,7 @@ async def test_get_type_strains(mocker):
 
     # Validate the result
     assert len(result) == 2
-    assert isinstance(result[0], TypeStrainSchema)
+    assert isinstance(result[0], GenomeResponseSchema)
     assert result[0].type_strain is True
 
 
