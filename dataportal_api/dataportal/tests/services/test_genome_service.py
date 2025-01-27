@@ -114,14 +114,10 @@ class TestGenomeService:
     @pytest.mark.asyncio
     async def test_get_genome_by_strain_name(self, shared_species):
         species_bu, _ = shared_species
-
         # Create a single strain
         strain = await sync_to_async(StrainFactory.create)(
             isolate_name="Test_Strain_001", species=species_bu
         )
-
-        print(f"Strain species: {strain.species}, Type: {type(strain.species)}")  # Debugging
-
         service = GenomeService()
         result = await service.get_genome_by_strain_name("Test_Strain_001")
 

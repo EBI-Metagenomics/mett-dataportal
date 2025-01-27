@@ -21,4 +21,4 @@ class StrainFactory(factory.django.DjangoModelFactory):
         ["BU_ATCC8492_annotations.gff", "BU_2243B_annotations.gff", "BU_3537_annotations.gff", "PV_ATCC8482_annotations.gff"]
     )
     type_strain = factory.Iterator([True, False, False, True])
-    species = None
+    species = factory.SubFactory(SpeciesFactory)
