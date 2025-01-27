@@ -6,10 +6,8 @@ export interface Contig {
 }
 
 export interface GenomeMeta {
-    species: Species;
-    species_id: number;
     id: number;
-    common_name: string;
+    species: Species;
     isolate_name: string;
     assembly_name: string;
     assembly_accession: string | null;

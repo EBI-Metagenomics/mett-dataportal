@@ -113,7 +113,7 @@ const HomePage: React.FC = () => {
             setSelectedTypeStrains([]);
         } else {
             const validTypeStrains = typeStrains.filter((strain) =>
-                updatedSelectedSpecies.includes(strain.species_id)
+                updatedSelectedSpecies.includes(strain.species.id)
             );
 
             // Keep only the type strains that are both valid and already selected

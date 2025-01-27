@@ -13,9 +13,7 @@ export function transformSpecies(rawSpecies: any): Species {
 export function transformGenomeMeta(rawGenome: any): GenomeMeta {
     return {
         species: transformSpecies(rawGenome.species),
-        species_id: rawGenome.species_id,
         id: rawGenome.id,
-        common_name: rawGenome.common_name,
         isolate_name: rawGenome.isolate_name,
         assembly_name: rawGenome.assembly_name,
         assembly_accession: rawGenome.assembly_accession,

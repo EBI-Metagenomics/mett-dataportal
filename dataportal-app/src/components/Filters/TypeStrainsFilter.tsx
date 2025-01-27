@@ -14,7 +14,7 @@ const TypeStrainsFilter: React.FC<TypeStrainsFilterProps> = ({ typeStrains, sele
         <h3>Type Strains</h3>
         <ul>
             {typeStrains.map((strain) => {
-                const isStrainEnabled = selectedSpecies.length === 0 || selectedSpecies.includes(strain.species_id);
+                const isStrainEnabled = selectedSpecies.length === 0 || selectedSpecies.includes(strain.species.id);
 
                 return (
                     <li key={strain.id}>
