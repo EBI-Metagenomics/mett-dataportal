@@ -1,10 +1,12 @@
+import {Species} from "./Species";
+
 export interface Contig {
     seq_id: string;
     length: number;
 }
 
 export interface GenomeMeta {
-    species: string;
+    species: Species;
     species_id: number;
     id: number;
     common_name: string;
@@ -34,7 +36,8 @@ export interface GenomeResponse {
     total_results: number;
 }
 
-// export interface TypeStrain {
-//     name: string;
-//     id: number;
-// }
+export interface AutocompleteResponse {
+    strain_id: number,
+    isolate_name: string,
+    assembly_name: string
+}

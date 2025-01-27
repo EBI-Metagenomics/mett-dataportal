@@ -1,22 +1,26 @@
 import {ApiService} from "./api";
-import {GenomeMeta, GenomeResponse} from "../interfaces/Genome";
-
-interface AutocompleteResponse {
-    data: string[];
-}
+import {AutocompleteResponse, GenomeMeta, GenomeResponse} from "../interfaces/Genome";
+import {transformAutocompleteResponse, transformGenomeMeta, transformGenomeResponse} from "../utils/transformer";
 
 export class GenomeService {
     /**
      * Fetch genome autocomplete suggestions.
      */
-    static async fetchGenomeAutocompleteSuggestions(inputQuery: string, selectedSpecies?: string) {
+    static async fetchGenomeAutocompleteSuggestions(
+        inputQuery: string,
+        selectedSpecies?: string
+    ): Promise<AutocompleteResponse[]> {
         try {
             const params = new URLSearchParams({
                 query: inputQuery,
-                ...(selectedSpecies && { species_id: selectedSpecies }),
+                ...(selectedSpecies && {species_id: selectedSpecies}),
             });
-            const response = await ApiService.get("/genomes/autocomplete", params);
-            return response;
+
+            const rawResponse = await ApiService.get("/genomes/autocomplete", params);
+            console.log("response: ", rawResponse);
+
+            // Transform raw response to match AutocompleteResponse
+            return transformAutocompleteResponse(rawResponse);
         } catch (error) {
             console.error("Error fetching genome suggestions:", error);
             throw error;
@@ -26,11 +30,11 @@ export class GenomeService {
     /**
      * Fetch genomes by strain IDs.
      */
-    static async fetchGenomeByStrainIds(strainIds: number[]) {
+    static async fetchGenomeByStrainIds(strainIds: number[]): Promise<GenomeMeta[]> {
         try {
-            const params = new URLSearchParams({ ids: strainIds.join(",") });
-            const response = await ApiService.get("/genomes/by-ids", params);
-            return response;
+            const params = new URLSearchParams({ids: strainIds.join(",")});
+            const rawResponse = await ApiService.get("/genomes/by-ids", params);
+            return rawResponse.map(transformGenomeMeta);
         } catch (error) {
             console.error(`Error fetching genome with strain IDs ${strainIds}:`, error);
             throw error;
@@ -40,11 +44,11 @@ export class GenomeService {
     /**
      * Fetch genomes by isolate names.
      */
-    static async fetchGenomeByIsolateNames(isolateNames: string[]) {
+    static async fetchGenomeByIsolateNames(isolateNames: string[]): Promise<GenomeMeta[]> {
         try {
-            const params = new URLSearchParams({ names: isolateNames.join(",") });
-            const response = await ApiService.get("/genomes/by-isolate-names", params);
-            return response;
+            const params = new URLSearchParams({names: isolateNames.join(",")});
+            const rawResponse = await ApiService.get("/genomes/by-isolate-names", params);
+            return rawResponse.map(transformGenomeMeta);
         } catch (error) {
             console.error(`Error fetching genome by isolate names ${isolateNames}:`, error);
             throw error;
@@ -61,7 +65,7 @@ export class GenomeService {
         sortField: string,
         sortOrder: string,
         selectedSpecies?: number[]
-    ) {
+    ): Promise<GenomeResponse> {
         try {
             const params = new URLSearchParams({
                 query,
@@ -76,8 +80,8 @@ export class GenomeService {
                     ? `/species/${selectedSpecies[0]}/genomes/search`
                     : `/genomes/search`;
 
-            const response = await ApiService.get(endpoint, params);
-            return response;
+            const rawResponse = await ApiService.get(endpoint, params);
+            return transformGenomeResponse(rawResponse);
         } catch (error) {
             console.error("Error fetching genome search results:", error);
             throw error;
@@ -102,8 +106,8 @@ export class GenomeService {
                 sortOrder,
             });
 
-            const response = await ApiService.get(baseUrl, params);
-            return response;
+            const rawResponse = await ApiService.get(baseUrl, params);
+            return transformGenomeResponse(rawResponse);
         } catch (error) {
             console.error("Error fetching genome search results:", {
                 species,
@@ -117,29 +121,12 @@ export class GenomeService {
     }
 
     /**
-     * Fetch fuzzy isolate suggestions with optional species ID.
-     */
-    static async fetchFuzzyIsolateSuggestions(query: string, speciesId?: string): Promise<AutocompleteResponse> {
-        try {
-            const params = new URLSearchParams({
-                query,
-                ...(speciesId && { species_id: speciesId }),
-            });
-            const response = await ApiService.get("genomes/search/autocomplete", params);
-            return response;
-        } catch (error) {
-            console.error("Error fetching isolate suggestions:", { query, speciesId, error });
-            throw error;
-        }
-    }
-
-    /**
      * Fetch all type strains.
      */
     static async fetchTypeStrains(): Promise<GenomeMeta[]> {
         try {
-            const response = await ApiService.get("/genomes/type-strains");
-            return response;
+            const rawResponse = await ApiService.get("/genomes/type-strains");
+            return rawResponse.map(transformGenomeMeta);
         } catch (error) {
             console.error("Error fetching type strains:", error);
             throw error;

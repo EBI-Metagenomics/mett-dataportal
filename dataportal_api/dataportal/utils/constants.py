@@ -39,13 +39,17 @@ STRAIN_FIELD_FASTA_FILE = "fasta_file"
 STRAIN_FIELD_GFF_FILE = "gff_file"
 STRAIN_FIELD_SPECIES = "species"
 STRAIN_FIELD_SPECIES_ID = "species_id"
-STRAIN_FIELD_COMMON_NAME = "common_name"
 STRAIN_FIELD_FASTA_URL = "fasta_url"
 STRAIN_FIELD_GFF_URL = "gff_url"
 STRAIN_FIELD_CONTIGS = "contigs"
 STRAIN_FIELD_CONTIG_SEQ_ID = "seq_id"
 STRAIN_FIELD_CONTIG_LEN = "length"
 STRAIN_FIELD_TYPE_STRAIN = "type_strain"
+
+# species related constants
+SPECIES_FIELD_COMMON_NAME = "common_name"
+SPECIES_FIELD_ACRONYM = "acronym"
+SPECIES_FIELD_SCIENTIFIC_NAME = "scientific_name"
 
 FILTER_MAPPING = {
     "essentiality": "essentiality_data__essentiality__name",

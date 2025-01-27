@@ -28,10 +28,8 @@ class ContigSchema(BaseModel):
 
 
 class GenomeResponseSchema(BaseModel):
-    species: str
-    species_id: int
     id: int
-    common_name: Optional[str]
+    species: SpeciesSchema
     isolate_name: str
     assembly_name: Optional[str]
     assembly_accession: Optional[str]

@@ -5,7 +5,7 @@ import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResults
 import styles from "@components/organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm.module.scss";
 import {GenomeService} from "../../../../services/genomeService";
 import {LinkData} from "../../../../interfaces/Auxiliary";
-import {BaseGenome} from "../../../../interfaces/Genome";
+import {AutocompleteResponse, BaseGenome} from "../../../../interfaces/Genome";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -35,11 +35,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                linkData
                                                            }) => {
     const [query, setQuery] = useState<string>('');
-    const [suggestions, setSuggestions] = useState<{
-        strain_id: number,
-        isolate_name: string,
-        assembly_name: string
-    }[]>([]);
+    const [suggestions, setSuggestions] = useState<AutocompleteResponse[]>([]);
     const [isolateName, setIsolateName] = useState<string>('');
     const [results, setResults] = useState<any[]>([]);
     const [currentPage, setCurrentPage] = useState<number>(1);

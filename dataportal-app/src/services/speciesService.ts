@@ -12,6 +12,8 @@ export class SpeciesService {
                 return response.map((item: any) => ({
                     id: item.id,
                     scientific_name: item.scientific_name || item.name,
+                    common_name: item.common_name || item.name,
+                    acronym: item.acronym || item.name,
                 }));
             } else {
                 console.error("Invalid response format for species list:", response);

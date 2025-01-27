@@ -19,8 +19,6 @@ from dataportal.utils.constants import (
     STRAIN_FIELD_FASTA_FILE,
     STRAIN_FIELD_GFF_FILE,
     STRAIN_FIELD_SPECIES,
-    STRAIN_FIELD_SPECIES_ID,
-    STRAIN_FIELD_COMMON_NAME,
     STRAIN_FIELD_FASTA_URL,
     STRAIN_FIELD_GFF_URL,
     STRAIN_FIELD_CONTIGS,
@@ -30,6 +28,9 @@ from dataportal.utils.constants import (
     SORT_DESC,
     DEFAULT_PER_PAGE_CNT,
     STRAIN_FIELD_TYPE_STRAIN,
+    SPECIES_FIELD_COMMON_NAME,
+    SPECIES_FIELD_SCIENTIFIC_NAME,
+    SPECIES_FIELD_ACRONYM,
 )
 from dataportal.utils.exceptions import ServiceError, GenomeNotFoundError
 
@@ -48,12 +49,12 @@ class GenomeService:
         )
 
     async def search_genomes_by_string(
-        self,
-        query: str,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
+            self,
+            query: str,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+            sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
             filter_criteria=Q(isolate_name__icontains=query),
@@ -65,12 +66,12 @@ class GenomeService:
         )
 
     async def get_genomes_by_species(
-        self,
-        species_id: int,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
+            self,
+            species_id: int,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+            sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
             filter_criteria=Q(species_id=species_id),
@@ -82,13 +83,13 @@ class GenomeService:
         )
 
     async def search_genomes_by_species_and_string(
-        self,
-        species_id: int,
-        query: str,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
+            self,
+            species_id: int,
+            query: str,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+            sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         filter_criteria = Q(species_id=species_id, isolate_name__icontains=query)
         return await self._search_paginated_strains(
@@ -101,7 +102,7 @@ class GenomeService:
         )
 
     async def search_strains(
-        self, query: str, limit: int = None, species_id: Optional[int] = None
+            self, query: str, limit: int = None, species_id: Optional[int] = None
     ):
         try:
             strain_filter = Q(isolate_name__icontains=query) | Q(
@@ -129,11 +130,11 @@ class GenomeService:
             return []
 
     async def get_genomes(
-        self,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
+            self,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+            sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
             filter_criteria=Q(),
@@ -159,7 +160,7 @@ class GenomeService:
         )
 
     async def get_genomes_by_ids(
-        self, genome_ids: List[int]
+            self, genome_ids: List[int]
     ) -> List[GenomeResponseSchema]:
         if not genome_ids:
             return []
@@ -176,7 +177,7 @@ class GenomeService:
             raise ServiceError(f"Could not fetch genomes by IDs: {e}")
 
     async def get_genomes_by_isolate_names(
-        self, isolate_names: List[str]
+            self, isolate_names: List[str]
     ) -> List[GenomeResponseSchema]:
         if not isolate_names:
             return []
@@ -208,7 +209,7 @@ class GenomeService:
             raise ServiceError(e)
 
     async def _search_paginated_strains(
-        self, filter_criteria, page, per_page, sortField, sortOrder, error_message
+            self, filter_criteria, page, per_page, sortField, sortOrder, error_message
     ):
         try:
             strains, total_results = await self._fetch_paginated_strains(
@@ -247,6 +248,7 @@ class GenomeService:
             raise ServiceError(e)
 
     async def _serialize_strain(self, strain):
+        print(f'********** strain: {strain.species}')
         contigs = await sync_to_async(
             lambda: list(
                 strain.contigs.values(
@@ -255,11 +257,17 @@ class GenomeService:
             )
         )()
 
+        species = strain.species
+        print(f'********** species: {species}')
+
         return {
             FIELD_ID: strain.id,
-            STRAIN_FIELD_SPECIES: strain.species.scientific_name,
-            STRAIN_FIELD_SPECIES_ID: strain.species.id,
-            STRAIN_FIELD_COMMON_NAME: strain.species.common_name or None,
+            STRAIN_FIELD_SPECIES: {
+                FIELD_ID: species.id,
+                SPECIES_FIELD_SCIENTIFIC_NAME: species.scientific_name,
+                SPECIES_FIELD_COMMON_NAME: species.common_name or None,
+                SPECIES_FIELD_ACRONYM: species.acronym or None,
+            },
             STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
             STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
             STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
@@ -280,12 +288,12 @@ class GenomeService:
         }
 
     async def _fetch_paginated_strains(
-        self,
-        filter_criteria: Q,
-        page: int,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
+            self,
+            filter_criteria: Q,
+            page: int,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
+            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+            sortOrder: str = SORT_ASC,
     ):
         if not sortField:
             sortField = STRAIN_FIELD_ISOLATE_NAME
@@ -299,7 +307,7 @@ class GenomeService:
             lambda: list(
                 Strain.objects.select_related(STRAIN_FIELD_SPECIES)
                 .filter(filter_criteria)
-                .order_by(ordering)[start : start + per_page]
+                .order_by(ordering)[start: start + per_page]
             )
         )()
         total_results = await sync_to_async(

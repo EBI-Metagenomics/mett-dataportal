@@ -65,7 +65,8 @@ class Species(models.Model):
         ]
 
     def __str__(self):
-        return self.scientific_name
+        return (f"Species(id={self.id}, scientific_name='{self.scientific_name}'), "
+                f"common_name='{self.common_name}'), acronym='{self.acronym}'), taxonomy_id='{self.taxonomy_id}')")
 
 
 # Strain Model

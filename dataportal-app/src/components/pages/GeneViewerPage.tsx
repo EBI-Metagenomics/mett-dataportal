@@ -258,7 +258,7 @@ const GeneViewerPage: React.FC = () => {
                 <section>
                     {genomeMeta ? (
                         <div className="genome-meta-info">
-                            <h2><i>{genomeMeta.species}</i>: {genomeMeta.isolate_name}</h2>
+                            <h2><i>{genomeMeta.species.scientific_name}</i>: {genomeMeta.isolate_name}</h2>
                             <p><strong>Assembly Name:&nbsp;</strong>
                                 <a href={genomeMeta.fasta_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.assembly_name}

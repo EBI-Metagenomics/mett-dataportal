@@ -17,15 +17,22 @@ def shared_species():
     species_pv = SpeciesFactory(scientific_name="Phocaeicola vulgatus")
     return species_bu, species_pv
 
+
 # Cleanup database before each test
 @pytest.fixture(autouse=True)
 def cleanup_test_database(django_db_blocker):
     with django_db_blocker.unblock():
         Strain.objects.all().delete()
         Species.objects.all().delete()
+        # Reset sequences to avoid conflicts
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='dataportal_strain'")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='dataportal_species'")
+
 
 # Test class for GenomeService
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 class TestGenomeService:
     def test_strain_species_mapping(self, shared_species):
         # Pre-create species
@@ -112,13 +119,13 @@ class TestGenomeService:
             isolate_name="Test_Strain_001", species=species_bu
         )
 
+        print(f"Strain species: {strain.species}, Type: {type(strain.species)}")  # Debugging
+
         service = GenomeService()
         result = await service.get_genome_by_strain_name("Test_Strain_001")
 
         assert result.isolate_name == "Test_Strain_001"
         assert result.species.scientific_name == "Bacteroides uniformis"
-
-
 
 #
 # @pytest.mark.django_db
@@ -207,4 +214,3 @@ class TestGenomeService:
 #     assert len(result.results) > 0
 #     assert all("Test" in strain.isolate_name for strain in result.results)
 #     assert all(strain.species_id == 1 for strain in result.results)
-

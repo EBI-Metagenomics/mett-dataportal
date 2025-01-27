@@ -26,11 +26,3 @@ class SpeciesFactory(factory.django.DjangoModelFactory):
     )
 
     taxonomy_id = factory.Sequence(lambda n: n + 100)
-
-    # @factory.post_generation
-    # def customize_species(obj, create, extracted, **kwargs):
-    #     if extracted:
-    #         for key, value in extracted.items():
-    #             setattr(obj, key, value)
-    #     if create:
-    #         obj.save()
