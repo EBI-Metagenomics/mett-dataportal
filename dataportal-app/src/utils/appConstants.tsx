@@ -14,32 +14,32 @@ export const DISPLAY_SETTINGS = {
 export const getColorForEssentiality = (essentiality: string): string => {
     switch (essentiality) {
         case 'essential':
-            return '#FF0000'; // Red
+            return '#FF0000'; // Red (critical importance)
         case 'not_essential':
-            return '#008000'; // Green
+            return '#555555'; // Dark Gray (subdued and non-critical)
         case 'essential_liquid':
-            return '#FFA500'; // Orange
+            return '#1E90FF'; // Dodger Blue (fluid and vibrant for liquid)
         case 'essential_solid':
-            return '#800080'; // Purple
+            return '#8B4513'; // Saddle Brown (earthy, solid representation)
         case 'unclear':
-            return '#808080'; // Gray
+            return '#808080'; // Medium Gray (neutral and ambiguous)
         default:
-            return '#DAA520'; // Goldenrod
+            return '#DAA520'; // Goldenrod (fallback color)
     }
 };
 
 export const getIconForEssentiality = (essentiality: string) => {
     switch (essentiality) {
         case 'essential':
-            return '💎'; // Gem
+            return '♦️'; // Gem
         case 'not_essential':
-            return '⭕'; // Minimal and neutral
+            return '⚫'; // Black Circle (minimal and understated)
         case 'essential_liquid':
-            return '💧'; // Droplet id
+            return '💎'; // Gem \
         case 'essential_solid':
-            return '🧊'; // Ice cube
+            return '🔶'; // Rock (stable and earthy)
         case 'unclear':
         default:
-            return '🌀'; // Cyclone
+            return '🌫️'; // Fog (unclear and ambiguous)
     }
 };
