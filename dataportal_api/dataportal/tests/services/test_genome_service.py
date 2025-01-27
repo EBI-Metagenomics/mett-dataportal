@@ -1,12 +1,13 @@
+import factory
 import pytest
 from asgiref.sync import sync_to_async
-import factory
 
 from dataportal.models import Strain, Species
 from dataportal.schemas import GenomePaginationSchema, GenomeResponseSchema
 from dataportal.services.genome_service import GenomeService
 from dataportal.tests.factories.species_factory import SpeciesFactory
 from dataportal.tests.factories.strain_factory import StrainFactory
+from dataportal.utils.constants import STRAIN_FIELD_ISOLATE_NAME
 from dataportal.utils.exceptions import GenomeNotFoundError
 
 
@@ -95,7 +96,7 @@ class TestGenomeService:
 
         assert isinstance(result, GenomePaginationSchema)
         assert len(result.results) == 3
-        assert all(strain.species_id == species_bu.id for strain in result.results)
+        assert all(strain.species.id == species_bu.id for strain in result.results)
 
     @pytest.mark.asyncio
     async def test_get_genome_by_id(self, shared_species):
@@ -127,90 +128,105 @@ class TestGenomeService:
         assert result.isolate_name == "Test_Strain_001"
         assert result.species.scientific_name == "Bacteroides uniformis"
 
-#
-# @pytest.mark.django_db
-# @pytest.mark.asyncio
-# async def test_get_genomes_by_species(mocker):
-#     service = GenomeService()
-#     result = await service.get_genomes_by_species(species_id=1)
-#
-#     # Validate the result
-#     assert isinstance(result, GenomePaginationSchema)
-#     assert len(result.results) == 3
-#     assert all(strain.species_id == 1 for strain in result.results)
-#
-#
-# @pytest.mark.django_db
-# @pytest.mark.asyncio
-# async def test_get_genome_by_id(mocker):
-#     # Create a single mock strain
-#     mock_strain = await sync_to_async(StrainFactory.create)()
-#
-#     # Mock the get call in Strain.objects
-#     mocker.patch("dataportal.models.Strain.objects.get", return_value=mock_strain)
-#
-#     service = GenomeService()
-#     result = await service.get_genome_by_id(mock_strain.id)
-#
-#     # Validate the result
-#     assert result.id == mock_strain.id
-#     assert result.isolate_name == mock_strain.isolate_name
-#
-#
-# @pytest.mark.django_db
-# @pytest.mark.asyncio
-# async def test_search_strains():
-#     service = GenomeService()
-#     result = await service.search_strains(query="ATCC", species_id=1)
-#
-#     assert len(result) == 2
-#     assert all("ATCC" in strain['isolate_name'] for strain in result)
-#     assert all(strain['strain_id'] is not None for strain in result)
-#
-#
-# @pytest.mark.django_db
-# @pytest.mark.asyncio
-# async def test_get_genome_by_strain_name(mocker):
-#     # Create a single mock strain
-#     mock_strain = await sync_to_async(StrainFactory.create)(
-#         isolate_name="Test_Strain_001"
-#     )
-#
-#     service = GenomeService()
-#     result = await service.get_genome_by_strain_name("Test_Strain_001")
-#
-#     assert result.isolate_name == "Test_Strain_001"
-#
-#
-# @pytest.mark.django_db
-# @pytest.mark.asyncio
-# async def test_get_genomes_by_ids():
-#     service = GenomeService()
-#     result = await service.get_genomes_by_ids([1, 2, 3])
-#
-#     assert len(result) == 3
-#     assert all(isinstance(genome, GenomeResponseSchema) for genome in result)
-#     assert {genome.id for genome in result} == set([1, 2, 3])
-#
-#
-# @pytest.mark.django_db
-# @pytest.mark.asyncio
-# async def test_get_genome_by_strain_name_not_found():
-#     service = GenomeService()
-#
-#     with pytest.raises(GenomeNotFoundError):
-#         await service.get_genome_by_strain_name("Non_Existent_Strain")
-#
-#
-# @pytest.mark.django_db
-# @pytest.mark.asyncio
-# async def test_search_genomes_by_species_and_string():
-#     service = GenomeService()
-#     result = await service.search_genomes_by_species_and_string(
-#         species_id=1, query="Test"
-#     )
-#
-#     assert isinstance(result, GenomePaginationSchema)
-#     assert len(result.results) > 0
-#     assert all("Test" in strain.isolate_name for strain in result.results)
-#     assert all(strain.species_id == 1 for strain in result.results)
+    @pytest.mark.asyncio
+    async def test_search_genomes_by_species_and_string(self, shared_species):
+        species_bu, _ = shared_species
+
+        # Create strains matching query and species
+        await sync_to_async(StrainFactory.create_batch)(
+            3, isolate_name=factory.Iterator(["BU_001", "BU_002", "Other"]),
+            species=species_bu
+        )
+
+        service = GenomeService()
+        result = await service.search_genomes_by_species_and_string(species_id=species_bu.id, query="BU")
+
+        assert isinstance(result, GenomePaginationSchema)
+        assert len(result.results) == 2  # Only "BU_001" and "BU_002" match
+        assert all("BU" in strain.isolate_name for strain in result.results)
+
+    @pytest.mark.asyncio
+    async def test_search_strains(self, shared_species):
+        species_bu, _ = shared_species
+
+        # Create strains with various names
+        await sync_to_async(StrainFactory.create_batch)(
+            3, isolate_name=factory.Iterator(["BU_A", "BU_B", "NotB_U"]),
+            assembly_name=factory.Iterator(["Assembly1", "Assembly2", "Assembly3"]),
+            species=species_bu
+        )
+
+        service = GenomeService()
+        result = await service.search_strains(query="BU")
+
+        assert len(result) == 2  # "BU_A" and "BU_B" match
+        assert all("BU" in strain[STRAIN_FIELD_ISOLATE_NAME] for strain in result)
+
+    @pytest.mark.asyncio
+    async def test_get_genomes(self, shared_species):
+        species_bu, _ = shared_species
+
+        # Create strains
+        await sync_to_async(StrainFactory.create_batch)(5, species=species_bu)
+
+        service = GenomeService()
+        result = await service.get_genomes()
+
+        assert isinstance(result, GenomePaginationSchema)
+        assert len(result.results) == 5
+
+    @pytest.mark.asyncio
+    async def test_get_genomes_by_ids(self, shared_species):
+        species_bu, _ = shared_species
+
+        # Create strains and capture their IDs
+        strains = await sync_to_async(StrainFactory.create_batch)(3, species=species_bu)
+        strain_ids = [strain.id for strain in strains]
+
+        service = GenomeService()
+        result = await service.get_genomes_by_ids(genome_ids=strain_ids)
+
+        assert len(result) == 3
+        assert all(strain.id in strain_ids for strain in result)
+
+    @pytest.mark.asyncio
+    async def test_get_genomes_by_isolate_names(self, shared_species):
+        species_bu, _ = shared_species
+
+        # Create strains with specific isolate names
+        isolate_names = ["Isolate_A", "Isolate_B"]
+        await sync_to_async(StrainFactory.create_batch)(
+            2, isolate_name=factory.Iterator(isolate_names), species=species_bu
+        )
+
+        service = GenomeService()
+        result = await service.get_genomes_by_isolate_names(isolate_names=isolate_names)
+
+        assert len(result) == 2
+        assert all(strain.isolate_name in isolate_names for strain in result)
+
+    @pytest.mark.asyncio
+    async def test_get_genomes_by_ids_empty_list(self):
+        service = GenomeService()
+        result = await service.get_genomes_by_ids(genome_ids=[])
+        assert result == []  # Should return an empty list without error
+
+    @pytest.mark.asyncio
+    async def test_get_genomes_by_isolate_names_empty_list(self):
+        service = GenomeService()
+        result = await service.get_genomes_by_isolate_names(isolate_names=[])
+        assert result == []  # Should return an empty list without error
+
+    @pytest.mark.asyncio
+    async def test_invalid_genome_id_raises_error(self, shared_species):
+        service = GenomeService()
+        invalid_id = 999  # Assuming no strain with this ID exists
+        with pytest.raises(GenomeNotFoundError):
+            await service.get_genome_by_id(invalid_id)
+
+    @pytest.mark.asyncio
+    async def test_invalid_genome_strain_name_raises_error(self, shared_species):
+        service = GenomeService()
+        invalid_name = "NonExistentStrain"
+        with pytest.raises(GenomeNotFoundError):
+            await service.get_genome_by_strain_name(invalid_name)

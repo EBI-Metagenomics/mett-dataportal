@@ -248,7 +248,6 @@ class GenomeService:
             raise ServiceError(e)
 
     async def _serialize_strain(self, strain):
-        print(f'********** strain: {strain.species}')
         contigs = await sync_to_async(
             lambda: list(
                 strain.contigs.values(
@@ -258,7 +257,6 @@ class GenomeService:
         )()
 
         species = strain.species
-        print(f'********** species: {species}')
 
         return {
             FIELD_ID: strain.id,
