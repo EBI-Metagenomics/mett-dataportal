@@ -31,15 +31,15 @@ export const getColorForEssentiality = (essentiality: string): string => {
 export const getIconForEssentiality = (essentiality: string) => {
     switch (essentiality) {
         case 'essential':
-            return '💎'; // Gem for essential
+            return '💎'; // Gem
         case 'not_essential':
-            return '🍂'; // Fallen leaf for not essential
+            return '⭕'; // Minimal and neutral
         case 'essential_liquid':
-            return '💧'; // Droplet for liquid
+            return '💧'; // Droplet id
         case 'essential_solid':
-            return '🧊'; // Ice cube for solid
+            return '🧊'; // Ice cube
         case 'unclear':
         default:
-            return '🌀'; // Cyclone for unclear
+            return '🌀'; // Cyclone
     }
 };

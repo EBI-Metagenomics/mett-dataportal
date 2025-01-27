@@ -22,11 +22,11 @@ class Command(BaseCommand):
 
         # Define valid essentiality categories with their corresponding labels
         valid_essentiality_categories = {
-            "unclear": "Unclear",
             "essential": "Essential",
-            "not_essential": "Not Essential",
             "essential_liquid": "Essential Liquid",
             "essential_solid": "Essential Solid",
+            "not_essential": "Not Essential",
+            "unclear": "Unclear",
         }
 
         # Preload or create essentiality tags with names and labels

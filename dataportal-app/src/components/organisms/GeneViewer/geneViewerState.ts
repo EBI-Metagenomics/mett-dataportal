@@ -77,7 +77,6 @@ const useGeneViewerState = (
                     await assemblyInstance.load();
                 }
             } catch (error) {
-                console.error('Comprehensive JBrowse initialization error:', error);
                 setInitializationError(error instanceof Error ? error : new Error(String(error)));
             }
         };
