@@ -30,8 +30,6 @@ GENE_ESSENTIALITY = "essentiality"
 GENE_ESSENTIALITY_MEDIA = "media"
 
 # Strain-related constants
-STRAIN_FIELD_STRAIN_ID = "strain_id"
-STRAIN_FIELD_STRAIN_NAME = "strain_name"
 STRAIN_FIELD_ISOLATE_NAME = "isolate_name"
 STRAIN_FIELD_ASSEMBLY_NAME = "assembly_name"
 STRAIN_FIELD_ASSEMBLY_ACCESSION = "assembly_accession"

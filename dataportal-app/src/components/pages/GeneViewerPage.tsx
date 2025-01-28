@@ -36,7 +36,7 @@ const GeneViewerPage: React.FC = () => {
                     const geneResponse = await GeneService.fetchGeneById(Number(geneId));
                     setGeneMeta(geneResponse);
 
-                    const genomeResponse = await GenomeService.fetchGenomeByStrainIds([geneResponse.strain_id]);
+                    const genomeResponse = await GenomeService.fetchGenomeByStrainIds([geneResponse.strain.id]);
                     setGenomeMeta(genomeResponse[0]);
                 } else if (strainName) {
                     const genomeResponse = await GenomeService.fetchGenomeByIsolateNames([strainName]);

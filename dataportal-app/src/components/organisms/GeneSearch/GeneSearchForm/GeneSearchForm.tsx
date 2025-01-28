@@ -192,7 +192,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
         console.log('suggestion: ' + suggestion)
-        console.log('strain name: ' + suggestion.strain_name)
+        console.log('strain name: ' + suggestion.isolate_name)
         console.log('suggestion.gene_id: ' + suggestion.gene_id)
         console.log('suggestion.gene_name: ' + suggestion.gene_name)
         console.log('suggestion.locus_tag: ' + suggestion.locus_tag)

@@ -13,7 +13,14 @@ class SpeciesSchema(BaseModel):
 
 
 class StrainSuggestionSchema(BaseModel):
-    strain_id: int
+    id: int
+    isolate_name: str
+    assembly_name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class StrainMinSchema(BaseModel):
+    id: int
     isolate_name: str
     assembly_name: str
 
@@ -46,7 +53,7 @@ class GenomeResponseSchema(BaseModel):
 class GeneAutocompleteResponseSchema(BaseModel):
     gene_id: int
     gene_name: Optional[str]
-    strain_name: str
+    isolate_name: str
     product: Optional[str] = None
     locus_tag: Optional[str] = None
     kegg: Optional[str] = None
@@ -77,9 +84,7 @@ class GeneResponseSchema(BaseModel):
     seq_id: Optional[str] = None
     gene_name: Optional[str] = None
     description: Optional[str] = None
-    strain_id: Optional[int] = None
-    strain: Optional[str] = None
-    assembly: Optional[str] = None
+    strain: StrainMinSchema
     locus_tag: Optional[str] = None
     cog: Optional[str] = None
     kegg: Optional[str] = None

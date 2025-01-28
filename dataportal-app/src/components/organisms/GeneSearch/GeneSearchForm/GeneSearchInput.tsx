@@ -43,7 +43,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                 style={{zIndex: 1000}}
                 getOptionLabel={(option) => {
                     if (typeof option === 'string') return option;
-                    const strainName = option.strain_name || 'Unknown strain';
+                    const strainName = option.isolate_name || 'Unknown strain';
                     const product = option.product || 'Unknown product';
                     const locusTag = option.locus_tag || 'Unknown locus tag';
                     const geneNamePart = option.gene_name ? ` - ${option.gene_name}` : '';

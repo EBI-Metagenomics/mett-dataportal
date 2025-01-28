@@ -35,7 +35,14 @@ export interface GenomeResponse {
 }
 
 export interface AutocompleteResponse {
-    strain_id: number,
+    id: number,
     isolate_name: string,
     assembly_name: string
 }
+
+export interface GenomeMinIntf {
+    id: number,
+    isolate_name: string,
+    assembly_name: string
+}
+

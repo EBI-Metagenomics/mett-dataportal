@@ -12,7 +12,6 @@ from dataportal.schemas import (
 )
 from dataportal.utils.constants import (
     FIELD_ID,
-    STRAIN_FIELD_STRAIN_ID,
     STRAIN_FIELD_ISOLATE_NAME,
     STRAIN_FIELD_ASSEMBLY_NAME,
     STRAIN_FIELD_ASSEMBLY_ACCESSION,
@@ -119,7 +118,7 @@ class GenomeService:
             )()
             return [
                 {
-                    STRAIN_FIELD_STRAIN_ID: strain.id,
+                    FIELD_ID: strain.id,
                     STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
                     STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
                 }

@@ -84,7 +84,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
             <tbody className="vf-table__body">
             {results.map((geneMeta, index) => (
                 <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.strain || 'Unknown Strain'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.strain.isolate_name || 'Unknown Strain'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || 'Unknown Gene Name'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.seq_id || 'Unknown'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.locus_tag || 'Unknown Locus Tag'}</td>

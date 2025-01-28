@@ -1,12 +1,13 @@
 import React, {useEffect, useRef} from 'react';
 import styles from "./GenomeSearchInput.module.scss";
 import {Autocomplete, TextField} from "@mui/material";
+import {AutocompleteResponse} from "../../../../interfaces/Genome";
 
 interface GenomeSearchInputProps {
     query: string;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    suggestions: { strain_id: number; isolate_name: string; assembly_name: string }[];
-    onSuggestionClick: (suggestion: { strain_id: number; isolate_name: string; assembly_name: string }) => void;
+    suggestions: AutocompleteResponse[];
+    onSuggestionClick: (suggestion: AutocompleteResponse) => void;
     onSuggestionsClear: () => void;
 }
 

@@ -42,7 +42,7 @@ export function transformGenomeResponse(rawResponse: any): GenomeResponse {
 
 export function transformAutocompleteResponse(rawResponse: any[]): AutocompleteResponse[] {
     return rawResponse.map((item) => ({
-        strain_id: item.strain_id,
+        id: item.id,
         isolate_name: item.isolate_name,
         assembly_name: item.assembly_name,
     }));

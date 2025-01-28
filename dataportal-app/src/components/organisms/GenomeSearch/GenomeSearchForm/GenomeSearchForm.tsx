@@ -161,13 +161,13 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         debouncedFetchSuggestions(newQuery);
     };
 
-    const handleSuggestionClick = (suggestion: { strain_id: number, isolate_name: string, assembly_name: string }) => {
+    const handleSuggestionClick = (suggestion: AutocompleteResponse) => {
         console.log('suggestion: ' + suggestion)
         console.log('isolateName: ' + isolateName)
-        console.log('suggestion.strain_id: ' + suggestion.strain_id)
+        console.log('suggestion.strain_id: ' + suggestion.id)
         setQuery(suggestion.isolate_name);
         setIsolateName(suggestion.isolate_name);
-        setSelectedStrainId(suggestion.strain_id);
+        setSelectedStrainId(suggestion.id);
         setSuggestions([]);
         // EMG-7006 - no auto selection of filters
         //onGenomeSelect({id: suggestion.strain_id, name: suggestion.isolate_name});

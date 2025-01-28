@@ -1,3 +1,5 @@
+import {GenomeMinIntf} from "./Genome";
+
 export interface GeneEssentiality {
     id: number;
     media: string;
@@ -9,9 +11,7 @@ export interface GeneMeta {
     seq_id: string;
     gene_name: string;
     description: string;
-    strain_id: number;
-    strain: string;
-    assembly: string;
+    strain: GenomeMinIntf;
     locus_tag: string;
     cog: string | null;
     kegg: string | null;
@@ -35,7 +35,7 @@ export interface Gene {
 export interface GeneSuggestion {
     gene_id: number;
     gene_name: string | '';
-    strain_name: string;
+    isolate_name: string;
     product: string | null;
     locus_tag: string;
     kegg: string | null;
