@@ -8,7 +8,13 @@ import {createViewState} from '@jbrowse/react-app';
 import {GeneEssentialityTag, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../../interfaces/Genome";
-import {SPINNER_DELAY} from "../../../../utils/appConstants";
+import {
+    API_GENE_SEARCH_ADVANCED,
+    API_GENOME_SEARCH,
+    getAPIUrlGenomeSearchWithSpecies,
+    SPINNER_DELAY
+} from "../../../../utils/appConstants";
+import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -50,6 +56,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [pageSize, setPageSize] = useState<number>(10);
     // const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
     const [essentialityTags, setEssentialityTags] = useState<GeneEssentialityTag[]>([]);
+
+    const [apiRequestDetails, setApiRequestDetails] = useState<{
+        url: string;
+        method: string;
+        headers: any;
+        body?: any
+    } | null>(null);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, 10);
@@ -150,6 +163,20 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 ? selectedSpecies
                 : undefined;
             try {
+                const apiDetails = {
+                    url: '',
+                    method: 'GET',
+                    headers: {'Content-Type': 'application/json'},
+                    params: {},
+                };
+                const params = GeneService
+                    .buildParamsFetchGeneSearchResults(query, page, pageSize, sortField,
+                        sortOrder, genomeFilter, speciesFilter, essentialityFilter);
+
+                apiDetails.url = API_GENE_SEARCH_ADVANCED;
+                apiDetails.params = Object.fromEntries(params.entries());
+                console.log('apiRequestDetails', apiDetails)
+                setApiRequestDetails(apiDetails);
                 const response = await GeneService.fetchGeneSearchResults(
                     query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter, essentialityFilter
                 );
@@ -257,18 +284,31 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             <option value={50}>Show 50</option>
                         </select>
                     </div>
-
-                    {totalPages > 1 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            hasPrevious={hasPrevious}
-                            hasNext={hasNext}
-                            onPageClick={handlePageClick}
-                        />
-                    )}
+                    <div className={styles.paginationBar}>
+                        {totalPages > 1 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                hasPrevious={hasPrevious}
+                                hasNext={hasNext}
+                                onPageClick={handlePageClick}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
+            <div><p/></div>
+            <div className={styles.rightPaneButtons}>
+                <button className="vf-button vf-button--primary vf-button--sm"
+                        onClick={() => copyToClipboard(generateCurlRequest(apiRequestDetails))}>Copy cURL
+                    Request
+                </button>
+                <button className="vf-button vf-button--primary vf-button--sm"
+                        onClick={() => copyToClipboard(generateHttpRequest(apiRequestDetails))}>Copy HTTP
+                    Request
+                </button>
+            </div>
+            <div><p/></div>
 
 
             <div>

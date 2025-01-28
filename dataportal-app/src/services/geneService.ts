@@ -60,33 +60,46 @@ export class GeneService {
         essentialityFilter?: string[]
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
-            const params = new URLSearchParams({
-                query: gene,
-                page: String(page),
-                per_page: String(perPage),
-                sort_field: sortField,
-                sort_order: sortOrder,
-            });
-
-            if (selectedGenomes?.length) {
-                params.append("genome_ids", selectedGenomes.map((genome) => genome.id).join(","));
-            }
-
-            if (selectedSpecies?.length === 1) {
-                params.append("species_id", String(selectedSpecies[0]));
-            }
-
-            if (essentialityFilter?.length) {
-                const filterValue = `essentiality:${essentialityFilter.join(",")}`;
-                params.append("filter", filterValue);
-            }
-
+            const params = GeneService.buildParamsFetchGeneSearchResults(gene, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, essentialityFilter);
             const response = await ApiService.get<PaginatedResponse<GeneMeta>>("/genes/search/advanced", params);
             return response;
         } catch (error) {
             console.error("Error fetching gene search results:", error);
             throw error;
         }
+    }
+
+    static buildParamsFetchGeneSearchResults(
+        gene: string,
+        page: number,
+        perPage: number,
+        sortField: string,
+        sortOrder: string,
+        selectedGenomes?: { id: number; name: string }[],
+        selectedSpecies?: number[],
+        essentialityFilter?: string[]
+    ) {
+        const params = new URLSearchParams({
+            query: gene,
+            page: String(page),
+            per_page: String(perPage),
+            sort_field: sortField,
+            sort_order: sortOrder,
+        });
+
+        if (selectedGenomes?.length) {
+            params.append("genome_ids", selectedGenomes.map((genome) => genome.id).join(","));
+        }
+
+        if (selectedSpecies?.length === 1) {
+            params.append("species_id", String(selectedSpecies[0]));
+        }
+
+        if (essentialityFilter?.length) {
+            const filterValue = `essentiality:${essentialityFilter.join(",")}`;
+            params.append("filter", filterValue);
+        }
+        return params;
     }
 
     /**

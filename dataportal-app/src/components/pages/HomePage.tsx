@@ -189,7 +189,7 @@ const HomePage: React.FC = () => {
         setGenomeResults(response.results);
     };
 
-
+    //todo to be removed
     const handleGeneSearch = async (field = geneSortField, order = geneSortOrder) => {
         const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, geneSearchQuery, field, order);
         setGenomeResults(response.results);
@@ -283,6 +283,13 @@ const HomePage: React.FC = () => {
                 </div>
 
                 {/* Right Panel - Search Form */}
+                {/*<div className={styles.rightPane}>*/}
+                {/*    <div className={styles.rightPaneButtons}>*/}
+                {/*        <button className="vf-button vf-button--primary vf-button--sm"*/}
+                {/*                onClick={() => downloadTableData(genomeResults, 'csv')}>Download CSV*/}
+                {/*        </button>*/}
+                {/*    </div>*/}
+                {/*</div>*/}
                 <div className={styles.rightPane}>
                     <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick}/>
                     {activeTab === 'vf-tabs__section--1' && (

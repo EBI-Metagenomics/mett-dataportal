@@ -6,6 +6,8 @@ import styles from "@components/organisms/GenomeSearch/GenomeSearchForm/GenomeSe
 import {GenomeService} from "../../../../services/genomeService";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {AutocompleteResponse, BaseGenome} from "../../../../interfaces/Genome";
+import {API_GENOME_SEARCH, API_GENOMES_BY_IDS, getAPIUrlGenomeSearchWithSpecies} from "../../../../utils/appConstants";
+import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -47,6 +49,13 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const [pageSize, setPageSize] = useState<number>(10);
 
     const [resetFlag, setResetFlag] = useState<boolean>(false);
+
+    const [apiRequestDetails, setApiRequestDetails] = useState<{
+        url: string;
+        method: string;
+        headers: any;
+        body?: any
+    } | null>(null);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, 10);
@@ -98,24 +107,50 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             sortField: string = "isolate_name",
             sortOrder: string = "asc"
         ) => {
-            const qry = isolateName.trim() || query.trim();
-            // console.log("fetchSearchResults called with page:", page);
+            setLoading(true); // Show spinner
+            const startTime = Date.now();
 
+            const qry = isolateName.trim() || query.trim();
             const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
             const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : null;
 
             try {
                 let response;
+                const apiDetails = {
+                    url: '',
+                    method: 'GET',
+                    headers: {'Content-Type': 'application/json'},
+                    params: {},
+                };
 
                 if (typeStrainFilter) {
-                    // console.log("Fetching genomes by type strain IDs:", typeStrainFilter);
+                    // Fetch by strain IDs
+                    apiDetails.url = API_GENOMES_BY_IDS;
+                    apiDetails.params = {ids: typeStrainFilter.join(",")};
+
                     response = await GenomeService.fetchGenomeByStrainIds(typeStrainFilter);
                     setResults(response);
                     setTotalPages(1);
                     setHasPrevious(false);
                     setHasNext(false);
                 } else {
-                    // console.log("Fetching genomes using standard search");
+                    // Standard genome search
+                    const params = new URLSearchParams({
+                        query: qry,
+                        page: String(page),
+                        per_page: String(pageSize),
+                        sortField,
+                        sortOrder,
+                    });
+
+                    const endpoint =
+                        speciesFilter.length === 1
+                            ? getAPIUrlGenomeSearchWithSpecies(speciesFilter[0])
+                            : API_GENOME_SEARCH;
+
+                    apiDetails.url = endpoint;
+                    apiDetails.params = Object.fromEntries(params.entries());
+
                     response = await GenomeService.fetchGenomeSearchResults(
                         qry,
                         page,
@@ -137,15 +172,21 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         setHasNext(false);
                     }
                 }
+                console.log('apiRequestDetails', apiDetails)
+                setApiRequestDetails(apiDetails);
             } catch (error) {
                 console.error("Error fetching data:", error);
                 setResults([]);
                 setTotalPages(1);
                 setHasPrevious(false);
                 setHasNext(false);
+            } finally {
+                const elapsedTime = Date.now() - startTime;
+                const remainingTime = 500 - elapsedTime;
+                setTimeout(() => setLoading(false), remainingTime > 0 ? remainingTime : 0);
             }
         },
-        [query, isolateName, selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize]
+        [query, isolateName, selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize, setLoading]
     );
 
 
@@ -232,7 +273,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                 <option value={50}>Show 50</option>
                             </select>
                         </div>
-
+                        <div className={styles.paginationBar}>
                         {totalPages > 1 && (
                             <Pagination
                                 currentPage={currentPage}
@@ -241,9 +282,21 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                 hasNext={hasNext}
                                 onPageClick={handlePageClick}
                             />
-                        )}
+                        )}</div>
                     </div>
                 </div>
+                <div><p/></div>
+                <div className={styles.rightPaneButtons}>
+                    <button className="vf-button vf-button--primary vf-button--sm"
+                            onClick={() => copyToClipboard(generateCurlRequest(apiRequestDetails))}>Copy cURL
+                        Request
+                    </button>
+                    <button className="vf-button vf-button--primary vf-button--sm"
+                            onClick={() => copyToClipboard(generateHttpRequest(apiRequestDetails))}>Copy HTTP
+                        Request
+                    </button>
+                </div>
+                <div><p/></div>
 
             </div>
             <div>
