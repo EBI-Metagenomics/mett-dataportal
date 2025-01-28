@@ -4,12 +4,12 @@ type ParamsType = Record<string, any>;
 
 export class ApiService {
     /**
-     * Handle generic GET requests.
+     * Handle generic GET requests with type safety.
      */
-    static async get(endpoint: string, params: ParamsType = {}): Promise<any> {
+    static async get<T = any>(endpoint: string, params: ParamsType = {}): Promise<T> {
         try {
             const response = await apiInstance.get(endpoint, {params});
-            return response.data;
+            return response.data as T;
         } catch (error) {
             if (error instanceof Error) {
                 console.error("Error fetching data:", error.message);
@@ -21,12 +21,12 @@ export class ApiService {
     }
 
     /**
-     * Handle generic POST requests.
+     * Handle generic POST requests with type safety.
      */
-    static async post(endpoint: string, data: ParamsType): Promise<any> {
+    static async post<T = any>(endpoint: string, data: ParamsType): Promise<T> {
         try {
             const response = await apiInstance.post(endpoint, data);
-            return response.data;
+            return response.data as T;
         } catch (error) {
             if (error instanceof Error) {
                 console.error("Error posting data:", error.message);
@@ -38,12 +38,12 @@ export class ApiService {
     }
 
     /**
-     * Handle generic PUT requests.
+     * Handle generic PUT requests with type safety.
      */
-    static async put(endpoint: string, data: ParamsType): Promise<any> {
+    static async put<T = any>(endpoint: string, data: ParamsType): Promise<T> {
         try {
             const response = await apiInstance.put(endpoint, data);
-            return response.data;
+            return response.data as T;
         } catch (error) {
             if (error instanceof Error) {
                 console.error("Error putting data:", error.message);
@@ -55,12 +55,12 @@ export class ApiService {
     }
 
     /**
-     * Handle generic DELETE requests.
+     * Handle generic DELETE requests with type safety.
      */
-    static async delete(endpoint: string): Promise<any> {
+    static async delete<T = any>(endpoint: string): Promise<T> {
         try {
             const response = await apiInstance.delete(endpoint);
-            return response.data;
+            return response.data as T;
         } catch (error) {
             if (error instanceof Error) {
                 console.error("Error deleting data:", error.message);

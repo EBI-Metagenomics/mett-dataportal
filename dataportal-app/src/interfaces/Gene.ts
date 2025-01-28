@@ -47,6 +47,9 @@ export interface GeneSuggestion {
 export interface PaginatedResponse<T> {
     results: T[];
     num_pages: number;
+    page_number: number;
+    has_previous: boolean;
+    has_next: boolean;
 }
 
 export interface GeneEssentialityTag {

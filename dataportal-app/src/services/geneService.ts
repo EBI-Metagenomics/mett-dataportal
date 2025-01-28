@@ -1,5 +1,5 @@
 import {ApiService} from "./api";
-import {Gene, GeneEssentialityTag, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
+import {Gene, GeneEssentialityTag, GeneMeta, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
 import {cacheResponse} from "./cachingDecorator";
 
 export class GeneService {
@@ -12,7 +12,7 @@ export class GeneService {
         perPage: number = 10,
         speciesId?: number,
         genomeIds?: string
-    ) {
+    ): URLSearchParams {
         return new URLSearchParams({
             query,
             page: String(page),
@@ -38,15 +38,10 @@ export class GeneService {
                 const filterValue = `essentiality:${essentialityFilter.join(",")}`;
                 params.append("filter", filterValue);
             }
-            const response = await ApiService.get("genes/autocomplete", params);
+            const response = await ApiService.get<GeneSuggestion[]>("genes/autocomplete", params);
             return response;
         } catch (error) {
-            console.error("Error fetching gene autocomplete suggestions:", {
-                query,
-                speciesId,
-                genomeIds,
-                error,
-            });
+            console.error("Error fetching gene autocomplete suggestions:", error);
             throw error;
         }
     }
@@ -63,7 +58,7 @@ export class GeneService {
         selectedGenomes?: { id: number; name: string }[],
         selectedSpecies?: number[],
         essentialityFilter?: string[]
-    ) {
+    ): Promise<PaginatedResponse<GeneMeta>> {
         try {
             const params = new URLSearchParams({
                 query: gene,
@@ -73,21 +68,20 @@ export class GeneService {
                 sort_order: sortOrder,
             });
 
-            if (selectedGenomes && selectedGenomes.length > 0) {
+            if (selectedGenomes?.length) {
                 params.append("genome_ids", selectedGenomes.map((genome) => genome.id).join(","));
             }
 
-            if (selectedSpecies && selectedSpecies.length === 1) {
+            if (selectedSpecies?.length === 1) {
                 params.append("species_id", String(selectedSpecies[0]));
             }
 
-            if (essentialityFilter && essentialityFilter.length > 0) {
+            if (essentialityFilter?.length) {
                 const filterValue = `essentiality:${essentialityFilter.join(",")}`;
                 params.append("filter", filterValue);
             }
 
-
-            const response = await ApiService.get("/genes/search/advanced", params);
+            const response = await ApiService.get<PaginatedResponse<GeneMeta>>("/genes/search/advanced", params);
             return response;
         } catch (error) {
             console.error("Error fetching gene search results:", error);
@@ -104,18 +98,12 @@ export class GeneService {
         page: number = 1
     ): Promise<PaginatedResponse<Gene>> {
         try {
-            const params = new URLSearchParams({
-                query,
-                page: String(page),
-            });
+            const params = new URLSearchParams({query, page: String(page)});
             const url = genomeId ? `species/${genomeId}/genomes/search` : "";
-            const response = await ApiService.get(url, params);
-            return {
-                results: response,
-                num_pages: response.num_pages || 1,
-            };
+            const response = await ApiService.get<PaginatedResponse<Gene>>(url, params);
+            return response;
         } catch (error) {
-            console.error("Error fetching genome search results:", {genomeId, query, page, error});
+            console.error("Error fetching genome search results:", error);
             throw error;
         }
     }
@@ -127,16 +115,13 @@ export class GeneService {
         genomeId: number,
         page: number = 1,
         perPage: number = 10
-    ): Promise<PaginatedResponse<Gene>> {
+    ): Promise<PaginatedResponse<GeneMeta>> {
         try {
             const params = this.buildParams("", page, perPage);
-            const response = await ApiService.get(`genomes/${genomeId}/genes`, params);
-            return {
-                results: response,
-                num_pages: response.num_pages || 1,
-            };
+            const response = await ApiService.get<PaginatedResponse<GeneMeta>>(`genomes/${genomeId}/genes`, params);
+            return response;
         } catch (error) {
-            console.error("Error fetching genes by genome:", {genomeId, page, perPage, error});
+            console.error("Error fetching genes by genome:", error);
             throw error;
         }
     }
@@ -144,9 +129,9 @@ export class GeneService {
     /**
      * Fetch a specific gene by its ID.
      */
-    static async fetchGeneById(geneId: number) {
+    static async fetchGeneById(geneId: number): Promise<GeneMeta> {
         try {
-            const response = await ApiService.get(`/genes/${geneId}`);
+            const response = await ApiService.get<GeneMeta>(`/genes/${geneId}`);
             return response;
         } catch (error) {
             console.error(`Error fetching gene with ID ${geneId}:`, error);
@@ -160,9 +145,9 @@ export class GeneService {
     @cacheResponse(60 * 60 * 1000) // Cache for 60 minutes
     static async fetchEssentialityTags(): Promise<GeneEssentialityTag[]> {
         try {
-            return await ApiService.get(`/genes/essentiality/tags`);
+            return await ApiService.get<GeneEssentialityTag[]>(`/genes/essentiality/tags`);
         } catch (error) {
-            console.error("Error fetching essentiality/tags:", error);
+            console.error("Error fetching essentiality tags:", error);
             throw error;
         }
     }
