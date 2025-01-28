@@ -93,7 +93,7 @@ const HomePage: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, genomeSortField, genomeSortOrder);
-            console.log('Fetched results:', response.results);
+            // console.log('Fetched results:', response.results);
             setGenomeResults(response.results);
         };
         fetchData();
@@ -195,7 +195,7 @@ const HomePage: React.FC = () => {
         const newSortOrder = genomeSortField === field && genomeSortOrder === 'asc' ? 'desc' : 'asc';
         setGenomeSortField(field);
         setGenomeSortOrder(newSortOrder);
-        console.log('Sorting Genomes by:', {field, order: newSortOrder});
+        // console.log('Sorting Genomes by:', {field, order: newSortOrder});
         handleGenomeSearch(field, newSortOrder);
     };
 
@@ -204,7 +204,7 @@ const HomePage: React.FC = () => {
         const newSortOrder = geneSortField === field && geneSortOrder === 'asc' ? 'desc' : 'asc';
         setGeneSortField(field);
         setGeneSortOrder(newSortOrder);
-        console.log('Sorting Genes by:', {field, order: newSortOrder});
+        // console.log('Sorting Genes by:', {field, order: newSortOrder});
         //handleGeneSearch(field, newSortOrder);
     };
 

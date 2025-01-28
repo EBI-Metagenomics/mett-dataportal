@@ -22,14 +22,14 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     useEffect(() => {
-        console.log('Updated results:', results);
+        // console.log('Updated results:', results);
     }, [results]);
 
     const handleSort = (field: string) => {
         const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
         setSortField(field);
         setSortOrder(newSortOrder);
-        console.log("sort originated with sort order - " + sortOrder);
+        // console.log("sort originated with sort order - " + sortOrder);
         onSortClick(field, newSortOrder);
     };
 

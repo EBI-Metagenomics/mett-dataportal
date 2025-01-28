@@ -1,3 +1,11 @@
+# Router configuration
+ROUTER_GENOME = "Genomes"
+ROUTER_GENE = "Genes"
+ROUTER_SPECIES = "Species"
+URL_PREFIX_SPECIES = "/species"
+URL_PREFIX_GENOMES = "/genomes"
+URL_PREFIX_GENES = "/genes"
+
 # Generic constants
 FIELD_ID = "id"
 FIELD_SEQ_ID = "seq_id"
@@ -28,6 +36,8 @@ GENE_SORT_FIELD_STRAIN = "strain"
 GENE_SORT_FIELD_STRAIN_ISO = "strain__isolate_name"
 GENE_ESSENTIALITY = "essentiality"
 GENE_ESSENTIALITY_MEDIA = "media"
+GENE_ESSENTIALITY_SOLID = "solid"
+GENE_ESSENTIALITY_LIQUID = "liquid"
 
 # Strain-related constants
 STRAIN_FIELD_ISOLATE_NAME = "isolate_name"
@@ -36,7 +46,6 @@ STRAIN_FIELD_ASSEMBLY_ACCESSION = "assembly_accession"
 STRAIN_FIELD_FASTA_FILE = "fasta_file"
 STRAIN_FIELD_GFF_FILE = "gff_file"
 STRAIN_FIELD_SPECIES = "species"
-STRAIN_FIELD_SPECIES_ID = "species_id"
 STRAIN_FIELD_FASTA_URL = "fasta_url"
 STRAIN_FIELD_GFF_URL = "gff_url"
 STRAIN_FIELD_CONTIGS = "contigs"
@@ -45,13 +54,13 @@ STRAIN_FIELD_CONTIG_LEN = "length"
 STRAIN_FIELD_TYPE_STRAIN = "type_strain"
 
 # species related constants
+SPECIES_FIELD_SCIENTIFIC_NAME = "scientific_name"
 SPECIES_FIELD_COMMON_NAME = "common_name"
 SPECIES_FIELD_ACRONYM = "acronym"
-SPECIES_FIELD_SCIENTIFIC_NAME = "scientific_name"
 
 FILTER_MAPPING = {
-    "essentiality": "essentiality_data__essentiality__name",
-    "media": "essentiality_data__media",
-    "product": GENE_FIELD_PRODUCT,
-    "description": GENE_FIELD_DESCRIPTION,
+    GENE_ESSENTIALITY: "essentiality_data__essentiality__name",
+    GENE_ESSENTIALITY_MEDIA: "essentiality_data__media",
+    GENE_FIELD_PRODUCT: GENE_FIELD_PRODUCT,
+    GENE_FIELD_DESCRIPTION: GENE_FIELD_DESCRIPTION,
 }

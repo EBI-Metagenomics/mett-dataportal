@@ -97,7 +97,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             sortOrder: string = "asc"
         ) => {
             const qry = isolateName.trim() || query.trim();
-            console.log("fetchSearchResults called with page:", page);
+            // console.log("fetchSearchResults called with page:", page);
 
             const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
             const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : null;
@@ -106,14 +106,14 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 let response;
 
                 if (typeStrainFilter) {
-                    console.log("Fetching genomes by type strain IDs:", typeStrainFilter);
+                    // console.log("Fetching genomes by type strain IDs:", typeStrainFilter);
                     response = await GenomeService.fetchGenomeByStrainIds(typeStrainFilter);
                     setResults(response);
                     setTotalPages(1);
                     setHasPrevious(false);
                     setHasNext(false);
                 } else {
-                    console.log("Fetching genomes using standard search");
+                    // console.log("Fetching genomes using standard search");
                     response = await GenomeService.fetchGenomeSearchResults(
                         qry,
                         page,
@@ -162,9 +162,9 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     };
 
     const handleSuggestionClick = (suggestion: AutocompleteResponse) => {
-        console.log('suggestion: ' + suggestion)
-        console.log('isolateName: ' + isolateName)
-        console.log('suggestion.strain_id: ' + suggestion.id)
+        // console.log('suggestion: ' + suggestion)
+        // console.log('isolateName: ' + isolateName)
+        // console.log('suggestion.strain_id: ' + suggestion.id)
         setQuery(suggestion.isolate_name);
         setIsolateName(suggestion.isolate_name);
         setSelectedStrainId(suggestion.id);

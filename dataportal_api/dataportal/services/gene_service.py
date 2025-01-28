@@ -13,7 +13,6 @@ from dataportal.utils.constants import (
     FIELD_ID,
     GENE_FIELD_ID,
     GENE_FIELD_NAME,
-    FIELD_ASSEMBLY,
     FIELD_SEQ_ID,
     GENE_FIELD_PRODUCT,
     GENE_FIELD_LOCUS_TAG,
@@ -37,6 +36,9 @@ from dataportal.utils.constants import (
     SORT_ASC,
     GENE_ESSENTIALITY,
     GENE_ESSENTIALITY_MEDIA,
+    STRAIN_FIELD_ISOLATE_NAME,
+    STRAIN_FIELD_ASSEMBLY_NAME,
+    GENE_ESSENTIALITY_SOLID,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -60,9 +62,9 @@ class GeneService:
         logger.info("Loading essentiality data into cache...")
         try:
             fields_to_fetch = [
-                "gene__strain__id",
-                "gene__strain__isolate_name",
-                "gene__strain__assembly_name",
+                f"gene__strain__{FIELD_ID}",
+                f"gene__strain__{STRAIN_FIELD_ISOLATE_NAME}",
+                f"gene__strain__{STRAIN_FIELD_ASSEMBLY_NAME}",
                 f"gene__{FIELD_SEQ_ID}",
                 f"gene__{GENE_FIELD_LOCUS_TAG}",
                 f"gene__{GENE_FIELD_START_POS}",
@@ -78,12 +80,7 @@ class GeneService:
 
             cache_data = {}
             for entry in essentiality_data:
-                strain_id = entry["gene__strain__id"]
-                strain_info = {
-                    "id": strain_id,
-                    "isolate_name": entry["gene__strain__isolate_name"],
-                    "assembly_name": entry["gene__strain__assembly_name"],
-                }
+                strain_id = entry[f"gene__strain__{FIELD_ID}"]
                 ref_name = entry[f"gene__{FIELD_SEQ_ID}"]
                 locus_tag = entry[f"gene__{GENE_FIELD_LOCUS_TAG}"]
                 start = entry[f"gene__{GENE_FIELD_START_POS}"]
@@ -91,24 +88,21 @@ class GeneService:
                 media = entry[GENE_ESSENTIALITY_MEDIA]
                 essentiality = entry[f"{GENE_ESSENTIALITY}__name"] or "Unknown"
 
-                # Initialize strain and reference if not already in the cache
                 if strain_id not in cache_data:
-                    cache_data[strain_id] = {"strain_info": strain_info, "references": {}}
+                    cache_data[strain_id] = {}
 
-                if ref_name not in cache_data[strain_id]["references"]:
-                    cache_data[strain_id]["references"][ref_name] = {}
+                if ref_name not in cache_data[strain_id]:
+                    cache_data[strain_id][ref_name] = {}
 
-                # Initialize locus_tag data
-                if locus_tag not in cache_data[strain_id]["references"][ref_name]:
-                    cache_data[strain_id]["references"][ref_name][locus_tag] = {
+                if locus_tag not in cache_data[strain_id][ref_name]:
+                    cache_data[strain_id][ref_name][locus_tag] = {
                         GENE_FIELD_LOCUS_TAG: locus_tag,
                         GENE_FIELD_START_POS: start,
                         GENE_FIELD_END_POS: end,
                         GENE_ESSENTIALITY_DATA: [],
                     }
 
-                # Add essentiality data
-                cache_data[strain_id]["references"][ref_name][locus_tag][GENE_ESSENTIALITY_DATA].append(
+                cache_data[strain_id][ref_name][locus_tag][GENE_ESSENTIALITY_DATA].append(
                     {GENE_ESSENTIALITY_MEDIA: media, GENE_ESSENTIALITY: essentiality}
                 )
 
@@ -125,17 +119,12 @@ class GeneService:
         if not self.essentiality_cache:
             await self.load_essentiality_data_by_strain()
 
-        # Get strain data from the cache
         strain_data = self.essentiality_cache.get(strain_id, {})
-        if not strain_data:
-            return {}
-
-        # Get references from strain data
-        references = strain_data.get("references", {})
-        contig_data = references.get(ref_name, {})
+        contig_data = strain_data.get(ref_name, {})
 
         response = {}
-        for locus_tag, gene_data in contig_data.items():
+        for gene_data in contig_data.values():
+            locus_tag = gene_data[GENE_FIELD_LOCUS_TAG]
             response[locus_tag] = {
                 GENE_FIELD_LOCUS_TAG: locus_tag,
                 "start": gene_data.get(GENE_FIELD_START_POS),
@@ -146,7 +135,7 @@ class GeneService:
                         GENE_ESSENTIALITY: record[GENE_ESSENTIALITY]
                     }
                     for record in gene_data[GENE_ESSENTIALITY_DATA]
-                ],
+                ]
             }
 
         return response
@@ -200,7 +189,7 @@ class GeneService:
                 {
                     GENE_FIELD_ID: gene.id,
                     GENE_FIELD_NAME: gene.gene_name,
-                    "isolate_name": gene.strain.isolate_name if gene.strain else "Unknown",
+                    STRAIN_FIELD_ISOLATE_NAME: gene.strain.isolate_name if gene.strain else "Unknown",
                     GENE_FIELD_PRODUCT: gene.product,
                     GENE_FIELD_LOCUS_TAG: gene.locus_tag,
                     GENE_FIELD_KEGG: gene.kegg,
@@ -220,7 +209,7 @@ class GeneService:
     def fetch_gene_by_id(self, gene_id: int):
         return get_object_or_404(
             Gene.objects.select_related("strain").prefetch_related(
-                "essentiality_data__essentiality"
+                f"essentiality_data__{GENE_ESSENTIALITY}"
             ),
             id=gene_id,
         )
@@ -418,8 +407,8 @@ class GeneService:
 
     def _serialize_gene_essentiality(self, gene_essentiality):
         return {
-            "media": gene_essentiality.media,
-            "essentiality": (
+            GENE_ESSENTIALITY_MEDIA: gene_essentiality.media,
+            GENE_ESSENTIALITY: (
                 gene_essentiality.essentiality.name
                 if gene_essentiality.essentiality
                 else None
@@ -433,10 +422,10 @@ class GeneService:
                 FIELD_SEQ_ID: gene.seq_id,
                 GENE_FIELD_NAME: gene.gene_name or "N/A",
                 GENE_FIELD_DESCRIPTION: gene.description or None,
-                "strain": {
-                    "id": gene.strain.id if gene.strain else None,
-                    "isolate_name": gene.strain.isolate_name if gene.strain else "Unknown",
-                    "assembly_name": gene.strain.assembly_name if gene.strain else None,
+                GENE_SORT_FIELD_STRAIN: {
+                    FIELD_ID: gene.strain.id if gene.strain else None,
+                    STRAIN_FIELD_ISOLATE_NAME: gene.strain.isolate_name if gene.strain else "Unknown",
+                    STRAIN_FIELD_ASSEMBLY_NAME: gene.strain.assembly_name if gene.strain else None,
                 },
                 GENE_FIELD_LOCUS_TAG: gene.locus_tag or None,
                 GENE_FIELD_COG: gene.cog or None,
@@ -488,7 +477,7 @@ class GeneService:
             if tags:
                 return query & Q(
                     essentiality_data__essentiality__in=tags,
-                    essentiality_data__media="solid",
+                    essentiality_data__media=GENE_ESSENTIALITY_SOLID,
                 )
             else:
                 logger.error(
@@ -506,7 +495,7 @@ class GeneService:
             query &= Q(strain__type_strain=True)
 
             for key, values in filters.items():
-                if key == "essentiality":
+                if key == GENE_ESSENTIALITY:
                     query = await self._apply_essentiality_filter(query, values)
                 else:
                     for value in values:
@@ -547,7 +536,7 @@ class GeneService:
             genes = await sync_to_async(
                 lambda: list(
                     Gene.objects.select_related(GENE_SORT_FIELD_STRAIN)
-                    .prefetch_related("essentiality_data__essentiality")
+                    .prefetch_related(f"essentiality_data__{GENE_ESSENTIALITY}")
                     .filter(filter_criteria)
                     .order_by(sort_by)[start: start + per_page]
                 )

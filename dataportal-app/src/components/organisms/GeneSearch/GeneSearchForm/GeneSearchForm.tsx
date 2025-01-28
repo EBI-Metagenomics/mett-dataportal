@@ -191,11 +191,11 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
-        console.log('suggestion: ' + suggestion)
-        console.log('strain name: ' + suggestion.isolate_name)
-        console.log('suggestion.gene_id: ' + suggestion.gene_id)
-        console.log('suggestion.gene_name: ' + suggestion.gene_name)
-        console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
+        // console.log('suggestion: ' + suggestion)
+        // console.log('strain name: ' + suggestion.isolate_name)
+        // console.log('suggestion.gene_id: ' + suggestion.gene_id)
+        // console.log('suggestion.gene_name: ' + suggestion.gene_name)
+        // console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
         setQuery(suggestion.gene_name || suggestion.locus_tag);
         setGeneName(suggestion.gene_name);
         setSelectedGeneId(suggestion.gene_id);
@@ -204,7 +204,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        console.log('selectedGeneId:' + selectedGeneId)
+        // console.log('selectedGeneId:' + selectedGeneId)
         event.preventDefault();
         fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
     };

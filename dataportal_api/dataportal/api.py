@@ -19,7 +19,14 @@ from .schemas import (
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
 from .services.species_service import SpeciesService
-from .utils.constants import DEFAULT_PER_PAGE_CNT, DEFAULT_SORT
+from .utils.constants import (
+    DEFAULT_PER_PAGE_CNT,
+    DEFAULT_SORT,
+    ROUTER_GENOME,
+    ROUTER_GENE,
+    ROUTER_SPECIES,
+    STRAIN_FIELD_ISOLATE_NAME, URL_PREFIX_GENES, URL_PREFIX_GENOMES, URL_PREFIX_SPECIES,
+)
 from .utils.decorators import log_endpoint_access
 from .utils.errors import raise_http_error
 from .utils.exceptions import (
@@ -41,10 +48,9 @@ api = NinjaAPI(
     csrf=True,
 )
 
-genome_router = Router(tags=["Genomes"])
-gene_router = Router(tags=["Genes"])
-species_router = Router(tags=["Species"])
-jbrowse_router = Router(tags=["JBrowse Viewer"])
+genome_router = Router(tags=[ROUTER_GENOME])
+gene_router = Router(tags=[ROUTER_GENE])
+species_router = Router(tags=[ROUTER_SPECIES])
 
 
 # Map the router to the class methods
@@ -77,7 +83,7 @@ async def get_all_genomes(
         request,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: Optional[str] = "isolate_name",
+        sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     try:
@@ -103,10 +109,10 @@ async def search_genomes_by_string(
         query: str,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: Optional[str] = "isolate_name",
+        sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: Optional[str] = DEFAULT_SORT,
 ):
-    sortField = sortField or "isolate_name"
+    sortField = sortField or STRAIN_FIELD_ISOLATE_NAME
     sortOrder = sortOrder or DEFAULT_SORT
     try:
         return await genome_service.search_genomes_by_string(
@@ -150,7 +156,7 @@ async def get_genomes_by_species(
         species_id: int,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: Optional[str] = "isolate_name",
+        sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     try:
@@ -171,7 +177,7 @@ async def search_genomes_by_species_and_string(
         query: str,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: Optional[str] = "isolate_name",
+        sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: Optional[str] = DEFAULT_SORT,
 ):
     try:
@@ -368,6 +374,6 @@ async def get_essentiality_data_by_contig(request, strain_id: int, ref_name: str
 
 
 # Register routers with the main API
-api.add_router("/species", species_router)
-api.add_router("/genomes", genome_router)
-api.add_router("/genes", gene_router)
+api.add_router(URL_PREFIX_SPECIES, species_router)
+api.add_router(URL_PREFIX_GENOMES, genome_router)
+api.add_router(URL_PREFIX_GENES, gene_router)

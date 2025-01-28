@@ -120,7 +120,7 @@ const GeneViewerPage: React.FC = () => {
     useEffect(() => {
         const waitForInitialization = async () => {
             if (viewState && geneMeta) {
-                console.log("geneMeta view state", geneMeta);
+                // console.log("geneMeta view state", geneMeta);
                 const linearGenomeView = viewState.session.views[0];
 
                 if (linearGenomeView?.type === 'LinearGenomeView') {

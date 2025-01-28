@@ -11,7 +11,7 @@ interface HomePageHeadBandProps {
 const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({typeStrains, linkTemplate}) => {
     const generateLink = (strainName: string) => linkTemplate.replace('$strain_name', strainName);
 
-    console.log(typeStrains)
+    // console.log(typeStrains)
 
     return (
         <section className="vf-grid vf-grid__col-3 | vf-card-container | vf-u-fullbleed">
