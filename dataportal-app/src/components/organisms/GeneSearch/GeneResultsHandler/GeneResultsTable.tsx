@@ -12,11 +12,12 @@ interface GeneResultsTableProps {
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     linkData: LinkData;
     viewState?: ViewModel;
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const generateLink = (template: string, result: any) => {
     return template
-        .replace('${strain_name}', result.strain)
+        .replace('${strain_name}', result.strain.isolate_name)
         .replace('${gene_id}', result.id);
 };
 
@@ -24,14 +25,22 @@ const handleNavigation = (
     viewState: ViewModel,
     contig: string,
     start: number,
-    end: number
+    end: number,
+    setLoading: React.Dispatch<React.SetStateAction<boolean>> // Pass setLoading to handle spinner
 ) => {
     const view = viewState?.session?.views?.[0];
     if (view && typeof view.navToLocString === 'function') {
-        view.navToLocString(`${contig}:${start}..${end}`);
-        setTimeout(() => {
-            view.zoomTo(ZOOM_LEVELS.DEFAULT);
-        }, 200);
+        setLoading(true); // Show spinner before navigation
+        try {
+            view.navToLocString(`${contig}:${start}..${end}`);
+            setTimeout(() => {
+                view.zoomTo(ZOOM_LEVELS.DEFAULT);
+                setLoading(false); // Hide spinner after navigation
+            }, 200);
+        } catch (error) {
+            console.error('Error during navigation:', error);
+            setLoading(false); // Ensure spinner is hidden on error
+        }
     } else {
         console.error('navToLocString is not available on the view object');
     }
@@ -42,6 +51,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                                onSortClick,
                                                                linkData,
                                                                viewState,
+                                                               setLoading,
                                                            }) => {
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -120,7 +130,8 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                         viewState,
                                         geneMeta.seq_id,
                                         geneMeta.start_position ? geneMeta.start_position : 0,
-                                        geneMeta.end_position ? geneMeta.end_position : 1000
+                                        geneMeta.end_position ? geneMeta.end_position : 1000,
+                                        setLoading
                                     );
                                 }}
                             >

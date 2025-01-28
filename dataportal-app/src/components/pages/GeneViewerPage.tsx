@@ -11,12 +11,13 @@ import {GeneService} from '../../services/geneService';
 import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
-import {getEssentialityDataUrl, ZOOM_LEVELS} from "../../utils/appConstants";
+import {getEssentialityDataUrl, SPINNER_DELAY, ZOOM_LEVELS} from "../../utils/appConstants";
 import GeneSearchWithFilters from "@components/organisms/GeneSearch/GeneSearchModules/GeneSearchWithFilters";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
     const [genomeMeta, setGenomeMeta] = useState<GenomeMeta | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
     const [geneResults, setGeneResults] = useState<any[]>([]);
     const [totalPages, setTotalPages] = useState(1);
@@ -29,8 +30,15 @@ const GeneViewerPage: React.FC = () => {
     const geneId = searchParams.get('gene_id');
     const [height, setHeight] = useState(500);
 
+    const spinner = loading && (
+        <div className={styles.spinnerOverlay}>
+            <div className={styles.spinner}></div>
+        </div>
+    );
+
     useEffect(() => {
         const fetchGeneAndGenomeMeta = async () => {
+            setLoading(true); // Show spinner
             try {
                 if (geneId) {
                     const geneResponse = await GeneService.fetchGeneById(Number(geneId));
@@ -42,15 +50,14 @@ const GeneViewerPage: React.FC = () => {
                     const genomeResponse = await GenomeService.fetchGenomeByIsolateNames([strainName]);
                     setGenomeMeta(genomeResponse[0]);
                 }
-                // Adjust height if the essentiality track is present
-                if (genomeMeta?.type_strain) {
-                    setHeight(500);
-                } else {
-                    setHeight(500);
-                }
+
+                // Adjust height based on essentiality track
+                setHeight(genomeMeta?.type_strain ? 500 : 500);
 
             } catch (error) {
                 console.error('Error fetching gene/genome meta information', error);
+            } finally {
+                setTimeout(() => setLoading(false), SPINNER_DELAY); // Hide spinner after delay
             }
         };
 
@@ -63,7 +70,7 @@ const GeneViewerPage: React.FC = () => {
             return getAssembly(genomeMeta, process.env.REACT_APP_ASSEMBLY_INDEXES_PATH
                 ? process.env.REACT_APP_ASSEMBLY_INDEXES_PATH : '');
         }
-        return null; // return null if genomeMeta is missing
+        return null;
     }, [genomeMeta]);
 
     const tracks = useMemo(() => {
@@ -120,20 +127,18 @@ const GeneViewerPage: React.FC = () => {
     useEffect(() => {
         const waitForInitialization = async () => {
             if (viewState && geneMeta) {
-                // console.log("geneMeta view state", geneMeta);
                 const linearGenomeView = viewState.session.views[0];
 
                 if (linearGenomeView?.type === 'LinearGenomeView') {
                     console.log('Waiting for LinearGenomeView to initialize...');
 
-                    // Wait until linearGenomeView.initialized
                     const waitForReady = async () => {
-                        const maxRetries = 1; // Retry for a maximum of 2 times (200 milliseconds)
+                        const maxRetries = 2; // Retry for a maximum of 10 times (200 milliseconds each)
                         let retries = 0;
 
                         while (!linearGenomeView.initialized && retries < maxRetries) {
                             console.log(`Retry ${retries + 1}: LinearGenomeView not initialized yet.`);
-                            await new Promise(resolve => setTimeout(resolve, 200)); // Wait 100ms
+                            await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms
                             retries++;
                         }
 
@@ -146,8 +151,9 @@ const GeneViewerPage: React.FC = () => {
                         console.log('LinearGenomeView initialized:', linearGenomeView.initialized);
 
                         try {
+                            setLoading(true); // Show spinner
                             const locationString = `${geneMeta.seq_id}:${geneMeta.start_position}..${geneMeta.end_position}`;
-                            // console.log('Navigating to:', locationString);
+                            console.log('Navigating to:', locationString);
 
                             // Perform navigation
                             linearGenomeView.navToLocString(locationString);
@@ -155,11 +161,12 @@ const GeneViewerPage: React.FC = () => {
                             // Apply zoom with a delay
                             setTimeout(() => {
                                 linearGenomeView.zoomTo(ZOOM_LEVELS.DEFAULT);
-                                // console.log('Zoom applied');
+                                console.log('Zoom applied');
+                                setLoading(false); // Hide spinner after zoom
                             }, 200);
-
                         } catch (error) {
                             console.error('Error during navigation or zoom:', error);
+                            setLoading(false); // Hide spinner on error
                         }
                     };
 
@@ -174,6 +181,15 @@ const GeneViewerPage: React.FC = () => {
 
         waitForInitialization();
     }, [viewState, geneMeta]);
+
+
+    useEffect(() => {
+        if (viewState) {
+            setLoading(true); // Show spinner while JBrowse refreshes
+            const refreshTimeout = setTimeout(() => setLoading(false), SPINNER_DELAY);
+            return () => clearTimeout(refreshTimeout);
+        }
+    }, [viewState]);
 
 
     if (!viewState) {
@@ -194,9 +210,11 @@ const GeneViewerPage: React.FC = () => {
 
     const handleGeneSearch = async () => {
         if (genomeMeta?.id) {
+            setLoading(true);
             const response = await GeneService.fetchGeneBySearch(genomeMeta.id, geneSearchQuery);
             setGeneResults(response.results || []);
             setTotalPages(response.num_pages || 1);
+            setTimeout(() => setLoading(false), SPINNER_DELAY);
         }
     };
 
@@ -215,6 +233,7 @@ const GeneViewerPage: React.FC = () => {
 
     return (
         <div>
+            {spinner} {/* Display spinner */}
             <div className={`vf-content ${styles.vfContent}`}>
                 <div style={{height: '20px'}}></div>
             </div>
@@ -309,7 +328,7 @@ const GeneViewerPage: React.FC = () => {
                 {/* Gene Search Section */}
                 <div className={styles.geneSearchContainer}>
                     <section>
-                    <GeneSearchWithFilters
+                        <GeneSearchWithFilters
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                             onSearchSubmit={handleGeneSearch}
@@ -326,6 +345,7 @@ const GeneViewerPage: React.FC = () => {
                             sortOrder={sortOrder}
                             linkData={linkData}
                             viewState={viewState}
+                            setLoading={setLoading}
                         />
                     </section>
                 </div>

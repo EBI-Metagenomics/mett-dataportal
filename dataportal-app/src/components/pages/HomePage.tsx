@@ -10,6 +10,7 @@ import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
 import SpeciesFilter from '@components/Filters/SpeciesFilter';
 import TypeStrainsFilter from '@components/Filters/TypeStrainsFilter';
+import {SPINNER_DELAY} from "../../utils/appConstants";
 
 // Define the type for each tab
 interface Tab {
@@ -55,12 +56,19 @@ const HomePage: React.FC = () => {
     // State for Gene Search
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
     const [geneResults, setGeneResults] = useState<any[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
 
     // sorting state
     const [genomeSortField, setGenomeSortField] = useState<string>('species');
     const [genomeSortOrder, setGenomeSortOrder] = useState<'asc' | 'desc'>('asc');
     const [geneSortField, setGeneSortField] = useState<string>('gene_name');
     const [geneSortOrder, setGeneSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    const spinner = loading && (
+        <div className={styles.spinnerOverlay}>
+            <div className={styles.spinner}></div>
+        </div>
+    );
 
 
     useEffect(() => {
@@ -99,7 +107,10 @@ const HomePage: React.FC = () => {
         fetchData();
     }, [genomeSearchQuery, selectedSpecies]);
 
-    const handleSpeciesSelect = (speciesId: number) => {
+    const handleSpeciesSelect = async (speciesId: number) => {
+        setLoading(true); // Show spinner
+        const startTime = Date.now(); // Track start time
+
         let updatedSelectedSpecies: number[];
         if (selectedSpecies.includes(speciesId)) {
             updatedSelectedSpecies = selectedSpecies.filter((id) => id !== speciesId);
@@ -116,7 +127,6 @@ const HomePage: React.FC = () => {
                 updatedSelectedSpecies.includes(strain.species.id)
             );
 
-            // Keep only the type strains that are both valid and already selected
             const updatedSelectedTypeStrains = selectedTypeStrains.filter((strainId) =>
                 validTypeStrains.some((strain) => strain.id === strainId)
             );
@@ -129,13 +139,23 @@ const HomePage: React.FC = () => {
                 );
                 setGenomeResults(filteredResults);
             } else {
-                handleGenomeSearch();
+                await handleGenomeSearch();
             }
         }
+
+        const elapsedTime = Date.now() - startTime; // Calculate elapsed time
+        const remainingTime = SPINNER_DELAY - elapsedTime;
+
+        setTimeout(() => {
+            setLoading(false); // Hide spinner after delay
+        }, remainingTime > 0 ? remainingTime : 0);
     };
 
 
-    const handleTypeStrainToggle = (strainId: number) => {
+    const handleTypeStrainToggle = async (strainId: number) => {
+        setLoading(true); // Show spinner
+        const startTime = Date.now(); // Track start time
+
         let updatedSelectedTypeStrains: number[];
 
         if (selectedTypeStrains.includes(strainId)) {
@@ -152,8 +172,15 @@ const HomePage: React.FC = () => {
             );
             setGenomeResults(filteredResults);
         } else {
-            handleGenomeSearch();
+            await handleGenomeSearch();
         }
+
+        const elapsedTime = Date.now() - startTime; // Calculate elapsed time
+        const remainingTime = SPINNER_DELAY - elapsedTime;
+
+        setTimeout(() => {
+            setLoading(false); // Hide spinner after delay
+        }, remainingTime > 0 ? remainingTime : 0);
     };
 
 
@@ -226,6 +253,7 @@ const HomePage: React.FC = () => {
 
     return (
         <div>
+            {spinner} {/* Display spinner */}
             <div>
                 <HomePageHeadBand
                     typeStrains={typeStrains}
@@ -273,6 +301,7 @@ const HomePage: React.FC = () => {
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
                             linkData={genomeLinkData}
+                            setLoading={setLoading}
                         />
                     )}
 
@@ -289,6 +318,7 @@ const HomePage: React.FC = () => {
                             sortOrder={geneSortOrder}
                             linkData={geneLinkData}
                             essentialityFilter={[]}
+                            setLoading={setLoading}
                         />
                     )}
                 </div>

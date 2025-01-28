@@ -21,6 +21,7 @@ interface SearchGenomeFormProps {
     onToggleGenomeSelect: (genome: BaseGenome) => void;
     // onGenomeSelect: (genome: { id: number; name: string }) => void;
     linkData: LinkData;
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
@@ -32,7 +33,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                onSortClick,
                                                                sortField,
                                                                sortOrder,
-                                                               linkData
+                                                               linkData,
+                                                               setLoading,
                                                            }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<AutocompleteResponse[]>([]);
@@ -218,6 +220,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         selectedGenomes={selectedGenomes}
                         onToggleGenomeSelect={onToggleGenomeSelect}
                         linkData={linkData}
+                        setLoading={setLoading}
                     />
                     {/* Page size dropdown and pagination */}
                     <div className={styles.paginationContainer}>

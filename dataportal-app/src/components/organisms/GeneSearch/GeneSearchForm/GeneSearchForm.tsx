@@ -8,6 +8,7 @@ import {createViewState} from '@jbrowse/react-app';
 import {GeneEssentialityTag, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../../interfaces/Genome";
+import {SPINNER_DELAY} from "../../../../utils/appConstants";
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -24,6 +25,7 @@ interface GeneSearchFormProps {
     linkData: LinkData,
     viewState?: ViewModel,
     essentialityFilter: string[];
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -34,7 +36,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            viewState,
                                                            sortField,
                                                            sortOrder,
-                                                           essentialityFilter
+                                                           essentialityFilter,
+                                                           setLoading,
                                                        }) => {
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<GeneSuggestion[]>([]);
@@ -140,7 +143,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
         async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
-
             const genomeFilter = selectedGenomes && selectedGenomes.length > 0
                 ? selectedGenomes.map((genome) => ({id: genome.id, name: genome.isolate_name}))
                 : undefined;
@@ -179,7 +181,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     useEffect(() => {
         fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
-    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize,essentialityFilter]);
+    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, essentialityFilter]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,38 +221,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         <section id="vf-tabs__section--2">
             <div>
                 <p/>
-                {/*{selectedGenomes && selectedGenomes[0].type_strain && (*/}
-                {/*<div className={styles.essentialityFilterContainer}>*/}
-                {/*    <h3>Essentiality</h3>*/}
-                {/*    <label>*/}
-                {/*        <input*/}
-                {/*            type="checkbox"*/}
-                {/*            value="Essential"*/}
-                {/*            checked={essentialityFilter.includes("Essential")}*/}
-                {/*            onChange={handleEssentialityFilterChange}*/}
-                {/*        />*/}
-                {/*        Essential*/}
-                {/*    </label>*/}
-                {/*    <label>*/}
-                {/*        <input*/}
-                {/*            type="checkbox"*/}
-                {/*            value="Not Essential"*/}
-                {/*            checked={essentialityFilter.includes("Not Essential")}*/}
-                {/*            onChange={handleEssentialityFilterChange}*/}
-                {/*        />*/}
-                {/*        Not Essential*/}
-                {/*    </label>*/}
-                {/*    <label>*/}
-                {/*        <input*/}
-                {/*            type="checkbox"*/}
-                {/*            value="Not Clear"*/}
-                {/*            checked={essentialityFilter.includes("Not Clear")}*/}
-                {/*            onChange={handleEssentialityFilterChange}*/}
-                {/*        />*/}
-                {/*        Not Clear*/}
-                {/*    </label>*/}
-                {/*</div>*/}
-                {/*)}*/}
             </div>
             <form onSubmit={handleSubmit}
                   className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
@@ -275,6 +245,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     onSortClick={onSortClick}
                     linkData={linkData}
                     viewState={viewState}
+                    setLoading={setLoading}
                 />
                 {/* Page size dropdown and pagination */}
                 <div className={styles.paginationContainer}>

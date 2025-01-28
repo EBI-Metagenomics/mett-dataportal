@@ -9,6 +9,7 @@ interface GenomeResultsTableProps {
     selectedGenomes: BaseGenome[];
     onToggleGenomeSelect: (genome: BaseGenome) => void;
     linkData: LinkData;
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
@@ -16,7 +17,8 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                                                                    onSortClick,
                                                                    selectedGenomes,
                                                                    onToggleGenomeSelect,
-                                                                   linkData
+                                                                   linkData,
+                                                                   setLoading,
                                                                }) => {
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');

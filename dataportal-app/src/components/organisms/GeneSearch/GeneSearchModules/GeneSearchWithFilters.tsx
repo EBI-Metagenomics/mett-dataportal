@@ -15,6 +15,7 @@ interface GeneSearchWithFiltersProps {
     selectedGenomes?: any[];
     linkData: any;
     viewState?: any;
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const GeneSearchWithFilters: React.FC<GeneSearchWithFiltersProps> = ({
@@ -29,6 +30,7 @@ const GeneSearchWithFilters: React.FC<GeneSearchWithFiltersProps> = ({
     selectedGenomes,
     linkData,
     viewState,
+    setLoading,
 }) => {
     const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
 
@@ -65,6 +67,7 @@ const GeneSearchWithFilters: React.FC<GeneSearchWithFiltersProps> = ({
                     linkData={linkData}
                     viewState={viewState}
                     essentialityFilter={essentialityFilter}
+                    setLoading={setLoading}
                 />
             </div>
         </div>
