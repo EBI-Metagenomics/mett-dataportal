@@ -27,8 +27,8 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         this.apiUrl = config.apiUrl.value;
         this.isTypeStrain = config.isTypeStrain.value;
         this.includeEssentiality = config.includeEssentiality.value;
-        console.log('EssentialityAdapter initialized with includeEssentiality:', config.includeEssentiality.value);
-        console.log('EssentialityAdapter initialized with config:', config);
+        // console.log('EssentialityAdapter initialized with includeEssentiality:', config.includeEssentiality.value);
+        // console.log('EssentialityAdapter initialized with config:', config);
     }
 
     async freeResources(): Promise<void> {
