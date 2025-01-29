@@ -22,12 +22,13 @@ export const getColorForEssentiality = (essentiality: string): string => {
     switch (essentiality) {
         case 'essential':
             return '#FF0000'; // Red (critical importance)
-        case 'not_essential':
-            return '#555555'; // Dark Gray (subdued and non-critical)
+            // return '#FFD700'; // Gold (matches the star)
         case 'essential_liquid':
             return '#1E90FF'; // Dodger Blue (fluid and vibrant for liquid)
         case 'essential_solid':
             return '#8B4513'; // Saddle Brown (earthy, solid representation)
+        case 'not_essential':
+            return '#555555'; // Dark Gray (subdued and non-critical)
         case 'unclear':
             return '#808080'; // Medium Gray (neutral and ambiguous)
         default:
@@ -38,15 +39,16 @@ export const getColorForEssentiality = (essentiality: string): string => {
 export const getIconForEssentiality = (essentiality: string) => {
     switch (essentiality) {
         case 'essential':
-            return '♦️'; // Gem
-        case 'not_essential':
-            return '⚫'; // Black Circle (minimal and understated)
+            return '⭐'; // Star (distinct shape)
         case 'essential_liquid':
-            return '💎'; // Gem \
+            return '💧'; // Droplet (represents liquid)
         case 'essential_solid':
-            return '🔶'; // Rock (stable and earthy)
+            return '🪨'; // Rock (brown, represents solid)
+        case 'not_essential':
+            return '⚫'; // Black Circle
         case 'unclear':
         default:
-            return '🌫️'; // Fog (unclear and ambiguous)
+            return '🌫️'; // Fog
     }
 };
+
