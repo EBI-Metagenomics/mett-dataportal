@@ -20,6 +20,10 @@ const essentialityAdapterConfigSchema = ConfigurationSchema('EssentialityAdapter
             type: 'boolean',
             defaultValue: false,
         },
+        includeEssentiality: {
+            type: 'boolean',
+            defaultValue: true,
+        },
 
         index: ConfigurationSchema('Gff3TabixIndex', {
             /**

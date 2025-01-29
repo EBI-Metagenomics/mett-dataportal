@@ -1,6 +1,7 @@
 import {GenomeMeta} from "../../../interfaces/Genome";
 
-const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) => {
+const getTracks
+        = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string, includeEssentiality: boolean) => {
         const tracks = [];
 
         // Structural Annotation Track
@@ -17,6 +18,7 @@ const getTracks = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string) =
                 },
                 apiUrl: apiUrl,
                 isTypeStrain: genomeMeta.type_strain,
+                includeEssentiality: includeEssentiality,
                 index: {
                     location: {
                         uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz.tbi`,

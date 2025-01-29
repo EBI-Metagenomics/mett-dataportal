@@ -12,6 +12,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     private gffLocation: string;
     private apiUrl: string;
     private isTypeStrain: boolean;
+    private includeEssentiality: boolean;
 
     private cache: Map<string, SimpleFeature[]> = new Map(); // Cache for features by region key
 
@@ -25,7 +26,9 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         this.gffLocation = config.gffGzLocation.value.uri;
         this.apiUrl = config.apiUrl.value;
         this.isTypeStrain = config.isTypeStrain.value;
-        // console.log('EssentialityAdapter initialized with config:', config);
+        this.includeEssentiality = config.includeEssentiality.value;
+        console.log('EssentialityAdapter initialized with includeEssentiality:', config.includeEssentiality.value);
+        console.log('EssentialityAdapter initialized with config:', config);
     }
 
     async freeResources(): Promise<void> {
@@ -48,12 +51,12 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
 
         // Fetch and process features if not cached
         const featuresPromise = this.fetchGFF(region).then((gffFeatures) => {
-            if (this.isTypeStrain) {
+            if (this.isTypeStrain && this.includeEssentiality) {
                 return this.fetchEssentialityData(region.refName).then((essentialityData) =>
                     this.mergeAnnotationsWithEssentiality(gffFeatures, essentialityData),
                 );
             }
-            // For non-type strains, flatten attributes
+            // For non-type strains or includeEssentiality is false, flatten attributes
             return gffFeatures.map((serializedFeature) => {
                 const feature = new SimpleFeature(serializedFeature);
                 const featureData = feature.toJSON();

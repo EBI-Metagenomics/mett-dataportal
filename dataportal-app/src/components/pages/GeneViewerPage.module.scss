@@ -129,3 +129,24 @@ header[class*="MuiAppBar-root"][class*="css-"] {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+
+.essentialityToggleContainer {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-top: 20px;
+}
+
+.essentialityLabel {
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.essentialityCheckbox {
+    margin-right: 8px;
+    transform: scale(1.2);
+}

@@ -30,6 +30,8 @@ const GeneViewerPage: React.FC = () => {
     const geneId = searchParams.get('gene_id');
     const [height, setHeight] = useState(500);
 
+    const [includeEssentiality, setIncludeEssentiality] = useState(true);
+
     const spinner = loading && (
         <div className={styles.spinnerOverlay}>
             <div className={styles.spinner}></div>
@@ -75,9 +77,15 @@ const GeneViewerPage: React.FC = () => {
 
     const tracks = useMemo(() => {
         // console.log("base gff indexes path: " + process.env.REACT_APP_GFF_INDEXES_PATH)
-        return genomeMeta ? getTracks(genomeMeta, process.env.REACT_APP_GFF_INDEXES_PATH
-            ? process.env.REACT_APP_GFF_INDEXES_PATH : '', getEssentialityDataUrl(genomeMeta.id)) : [];
-    }, [genomeMeta]);
+        return genomeMeta
+            ? getTracks(
+                genomeMeta,
+                process.env.REACT_APP_GFF_INDEXES_PATH
+                    ? process.env.REACT_APP_GFF_INDEXES_PATH : '',
+                getEssentialityDataUrl(genomeMeta.id),
+                includeEssentiality
+            ) : [];
+    }, [genomeMeta, includeEssentiality]);
 
     const sessionConfig = useMemo(() => {
         if (genomeMeta) {
@@ -312,8 +320,24 @@ const GeneViewerPage: React.FC = () => {
                         <p>Loading genome meta information...</p>
                     )}
                 </section>
+                {/* Essentiality Toggle Checkbox */}
+                {genomeMeta?.type_strain && (
+                    <div className={styles.essentialityToggleContainer}>
+                        <label htmlFor="toggleEssentiality" className={styles.essentialityLabel}>
+                            <input
+                                type="checkbox"
+                                id="toggleEssentiality"
+                                checked={includeEssentiality}
+                                onChange={() => setIncludeEssentiality(prev => !prev)}
+                                className={styles.essentialityCheckbox}
+                            />
+                            Include Essentiality in viewer
+                        </label>
+                    </div>
+                )}
+
                 {/* JBrowse Component Section */}
-                <div style={{paddingTop: '20px', height: `${height}px`}}>
+                <div style={{paddingTop: '5px', height: `${height}px`}}>
                     {viewState ? (
                         <div className={styles.jbrowseViewer}>
                             <div className={`${styles.jbrowseContainer} ${styles.sidePanel}`}>
