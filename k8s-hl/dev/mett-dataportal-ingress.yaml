@@ -14,13 +14,13 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: mett-dataportal-api-svc-dev
+            name: test-dataportal-api-svc-dev
             port:
               number: 8000
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: mett-dataportal-react-app-svc-dev
+            name: test-dataportal-react-app-svc-dev
             port:
               number: 80
