@@ -337,10 +337,10 @@ const GeneViewerPage: React.FC = () => {
                 )}
 
                 {/* JBrowse Component Section */}
-                <div style={{paddingTop: '5px', height: `${height}px`}}>
+                <div style={{paddingTop: '5px', height: `${height}px`, overflow: 'hidden'}}>
                     {viewState ? (
                         <div className={styles.jbrowseViewer}>
-                            <div className={`${styles.jbrowseContainer} ${styles.sidePanel}`}>
+                            <div className={styles.jbrowseContainer} style={{height: `${height}px`}}>
                                 <JBrowseApp viewState={viewState}/>
                             </div>
                         </div>
@@ -348,6 +348,7 @@ const GeneViewerPage: React.FC = () => {
                         <p>Loading Genome Viewer...</p>
                     )}
                 </div>
+
 
                 {/* Gene Search Section */}
                 <div className={styles.geneSearchContainer}>
