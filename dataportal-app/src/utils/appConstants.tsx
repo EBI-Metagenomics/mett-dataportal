@@ -39,16 +39,17 @@ export const getColorForEssentiality = (essentiality: string): string => {
 export const getIconForEssentiality = (essentiality: string) => {
     switch (essentiality) {
         case 'essential':
-            return '⭐'; // Star (distinct shape)
+            return '🧪🧫'; // Test Tube + Petri Dish (U+1F9EA U+1F9EB)
         case 'essential_liquid':
-            return '💧'; // Droplet (represents liquid)
+            return '🧪'; // Test Tube (U+1F9EA)
         case 'essential_solid':
-            return '🪨'; // Rock (brown, represents solid)
+            return '🧫'; // Petri Dish (U+1F9EB)
         case 'not_essential':
-            return '⚫'; // Black Circle
+            return '⛔'; // No Entry Sign (U+26D4)
         case 'unclear':
         default:
-            return '🌫️'; // Fog
+            return '❓'; // Question Mark (U+2753)
     }
 };
+
 

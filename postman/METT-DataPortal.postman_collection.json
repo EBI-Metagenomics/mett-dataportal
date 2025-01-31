@@ -311,7 +311,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -427,7 +427,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -483,7 +483,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -539,7 +539,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -595,7 +595,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -1577,7 +1577,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.strain).to.eql(\"BU_ATCC8492\");",
+											"    pm.expect(jsonData.strain.isolate_name).to.eql(\"BU_ATCC8492\");",
 											"});"
 										],
 										"type": "text/javascript",
