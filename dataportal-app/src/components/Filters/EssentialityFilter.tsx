@@ -47,8 +47,8 @@ const EssentialityFilter: React.FC<EssentialityFilterProps> = ({
                         onChange={onEssentialityFilterChange}
                         disabled={!hasTypeStrains}
                     />
+                    <span className={styles.label}>{tag.label}</span>&nbsp;
                     <span className={styles.icon}>{getIconForEssentiality(tag.name)}</span>
-                    <span className={styles.label}>{tag.label}</span>
                 </label>
             ))}
         </div>
