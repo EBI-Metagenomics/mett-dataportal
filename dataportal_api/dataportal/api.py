@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional, Dict
 
+from django.http import JsonResponse
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
 
@@ -51,6 +52,11 @@ api = NinjaAPI(
 genome_router = Router(tags=[ROUTER_GENOME])
 gene_router = Router(tags=[ROUTER_GENE])
 species_router = Router(tags=[ROUTER_SPECIES])
+
+def custom_error_handler(request, exc):
+    if isinstance(exc, HttpError):
+        return JsonResponse({"error": str(exc)}, status=exc.status_code)
+    return JsonResponse({"error": "Internal server error"}, status=500)
 
 
 # Map the router to the class methods
@@ -377,3 +383,4 @@ async def get_essentiality_data_by_contig(request, strain_id: int, ref_name: str
 api.add_router(URL_PREFIX_SPECIES, species_router)
 api.add_router(URL_PREFIX_GENOMES, genome_router)
 api.add_router(URL_PREFIX_GENES, gene_router)
+api.add_exception_handler(Exception, custom_error_handler)
