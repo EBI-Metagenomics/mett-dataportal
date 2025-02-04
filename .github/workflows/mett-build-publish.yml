@@ -1,0 +1,126 @@
+name: Build and Publish METT Data Portal Images to Quay.io
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/*'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Install `semver` (if needed)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y semver || echo "semver tool not installed, using fallback logic"
+
+      - name: Generate Version Tag
+        id: versioning
+        run: |
+          BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+          
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            # Get latest tag and increment patch version
+            LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+            if [[ -z "$LATEST_TAG" ]]; then
+              NEW_TAG="v1.0.0"
+            else
+              NEW_TAG=$(semver bump patch "$LATEST_TAG")
+            fi
+          
+          elif [[ "$BRANCH_NAME" == "develop" ]]; then
+            # Create release candidate tag (RC)
+            LATEST_TAG=$(git tag --sort=-v:refname | grep 'rc' | head -n 1)
+            if [[ -z "$LATEST_TAG" ]]; then
+              NEW_TAG="v1.0.0-rc1"
+            else
+              RC_NUM=$(echo "$LATEST_TAG" | grep -oP '(?<=rc)\d+' | tail -n 1)
+              NEW_RC_NUM=$((RC_NUM+1))
+              NEW_TAG=$(echo "$LATEST_TAG" | sed "s/rc[0-9]\+/rc$NEW_RC_NUM/")
+            fi
+          
+          else
+            # Create feature branch tag
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            NEW_TAG="feature-${BRANCH_NAME}-${SHORT_SHA}"
+          fi
+          
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+          echo "Generated Tag: $NEW_TAG"
+
+      - name: Create Git Tag
+        run: |
+          git tag ${{ env.NEW_TAG }}
+          git push origin ${{ env.NEW_TAG }}
+
+  build-and-push-django:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ github.ref_name }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Quay.io
+        env:
+          DOCKER_CONFIG_JSON: ${{ secrets.QUAY_DOCKER_CONFIG }}
+        run: |
+          echo "$DOCKER_CONFIG_JSON" > ~/.docker/config.json
+
+      - name: Build and push Django API image
+        run: |
+          docker build -t quay.io/microbiome-informatics/mett-dataportal-api:${{ env.env.NEW_TAG }} -f ./dataportal_api/Dockerfile .
+          docker push quay.io/microbiome-informatics/mett-dataportal-api:${{ env.env.NEW_TAG }}
+
+  build-and-push-react:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ github.ref_name }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Quay.io
+        env:
+          DOCKER_CONFIG_JSON: ${{ secrets.QUAY_DOCKER_CONFIG }}
+        run: |
+          echo "$DOCKER_CONFIG_JSON" > ~/.docker/config.json
+
+      - name: Build and push React app image
+        run: |
+          docker build -t quay.io/microbiome-informatics/mett-dataportal-react-app:${{ env.env.NEW_TAG }} -f ./dataportal-app/Dockerfile .
+          docker push quay.io/microbiome-informatics/mett-dataportal-react-app:${{ env.env.NEW_TAG }}
+
+  trigger-deployment:
+    needs: [ build-and-push-django, build-and-push-react ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine Target Environment
+        id: env_selector
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "DEPLOY_ENV=prod" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=dev" >> $GITHUB_ENV
+          fi
+
+      - name: Trigger deployment workflow
+        run: |
+          curl -X POST -H "Accept: application/vnd.github.v3+json" \
+               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               https://api.github.com/repos/microbiome-informatics/mett-dataportal/actions/workflows/mett-deploy.yml/dispatches \
+               -d '{ "ref": "main", "inputs": { "environment": "${{ env.DEPLOY_ENV }}" } }'
