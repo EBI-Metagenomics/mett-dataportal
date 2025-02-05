@@ -1,78 +1,25 @@
-name: Build and Publish METT Data Portal Images to Quay.io
+name: Build and Publish ME TT Data Portal Images (Django APIs & React App) to Quay.io
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - 'feature/*'
-    tags:
-      - 'v*'
+#  push:
+#    branches:
+#      - main
+#    tags:
+#      - 'v*'   # Only push semantic version tags, e.g., v1.0.0, v2.1.3, etc.
   workflow_dispatch:
 
 jobs:
-  create-tag:
-    runs-on: ubuntu-latest
-    outputs:
-      NEW_TAG: ${{ steps.versioning.outputs.NEW_TAG }}
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v3
-
-      - name: Install `semver` (if needed)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y semver || echo "semver tool not installed, using fallback logic"
-
-      - name: Generate Version Tag
-        id: versioning
-        run: |
-          BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
-          SAFE_BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's|.*/||')  
-          
-          if [[ "$BRANCH_NAME" == "main" ]]; then
-            LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
-            if [[ -z "$LATEST_TAG" ]]; then
-              NEW_TAG="v1.0.0"
-            else
-              NEW_TAG=$(semver bump patch "$LATEST_TAG")
-            fi
-          
-          elif [[ "$BRANCH_NAME" == "develop" ]]; then
-            LATEST_TAG=$(git tag --sort=-v:refname | grep 'rc' | head -n 1)
-            if [[ -z "$LATEST_TAG" ]]; then
-              NEW_TAG="v1.0.0-rc1"
-            else
-              RC_NUM=$(echo "$LATEST_TAG" | grep -oP '(?<=rc)\d+' | tail -n 1)
-              NEW_RC_NUM=$((RC_NUM+1))
-              NEW_TAG=$(echo "$LATEST_TAG" | sed "s/rc[0-9]\+/rc$NEW_RC_NUM/")
-            fi
-          
-          else
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            NEW_TAG="${SAFE_BRANCH_NAME}-${SHORT_SHA}" 
-          fi
-          
-          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
-          echo "::set-output name=NEW_TAG::$NEW_TAG"
-          echo "Generated Tag: $NEW_TAG"
-
-      - name: Create Git Tag
-        run: |
-          git tag ${{ env.NEW_TAG }}
-          git push origin ${{ env.NEW_TAG }}
-
+  # Job to build and push Django API image
   build-and-push-django:
-    needs: create-tag
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: ${{ needs.create-tag.outputs.NEW_TAG }}
+      IMAGE_TAG: ${{ github.ref_name }}
     steps:
       - name: Check out the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
       - name: Log in to Quay.io
         env:
@@ -80,26 +27,25 @@ jobs:
         run: |
           echo "$DOCKER_CONFIG_JSON" > ~/.docker/config.json
 
-      - name: Build and push Django API image
+      - name: Build the Django Docker image
         run: |
-          if [ -z "${{ env.IMAGE_TAG }}" ]; then
-            echo "Error: IMAGE_TAG is empty"
-            exit 1
-          fi
           docker build -t quay.io/microbiome-informatics/mett-dataportal-api:${{ env.IMAGE_TAG }} -f ./dataportal_api/Dockerfile .
+
+      - name: Push the Django Docker image
+        run: |
           docker push quay.io/microbiome-informatics/mett-dataportal-api:${{ env.IMAGE_TAG }}
 
+  # Job to build and push React app image
   build-and-push-react:
-    needs: create-tag
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: ${{ needs.create-tag.outputs.NEW_TAG }}
+      IMAGE_TAG: ${{ github.ref_name }}
     steps:
       - name: Check out the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
       - name: Log in to Quay.io
         env:
@@ -107,41 +53,10 @@ jobs:
         run: |
           echo "$DOCKER_CONFIG_JSON" > ~/.docker/config.json
 
-      - name: Build and push React app image
+      - name: Build the React Docker image
         run: |
-          if [ -z "${{ env.IMAGE_TAG }}" ]; then
-            echo "Error: IMAGE_TAG is empty"
-            exit 1
-          fi
           docker build -t quay.io/microbiome-informatics/mett-dataportal-react-app:${{ env.IMAGE_TAG }} -f ./dataportal-app/Dockerfile .
+
+      - name: Push the React Docker image
+        run: |
           docker push quay.io/microbiome-informatics/mett-dataportal-react-app:${{ env.IMAGE_TAG }}
-
-  trigger-deployment:
-    needs: [ create-tag, build-and-push-django, build-and-push-react ]
-    runs-on: ubuntu-latest
-    if: success()
-    steps:
-      - name: Determine Target Environment
-        id: env_selector
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "DEPLOY_ENV=production" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
-          else
-            echo "DEPLOY_ENV=dev" >> $GITHUB_ENV
-          fi
-
-      - name: Pass Image Tag
-        run: |
-          echo "IMAGE_TAG=${{ needs.create-tag.outputs.NEW_TAG }}" >> $GITHUB_ENV
-
-      - name: Trigger deployment workflow
-        run: |
-          curl -X POST -H "Accept: application/vnd.github+json" \
-               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-               -H "X-GitHub-Api-Version: 2022-11-28" \
-               https://api.github.com/repos/EBI-Metagenomics/mett-dataportal/actions/workflows/mett-deploy.yml/dispatches \
-               -d '{ "ref": "main", "inputs": { "environment": "${{ env.DEPLOY_ENV }}", "image_tag": "${{ env.IMAGE_TAG }}" } }'
-  
-  
