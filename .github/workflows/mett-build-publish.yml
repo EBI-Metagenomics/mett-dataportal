@@ -1,13 +1,13 @@
 name: Build and Publish METT Data Portal Images to Quay.io
 
 on:
-#  push:
-#    branches:
-#      - main
-#      - develop
-#      - 'feature/*'
-#    tags:
-#      - 'v*'
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/*'
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -138,9 +138,10 @@ jobs:
 
       - name: Trigger deployment workflow
         run: |
-          curl -X POST -H "Accept: application/vnd.github.v3+json" \
-               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-               https://api.github.com/repos/microbiome-informatics/mett-dataportal/actions/workflows/mett-deploy.yml/dispatches \
+          curl -X POST -H "Accept: application/vnd.github+json" \
+               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "X-GitHub-Api-Version: 2022-11-28" \
+               https://api.github.com/repos/EBI-Metagenomics/mett-dataportal/actions/workflows/mett-deploy.yml/dispatches \
                -d '{ "ref": "main", "inputs": { "environment": "${{ env.DEPLOY_ENV }}", "image_tag": "${{ env.IMAGE_TAG }}" } }'
   
   

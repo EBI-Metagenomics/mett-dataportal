@@ -48,7 +48,7 @@ jobs:
               exit 1
             fi
             sed -i 's|<TAG>|${{ env.IMAGE_TAG }}|g' k8s/mett-app/overlays/${{ env.DEPLOY_ENV }}/mett-dataportal-api-deployment.yaml
-            sed -i 's|<TAG>|${{ env.IMAGE_TAG }}|g' k8s/mett-app/overlays/${{ env.DEPLOY_ENV }}/mett-dataportal-react-deployment.yaml
+            sed -i 's|<TAG>|${{ env.IMAGE_TAG }}|g' k8s/mett-app/overlays/${{ env.DEPLOY_ENV }}/mett-dataportal-app-deployment.yaml
 
       - name: Configure Kubeconfig
         env:
