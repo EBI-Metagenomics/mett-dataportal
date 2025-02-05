@@ -1,0 +1,62 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment (dev, staging, or production)'
+        required: true
+        default: 'dev'
+      image_tag:
+        description: 'Tag of the container image to deploy (optional)'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set Deployment Environment
+        run: |
+          if [ -z "${{ github.event.inputs.environment }}" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              echo "DEPLOY_ENV=production" >> $GITHUB_ENV
+            elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+              echo "DEPLOY_ENV=dev" >> $GITHUB_ENV
+            else
+              echo "DEPLOY_ENV=dev" >> $GITHUB_ENV
+            fi
+          else
+            echo "DEPLOY_ENV=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          fi
+
+      - name: Set Image Tag (if provided)
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Replace Image Tag in Kubernetes Manifest
+        run: |
+          run: |
+            if [ -z "${{ env.IMAGE_TAG }}" ]; then
+              echo "Error: IMAGE_TAG is empty!"
+              exit 1
+            fi
+            sed -i 's|<TAG>|${{ env.IMAGE_TAG }}|g' k8s/mett-app/overlays/${{ env.DEPLOY_ENV }}/mett-dataportal-api-deployment.yaml
+            sed -i 's|<TAG>|${{ env.IMAGE_TAG }}|g' k8s/mett-app/overlays/${{ env.DEPLOY_ENV }}/mett-dataportal-react-deployment.yaml
+
+      - name: Configure Kubeconfig
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG }}
+        run: |
+          echo "$KUBECONFIG_DATA" | base64 --decode > kubeconfig.yaml
+          export KUBECONFIG=$(pwd)/kubeconfig.yaml
+
+      - name: Deploy to Kubernetes
+        run: |
+          kustomize build k8s/mett-app/overlays/${{ env.DEPLOY_ENV }} | kubectl apply -f -
