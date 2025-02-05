@@ -10,10 +10,6 @@ on:
       - 'v*'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  actions: write
-
 jobs:
   create-tag:
     runs-on: ubuntu-latest
@@ -142,8 +138,9 @@ jobs:
 
       - name: Trigger deployment workflow
         run: |
-          curl -X POST -H "Accept: application/vnd.github.v3+json" \
-               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          curl -X POST -H "Accept: application/vnd.github+json" \
+               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "X-GitHub-Api-Version: 2022-11-28" \
                https://api.github.com/repos/microbiome-informatics/mett-dataportal/actions/workflows/mett-deploy.yml/dispatches \
                -d '{ "ref": "main", "inputs": { "environment": "${{ env.DEPLOY_ENV }}", "image_tag": "${{ env.IMAGE_TAG }}" } }'
   
