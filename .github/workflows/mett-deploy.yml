@@ -1,11 +1,6 @@
 name: Deploy to Kubernetes
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - 'feature/*'
   workflow_dispatch:
     inputs:
       environment:
@@ -14,7 +9,7 @@ on:
         default: 'dev'
       image_tag:
         description: 'Tag of the container image to deploy (optional)'
-        required: false
+        required: true
 
 jobs:
   deploy:
@@ -47,7 +42,13 @@ jobs:
 
       - name: Replace Image Tag in Kubernetes Manifest
         run: |
-          sed -i 's|<TAG>|${{ env.IMAGE_TAG }}|g' k8s/overlays/${{ env.DEPLOY_ENV }}/mett-dataportal-api-deployment.yaml
+          run: |
+            if [ -z "${{ env.IMAGE_TAG }}" ]; then
+              echo "Error: IMAGE_TAG is empty!"
+              exit 1
+            fi
+            sed -i 's|<TAG>|${{ env.IMAGE_TAG }}|g' k8s/mett-app/overlays/${{ env.DEPLOY_ENV }}/mett-dataportal-api-deployment.yaml
+            sed -i 's|<TAG>|${{ env.IMAGE_TAG }}|g' k8s/mett-app/overlays/${{ env.DEPLOY_ENV }}/mett-dataportal-react-deployment.yaml
 
       - name: Configure Kubeconfig
         env:
@@ -58,4 +59,4 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          kustomize build k8s/overlays/${{ env.DEPLOY_ENV }} | kubectl apply -f -
+          kustomize build k8s/mett-app/overlays/${{ env.DEPLOY_ENV }} | kubectl apply -f -
