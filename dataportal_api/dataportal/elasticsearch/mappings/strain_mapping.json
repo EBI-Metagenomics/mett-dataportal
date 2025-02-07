@@ -1,9 +1,39 @@
 {
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "autocomplete_analyzer": {
+          "type": "custom",
+          "tokenizer": "edge_ngram_tokenizer",
+          "filter": ["lowercase"]
+        }
+      },
+      "tokenizer": {
+        "edge_ngram_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 20,
+          "token_chars": ["letter", "digit"]
+        }
+      }
+    }
+  },
   "mappings": {
     "properties": {
+      "strain_id": { "type": "integer" },
       "species_id": { "type": "integer" },
-      "isolate_name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
-      "assembly_name": { "type": "text" },
+      "isolate_name": {
+        "type": "text",
+        "analyzer": "autocomplete_analyzer",
+        "search_analyzer": "standard",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
+      "assembly_name": {
+        "type": "text",
+        "analyzer": "autocomplete_analyzer",
+        "search_analyzer": "standard",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
       "assembly_accession": { "type": "keyword" },
       "type_strain": { "type": "boolean" }
     }

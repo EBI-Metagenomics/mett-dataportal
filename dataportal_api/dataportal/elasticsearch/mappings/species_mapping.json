@@ -1,6 +1,7 @@
 {
   "mappings": {
     "properties": {
+      "species_id": { "type": "integer" },
       "scientific_name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
       "common_name": { "type": "text" },
       "acronym": { "type": "keyword" },

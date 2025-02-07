@@ -20,6 +20,7 @@
   },
   "mappings": {
     "properties": {
+      "gene_id": { "type": "integer" },
       "gene_name": {
         "type": "text",
         "analyzer": "autocomplete_analyzer",
