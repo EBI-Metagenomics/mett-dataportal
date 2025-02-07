@@ -19,6 +19,17 @@
     }
   },
   "mappings": {
+    "dynamic_templates": [
+      {
+        "additional_annotations": {
+          "match": "*",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      }
+    ],
     "properties": {
       "gene_id": { "type": "integer" },
       "gene_name": {
