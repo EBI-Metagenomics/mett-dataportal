@@ -1,49 +1,37 @@
+import os
 import csv
 import ftplib
 import json
-import logging
-import os
 import time
-from concurrent.futures import ThreadPoolExecutor
-
-import psycopg
-from decouple import Config, RepositoryEnv
+import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from Bio import SeqIO
+import pandas as pd
 from django.core.management.base import BaseCommand
+from elasticsearch_dsl import connections
+from elasticsearch.helpers import bulk
+from dataportal.elasticsearch.models import GeneDocument
 
-config = Config(RepositoryEnv("./mett.env"))
+# Load environment variables for Elasticsearch
+ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
+ES_USER = os.getenv("ES_USER")
+ES_PASSWORD = os.getenv("ES_PASSWORD")
 
+# Establish Elasticsearch connection
+connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
+
+# Logging configuration
 logging.basicConfig(
-    filename="process_gff.log",
-    level=logging.DEBUG,  # Set to DEBUG for detailed information
+    filename="import_genes.log",
+    level=logging.INFO,
     format="%(asctime)s %(levelname)s:%(message)s",
 )
 
-# Database query templates
-gene_insert_query = """
-INSERT INTO Gene (strain_id, gene_name, locus_tag, description, seq_id, cog, kegg, pfam, interpro, dbxref, 
-ec_number, product, start_position, end_position, annotations)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
-ON CONFLICT (locus_tag) DO NOTHING;
-"""
-
-ontology_insert_query = """
-INSERT INTO Gene_Ontology_Term (gene_id, ontology_type, ontology_id, ontology_description)
-VALUES (%s, %s, %s, %s)
-ON CONFLICT DO NOTHING;
-"""
-
-update_strain_query = """
-UPDATE Strain
-SET gff_file = %s
-WHERE isolate_name = %s
-"""
-
-# batch size for inserts
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 
 
 class Command(BaseCommand):
-    help = "Imports gene annotations from GFF files via FTP and inserts them into the database."
+    help = "Imports gene annotations and essentiality data into Elasticsearch."
 
     def add_arguments(self, parser):
         parser.add_argument("--ftp-server", type=str, default="ftp.ebi.ac.uk")
@@ -58,128 +46,109 @@ class Command(BaseCommand):
             default="../data-generators/data/gff-assembly-prefixes.tsv",
         )
         parser.add_argument(
-            "--isolate", type=str, help="Specific isolate to import", required=False
-        )
-        parser.add_argument(
-            "--assembly", type=str, help="Specific assembly to import", required=False
+            "--essentiality-csv",
+            type=str,
+            default="../data-generators/data/essentiality_table_all_libraries.csv",
         )
 
     def handle(self, *args, **options):
         ftp_server = options["ftp_server"]
         ftp_directory = options["ftp_directory"]
         mapping_task_file = options["mapping_task_file"]
-        target_isolate = options.get("isolate")
-        target_assembly = options.get("assembly")
+        essentiality_csv = options["essentiality_csv"]
 
-        logging.debug("Starting import process.")
+        logging.info("Starting gene import process.")
 
         try:
-            # Load the mapping task file
-            logging.debug("Loading mapping task file...")
-            isolate_to_assembly_map = {}
-            with open(mapping_task_file, mode="r") as file:
-                reader = csv.DictReader(file, delimiter="\t")
-                for row in reader:
-                    assembly_name = row["assembly"].replace(".fa", "")
-                    isolate_to_assembly_map[row["prefix"]] = assembly_name
-            logging.debug(
-                f"Loaded mapping for {len(isolate_to_assembly_map)} isolates."
-            )
+            # Load isolate-to-assembly mapping
+            isolate_to_assembly_map = self.load_isolate_mapping(mapping_task_file)
 
-            # Check if specific isolate or assembly is requested
-            if target_isolate:
-                isolates = [target_isolate]
-            elif target_assembly:
-                isolates = [
-                    iso
-                    for iso, asm in isolate_to_assembly_map.items()
-                    if asm == target_assembly
-                ]
-                if not isolates:
-                    logging.warning(
-                        f"No isolates found for assembly: {target_assembly}"
-                    )
-                    return
-            else:
-                ftp = self.reconnect_ftp(ftp_server)
-                ftp.cwd(ftp_directory)
-                isolates = ftp.nlst()
-                ftp.quit()
+            # Fetch list of isolates from FTP
+            ftp = self.reconnect_ftp(ftp_server)
+            ftp.cwd(ftp_directory)
+            isolates = ftp.nlst()
+            ftp.quit()
 
             logging.info(f"Found {len(isolates)} isolates to process.")
 
-            # Process each isolate
+            # Process each isolate in parallel
             with ThreadPoolExecutor(max_workers=2) as executor:
                 futures = [
                     executor.submit(
-                        self.process_isolate,
-                        isolate,
-                        ftp_server,
-                        ftp_directory,
-                        isolate_to_assembly_map,
+                        self.process_isolate, isolate, ftp_server, ftp_directory, isolate_to_assembly_map
                     )
                     for isolate in isolates
                 ]
                 for future in futures:
                     future.result()
 
-            logging.info("GFF files processed, and strain table updated.")
+            logging.info("GFF files processed successfully.")
+
+            # Import essentiality data and update gene index
+            self.import_essentiality_data(essentiality_csv)
+
+            logging.info("Gene annotations and essentiality data imported successfully.")
+
         except Exception as e:
             logging.error(f"Error in the import process: {e}", exc_info=True)
 
+    def load_isolate_mapping(self, mapping_task_file):
+        """ Load isolate-to-assembly mapping from TSV file. """
+        mapping = {}
+        with open(mapping_task_file, mode="r") as file:
+            reader = csv.DictReader(file, delimiter="\t")
+            for row in reader:
+                assembly_name = row["assembly"].replace(".fa", "")
+                mapping[row["prefix"]] = assembly_name
+        return mapping
+
     def reconnect_ftp(self, ftp_server):
+        """ Handle FTP connection with retry logic. """
         retries = 3
         for attempt in range(retries):
             try:
-                logging.debug(
-                    f"Connecting to FTP server {ftp_server} (attempt {attempt + 1})..."
-                )
                 ftp = ftplib.FTP(ftp_server)
                 ftp.login()
-                logging.info(f"Connected to FTP server: {ftp_server}")
                 return ftp
             except ftplib.all_errors as e:
-                logging.warning(f"Connection failed on attempt {attempt + 1}: {e}")
                 if attempt < retries - 1:
                     time.sleep(2)
                 else:
-                    logging.error(f"Failed to reconnect after {retries} attempts.")
                     raise
 
-    def list_files(self, ftp, path):
-        logging.debug(f"Listing files in FTP path: {path}")
+    def process_isolate(self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map):
+        """ Process GFF files for a given isolate. """
         try:
-            file_list = ftp.nlst(path)
-            logging.info(f"Files listed in {path}: {file_list}")
-            return file_list
-        except ftplib.error_perm as resp:
-            if "No files found" in str(resp):
-                logging.warning(f"No files found in {path}")
-                return []
-            else:
-                logging.error(f"FTP error listing files in {path}: {resp}")
-                raise
+            assembly_name = isolate_to_assembly_map.get(isolate)
 
-    def process_gff_file(self, gff_file, isolate, strain_id, ftp_server):
-        logging.info(f"Starting processing of {gff_file} for isolate {isolate}")
+            ftp = self.reconnect_ftp(ftp_server)
+            isolate_path = f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
+            gff_files = ftp.nlst(isolate_path)
+            ftp.quit()
+
+            if not gff_files:
+                return
+
+            for gff_file in gff_files:
+                if gff_file.endswith("_annotations.gff"):
+                    self.process_gff_file(gff_file, isolate, ftp_server)
+
+        except Exception as e:
+            logging.error(f"Error processing isolate {isolate}: {e}", exc_info=True)
+
+    def process_gff_file(self, gff_file, isolate, ftp_server):
+        """ Process GFF file and index gene data into Elasticsearch. """
         try:
             ftp = self.reconnect_ftp(ftp_server)
             local_gff_path = os.path.join("/tmp", os.path.basename(gff_file))
             with open(local_gff_path, "wb") as f:
                 ftp.retrbinary(f"RETR {gff_file}", f.write)
             ftp.quit()
-            logging.info(f"Downloaded {gff_file} to {local_gff_path}")
 
-            genes_to_insert = []
-            ontology_terms = []
+            genes_to_index = []
 
             with open(local_gff_path, "r") as gff:
-                line_count = 0
                 for line in gff:
-                    line_count += 1
-                    if line.startswith("##FASTA"):
-                        logging.info(f"Ignoring assembly sequence in {gff_file}")
-                        break
                     if line.startswith("#"):
                         continue
 
@@ -191,172 +160,76 @@ class Command(BaseCommand):
                     attr_dict = dict(
                         item.split("=") for item in attributes.split(";") if "=" in item
                     )
+
                     gene_name = attr_dict.get("Name")
                     locus_tag = attr_dict.get("locus_tag")
-                    description = attr_dict.get("product")
+                    product = attr_dict.get("product")
+                    annotations = json.dumps(attr_dict)
 
                     if not locus_tag:
-                        logging.warning(
-                            f"Skipping gene without locus_tag in {gff_file}"
-                        )
                         continue
 
-                    annotations = json.dumps(
-                        {
-                            "seq_id": seq_id,
-                            "start_position": start,
-                            "end_position": end,
-                            "strand": strand,
-                            "attributes": attr_dict,
-                        }
-                    )
-
-                    genes_to_insert.append(
-                        (
-                            strain_id,
-                            gene_name,
-                            locus_tag,
-                            description,
-                            seq_id,
-                            attr_dict.get("cog"),
-                            attr_dict.get("kegg"),
-                            attr_dict.get("pfam"),
-                            attr_dict.get("interpro"),
-                            attr_dict.get("Dbxref"),
-                            attr_dict.get("eC_number"),
-                            attr_dict.get("product"),
-                            start,
-                            end,
-                            annotations,
+                    genes_to_index.append(
+                        GeneDocument(
+                            meta={"id": locus_tag},
+                            gene_name=gene_name,
+                            locus_tag=locus_tag,
+                            product=product,
+                            seq_id=seq_id,
+                            start=int(start),
+                            end=int(end),
+                            annotations=annotations,
                         )
                     )
 
-                    if "interpro" in attr_dict:
-                        for ont_id in attr_dict["interpro"].split(","):
-                            ontology_terms.append(
-                                (locus_tag, "InterPro", ont_id.strip(), None)
-                            )
+                    if len(genes_to_index) >= BATCH_SIZE:
+                        bulk(connections.get_connection(), (doc.to_dict(include_meta=True) for doc in genes_to_index))
+                        genes_to_index.clear()
 
-            logging.info(
-                f"Parsed {line_count} lines from {gff_file}. Found {len(genes_to_insert)} genes and {len(ontology_terms)} ontology terms."
-            )
+            if genes_to_index:
+                bulk(connections.get_connection(), (doc.to_dict(include_meta=True) for doc in genes_to_index))
 
             os.remove(local_gff_path)
-            logging.info(f"Removed local GFF file {local_gff_path}")
-
-            # Perform bulk insertions using psycopg
-            with psycopg.connect(
-                dbname=config("DB_NAME"),
-                user=config("DB_USER"),
-                password=config("DB_PASSWORD"),
-                host=config("DB_HOST"),
-                port=config("DB_PORT"),
-                options="-c statement_timeout=60000",
-            ) as conn:
-                with conn.cursor() as cursor:
-                    for i in range(0, len(genes_to_insert), BATCH_SIZE):
-                        batch = genes_to_insert[i : i + BATCH_SIZE]
-                        logging.info(f"Inserting batch of {len(batch)} genes...")
-                        cursor.executemany(gene_insert_query, batch)
-                        conn.commit()
-                        logging.info(f"Inserted {len(batch)} genes in this batch.")
-
-                    # todo Insert ontology terms
-                    # for locus_tag, ontology_type, ontology_id, _ in ontology_terms:
-                    #     cursor.execute(
-                    #         "SELECT id FROM Gene WHERE locus_tag = %s", (locus_tag,)
-                    #     )
-                    #     gene_id = cursor.fetchone()
-                    #     if gene_id:
-                    #         cursor.execute(
-                    #             ontology_insert_query,
-                    #             (gene_id[0], ontology_type, ontology_id, None),
-                    #         )
-                    # logging.info(
-                    #     f"Inserted {len(ontology_terms)} ontology terms for {gff_file}"
-                    # )
-
-                    cursor.execute(
-                        update_strain_query, (os.path.basename(gff_file), isolate)
-                    )
-                    logging.info(
-                        f"Updated Strain table with GFF file {os.path.basename(gff_file)} for isolate: {isolate}"
-                    )
-
-                conn.commit()
-                logging.info("Transaction committed.")
 
         except Exception as e:
             logging.error(f"Error processing GFF file {gff_file}: {e}", exc_info=True)
 
-    def process_isolate(
-        self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map
-    ):
-        retries = 5
-        for attempt in range(retries):
-            try:
-                logging.info(f"Processing isolate: {isolate} (Attempt {attempt + 1})")
-                assembly_name = isolate_to_assembly_map.get(isolate)
+    def import_essentiality_data(self, essentiality_csv):
+        """ Import essentiality data and update genes in Elasticsearch. """
+        try:
+            essentiality_data = pd.read_csv(essentiality_csv)
 
-                ftp = self.reconnect_ftp(ftp_server)
-                isolate_path = (
-                    f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
-                )
-                gff_files_in_isolate = self.list_files(ftp, isolate_path)
-                ftp.quit()
+            valid_strains = ["BU_ATCC8492", "PV_ATCC8482"]
+            valid_essentiality_categories = {
+                "essential": "Essential",
+                "essential_liquid": "Essential Liquid",
+                "essential_solid": "Essential Solid",
+                "not_essential": "Not Essential",
+                "unclear": "Unclear",
+            }
 
-                if not gff_files_in_isolate:
-                    logging.warning(f"No GFF files found for isolate {isolate}")
-                    return
+            updates = []
+            for row in essentiality_data.itertuples():
+                locus_tag = row.locus_tag.strip()
+                strain_id = "_".join(locus_tag.split("_")[:2])
+                essentiality_value = row.unified_final_call_240817.strip().lower()
 
-                with psycopg.connect(
-                    dbname=config("DB_NAME"),
-                    user=config("DB_USER"),
-                    password=config("DB_PASSWORD"),
-                    host=config("DB_HOST"),
-                    port=config("DB_PORT"),
-                    options="-c statement_timeout=60000",
-                ) as conn:
-                    with conn.cursor() as cursor:
-                        cursor.execute(
-                            "SELECT id FROM Strain WHERE assembly_name = %s",
-                            (assembly_name,),
-                        )
-                        strain_id = cursor.fetchone()
+                if strain_id in valid_strains and essentiality_value in valid_essentiality_categories:
+                    updates.append({
+                        "_op_type": "update",
+                        "_index": "gene_index",
+                        "_id": locus_tag,
+                        "doc": {"essentiality": valid_essentiality_categories[essentiality_value]},
+                    })
 
-                        if not strain_id:
-                            logging.error(f"No strain_id found for isolate: {isolate}")
-                            return
+                    if len(updates) >= BATCH_SIZE:
+                        bulk(connections.get_connection(), updates)
+                        updates.clear()
 
-                logging.debug(f"Strain ID for {isolate} is {strain_id[0]}.")
+            if updates:
+                bulk(connections.get_connection(), updates)
 
-                with ThreadPoolExecutor(max_workers=5) as executor:
-                    futures = [
-                        executor.submit(
-                            self.process_gff_file,
-                            gff_file,
-                            isolate,
-                            strain_id[0],
-                            ftp_server,
-                        )
-                        for gff_file in gff_files_in_isolate
-                        if gff_file.endswith("_annotations.gff")
-                    ]
+            logging.info("Essentiality data successfully updated in Elasticsearch.")
 
-                    for future in futures:
-                        future.result()
-
-                logging.info(f"Successfully processed isolate: {isolate}")
-                break
-
-            except Exception as e:
-                logging.error(
-                    f"Error processing isolate {isolate} on attempt {attempt + 1}: {e}",
-                    exc_info=True,
-                )
-                if attempt < retries - 1:
-                    time.sleep(2)
-                else:
-                    logging.error(
-                        f"Failed to process isolate {isolate} after {retries} attempts."
-                    )
+        except Exception as e:
+            logging.error(f"Error importing essentiality data: {e}", exc_info=True)
