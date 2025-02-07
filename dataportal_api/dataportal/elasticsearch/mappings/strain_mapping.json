@@ -1,0 +1,11 @@
+{
+  "mappings": {
+    "properties": {
+      "species_id": { "type": "integer" },
+      "isolate_name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
+      "assembly_name": { "type": "text" },
+      "assembly_accession": { "type": "keyword" },
+      "type_strain": { "type": "boolean" }
+    }
+  }
+}

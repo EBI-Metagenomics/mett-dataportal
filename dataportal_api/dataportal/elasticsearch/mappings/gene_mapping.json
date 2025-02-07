@@ -1,0 +1,84 @@
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "autocomplete_analyzer": {
+          "type": "custom",
+          "tokenizer": "edge_ngram_tokenizer",
+          "filter": ["lowercase"]
+        }
+      },
+      "tokenizer": {
+        "edge_ngram_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 20,
+          "token_chars": ["letter", "digit"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "gene_name": {
+        "type": "text",
+        "analyzer": "autocomplete_analyzer",
+        "search_analyzer": "standard",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
+      "seq_id": {
+        "type": "text",
+        "analyzer": "autocomplete_analyzer",
+        "search_analyzer": "standard",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
+      "locus_tag": {
+        "type": "text",
+        "analyzer": "autocomplete_analyzer",
+        "search_analyzer": "standard",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
+      "product": {
+        "type": "text",
+        "analyzer": "autocomplete_analyzer",
+        "search_analyzer": "standard",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
+      "species_scientific_name": { "type": "keyword" },
+      "isolate_name": { "type": "keyword" },
+      "start": { "type": "integer" },
+      "end": { "type": "integer" },
+      "cog": { "type": "keyword" },
+      "kegg": { "type": "keyword" },
+      "pfam": { "type": "keyword" },
+      "interpro": { "type": "keyword" },
+      "dbxref": { "type": "keyword" },
+      "ec_number": { "type": "keyword" },
+      "essentiality": { "type": "keyword" },
+      "ontology_terms": {
+        "type": "nested",
+        "properties": {
+          "ontology_type": { "type": "keyword" },
+          "ontology_id": { "type": "keyword" },
+          "ontology_description": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          }
+        }
+      },
+      "cross_references": {
+        "type": "nested",
+        "properties": {
+          "db_name": { "type": "keyword" },
+          "db_accession": { "type": "keyword" },
+          "db_description": { "type": "text" }
+        }
+      }
+    }
+  }
+}
