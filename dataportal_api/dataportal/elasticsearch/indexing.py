@@ -1,48 +1,26 @@
-from elasticsearch import Elasticsearch
-import json
+from elasticsearch_dsl import connections
+from dataportal.elasticsearch.models import SpeciesDocument, StrainDocument, GeneDocument
 import os
 
-# Elasticsearch connection with authentication
+# Load environment variables for Elasticsearch
 ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
-ES_USER = os.getenv("ES_USER", "")
-ES_PASSWORD = os.getenv("ES_PASSWORD", "")
+ES_USER = os.getenv("ES_USER")
+ES_PASSWORD = os.getenv("ES_PASSWORD")
 
-es = Elasticsearch(
-    ES_HOST,
-    basic_auth=(ES_USER, ES_PASSWORD)  # Use basic authentication
-)
+# Establish Elasticsearch connection
+connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 
-# Get the absolute path of the directory containing this script
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MAPPINGS_DIR = os.path.join(BASE_DIR, "mappings")
+# List of Elasticsearch document classes
+INDEX_MODELS = [SpeciesDocument, StrainDocument, GeneDocument]
 
-MAPPING_FILES = {
-    "species_index": os.path.join(MAPPINGS_DIR, "species_mapping.json"),
-    "strain_index": os.path.join(MAPPINGS_DIR, "strain_mapping.json"),
-    "gene_index": os.path.join(MAPPINGS_DIR, "gene_mapping.json"),
-}
+def create_indexes():
 
-
-def create_index():
-    for index_name, mapping_file in MAPPING_FILES.items():
-        # Check if the index exists
-        if es.indices.exists(index=index_name):
-            print(f"Index '{index_name}' already exists. Skipping creation.")
-            continue  # Skip index creation if it already exists
-
-        # Ensure the mapping file exists before proceeding
-        if not os.path.exists(mapping_file):
-            print(f"Error: Mapping file '{mapping_file}' not found. Skipping index creation for '{index_name}'.")
-            continue
-
-        # Load the mapping
-        with open(mapping_file, "r") as f:
-            mapping = json.load(f)
-
-        # Create the index
-        es.indices.create(index=index_name, body=mapping)
-        print(f"Index '{index_name}' created successfully.")
-
+    for model in INDEX_MODELS:
+        if not model._index.exists():
+            model.init()
+            print(f"Index '{model.Index.name}' created successfully.")
+        else:
+            print(f"Index '{model.Index.name}' already exists. Skipping creation.")
 
 if __name__ == "__main__":
-    create_index()
+    create_indexes()
