@@ -1,7 +1,35 @@
-// utils/apiHelpers.ts
+
 export const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert('Copied to clipboard!');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        // Modern API
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                alert('Copied to clipboard!');
+            })
+            .catch((err) => {
+                console.error('Failed to copy text to clipboard:', err);
+                alert('Failed to copy to clipboard.');
+            });
+    } else {
+        // Fallback for unsupported browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                alert('Copied to clipboard!');
+            } else {
+                alert('Failed to copy to clipboard.');
+            }
+        } catch (err) {
+            console.error('Fallback: Oops, unable to copy', err);
+        }
+
+        document.body.removeChild(textArea);
+    }
 };
 
 export const generateCurlRequest = (apiRequestDetails: {
