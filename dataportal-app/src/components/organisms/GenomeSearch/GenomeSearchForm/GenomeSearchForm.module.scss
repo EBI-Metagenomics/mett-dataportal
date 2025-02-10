@@ -29,14 +29,25 @@
 }
 
 .pageSizeDropdown {
-  display: flex;
-  align-items: left;
-  margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.pageSizeDropdown label {
-  margin-right: 5px;
+.pageSizeSelect {
+    font-size: 14px;
+    padding: 4px 8px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
 }
+
+.pageSizeSelect:hover {
+    border-color: #555;
+    cursor: pointer;
+}
+
 
 .vf-button--sm {
   margin-top: 10px;

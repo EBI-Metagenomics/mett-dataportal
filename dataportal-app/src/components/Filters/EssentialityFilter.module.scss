@@ -1,9 +1,16 @@
-.container {
-  //padding: 1rem;
+.essentialityFilter {
   background-color: #ffffff;
   border: 0px solid #ccc;
   border-radius: 4px;
   margin-bottom: 1rem;
+}
+
+.essentialityFilter label {
+  display: flex;
+  align-items: center;
+  //gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 h3 {

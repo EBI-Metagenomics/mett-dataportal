@@ -267,22 +267,27 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     <div className={styles.paginationContainer}>
                         <div className={styles.pageSizeDropdown}>
                             <label htmlFor="pageSize">Page Size: </label>
-                            <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
+                            <select
+                                id="pageSize"
+                                value={pageSize}
+                                onChange={handlePageSizeChange}
+                                className={styles.pageSizeSelect}
+                            >
                                 <option value={10}>Show 10</option>
                                 <option value={20}>Show 20</option>
                                 <option value={50}>Show 50</option>
                             </select>
                         </div>
                         <div className={styles.paginationBar}>
-                        {totalPages > 1 && (
-                            <Pagination
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                hasPrevious={hasPrevious}
-                                hasNext={hasNext}
-                                onPageClick={handlePageClick}
-                            />
-                        )}</div>
+                            {totalPages > 1 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    hasPrevious={hasPrevious}
+                                    hasNext={hasNext}
+                                    onPageClick={handlePageClick}
+                                />
+                            )}</div>
                     </div>
                 </div>
                 <div><p/></div>

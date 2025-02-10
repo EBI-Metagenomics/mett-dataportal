@@ -33,7 +33,7 @@ const EssentialityFilter: React.FC<EssentialityFilterProps> = ({
     }, [hasTypeStrains]);
 
     return (
-        <div className={styles.container}>
+        <div className={styles.essentialityFilter}>
             <h3>Essentiality</h3>
             {essentialityTags.length === 0 && !hasTypeStrains && (
                 <p className={styles.disabledMessage}>Filters available for type strains only</p>
