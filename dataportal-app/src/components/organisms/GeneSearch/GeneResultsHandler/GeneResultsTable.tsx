@@ -138,8 +138,10 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                 {linkData.alias}
                             </a>
                         ) : (
-                            <a href={generateLink(linkData.template, geneMeta)}>
+                            <a href={generateLink(linkData.template, geneMeta)} target="_blank" rel="noreferrer">
                                 {linkData.alias}
+                                <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
+                                      style={{paddingLeft: '5px'}}></span>
                             </a>
                         )}
                     </td>

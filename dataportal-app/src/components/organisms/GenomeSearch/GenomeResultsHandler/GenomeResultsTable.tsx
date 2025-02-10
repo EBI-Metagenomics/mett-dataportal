@@ -90,10 +90,14 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                             style={{paddingLeft: '5px'}}></span></a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={generateLink(linkData.template, result)}>{linkData.alias}</a>
+                        <a href={generateLink(linkData.template, result)} target="_blank" rel="noreferrer">
+                            {linkData.alias}
+                            <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
+                            style={{paddingLeft: '5px'}}></span>
+                        </a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <button
+                    <button
                             className={styles.toggleButton}
                             onClick={() => onToggleGenomeSelect({
                                 id: result.id,
