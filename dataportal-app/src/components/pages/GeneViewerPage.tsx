@@ -289,14 +289,14 @@ const GeneViewerPage: React.FC = () => {
                             <p><strong>Assembly Name:&nbsp;</strong>
                                 <a href={genomeMeta.fasta_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.assembly_name}
-                                    <span className="icon icon-common icon-download"
+                                    <span className={`icon icon-common icon-download ${styles.iconBlack}`}
                                           style={{paddingLeft: '5px'}}></span>
                                 </a>
                             </p>
                             <p><strong>Annotations:&nbsp;</strong>
                                 <a href={genomeMeta.gff_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.gff_file}
-                                    <span className="icon icon-common icon-download"
+                                    <span className={`icon icon-common icon-download ${styles.iconBlack}`}
                                           style={{paddingLeft: '5px'}}></span>
                                 </a>
                             </p>
