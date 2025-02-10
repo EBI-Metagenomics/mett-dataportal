@@ -9,10 +9,12 @@ import "./GeneViewerPage.module.scss";
 import {GenomeService} from "../../services/genomeService";
 import {GeneService} from '../../services/geneService';
 import {JBrowseApp} from "@jbrowse/react-app";
-import {GenomeMeta} from "../../interfaces/Genome";
+import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
 import {getEssentialityDataUrl, SPINNER_DELAY, ZOOM_LEVELS} from "../../utils/appConstants";
 import GeneSearchWithFilters from "@components/organisms/GeneSearch/GeneSearchModules/GeneSearchWithFilters";
+import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm/GeneSearchForm";
+import {LinkData} from "../../interfaces/Auxiliary";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -353,26 +355,51 @@ const GeneViewerPage: React.FC = () => {
                 {/* Gene Search Section */}
                 <div className={styles.geneSearchContainer}>
                     <section>
-                        <GeneSearchWithFilters
-                            searchQuery={geneSearchQuery}
-                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                            onSearchSubmit={handleGeneSearch}
-                            selectedGenomes={
-                                genomeMeta ? [{
-                                    id: genomeMeta.id,
-                                    isolate_name: genomeMeta.isolate_name,
-                                    type_strain: genomeMeta.type_strain
-                                }] : []
-                            }
-                            results={geneResults}
-                            onSortClick={handleGeneSortClick}
-                            sortField={sortField}
-                            sortOrder={sortOrder}
-                            linkData={linkData}
-                            viewState={viewState}
-                            setLoading={setLoading}
-                        />
+                        {genomeMeta?.type_strain ? (
+                            <GeneSearchWithFilters
+                                searchQuery={geneSearchQuery}
+                                onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                                onSearchSubmit={handleGeneSearch}
+                                selectedGenomes={
+                                    genomeMeta ? [{
+                                        id: genomeMeta.id,
+                                        isolate_name: genomeMeta.isolate_name,
+                                        type_strain: genomeMeta.type_strain
+                                    }] : []
+                                }
+                                results={geneResults}
+                                onSortClick={handleGeneSortClick}
+                                sortField={sortField}
+                                sortOrder={sortOrder}
+                                linkData={linkData}
+                                viewState={viewState}
+                                setLoading={setLoading}
+                            />
+                        ) : (
+                            <GeneSearchForm
+                                searchQuery={geneSearchQuery}
+                                onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                                onSearchSubmit={handleGeneSearch}
+                                selectedSpecies={[]}
+                                selectedGenomes={
+                                    genomeMeta ? [{
+                                        id: genomeMeta.id,
+                                        isolate_name: genomeMeta.isolate_name,
+                                        type_strain: genomeMeta.type_strain
+                                    }] : []
+                                }
+                                results={geneResults}
+                                onSortClick={handleGeneSortClick}
+                                sortField={sortField}
+                                sortOrder={sortOrder}
+                                linkData={linkData}
+                                viewState={viewState}
+                                essentialityFilter={[]}
+                                setLoading={setLoading}
+                            />
+                        )}
                     </section>
+
                 </div>
 
 
