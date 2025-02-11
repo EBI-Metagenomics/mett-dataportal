@@ -64,9 +64,12 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                 onChange={(event, value) => {
                     if (value && typeof value !== 'string') {
                         setIsSelecting(true);
-                        const displayValue = value.gene_name ? value.gene_name : value.locus_tag || 'Unknown locus tag';
+                        const strainName = value.isolate_name || 'Unknown strain';
+                        const geneNamePart = value.gene_name || value.locus_tag || 'Unknown locus tag';
+                        const displayValue = `${geneNamePart} (${strainName})`;
+
                         onInputChange({
-                            target: {value: displayValue || ''},
+                            target: {value: displayValue},
                         } as React.ChangeEvent<HTMLInputElement>);
                         onSuggestionClick(value);
                     }

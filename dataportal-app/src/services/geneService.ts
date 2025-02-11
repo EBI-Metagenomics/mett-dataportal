@@ -49,8 +49,8 @@ export class GeneService {
     /**
      * Fetch gene search results with advanced filters.
      */
-    static async fetchGeneSearchResults(
-        gene: string,
+    static async fetchGeneSearchResultsAdvanced(
+        query: string,
         page: number,
         perPage: number,
         sortField: string,
@@ -60,7 +60,7 @@ export class GeneService {
         essentialityFilter?: string[]
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
-            const params = GeneService.buildParamsFetchGeneSearchResults(gene, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, essentialityFilter);
+            const params = GeneService.buildParamsFetchGeneSearchResults(query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, essentialityFilter);
             const response = await ApiService.get<PaginatedResponse<GeneMeta>>("/genes/search/advanced", params);
             return response;
         } catch (error) {
