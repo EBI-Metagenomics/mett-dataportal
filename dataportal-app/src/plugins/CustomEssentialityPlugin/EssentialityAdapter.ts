@@ -5,6 +5,7 @@ import {from, Observable} from 'rxjs';
 import {mergeMap} from 'rxjs/operators';
 import {unzip} from '@gmod/bgzf-filehandle';
 import {getIconForEssentiality} from "../../utils/appConstants";
+import {GeneService} from "../../services/geneService";
 
 export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     static type = 'EssentialityAdapter';
@@ -52,7 +53,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         // Fetch and process features if not cached
         const featuresPromise = this.fetchGFF(region).then((gffFeatures) => {
             if (this.isTypeStrain && this.includeEssentiality) {
-                return this.fetchEssentialityData(region.refName).then((essentialityData) =>
+                return GeneService.fetchEssentialityData(this.apiUrl, region.refName).then((essentialityData) =>
                     this.mergeAnnotationsWithEssentiality(gffFeatures, essentialityData),
                 );
             }
@@ -152,24 +153,6 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         } catch (error) {
             console.error('Error fetching GFF file:', error);
             return [];
-        }
-    }
-
-    async fetchEssentialityData(refName: string): Promise<Record<string, any>> {
-        // console.log('Fetching essentiality data for:', refName);
-
-        try {
-            const response = await fetch(`${this.apiUrl}/${refName}`);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch essentiality data for ${refName}`);
-            }
-
-            const data = await response.json();
-            // console.log(`Essentiality data fetched for ${refName}:`, Object.keys(data).length);
-            return data;
-        } catch (error) {
-            console.error('Error fetching essentiality data:', error);
-            return {};
         }
     }
 
