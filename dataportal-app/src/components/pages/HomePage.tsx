@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm';
@@ -43,9 +43,9 @@ const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClic
 const HomePage: React.FC = () => {
     const location = useLocation();
     const [speciesList, setSpeciesList] = useState<{ id: number; scientific_name: string }[]>([]);
+    const [selectedGenomes, setSelectedGenomes] = useState<BaseGenome[]>([]);
     const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
-    const [selectedGenomes, setSelectedGenomes] = useState<BaseGenome[]>([]);
     const [typeStrains, setTypeStrains] = useState<GenomeMeta[]>([]);
     const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]);
 
@@ -63,6 +63,9 @@ const HomePage: React.FC = () => {
     const [genomeSortOrder, setGenomeSortOrder] = useState<'asc' | 'desc'>('asc');
     const [geneSortField, setGeneSortField] = useState<string>('gene_name');
     const [geneSortOrder, setGeneSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    const essentialityFilter = useMemo(() => [], []);
+
 
     const spinner = loading && (
         <div className={styles.spinnerOverlay}>
@@ -324,7 +327,7 @@ const HomePage: React.FC = () => {
                             sortField={geneSortField}
                             sortOrder={geneSortOrder}
                             linkData={geneLinkData}
-                            essentialityFilter={[]}
+                            essentialityFilter={essentialityFilter}
                             setLoading={setLoading}
                         />
                     )}

@@ -172,7 +172,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         setHasNext(false);
                     }
                 }
-                console.log('apiRequestDetails', apiDetails)
+                // console.log('apiRequestDetails', apiDetails)
                 setApiRequestDetails(apiDetails);
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -186,7 +186,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 setTimeout(() => setLoading(false), remainingTime > 0 ? remainingTime : 0);
             }
         },
-        [query, isolateName, selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize, setLoading]
+        [query, isolateName, selectedSpecies, selectedTypeStrains]
     );
 
 

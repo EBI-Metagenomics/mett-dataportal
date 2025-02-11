@@ -9,12 +9,11 @@ import "./GeneViewerPage.module.scss";
 import {GenomeService} from "../../services/genomeService";
 import {GeneService} from '../../services/geneService';
 import {JBrowseApp} from "@jbrowse/react-app";
-import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
+import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
 import {getEssentialityDataUrl, SPINNER_DELAY, ZOOM_LEVELS} from "../../utils/appConstants";
 import GeneSearchWithFilters from "@components/organisms/GeneSearch/GeneSearchModules/GeneSearchWithFilters";
 import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm/GeneSearchForm";
-import {LinkData} from "../../interfaces/Auxiliary";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -33,6 +32,8 @@ const GeneViewerPage: React.FC = () => {
     const [height, setHeight] = useState(500);
 
     const [includeEssentiality, setIncludeEssentiality] = useState(true);
+    const essentialityFilter = useMemo(() => [], []);
+    const selectedSpecies = useMemo(() => [], []);
 
     const spinner = loading && (
         <div className={styles.spinnerOverlay}>
@@ -88,6 +89,16 @@ const GeneViewerPage: React.FC = () => {
                 includeEssentiality
             ) : [];
     }, [genomeMeta, includeEssentiality]);
+
+     const selectedGenomes = useMemo(() => {
+        return genomeMeta
+            ? [{
+                id: genomeMeta.id,
+                isolate_name: genomeMeta.isolate_name,
+                type_strain: genomeMeta.type_strain
+            }]
+            : [];
+    }, [genomeMeta]);
 
     const sessionConfig = useMemo(() => {
         if (genomeMeta) {
@@ -360,13 +371,7 @@ const GeneViewerPage: React.FC = () => {
                                 searchQuery={geneSearchQuery}
                                 onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                                 onSearchSubmit={handleGeneSearch}
-                                selectedGenomes={
-                                    genomeMeta ? [{
-                                        id: genomeMeta.id,
-                                        isolate_name: genomeMeta.isolate_name,
-                                        type_strain: genomeMeta.type_strain
-                                    }] : []
-                                }
+                                selectedGenomes={selectedGenomes}
                                 results={geneResults}
                                 onSortClick={handleGeneSortClick}
                                 sortField={sortField}
@@ -380,21 +385,15 @@ const GeneViewerPage: React.FC = () => {
                                 searchQuery={geneSearchQuery}
                                 onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
                                 onSearchSubmit={handleGeneSearch}
-                                selectedSpecies={[]}
-                                selectedGenomes={
-                                    genomeMeta ? [{
-                                        id: genomeMeta.id,
-                                        isolate_name: genomeMeta.isolate_name,
-                                        type_strain: genomeMeta.type_strain
-                                    }] : []
-                                }
+                                selectedSpecies={selectedSpecies}
+                                selectedGenomes={selectedGenomes}
                                 results={geneResults}
                                 onSortClick={handleGeneSortClick}
                                 sortField={sortField}
                                 sortOrder={sortOrder}
                                 linkData={linkData}
                                 viewState={viewState}
-                                essentialityFilter={[]}
+                                essentialityFilter={essentialityFilter}
                                 setLoading={setLoading}
                             />
                         )}

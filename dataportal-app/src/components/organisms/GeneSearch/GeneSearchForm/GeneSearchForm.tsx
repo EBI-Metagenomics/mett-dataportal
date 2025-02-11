@@ -53,8 +53,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(10);
-    // const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
     const [essentialityTags, setEssentialityTags] = useState<GeneEssentialityTag[]>([]);
+
 
     const [apiRequestDetails, setApiRequestDetails] = useState<{
         url: string;
@@ -80,10 +80,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
         essentialityTags();
     }, []);
-
-    useEffect(() => {
-        fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
-    }, [pageSize]);
 
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
@@ -154,29 +150,19 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-        async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
-            const genomeFilter = selectedGenomes && selectedGenomes.length > 0
+         async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
+            const genomeFilter = selectedGenomes?.length
                 ? selectedGenomes.map((genome) => ({id: genome.id, name: genome.isolate_name}))
                 : undefined;
-            const speciesFilter = selectedSpecies && selectedSpecies.length === 1
-                ? selectedSpecies
-                : undefined;
+            const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
             try {
-                // Start spinner
-                setLoading(true);
-                const apiDetails = {
-                    url: '',
-                    method: 'GET',
-                    headers: {'Content-Type': 'application/json'},
-                    params: {},
-                };
-
-                let response: PaginatedResponse<GeneMeta> | null = null;
+                setLoading(true); // Start spinner
+                let response = null;
                 if (selectedGeneId) {
-                    // Fetch only the selected gene for the strain
+                    // Fetch by gene ID
                     const geneResponseObj = await GeneService.fetchGeneById(selectedGeneId);
                     response = {
-                        results: [geneResponseObj], // Single result in an array
+                        results: [geneResponseObj],
                         page_number: 1,
                         num_pages: 1,
                         has_previous: false,
@@ -185,15 +171,34 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 } else {
                     // Fetch results using the advanced search API
                     const params = GeneService.buildParamsFetchGeneSearchResults(
-                        query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter, essentialityFilter
+                        query,
+                        page,
+                        pageSize,
+                        sortField,
+                        sortOrder,
+                        genomeFilter,
+                        speciesFilter,
+                        essentialityFilter
                     );
 
-                    apiDetails.url = API_GENE_SEARCH_ADVANCED;
-                    apiDetails.params = Object.fromEntries(params.entries());
+                    const apiDetails = {
+                        url: API_GENE_SEARCH_ADVANCED,
+                        method: "GET",
+                        headers: {"Content-Type": "application/json"},
+                        params: Object.fromEntries(params.entries()),
+                    };
+
                     setApiRequestDetails(apiDetails);
 
                     response = await GeneService.fetchGeneSearchResultsAdvanced(
-                        query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter, essentialityFilter
+                        query,
+                        page,
+                        pageSize,
+                        sortField,
+                        sortOrder,
+                        genomeFilter,
+                        speciesFilter,
+                        essentialityFilter
                     );
                 }
                 if (response && response.results) {
@@ -210,22 +215,22 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     setHasNext(false);
                 }
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.error("Error fetching data:", error);
                 setResults([]);
                 setCurrentPage(1);
                 setTotalPages(1);
                 setHasPrevious(false);
                 setHasNext(false);
             } finally {
-                // Stop spinner
-                setLoading(false);
+                setLoading(false); // Stop spinner
             }
         },
-        [query, selectedGeneId, selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize]
+        [query, selectedGeneId, selectedSpecies, selectedGenomes, pageSize]
     );
 
 
     useEffect(() => {
+        console.log("##############################################################", selectedGenomes)
         fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
     }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, essentialityFilter]);
 
