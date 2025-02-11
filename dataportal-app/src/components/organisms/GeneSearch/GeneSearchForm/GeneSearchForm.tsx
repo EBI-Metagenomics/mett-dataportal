@@ -88,8 +88,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
         async (inputQuery: string) => {
-            // setLoading(true); // Show spinner
-            // const startTime = Date.now();
             if (inputQuery.length >= 2) {
                 try {
                     let response;
@@ -130,11 +128,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 } catch (error) {
                     console.error('Error fetching suggestions:', error);
                 }
-                // } finally {
-                //     const elapsedTime = Date.now() - startTime;
-                //     const remainingTime = 200 - elapsedTime;
-                //     setTimeout(() => setLoading(false), remainingTime > 0 ? remainingTime : 0);
-                // }
             } else {
                 setSuggestions([]);
             }
@@ -169,6 +162,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 ? selectedSpecies
                 : undefined;
             try {
+                // Start spinner
+                setLoading(true);
                 const apiDetails = {
                     url: '',
                     method: 'GET',
@@ -221,6 +216,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setTotalPages(1);
                 setHasPrevious(false);
                 setHasNext(false);
+            } finally {
+                // Stop spinner
+                setLoading(false);
             }
         },
         [query, selectedGeneId, selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize]
