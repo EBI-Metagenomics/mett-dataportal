@@ -34,8 +34,9 @@ class AssemblyCache {
 
 const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => {
     const cache = AssemblyCache.getInstance();
-    const assemblyName = genomeMeta.assembly_name;
+    const assemblyName = genomeMeta.assembly_name.trim().toLowerCase(); // Normalize assemblyName
 
+    console.log(`Looking for assembly Cache for: ${assemblyName}`);
     // Check if the assembly data is cached
     if (cache.get(assemblyName)) {
         console.log(`Cache hit for assembly: ${assemblyName}`);
@@ -46,7 +47,7 @@ const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => {
 
     // Build assembly data
     const assemblyData = {
-        name: assemblyName,
+        name: genomeMeta.assembly_name, // Use the original name for display
         sequence: {
             type: 'ReferenceSequenceTrack',
             trackId: 'reference',
@@ -57,13 +58,13 @@ const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => {
                     length: contig.length,
                 })),
                 fastaLocation: {
-                    uri: `${fastaBaseUrl}/${assemblyName}/${genomeMeta.fasta_file}.gz`,
+                    uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz`,
                 },
                 faiLocation: {
-                    uri: `${fastaBaseUrl}/${assemblyName}/${genomeMeta.fasta_file}.gz.fai`,
+                    uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz.fai`,
                 },
                 gziLocation: {
-                    uri: `${fastaBaseUrl}/${assemblyName}/${genomeMeta.fasta_file}.gz.gzi`,
+                    uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz.gzi`,
                 },
             },
         },
