@@ -29,6 +29,7 @@ logging.basicConfig(
 
 BATCH_SIZE = 500  # Bulk size for indexing
 
+
 class Command(BaseCommand):
     help = "Imports gene annotations and essentiality data into Elasticsearch."
 
@@ -52,6 +53,12 @@ class Command(BaseCommand):
         parser.add_argument(
             "--expected-records", type=int, default=449621, help="Expected number of total records in gene_index"
         )
+        parser.add_argument(
+            "--isolate", type=str, help="Specific isolate to process"
+        )
+        parser.add_argument(
+            "--assembly", type=str, help="Specific assembly to process"
+        )
 
     def handle(self, *args, **options):
         ftp_server = options["ftp_server"]
@@ -59,6 +66,10 @@ class Command(BaseCommand):
         mapping_task_file = options["mapping_task_file"]
         essentiality_csv = options["essentiality_csv"]
         expected_records = options["expected_records"]
+        target_isolate = options.get("isolate")
+        target_assembly = options.get("assembly")
+
+        failed_isolates = []
 
         logging.info("Starting gene import process.")
 
@@ -66,24 +77,43 @@ class Command(BaseCommand):
             # Load isolate-to-assembly mapping
             isolate_to_assembly_map = self.load_isolate_mapping(mapping_task_file)
 
-            # Fetch list of isolates from FTP
-            ftp = self.reconnect_ftp(ftp_server)
-            ftp.cwd(ftp_directory)
-            isolates = ftp.nlst()
-            ftp.quit()
+            # Determine isolates to process
+            if target_isolate:
+                isolates = [target_isolate]
+            elif target_assembly:
+                isolates = [
+                    isolate
+                    for isolate, assembly in isolate_to_assembly_map.items()
+                    if assembly == target_assembly
+                ]
+                if not isolates:
+                    logging.warning(f"No isolates found for assembly: {target_assembly}")
+                    return
+            else:
+                # Fetch list of isolates from FTP if none specified
+                ftp = self.reconnect_ftp(ftp_server)
+                ftp.cwd(ftp_directory)
+                isolates = ftp.nlst()
+                ftp.quit()
 
             logging.info(f"Found {len(isolates)} isolates to process.")
 
-            # Process each isolate in parallel
+            # Process each isolate
             with ThreadPoolExecutor(max_workers=2) as executor:
-                futures = [
+                futures = {
                     executor.submit(
                         self.process_isolate, isolate, ftp_server, ftp_directory, isolate_to_assembly_map
-                    )
+                    ): isolate
                     for isolate in isolates
-                ]
+                }
+
                 for future in futures:
-                    future.result()
+                    isolate = futures[future]
+                    try:
+                        future.result()
+                    except Exception as e:
+                        logging.error(f"Error processing isolate {isolate}: {e}")
+                        failed_isolates.append(isolate)
 
             logging.info("GFF files processed successfully.")
 
@@ -97,6 +127,13 @@ class Command(BaseCommand):
 
         except Exception as e:
             logging.error(f"Error in the import process: {e}", exc_info=True)
+
+        # Print failed isolates
+        if failed_isolates:
+            logging.warning(f"The following isolates failed to process: {failed_isolates}")
+            print(f"\nFailed isolates:\n{failed_isolates}")
+        else:
+            logging.info("All isolates processed successfully.")
 
     def load_isolate_mapping(self, mapping_task_file):
         """ Load isolate-to-assembly mapping from TSV file. """
@@ -122,12 +159,21 @@ class Command(BaseCommand):
                 else:
                     raise
 
+    def get_species_name(self, isolate_name):
+        """ Extract species name from isolate name (assuming acronym-based species names). """
+        species_acronym = isolate_name.split("_")[0]
+        species_mapping = {
+            "BU": "Bacteroides uniformis",
+            "PV": "Phocaeicola vulgatus"
+        }
+        return species_mapping.get(species_acronym, None)
+
     def is_isolate_processed(self, isolate):
         """ Check if the isolate's data already exists in Elasticsearch. """
         response = GeneDocument.search().filter("term", isolate_name=isolate).execute()
         return response.hits.total.value > 0
 
-    def process_isolate(self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map, max_retries=3):
+    def process_isolate(self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map, max_retries=5):
         """ Process GFF files for a given isolate with retry logic. """
         if self.is_isolate_processed(isolate):
             logging.info(f"Skipping already processed isolate: {isolate}")
@@ -137,6 +183,7 @@ class Command(BaseCommand):
             try:
                 logging.info(f"Processing isolate: {isolate} (Attempt {attempt + 1})")
                 assembly_name = isolate_to_assembly_map.get(isolate)
+                species_scientific_name = self.get_species_name(isolate)
 
                 ftp = self.reconnect_ftp(ftp_server)
                 isolate_path = f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
@@ -149,7 +196,7 @@ class Command(BaseCommand):
 
                 for gff_file in gff_files:
                     if gff_file.endswith("_annotations.gff"):
-                        self.process_gff_file(gff_file, isolate, ftp_server)
+                        self.process_gff_file(gff_file, isolate, ftp_server, species_scientific_name, isolate)
                         self.update_strain_index(isolate, gff_file)
 
                 logging.info(f"Successfully processed isolate: {isolate}")
@@ -162,7 +209,7 @@ class Command(BaseCommand):
                 else:
                     logging.error(f"Failed to process isolate {isolate} after {max_retries} attempts.")
 
-    def process_gff_file(self, gff_file, isolate, ftp_server):
+    def process_gff_file(self, gff_file, isolate, ftp_server, species_scientific_name, isolate_name):
         """ Process GFF file and index gene data into Elasticsearch. """
         try:
             ftp = self.reconnect_ftp(ftp_server)
@@ -205,9 +252,11 @@ class Command(BaseCommand):
                         GeneDocument(
                             meta={"id": locus_tag},
                             gene_name=gene_name,
+                            species_scientific_name=species_scientific_name,
+                            isolate_name=isolate_name,
+                            seq_id=seq_id,
                             locus_tag=locus_tag,
                             product=product,
-                            seq_id=seq_id,
                             start=int(start),
                             end=int(end),
                             cog=cog,
@@ -295,6 +344,7 @@ class Command(BaseCommand):
         total_docs = s.count()
 
         if total_docs < expected_count:
-            logging.warning(f"Expected {expected_count} records, but found {total_docs}. Missing {expected_count - total_docs} records.")
+            logging.warning(
+                f"Expected {expected_count} records, but found {total_docs}. Missing {expected_count - total_docs} records.")
         else:
             logging.info(f"Gene index contains the expected number of records: {total_docs}")

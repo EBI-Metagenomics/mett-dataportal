@@ -5,7 +5,7 @@ edge_ngram_tokenizer = tokenizer(
     type="edge_ngram",
     min_gram=1,
     max_gram=20,
-    token_chars=["letter", "digit"]
+    token_chars=["letter", "digit", "symbol"]
 )
 
 autocomplete_analyzer = analyzer(
