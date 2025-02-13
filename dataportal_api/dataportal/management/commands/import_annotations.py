@@ -4,13 +4,13 @@ import ftplib
 import json
 import time
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from Bio import SeqIO
 import pandas as pd
 from django.core.management.base import BaseCommand
 from elasticsearch_dsl import connections
 from elasticsearch.helpers import bulk
-from dataportal.elasticsearch.models import GeneDocument
+from dataportal.elasticsearch.models import GeneDocument, StrainDocument
 
 # Load environment variables for Elasticsearch
 ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
@@ -27,8 +27,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(message)s",
 )
 
-BATCH_SIZE = 500
-
+BATCH_SIZE = 500  # Bulk size for indexing
 
 class Command(BaseCommand):
     help = "Imports gene annotations and essentiality data into Elasticsearch."
@@ -48,7 +47,10 @@ class Command(BaseCommand):
         parser.add_argument(
             "--essentiality-csv",
             type=str,
-            default="../data-generators/data/essentiality_table_all_libraries.csv",
+            default="../data-generators/data/essentiality_table_all_libraries_240818_14102024.csv",
+        )
+        parser.add_argument(
+            "--expected-records", type=int, default=449621, help="Expected number of total records in gene_index"
         )
 
     def handle(self, *args, **options):
@@ -56,6 +58,7 @@ class Command(BaseCommand):
         ftp_directory = options["ftp_directory"]
         mapping_task_file = options["mapping_task_file"]
         essentiality_csv = options["essentiality_csv"]
+        expected_records = options["expected_records"]
 
         logging.info("Starting gene import process.")
 
@@ -87,7 +90,10 @@ class Command(BaseCommand):
             # Import essentiality data and update gene index
             self.import_essentiality_data(essentiality_csv)
 
-            logging.info("Gene annotations and essentiality data imported successfully.")
+            logging.info("Essentiality data imported successfully.")
+
+            # Validate total number of records
+            self.validate_gene_index(expected_records)
 
         except Exception as e:
             logging.error(f"Error in the import process: {e}", exc_info=True)
@@ -116,25 +122,45 @@ class Command(BaseCommand):
                 else:
                     raise
 
-    def process_isolate(self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map):
-        """ Process GFF files for a given isolate. """
-        try:
-            assembly_name = isolate_to_assembly_map.get(isolate)
+    def is_isolate_processed(self, isolate):
+        """ Check if the isolate's data already exists in Elasticsearch. """
+        response = GeneDocument.search().filter("term", isolate_name=isolate).execute()
+        return response.hits.total.value > 0
 
-            ftp = self.reconnect_ftp(ftp_server)
-            isolate_path = f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
-            gff_files = ftp.nlst(isolate_path)
-            ftp.quit()
+    def process_isolate(self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map, max_retries=3):
+        """ Process GFF files for a given isolate with retry logic. """
+        if self.is_isolate_processed(isolate):
+            logging.info(f"Skipping already processed isolate: {isolate}")
+            return
 
-            if not gff_files:
+        for attempt in range(max_retries):
+            try:
+                logging.info(f"Processing isolate: {isolate} (Attempt {attempt + 1})")
+                assembly_name = isolate_to_assembly_map.get(isolate)
+
+                ftp = self.reconnect_ftp(ftp_server)
+                isolate_path = f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
+                gff_files = ftp.nlst(isolate_path)
+                ftp.quit()
+
+                if not gff_files:
+                    logging.warning(f"No GFF files found for isolate {isolate}")
+                    return
+
+                for gff_file in gff_files:
+                    if gff_file.endswith("_annotations.gff"):
+                        self.process_gff_file(gff_file, isolate, ftp_server)
+                        self.update_strain_index(isolate, gff_file)
+
+                logging.info(f"Successfully processed isolate: {isolate}")
                 return
 
-            for gff_file in gff_files:
-                if gff_file.endswith("_annotations.gff"):
-                    self.process_gff_file(gff_file, isolate, ftp_server)
-
-        except Exception as e:
-            logging.error(f"Error processing isolate {isolate}: {e}", exc_info=True)
+            except Exception as e:
+                logging.error(f"Error processing isolate {isolate} on attempt {attempt + 1}: {e}", exc_info=True)
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                else:
+                    logging.error(f"Failed to process isolate {isolate} after {max_retries} attempts.")
 
     def process_gff_file(self, gff_file, isolate, ftp_server):
         """ Process GFF file and index gene data into Elasticsearch. """
@@ -161,10 +187,16 @@ class Command(BaseCommand):
                         item.split("=") for item in attributes.split(";") if "=" in item
                     )
 
+                    # Extract individual attributes
                     gene_name = attr_dict.get("Name")
                     locus_tag = attr_dict.get("locus_tag")
                     product = attr_dict.get("product")
-                    annotations = json.dumps(attr_dict)
+                    cog = attr_dict.get("cog")
+                    kegg = attr_dict.get("kegg")
+                    pfam = attr_dict.get("pfam")
+                    interpro = attr_dict.get("interpro")
+                    dbxref = attr_dict.get("Dbxref")
+                    ec_number = attr_dict.get("eC_number")
 
                     if not locus_tag:
                         continue
@@ -178,7 +210,12 @@ class Command(BaseCommand):
                             seq_id=seq_id,
                             start=int(start),
                             end=int(end),
-                            annotations=annotations,
+                            cog=cog,
+                            kegg=kegg,
+                            pfam=pfam,
+                            interpro=interpro,
+                            dbxref=dbxref,
+                            ec_number=ec_number,
                         )
                     )
 
@@ -194,9 +231,26 @@ class Command(BaseCommand):
         except Exception as e:
             logging.error(f"Error processing GFF file {gff_file}: {e}", exc_info=True)
 
+    def update_strain_index(self, isolate, gff_file):
+        """ Update the GFF file name in the strain index. """
+        try:
+            strain = StrainDocument.get(id=isolate, ignore=404)
+            if strain:
+                strain.gff_file = os.path.basename(gff_file)
+                strain.save()
+                logging.info(f"Updated strain_index for isolate {isolate} with GFF file: {gff_file}")
+            else:
+                logging.warning(f"Strain {isolate} not found in strain_index.")
+        except Exception as e:
+            logging.error(f"Error updating strain_index for isolate {isolate}: {e}")
+
     def import_essentiality_data(self, essentiality_csv):
         """ Import essentiality data and update genes in Elasticsearch. """
         try:
+            if not os.path.exists(essentiality_csv):
+                logging.error(f"Essentiality CSV file not found: {essentiality_csv}")
+                return
+
             essentiality_data = pd.read_csv(essentiality_csv)
 
             valid_strains = ["BU_ATCC8492", "PV_ATCC8482"]
@@ -233,3 +287,14 @@ class Command(BaseCommand):
 
         except Exception as e:
             logging.error(f"Error importing essentiality data: {e}", exc_info=True)
+
+    def validate_gene_index(self, expected_count):
+        """ Validate the total number of records in gene_index. """
+        from elasticsearch_dsl import Search
+        s = Search(index="gene_index")
+        total_docs = s.count()
+
+        if total_docs < expected_count:
+            logging.warning(f"Expected {expected_count} records, but found {total_docs}. Missing {expected_count - total_docs} records.")
+        else:
+            logging.info(f"Gene index contains the expected number of records: {total_docs}")
