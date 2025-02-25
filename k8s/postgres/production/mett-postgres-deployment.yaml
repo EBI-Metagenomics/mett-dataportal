@@ -13,6 +13,16 @@ spec:
       labels:
         app: mett-postgres-dev
     spec:
+      initContainers:
+      - name: init-fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 999:999 /var/lib/postgresql/data && chmod -R 700 /var/lib/postgresql/data"]
+        securityContext:
+          runAsUser: 0  # Root user to modify permissions
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-storage-dev
+
       containers:
       - name: mett-postgres-dev
         image: postgres:17
@@ -34,6 +44,9 @@ spec:
             secretKeyRef:
               name: postgres-secret-dev
               key: POSTGRES_PASSWORD
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 999
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: postgres-storage-dev

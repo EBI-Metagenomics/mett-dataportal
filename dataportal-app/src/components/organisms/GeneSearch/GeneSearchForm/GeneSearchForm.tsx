@@ -5,13 +5,11 @@ import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsHandle
 import Pagination from "@components/molecules/Pagination";
 import {GeneService} from '../../../../services/geneService';
 import {createViewState} from '@jbrowse/react-app';
-import {GeneEssentialityTag, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
+import {GeneEssentialityTag, GeneMeta, GeneSuggestion, PaginatedResponse} from "../../../../interfaces/Gene";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../../interfaces/Genome";
 import {
     API_GENE_SEARCH_ADVANCED,
-    API_GENOME_SEARCH,
-    getAPIUrlGenomeSearchWithSpecies,
     SPINNER_DELAY
 } from "../../../../utils/appConstants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
@@ -45,6 +43,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            essentialityFilter,
                                                            setLoading,
                                                        }) => {
+    const [searchInput, setSearchInput] = useState<string>('');
     const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<GeneSuggestion[]>([]);
     const [geneName, setGeneName] = useState<string>('');
@@ -54,8 +53,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(10);
-    // const [essentialityFilter, setEssentialityFilter] = useState<string[]>([]);
     const [essentialityTags, setEssentialityTags] = useState<GeneEssentialityTag[]>([]);
+
 
     const [apiRequestDetails, setApiRequestDetails] = useState<{
         url: string;
@@ -81,10 +80,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
         essentialityTags();
     }, []);
-
-    useEffect(() => {
-        fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
-    }, [pageSize]);
 
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
@@ -155,31 +150,57 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-        async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
-            const genomeFilter = selectedGenomes && selectedGenomes.length > 0
+         async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
+            const genomeFilter = selectedGenomes?.length
                 ? selectedGenomes.map((genome) => ({id: genome.id, name: genome.isolate_name}))
                 : undefined;
-            const speciesFilter = selectedSpecies && selectedSpecies.length === 1
-                ? selectedSpecies
-                : undefined;
+            const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
             try {
-                const apiDetails = {
-                    url: '',
-                    method: 'GET',
-                    headers: {'Content-Type': 'application/json'},
-                    params: {},
-                };
-                const params = GeneService
-                    .buildParamsFetchGeneSearchResults(query, page, pageSize, sortField,
-                        sortOrder, genomeFilter, speciesFilter, essentialityFilter);
+                setLoading(true); // Start spinner
+                let response = null;
+                if (selectedGeneId) {
+                    // Fetch by gene ID
+                    const geneResponseObj = await GeneService.fetchGeneById(selectedGeneId);
+                    response = {
+                        results: [geneResponseObj],
+                        page_number: 1,
+                        num_pages: 1,
+                        has_previous: false,
+                        has_next: false,
+                    };
+                } else {
+                    // Fetch results using the advanced search API
+                    const params = GeneService.buildParamsFetchGeneSearchResults(
+                        query,
+                        page,
+                        pageSize,
+                        sortField,
+                        sortOrder,
+                        genomeFilter,
+                        speciesFilter,
+                        essentialityFilter
+                    );
 
-                apiDetails.url = API_GENE_SEARCH_ADVANCED;
-                apiDetails.params = Object.fromEntries(params.entries());
-                console.log('apiRequestDetails', apiDetails)
-                setApiRequestDetails(apiDetails);
-                const response = await GeneService.fetchGeneSearchResults(
-                    query, page, pageSize, sortField, sortOrder, genomeFilter, speciesFilter, essentialityFilter
-                );
+                    const apiDetails = {
+                        url: API_GENE_SEARCH_ADVANCED,
+                        method: "GET",
+                        headers: {"Content-Type": "application/json"},
+                        params: Object.fromEntries(params.entries()),
+                    };
+
+                    setApiRequestDetails(apiDetails);
+
+                    response = await GeneService.fetchGeneSearchResultsAdvanced(
+                        query,
+                        page,
+                        pageSize,
+                        sortField,
+                        sortOrder,
+                        genomeFilter,
+                        speciesFilter,
+                        essentialityFilter
+                    );
+                }
                 if (response && response.results) {
                     setResults(response.results);
                     setCurrentPage(response.page_number);
@@ -194,29 +215,33 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     setHasNext(false);
                 }
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.error("Error fetching data:", error);
                 setResults([]);
                 setCurrentPage(1);
                 setTotalPages(1);
                 setHasPrevious(false);
                 setHasNext(false);
+            } finally {
+                setLoading(false); // Stop spinner
             }
         },
-        [query, selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize]
+        [query, selectedGeneId, selectedSpecies, selectedGenomes, pageSize]
     );
 
 
     useEffect(() => {
+        console.log("##############################################################", selectedGenomes)
         fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
     }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, essentialityFilter]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const newQuery = event.target.value;
-        setQuery(newQuery);
+        const newInput = event.target.value;
+        setSearchInput(newInput);
+        setQuery(newInput);
         setGeneName('');
         setSelectedGeneId(null);
-        debouncedFetchSuggestions(newQuery);
+        debouncedFetchSuggestions(newInput);
     };
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
@@ -225,7 +250,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         // console.log('suggestion.gene_id: ' + suggestion.gene_id)
         // console.log('suggestion.gene_name: ' + suggestion.gene_name)
         // console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
-        setQuery(suggestion.gene_name || suggestion.locus_tag);
+        // setQuery(suggestion.gene_name || suggestion.locus_tag + '(' + suggestion.isolate_name + ')');
         setGeneName(suggestion.gene_name);
         setSelectedGeneId(suggestion.gene_id);
         setSuggestions([]);
@@ -235,6 +260,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         // console.log('selectedGeneId:' + selectedGeneId)
         event.preventDefault();
+        setQuery(searchInput);
         fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
     };
 
@@ -278,7 +304,12 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 <div className={styles.paginationContainer}>
                     <div className={styles.pageSizeDropdown}>
                         <label htmlFor="pageSize">Page Size: </label>
-                        <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
+                        <select
+                            id="pageSize"
+                            value={pageSize}
+                            onChange={handlePageSizeChange}
+                            className={styles.pageSizeSelect}
+                        >
                             <option value={10}>Show 10</option>
                             <option value={20}>Show 20</option>
                             <option value={50}>Show 50</option>

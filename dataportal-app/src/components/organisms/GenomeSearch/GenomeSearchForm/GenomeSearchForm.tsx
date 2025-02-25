@@ -172,7 +172,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                         setHasNext(false);
                     }
                 }
-                console.log('apiRequestDetails', apiDetails)
+                // console.log('apiRequestDetails', apiDetails)
                 setApiRequestDetails(apiDetails);
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -186,7 +186,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 setTimeout(() => setLoading(false), remainingTime > 0 ? remainingTime : 0);
             }
         },
-        [query, isolateName, selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize, setLoading]
+        [query, isolateName, selectedSpecies, selectedTypeStrains]
     );
 
 
@@ -267,22 +267,27 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     <div className={styles.paginationContainer}>
                         <div className={styles.pageSizeDropdown}>
                             <label htmlFor="pageSize">Page Size: </label>
-                            <select id="pageSize" value={pageSize} onChange={handlePageSizeChange}>
+                            <select
+                                id="pageSize"
+                                value={pageSize}
+                                onChange={handlePageSizeChange}
+                                className={styles.pageSizeSelect}
+                            >
                                 <option value={10}>Show 10</option>
                                 <option value={20}>Show 20</option>
                                 <option value={50}>Show 50</option>
                             </select>
                         </div>
                         <div className={styles.paginationBar}>
-                        {totalPages > 1 && (
-                            <Pagination
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                hasPrevious={hasPrevious}
-                                hasNext={hasNext}
-                                onPageClick={handlePageClick}
-                            />
-                        )}</div>
+                            {totalPages > 1 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    hasPrevious={hasPrevious}
+                                    hasNext={hasNext}
+                                    onPageClick={handlePageClick}
+                                />
+                            )}</div>
                     </div>
                 </div>
                 <div><p/></div>

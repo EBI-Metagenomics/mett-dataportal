@@ -5,6 +5,7 @@ import {from, Observable} from 'rxjs';
 import {mergeMap} from 'rxjs/operators';
 import {unzip} from '@gmod/bgzf-filehandle';
 import {getIconForEssentiality} from "../../utils/appConstants";
+import {GeneService} from "../../services/geneService";
 
 export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     static type = 'EssentialityAdapter';
@@ -15,6 +16,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     private includeEssentiality: boolean;
 
     private cache: Map<string, SimpleFeature[]> = new Map(); // Cache for features by region key
+    private gffCache: Map<string, SimpleFeatureSerialized[]>;
 
     // Generate a cache key
     private getCacheKey(region: any): string {
@@ -27,6 +29,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         this.apiUrl = config.apiUrl.value;
         this.isTypeStrain = config.isTypeStrain.value;
         this.includeEssentiality = config.includeEssentiality.value;
+        this.gffCache = new Map();
         // console.log('EssentialityAdapter initialized with includeEssentiality:', config.includeEssentiality.value);
         // console.log('EssentialityAdapter initialized with config:', config);
     }
@@ -52,7 +55,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         // Fetch and process features if not cached
         const featuresPromise = this.fetchGFF(region).then((gffFeatures) => {
             if (this.isTypeStrain && this.includeEssentiality) {
-                return this.fetchEssentialityData(region.refName).then((essentialityData) =>
+                return GeneService.fetchEssentialityData(this.apiUrl, region.refName).then((essentialityData) =>
                     this.mergeAnnotationsWithEssentiality(gffFeatures, essentialityData),
                 );
             }
@@ -96,9 +99,17 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     }
 
     async fetchGFF(region: any): Promise<SimpleFeatureSerialized[]> {
-        // console.log('Fetching GFF file from:', this.gffLocation);
+        // Check if the GFF data is already in the cache
+        if (this.gffCache.has(this.gffLocation)) {
+            console.log('Cache hit for GFF data:', this.gffLocation);
+            const cachedFeatures = this.gffCache.get(this.gffLocation) || [];
+            return this.filterFeaturesByRegion(cachedFeatures, region);
+        }
+
+        console.log('Cache miss for GFF data. Fetching from:', this.gffLocation);
 
         try {
+            // Fetch and decompress the GFF file
             const gffFile = await openLocation({
                 locationType: 'UriLocation',
                 uri: this.gffLocation,
@@ -107,8 +118,9 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
             const compressedData = await unzip(gffFile);
             const gffContents = new TextDecoder('utf-8').decode(compressedData);
 
-            // console.log('GFF file successfully decompressed.');
+            console.log('GFF file successfully decompressed.');
 
+            // Parse the GFF file and cache the features
             const features: SimpleFeatureSerialized[] = [];
             const lines = gffContents.split('\n');
 
@@ -124,53 +136,44 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 );
 
                 if (type === 'gene' && attributes.locus_tag) {
-                    const featureStart = parseInt(start, 10);
-                    const featureEnd = parseInt(end, 10);
-
-                    if (
-                        refName === region.refName &&
-                        featureStart < region.end && // Adjusted to include overlaps
-                        featureEnd > region.start
-                    ) {
-                        features.push({
-                            uniqueId: attributes.locus_tag,
-                            refName,
-                            start: featureStart,
-                            end: featureEnd,
-                            strand: strand === '+' ? 1 : -1,
-                            type,
-                            attributes,
-                        });
-
-                        // console.log(`Parsed GFF feature: ${attributes.locus_tag}`);
-                    }
+                    features.push({
+                        uniqueId: attributes.locus_tag,
+                        refName,
+                        start: parseInt(start, 10),
+                        end: parseInt(end, 10),
+                        strand: strand === '+' ? 1 : -1,
+                        type,
+                        attributes,
+                    });
                 }
             }
 
-            // console.log('Total GFF features parsed:', features.length);
-            return features;
+            console.log('Total GFF features parsed:', features.length);
+
+            // Cache the parsed features
+            this.gffCache.set(this.gffLocation, features);
+
+            // Filter features based on the region
+            return this.filterFeaturesByRegion(features, region);
         } catch (error) {
             console.error('Error fetching GFF file:', error);
             return [];
         }
     }
 
-    async fetchEssentialityData(refName: string): Promise<Record<string, any>> {
-        // console.log('Fetching essentiality data for:', refName);
+    // Helper function to filter cached features by region
+    private filterFeaturesByRegion(features: SimpleFeatureSerialized[], region: any): SimpleFeatureSerialized[] {
+        return features.filter(
+            (feature) =>
+                feature.refName === region.refName &&
+                feature.start < region.end && // Include overlaps
+                feature.end > region.start
+        );
+    }
 
-        try {
-            const response = await fetch(`${this.apiUrl}/${refName}`);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch essentiality data for ${refName}`);
-            }
-
-            const data = await response.json();
-            // console.log(`Essentiality data fetched for ${refName}:`, Object.keys(data).length);
-            return data;
-        } catch (error) {
-            console.error('Error fetching essentiality data:', error);
-            return {};
-        }
+    // Optional method to clear the cache
+    clearGFFCache() {
+        this.gffCache.clear();
     }
 
     mergeAnnotationsWithEssentiality(

@@ -13,6 +13,7 @@ import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
 import {getEssentialityDataUrl, SPINNER_DELAY, ZOOM_LEVELS} from "../../utils/appConstants";
 import GeneSearchWithFilters from "@components/organisms/GeneSearch/GeneSearchModules/GeneSearchWithFilters";
+import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm/GeneSearchForm";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -31,6 +32,8 @@ const GeneViewerPage: React.FC = () => {
     const [height, setHeight] = useState(500);
 
     const [includeEssentiality, setIncludeEssentiality] = useState(true);
+    const essentialityFilter = useMemo(() => [], []);
+    const selectedSpecies = useMemo(() => [], []);
 
     const spinner = loading && (
         <div className={styles.spinnerOverlay}>
@@ -86,6 +89,16 @@ const GeneViewerPage: React.FC = () => {
                 includeEssentiality
             ) : [];
     }, [genomeMeta, includeEssentiality]);
+
+     const selectedGenomes = useMemo(() => {
+        return genomeMeta
+            ? [{
+                id: genomeMeta.id,
+                isolate_name: genomeMeta.isolate_name,
+                type_strain: genomeMeta.type_strain
+            }]
+            : [];
+    }, [genomeMeta]);
 
     const sessionConfig = useMemo(() => {
         if (genomeMeta) {
@@ -289,14 +302,14 @@ const GeneViewerPage: React.FC = () => {
                             <p><strong>Assembly Name:&nbsp;</strong>
                                 <a href={genomeMeta.fasta_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.assembly_name}
-                                    <span className="icon icon-common icon-download"
+                                    <span className={`icon icon-common icon-download ${styles.iconBlack}`}
                                           style={{paddingLeft: '5px'}}></span>
                                 </a>
                             </p>
                             <p><strong>Annotations:&nbsp;</strong>
                                 <a href={genomeMeta.gff_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.gff_file}
-                                    <span className="icon icon-common icon-download"
+                                    <span className={`icon icon-common icon-download ${styles.iconBlack}`}
                                           style={{paddingLeft: '5px'}}></span>
                                 </a>
                             </p>
@@ -353,26 +366,39 @@ const GeneViewerPage: React.FC = () => {
                 {/* Gene Search Section */}
                 <div className={styles.geneSearchContainer}>
                     <section>
-                        <GeneSearchWithFilters
-                            searchQuery={geneSearchQuery}
-                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                            onSearchSubmit={handleGeneSearch}
-                            selectedGenomes={
-                                genomeMeta ? [{
-                                    id: genomeMeta.id,
-                                    isolate_name: genomeMeta.isolate_name,
-                                    type_strain: genomeMeta.type_strain
-                                }] : []
-                            }
-                            results={geneResults}
-                            onSortClick={handleGeneSortClick}
-                            sortField={sortField}
-                            sortOrder={sortOrder}
-                            linkData={linkData}
-                            viewState={viewState}
-                            setLoading={setLoading}
-                        />
+                        {genomeMeta?.type_strain ? (
+                            <GeneSearchWithFilters
+                                searchQuery={geneSearchQuery}
+                                onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                                onSearchSubmit={handleGeneSearch}
+                                selectedGenomes={selectedGenomes}
+                                results={geneResults}
+                                onSortClick={handleGeneSortClick}
+                                sortField={sortField}
+                                sortOrder={sortOrder}
+                                linkData={linkData}
+                                viewState={viewState}
+                                setLoading={setLoading}
+                            />
+                        ) : (
+                            <GeneSearchForm
+                                searchQuery={geneSearchQuery}
+                                onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                                onSearchSubmit={handleGeneSearch}
+                                selectedSpecies={selectedSpecies}
+                                selectedGenomes={selectedGenomes}
+                                results={geneResults}
+                                onSortClick={handleGeneSortClick}
+                                sortField={sortField}
+                                sortOrder={sortOrder}
+                                linkData={linkData}
+                                viewState={viewState}
+                                essentialityFilter={essentialityFilter}
+                                setLoading={setLoading}
+                            />
+                        )}
                     </section>
+
                 </div>
 
 

@@ -49,8 +49,8 @@ export class GeneService {
     /**
      * Fetch gene search results with advanced filters.
      */
-    static async fetchGeneSearchResults(
-        gene: string,
+    static async fetchGeneSearchResultsAdvanced(
+        query: string,
         page: number,
         perPage: number,
         sortField: string,
@@ -60,7 +60,7 @@ export class GeneService {
         essentialityFilter?: string[]
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
-            const params = GeneService.buildParamsFetchGeneSearchResults(gene, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, essentialityFilter);
+            const params = GeneService.buildParamsFetchGeneSearchResults(query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, essentialityFilter);
             const response = await ApiService.get<PaginatedResponse<GeneMeta>>("/genes/search/advanced", params);
             return response;
         } catch (error) {
@@ -162,6 +162,24 @@ export class GeneService {
         } catch (error) {
             console.error("Error fetching essentiality tags:", error);
             throw error;
+        }
+    }
+
+    @cacheResponse(60 * 60 * 1000) // Cache for 60 minutes
+    static async fetchEssentialityData(apiUrl: string, refName: string): Promise<Record<string, any>> {
+        // Fetch data from the API if not in the cache
+        try {
+            const response = await fetch(`${apiUrl}/${refName}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch essentiality data for ${refName}`);
+            }
+
+            const data = await response.json();
+
+            return data;
+        } catch (error) {
+            console.error(`Error fetching essentiality data for ${refName}:`, error);
+            return {};
         }
     }
 }

@@ -81,19 +81,23 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         <a href={result.fasta_url || '#'} target="_blank"
                            rel="noreferrer">{result.assembly_name || 'Unknown Assembly'}<span
-                            className="icon icon-common icon-download"
+                            className={`icon icon-common icon-download ${styles.iconBlack}`}
                             style={{paddingLeft: '5px'}}></span></a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         <a href={result.gff_url || '#'} target="_blank" rel="noreferrer">GFF<span
-                            className="icon icon-common icon-download"
+                            className={`icon icon-common icon-download ${styles.iconBlack}`}
                             style={{paddingLeft: '5px'}}></span></a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <a href={generateLink(linkData.template, result)}>{linkData.alias}</a>
+                        <a href={generateLink(linkData.template, result)} target="_blank" rel="noreferrer">
+                            {linkData.alias}
+                            <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
+                            style={{paddingLeft: '5px'}}></span>
+                        </a>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <button
+                    <button
                             className={styles.toggleButton}
                             onClick={() => onToggleGenomeSelect({
                                 id: result.id,
