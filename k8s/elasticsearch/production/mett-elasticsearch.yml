@@ -14,6 +14,15 @@ spec:
       labels:
         app: elasticsearch
     spec:
+      initContainers:
+        - name: init-fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data && chmod -R 777 /usr/share/elasticsearch/data"]
+          securityContext:
+            runAsUser: 0  # Run as root to ensure it can modify permissions
+          volumeMounts:
+            - name: elasticsearch-data
+              mountPath: /usr/share/elasticsearch/data
       containers:
         - name: elasticsearch
           image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
@@ -36,6 +45,10 @@ spec:
                 secretKeyRef:
                   name: mett-elasticsearch-credentials
                   key: ELASTIC_PASSWORD
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000 # verify and if doesn't work, remove this statement
           resources:
             requests:
               memory: "3Gi"
