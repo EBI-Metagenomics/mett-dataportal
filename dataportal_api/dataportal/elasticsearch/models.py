@@ -76,8 +76,16 @@ class GeneDocument(Document):
     cog = Keyword()
     kegg = Keyword()
     pfam = Keyword()
-    interpro = Keyword()
-    dbxref = Keyword()
+
+    interpro = Keyword(multi=True)
+
+    dbxref = Nested(
+        properties={
+            "db": Keyword(),
+            "ref": Keyword()
+        }
+    )
+
     ec_number = Keyword()
     essentiality = Keyword()
 

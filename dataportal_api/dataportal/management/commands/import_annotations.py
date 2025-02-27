@@ -241,8 +241,8 @@ class Command(BaseCommand):
                     cog = attr_dict.get("cog")
                     kegg = attr_dict.get("kegg")
                     pfam = attr_dict.get("pfam")
-                    interpro = attr_dict.get("interpro")
-                    dbxref = attr_dict.get("Dbxref")
+                    interpro = attr_dict.get("interpro", "").split(",")
+                    dbxref = self.parse_dbxref(attr_dict.get("Dbxref", ""))
                     ec_number = attr_dict.get("eC_number")
 
                     if not locus_tag:
@@ -279,6 +279,16 @@ class Command(BaseCommand):
 
         except Exception as e:
             logging.error(f"Error processing GFF file {gff_file}: {e}", exc_info=True)
+
+    def parse_dbxref(self, dbxref_string):
+        """ Convert dbxref string into a structured nested field """
+        dbxref_list = dbxref_string.split(",") if dbxref_string else []
+        parsed_dbxref = []
+        for entry in dbxref_list:
+            if ":" in entry:
+                db, ref = entry.split(":", 1)
+                parsed_dbxref.append({"db": db, "ref": ref})
+        return parsed_dbxref
 
     def update_strain_index(self, isolate, gff_file):
         """ Update the GFF file name in the strain index. """
