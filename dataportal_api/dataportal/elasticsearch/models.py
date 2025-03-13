@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Document, Text, Keyword, Integer, Boolean, analyzer, tokenizer, Nested
+from elasticsearch_dsl import Document, Text, Keyword, Integer, Boolean, analyzer, tokenizer, Nested, normalizer
 
 edge_ngram_tokenizer = tokenizer(
     "edge_ngram_tokenizer",
@@ -11,6 +11,12 @@ edge_ngram_tokenizer = tokenizer(
 autocomplete_analyzer = analyzer(
     "autocomplete_analyzer",
     tokenizer=edge_ngram_tokenizer,
+    filter=["lowercase"]
+)
+
+lowercase_normalizer = normalizer(
+    "lowercase_normalizer",
+    type="custom",
     filter=["lowercase"]
 )
 
@@ -63,9 +69,11 @@ class StrainDocument(Document):
 class GeneDocument(Document):
     gene_id = Integer()
     gene_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
+    alias = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
     seq_id = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
     locus_tag = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
     product = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
+    product_source = Text(fields={"keyword": Keyword()})
 
     species_scientific_name = Keyword()
     isolate_name = Keyword()
@@ -73,11 +81,13 @@ class GeneDocument(Document):
     start = Integer()
     end = Integer()
 
-    cog = Keyword()
-    kegg = Keyword()
-    pfam = Keyword()
+    # ✅ Faceted Search & Case-Insensitive Queries
+    cog = Keyword(multi=True, normalizer=lowercase_normalizer)
+    kegg = Keyword(multi=True, normalizer=lowercase_normalizer)
+    pfam = Keyword(multi=True, normalizer=lowercase_normalizer)
+    eggnog = Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)})
 
-    interpro = Keyword(multi=True)
+    interpro = Keyword(multi=True, normalizer=lowercase_normalizer)
 
     dbxref = Nested(
         properties={
@@ -88,6 +98,7 @@ class GeneDocument(Document):
 
     ec_number = Keyword()
     essentiality = Keyword()
+    inference = Text(fields={"keyword": Keyword()})
 
     ontology_terms = Nested(
         properties={
@@ -114,6 +125,9 @@ class GeneDocument(Document):
                 },
                 "tokenizer": {
                     "edge_ngram_tokenizer": edge_ngram_tokenizer
+                },
+                "normalizer": {
+                    "lowercase_normalizer": lowercase_normalizer
                 }
             }
         }

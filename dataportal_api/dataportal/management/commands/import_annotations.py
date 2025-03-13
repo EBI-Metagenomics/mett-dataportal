@@ -214,6 +214,14 @@ class Command(BaseCommand):
         try:
             ftp = self.reconnect_ftp(ftp_server)
             local_gff_path = os.path.join("/tmp", os.path.basename(gff_file))
+
+            # Check if the file exists before downloading
+            try:
+                ftp.size(gff_file)
+            except ftplib.error_perm:
+                logging.warning(f"File not found on FTP: {gff_file}")
+                return
+
             with open(local_gff_path, "wb") as f:
                 ftp.retrbinary(f"RETR {gff_file}", f.write)
             ftp.quit()
@@ -234,16 +242,17 @@ class Command(BaseCommand):
                         item.split("=") for item in attributes.split(";") if "=" in item
                     )
 
-                    # Extract individual attributes
+                    # Extract attributes
                     gene_name = attr_dict.get("Name")
                     locus_tag = attr_dict.get("locus_tag")
                     product = attr_dict.get("product")
-                    cog = attr_dict.get("cog")
-                    kegg = attr_dict.get("kegg")
-                    pfam = attr_dict.get("pfam")
+                    cog = attr_dict.get("cog", "").split(",") if "cog" in attr_dict else []
+                    kegg = attr_dict.get("kegg", "").split(",") if "kegg" in attr_dict else []
+                    pfam = attr_dict.get("pfam", "").split(",") if "pfam" in attr_dict else []
                     interpro = attr_dict.get("interpro", "").split(",")
                     dbxref = self.parse_dbxref(attr_dict.get("Dbxref", ""))
                     ec_number = attr_dict.get("eC_number")
+                    alias = attr_dict.get("Alias", "").split(",") if "Alias" in attr_dict else []
 
                     if not locus_tag:
                         continue
@@ -265,6 +274,7 @@ class Command(BaseCommand):
                             interpro=interpro,
                             dbxref=dbxref,
                             ec_number=ec_number,
+                            alias=alias
                         )
                     )
 
@@ -275,10 +285,12 @@ class Command(BaseCommand):
             if genes_to_index:
                 bulk(connections.get_connection(), (doc.to_dict(include_meta=True) for doc in genes_to_index))
 
-            os.remove(local_gff_path)
-
         except Exception as e:
             logging.error(f"Error processing GFF file {gff_file}: {e}", exc_info=True)
+
+        finally:
+            if os.path.exists(local_gff_path):
+                os.remove(local_gff_path)  # Ensures file is deleted even if errors occur
 
     def parse_dbxref(self, dbxref_string):
         """ Convert dbxref string into a structured nested field """
@@ -304,15 +316,13 @@ class Command(BaseCommand):
             logging.error(f"Error updating strain_index for isolate {isolate}: {e}")
 
     def import_essentiality_data(self, essentiality_csv):
-        """ Import essentiality data and update genes in Elasticsearch. """
+        """ Import essentiality data and update genes in Elasticsearch efficiently. """
         try:
             if not os.path.exists(essentiality_csv):
                 logging.error(f"Essentiality CSV file not found: {essentiality_csv}")
                 return
 
-            essentiality_data = pd.read_csv(essentiality_csv)
-
-            valid_strains = ["BU_ATCC8492", "PV_ATCC8482"]
+            valid_strains = {"BU_ATCC8492", "PV_ATCC8482"}
             valid_essentiality_categories = {
                 "essential": "Essential",
                 "essential_liquid": "Essential Liquid",
@@ -322,22 +332,24 @@ class Command(BaseCommand):
             }
 
             updates = []
-            for row in essentiality_data.itertuples():
-                locus_tag = row.locus_tag.strip()
-                strain_id = "_".join(locus_tag.split("_")[:2])
-                essentiality_value = row.unified_final_call_240817.strip().lower()
 
-                if strain_id in valid_strains and essentiality_value in valid_essentiality_categories:
-                    updates.append({
-                        "_op_type": "update",
-                        "_index": "gene_index",
-                        "_id": locus_tag,
-                        "doc": {"essentiality": valid_essentiality_categories[essentiality_value]},
-                    })
+            for chunk in pd.read_csv(essentiality_csv, chunksize=10000):
+                for row in chunk.itertuples():
+                    locus_tag = row.locus_tag.strip()
+                    strain_id = "_".join(locus_tag.split("_")[:2])
+                    essentiality_value = row.unified_final_call_240817.strip().lower()
 
-                    if len(updates) >= BATCH_SIZE:
-                        bulk(connections.get_connection(), updates)
-                        updates.clear()
+                    if strain_id in valid_strains and essentiality_value in valid_essentiality_categories:
+                        updates.append({
+                            "_op_type": "update",
+                            "_index": "gene_index",
+                            "_id": locus_tag,
+                            "doc": {"essentiality": valid_essentiality_categories[essentiality_value]},
+                        })
+
+                        if len(updates) >= BATCH_SIZE:
+                            bulk(connections.get_connection(), updates)
+                            updates.clear()
 
             if updates:
                 bulk(connections.get_connection(), updates)

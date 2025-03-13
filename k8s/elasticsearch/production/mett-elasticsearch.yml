@@ -50,10 +50,10 @@ spec:
             runAsGroup: 1000
           resources:
             requests:
-              memory: "3Gi"
-              cpu: "2"
+              memory: "4Gi"
+              cpu: "3"
             limits:
-              memory: "6Gi"
+              memory: "8Gi"
               cpu: "4"
           volumeMounts:
             - name: elasticsearch-data
@@ -67,7 +67,7 @@ spec:
         resources:
           requests:
             storage: 20Gi
-        storageClassName: standard-nfs-production
+        storageClassName: local-storage
 
 ---
 

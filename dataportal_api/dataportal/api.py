@@ -47,6 +47,7 @@ api = NinjaAPI(
     description="API for genome browser and contextual information.",
     urls_namespace="api",
     csrf=True,
+    docs_url="/docs",
 )
 
 genome_router = Router(tags=[ROUTER_GENOME])
