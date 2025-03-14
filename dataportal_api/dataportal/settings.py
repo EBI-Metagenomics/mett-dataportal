@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 import logging
 
+from elasticsearch_dsl import connections
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -10,6 +12,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "replace-with-the-secret-key")
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
+
+# Load environment variables for Elasticsearch
+ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
+ES_USER = os.getenv("ES_USER")
+ES_PASSWORD = os.getenv("ES_PASSWORD")
+
 
 LOGGING = {
     "version": 1,
@@ -104,6 +112,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "dataportal.wsgi.application"
 
 DATABASES = {} # No database, since we are using Elasticsearch
+
+# Establish Elasticsearch connection
+connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 
 if "pytest" in sys.argv[0]:
     DATABASES = {

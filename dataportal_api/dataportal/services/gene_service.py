@@ -8,6 +8,8 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from dataportal.models import Gene, GeneEssentiality
+from elasticsearch_dsl import Search
+from dataportal.elasticsearch.models import GeneDocument
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
 from dataportal.utils.constants import (
     FIELD_ID,
@@ -38,7 +40,7 @@ from dataportal.utils.constants import (
     GENE_ESSENTIALITY_MEDIA,
     STRAIN_FIELD_ISOLATE_NAME,
     STRAIN_FIELD_ASSEMBLY_NAME,
-    GENE_ESSENTIALITY_SOLID,
+    GENE_ESSENTIALITY_SOLID, GENE_FIELD_START, GENE_FIELD_END,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -54,88 +56,78 @@ class GeneService:
         self.limit = limit
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
-    async def load_essentiality_data_by_strain(self) -> Dict[int, Dict[str, Dict[str, List[Dict[str, str]]]]]:
-        """Load essentiality data into cache."""
+    async def load_essentiality_data_by_strain(self) -> Dict[str, Dict[str, Dict[str, List[Dict[str, str]]]]]:
+        """Load essentiality data into cache from Elasticsearch."""
         if self.essentiality_cache:
             return self.essentiality_cache
 
-        logger.info("Loading essentiality data into cache...")
+        logger.info("Loading essentiality data into cache from Elasticsearch...")
+
         try:
-            fields_to_fetch = [
-                f"gene__strain__{FIELD_ID}",
-                f"gene__strain__{STRAIN_FIELD_ISOLATE_NAME}",
-                f"gene__strain__{STRAIN_FIELD_ASSEMBLY_NAME}",
-                f"gene__{FIELD_SEQ_ID}",
-                f"gene__{GENE_FIELD_LOCUS_TAG}",
-                f"gene__{GENE_FIELD_START_POS}",
-                f"gene__{GENE_FIELD_END_POS}",
-                GENE_ESSENTIALITY_MEDIA,
-                f"{GENE_ESSENTIALITY}__name",
-            ]
+            s = Search(index="gene_index").query(
+                "exists", field="essentiality"
+            ).source(["isolate_name", "seq_id", "locus_tag", "start", "end", "essentiality"])[:10000]
 
-            essentiality_data = await sync_to_async(list)(
-                GeneEssentiality.objects.select_related(GENE_ESSENTIALITY, "gene__strain")
-                .values(*fields_to_fetch)
-            )
-
+            response = s.execute()
             cache_data = {}
-            for entry in essentiality_data:
-                strain_id = entry[f"gene__strain__{FIELD_ID}"]
-                ref_name = entry[f"gene__{FIELD_SEQ_ID}"]
-                locus_tag = entry[f"gene__{GENE_FIELD_LOCUS_TAG}"]
-                start = entry[f"gene__{GENE_FIELD_START_POS}"]
-                end = entry[f"gene__{GENE_FIELD_END_POS}"]
-                media = entry[GENE_ESSENTIALITY_MEDIA]
-                essentiality = entry[f"{GENE_ESSENTIALITY}__name"] or "Unknown"
 
-                if strain_id not in cache_data:
-                    cache_data[strain_id] = {}
+            for hit in response:
+                isolate_name = hit.isolate_name
+                seq_id = hit.seq_id
+                locus_tag = hit.locus_tag
+                start = hit.start
+                end = hit.end
+                essentiality = hit.essentiality if hit.essentiality else "Unknown"
 
-                if ref_name not in cache_data[strain_id]:
-                    cache_data[strain_id][ref_name] = {}
+                if isolate_name not in cache_data:
+                    cache_data[isolate_name] = {}
 
-                if locus_tag not in cache_data[strain_id][ref_name]:
-                    cache_data[strain_id][ref_name][locus_tag] = {
-                        GENE_FIELD_LOCUS_TAG: locus_tag,
-                        GENE_FIELD_START_POS: start,
-                        GENE_FIELD_END_POS: end,
-                        GENE_ESSENTIALITY_DATA: [],
-                    }
+                if seq_id not in cache_data[isolate_name]:
+                    cache_data[isolate_name][seq_id] = {}
 
-                cache_data[strain_id][ref_name][locus_tag][GENE_ESSENTIALITY_DATA].append(
-                    {GENE_ESSENTIALITY_MEDIA: media, GENE_ESSENTIALITY: essentiality}
-                )
+                cache_data[isolate_name][seq_id][locus_tag] = {
+                    GENE_FIELD_LOCUS_TAG: locus_tag,
+                    GENE_FIELD_START: start,
+                    GENE_FIELD_END: end,
+                    GENE_ESSENTIALITY: essentiality
+                }
 
             self.essentiality_cache.update(cache_data)
-            logger.info(f"Loaded {len(essentiality_data)} essentiality records into cache.")
+            logger.info(f"Loaded {len(response)} essentiality records into cache.")
+
             return cache_data
 
         except Exception as e:
             logger.error(f"Error loading essentiality data: {e}")
             return {}
 
-    async def get_essentiality_data_by_strain_and_ref(self, strain_id: int, ref_name: str) -> Dict[str, Dict]:
-        """Retrieve essentiality data for a given strain and reference name."""
+    async def get_essentiality_data_by_strain_and_ref(self, isolate_name: str, ref_name: str) -> Dict[str, Dict]:
+        """Retrieve essentiality data for a given isolate and reference name."""
+
         if not self.essentiality_cache:
             await self.load_essentiality_data_by_strain()
 
-        strain_data = self.essentiality_cache.get(strain_id, {})
-        contig_data = strain_data.get(ref_name, {})
+        logger.info(f"🔍 Fetching essentiality for isolate: {isolate_name}, reference: {ref_name}")
+        isolate_data = self.essentiality_cache.get(isolate_name, {})
+        contig_data = isolate_data.get(ref_name, {})
+
+        if not contig_data:
+            logger.warning(f"⚠️ No essentiality data found for isolate '{isolate_name}' and reference '{ref_name}'")
+            return {}
 
         response = {}
         for gene_data in contig_data.values():
-            locus_tag = gene_data[GENE_FIELD_LOCUS_TAG]
+            # Ensure all required fields exist
+            locus_tag = gene_data.get(GENE_FIELD_LOCUS_TAG, "UNKNOWN")
+            start = gene_data.get(GENE_FIELD_START, 0)
+            end = gene_data.get(GENE_FIELD_END, 0)
+            essentiality = gene_data.get(GENE_ESSENTIALITY, "Unknown")
+
             response[locus_tag] = {
                 GENE_FIELD_LOCUS_TAG: locus_tag,
-                "start": gene_data.get(GENE_FIELD_START_POS),
-                "end": gene_data.get(GENE_FIELD_END_POS),
-                GENE_ESSENTIALITY_DATA: [
-                    {
-                        GENE_ESSENTIALITY_MEDIA: record[GENE_ESSENTIALITY_MEDIA],
-                        GENE_ESSENTIALITY: record[GENE_ESSENTIALITY]
-                    }
-                    for record in gene_data[GENE_ESSENTIALITY_DATA]
-                ]
+                GENE_FIELD_START: start,
+                GENE_FIELD_END: end,
+                GENE_ESSENTIALITY: essentiality
             }
 
         return response

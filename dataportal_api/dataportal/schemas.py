@@ -128,7 +128,7 @@ class EssentialityByContigSchema(BaseModel):
     locus_tag: str
     start: Optional[int]
     end: Optional[int]
-    essentiality_data: List[EssentialityDataSchema]
+    essentiality: str
 
 
 __all__ = [
