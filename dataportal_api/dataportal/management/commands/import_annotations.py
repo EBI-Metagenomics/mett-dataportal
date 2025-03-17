@@ -27,6 +27,11 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(message)s",
 )
 
+SPECIES_ACRONYM_MAPPING = {
+    "Bacteroides uniformis": "BU",
+    "Phocaeicola vulgatus": "PV"
+}
+
 BATCH_SIZE = 500  # Bulk size for indexing
 
 
@@ -59,6 +64,29 @@ class Command(BaseCommand):
         parser.add_argument(
             "--assembly", type=str, help="Specific assembly to process"
         )
+
+    def get_species_acronym(self, species_scientific_name):
+        """ Returns species acronym based on static mapping. """
+        return SPECIES_ACRONYM_MAPPING.get(species_scientific_name, None)
+
+    def parse_dbxref(self, dbxref_string):
+        """ Convert dbxref string into a structured format and extract IDs. """
+        dbxref_list = dbxref_string.split(",") if dbxref_string else []
+        parsed_dbxref = []
+        uniprot_id, cog_id = None, None
+
+        for entry in dbxref_list:
+            if ":" in entry:
+                db, ref = entry.split(":", 1)
+                parsed_dbxref.append({"db": db, "ref": ref})
+
+                # Extract specific fields
+                if db == "UniProt":
+                    uniprot_id = ref
+                elif db == "COG":
+                    cog_id = ref
+
+        return parsed_dbxref, uniprot_id or None, cog_id or None  # Ensure three values are returned
 
     def handle(self, *args, **options):
         ftp_server = options["ftp_server"]
@@ -246,13 +274,17 @@ class Command(BaseCommand):
                     gene_name = attr_dict.get("Name")
                     locus_tag = attr_dict.get("locus_tag")
                     product = attr_dict.get("product")
-                    cog = attr_dict.get("cog", "").split(",") if "cog" in attr_dict else []
+                    # cog = attr_dict.get("cog", "").split(",") if "cog" in attr_dict else []
                     kegg = attr_dict.get("kegg", "").split(",") if "kegg" in attr_dict else []
                     pfam = attr_dict.get("pfam", "").split(",") if "pfam" in attr_dict else []
                     interpro = attr_dict.get("interpro", "").split(",")
-                    dbxref = self.parse_dbxref(attr_dict.get("Dbxref", ""))
+                    dbxref_raw = attr_dict.get("Dbxref", "")
+                    dbxref, uniprot_id, cog_id = self.parse_dbxref(dbxref_raw)
                     ec_number = attr_dict.get("eC_number")
                     alias = attr_dict.get("Alias", "").split(",") if "Alias" in attr_dict else []
+
+                    # Extract cog functional categories
+                    cog_funcats = attr_dict.get("cog", "").split(",") if "cog" in attr_dict else []
 
                     if not locus_tag:
                         continue
@@ -262,17 +294,21 @@ class Command(BaseCommand):
                             meta={"id": locus_tag},
                             gene_name=gene_name,
                             species_scientific_name=species_scientific_name,
+                            species_acronym=self.get_species_acronym(species_scientific_name),
                             isolate_name=isolate_name,
                             seq_id=seq_id,
                             locus_tag=locus_tag,
                             product=product,
                             start=int(start),
                             end=int(end),
-                            cog=cog,
+                            # cog=cog,
+                            cog_funcats=cog_funcats,
                             kegg=kegg,
                             pfam=pfam,
                             interpro=interpro,
                             dbxref=dbxref,
+                            uniprot_id=uniprot_id,
+                            cog_id=cog_id,
                             ec_number=ec_number,
                             alias=alias
                         )

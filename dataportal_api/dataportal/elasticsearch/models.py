@@ -82,7 +82,7 @@ class GeneDocument(Document):
     start = Integer()
     end = Integer()
 
-    cog = Keyword(multi=True, normalizer=lowercase_normalizer)
+    # cog = Keyword(multi=True, normalizer=lowercase_normalizer)
     cog_funcats = Keyword(multi=True)
     kegg = Keyword(multi=True, normalizer=lowercase_normalizer)
     pfam = Keyword(multi=True, normalizer=lowercase_normalizer)
