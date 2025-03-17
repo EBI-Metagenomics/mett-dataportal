@@ -76,17 +76,17 @@ class GeneDocument(Document):
     product_source = Text(fields={"keyword": Keyword()})
 
     species_scientific_name = Keyword()
+    species_acronym = Keyword()
     isolate_name = Keyword()
 
     start = Integer()
     end = Integer()
 
-    # ✅ Faceted Search & Case-Insensitive Queries
     cog = Keyword(multi=True, normalizer=lowercase_normalizer)
+    cog_funcats = Keyword(multi=True)
     kegg = Keyword(multi=True, normalizer=lowercase_normalizer)
     pfam = Keyword(multi=True, normalizer=lowercase_normalizer)
     eggnog = Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)})
-
     interpro = Keyword(multi=True, normalizer=lowercase_normalizer)
 
     dbxref = Nested(
@@ -95,6 +95,9 @@ class GeneDocument(Document):
             "ref": Keyword()
         }
     )
+
+    uniprot_id = Keyword()
+    cog_id = Keyword()
 
     ec_number = Keyword()
     essentiality = Keyword()

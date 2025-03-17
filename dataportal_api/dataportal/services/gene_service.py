@@ -107,12 +107,12 @@ class GeneService:
         if not self.essentiality_cache:
             await self.load_essentiality_data_by_strain()
 
-        logger.info(f"🔍 Fetching essentiality for isolate: {isolate_name}, reference: {ref_name}")
+        logger.info(f"Fetching essentiality for isolate: {isolate_name}, reference: {ref_name}")
         isolate_data = self.essentiality_cache.get(isolate_name, {})
         contig_data = isolate_data.get(ref_name, {})
 
         if not contig_data:
-            logger.warning(f"⚠️ No essentiality data found for isolate '{isolate_name}' and reference '{ref_name}'")
+            logger.warning(f"No essentiality data found for isolate '{isolate_name}' and reference '{ref_name}'")
             return {}
 
         response = {}

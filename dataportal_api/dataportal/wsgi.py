@@ -20,6 +20,4 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dataportal.settings")
 gene_service = GeneService()
 async_to_sync(gene_service.load_essentiality_data_by_strain)()
 
-print(gene_service.essentiality_cache.get("BU_ATCC8492"))
-
 application = get_wsgi_application()
