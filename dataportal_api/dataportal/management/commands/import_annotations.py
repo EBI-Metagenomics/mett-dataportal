@@ -22,9 +22,9 @@ connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 
 # Logging configuration
 logging.basicConfig(
-    filename="import_genes.log",
-    level=logging.INFO,
+    level=logging.DEBUG,  # ✅ Set to DEBUG to capture all logs
     format="%(asctime)s %(levelname)s:%(message)s",
+    handlers=[logging.StreamHandler()]  # ✅ Ensure logs appear in the console
 )
 
 SPECIES_ACRONYM_MAPPING = {
@@ -71,22 +71,31 @@ class Command(BaseCommand):
 
     def parse_dbxref(self, dbxref_string):
         """ Convert dbxref string into a structured format and extract IDs. """
-        dbxref_list = dbxref_string.split(",") if dbxref_string else []
+        if not dbxref_string or dbxref_string.strip() == "":
+            return [], None, None
+
+        dbxref_list = dbxref_string.split(",")
         parsed_dbxref = []
         uniprot_id, cog_id = None, None
 
         for entry in dbxref_list:
-            if ":" in entry:
-                db, ref = entry.split(":", 1)
-                parsed_dbxref.append({"db": db, "ref": ref})
+            parts = entry.split(":", 1)
 
-                # Extract specific fields
-                if db == "UniProt":
-                    uniprot_id = ref
-                elif db == "COG":
-                    cog_id = ref
+            if len(parts) != 2:
+                # logging.error(f"Malformed Dbxref entry: '{entry}' in '{dbxref_string}'")
+                continue  # Skip malformed entries instead of failing
 
-        return parsed_dbxref, uniprot_id or None, cog_id or None  # Ensure three values are returned
+            db, ref = parts
+            parsed_dbxref.append({"db": db, "ref": ref})
+
+            # Extract specific fields
+            if db == "UniProt":
+                uniprot_id = ref
+            elif db == "COG":
+                cog_id = ref
+
+        # logging.debug(f"Parsed Dbxref: {parsed_dbxref}, Uniprot: {uniprot_id}, COG: {cog_id}")
+        return parsed_dbxref, uniprot_id or None, cog_id or None
 
     def handle(self, *args, **options):
         ftp_server = options["ftp_server"]
@@ -328,15 +337,6 @@ class Command(BaseCommand):
             if os.path.exists(local_gff_path):
                 os.remove(local_gff_path)  # Ensures file is deleted even if errors occur
 
-    def parse_dbxref(self, dbxref_string):
-        """ Convert dbxref string into a structured nested field """
-        dbxref_list = dbxref_string.split(",") if dbxref_string else []
-        parsed_dbxref = []
-        for entry in dbxref_list:
-            if ":" in entry:
-                db, ref = entry.split(":", 1)
-                parsed_dbxref.append({"db": db, "ref": ref})
-        return parsed_dbxref
 
     def update_strain_index(self, isolate, gff_file):
         """ Update the GFF file name in the strain index. """
