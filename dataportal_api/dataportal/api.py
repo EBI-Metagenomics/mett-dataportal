@@ -244,8 +244,15 @@ async def search_genes_by_string(
 async def get_faceted_search(request, species_acronym: Optional[str] = None,
                              essentiality: Optional[str] = None,
                              isolates: Optional[List[str]] = None,
+                             cog_funcats: Optional[str] = None,
+                             kegg: Optional[str] = None,
+                             go_term: Optional[str] = None,
+                             pfam: Optional[str] = None,
+                             interpro: Optional[str] = None,
                              limit: int = DEFAULT_PER_PAGE_CNT):
-    return await gene_service.get_faceted_search(species_acronym, essentiality, isolates, limit)
+    return await gene_service.get_faceted_search(species_acronym, essentiality, isolates,
+                                                 cog_funcats, kegg, go_term, pfam, interpro,
+                                                 limit)
 
 
 # API Endpoint to retrieve gene by ID

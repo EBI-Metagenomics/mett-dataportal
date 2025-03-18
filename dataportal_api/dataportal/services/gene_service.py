@@ -554,6 +554,11 @@ class GeneService:
     async def get_faceted_search(self, species_acronym: Optional[str] = None,
                                  essentiality: Optional[str] = None,
                                  isolates: Optional[List[str]] = None,
+                                 cog_funcat: Optional[str] = None,
+                                 kegg: Optional[str] = None,
+                                 go_term: Optional[str] = None,
+                                 pfam: Optional[str] = None,
+                                 interpro: Optional[str] = None,
                                  limit: int = None):
         try:
             s = Search(index="gene_index")
@@ -563,6 +568,17 @@ class GeneService:
                 s = s.filter("term", species_acronym=species_acronym)
             if essentiality:
                 s = s.filter("term", essentiality={"value": essentiality.lower()})
+            if cog_funcat:
+                s = s.filter("term", cog_funcats={"value": cog_funcat.lower()})
+            if kegg:
+                s = s.filter("prefix", kegg={"value": kegg.lower()})
+            if go_term:
+                s = s.filter("prefix", go_term={"value": go_term.lower()})
+            if pfam:
+                s = s.filter("prefix", pfam={"value": pfam.lower()})
+            if interpro:
+                s = s.filter("prefix", interpro={"value": interpro.lower()})
+
 
             if filters:
                 s = s.query(Q("bool", filter=filters))
@@ -582,11 +598,18 @@ class GeneService:
             response = s.execute()
 
             return {
-                "pfam": {b.key: b.doc_count for b in response.aggregations.pfam_terms.buckets},
-                "interpro": {b.key: b.doc_count for b in response.aggregations.interpro_terms.buckets},
-                "essentiality": {b.key: b.doc_count for b in response.aggregations.essentiality_terms.buckets}
+                "pfam": self.process_aggregation_results(
+                    {b.key: b.doc_count for b in response.aggregations.pfam_terms.buckets}),
+                "interpro": self.process_aggregation_results(
+                    {b.key: b.doc_count for b in response.aggregations.interpro_terms.buckets}),
+                "essentiality": self.process_aggregation_results(
+                    {b.key: b.doc_count for b in response.aggregations.essentiality_terms.buckets})
             }
 
         except Exception as e:
             logger.error(f"Error fetching faceted search: {str(e)}")
             raise ServiceError(e)
+
+    def process_aggregation_results(self, aggregation):
+        """Removes empty keys from aggregation results."""
+        return {k: v for k, v in aggregation.items() if k.strip()}
