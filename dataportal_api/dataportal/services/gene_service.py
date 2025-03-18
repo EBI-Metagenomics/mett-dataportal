@@ -579,7 +579,6 @@ class GeneService:
             if interpro:
                 s = s.filter("prefix", interpro={"value": interpro.lower()})
 
-
             if filters:
                 s = s.query(Q("bool", filter=filters))
 
