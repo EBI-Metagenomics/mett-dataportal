@@ -137,66 +137,70 @@ class GeneService:
             query: str,
             filter: Optional[str] = None,
             limit: int = None,
-            species_id: Optional[int] = None,
-            genome_ids: Optional[List[int]] = None,
+            species_acronym: Optional[str] = None,
+            isolates: Optional[List[str]] = None,
     ) -> List[Dict]:
+        """ Provides autocomplete suggestions for genes based on query & filters. """
+
         try:
-            # Build the filter criteria
-            gene_filter = (
-                    Q(**{f"{GENE_FIELD_NAME}__iexact": query})
-                    | Q(**{f"{GENE_FIELD_NAME}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_PRODUCT}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_LOCUS_TAG}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_KEGG}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_PFAM}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_INTERPRO}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_DBXREF}__icontains": query})
-            )
-            if species_id:
-                gene_filter &= Q(strain__species_id=species_id)
-            if genome_ids:
-                gene_filter &= Q(strain_id__in=genome_ids)
 
-            # Parse additional filters and apply only if strain is a type strain
+            s = Search(index="gene_index")
+            s = s.query(
+                "multi_match",
+                query=query,
+                fields=[
+                    "alias^3", "gene_name^2", "product", "kegg",
+                    "uniprot_id", "pfam", "cog_id", "interpro"
+                ],
+                type="best_fields"
+            )
+
+            if species_acronym:
+                s = s.filter("term", species_acronym=species_acronym)
+
+            if isolates:
+                s = s.filter("terms", isolate_name=isolates)
+
             parsed_filters = self._parse_filters(filter)
-            gene_filter = await self._apply_filters_for_type_strain(
-                gene_filter, parsed_filters
-            )
+            for key, values in parsed_filters.items():
+                if key == "essentiality":
+                    normalized_values = [v.lower() for v in values]
+                    s = s.filter("terms", essentiality=normalized_values)
+                else:
+                    s = s.filter("terms", **{key: values})
 
-            logger.debug(
-                f"Query: {query}, Species ID: {species_id}, Genome IDs: {genome_ids}"
-            )
-            logger.debug(f"Gene Filter: {gene_filter}")
+            s = s[:limit]
 
-            genes, total_results = await self._fetch_paginated_genes(
-                filter_criteria=gene_filter,
-                page=1,
-                per_page=limit or self.limit,
-                sort_field=GENE_FIELD_NAME,
-                sort_order=SORT_ASC,
-            )
+            logger.info(f"Final Elasticsearch Query: {s.to_dict()}")
 
-            # Build and return the response
-            response = [
+            response = s.execute()
+
+            results = [
                 {
-                    GENE_FIELD_ID: gene.id,
-                    GENE_FIELD_NAME: gene.gene_name,
-                    STRAIN_FIELD_ISOLATE_NAME: gene.strain.isolate_name if gene.strain else "Unknown",
-                    GENE_FIELD_PRODUCT: gene.product,
-                    GENE_FIELD_LOCUS_TAG: gene.locus_tag,
-                    GENE_FIELD_KEGG: gene.kegg,
-                    GENE_FIELD_PFAM: gene.pfam,
-                    GENE_FIELD_INTERPRO: gene.interpro,
-                    GENE_FIELD_DBXREF: gene.dbxref,
+                    "gene_name": getattr(hit, "gene_name", None),
+                    "alias": getattr(hit, "alias", []),
+                    "product": getattr(hit, "product", None),
+                    "locus_tag": getattr(hit, "locus_tag", None),
+                    "species_scientific_name": getattr(hit, "species_scientific_name", None),
+                    "species_acronym": getattr(hit, "species_acronym", None),
+                    "isolate_name": getattr(hit, "isolate_name", None),
+                    "kegg": getattr(hit, "kegg", []),
+                    "uniprot_id": getattr(hit, "uniprot_id", None),
+                    "pfam": getattr(hit, "pfam", []),
+                    "cog_id": getattr(hit, "cog_id", None),
+                    "interpro": getattr(hit, "interpro", []),
+                    "essentiality": getattr(hit, "essentiality", "Unknown")
                 }
-                for gene in genes
+                for hit in response
             ]
 
-            logger.debug(f"API Response: {response}")
-            return response
+            logger.info(f"Autocomplete results: {results}")
+            return results
+
         except Exception as e:
             logger.error(f"Error fetching gene autocomplete suggestions: {e}")
             return []
+
 
     def fetch_gene_by_id(self, gene_id: int):
         return get_object_or_404(

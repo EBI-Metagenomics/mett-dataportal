@@ -9,7 +9,7 @@ from Bio import SeqIO
 import pandas as pd
 from django.core.management.base import BaseCommand
 from elasticsearch_dsl import connections
-from elasticsearch.helpers import bulk
+from elasticsearch.helpers import bulk, BulkIndexError
 from dataportal.elasticsearch.models import GeneDocument, StrainDocument
 
 # Load environment variables for Elasticsearch
@@ -31,6 +31,14 @@ SPECIES_ACRONYM_MAPPING = {
     "Bacteroides uniformis": "BU",
     "Phocaeicola vulgatus": "PV"
 }
+
+VALID_ESENTIALITY_VALUES = {
+            "essential",
+            "essential_liquid",
+            "essential_solid",
+            "not_essential",
+            "unclear",
+        }
 
 BATCH_SIZE = 500  # Bulk size for indexing
 
@@ -358,42 +366,43 @@ class Command(BaseCommand):
                 logging.error(f"Essentiality CSV file not found: {essentiality_csv}")
                 return
 
-            valid_strains = {"BU_ATCC8492", "PV_ATCC8482"}
-            valid_essentiality_categories = {
-                "essential": "Essential",
-                "essential_liquid": "Essential Liquid",
-                "essential_solid": "Essential Solid",
-                "not_essential": "Not Essential",
-                "unclear": "Unclear",
-            }
-
             updates = []
-
             for chunk in pd.read_csv(essentiality_csv, chunksize=10000):
                 for row in chunk.itertuples():
-                    locus_tag = row.locus_tag.strip()
-                    strain_id = "_".join(locus_tag.split("_")[:2])
-                    essentiality_value = row.unified_final_call_240817.strip().lower()
+                    locus_tag = str(row.locus_tag).strip()
+                    essentiality_value = str(row.unified_final_call_240817).strip().lower()
 
-                    if strain_id in valid_strains and essentiality_value in valid_essentiality_categories:
+                    if essentiality_value in VALID_ESENTIALITY_VALUES:
                         updates.append({
                             "_op_type": "update",
                             "_index": "gene_index",
                             "_id": locus_tag,
-                            "doc": {"essentiality": valid_essentiality_categories[essentiality_value]},
+                            "doc": {"essentiality": essentiality_value},
                         })
 
                         if len(updates) >= BATCH_SIZE:
-                            bulk(connections.get_connection(), updates)
+                            self._execute_bulk(updates)
                             updates.clear()
 
             if updates:
-                bulk(connections.get_connection(), updates)
+                self._execute_bulk(updates)
 
             logging.info("Essentiality data successfully updated in Elasticsearch.")
 
         except Exception as e:
             logging.error(f"Error importing essentiality data: {e}", exc_info=True)
+
+    def _execute_bulk(self, updates):
+        """ Helper function to execute bulk updates and log errors. """
+        try:
+            success, failed = bulk(connections.get_connection(), updates, raise_on_error=False)
+            logging.info(f"Bulk indexing complete. Success: {success}, Failed: {len(failed)}")
+
+            if failed:
+                logging.error(f"Failed documents: {failed[:5]} ...")  # Log first 5 failed docs for debugging
+
+        except BulkIndexError as e:
+            logging.error(f"Bulk indexing error: {e.errors}")
 
     def validate_gene_index(self, expected_count):
         """ Validate the total number of records in gene_index. """

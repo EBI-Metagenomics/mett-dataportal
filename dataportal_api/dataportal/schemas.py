@@ -51,18 +51,21 @@ class GenomeResponseSchema(BaseModel):
 
 
 class GeneAutocompleteResponseSchema(BaseModel):
-    gene_id: int
-    gene_name: Optional[str]
-    isolate_name: str
+    gene_name: Optional[str] = None
+    alias: Optional[List[str]] = None
+    isolate_name: Optional[str] = None
+    species_scientific_name: Optional[str] = None
+    species_acronym: Optional[str] = None
     product: Optional[str] = None
     locus_tag: Optional[str] = None
-    kegg: Optional[str] = None
-    pfam: Optional[str] = None
-    interpro: Optional[str] = None
-    dbxref: Optional[str] = None
+    kegg: Optional[List[str]] = None
+    uniprot_id: Optional[str] = None
+    pfam: Optional[List[str]] = None
+    cog_id: Optional[str] = None
+    interpro: Optional[List[str]] = None
+    essentiality: Optional[str] = "Unknown"
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class EssentialityTagSchema(BaseModel):
     id: int

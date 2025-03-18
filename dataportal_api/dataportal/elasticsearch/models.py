@@ -30,6 +30,11 @@ class SpeciesDocument(Document):
     class Index:
         name = "species_index"
 
+    def save(self, **kwargs):
+        """ set `_id` as `acronym` """
+        self.meta.id = self.acronym
+        return super().save(**kwargs)
+
 
 class StrainDocument(Document):
     strain_id = Integer()
@@ -64,6 +69,11 @@ class StrainDocument(Document):
                 }
             }
         }
+
+    def save(self, **kwargs):
+        """ set `_id` as `isolate_name` """
+        self.meta.id = self.isolate_name
+        return super().save(**kwargs)
 
 
 class GeneDocument(Document):
@@ -100,7 +110,7 @@ class GeneDocument(Document):
     cog_id = Keyword()
 
     ec_number = Keyword()
-    essentiality = Keyword()
+    essentiality = Keyword(normalizer=lowercase_normalizer)
     inference = Text(fields={"keyword": Keyword()})
 
     ontology_terms = Nested(
@@ -135,3 +145,8 @@ class GeneDocument(Document):
             }
         }
         dynamic = "true"
+
+    def save(self, **kwargs):
+        """ set `_id` as `locus_tag` """
+        self.meta.id = self.locus_tag
+        return super().save(**kwargs)

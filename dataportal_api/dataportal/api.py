@@ -204,17 +204,18 @@ async def gene_autocomplete_suggestions(
         query: str,
         filter: Optional[str] = None,
         limit: int = DEFAULT_PER_PAGE_CNT,
-        species_id: Optional[int] = None,
-        genome_ids: Optional[str] = None,
+        species_acronym: Optional[str] = None,
+        isolates: Optional[str] = None,
 ):
-    genome_id_list = (
-        [int(gid) for gid in genome_ids.split(",") if gid.strip()]
-        if genome_ids
-        else None
+    isolate_list = (
+        [gid.strip() for gid in isolates.split(",") if gid.strip()]
+        if isolates else None
     )
+
     return await gene_service.autocomplete_gene_suggestions(
-        query, filter, limit, species_id, genome_id_list
+        query, filter, limit, species_acronym, isolate_list
     )
+
 
 
 # API Endpoint to search genes by query string
