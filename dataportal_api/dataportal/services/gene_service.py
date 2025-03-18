@@ -8,7 +8,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from dataportal.models import Gene, GeneEssentiality
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Search, A
 from dataportal.elasticsearch.models import GeneDocument
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
 from dataportal.utils.constants import (
@@ -200,7 +200,6 @@ class GeneService:
         except Exception as e:
             logger.error(f"Error fetching gene autocomplete suggestions: {e}")
             return []
-
 
     def fetch_gene_by_id(self, gene_id: int):
         return get_object_or_404(
@@ -550,4 +549,44 @@ class GeneService:
 
         except Exception as e:
             logger.error(f"Error fetching paginated genes: {str(e)}")
+            raise ServiceError(e)
+
+    async def get_faceted_search(self, species_acronym: Optional[str] = None,
+                                 essentiality: Optional[str] = None,
+                                 isolates: Optional[List[str]] = None,
+                                 limit: int = None):
+        try:
+            s = Search(index="gene_index")
+
+            filters = []
+            if species_acronym:
+                s = s.filter("term", species_acronym=species_acronym)
+            if essentiality:
+                s = s.filter("term", essentiality={"value": essentiality.lower()})
+
+            if filters:
+                s = s.query(Q("bool", filter=filters))
+
+            if isolates:
+                s = s.filter("terms", isolate_name=isolates)
+
+            # Aggregations for faceted search
+            s.aggs.bucket('pfam_terms', A('terms', field='pfam', size=limit))
+            s.aggs.bucket('interpro_terms', A('terms', field='interpro', size=limit))
+            s.aggs.bucket('essentiality_terms', A('terms', field='essentiality', size=limit))
+
+            # Print final query to debug
+            print(f"Final Elasticsearch Query: {s.to_dict()}")
+
+            # Execute search
+            response = s.execute()
+
+            return {
+                "pfam": {b.key: b.doc_count for b in response.aggregations.pfam_terms.buckets},
+                "interpro": {b.key: b.doc_count for b in response.aggregations.interpro_terms.buckets},
+                "essentiality": {b.key: b.doc_count for b in response.aggregations.essentiality_terms.buckets}
+            }
+
+        except Exception as e:
+            logger.error(f"Error fetching faceted search: {str(e)}")
             raise ServiceError(e)

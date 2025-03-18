@@ -54,6 +54,7 @@ genome_router = Router(tags=[ROUTER_GENOME])
 gene_router = Router(tags=[ROUTER_GENE])
 species_router = Router(tags=[ROUTER_SPECIES])
 
+
 def custom_error_handler(request, exc):
     if isinstance(exc, HttpError):
         return JsonResponse({"error": str(exc)}, status=exc.status_code)
@@ -217,7 +218,6 @@ async def gene_autocomplete_suggestions(
     )
 
 
-
 # API Endpoint to search genes by query string
 @gene_router.get("/search", response=GenePaginationSchema)
 async def search_genes_by_string(
@@ -238,6 +238,14 @@ async def search_genes_by_string(
             500,
             f"Failed to fetch the genes information for gene query - {query}",
         )
+
+
+@gene_router.get("/faceted-search")
+async def get_faceted_search(request, species_acronym: Optional[str] = None,
+                             essentiality: Optional[str] = None,
+                             isolates: Optional[List[str]] = None,
+                             limit: int = DEFAULT_PER_PAGE_CNT):
+    return await gene_service.get_faceted_search(species_acronym, essentiality, isolates, limit)
 
 
 # API Endpoint to retrieve gene by ID
