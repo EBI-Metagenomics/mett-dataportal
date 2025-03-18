@@ -40,6 +40,7 @@ class StrainDocument(Document):
     strain_id = Integer()
 
     species_scientific_name = Keyword()
+    species_acronym = Keyword()
 
     isolate_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
     assembly_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})

@@ -17,6 +17,11 @@ ES_PASSWORD = os.getenv("ES_PASSWORD")
 # Establish Elasticsearch connection
 connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 
+SPECIES_ACRONYM_MAPPING = {
+    "Bacteroides uniformis": "BU",
+    "Phocaeicola vulgatus": "PV"
+}
+
 
 class Command(BaseCommand):
     help = "Imports strains and contigs from FTP and indexes them into Elasticsearch."
@@ -48,6 +53,9 @@ class Command(BaseCommand):
         # Load the CSV mapping file
         prefix_df = pd.read_csv(csv_path, sep="\t")
         prefix_mapping = dict(zip(prefix_df["assembly"], prefix_df["prefix"]))
+
+        # Initialize assembly accession counter
+        self.assembly_accession_counter = 1
 
         # Connect to FTP and import strains and contigs
         self.stdout.write("Starting strain and contig import...")
@@ -88,12 +96,16 @@ class Command(BaseCommand):
                 return
 
             # Determine species name
-            species_name = self.get_species_name(isolate_name)
+            species_acronym, species_name = self.get_species_info(isolate_name)
             if not species_name:
                 self.stdout.write(f"No matching species found for isolate {isolate_name}")
                 return
 
             self.stdout.write(f"Processing strain {isolate_name} ...")
+
+            # Generate Assembly Accession
+            assembly_accession = f"AA{self.assembly_accession_counter:05d}"
+            self.assembly_accession_counter += 1  # Increment for next strain
 
             # Retry download with reconnection if necessary
             local_file_path = f"/tmp/{file}"
@@ -113,17 +125,18 @@ class Command(BaseCommand):
                 meta={"id": isolate_name},
                 isolate_name=isolate_name,
                 assembly_name=assembly_name,
-                assembly_accession=None,
+                assembly_accession=assembly_accession,
                 fasta_file=file,
-                gff_file=None,  # Can be updated if available
+                gff_file=None,
                 type_strain=False,
                 species_scientific_name=species_name,
+                species_acronym=species_acronym,
                 contigs=contigs,
             )
 
             # Save strain document to Elasticsearch
             strain_doc.save()
-            self.stdout.write(f"Indexed strain {isolate_name} with {len(contigs)} contigs.")
+            self.stdout.write(f"Indexed strain {isolate_name} with {len(contigs)} contigs and accession {assembly_accession}.")
 
             # Clean up local file
             os.remove(local_file_path)
@@ -131,15 +144,18 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(f"Error processing {file}: {e}")
 
-    def get_species_name(self, isolate_name):
-        """ Extract species name from isolate name (assuming acronym-based species names). """
-        species_acronym = isolate_name.split("_")[0]
+    def get_species_info(self, isolate_name):
+        """ Extract species acronym and species name from isolate name. """
+        species_acronym = isolate_name.split("_")[0] if "_" in isolate_name else None
         species_mapping = {
             "BU": "Bacteroides uniformis",
             "PV": "Phocaeicola vulgatus",
             # Add more mappings as needed
         }
-        return species_mapping.get(species_acronym, None)
+
+        species_name = species_mapping.get(species_acronym, None)
+
+        return species_acronym, species_name
 
     def download_with_retry(self, ftp, file, local_file_path, retries=3, delay=5):
         for attempt in range(retries):
@@ -189,3 +205,4 @@ class Command(BaseCommand):
                 self.stdout.write(f"Updated strain {isolate_name} to type_strain=True")
 
         self.stdout.write(self.style.SUCCESS(f"Updated {len(isolate_names)} type strains in Elasticsearch."))
+

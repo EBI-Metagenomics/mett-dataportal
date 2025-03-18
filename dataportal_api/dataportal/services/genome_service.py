@@ -10,6 +10,9 @@ from dataportal.schemas import (
     GenomePaginationSchema,
     GenomeResponseSchema,
 )
+from elasticsearch_dsl import Search
+from typing import List
+
 from dataportal.utils.constants import (
     FIELD_ID,
     STRAIN_FIELD_ISOLATE_NAME,
@@ -37,12 +40,14 @@ logger = logging.getLogger(__name__)
 
 
 class GenomeService:
+    INDEX_NAME = "strain_index"
+
     def __init__(self, limit: int = 10):
         self.limit = limit
 
     async def get_type_strains(self) -> List[GenomeResponseSchema]:
         return await self._fetch_and_validate_strains(
-            filter_criteria=Q(type_strain=True),
+            filter_criteria={"type_strain": True},
             schema=GenomeResponseSchema,
             error_message="Error fetching type strains",
         )
@@ -193,19 +198,35 @@ class GenomeService:
             raise ServiceError(f"Could not fetch genomes by isolate names: {e}")
 
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
+        """Fetch and validate strains from Elasticsearch and compute additional fields."""
         try:
-            strains = await sync_to_async(list)(
-                Strain.objects.filter(filter_criteria).select_related(
-                    STRAIN_FIELD_SPECIES
+            search = Search(index=self.INDEX_NAME).query("term", **filter_criteria)
+            response = await sync_to_async(search.execute)()
+
+            results = []
+            for hit in response:
+                strain_data = hit.to_dict()
+
+                # Compute fasta_url and gff_url
+                strain_data["fasta_url"] = (
+                    f"{settings.ASSEMBLY_FTP_PATH}/{strain_data['fasta_file']}"
+                    if strain_data.get("fasta_file")
+                    else None
                 )
-            )
-            return [
-                schema.model_validate(await self._serialize_strain(strain))
-                for strain in strains
-            ]
+                strain_data["gff_url"] = (
+                    f"{settings.GFF_FTP_PATH.format(strain_data['isolate_name'])}/{strain_data['gff_file']}"
+                    if strain_data.get("gff_file") and strain_data.get("isolate_name")
+                    else None
+                )
+
+                # Validate and append
+                results.append(schema.model_validate(strain_data))
+
+            return results
+
         except Exception as e:
             logger.error(f"{error_message}: {e}")
-            raise ServiceError(e)
+            raise ServiceError(f"{error_message}: {str(e)}")
 
     async def _search_paginated_strains(
             self, filter_criteria, page, per_page, sortField, sortOrder, error_message

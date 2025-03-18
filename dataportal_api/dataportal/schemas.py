@@ -13,14 +13,12 @@ class SpeciesSchema(BaseModel):
 
 
 class StrainSuggestionSchema(BaseModel):
-    id: int
     isolate_name: str
     assembly_name: str
 
     model_config = ConfigDict(from_attributes=True)
 
 class StrainMinSchema(BaseModel):
-    id: int
     isolate_name: str
     assembly_name: str
 
@@ -35,8 +33,8 @@ class ContigSchema(BaseModel):
 
 
 class GenomeResponseSchema(BaseModel):
-    id: int
-    species: SpeciesSchema
+    species_scientific_name: Optional[str] = None
+    species_acronym: Optional[str] = None
     isolate_name: str
     assembly_name: Optional[str]
     assembly_accession: Optional[str]
