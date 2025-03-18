@@ -35,7 +35,7 @@ class Command(BaseCommand):
         # Prepare documents for bulk indexing
         species_docs = [
             SpeciesDocument(
-                meta={"id": row.id},
+                meta={"id": row.acronym},
                 scientific_name=row.scientific_name,
                 common_name=row.common_name if pd.notna(row.common_name) else "",
                 acronym=row.acronym if pd.notna(row.acronym) else "",
