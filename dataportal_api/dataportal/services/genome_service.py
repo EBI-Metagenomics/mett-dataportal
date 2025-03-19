@@ -1,18 +1,17 @@
 import logging
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
 from asgiref.sync import sync_to_async
 from django.db.models import Q
+from elasticsearch_dsl import Search
 
 from dataportal import settings
-from dataportal.models import Strain
+from dataportal.elasticsearch.models import StrainDocument
 from dataportal.schemas import (
     GenomePaginationSchema,
     GenomeResponseSchema,
 )
-from elasticsearch_dsl import Search
-from typing import List
-
 from dataportal.utils.constants import (
     FIELD_ID,
     STRAIN_FIELD_ISOLATE_NAME,
@@ -27,7 +26,6 @@ from dataportal.utils.constants import (
     STRAIN_FIELD_CONTIG_SEQ_ID,
     STRAIN_FIELD_CONTIG_LEN,
     SORT_ASC,
-    SORT_DESC,
     DEFAULT_PER_PAGE_CNT,
     STRAIN_FIELD_TYPE_STRAIN,
     SPECIES_FIELD_COMMON_NAME,
@@ -246,7 +244,7 @@ class GenomeService:
                 filter_kwargs = filter_criteria
 
             strain = await sync_to_async(
-                lambda: Strain.objects.select_related(STRAIN_FIELD_SPECIES).get(
+                lambda: StrainDocument.objects.select_related(STRAIN_FIELD_SPECIES).get(
                     **filter_kwargs
                 )
             )()
@@ -254,7 +252,7 @@ class GenomeService:
             serialized_strain = await self._serialize_strain(strain)
             return GenomeResponseSchema.model_validate(serialized_strain)
 
-        except Strain.DoesNotExist:
+        except StrainDocument.DoesNotExist:
             logger.error(error_message)
             raise GenomeNotFoundError(error_message)
         except Exception as e:

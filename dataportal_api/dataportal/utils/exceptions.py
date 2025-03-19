@@ -17,9 +17,9 @@ class ServiceError(Exception):
 
 
 class GeneNotFoundError(ServiceError):
-    def __init__(self, gene_id: int, message: str = "Gene not found"):
-        self.gene_id = gene_id
-        self.message = f"{message}: {gene_id}"
+    def __init__(self, locus_tag: str, message: str = "Gene not found"):
+        self.locus_tag = locus_tag
+        self.message = f"{message}: {locus_tag}"
         super().__init__(self.message)
 
 

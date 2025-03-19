@@ -45,13 +45,14 @@ from dataportal.utils.constants import (
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
     ServiceError,
-    InvalidGenomeIdError,
+    InvalidGenomeIdError, NotFoundError,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class GeneService:
+    INDEX_NAME = "gene_index"
     def __init__(self, limit: int = 10, cache_size: int = 10000):
         self.limit = limit
         self.essentiality_cache = LRUCache(maxsize=cache_size)
@@ -64,7 +65,7 @@ class GeneService:
         logger.info("Loading essentiality data into cache from Elasticsearch...")
 
         try:
-            s = Search(index="gene_index").query(
+            s = Search(index=self.INDEX_NAME).query(
                 "exists", field="essentiality"
             ).source(["isolate_name", "seq_id", "locus_tag", "start", "end", "essentiality"])[:10000]
 
@@ -144,7 +145,7 @@ class GeneService:
 
         try:
 
-            s = Search(index="gene_index")
+            s = Search(index=self.INDEX_NAME)
             s = s.query(
                 "multi_match",
                 query=query,
@@ -201,25 +202,26 @@ class GeneService:
             logger.error(f"Error fetching gene autocomplete suggestions: {e}")
             return []
 
-    def fetch_gene_by_id(self, gene_id: int):
-        return get_object_or_404(
-            Gene.objects.select_related("strain").prefetch_related(
-                f"essentiality_data__{GENE_ESSENTIALITY}"
-            ),
-            id=gene_id,
-        )
-
-    async def get_gene_by_id(self, gene_id: int) -> GeneResponseSchema:
+    async def get_gene_by_locus_tag(self, locus_tag: str) -> GeneResponseSchema:
+        """Fetch a gene document from Elasticsearch using locus_tag."""
         try:
-            gene = await sync_to_async(self.fetch_gene_by_id, thread_sensitive=False)(
-                gene_id
-            )
+            gene = await sync_to_async(self.fetch_gene_by_locus_tag, thread_sensitive=False)(locus_tag)
             return self._serialize_gene(gene)
-        except Http404:
-            raise GeneNotFoundError(gene_id)
+        except ServiceError:
+            logger.error(f"Error in get_gene_by_locus_tag: {locus_tag}")
+            raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
         except Exception as e:
-            logger.error(f"Error in get_gene_by_id: {e}")
+            logger.error(f"Error in get_gene_by_locus_tag: {e}")
             raise ServiceError(e)
+
+    def fetch_gene_by_locus_tag(self, locus_tag: str):
+        s = Search(index=self.INDEX_NAME).query("match", locus_tag=locus_tag)
+        response = s.execute()
+
+        if not response.hits:
+            raise ServiceError(f"Error in get_gene_by_locus_tag: {locus_tag}")
+
+        return response.hits[0].to_dict()
 
     async def get_all_genes(
             self,
@@ -410,34 +412,55 @@ class GeneService:
             ),
         }
 
-    def _serialize_gene(self, gene: Gene) -> dict:
-        return GeneResponseSchema.model_validate(
-            {
-                FIELD_ID: gene.id,
-                FIELD_SEQ_ID: gene.seq_id,
-                GENE_FIELD_NAME: gene.gene_name or "N/A",
-                GENE_FIELD_DESCRIPTION: gene.description or None,
-                GENE_SORT_FIELD_STRAIN: {
-                    FIELD_ID: gene.strain.id if gene.strain else None,
-                    STRAIN_FIELD_ISOLATE_NAME: gene.strain.isolate_name if gene.strain else "Unknown",
-                    STRAIN_FIELD_ASSEMBLY_NAME: gene.strain.assembly_name if gene.strain else None,
-                },
-                GENE_FIELD_LOCUS_TAG: gene.locus_tag or None,
-                GENE_FIELD_COG: gene.cog or None,
-                GENE_FIELD_KEGG: gene.kegg or None,
-                GENE_FIELD_PFAM: gene.pfam or None,
-                GENE_FIELD_INTERPRO: gene.interpro or None,
-                GENE_FIELD_DBXREF: gene.dbxref or None,
-                GENE_FIELD_EC_NUMBER: gene.ec_number or None,
-                GENE_FIELD_PRODUCT: gene.product or None,
-                GENE_FIELD_START_POS: gene.start_position or None,
-                GENE_FIELD_END_POS: gene.end_position or None,
-                GENE_FIELD_ANNOTATIONS: gene.annotations or {},
-                GENE_ESSENTIALITY_DATA: [
-                    self._serialize_gene_essentiality(ge)
-                    for ge in gene.essentiality_data.all()
-                ],
-            }
+    # def _serialize_gene(self, gene: Gene) -> GeneResponseSchema:
+    #     return GeneResponseSchema.model_validate(
+    #         {
+    #             FIELD_ID: gene.id,
+    #             FIELD_SEQ_ID: gene.seq_id,
+    #             GENE_FIELD_NAME: gene.gene_name or "N/A",
+    #             GENE_FIELD_DESCRIPTION: gene.description or None,
+    #             GENE_SORT_FIELD_STRAIN: {
+    #                 FIELD_ID: gene.strain.id if gene.strain else None,
+    #                 STRAIN_FIELD_ISOLATE_NAME: gene.strain.isolate_name if gene.strain else "Unknown",
+    #                 STRAIN_FIELD_ASSEMBLY_NAME: gene.strain.assembly_name if gene.strain else None,
+    #             },
+    #             GENE_FIELD_LOCUS_TAG: gene.locus_tag or None,
+    #             GENE_FIELD_COG: gene.cog or None,
+    #             GENE_FIELD_KEGG: gene.kegg or None,
+    #             GENE_FIELD_PFAM: gene.pfam or None,
+    #             GENE_FIELD_INTERPRO: gene.interpro or None,
+    #             GENE_FIELD_DBXREF: gene.dbxref or None,
+    #             GENE_FIELD_EC_NUMBER: gene.ec_number or None,
+    #             GENE_FIELD_PRODUCT: gene.product or None,
+    #             GENE_FIELD_START_POS: gene.start_position or None,
+    #             GENE_FIELD_END_POS: gene.end_position or None,
+    #             GENE_FIELD_ANNOTATIONS: gene.annotations or {},
+    #             GENE_ESSENTIALITY_DATA: [
+    #                 self._serialize_gene_essentiality(ge)
+    #                 for ge in gene.essentiality_data.all()
+    #             ],
+    #         }
+    #     )
+
+    def _serialize_gene(self, gene_data: GeneDocument) -> GeneResponseSchema:
+        return GeneResponseSchema(
+            locus_tag=gene_data.get("locus_tag"),
+            gene_name=gene_data.get("gene_name"),
+            alias=gene_data.get("alias") or None,
+            seq_id=gene_data.get("seq_id"),
+            isolate_name=gene_data.get("isolate_name"),
+            uniprot_id=gene_data.get("uniprot_id"),
+            cog_funcats=gene_data.get("cog_funcats"),
+            cog_id=gene_data.get("cog_id"),
+            kegg=gene_data.get("kegg"),
+            pfam=gene_data.get("pfam"),
+            interpro=gene_data.get("interpro"),
+            dbxref=gene_data.get("dbxref"),
+            ec_number=gene_data.get("ec_number"),
+            product=gene_data.get("product"),
+            start_position=gene_data.get("start"),
+            end_position=gene_data.get("end"),
+            essentiality=gene_data.get("essentiality", "Unknown")
         )
 
     def _parse_filters(self, filter_str: Optional[str]) -> Dict[str, List[str]]:

@@ -241,18 +241,18 @@ async def get_faceted_search(request, species_acronym: Optional[str] = None,
                                                  limit)
 
 
-# API Endpoint to retrieve gene by ID
-@gene_router.get("/{gene_id}", response=GeneResponseSchema)
-async def get_gene_by_id(request, gene_id: int):
+# API Endpoint to retrieve gene by locus tag
+@gene_router.get("/{locus_tag}", response=GeneResponseSchema)
+async def get_gene_by_locus_tag(request, locus_tag: str):
     try:
-        return await gene_service.get_gene_by_id(gene_id)
+        return await gene_service.get_gene_by_locus_tag(locus_tag)
     except GeneNotFoundError as e:
-        logger.error(f"Gene not found: {e.gene_id}")
+        logger.error(f"Gene not found: {e.locus_tag}")
         raise HttpError(404, str(e))
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise HttpError(
-            500, f"Failed to fetch the gene information for gene_id - {gene_id}"
+            500, f"Failed to fetch the gene information for locus_tag - {locus_tag}"
         )
 
 
