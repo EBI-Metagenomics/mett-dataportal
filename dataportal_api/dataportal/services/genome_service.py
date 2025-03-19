@@ -60,8 +60,9 @@ class GenomeService:
             sortField: str = STRAIN_FIELD_ISOLATE_NAME,
             sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
+        """Search genomes in Elasticsearch by isolate name (partial match)."""
         return await self._search_paginated_strains(
-            filter_criteria=Q(isolate_name__icontains=query),
+            filter_criteria={"isolate_name": query},
             page=page,
             per_page=per_page,
             sortField=sortField,
@@ -231,13 +232,12 @@ class GenomeService:
     async def _search_paginated_strains(
             self, filter_criteria, page, per_page, sortField, sortOrder, error_message
     ):
+        """Search and paginate strains in Elasticsearch."""
         try:
             strains, total_results = await self._fetch_paginated_strains(
                 filter_criteria, page, per_page, sortField, sortOrder
             )
-            return await self._create_pagination_schema(
-                strains, total_results, page, per_page
-            )
+            return await self._create_pagination_schema(strains, total_results, page, per_page)
         except Exception as e:
             logger.error(f"{error_message}: {e}")
             raise ServiceError(e)
@@ -306,38 +306,56 @@ class GenomeService:
         }
 
     async def _fetch_paginated_strains(
-            self,
-            filter_criteria: Q,
-            page: int,
-            per_page: int = DEFAULT_PER_PAGE_CNT,
-            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-            sortOrder: str = SORT_ASC,
+            self, filter_criteria, page, per_page, sortField, sortOrder
     ):
-        if not sortField:
-            sortField = STRAIN_FIELD_ISOLATE_NAME
-        if sortOrder not in (SORT_ASC, SORT_DESC):
-            sortOrder = SORT_ASC
-
-        ordering = f"{'-' if sortOrder == SORT_DESC else ''}{sortField}"
-        start = (page - 1) * per_page
-
-        strains = await sync_to_async(
-            lambda: list(
-                Strain.objects.select_related(STRAIN_FIELD_SPECIES)
-                .filter(filter_criteria)
-                .order_by(ordering)[start: start + per_page]
+        """Fetch paginated strains from Elasticsearch."""
+        try:
+            search = Search(index=self.INDEX_NAME).query(
+                "wildcard", isolate_name=f"*{filter_criteria['isolate_name']}*"
             )
-        )()
-        total_results = await sync_to_async(
-            lambda: Strain.objects.filter(filter_criteria).count()
-        )()
 
-        return strains, total_results
+            # Ensure sorting uses `.keyword` for text fields
+            if sortField == "isolate_name":
+                sortField = "isolate_name.keyword"  # Use keyword field
+
+            sort_order = "asc" if sortOrder == SORT_ASC else "desc"
+            search = search.sort({sortField: {"order": sort_order}})
+
+            # Pagination
+            search = search[(page - 1) * per_page: page * per_page]
+
+            response = await sync_to_async(search.execute)()
+            total_results = response.hits.total.value if hasattr(response.hits.total, 'value') else len(response)
+
+            # Compute additional fields and format response
+            results = []
+            for hit in response:
+                strain_data = hit.to_dict()
+
+                # Compute fasta_url and gff_url
+                strain_data["fasta_url"] = (
+                    f"{settings.ASSEMBLY_FTP_PATH}/{strain_data['fasta_file']}"
+                    if strain_data.get("fasta_file")
+                    else None
+                )
+                strain_data["gff_url"] = (
+                    f"{settings.GFF_FTP_PATH.format(strain_data['isolate_name'])}/{strain_data['gff_file']}"
+                    if strain_data.get("gff_file") and strain_data.get("isolate_name")
+                    else None
+                )
+
+                results.append(strain_data)
+
+            return results, total_results
+
+        except Exception as e:
+            logger.error(f"Error fetching paginated strains: {e}")
+            raise ServiceError(f"Error fetching paginated strains: {str(e)}")
 
     async def _create_pagination_schema(self, strains, total_results, page, per_page):
+        """Create pagination schema for search results."""
         serialized_strains = [
-            GenomeResponseSchema.model_validate(await self._serialize_strain(strain))
-            for strain in strains
+            GenomeResponseSchema.model_validate(strain) for strain in strains
         ]
 
         return GenomePaginationSchema(
