@@ -261,7 +261,7 @@ class GeneService:
 
     async def get_genes_by_genome(
             self,
-            genome_id: int,
+            isolate_name: str,
             filter: Optional[str] = None,
             page: int = 1,
             per_page: int = DEFAULT_PER_PAGE_CNT,
@@ -269,23 +269,20 @@ class GeneService:
             sort_order: Optional[str] = SORT_ASC,
     ) -> GenePaginationSchema:
         try:
-            gene_filter = Q(strain_id=genome_id)
-
-            # Parse additional filters and apply only if strain is a type strain
+            filter_criteria = {"isolate_name": isolate_name}
             parsed_filters = self._parse_filters(filter)
-            gene_filter = await self._apply_filters_for_type_strain(
-                gene_filter, parsed_filters
-            )
+            filter_criteria = await self._apply_filters_for_type_strain(filter_criteria, parsed_filters)
+
+            es_query = self._build_es_query(query=None, isolate_name=None, filter_criteria=filter_criteria)
 
             genes, total_results = await self._fetch_paginated_genes(
-                gene_filter, page, per_page, sort_field, sort_order
+                query=es_query, page=page, per_page=per_page, sort_field=sort_field, sort_order=sort_order
             )
-            serialized_genes = [self._serialize_gene(gene) for gene in genes]
-            return self._create_pagination_schema(
-                serialized_genes, page, per_page, total_results
-            )
+
+            return self._create_pagination_schema(genes, page, per_page, total_results)
+
         except Exception as e:
-            logger.error(f"Error fetching genes for genome ID {genome_id}: {e}")
+            logger.error(f"Error fetching genes for genome {isolate_name}: {e}")
             raise ServiceError(e)
 
     async def get_genes_by_multiple_genomes(
