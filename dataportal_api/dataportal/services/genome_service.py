@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import List
 from typing import Optional
@@ -127,7 +128,7 @@ class GenomeService:
             search = search.source(["id", "isolate_name", "assembly_name"])
 
             # Print final query to debug
-            print(f"Final Elasticsearch Query: {search.to_dict()}")
+            logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
             response = await sync_to_async(search.execute)()
 
             # Process results
@@ -333,7 +334,7 @@ class GenomeService:
             search = search[(page - 1) * per_page: page * per_page]
 
             # Print final query to debug
-            print(f"Final Elasticsearch Query: {search.to_dict()}")
+            logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
 
             response = await sync_to_async(search.execute)()
             total_results = response.hits.total.value if hasattr(response.hits.total, 'value') else len(response)
