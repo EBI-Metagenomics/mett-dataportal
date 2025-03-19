@@ -42,7 +42,11 @@ class StrainDocument(Document):
     species_scientific_name = Text(fields={"keyword": Keyword()})
     species_acronym = Keyword(normalizer=lowercase_normalizer)
 
-    isolate_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
+    isolate_name = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword(normalizer=lowercase_normalizer)}
+    )
     assembly_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
     assembly_accession = Keyword()
 

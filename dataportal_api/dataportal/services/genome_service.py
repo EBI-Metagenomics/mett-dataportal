@@ -89,14 +89,14 @@ class GenomeService:
 
     async def search_genomes_by_species_and_string(
             self,
-            species_id: int,
+            species_acronym: str,
             query: str,
             page: int = 1,
             per_page: int = DEFAULT_PER_PAGE_CNT,
             sortField: str = STRAIN_FIELD_ISOLATE_NAME,
             sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
-        filter_criteria = Q(species_id=species_id, isolate_name__icontains=query)
+        filter_criteria = {"species_acronym": species_acronym, "isolate_name": query}
         return await self._search_paginated_strains(
             filter_criteria=filter_criteria,
             page=page,
@@ -308,16 +308,29 @@ class GenomeService:
     async def _fetch_paginated_strains(
             self, filter_criteria, page, per_page, sortField, sortOrder
     ):
+        """Fetch paginated strains from Elasticsearch with optimized searching."""
         try:
             search = Search(index=self.INDEX_NAME)
 
             # Dynamically apply filters
             for field, value in filter_criteria.items():
                 if isinstance(value, str):
-                    search = search.query("wildcard", **{field: f"*{value}*"})
+                    if field == "isolate_name":
+                        # Use a combination of wildcard and term query
+                        search = search.query(
+                            "bool",
+                            should=[
+                                {"wildcard": {f"{field}.keyword": f"*{value.lower()}*"}},
+                                {"term": {f"{field}.keyword": value}}  #
+                            ],
+                            minimum_should_match=1
+                        )
+                    else:
+                        search = search.query("wildcard", **{field: f"*{value}*"})
                 else:
                     search = search.query("term", **{field: value})
 
+            # Ensure sorting uses `.keyword` for text fields
             if sortField in ["isolate_name", "species_scientific_name"]:
                 sortField = f"{sortField}.keyword"
 

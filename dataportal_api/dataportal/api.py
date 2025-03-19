@@ -157,7 +157,7 @@ async def get_genomes_by_isolate_names(request, names: str):
         raise_http_error(500, f"An error occurred: {str(e)}")
 
 
-# API Endpoint to retrieve genomes filtered by species ID
+# API Endpoint to retrieve genomes filtered by species_acronym
 @species_router.get("/{species_acronym}/genomes", response=GenomePaginationSchema)
 async def get_genomes_by_species(
         request,
@@ -173,15 +173,15 @@ async def get_genomes_by_species(
         )
     except ServiceError:
         raise HttpError(
-            500, f"An error occurred while fetching genomes by species: {species_id}"
+            500, f"An error occurred while fetching genomes by species: {species_acronym}"
         )
 
 
-# API Endpoint to search genomes by species ID and query string
-@species_router.get("/{species_id}/genomes/search", response=GenomePaginationSchema)
+# API Endpoint to search genomes by species_acronym and query string
+@species_router.get("/{species_acronym}/genomes/search", response=GenomePaginationSchema)
 async def search_genomes_by_species_and_string(
         request,
-        species_id: int,
+        species_acronym: str,
         query: str,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
@@ -190,12 +190,12 @@ async def search_genomes_by_species_and_string(
 ):
     try:
         return await genome_service.search_genomes_by_species_and_string(
-            species_id, query, page, per_page, sortField, sortOrder
+            species_acronym, query, page, per_page, sortField, sortOrder
         )
     except ServiceError:
         raise HttpError(
             500,
-            f"An error occurred while fetching genomes by species: {species_id} and query: {query}",
+            f"An error occurred while fetching genomes by species: {species_acronym} and query: {query}",
         )
 
 
