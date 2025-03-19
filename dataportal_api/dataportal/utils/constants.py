@@ -54,6 +54,7 @@ STRAIN_FIELD_CONTIGS = "contigs"
 STRAIN_FIELD_CONTIG_SEQ_ID = "seq_id"
 STRAIN_FIELD_CONTIG_LEN = "length"
 STRAIN_FIELD_TYPE_STRAIN = "type_strain"
+STRAIN_FIELD_SPECIES_ACRONYM = "species_acronym"
 
 # species related constants
 SPECIES_FIELD_SCIENTIFIC_NAME = "scientific_name"

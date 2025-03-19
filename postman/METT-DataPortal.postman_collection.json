@@ -226,7 +226,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/autocomplete?query=bu&species_id=1&limit=5",
+									"raw": "{{mett-current}}/api/genomes/autocomplete?query=bu&species_acronym=bu&limit=5",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -241,8 +241,8 @@
 											"value": "bu"
 										},
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "bu"
 										},
 										{
 											"key": "limit",
@@ -251,50 +251,6 @@
 									]
 								},
 								"description": "Generated from cURL: curl -X GET \"http://localhost:8000/api/search/autocomplete/?query=Bacteroides&limit=5\"\n"
-							},
-							"response": []
-						},
-						{
-							"name": "Genome-by-genome-ID-positive",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"pm.test(\"Name matches expected value\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].isolate_name).to.eql(\"BU_2243B\");",
-											"});"
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/genomes/by-ids?ids=1",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"genomes",
-										"by-ids"
-									],
-									"query": [
-										{
-											"key": "ids",
-											"value": "1"
-										}
-									]
-								}
 							},
 							"response": []
 						},
@@ -311,7 +267,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].species_scientific_name).contain(\"Bacteroides\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -377,156 +333,6 @@
 							"response": []
 						},
 						{
-							"name": "Genome-by-genome-ID-negative",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 404\", function () {",
-											"    pm.response.to.have.status(404);",
-											"});"
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/genomes/9999",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"genomes",
-										"9999"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Genome-multple-by-genome-IDs-positive",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"pm.test(\"Size of array\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData).to.be.an(\"array\").lengthOf(3)",
-											"});",
-											"",
-											"pm.test(\"Name matches expected value\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
-											"});"
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"protocolProfileBehavior": {
-								"disableBodyPruning": true
-							},
-							"request": {
-								"method": "GET",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{mett-current}}/api/genomes/by-ids?ids=1,2,3",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"genomes",
-										"by-ids"
-									],
-									"query": [
-										{
-											"key": "ids",
-											"value": "1,2,3"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Genome-multple-by-genome-IDs-single-positive",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"pm.test(\"Name matches expected value\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
-											"});"
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"protocolProfileBehavior": {
-								"disableBodyPruning": true
-							},
-							"request": {
-								"method": "GET",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{mett-current}}/api/genomes/by-ids?ids=1",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"genomes",
-										"by-ids"
-									],
-									"query": [
-										{
-											"key": "ids",
-											"value": "1"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
 							"name": "Genome-multple-by-isolate-names-positive",
 							"event": [
 								{
@@ -539,7 +345,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].species_scientific_name).contain(\"Bacteroides\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -595,7 +401,7 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].species.common_name).to.eql(\"Bacteroides\");",
+											"    pm.expect(jsonData[0].species_scientific_name).contain(\"Bacteroides\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -786,7 +592,7 @@
 											"",
 											"pm.test(\"Number of pages matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.num_pages).to.be.at.least(5);",
+											"    pm.expect(jsonData.results).to.be.an('array').length(1)",
 											"});"
 										],
 										"type": "text/javascript",
@@ -798,7 +604,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/search?query=bu",
+									"raw": "{{mett-current}}/api/genomes/search?query=PV_H4",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -810,7 +616,7 @@
 									"query": [
 										{
 											"key": "query",
-											"value": "bu"
+											"value": "PV_H4"
 										}
 									]
 								}
@@ -862,7 +668,7 @@
 							"response": []
 						},
 						{
-							"name": "Genomes-by-SpeciesID-positive",
+							"name": "Genomes-by-SpeciesAcronym-positive",
 							"event": [
 								{
 									"listen": "test",
@@ -886,14 +692,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/species/1/genomes",
+									"raw": "{{mett-current}}/api/species/bu/genomes",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"species",
-										"1",
+										"bu",
 										"genomes"
 									]
 								}
@@ -901,7 +707,7 @@
 							"response": []
 						},
 						{
-							"name": "Genomes-by-SpeciesID-negative",
+							"name": "Genomes-by-SpeciesAcronym-negative",
 							"event": [
 								{
 									"listen": "test",
@@ -925,14 +731,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/species/9999/genomes",
+									"raw": "{{mett-current}}/api/species/abc/genomes",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"species",
-										"9999",
+										"abc",
 										"genomes"
 									]
 								}
@@ -940,7 +746,7 @@
 							"response": []
 						},
 						{
-							"name": "Genomes-by-SpeciesID-GenomeString-positive",
+							"name": "Genomes-by-SpeciesScronym-GenomeString-positive",
 							"event": [
 								{
 									"listen": "test",
@@ -964,14 +770,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/species/2/genomes/search?query=pv&page=3",
+									"raw": "{{mett-current}}/api/species/pv/genomes/search?query=pv&page=3",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"species",
-										"2",
+										"pv",
 										"genomes",
 										"search"
 									],
@@ -990,7 +796,7 @@
 							"response": []
 						},
 						{
-							"name": "Genomes-by-SpeciesID-GenomeString-negative-01",
+							"name": "Genomes-by-SpeciesAcronym-GenomeString-negative-01",
 							"event": [
 								{
 									"listen": "test",
@@ -1036,7 +842,7 @@
 							"response": []
 						},
 						{
-							"name": "Genomes-by-SpeciesID-GenomeString-negative-02",
+							"name": "Genomes-by-SpeciesAcronym-GenomeString-negative-02",
 							"event": [
 								{
 									"listen": "test",
@@ -1060,14 +866,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/species/999/genomes/search?query=pv",
+									"raw": "{{mett-current}}/api/species/abc/genomes/search?query=pv",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"species",
-										"999",
+										"abc",
 										"genomes",
 										"search"
 									],
@@ -1103,7 +909,7 @@
 											"    pm.expect(geneData).to.not.be.undefined;",
 											"",
 											"    // Check if any essentiality_data entry has \"essential\" as the essentiality value",
-											"    let isEssential = geneData.essentiality_data.some(data => data.essentiality === \"essential\");",
+											"    let isEssential = geneData.essentiality === \"essential\";",
 											"",
 											"    // Validate the test",
 											"    pm.expect(isEssential).to.be.true;",
@@ -1119,14 +925,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/6/essentiality/contig_1",
+									"raw": "{{mett-current}}/api/genomes/BU_ATCC8492/essentiality/contig_1",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genomes",
-										"6",
+										"BU_ATCC8492",
 										"essentiality",
 										"contig_1"
 									]
@@ -1156,7 +962,7 @@
 											"    pm.expect(geneData).to.not.be.undefined;",
 											"",
 											"    // Check if any essentiality_data entry has \"essential\" as the essentiality value",
-											"    let isEssential = geneData.essentiality_data.some(data => data.essentiality === \"essential\");",
+											"    let isEssential = geneData.essentiality === \"essential\";",
 											"",
 											"    // Validate the test",
 											"    pm.expect(isEssential).to.be.true;",
@@ -1172,14 +978,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/62/essentiality/contig_1",
+									"raw": "{{mett-current}}/api/genomes/PV_ATCC8482/essentiality/contig_1",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genomes",
-										"62",
+										"PV_ATCC8482",
 										"essentiality",
 										"contig_1"
 									]
@@ -1192,6 +998,114 @@
 				{
 					"name": "genes",
 					"item": [
+						{
+							"name": "Gene-Faceted-Search-pfam",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(10); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/faceted-search?species_acronym=BU&limit=10&interpro=ipr011611",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"faceted-search"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "interpro",
+											"value": "ipr011611"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Faceted-Search-Interpro-pfam",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(10); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/faceted-search?species_acronym=BU&limit=100&interpro=ipr011611&pfam=pf00294",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"faceted-search"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "limit",
+											"value": "100"
+										},
+										{
+											"key": "interpro",
+											"value": "ipr011611"
+										},
+										{
+											"key": "pfam",
+											"value": "pf00294"
+										}
+									]
+								}
+							},
+							"response": []
+						},
 						{
 							"name": "Gene-Autocomplete-01",
 							"event": [
@@ -1217,7 +1131,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&query=dnaA",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1228,8 +1142,8 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "BU"
 										},
 										{
 											"key": "query",
@@ -1265,7 +1179,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/autocomplete?genome_ids=1,2,3&query=dnaA",
+									"raw": "{{mett-current}}/api/genes/autocomplete?isolates=BU_2243B,BU_3537,BU_61&query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1276,8 +1190,8 @@
 									],
 									"query": [
 										{
-											"key": "genome_ids",
-											"value": "1,2,3"
+											"key": "isolates",
+											"value": "BU_2243B,BU_3537,BU_61"
 										},
 										{
 											"key": "query",
@@ -1313,7 +1227,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=2,5,7,10&query=dnaA",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&isolates=BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527&query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1324,12 +1238,12 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "BU"
 										},
 										{
-											"key": "genome_ids",
-											"value": "2,5,7,10"
+											"key": "isolates",
+											"value": "BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527"
 										},
 										{
 											"key": "query",
@@ -1365,7 +1279,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=6&query=pr&filter=essentiality:essential",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&gisolates=BU_ATCC8492&query=pr&filter=essentiality:essential",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1376,12 +1290,12 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "BU"
 										},
 										{
-											"key": "genome_ids",
-											"value": "6"
+											"key": "gisolates",
+											"value": "BU_ATCC8492"
 										},
 										{
 											"key": "query",
@@ -1421,7 +1335,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=6&query=pr&filter=essentiality:essential_liquid",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&gisolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1432,12 +1346,12 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "BU"
 										},
 										{
-											"key": "genome_ids",
-											"value": "6"
+											"key": "gisolates",
+											"value": "BU_ATCC8492"
 										},
 										{
 											"key": "query",
@@ -1463,7 +1377,7 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Number of pages matches expected value\", function () {",
+											"pm.test(\"Json data length matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
 											"    pm.expect(jsonData.length).to.eql(10); ",
 											"});"
@@ -1477,7 +1391,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=6&query=pr&filter=essentiality:essential_liquid,unclear",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&gisolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid,unclear",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1488,12 +1402,12 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "BU"
 										},
 										{
-											"key": "genome_ids",
-											"value": "6"
+											"key": "gisolates",
+											"value": "BU_ATCC8492"
 										},
 										{
 											"key": "query",
@@ -1519,7 +1433,7 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Number of pages matches expected value\", function () {",
+											"pm.test(\"Json data length matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
 											"    pm.expect(jsonData.length).to.eql(0); ",
 											"});"
@@ -1533,7 +1447,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/autocomplete?species_id=1&genome_ids=1&query=pr&filter=essentiality:essential",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&isolates=BU_2243B&query=pr&filter=essentiality:essential",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1544,12 +1458,12 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "BU"
 										},
 										{
-											"key": "genome_ids",
-											"value": "1"
+											"key": "isolates",
+											"value": "BU_2243B"
 										},
 										{
 											"key": "query",

@@ -32,7 +32,7 @@ from dataportal.utils.constants import (
     STRAIN_FIELD_TYPE_STRAIN,
     SPECIES_FIELD_COMMON_NAME,
     SPECIES_FIELD_SCIENTIFIC_NAME,
-    SPECIES_FIELD_ACRONYM,
+    SPECIES_FIELD_ACRONYM, STRAIN_FIELD_SPECIES_ACRONYM,
 )
 from dataportal.utils.exceptions import ServiceError, GenomeNotFoundError
 
@@ -62,7 +62,7 @@ class GenomeService:
     ) -> GenomePaginationSchema:
         """Search genomes in Elasticsearch by isolate name (partial match)."""
         return await self._search_paginated_strains(
-            filter_criteria={"isolate_name": query},
+            filter_criteria={STRAIN_FIELD_ISOLATE_NAME: query},
             page=page,
             per_page=per_page,
             sortField=sortField,
@@ -79,7 +79,7 @@ class GenomeService:
             sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
-            filter_criteria={"species_acronym": species_acronym},
+            filter_criteria={STRAIN_FIELD_SPECIES_ACRONYM: species_acronym},
             page=page,
             per_page=per_page,
             sortField=sortField,
@@ -96,7 +96,7 @@ class GenomeService:
             sortField: str = STRAIN_FIELD_ISOLATE_NAME,
             sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
-        filter_criteria = {"species_acronym": species_acronym, "isolate_name": query}
+        filter_criteria = {STRAIN_FIELD_SPECIES_ACRONYM: species_acronym, STRAIN_FIELD_ISOLATE_NAME: query}
         return await self._search_paginated_strains(
             filter_criteria=filter_criteria,
             page=page,
@@ -107,29 +107,40 @@ class GenomeService:
         )
 
     async def search_strains(
-            self, query: str, limit: int = None, species_id: Optional[int] = None
+            self, query: str, limit: int = None, species_acronym: Optional[str] = None
     ):
         try:
-            strain_filter = Q(isolate_name__icontains=query) | Q(
-                assembly_name__icontains=query
+            search = Search(index=self.INDEX_NAME)
+
+            search = search.query(
+                "bool",
+                should=[
+                    {"wildcard": {"isolate_name.keyword": f"*{query}*"}},
+                    {"wildcard": {"assembly_name.keyword": f"*{query}*"}}
+                ],
+                minimum_should_match=1
             )
-            if species_id:
-                strain_filter &= Q(species_id=species_id)
-            strains = await sync_to_async(
-                lambda: list(
-                    Strain.objects.filter(strain_filter).select_related(
-                        STRAIN_FIELD_SPECIES
-                    )[: limit or self.limit]
-                )
-            )()
+
+            if species_acronym:
+                search = search.filter("term", species_acronym=species_acronym)
+
+            search = search[: (limit or self.limit)]
+
+            search = search.source(["id", "isolate_name", "assembly_name"])
+
+            # Print final query to debug
+            print(f"Final Elasticsearch Query: {search.to_dict()}")
+            response = await sync_to_async(search.execute)()
+
+            # Process results
             return [
                 {
-                    FIELD_ID: strain.id,
-                    STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
-                    STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
+                    STRAIN_FIELD_ISOLATE_NAME: hit.isolate_name,
+                    STRAIN_FIELD_ASSEMBLY_NAME: hit.assembly_name,
                 }
-                for strain in strains
+                for hit in response
             ]
+
         except Exception as e:
             logger.error(f"Error executing strain search query: {e}")
             return []
@@ -142,7 +153,7 @@ class GenomeService:
             sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
-            filter_criteria=Q(),
+            filter_criteria={},
             page=page,
             per_page=per_page,
             sortField=sortField,
@@ -150,43 +161,19 @@ class GenomeService:
             error_message="Error fetching genomes",
         )
 
-    async def get_genome_by_id(self, genome_id: int):
-        result = await self._fetch_single_genome(
-            filter_criteria=Q(id=genome_id),
-            error_message=f"Error fetching genome by ID {genome_id}",
-        )
-        logger.debug(f"Fetched genome successfully: {result}")
-        return result
-
-    async def get_genome_by_strain_name(self, strain_name: str):
+    async def get_genome_by_strain_name(self, isolate_name: str):
         return await self._fetch_single_genome(
-            filter_criteria=Q(isolate_name__iexact=strain_name),
-            error_message=f"Error fetching genome by strain name {strain_name}",
+            filter_criteria={STRAIN_FIELD_ISOLATE_NAME: isolate_name},
+            error_message=f"Error fetching genome by strain name {isolate_name}",
         )
-
-    async def get_genomes_by_ids(
-            self, genome_ids: List[int]
-    ) -> List[GenomeResponseSchema]:
-        if not genome_ids:
-            return []
-        filter_criteria = Q(id__in=genome_ids)
-        try:
-            strains = await self._fetch_and_validate_strains(
-                filter_criteria=filter_criteria,
-                schema=GenomeResponseSchema,
-                error_message="Error fetching genomes by IDs",
-            )
-            return strains
-        except Exception as e:
-            logger.error(f"Error in get_genomes_by_ids: {e}", exc_info=True)
-            raise ServiceError(f"Could not fetch genomes by IDs: {e}")
 
     async def get_genomes_by_isolate_names(
             self, isolate_names: List[str]
     ) -> List[GenomeResponseSchema]:
         if not isolate_names:
             return []
-        filter_criteria = Q(isolate_name__in=isolate_names)
+        logger.info(f"Getting genomes for isolate names: {isolate_names}")
+        filter_criteria = {"isolate_name.keyword": isolate_names}
         try:
             strains = await self._fetch_and_validate_strains(
                 filter_criteria=filter_criteria,
@@ -201,7 +188,14 @@ class GenomeService:
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         """Fetch and validate strains from Elasticsearch and compute additional fields."""
         try:
-            search = Search(index=self.INDEX_NAME).query("term", **filter_criteria)
+            search = Search(index=self.INDEX_NAME)
+
+            for field, value in filter_criteria.items():
+                if isinstance(value, list):
+                    search = search.filter("terms", **{field: value})
+                else:
+                    search = search.filter("term", **{field: value})
+
             response = await sync_to_async(search.execute)()
 
             results = []

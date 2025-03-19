@@ -68,9 +68,9 @@ async def autocomplete_suggestions(
         request,
         query: str,
         limit: int = DEFAULT_PER_PAGE_CNT,
-        species_id: Optional[int] = None,
+        species_acronym: Optional[str] = None,
 ):
-    return await genome_service.search_strains(query, limit, species_id)
+    return await genome_service.search_strains(query, limit, species_acronym)
 
 
 # API Endpoint to retrieve all species
@@ -130,20 +130,6 @@ async def search_genomes_by_string(
         raise HttpError(
             500, f"An error occurred while fetching genomes by query: {query}"
         )
-
-
-@genome_router.get("/by-ids", response=List[GenomeResponseSchema])
-async def get_genomes_by_ids(request, ids: str):
-    try:
-        if not ids:
-            raise_http_error(400, "Genome IDs list is empty.")
-
-        genome_id_list = [
-            int(id.strip()) for id in ids.split(",") if id.strip().isdigit()
-        ]
-        return await genome_service.get_genomes_by_ids(genome_id_list)
-    except ServiceError as e:
-        raise_http_error(500, f"An error occurred: {str(e)}")
 
 
 @genome_router.get("/by-isolate-names", response=List[GenomeResponseSchema])
