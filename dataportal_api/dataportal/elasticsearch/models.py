@@ -40,7 +40,7 @@ class StrainDocument(Document):
     strain_id = Integer()
 
     species_scientific_name = Text(fields={"keyword": Keyword()})
-    species_acronym = Keyword()
+    species_acronym = Keyword(normalizer=lowercase_normalizer)
 
     isolate_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
     assembly_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
@@ -67,6 +67,9 @@ class StrainDocument(Document):
                 },
                 "tokenizer": {
                     "edge_ngram_tokenizer": edge_ngram_tokenizer
+                },
+                "normalizer": {
+                    "lowercase_normalizer": lowercase_normalizer
                 }
             }
         }
@@ -87,7 +90,7 @@ class GeneDocument(Document):
     product_source = Text(fields={"keyword": Keyword()})
 
     species_scientific_name = Keyword()
-    species_acronym = Keyword()
+    species_acronym = Keyword(normalizer=lowercase_normalizer)
     isolate_name = Keyword()
 
     start = Integer()

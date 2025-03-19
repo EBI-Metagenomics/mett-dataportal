@@ -158,10 +158,10 @@ async def get_genomes_by_isolate_names(request, names: str):
 
 
 # API Endpoint to retrieve genomes filtered by species ID
-@species_router.get("/{species_id}/genomes", response=GenomePaginationSchema)
+@species_router.get("/{species_acronym}/genomes", response=GenomePaginationSchema)
 async def get_genomes_by_species(
         request,
-        species_id: int,
+        species_acronym: str,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
         sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
@@ -169,7 +169,7 @@ async def get_genomes_by_species(
 ):
     try:
         return await genome_service.get_genomes_by_species(
-            species_id, page, per_page, sortField, sortOrder
+            species_acronym, page, per_page, sortField, sortOrder
         )
     except ServiceError:
         raise HttpError(

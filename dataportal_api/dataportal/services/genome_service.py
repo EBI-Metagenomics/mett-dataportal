@@ -72,14 +72,14 @@ class GenomeService:
 
     async def get_genomes_by_species(
             self,
-            species_id: int,
+            species_acronym: str,
             page: int = 1,
             per_page: int = DEFAULT_PER_PAGE_CNT,
             sortField: str = STRAIN_FIELD_ISOLATE_NAME,
             sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
-            filter_criteria=Q(species_id=species_id),
+            filter_criteria={"species_acronym": species_acronym},
             page=page,
             per_page=per_page,
             sortField=sortField,
@@ -308,21 +308,27 @@ class GenomeService:
     async def _fetch_paginated_strains(
             self, filter_criteria, page, per_page, sortField, sortOrder
     ):
-        """Fetch paginated strains from Elasticsearch."""
         try:
-            search = Search(index=self.INDEX_NAME).query(
-                "wildcard", isolate_name=f"*{filter_criteria['isolate_name']}*"
-            )
+            search = Search(index=self.INDEX_NAME)
 
-            # Ensure sorting uses `.keyword` for text fields
-            if sortField == "isolate_name":
-                sortField = "isolate_name.keyword"  # Use keyword field
+            # Dynamically apply filters
+            for field, value in filter_criteria.items():
+                if isinstance(value, str):
+                    search = search.query("wildcard", **{field: f"*{value}*"})
+                else:
+                    search = search.query("term", **{field: value})
+
+            if sortField in ["isolate_name", "species_scientific_name"]:
+                sortField = f"{sortField}.keyword"
 
             sort_order = "asc" if sortOrder == SORT_ASC else "desc"
             search = search.sort({sortField: {"order": sort_order}})
 
-            # Pagination
+            # Apply pagination
             search = search[(page - 1) * per_page: page * per_page]
+
+            # Print final query to debug
+            print(f"Final Elasticsearch Query: {search.to_dict()}")
 
             response = await sync_to_async(search.execute)()
             total_results = response.hits.total.value if hasattr(response.hits.total, 'value') else len(response)
