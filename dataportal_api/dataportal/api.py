@@ -337,8 +337,8 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
         logger.debug(
             f"Request received with params: query={query}, filter={filter}, page={page}, per_page={per_page}, sortField={sort_field}, sortOrder={sort_order}"
         )
-        if not isolates:
-            raise_http_error(400, "Isolate names list is empty.")
+        # if not isolates:
+        #     raise_http_error(400, "Isolate names list is empty.")
         return await gene_service.get_genes_by_multiple_genomes_and_string(
             isolates,
             species_acronym,
