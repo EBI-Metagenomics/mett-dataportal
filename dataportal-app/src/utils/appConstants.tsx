@@ -5,10 +5,10 @@ export const ZOOM_LEVELS = {
 };
 
 export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
-export const API_GENOMES_BY_IDS = `${API_BASE_URL}/genomes/by-ids`;
-export const getAPIUrlGenomeSearchWithSpecies = (speciesId: number) => `${API_BASE_URL}/species/${speciesId}/genomes/search`;
+export const API_GENOMES_BY_ISOLATE_NAMES = `${API_BASE_URL}/genomes/by-isolate-names`;
+export const getAPIUrlGenomeSearchWithSpecies = (species_acronym: string) => `${API_BASE_URL}/species/${species_acronym}/genomes/search`;
 export const API_GENOME_SEARCH = `${API_BASE_URL}/genomes/search`;
-export const getEssentialityDataUrl = (strainId: number) => `${API_BASE_URL}/genomes/${strainId}/essentiality`;
+export const getEssentialityDataUrl = (isolate_name: string) => `${API_BASE_URL}/genomes/${isolate_name}/essentiality`;
 
 export const API_GENE_SEARCH_ADVANCED = `${API_BASE_URL}/genes/search/advanced`;
 

@@ -20,7 +20,7 @@ interface GeneSearchFormProps {
     searchQuery: string,
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
     onSearchSubmit: () => void,
-    selectedSpecies?: number [],
+    selectedSpecies?: string [],
     results: any[],
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     sortField: string,
@@ -100,7 +100,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     }
                     // If genome is selected (used in GeneViewerPage.tsx)
                     else if (selectedGenomes && selectedGenomes.length > 0) {
-                        const genomeIds = selectedGenomes.map(genome => genome.id).join(',');
+                        const genomeIds = selectedGenomes.map(genome => genome.isolate_name).join(',');
                         response = await GeneService.fetchGeneAutocompleteSuggestions(
                             inputQuery,
                             10,
@@ -146,13 +146,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
-    const [selectedGeneId, setSelectedGeneId] = useState<number | null>(null);
+    const [selectedGeneId, setSelectedGeneId] = useState<string | null>(null);
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
          async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
             const genomeFilter = selectedGenomes?.length
-                ? selectedGenomes.map((genome) => ({id: genome.id, name: genome.isolate_name}))
+                ? selectedGenomes.map((genome) => ({id: genome.isolate_name, name: genome.isolate_name}))
                 : undefined;
             const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
             try {
@@ -160,7 +160,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 let response = null;
                 if (selectedGeneId) {
                     // Fetch by gene ID
-                    const geneResponseObj = await GeneService.fetchGeneById(selectedGeneId);
+                    const geneResponseObj = await GeneService.fetchGeneByLocusTag(selectedGeneId);
                     response = {
                         results: [geneResponseObj],
                         page_number: 1,
@@ -245,14 +245,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
-        // console.log('suggestion: ' + suggestion)
-        // console.log('strain name: ' + suggestion.isolate_name)
-        // console.log('suggestion.gene_id: ' + suggestion.gene_id)
-        // console.log('suggestion.gene_name: ' + suggestion.gene_name)
-        // console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
-        // setQuery(suggestion.gene_name || suggestion.locus_tag + '(' + suggestion.isolate_name + ')');
+        console.log('suggestion: ' + suggestion)
+        console.log('strain name: ' + suggestion.isolate_name)
+        console.log('suggestion.gene_name: ' + suggestion.gene_name)
+        console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
+        setQuery(suggestion.gene_name || suggestion.locus_tag + '(' + suggestion.isolate_name + ')');
         setGeneName(suggestion.gene_name);
-        setSelectedGeneId(suggestion.gene_id);
+        setSelectedGeneId(suggestion.locus_tag);
         setSuggestions([]);
     };
 

@@ -42,12 +42,12 @@ const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClic
 
 const HomePage: React.FC = () => {
     const location = useLocation();
-    const [speciesList, setSpeciesList] = useState<{ id: number; scientific_name: string }[]>([]);
+    const [speciesList, setSpeciesList] = useState<{ acronym: string; scientific_name: string, common_name: string, taxonomy_id: number }[]>([]);
     const [selectedGenomes, setSelectedGenomes] = useState<BaseGenome[]>([]);
-    const [selectedSpecies, setSelectedSpecies] = useState<number[]>([]);
+    const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
     const [typeStrains, setTypeStrains] = useState<GenomeMeta[]>([]);
-    const [selectedTypeStrains, setSelectedTypeStrains] = useState<number[]>([]);
+    const [selectedTypeStrains, setSelectedTypeStrains] = useState<string[]>([]);
 
     // State for Genome Search
     const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
@@ -91,12 +91,11 @@ const HomePage: React.FC = () => {
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
-        const speciesId = params.get('speciesId');
+        const species_acronym = params.get('species_acronym');
 
-        if (speciesId) {
-            const id = parseInt(speciesId, 10);
-            if (!selectedSpecies.includes(id)) {
-                setSelectedSpecies([...selectedSpecies, id]);
+        if (species_acronym) {
+            if (!selectedSpecies.includes(species_acronym)) {
+                setSelectedSpecies([...selectedSpecies, species_acronym]);
             }
         }
     }, [location.search]);
@@ -110,15 +109,15 @@ const HomePage: React.FC = () => {
         fetchData();
     }, [genomeSearchQuery, selectedSpecies]);
 
-    const handleSpeciesSelect = async (speciesId: number) => {
+    const handleSpeciesSelect = async (species_acronym: string) => {
         setLoading(true); // Show spinner
         const startTime = Date.now(); // Track start time
 
-        let updatedSelectedSpecies: number[];
-        if (selectedSpecies.includes(speciesId)) {
-            updatedSelectedSpecies = selectedSpecies.filter((id) => id !== speciesId);
+        let updatedSelectedSpecies: string[];
+        if (selectedSpecies.includes(species_acronym)) {
+            updatedSelectedSpecies = selectedSpecies.filter((acronym) => acronym !== species_acronym);
         } else {
-            updatedSelectedSpecies = [...selectedSpecies, speciesId];
+            updatedSelectedSpecies = [...selectedSpecies, species_acronym];
         }
 
         setSelectedSpecies(updatedSelectedSpecies);
@@ -127,11 +126,11 @@ const HomePage: React.FC = () => {
             setSelectedTypeStrains([]);
         } else {
             const validTypeStrains = typeStrains.filter((strain) =>
-                updatedSelectedSpecies.includes(strain.species.id)
+                updatedSelectedSpecies.includes(strain.species_acronym)
             );
 
-            const updatedSelectedTypeStrains = selectedTypeStrains.filter((strainId) =>
-                validTypeStrains.some((strain) => strain.id === strainId)
+            const updatedSelectedTypeStrains = selectedTypeStrains.filter((isolate_name) =>
+                validTypeStrains.some((strain) => strain.isolate_name === isolate_name)
             );
 
             setSelectedTypeStrains(updatedSelectedTypeStrains);
@@ -155,16 +154,16 @@ const HomePage: React.FC = () => {
     };
 
 
-    const handleTypeStrainToggle = async (strainId: number) => {
+    const handleTypeStrainToggle = async (isolate_name: string) => {
         setLoading(true); // Show spinner
         const startTime = Date.now(); // Track start time
 
-        let updatedSelectedTypeStrains: number[];
+        let updatedSelectedTypeStrains: string[];
 
-        if (selectedTypeStrains.includes(strainId)) {
-            updatedSelectedTypeStrains = selectedTypeStrains.filter((id) => id !== strainId);
+        if (selectedTypeStrains.includes(isolate_name)) {
+            updatedSelectedTypeStrains = selectedTypeStrains.filter((id) => id !== isolate_name);
         } else {
-            updatedSelectedTypeStrains = [...selectedTypeStrains, strainId];
+            updatedSelectedTypeStrains = [...selectedTypeStrains, isolate_name];
         }
 
         setSelectedTypeStrains(updatedSelectedTypeStrains);
@@ -199,19 +198,19 @@ const HomePage: React.FC = () => {
     };
 
     const handleGenomeSelect = (genome: BaseGenome) => {
-        if (!selectedGenomes.some(g => g.id === genome.id)) {
+        if (!selectedGenomes.some(g => g.isolate_name === genome.isolate_name)) {
             setSelectedGenomes([...selectedGenomes, genome]);
         }
     };
 
-    const handleRemoveGenome = (genomeId: number) => {
-        setSelectedGenomes(selectedGenomes.filter(g => g.id !== genomeId));
-        setSelectedTypeStrains(selectedTypeStrains.filter(id => id !== genomeId));
+    const handleRemoveGenome = (isolate_name: string) => {
+        setSelectedGenomes(selectedGenomes.filter(g => g.isolate_name !== isolate_name));
+        setSelectedTypeStrains(selectedTypeStrains.filter(id => id !== isolate_name));
     };
 
     const handleToggleGenomeSelect = (genome: BaseGenome) => {
-        if (selectedGenomes.some(g => g.id === genome.id)) {
-            handleRemoveGenome(genome.id);
+        if (selectedGenomes.some(g => g.isolate_name === genome.isolate_name)) {
+            handleRemoveGenome(genome.isolate_name);
         } else {
             handleGenomeSelect(genome);
         }
@@ -240,7 +239,7 @@ const HomePage: React.FC = () => {
 
 
     const geneLinkData = {
-        template: '/genome/${strain_name}?gene_id=${gene_id}',
+        template: '/genome/${strain_name}?locus_tag=${locus_tag}',
         alias: 'Browse'
     };
 

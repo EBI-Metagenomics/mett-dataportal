@@ -100,7 +100,6 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     <button
                             className={styles.toggleButton}
                             onClick={() => onToggleGenomeSelect({
-                                id: result.id,
                                 isolate_name: result.isolate_name,
                                 type_strain: result.type_strain
                             })}
@@ -117,12 +116,12 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                         >
                             <i
                                 className={`icon icon-common ${
-                                    selectedGenomes.some(genome => genome.id === result.id)
+                                    selectedGenomes.some(genome => genome.isolate_name === result.isolate_name)
                                         ? "icon-minus-circle"
                                         : "icon-plus-circle"
                                 }`}
                                 style={{
-                                    color: selectedGenomes.some(genome => genome.id === result.id)
+                                    color: selectedGenomes.some(genome => genome.isolate_name === result.isolate_name)
                                         ? "#B0B0B0"
                                         : "#007BFF",
                                     fontSize: "18px",

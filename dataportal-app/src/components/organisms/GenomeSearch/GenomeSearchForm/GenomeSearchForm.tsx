@@ -6,7 +6,7 @@ import styles from "@components/organisms/GenomeSearch/GenomeSearchForm/GenomeSe
 import {GenomeService} from "../../../../services/genomeService";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {AutocompleteResponse, BaseGenome} from "../../../../interfaces/Genome";
-import {API_GENOME_SEARCH, API_GENOMES_BY_IDS, getAPIUrlGenomeSearchWithSpecies} from "../../../../utils/appConstants";
+import {API_GENOME_SEARCH, API_GENOMES_BY_ISOLATE_NAMES, getAPIUrlGenomeSearchWithSpecies} from "../../../../utils/appConstants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 
 interface SearchGenomeFormProps {
@@ -14,8 +14,8 @@ interface SearchGenomeFormProps {
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: (field: string) => void;
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
-    selectedSpecies: number [];
-    selectedTypeStrains: number[];
+    selectedSpecies: string [];
+    selectedTypeStrains: string[];
     results: any[];
     sortField: string,
     sortOrder: 'asc' | 'desc';
@@ -125,10 +125,10 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
                 if (typeStrainFilter) {
                     // Fetch by strain IDs
-                    apiDetails.url = API_GENOMES_BY_IDS;
+                    apiDetails.url = API_GENOMES_BY_ISOLATE_NAMES;
                     apiDetails.params = {ids: typeStrainFilter.join(",")};
 
-                    response = await GenomeService.fetchGenomeByStrainIds(typeStrainFilter);
+                    response = await GenomeService.fetchGenomeByIsolateNames(typeStrainFilter);
                     setResults(response);
                     setTotalPages(1);
                     setHasPrevious(false);
@@ -210,7 +210,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         // console.log('suggestion.strain_id: ' + suggestion.id)
         setQuery(suggestion.isolate_name);
         setIsolateName(suggestion.isolate_name);
-        setSelectedStrainId(suggestion.id);
         setSuggestions([]);
         // EMG-7006 - no auto selection of filters
         //onGenomeSelect({id: suggestion.strain_id, name: suggestion.isolate_name});

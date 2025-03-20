@@ -18,7 +18,7 @@ interface GeneResultsTableProps {
 const generateLink = (template: string, result: any) => {
     return template
         .replace('${strain_name}', result.strain.isolate_name)
-        .replace('${gene_id}', result.id);
+        .replace('${locus_tag}', result.locus_tag);
 };
 
 const handleNavigation = (
@@ -94,30 +94,25 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
             <tbody className="vf-table__body">
             {results.map((geneMeta, index) => (
                 <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.strain.isolate_name || 'Unknown Strain'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.isolate_name || 'Unknown Strain'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || 'Unknown Gene Name'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.seq_id || 'Unknown'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.locus_tag || 'Unknown Locus Tag'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.product || ''}</td>
 
                     <td className={`vf-table__cell ${styles.vfTableCellIcon}`}>
-                        {geneMeta.essentiality_data && geneMeta.essentiality_data.length > 0 ? (
-                            // Filter for only 'solid' media type
-                            geneMeta.essentiality_data
-                                .filter((essentiality) => essentiality.media === 'solid')
-                                .map((essentiality, index) => (
-                                    <span
-                                        key={`${geneMeta.id}-${index}`}
-                                        title={`${essentiality.essentiality}`}
-                                        className={styles.essentialityIcon}
-                                    >
-                                        {getIconForEssentiality(essentiality.essentiality)}
-                                    </span>
-                                ))
+                        {geneMeta.essentiality && geneMeta.essentiality !== "Unknown" ? (
+                            <span
+                                title={geneMeta.essentiality}
+                                className={styles.essentialityIcon}
+                            >
+                                {getIconForEssentiality(geneMeta.essentiality)}
+                            </span>
                         ) : (
                             '---'
                         )}
                     </td>
+
 
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         {viewState ? (

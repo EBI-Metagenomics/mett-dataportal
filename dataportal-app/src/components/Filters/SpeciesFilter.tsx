@@ -2,14 +2,14 @@ import React from 'react';
 import styles from '@components/pages/HomePage.module.scss';
 
 interface Species {
-    id: number;
+    acronym: string;
     scientific_name: string;
 }
 
 interface SpeciesFilterProps {
     speciesList: Species[];
-    selectedSpecies: number[];
-    onSpeciesSelect: (speciesId: number) => void;
+    selectedSpecies: string[];
+    onSpeciesSelect: (acronym: string) => void;
 }
 
 const SpeciesFilter: React.FC<SpeciesFilterProps> = ({speciesList, selectedSpecies, onSpeciesSelect}) => (
@@ -17,12 +17,12 @@ const SpeciesFilter: React.FC<SpeciesFilterProps> = ({speciesList, selectedSpeci
         <h3>Species</h3>
         <ul>
             {speciesList.map(species => (
-                <li key={species.id}>
+                <li key={species.acronym}>
                     <label>
                         <input
                             type="checkbox"
-                            checked={selectedSpecies.includes(species.id)}
-                            onChange={() => onSpeciesSelect(species.id)}
+                            checked={selectedSpecies.includes(species.acronym)}
+                            onChange={() => onSpeciesSelect(species.acronym)}
                         />
                         <i>{species.scientific_name}</i>
                     </label>

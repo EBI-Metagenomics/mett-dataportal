@@ -4,9 +4,9 @@ import { GenomeMeta } from '../../interfaces/Genome';
 
 interface TypeStrainsFilterProps {
     typeStrains: GenomeMeta[];
-    selectedTypeStrains: number[];
-    selectedSpecies: number[];
-    onTypeStrainToggle: (strainId: number) => void;
+    selectedTypeStrains: string[];
+    selectedSpecies: string[];
+    onTypeStrainToggle: (isolate_name: string) => void;
 }
 
 const TypeStrainsFilter: React.FC<TypeStrainsFilterProps> = ({ typeStrains, selectedTypeStrains, selectedSpecies, onTypeStrainToggle }) => (
@@ -14,16 +14,16 @@ const TypeStrainsFilter: React.FC<TypeStrainsFilterProps> = ({ typeStrains, sele
         <h3>Type Strains</h3>
         <ul>
             {typeStrains.map((strain) => {
-                const isStrainEnabled = selectedSpecies.length === 0 || selectedSpecies.includes(strain.species.id);
+                const isStrainEnabled = selectedSpecies.length === 0 || selectedSpecies.includes(strain.species_acronym);
 
                 return (
-                    <li key={strain.id}>
+                    <li key={strain.isolate_name}>
                         <label>
                             <input
                                 type="checkbox"
-                                checked={selectedTypeStrains.includes(strain.id)}
+                                checked={selectedTypeStrains.includes(strain.isolate_name)}
                                 disabled={!isStrainEnabled}
-                                onChange={() => onTypeStrainToggle(strain.id)}
+                                onChange={() => onTypeStrainToggle(strain.isolate_name)}
                             />
                             {strain.isolate_name}
                         </label>
