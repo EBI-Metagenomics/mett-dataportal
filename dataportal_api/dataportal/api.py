@@ -133,11 +133,11 @@ async def search_genomes_by_string(
 
 
 @genome_router.get("/by-isolate-names", response=List[GenomeResponseSchema])
-async def get_genomes_by_isolate_names(request, names: str):
+async def get_genomes_by_isolate_names(request, isolates: str):
     try:
-        if not names:
+        if not isolates:
             raise_http_error(400, "Isolate names list is empty.")
-        isolate_names_list = [id.strip() for id in names.split(",")]
+        isolate_names_list = [id.strip() for id in isolates.split(",")]
         return await genome_service.get_genomes_by_isolate_names(isolate_names_list)
     except ServiceError as e:
         raise_http_error(500, f"An error occurred: {str(e)}")
@@ -324,8 +324,8 @@ async def search_genes_by_genome_and_string(
 @gene_router.get("/search/advanced", response=GenePaginationSchema)
 async def search_genes_by_multiple_genomes_and_species_and_string(
         request,
-        genome_ids: str = "",
-        species_id: Optional[int] = None,
+        isolates: str = "",
+        species_acronym: Optional[str] = None,
         query: str = "",
         filter: Optional[str] = None,
         page: int = 1,
@@ -337,9 +337,11 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
         logger.debug(
             f"Request received with params: query={query}, filter={filter}, page={page}, per_page={per_page}, sortField={sort_field}, sortOrder={sort_order}"
         )
+        if not isolates:
+            raise_http_error(400, "Isolate names list is empty.")
         return await gene_service.get_genes_by_multiple_genomes_and_string(
-            genome_ids,
-            species_id,
+            isolates,
+            species_acronym,
             query,
             filter,
             page,
@@ -348,7 +350,7 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
             sort_order,
         )
     except InvalidGenomeIdError:
-        raise_http_error(400, f"Invalid genome ID provided: {genome_ids}")
+        raise_http_error(400, f"Invalid genome ID provided: {isolates}")
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
