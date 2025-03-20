@@ -7,7 +7,7 @@ export interface GenomeMeta {
     species_scientific_name?: string;
     species_acronym: string;
     isolate_name: string;
-    assembly_name?: string;
+    assembly_name: string;
     assembly_accession?: string | null;
     fasta_file: string;
     gff_file: string;
