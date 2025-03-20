@@ -17,6 +17,7 @@ from .schemas import (
     EssentialityTagSchema,
     EssentialityByContigSchema,
 )
+from .services.essentiality_service import EssentialityService
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
 from .services.species_service import SpeciesService
@@ -40,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 genome_service = GenomeService()
 gene_service = GeneService()
+essentiality_service = EssentialityService()
 species_service = SpeciesService()
 
 api = NinjaAPI(
@@ -357,16 +359,15 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
 
 
 @gene_router.get("/essentiality/tags", response=list[EssentialityTagSchema])
-def list_essentiality_tags(request):
-    tags = EssentialityTag.objects.all()
-    return tags
+async def list_essentiality_tags(request):
+    return await essentiality_service.get_unique_essentiality_tags()
 
 
 # API endpoint to retrieve essentiality data from cache for a specific strain ID.
 @genome_router.get("/{isolate_name}/essentiality/{ref_name}", response=Dict[str, EssentialityByContigSchema])
 async def get_essentiality_data_by_contig(request, isolate_name: str, ref_name: str):
     try:
-        essentiality_data = await gene_service.get_essentiality_data_by_strain_and_ref(
+        essentiality_data = await essentiality_service.get_essentiality_data_by_strain_and_ref(
             isolate_name, ref_name
         )
         if not essentiality_data:

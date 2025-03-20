@@ -1,6 +1,11 @@
 from django.conf import settings
 
 
+def convert_to_camel_case(text: str) -> str:
+    """Convert a string to CamelCase."""
+    return " ".join(word.capitalize() for word in text.split())
+
+
 def construct_file_urls(strain):
     # Construct URLs using environment variables
     fasta_url = f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"

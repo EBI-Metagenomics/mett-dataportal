@@ -279,7 +279,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/by-isolate-names?names=BU_909",
+									"raw": "{{mett-current}}/api/genomes/by-isolate-names?isolates=BU_909",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -290,7 +290,7 @@
 									],
 									"query": [
 										{
-											"key": "names",
+											"key": "isolates",
 											"value": "BU_909"
 										}
 									]
@@ -369,7 +369,7 @@
 									}
 								},
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/by-isolate-names?names=BU_ATCC8492,PV_ATCC8482",
+									"raw": "{{mett-current}}/api/genomes/by-isolate-names?isolates=BU_ATCC8492,PV_ATCC8482",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -380,7 +380,7 @@
 									],
 									"query": [
 										{
-											"key": "names",
+											"key": "isolates",
 											"value": "BU_ATCC8492,PV_ATCC8482"
 										}
 									]
@@ -425,7 +425,7 @@
 									}
 								},
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/by-isolate-names?names=BU_ATCC8492",
+									"raw": "{{mett-current}}/api/genomes/by-isolate-names?isolates=BU_ATCC8492",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -436,7 +436,7 @@
 									],
 									"query": [
 										{
-											"key": "names",
+											"key": "isolates",
 											"value": "BU_ATCC8492"
 										}
 									]
@@ -1023,7 +1023,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/faceted-search?species_acronym=BU&limit=10&interpro=ipr011611",
+									"raw": "{{mett-current}}/api/genes/faceted-search?species_acronym=BU&limit=10&pfam=pf00294",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1042,8 +1042,8 @@
 											"value": "10"
 										},
 										{
-											"key": "interpro",
-											"value": "ipr011611"
+											"key": "pfam",
+											"value": "pf00294"
 										}
 									]
 								}
@@ -1323,7 +1323,7 @@
 											"",
 											"pm.test(\"Number of pages matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.length).to.eql(10); ",
+											"    pm.expect(jsonData.length).to.eql(8); ",
 											"});"
 										],
 										"type": "text/javascript",
@@ -1479,7 +1479,7 @@
 							"response": []
 						},
 						{
-							"name": "Gene-by-GeneID-positive",
+							"name": "Gene-by-LocusTag-positive",
 							"event": [
 								{
 									"listen": "test",
@@ -1491,7 +1491,12 @@
 											"",
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.strain.isolate_name).to.eql(\"BU_ATCC8492\");",
+											"    pm.expect(jsonData.isolate_name).to.eql(\"BU_ATCC8492\");",
+											"});",
+											"",
+											"pm.test(\"Start Position not null\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.start_position).is.not.null;",
 											"});"
 										],
 										"type": "text/javascript",
@@ -1503,14 +1508,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/21160",
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_02153",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genes",
-										"21160"
+										"BU_ATCC8492_02153"
 									]
 								}
 							},
@@ -1536,14 +1541,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/-1",
+									"raw": "{{mett-current}}/api/genes/BU_AXCC8492_02153",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genes",
-										"-1"
+										"BU_AXCC8492_02153"
 									]
 								}
 							},
@@ -1666,14 +1671,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/6/genes",
+									"raw": "{{mett-current}}/api/genomes/BU_909/genes",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genomes",
-										"6",
+										"BU_909",
 										"genes"
 									]
 								}
@@ -1705,14 +1710,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/9999/genes",
+									"raw": "{{mett-current}}/api/genomes/ABC_6546/genes",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genomes",
-										"9999",
+										"ABC_6546",
 										"genes"
 									]
 								}
@@ -1720,7 +1725,7 @@
 							"response": []
 						},
 						{
-							"name": "Genes-by-GenomeID-Single-GeneString-positive",
+							"name": "Genes-by-IsolateName-Single-GeneString-positive",
 							"event": [
 								{
 									"listen": "test",
@@ -1745,14 +1750,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/1/genes/search?query=dnaA",
+									"raw": "{{mett-current}}/api/genomes/BU_ATCC8492/genes/search?query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genomes",
-										"1",
+										"BU_ATCC8492",
 										"genes",
 										"search"
 									],
@@ -1792,7 +1797,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?query=&per_page=10&sort_field=seq_id&sort_order=asc&genome_ids=4",
+									"raw": "{{mett-current}}/api/genes/search/advanced?query=&per_page=10&sort_field=seq_id&sort_order=asc&isolates=BU_909",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1820,8 +1825,8 @@
 											"value": "asc"
 										},
 										{
-											"key": "genome_ids",
-											"value": "4"
+											"key": "isolates",
+											"value": "BU_909"
 										}
 									]
 								}
@@ -1829,7 +1834,7 @@
 							"response": []
 						},
 						{
-							"name": "Genes-by-GenomeID-Single-GeneString-negative",
+							"name": "Genes-by-IsolateName-Single-GeneString-negative",
 							"event": [
 								{
 									"listen": "test",
@@ -1853,14 +1858,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/999/genes/search?query=",
+									"raw": "{{mett-current}}/api/genomes/ABC_6576/genes/search?query=",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genomes",
-										"999",
+										"ABC_6576",
 										"genes",
 										"search"
 									],
@@ -1875,7 +1880,7 @@
 							"response": []
 						},
 						{
-							"name": "Genes-by-GenomeID-Multiple-GeneString-positive-01",
+							"name": "Genes-by-IsolateName-Multiple-GeneString-positive-01",
 							"event": [
 								{
 									"listen": "test",
@@ -1899,7 +1904,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?genome_ids=1,2,3,4,5&query=dnaA",
+									"raw": "{{mett-current}}/api/genes/search/advanced?isolates=BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492&query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1911,8 +1916,8 @@
 									],
 									"query": [
 										{
-											"key": "genome_ids",
-											"value": "1,2,3,4,5"
+											"key": "isolates",
+											"value": "BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492"
 										},
 										{
 											"key": "query",
@@ -1924,7 +1929,7 @@
 							"response": []
 						},
 						{
-							"name": "Genes-by-GenomeID-Multiple-GeneString-positive-02",
+							"name": "Genes-by-IsolateName-Multiple-GeneString-positive-02",
 							"event": [
 								{
 									"listen": "test",
@@ -1948,7 +1953,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?genome_ids=1,2,3,4,5&query=",
+									"raw": "{{mett-current}}/api/genes/search/advanced?isolates=BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492&query=",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1960,8 +1965,8 @@
 									],
 									"query": [
 										{
-											"key": "genome_ids",
-											"value": "1,2,3,4,5"
+											"key": "isolates",
+											"value": "BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492"
 										},
 										{
 											"key": "query",
@@ -1973,7 +1978,7 @@
 							"response": []
 						},
 						{
-							"name": "Genes-by-GenomeID-Multiple-GeneString-negative",
+							"name": "Genes-by-IsolateName-Multiple-GeneString-negative",
 							"event": [
 								{
 									"listen": "test",
@@ -1997,7 +2002,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?genome_ids=&query=",
+									"raw": "{{mett-current}}/api/genes/search/advanced?isolates=&query=",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -2009,7 +2014,7 @@
 									],
 									"query": [
 										{
-											"key": "genome_ids",
+											"key": "isolates",
 											"value": ""
 										},
 										{
@@ -2022,7 +2027,7 @@
 							"response": []
 						},
 						{
-							"name": "Genes-by-Species-GenomeID-Multiple-GeneString-positive-01",
+							"name": "Genes-by-Species-IsolateName-Multiple-GeneString-positive-01",
 							"event": [
 								{
 									"listen": "test",
@@ -2046,7 +2051,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?species_id=1&genome_ids=1,2,3,4,5&query=dnaA",
+									"raw": "{{mett-current}}/api/genes/search/advanced?species_acronym=bu&isolates=BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492&query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -2058,12 +2063,12 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "bu"
 										},
 										{
-											"key": "genome_ids",
-											"value": "1,2,3,4,5"
+											"key": "isolates",
+											"value": "BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492"
 										},
 										{
 											"key": "query",
@@ -2087,7 +2092,7 @@
 											"",
 											"pm.test(\"Number of pages matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.num_pages).to.be.at.least(30);",
+											"    pm.expect(jsonData.num_pages).to.be.at.least(3);",
 											"});"
 										],
 										"type": "text/javascript",
@@ -2099,7 +2104,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?species_id=1&genome_ids=6&query=pr&filter=essentiality:essential",
+									"raw": "{{mett-current}}/api/genes/search/advanced?species_acronym=bu&isolates=BU_ATCC8492&query=dna&filter=essentiality:essential",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -2111,16 +2116,16 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "bu"
 										},
 										{
-											"key": "genome_ids",
-											"value": "6"
+											"key": "isolates",
+											"value": "BU_ATCC8492"
 										},
 										{
 											"key": "query",
-											"value": "pr"
+											"value": "dna"
 										},
 										{
 											"key": "filter",
@@ -2156,7 +2161,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?species_id=1&genome_ids=1&query=pr&filter=essentiality:essential",
+									"raw": "{{mett-current}}/api/genes/search/advanced?species_acronym=BU&isolates=BU_909&query=pr&filter=essentiality:essential",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -2168,12 +2173,12 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "BU"
 										},
 										{
-											"key": "genome_ids",
-											"value": "1"
+											"key": "isolates",
+											"value": "BU_909"
 										},
 										{
 											"key": "query",
@@ -2213,7 +2218,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?species_id=1&query=dna",
+									"raw": "{{mett-current}}/api/genes/search/advanced?species_acronym=BU&query=dna",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -2225,8 +2230,8 @@
 									],
 									"query": [
 										{
-											"key": "species_id",
-											"value": "1"
+											"key": "species_acronym",
+											"value": "BU"
 										},
 										{
 											"key": "query",
@@ -2294,7 +2299,7 @@
 											"});",
 											"",
 											"",
-											"pm.test(\"Results array contains exactly one record\", function () {",
+											"pm.test(\"Results array contains e5 records\", function () {",
 											"    const jsonData = pm.response.json(); ",
 											"    pm.expect(jsonData).to.be.an('array').with.lengthOf(5); ",
 											"});",
