@@ -217,7 +217,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        console.log('selectedStrainId:' + selectedStrainId)
+        // console.log('selectedStrainId:' + selectedStrainId)
         event.preventDefault();
         fetchSearchResults(1, sortField, sortOrder);
     };

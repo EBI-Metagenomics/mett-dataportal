@@ -362,8 +362,15 @@ class GeneService:
 
         start = (page - 1) * per_page
         order_prefix = "desc" if sort_order == SORT_DESC else "asc"
+
+        # Ensure "species" is mapped to "species_scientific_name"
+        if sort_field == "strain":
+            sort_field = "isolate_name"
+
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
-        sort_by = f"{sort_by}.keyword" if sort_by in ["gene_name", "alias", "seq_id"] else sort_by
+        sort_by = f"{sort_by}.keyword" if sort_by in ["gene_name", "alias", "seq_id", "locus_tag", "product"] else sort_by
+
+
 
         try:
             logger.debug(f"Sorting by: {sort_by} ({order_prefix})")

@@ -23,7 +23,7 @@ const GeneViewerPage: React.FC = () => {
     const [geneResults, setGeneResults] = useState<any[]>([]);
     const [totalPages, setTotalPages] = useState(1);
 
-    const [sortField, setSortField] = useState<string>('species');
+    const [sortField, setSortField] = useState<string>('locus_tag');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     const {strainName} = useParams<{ strainName?: string }>();

@@ -17,7 +17,7 @@ interface GeneResultsTableProps {
 
 const generateLink = (template: string, result: any) => {
     return template
-        .replace('${strain_name}', result.strain.isolate_name)
+        .replace('${strain_name}', result.isolate_name)
         .replace('${locus_tag}', result.locus_tag);
 };
 
@@ -70,22 +70,57 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 <th onClick={() => handleSort('strain')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Strain
+                    {sortField === 'strain' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th onClick={() => handleSort('gene_name')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Gene
+                    {sortField === 'gene_name' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th onClick={() => handleSort('seq_id')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Seq Id
+                    {sortField === 'seq_id' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th onClick={() => handleSort('locus_tag')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Locus Tag
+                    {sortField === 'locus_tag' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th onClick={() => handleSort('product')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Product
+                    {sortField === 'product' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`}>Essentiality</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>

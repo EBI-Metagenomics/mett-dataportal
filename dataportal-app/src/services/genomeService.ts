@@ -17,7 +17,7 @@ export class GenomeService {
             });
 
             const rawResponse = await ApiService.get("/genomes/autocomplete", params);
-            console.log("response: ", rawResponse);
+            // console.log("response: ", rawResponse);
 
             // Transform raw response to match AutocompleteResponse
             return transformAutocompleteResponse(rawResponse);

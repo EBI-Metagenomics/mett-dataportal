@@ -5,13 +5,10 @@ import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsHandle
 import Pagination from "@components/molecules/Pagination";
 import {GeneService} from '../../../../services/geneService';
 import {createViewState} from '@jbrowse/react-app';
-import {GeneEssentialityTag, GeneMeta, GeneSuggestion, PaginatedResponse} from "../../../../interfaces/Gene";
+import {GeneEssentialityTag, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../../interfaces/Genome";
-import {
-    API_GENE_SEARCH_ADVANCED,
-    SPINNER_DELAY
-} from "../../../../utils/appConstants";
+import {API_GENE_SEARCH_ADVANCED} from "../../../../utils/appConstants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 
 type ViewModel = ReturnType<typeof createViewState>;
@@ -152,7 +149,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const fetchSearchResults = useCallback(
          async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
             const genomeFilter = selectedGenomes?.length
-                ? selectedGenomes.map((genome) => ({id: genome.isolate_name, name: genome.isolate_name}))
+                ? selectedGenomes.map((genome) => ({isolate_name: genome.isolate_name, type_strain: genome.type_strain}))
                 : undefined;
             const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
             try {
@@ -230,7 +227,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
 
     useEffect(() => {
-        console.log("##############################################################", selectedGenomes)
         fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
     }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, essentialityFilter]);
 
@@ -245,10 +241,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
-        console.log('suggestion: ' + suggestion)
-        console.log('strain name: ' + suggestion.isolate_name)
-        console.log('suggestion.gene_name: ' + suggestion.gene_name)
-        console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
+        // console.log('suggestion: ' + suggestion)
+        // console.log('strain name: ' + suggestion.isolate_name)
+        // console.log('suggestion.gene_name: ' + suggestion.gene_name)
+        // console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
         setQuery(suggestion.gene_name || suggestion.locus_tag + '(' + suggestion.isolate_name + ')');
         setGeneName(suggestion.gene_name);
         setSelectedGeneId(suggestion.locus_tag);

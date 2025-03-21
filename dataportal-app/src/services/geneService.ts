@@ -18,7 +18,7 @@ export class GeneService {
             page: String(page),
             per_page: String(perPage),
             ...(speciesAcronym && {species_acronym: String(speciesAcronym)}),
-            ...(genomeIds && {genome_ids: genomeIds}),
+            ...(genomeIds && {isolates: genomeIds}),
         });
     }
 
@@ -55,7 +55,7 @@ export class GeneService {
         perPage: number,
         sortField: string,
         sortOrder: string,
-        selectedGenomes?: { id: string; name: string }[],
+        selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
         essentialityFilter?: string[]
     ): Promise<PaginatedResponse<GeneMeta>> {
@@ -75,7 +75,7 @@ export class GeneService {
         perPage: number,
         sortField: string,
         sortOrder: string,
-        selectedGenomes?: { id: string; name: string }[],
+        selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
         essentialityFilter?: string[]
     ) {
@@ -88,7 +88,7 @@ export class GeneService {
         });
 
         if (selectedGenomes?.length) {
-            params.append("genome_ids", selectedGenomes.map((genome) => genome.id).join(","));
+            params.append("isolates", selectedGenomes.map((genome) => genome.isolate_name).join(","));
         }
 
         if (selectedSpecies?.length === 1) {

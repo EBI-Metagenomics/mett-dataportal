@@ -61,7 +61,7 @@ const HomePage: React.FC = () => {
     // sorting state
     const [genomeSortField, setGenomeSortField] = useState<string>('species');
     const [genomeSortOrder, setGenomeSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [geneSortField, setGeneSortField] = useState<string>('gene_name');
+    const [geneSortField, setGeneSortField] = useState<string>('locus_tag');
     const [geneSortOrder, setGeneSortOrder] = useState<'asc' | 'desc'>('asc');
 
     const essentialityFilter = useMemo(() => [], []);

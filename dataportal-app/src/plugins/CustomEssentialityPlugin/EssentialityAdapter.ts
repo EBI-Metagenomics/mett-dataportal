@@ -101,7 +101,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     async fetchGFF(region: any): Promise<SimpleFeatureSerialized[]> {
         // Check if the GFF data is already in the cache
         if (this.gffCache.has(this.gffLocation)) {
-            console.log('Cache hit for GFF data:', this.gffLocation);
+            // console.log('Cache hit for GFF data:', this.gffLocation);
             const cachedFeatures = this.gffCache.get(this.gffLocation) || [];
             return this.filterFeaturesByRegion(cachedFeatures, region);
         }
@@ -118,7 +118,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
             const compressedData = await unzip(gffFile);
             const gffContents = new TextDecoder('utf-8').decode(compressedData);
 
-            console.log('GFF file successfully decompressed.');
+            // console.log('GFF file successfully decompressed.');
 
             // Parse the GFF file and cache the features
             const features: SimpleFeatureSerialized[] = [];
@@ -148,7 +148,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 }
             }
 
-            console.log('Total GFF features parsed:', features.length);
+            // console.log('Total GFF features parsed:', features.length);
 
             // Cache the parsed features
             this.gffCache.set(this.gffLocation, features);
@@ -189,11 +189,8 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
             const attributes = feature.get('attributes') || {};
             const locusTag = attributes.locus_tag;
 
-            // Extract essentiality data
-            const essentialityArray = essentialityData[locusTag]?.essentiality_data || [];
-            const Essentiality = essentialityArray.length
-                ? essentialityArray[0]?.essentiality.toLowerCase()
-                : '';
+            // Extract essentiality directly from essentialityData
+            const Essentiality = essentialityData[locusTag]?.essentiality?.toLowerCase() || 'unknown';
 
             const EssentialityVisual = getIconForEssentiality(Essentiality);
 

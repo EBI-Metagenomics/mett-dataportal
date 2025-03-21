@@ -323,6 +323,10 @@ class GenomeService:
                 else:
                     search = search.query("term", **{field: value})
 
+            # Ensure "species" is mapped to "species_scientific_name"
+            if sortField == "species":
+                sortField = "species_acronym"
+
             # Ensure sorting uses `.keyword` for text fields
             if sortField in ["isolate_name", "species_scientific_name"]:
                 sortField = f"{sortField}.keyword"

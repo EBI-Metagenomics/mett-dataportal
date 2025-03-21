@@ -75,7 +75,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
             <tbody className="vf-table__body">
             {results.map((result, index) => (
                 <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}><i>{result.species.scientific_name || 'Unknown Species'}</i>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}><i>{result.species_scientific_name || 'Unknown Species'}</i>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.isolate_name || 'Unknown Isolate'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
