@@ -45,7 +45,7 @@ class GeneService:
                 "multi_match",
                 query=query,
                 fields=[
-                    "alias^3", "gene_name^2", "product", "kegg",
+                    "alias^3", "alias.keyword^5", "gene_name^2", "product", "kegg",
                     "uniprot_id", "pfam", "cog_id", "interpro"
                 ],
                 type="best_fields"
@@ -410,7 +410,7 @@ class GeneService:
         # ✅ Full-text search on gene_name and product
         if query:
             es_query["bool"]["must"].append(
-                {"multi_match": {"query": query, "fields": ["gene_name", "product", "pfam", "interpro"]}}
+                {"multi_match": {"query": query, "fields": ["gene_name", "alias", "product", "pfam", "interpro"]}}
             )
 
         # ✅ Filter by isolate_name

@@ -1,6 +1,7 @@
 export const ZOOM_LEVELS = {
-    MIN: 1,
+    MIN: -2,
     MAX: 5,
+    NAV:-2,
     DEFAULT: 2,
 };
 

@@ -34,7 +34,7 @@ const handleNavigation = (
         try {
             view.navToLocString(`${contig}:${start}..${end}`);
             setTimeout(() => {
-                view.zoomTo(ZOOM_LEVELS.DEFAULT);
+                view.zoomTo(ZOOM_LEVELS.NAV);
                 setLoading(false); // Hide spinner after navigation
             }, 200);
         } catch (error) {
