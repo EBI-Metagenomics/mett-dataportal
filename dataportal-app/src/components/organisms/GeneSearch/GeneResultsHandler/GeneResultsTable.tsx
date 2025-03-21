@@ -89,6 +89,17 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                         <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
                     )}
                 </th>
+                <th onClick={() => handleSort('alias')}
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
+                    Alias
+                    {sortField === 'alias' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
+                </th>
                 <th onClick={() => handleSort('seq_id')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Seq Id
@@ -122,6 +133,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                         <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
                     )}
                 </th>
+                <th className={`vf-table__heading ${styles.vfTableHeading}`}>UniProt Id</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`}>Essentiality</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
             </tr>
@@ -129,11 +141,13 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
             <tbody className="vf-table__body">
             {results.map((geneMeta, index) => (
                 <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.isolate_name || 'Unknown Strain'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || 'Unknown Gene Name'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.isolate_name || '---'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || '---'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.alias || '---'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.seq_id || 'Unknown'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.locus_tag || 'Unknown Locus Tag'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.product || ''}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.uniprot_id || ''}</td>
 
                     <td className={`vf-table__cell ${styles.vfTableCellIcon}`}>
                         {geneMeta.essentiality && geneMeta.essentiality !== "Unknown" ? (
