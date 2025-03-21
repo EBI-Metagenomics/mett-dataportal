@@ -19,7 +19,7 @@ spec:
         runAsUser: 7123
         runAsGroup: 1347
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.103
+        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.104
           imagePullPolicy: Always
           name: mett-dataportal-api-dev
           env:
@@ -27,27 +27,17 @@ spec:
             - name: DB_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: postgres-config-dev
+                  name: mett-elasticsearch-config-dev
                   key: DB_HOST
-            - name: DB_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: postgres-config-dev
-                  key: DB_PORT
-            - name: DB_NAME
-              valueFrom:
-                configMapKeyRef:
-                  name: postgres-config-dev
-                  key: POSTGRES_DB
             - name: DB_USER
               valueFrom:
                 configMapKeyRef:
-                  name: postgres-config-dev
+                  name: mett-elasticsearch-config-dev
                   key: POSTGRES_USER
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret-dev
+                  name: mett-elasticsearch-config-dev
                   key: POSTGRES_PASSWORD
 
             # Application-specific environment variables
