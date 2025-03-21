@@ -4,6 +4,7 @@ from pathlib import Path
 import logging
 
 from elasticsearch_dsl import connections
+from .elasticsearch_client import init_es_connection
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,11 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "replace-with-the-secret-key")
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
 
-# Load environment variables for Elasticsearch
+# Environment variables for Elasticsearch
 ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
 ES_USER = os.getenv("ES_USER")
 ES_PASSWORD = os.getenv("ES_PASSWORD")
-
+ES_TIMEOUT = int(os.getenv("ES_TIMEOUT", 30))
+ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 
 LOGGING = {
     "version": 1,
@@ -111,10 +113,16 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = "dataportal.wsgi.application"
 
-DATABASES = {} # No database, since we are using Elasticsearch
+DATABASES = {}  # No database, since we are using Elasticsearch
 
 # Establish Elasticsearch connection
-connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
+init_es_connection(
+    host=ES_HOST,
+    user=ES_USER,
+    password=ES_PASSWORD,
+    timeout=ES_TIMEOUT,
+    max_retries=ES_MAX_RETRIES,
+)
 
 if "pytest" in sys.argv[0]:
     DATABASES = {

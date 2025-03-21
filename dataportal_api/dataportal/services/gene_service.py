@@ -184,7 +184,8 @@ class GeneService:
             parsed_filters = self._parse_filters(filter)
             filter_criteria = await self._apply_filters_for_type_strain(filter_criteria, parsed_filters)
 
-            es_query = self._build_es_query(query=None, isolate_name=filter_criteria.get("isolate_name"), filter_criteria=filter_criteria)
+            es_query = self._build_es_query(query=None, isolate_name=filter_criteria.get("isolate_name"),
+                                            filter_criteria=filter_criteria)
 
             genes, total_results = await self._fetch_paginated_genes(
                 query=es_query, page=page, per_page=per_page, sort_field=sort_field, sort_order=sort_order
@@ -211,26 +212,24 @@ class GeneService:
 
         try:
             isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
-            filter_criteria = {"bool": {"must": []}}  # ✅ Ensure correct query structure
+            filter_criteria = {"bool": {"must": []}}
 
-            # ✅ Filters for genome IDs and species ID
+            # Filters for genome IDs and species ID
             if isolate_names_list:
                 filter_criteria["bool"]["must"].append({"terms": {"isolate_name": isolate_names_list}})
             if species_acronym:
                 filter_criteria["bool"]["must"].append({"term": {"species_acronym": species_acronym}})
 
-            # ✅ Parse and apply additional filters
+            # apply additional filters
             parsed_filters = self._parse_filters(filter)
             type_strain_filters = await self._apply_filters_for_type_strain({}, parsed_filters)
 
-            # ✅ Instead of `.update()`, extend `bool.must`
             if "bool" in type_strain_filters and "must" in type_strain_filters["bool"]:
                 filter_criteria["bool"]["must"].extend(type_strain_filters["bool"]["must"])
 
-            # ✅ Ensure `filter_criteria` is properly structured
-            es_query = self._build_es_query(query=query, isolate_name=filter_criteria.get("isolate_name"), filter_criteria=filter_criteria)
+            es_query = self._build_es_query(query=query, isolate_name=filter_criteria.get("isolate_name"),
+                                            filter_criteria=filter_criteria)
 
-            # ✅ Fetch paginated genes
             genes, total_results = await self._fetch_paginated_genes(
                 query=es_query, page=page, per_page=per_page, sort_field=sort_field, sort_order=sort_order
             )
@@ -255,7 +254,6 @@ class GeneService:
                 else None
             ),
         }
-
 
     def _serialize_gene(self, gene_data: GeneDocument) -> GeneResponseSchema:
         return GeneResponseSchema(
@@ -330,10 +328,8 @@ class GeneService:
             else:
                 must_filters.append({"terms": {key: values}})
 
-        # ✅ Merge all filters correctly
         query["bool"]["must"].extend(must_filters)
 
-        # 🚨 DEBUGGING: Print intermediate filter structure
         logger.info(f"DEBUG - Filters after _apply_filters_for_type_strain: {json.dumps(query, indent=2)}")
 
         return query
@@ -368,9 +364,8 @@ class GeneService:
             sort_field = "isolate_name"
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
-        sort_by = f"{sort_by}.keyword" if sort_by in ["gene_name", "alias", "seq_id", "locus_tag", "product"] else sort_by
-
-
+        sort_by = f"{sort_by}.keyword" if sort_by in ["gene_name", "alias", "seq_id", "locus_tag",
+                                                      "product"] else sort_by
 
         try:
             logger.debug(f"Sorting by: {sort_by} ({order_prefix})")
@@ -384,7 +379,6 @@ class GeneService:
                 [start: start + per_page]
                 .extra(track_total_hits=True)
             )
-
 
             logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
 
@@ -407,23 +401,18 @@ class GeneService:
         """Build a properly structured Elasticsearch query for both full-text search and filters."""
         es_query = {"bool": {"must": []}}
 
-        # ✅ Full-text search on gene_name and product
         if query:
             es_query["bool"]["must"].append(
                 {"multi_match": {"query": query, "fields": ["gene_name", "alias", "product", "pfam", "interpro"]}}
             )
 
-        # ✅ Filter by isolate_name
         if isolate_name:
             es_query["bool"]["must"].append({"term": {"isolate_name": isolate_name}})
 
-        # ✅ Merge additional filters (ensuring `bool.must` is at the right level)
         if filter_criteria:
             if "bool" in filter_criteria and "must" in filter_criteria["bool"]:
-                # ✅ Extend the main `bool.must` with all filters from `filter_criteria`
                 es_query["bool"]["must"].extend(filter_criteria["bool"]["must"])
             else:
-                # ✅ If `filter_criteria` is a simple dictionary, process normally
                 for field, value in filter_criteria.items():
                     if isinstance(value, list):
                         es_query["bool"]["must"].append({"terms": {field: value}})
