@@ -1,8 +1,8 @@
 export interface Species {
-    id: number;
+    acronym: string;
     scientific_name: string;
     common_name: string;
-    acronym: string;
+    taxonomy_id: number;
 }
 
 export interface PaginatedResponse<T> {

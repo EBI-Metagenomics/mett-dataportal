@@ -5,7 +5,6 @@ from django.http import JsonResponse
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
 
-from .models import EssentialityTag
 from .schemas import (
     StrainSuggestionSchema,
     SpeciesSchema,
@@ -17,6 +16,7 @@ from .schemas import (
     EssentialityTagSchema,
     EssentialityByContigSchema,
 )
+from .services.essentiality_service import EssentialityService
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
 from .services.species_service import SpeciesService
@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 genome_service = GenomeService()
 gene_service = GeneService()
+essentiality_service = EssentialityService()
 species_service = SpeciesService()
 
 api = NinjaAPI(
@@ -47,11 +48,13 @@ api = NinjaAPI(
     description="API for genome browser and contextual information.",
     urls_namespace="api",
     csrf=True,
+    docs_url="/docs",
 )
 
 genome_router = Router(tags=[ROUTER_GENOME])
 gene_router = Router(tags=[ROUTER_GENE])
 species_router = Router(tags=[ROUTER_SPECIES])
+
 
 def custom_error_handler(request, exc):
     if isinstance(exc, HttpError):
@@ -66,9 +69,9 @@ async def autocomplete_suggestions(
         request,
         query: str,
         limit: int = DEFAULT_PER_PAGE_CNT,
-        species_id: Optional[int] = None,
+        species_acronym: Optional[str] = None,
 ):
-    return await genome_service.search_strains(query, limit, species_id)
+    return await genome_service.search_strains(query, limit, species_acronym)
 
 
 # API Endpoint to retrieve all species
@@ -130,36 +133,22 @@ async def search_genomes_by_string(
         )
 
 
-@genome_router.get("/by-ids", response=List[GenomeResponseSchema])
-async def get_genomes_by_ids(request, ids: str):
-    try:
-        if not ids:
-            raise_http_error(400, "Genome IDs list is empty.")
-
-        genome_id_list = [
-            int(id.strip()) for id in ids.split(",") if id.strip().isdigit()
-        ]
-        return await genome_service.get_genomes_by_ids(genome_id_list)
-    except ServiceError as e:
-        raise_http_error(500, f"An error occurred: {str(e)}")
-
-
 @genome_router.get("/by-isolate-names", response=List[GenomeResponseSchema])
-async def get_genomes_by_isolate_names(request, names: str):
+async def get_genomes_by_isolate_names(request, isolates: str):
     try:
-        if not names:
+        if not isolates:
             raise_http_error(400, "Isolate names list is empty.")
-        isolate_names_list = [id.strip() for id in names.split(",")]
+        isolate_names_list = [id.strip() for id in isolates.split(",")]
         return await genome_service.get_genomes_by_isolate_names(isolate_names_list)
     except ServiceError as e:
         raise_http_error(500, f"An error occurred: {str(e)}")
 
 
-# API Endpoint to retrieve genomes filtered by species ID
-@species_router.get("/{species_id}/genomes", response=GenomePaginationSchema)
+# API Endpoint to retrieve genomes filtered by species_acronym
+@species_router.get("/{species_acronym}/genomes", response=GenomePaginationSchema)
 async def get_genomes_by_species(
         request,
-        species_id: int,
+        species_acronym: str,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
         sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
@@ -167,19 +156,19 @@ async def get_genomes_by_species(
 ):
     try:
         return await genome_service.get_genomes_by_species(
-            species_id, page, per_page, sortField, sortOrder
+            species_acronym, page, per_page, sortField, sortOrder
         )
     except ServiceError:
         raise HttpError(
-            500, f"An error occurred while fetching genomes by species: {species_id}"
+            500, f"An error occurred while fetching genomes by species: {species_acronym}"
         )
 
 
-# API Endpoint to search genomes by species ID and query string
-@species_router.get("/{species_id}/genomes/search", response=GenomePaginationSchema)
+# API Endpoint to search genomes by species_acronym and query string
+@species_router.get("/{species_acronym}/genomes/search", response=GenomePaginationSchema)
 async def search_genomes_by_species_and_string(
         request,
-        species_id: int,
+        species_acronym: str,
         query: str,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
@@ -188,12 +177,12 @@ async def search_genomes_by_species_and_string(
 ):
     try:
         return await genome_service.search_genomes_by_species_and_string(
-            species_id, query, page, per_page, sortField, sortOrder
+            species_acronym, query, page, per_page, sortField, sortOrder
         )
     except ServiceError:
         raise HttpError(
             500,
-            f"An error occurred while fetching genomes by species: {species_id} and query: {query}",
+            f"An error occurred while fetching genomes by species: {species_acronym} and query: {query}",
         )
 
 
@@ -203,16 +192,16 @@ async def gene_autocomplete_suggestions(
         query: str,
         filter: Optional[str] = None,
         limit: int = DEFAULT_PER_PAGE_CNT,
-        species_id: Optional[int] = None,
-        genome_ids: Optional[str] = None,
+        species_acronym: Optional[str] = None,
+        isolates: Optional[str] = None,
 ):
-    genome_id_list = (
-        [int(gid) for gid in genome_ids.split(",") if gid.strip()]
-        if genome_ids
-        else None
+    isolate_list = (
+        [gid.strip() for gid in isolates.split(",") if gid.strip()]
+        if isolates else None
     )
+
     return await gene_service.autocomplete_gene_suggestions(
-        query, filter, limit, species_id, genome_id_list
+        query, filter, limit, species_acronym, isolate_list
     )
 
 
@@ -238,18 +227,33 @@ async def search_genes_by_string(
         )
 
 
-# API Endpoint to retrieve gene by ID
-@gene_router.get("/{gene_id}", response=GeneResponseSchema)
-async def get_gene_by_id(request, gene_id: int):
+@gene_router.get("/faceted-search")
+async def get_faceted_search(request, species_acronym: Optional[str] = None,
+                             essentiality: Optional[str] = None,
+                             isolates: Optional[List[str]] = None,
+                             cog_funcats: Optional[str] = None,
+                             kegg: Optional[str] = None,
+                             go_term: Optional[str] = None,
+                             pfam: Optional[str] = None,
+                             interpro: Optional[str] = None,
+                             limit: int = DEFAULT_PER_PAGE_CNT):
+    return await gene_service.get_faceted_search(species_acronym, essentiality, isolates,
+                                                 cog_funcats, kegg, go_term, pfam, interpro,
+                                                 limit)
+
+
+# API Endpoint to retrieve gene by locus tag
+@gene_router.get("/{locus_tag}", response=GeneResponseSchema)
+async def get_gene_by_locus_tag(request, locus_tag: str):
     try:
-        return await gene_service.get_gene_by_id(gene_id)
+        return await gene_service.get_gene_by_locus_tag(locus_tag)
     except GeneNotFoundError as e:
-        logger.error(f"Gene not found: {e.gene_id}")
+        logger.error(f"Gene not found: {e.locus_tag}")
         raise HttpError(404, str(e))
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise HttpError(
-            500, f"Failed to fetch the gene information for gene_id - {gene_id}"
+            500, f"Failed to fetch the gene information for locus_tag - {locus_tag}"
         )
 
 
@@ -270,10 +274,10 @@ async def get_all_genes(
 
 
 # API Endpoint to retrieve genes filtered by a single genome ID
-@genome_router.get("/{genome_id}/genes", response=GenePaginationSchema)
+@genome_router.get("/{isolate_name}/genes", response=GenePaginationSchema)
 async def get_genes_by_genome(
         request,
-        genome_id: int,
+        isolate_name: str,
         filter: Optional[str] = None,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
@@ -282,20 +286,20 @@ async def get_genes_by_genome(
 ):
     try:
         return await gene_service.get_genes_by_genome(
-            genome_id, filter, page, per_page, sort_field, sort_order
+            isolate_name, filter, page, per_page, sort_field, sort_order
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise HttpError(
-            500, f"Failed to fetch the genes information for genome_id - {genome_id}"
+            500, f"Failed to fetch the genes information for genome_id - {isolate_name}"
         )
 
 
 # API Endpoint to search genes by genome ID and gene string
-@genome_router.get("/{genome_id}/genes/search", response=GenePaginationSchema)
+@genome_router.get("/{isolate_name}/genes/search", response=GenePaginationSchema)
 async def search_genes_by_genome_and_string(
         request,
-        genome_id: int,
+        isolate_name: str,
         query: str,
         filter: Optional[str] = None,
         page: int = 1,
@@ -305,13 +309,13 @@ async def search_genes_by_genome_and_string(
 ):
     try:
         return await gene_service.search_genes(
-            query, genome_id, filter, page, per_page, sort_field, sort_order
+            query, isolate_name, filter, page, per_page, sort_field, sort_order
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise HttpError(
             500,
-            f"Failed to fetch the genes information for genome_id - {genome_id} and query - {query}",
+            f"Failed to fetch the genes information for genome_id - {isolate_name} and query - {query}",
         )
     except Exception as e:
         raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
@@ -321,8 +325,8 @@ async def search_genes_by_genome_and_string(
 @gene_router.get("/search/advanced", response=GenePaginationSchema)
 async def search_genes_by_multiple_genomes_and_species_and_string(
         request,
-        genome_ids: str = "",
-        species_id: Optional[int] = None,
+        isolates: str = "",
+        species_acronym: Optional[str] = None,
         query: str = "",
         filter: Optional[str] = None,
         page: int = 1,
@@ -334,9 +338,11 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
         logger.debug(
             f"Request received with params: query={query}, filter={filter}, page={page}, per_page={per_page}, sortField={sort_field}, sortOrder={sort_order}"
         )
+        # if not isolates:
+        #     raise_http_error(400, "Isolate names list is empty.")
         return await gene_service.get_genes_by_multiple_genomes_and_string(
-            genome_ids,
-            species_id,
+            isolates,
+            species_acronym,
             query,
             filter,
             page,
@@ -345,24 +351,23 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
             sort_order,
         )
     except InvalidGenomeIdError:
-        raise_http_error(400, f"Invalid genome ID provided: {genome_ids}")
+        raise_http_error(400, f"Invalid genome ID provided: {isolates}")
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
 
 
 @gene_router.get("/essentiality/tags", response=list[EssentialityTagSchema])
-def list_essentiality_tags(request):
-    tags = EssentialityTag.objects.all()
-    return tags
+async def list_essentiality_tags(request):
+    return await essentiality_service.get_unique_essentiality_tags()
 
 
 # API endpoint to retrieve essentiality data from cache for a specific strain ID.
-@genome_router.get("/{strain_id}/essentiality/{ref_name}", response=Dict[str, EssentialityByContigSchema])
-async def get_essentiality_data_by_contig(request, strain_id: int, ref_name: str):
+@genome_router.get("/{isolate_name}/essentiality/{ref_name}", response=Dict[str, EssentialityByContigSchema])
+async def get_essentiality_data_by_contig(request, isolate_name: str, ref_name: str):
     try:
-        essentiality_data = await gene_service.get_essentiality_data_by_strain_and_ref(
-            strain_id, ref_name
+        essentiality_data = await essentiality_service.get_essentiality_data_by_strain_and_ref(
+            isolate_name, ref_name
         )
         if not essentiality_data:
             return {}
@@ -370,12 +375,12 @@ async def get_essentiality_data_by_contig(request, strain_id: int, ref_name: str
         return essentiality_data
     except Exception as e:
         logger.error(
-            f"Error retrieving essentiality data for strain_id={strain_id}, ref_name={ref_name}: {e}",
+            f"Error retrieving essentiality data for isolate_name={isolate_name}, ref_name={ref_name}: {e}",
             exc_info=True,
         )
         raise HttpError(
             500,
-            f"Failed to retrieve essentiality data for strain {strain_id} and refName {ref_name}.",
+            f"Failed to retrieve essentiality data for strain {isolate_name} and refName {ref_name}.",
         )
 
 

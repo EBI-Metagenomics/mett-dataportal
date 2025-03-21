@@ -1,27 +1,34 @@
 from typing import List
 
 from asgiref.sync import sync_to_async
-from django.shortcuts import get_object_or_404
+from elasticsearch_dsl import Search
 
-from dataportal.models import Species
 from dataportal.schemas import SpeciesSchema
 from dataportal.utils.errors import raise_exception
 
 
 class SpeciesService:
+    INDEX_NAME = "species_index"
 
     async def get_all_species(self) -> List[SpeciesSchema]:
+        """Retrieve all species from Elasticsearch."""
         try:
-            species = await sync_to_async(list)(Species.objects.all())
-            return [SpeciesSchema.model_validate(sp) for sp in species]
+            search = Search(index=self.INDEX_NAME).query("match_all")
+            response = await sync_to_async(search.execute)()
+
+            return [SpeciesSchema.model_validate(hit.to_dict()) for hit in response]
         except Exception as e:
             raise_exception(f"Error retrieving all species: {str(e)}")
 
-    async def get_species_by_id(self, species_id: int) -> SpeciesSchema:
+    async def get_species_by_id(self, acronym: str) -> SpeciesSchema:
+        """Retrieve a single species by acronym from Elasticsearch."""
         try:
-            species = await sync_to_async(
-                lambda: get_object_or_404(Species, id=species_id)
-            )()
-            return SpeciesSchema.model_validate(species)
+            search = Search(index=self.INDEX_NAME).query("term", acronym=acronym)
+            response = await sync_to_async(search.execute)()
+
+            if not response:
+                raise_exception(f"Species with ID {acronym} not found.", status_code=404)
+
+            return SpeciesSchema.model_validate(response[0].to_dict())
         except Exception as e:
             raise_exception(f"Error retrieving species by ID: {str(e)}")

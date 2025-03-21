@@ -5,7 +5,7 @@ import {BaseGenome} from "../../interfaces/Genome";
 
 interface SelectedGenomesProps {
     selectedGenomes: BaseGenome[];
-    onRemoveGenome: (genomeId: number) => void;
+    onRemoveGenome: (genomeId: string) => void;
 }
 
 const SelectedGenomes: React.FC<SelectedGenomesProps> = ({selectedGenomes, onRemoveGenome}) => {
@@ -17,10 +17,10 @@ const SelectedGenomes: React.FC<SelectedGenomesProps> = ({selectedGenomes, onRem
             <div style={{float: "left"}}>
                 {selectedGenomes.map((genome) => (
                     <Chip
-                        key={genome.id}
+                        key={genome.isolate_name}
                         label={genome.isolate_name}
                         variant="outlined"
-                        onDelete={() => onRemoveGenome(genome.id)}
+                        onDelete={() => onRemoveGenome(genome.isolate_name)}
                         className={styles.genomeChip}
                     />
                 ))}

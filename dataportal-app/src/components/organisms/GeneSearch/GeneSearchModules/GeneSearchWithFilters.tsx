@@ -7,7 +7,7 @@ interface GeneSearchWithFiltersProps {
     searchQuery: string;
     onSearchQueryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSearchSubmit: () => void;
-    selectedSpecies?: number[];
+    selectedSpecies?: string[];
     results: any[];
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     sortField: string;

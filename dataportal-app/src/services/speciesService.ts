@@ -10,10 +10,10 @@ export class SpeciesService {
             const response = await ApiService.get("species/");
             if (Array.isArray(response)) {
                 return response.map((item: any) => ({
-                    id: item.id,
                     scientific_name: item.scientific_name || item.name,
                     common_name: item.common_name || item.name,
                     acronym: item.acronym || item.name,
+                    taxonomy_id: item.taxonomy_id
                 }));
             } else {
                 console.error("Invalid response format for species list:", response);

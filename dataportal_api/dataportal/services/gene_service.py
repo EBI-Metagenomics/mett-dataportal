@@ -1,34 +1,14 @@
+import json
 import logging
 from typing import Optional, List, Tuple, Dict
 
 from asgiref.sync import sync_to_async
-from cachetools import LRUCache
 from django.db.models import Q
-from django.http import Http404
-from django.shortcuts import get_object_or_404
+from elasticsearch_dsl import Search, A
 
-from dataportal.models import Gene, GeneEssentiality
+from dataportal.models import GeneDocument
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
 from dataportal.utils.constants import (
-    FIELD_ID,
-    GENE_FIELD_ID,
-    GENE_FIELD_NAME,
-    FIELD_SEQ_ID,
-    GENE_FIELD_PRODUCT,
-    GENE_FIELD_LOCUS_TAG,
-    GENE_FIELD_COG,
-    GENE_FIELD_KEGG,
-    GENE_FIELD_PFAM,
-    GENE_FIELD_INTERPRO,
-    GENE_FIELD_DBXREF,
-    GENE_FIELD_EC_NUMBER,
-    GENE_FIELD_START_POS,
-    GENE_FIELD_END_POS,
-    GENE_FIELD_ANNOTATIONS,
-    GENE_SORT_FIELD_STRAIN,
-    GENE_SORT_FIELD_STRAIN_ISO,
-    GENE_FIELD_DESCRIPTION,
-    GENE_ESSENTIALITY_DATA,
     GENE_DEFAULT_SORT_FIELD,
     DEFAULT_SORT,
     DEFAULT_PER_PAGE_CNT,
@@ -36,195 +16,107 @@ from dataportal.utils.constants import (
     SORT_ASC,
     GENE_ESSENTIALITY,
     GENE_ESSENTIALITY_MEDIA,
-    STRAIN_FIELD_ISOLATE_NAME,
-    STRAIN_FIELD_ASSEMBLY_NAME,
-    GENE_ESSENTIALITY_SOLID,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
     ServiceError,
-    InvalidGenomeIdError,
-)
+    InvalidGenomeIdError, )
 
 logger = logging.getLogger(__name__)
 
 
 class GeneService:
-    def __init__(self, limit: int = 10, cache_size: int = 10000):
-        self.limit = limit
-        self.essentiality_cache = LRUCache(maxsize=cache_size)
-
-    async def load_essentiality_data_by_strain(self) -> Dict[int, Dict[str, Dict[str, List[Dict[str, str]]]]]:
-        """Load essentiality data into cache."""
-        if self.essentiality_cache:
-            return self.essentiality_cache
-
-        logger.info("Loading essentiality data into cache...")
-        try:
-            fields_to_fetch = [
-                f"gene__strain__{FIELD_ID}",
-                f"gene__strain__{STRAIN_FIELD_ISOLATE_NAME}",
-                f"gene__strain__{STRAIN_FIELD_ASSEMBLY_NAME}",
-                f"gene__{FIELD_SEQ_ID}",
-                f"gene__{GENE_FIELD_LOCUS_TAG}",
-                f"gene__{GENE_FIELD_START_POS}",
-                f"gene__{GENE_FIELD_END_POS}",
-                GENE_ESSENTIALITY_MEDIA,
-                f"{GENE_ESSENTIALITY}__name",
-            ]
-
-            essentiality_data = await sync_to_async(list)(
-                GeneEssentiality.objects.select_related(GENE_ESSENTIALITY, "gene__strain")
-                .values(*fields_to_fetch)
-            )
-
-            cache_data = {}
-            for entry in essentiality_data:
-                strain_id = entry[f"gene__strain__{FIELD_ID}"]
-                ref_name = entry[f"gene__{FIELD_SEQ_ID}"]
-                locus_tag = entry[f"gene__{GENE_FIELD_LOCUS_TAG}"]
-                start = entry[f"gene__{GENE_FIELD_START_POS}"]
-                end = entry[f"gene__{GENE_FIELD_END_POS}"]
-                media = entry[GENE_ESSENTIALITY_MEDIA]
-                essentiality = entry[f"{GENE_ESSENTIALITY}__name"] or "Unknown"
-
-                if strain_id not in cache_data:
-                    cache_data[strain_id] = {}
-
-                if ref_name not in cache_data[strain_id]:
-                    cache_data[strain_id][ref_name] = {}
-
-                if locus_tag not in cache_data[strain_id][ref_name]:
-                    cache_data[strain_id][ref_name][locus_tag] = {
-                        GENE_FIELD_LOCUS_TAG: locus_tag,
-                        GENE_FIELD_START_POS: start,
-                        GENE_FIELD_END_POS: end,
-                        GENE_ESSENTIALITY_DATA: [],
-                    }
-
-                cache_data[strain_id][ref_name][locus_tag][GENE_ESSENTIALITY_DATA].append(
-                    {GENE_ESSENTIALITY_MEDIA: media, GENE_ESSENTIALITY: essentiality}
-                )
-
-            self.essentiality_cache.update(cache_data)
-            logger.info(f"Loaded {len(essentiality_data)} essentiality records into cache.")
-            return cache_data
-
-        except Exception as e:
-            logger.error(f"Error loading essentiality data: {e}")
-            return {}
-
-    async def get_essentiality_data_by_strain_and_ref(self, strain_id: int, ref_name: str) -> Dict[str, Dict]:
-        """Retrieve essentiality data for a given strain and reference name."""
-        if not self.essentiality_cache:
-            await self.load_essentiality_data_by_strain()
-
-        strain_data = self.essentiality_cache.get(strain_id, {})
-        contig_data = strain_data.get(ref_name, {})
-
-        response = {}
-        for gene_data in contig_data.values():
-            locus_tag = gene_data[GENE_FIELD_LOCUS_TAG]
-            response[locus_tag] = {
-                GENE_FIELD_LOCUS_TAG: locus_tag,
-                "start": gene_data.get(GENE_FIELD_START_POS),
-                "end": gene_data.get(GENE_FIELD_END_POS),
-                GENE_ESSENTIALITY_DATA: [
-                    {
-                        GENE_ESSENTIALITY_MEDIA: record[GENE_ESSENTIALITY_MEDIA],
-                        GENE_ESSENTIALITY: record[GENE_ESSENTIALITY]
-                    }
-                    for record in gene_data[GENE_ESSENTIALITY_DATA]
-                ]
-            }
-
-        return response
+    INDEX_NAME = "gene_index"
 
     async def autocomplete_gene_suggestions(
             self,
             query: str,
             filter: Optional[str] = None,
             limit: int = None,
-            species_id: Optional[int] = None,
-            genome_ids: Optional[List[int]] = None,
+            species_acronym: Optional[str] = None,
+            isolates: Optional[List[str]] = None,
     ) -> List[Dict]:
+        """ Provides autocomplete suggestions for genes based on query & filters. """
+
         try:
-            # Build the filter criteria
-            gene_filter = (
-                    Q(**{f"{GENE_FIELD_NAME}__iexact": query})
-                    | Q(**{f"{GENE_FIELD_NAME}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_PRODUCT}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_LOCUS_TAG}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_KEGG}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_PFAM}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_INTERPRO}__icontains": query})
-                    | Q(**{f"{GENE_FIELD_DBXREF}__icontains": query})
-            )
-            if species_id:
-                gene_filter &= Q(strain__species_id=species_id)
-            if genome_ids:
-                gene_filter &= Q(strain_id__in=genome_ids)
 
-            # Parse additional filters and apply only if strain is a type strain
+            s = Search(index=self.INDEX_NAME)
+            s = s.query(
+                "multi_match",
+                query=query,
+                fields=[
+                    "alias^3", "gene_name^2", "product", "kegg",
+                    "uniprot_id", "pfam", "cog_id", "interpro"
+                ],
+                type="best_fields"
+            )
+
+            if species_acronym:
+                s = s.filter("term", species_acronym=species_acronym)
+
+            if isolates:
+                s = s.filter("terms", isolate_name=isolates)
+
             parsed_filters = self._parse_filters(filter)
-            gene_filter = await self._apply_filters_for_type_strain(
-                gene_filter, parsed_filters
-            )
+            for key, values in parsed_filters.items():
+                if key == "essentiality":
+                    normalized_values = [v.lower() for v in values]
+                    s = s.filter("terms", essentiality=normalized_values)
+                else:
+                    s = s.filter("terms", **{key: values})
 
-            logger.debug(
-                f"Query: {query}, Species ID: {species_id}, Genome IDs: {genome_ids}"
-            )
-            logger.debug(f"Gene Filter: {gene_filter}")
+            s = s[:limit]
 
-            genes, total_results = await self._fetch_paginated_genes(
-                filter_criteria=gene_filter,
-                page=1,
-                per_page=limit or self.limit,
-                sort_field=GENE_FIELD_NAME,
-                sort_order=SORT_ASC,
-            )
+            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
 
-            # Build and return the response
-            response = [
+            response = s.execute()
+
+            results = [
                 {
-                    GENE_FIELD_ID: gene.id,
-                    GENE_FIELD_NAME: gene.gene_name,
-                    STRAIN_FIELD_ISOLATE_NAME: gene.strain.isolate_name if gene.strain else "Unknown",
-                    GENE_FIELD_PRODUCT: gene.product,
-                    GENE_FIELD_LOCUS_TAG: gene.locus_tag,
-                    GENE_FIELD_KEGG: gene.kegg,
-                    GENE_FIELD_PFAM: gene.pfam,
-                    GENE_FIELD_INTERPRO: gene.interpro,
-                    GENE_FIELD_DBXREF: gene.dbxref,
+                    "gene_name": getattr(hit, "gene_name", None),
+                    "alias": getattr(hit, "alias", []),
+                    "product": getattr(hit, "product", None),
+                    "locus_tag": getattr(hit, "locus_tag", None),
+                    "species_scientific_name": getattr(hit, "species_scientific_name", None),
+                    "species_acronym": getattr(hit, "species_acronym", None),
+                    "isolate_name": getattr(hit, "isolate_name", None),
+                    "kegg": getattr(hit, "kegg", []),
+                    "uniprot_id": getattr(hit, "uniprot_id", None),
+                    "pfam": getattr(hit, "pfam", []),
+                    "cog_id": getattr(hit, "cog_id", None),
+                    "interpro": getattr(hit, "interpro", []),
+                    "essentiality": getattr(hit, "essentiality", "Unknown")
                 }
-                for gene in genes
+                for hit in response
             ]
 
-            logger.debug(f"API Response: {response}")
-            return response
+            logger.info(f"Autocomplete results: {results}")
+            return results
+
         except Exception as e:
             logger.error(f"Error fetching gene autocomplete suggestions: {e}")
             return []
 
-    def fetch_gene_by_id(self, gene_id: int):
-        return get_object_or_404(
-            Gene.objects.select_related("strain").prefetch_related(
-                f"essentiality_data__{GENE_ESSENTIALITY}"
-            ),
-            id=gene_id,
-        )
-
-    async def get_gene_by_id(self, gene_id: int) -> GeneResponseSchema:
+    async def get_gene_by_locus_tag(self, locus_tag: str) -> GeneResponseSchema:
+        """Fetch a gene document from Elasticsearch using locus_tag."""
         try:
-            gene = await sync_to_async(self.fetch_gene_by_id, thread_sensitive=False)(
-                gene_id
-            )
+            gene = await sync_to_async(self.fetch_gene_by_locus_tag, thread_sensitive=False)(locus_tag)
             return self._serialize_gene(gene)
-        except Http404:
-            raise GeneNotFoundError(gene_id)
+        except ServiceError:
+            logger.error(f"Error in get_gene_by_locus_tag: {locus_tag}")
+            raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
         except Exception as e:
-            logger.error(f"Error in get_gene_by_id: {e}")
+            logger.error(f"Error in get_gene_by_locus_tag: {e}")
             raise ServiceError(e)
+
+    def fetch_gene_by_locus_tag(self, locus_tag: str):
+        s = Search(index=self.INDEX_NAME).query("match", locus_tag=locus_tag)
+        response = s.execute()
+
+        if not response.hits:
+            raise ServiceError(f"Error in get_gene_by_locus_tag: {locus_tag}")
+
+        return response.hits[0].to_dict()
 
     async def get_all_genes(
             self,
@@ -234,12 +126,17 @@ class GeneService:
             sort_order: Optional[str] = DEFAULT_SORT,
     ) -> GenePaginationSchema:
         try:
+            es_query = {"match_all": {}}
             genes, total_results = await self._fetch_paginated_genes(
-                Q(), page, per_page, sort_field, sort_order
+                es_query,
+                page=page,
+                per_page=per_page,
+                sort_field=sort_field,
+                sort_order=sort_order
             )
-            serialized_genes = [self._serialize_gene(gene) for gene in genes]
+            # serialized_genes = [self._serialize_gene(gene) for gene in genes]
             return self._create_pagination_schema(
-                serialized_genes, page, per_page, total_results
+                genes, page, per_page, total_results
             )
         except Exception as e:
             logger.error(f"Error in get_all_genes: {e}")
@@ -248,35 +145,34 @@ class GeneService:
     async def search_genes(
             self,
             query: str = None,
-            genome_id: Optional[int] = None,
+            isolate_name: Optional[str] = None,
             filter: Optional[str] = None,
             page: int = 1,
             per_page: int = DEFAULT_PER_PAGE_CNT,
             sort_field: Optional[str] = None,
             sort_order: Optional[str] = DEFAULT_SORT,
     ) -> GenePaginationSchema:
+
         try:
-            filters = Q()
-            if query:
-                filters &= Q(gene_name__icontains=query) | Q(
-                    description__icontains=query
-                )
-            if genome_id:
-                filters &= Q(strain_id=genome_id)
+            # Build query filters
+            es_query = self._build_es_query(query, isolate_name, filter)
+
+            logger.info(f"Final Elasticsearch Query (Formatted): {json.dumps(es_query, indent=2)}")
+
+            # Call the common function
             genes, total_results = await self._fetch_paginated_genes(
-                filters, page, per_page, sort_field, sort_order
+                es_query, page, per_page, sort_field, sort_order
             )
-            serialized_genes = [self._serialize_gene(gene) for gene in genes]
-            return self._create_pagination_schema(
-                serialized_genes, page, per_page, total_results
-            )
+
+            return self._create_pagination_schema(genes, page, per_page, total_results)
+
         except Exception as e:
             logger.error(f"Error searching genes: {e}")
             raise ServiceError(e)
 
     async def get_genes_by_genome(
             self,
-            genome_id: int,
+            isolate_name: str,
             filter: Optional[str] = None,
             page: int = 1,
             per_page: int = DEFAULT_PER_PAGE_CNT,
@@ -284,45 +180,26 @@ class GeneService:
             sort_order: Optional[str] = SORT_ASC,
     ) -> GenePaginationSchema:
         try:
-            gene_filter = Q(strain_id=genome_id)
-
-            # Parse additional filters and apply only if strain is a type strain
+            filter_criteria = {"isolate_name": isolate_name}
             parsed_filters = self._parse_filters(filter)
-            gene_filter = await self._apply_filters_for_type_strain(
-                gene_filter, parsed_filters
-            )
+            filter_criteria = await self._apply_filters_for_type_strain(filter_criteria, parsed_filters)
+
+            es_query = self._build_es_query(query=None, isolate_name=filter_criteria.get("isolate_name"), filter_criteria=filter_criteria)
 
             genes, total_results = await self._fetch_paginated_genes(
-                gene_filter, page, per_page, sort_field, sort_order
+                query=es_query, page=page, per_page=per_page, sort_field=sort_field, sort_order=sort_order
             )
-            serialized_genes = [self._serialize_gene(gene) for gene in genes]
-            return self._create_pagination_schema(
-                serialized_genes, page, per_page, total_results
-            )
-        except Exception as e:
-            logger.error(f"Error fetching genes for genome ID {genome_id}: {e}")
-            raise ServiceError(e)
 
-    async def get_genes_by_multiple_genomes(
-            self, genome_ids: List[int], page: int = 1, per_page: int = 10
-    ):
-        try:
-            filter_criteria = Q(strain_id__in=genome_ids)
-            genes, total_results = await self._fetch_paginated_genes(
-                filter_criteria, page, per_page
-            )
-            serialized_genes = [self._serialize_gene(gene) for gene in genes]
-            return self._create_pagination_schema(
-                serialized_genes, page, per_page, total_results
-            )
+            return self._create_pagination_schema(genes, page, per_page, total_results)
+
         except Exception as e:
-            logger.error(f"Error fetching genes for genome IDs {genome_ids}: {e}")
+            logger.error(f"Error fetching genes for genome {isolate_name}: {e}")
             raise ServiceError(e)
 
     async def get_genes_by_multiple_genomes_and_string(
             self,
-            genome_ids: str = None,
-            species_id: Optional[int] = None,
+            isolates: str = None,
+            species_acronym: Optional[int] = None,
             query: str = None,
             filter: Optional[str] = None,
             page: int = 1,
@@ -330,75 +207,39 @@ class GeneService:
             sort_field: Optional[str] = None,
             sort_order: Optional[str] = SORT_ASC,
     ) -> GenePaginationSchema:
+        """Fetch genes by multiple genomes, species, and optional search query."""
+
         try:
-            # Parse genome IDs
-            genome_id_list = (
-                [int(gid) for gid in genome_ids.split(",") if gid.strip()]
-                if genome_ids
-                else []
-            )
-            filters = Q()
+            isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
+            filter_criteria = {"bool": {"must": []}}  # ✅ Ensure correct query structure
 
-            # Add filters for genome IDs and species ID
-            if genome_id_list:
-                filters &= Q(strain_id__in=genome_id_list)
-            if species_id:
-                filters &= Q(strain__species_id=species_id)
+            # ✅ Filters for genome IDs and species ID
+            if isolate_names_list:
+                filter_criteria["bool"]["must"].append({"terms": {"isolate_name": isolate_names_list}})
+            if species_acronym:
+                filter_criteria["bool"]["must"].append({"term": {"species_acronym": species_acronym}})
 
-            # Parse additional filters and apply only if strain is a type strain
+            # ✅ Parse and apply additional filters
             parsed_filters = self._parse_filters(filter)
-            filters = await self._apply_filters_for_type_strain(filters, parsed_filters)
+            type_strain_filters = await self._apply_filters_for_type_strain({}, parsed_filters)
 
-            # Add gene search filters if query is provided
-            if query:
-                gene_filter = (
-                        Q(gene_name__iexact=query.strip())
-                        | Q(gene_name__icontains=query.strip())
-                        | Q(product__icontains=query.strip())
-                        | Q(locus_tag__icontains=query.strip())
-                        | Q(kegg__icontains=query.strip())
-                        | Q(pfam__icontains=query.strip())
-                        | Q(interpro__icontains=query.strip())
-                        | Q(dbxref__icontains=query.strip())
-                )
-                filters &= gene_filter
+            # ✅ Instead of `.update()`, extend `bool.must`
+            if "bool" in type_strain_filters and "must" in type_strain_filters["bool"]:
+                filter_criteria["bool"]["must"].extend(type_strain_filters["bool"]["must"])
 
-            # Valid sorting fields
-            valid_sort_fields = {
-                GENE_FIELD_NAME: GENE_FIELD_NAME,
-                GENE_SORT_FIELD_STRAIN: GENE_SORT_FIELD_STRAIN_ISO,
-                GENE_FIELD_DESCRIPTION: GENE_FIELD_DESCRIPTION,
-                GENE_FIELD_LOCUS_TAG: GENE_FIELD_LOCUS_TAG,
-                GENE_FIELD_PRODUCT: GENE_FIELD_PRODUCT,
-                FIELD_SEQ_ID: FIELD_SEQ_ID,
-            }
+            # ✅ Ensure `filter_criteria` is properly structured
+            es_query = self._build_es_query(query=query, isolate_name=filter_criteria.get("isolate_name"), filter_criteria=filter_criteria)
 
-            # Validate and map sort_field
-            sort_field_mapped = valid_sort_fields.get(sort_field, GENE_FIELD_NAME)
-            if sort_field not in valid_sort_fields:
-                logger.warning(
-                    f"Invalid sort_field '{sort_field}', defaulting to '{GENE_FIELD_NAME}'"
-                )
-                sort_field_mapped = GENE_FIELD_NAME
-
-            logger.info(
-                f"Fetching genes with sort_field='{sort_field_mapped}', sort_order='{sort_order}'"
-            )
-
-            # Fetch paginated genes with sorting
+            # ✅ Fetch paginated genes
             genes, total_results = await self._fetch_paginated_genes(
-                filters, page, per_page, sort_field_mapped, sort_order
+                query=es_query, page=page, per_page=per_page, sort_field=sort_field, sort_order=sort_order
             )
 
-            # Serialize genes for the response
-            serialized_genes = [self._serialize_gene(gene) for gene in genes]
+            return self._create_pagination_schema(genes, page, per_page, total_results)
 
-            return self._create_pagination_schema(
-                serialized_genes, page, per_page, total_results
-            )
         except ValueError:
             logger.error("Invalid genome ID provided")
-            raise InvalidGenomeIdError(genome_ids)
+            raise InvalidGenomeIdError(isolates)
         except Exception as e:
             logger.error(f"Error in get_genes_by_multiple_genomes_and_string: {e}")
             raise ServiceError(e)
@@ -415,34 +256,26 @@ class GeneService:
             ),
         }
 
-    def _serialize_gene(self, gene: Gene) -> dict:
-        return GeneResponseSchema.model_validate(
-            {
-                FIELD_ID: gene.id,
-                FIELD_SEQ_ID: gene.seq_id,
-                GENE_FIELD_NAME: gene.gene_name or "N/A",
-                GENE_FIELD_DESCRIPTION: gene.description or None,
-                GENE_SORT_FIELD_STRAIN: {
-                    FIELD_ID: gene.strain.id if gene.strain else None,
-                    STRAIN_FIELD_ISOLATE_NAME: gene.strain.isolate_name if gene.strain else "Unknown",
-                    STRAIN_FIELD_ASSEMBLY_NAME: gene.strain.assembly_name if gene.strain else None,
-                },
-                GENE_FIELD_LOCUS_TAG: gene.locus_tag or None,
-                GENE_FIELD_COG: gene.cog or None,
-                GENE_FIELD_KEGG: gene.kegg or None,
-                GENE_FIELD_PFAM: gene.pfam or None,
-                GENE_FIELD_INTERPRO: gene.interpro or None,
-                GENE_FIELD_DBXREF: gene.dbxref or None,
-                GENE_FIELD_EC_NUMBER: gene.ec_number or None,
-                GENE_FIELD_PRODUCT: gene.product or None,
-                GENE_FIELD_START_POS: gene.start_position or None,
-                GENE_FIELD_END_POS: gene.end_position or None,
-                GENE_FIELD_ANNOTATIONS: gene.annotations or {},
-                GENE_ESSENTIALITY_DATA: [
-                    self._serialize_gene_essentiality(ge)
-                    for ge in gene.essentiality_data.all()
-                ],
-            }
+
+    def _serialize_gene(self, gene_data: GeneDocument) -> GeneResponseSchema:
+        return GeneResponseSchema(
+            locus_tag=gene_data.get("locus_tag"),
+            gene_name=gene_data.get("gene_name"),
+            alias=gene_data.get("alias") or None,
+            seq_id=gene_data.get("seq_id"),
+            isolate_name=gene_data.get("isolate_name"),
+            uniprot_id=gene_data.get("uniprot_id"),
+            cog_funcats=gene_data.get("cog_funcats"),
+            cog_id=gene_data.get("cog_id"),
+            kegg=gene_data.get("kegg"),
+            pfam=gene_data.get("pfam"),
+            interpro=gene_data.get("interpro"),
+            dbxref=gene_data.get("dbxref"),
+            ec_number=gene_data.get("ec_number"),
+            product=gene_data.get("product"),
+            start_position=gene_data.get("start"),
+            end_position=gene_data.get("end"),
+            essentiality=gene_data.get("essentiality", "Unknown")
         )
 
     def _parse_filters(self, filter_str: Optional[str]) -> Dict[str, List[str]]:
@@ -465,41 +298,43 @@ class GeneService:
         logger.debug(f"Parsed filters: {filters}")
         return filters
 
-    async def _apply_essentiality_filter(
-            self, query: Q, essentiality_values: List[str]
-    ) -> Q:
-        from dataportal.models import EssentialityTag
+    async def _apply_essentiality_filter(self, query: dict, values: list) -> dict:
 
-        try:
-            tags = await sync_to_async(list)(
-                EssentialityTag.objects.filter(name__in=essentiality_values)
-            )
-            if tags:
-                return query & Q(
-                    essentiality_data__essentiality__in=tags,
-                    essentiality_data__media=GENE_ESSENTIALITY_SOLID,
-                )
-            else:
-                logger.error(
-                    f"No matching essentiality tags found for values: {essentiality_values}"
-                )
-                return query
-        except Exception as e:
-            logger.error(f"Error applying essentiality filter: {e}")
+        if not values:
             return query
 
-    async def _apply_filters_for_type_strain(
-            self, query: Q, filters: Dict[str, list]
-    ) -> Q:
-        if filters:
-            query &= Q(strain__type_strain=True)
+        if "bool" not in query:
+            query["bool"] = {"must": []}
 
-            for key, values in filters.items():
-                if key == GENE_ESSENTIALITY:
-                    query = await self._apply_essentiality_filter(query, values)
-                else:
-                    for value in values:
-                        query &= Q(**{f"{key}__icontains": value})
+        query["bool"]["must"].append({"terms": {GENE_ESSENTIALITY: values}})
+
+        return query
+
+    async def _apply_filters_for_type_strain(
+            self, query: dict, filters: Dict[str, list]
+    ) -> dict:
+        """Apply additional filters for type strain in Elasticsearch query."""
+
+        if "bool" not in query:
+            query["bool"] = {"must": []}
+
+        must_filters = []
+
+        # ✅ Add type strain filter
+        # must_filters.append({"term": {"strain.type_strain": True}})
+
+        # ✅ Apply additional filters
+        for key, values in filters.items():
+            if key == GENE_ESSENTIALITY:
+                must_filters.append({"terms": {GENE_ESSENTIALITY: values}})
+            else:
+                must_filters.append({"terms": {key: values}})
+
+        # ✅ Merge all filters correctly
+        query["bool"]["must"].extend(must_filters)
+
+        # 🚨 DEBUGGING: Print intermediate filter structure
+        logger.info(f"DEBUG - Filters after _apply_filters_for_type_strain: {json.dumps(query, indent=2)}")
 
         return query
 
@@ -517,41 +352,145 @@ class GeneService:
 
     async def _fetch_paginated_genes(
             self,
-            filter_criteria: Q,
-            page: int,
-            per_page: int,
+            query: dict,
+            page: int = 1,
+            per_page: int = DEFAULT_PER_PAGE_CNT,
             sort_field: Optional[str] = None,
             sort_order: Optional[str] = DEFAULT_SORT,
-    ) -> Tuple[List[Gene], int]:
+    ) -> Tuple[List[GeneResponseSchema], int]:
+        """Fetch paginated genes from Elasticsearch using a unified query format."""
+
         start = (page - 1) * per_page
-        order_prefix = "-" if sort_order == SORT_DESC else ""
-        sort_by = f"{order_prefix}{sort_field or GENE_DEFAULT_SORT_FIELD}"
+        order_prefix = "desc" if sort_order == SORT_DESC else "asc"
+
+        # Ensure "species" is mapped to "species_scientific_name"
+        if sort_field == "strain":
+            sort_field = "isolate_name"
+
+        sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        sort_by = f"{sort_by}.keyword" if sort_by in ["gene_name", "alias", "seq_id", "locus_tag", "product"] else sort_by
+
+
 
         try:
-            logger.debug(f"Filter criteria: {filter_criteria}")
-            logger.debug(f"Sorting by: {sort_by}")
-            logger.debug(f"Pagination: start={start}, end={start + per_page}")
+            logger.debug(f"Sorting by: {sort_by} ({order_prefix})")
+            logger.debug(f"Pagination: start={start}, size={per_page}")
 
-            # Fetch paginated gene list
-            genes = await sync_to_async(
-                lambda: list(
-                    Gene.objects.select_related(GENE_SORT_FIELD_STRAIN)
-                    .prefetch_related(f"essentiality_data__{GENE_ESSENTIALITY}")
-                    .filter(filter_criteria)
-                    .order_by(sort_by)[start: start + per_page]
-                )
-            )()
+            # Execute Elasticsearch query
+            s = (
+                Search(index=self.INDEX_NAME)
+                .query(query)
+                .sort({sort_by: {"order": order_prefix}})
+                [start: start + per_page]
+                .extra(track_total_hits=True)
+            )
 
-            # Count total results
-            total_results = await sync_to_async(
-                lambda: Gene.objects.filter(filter_criteria).count()
-            )()
 
-            logger.debug(f"Fetched genes: {[gene.gene_name for gene in genes]}")
-            logger.debug(f"Total matching genes: {total_results}")
+            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+
+            response = await sync_to_async(s.execute)()
+
+            genes = [self._serialize_gene(hit.to_dict()) for hit in response.hits]
+            total_results = response.hits.total.value if hasattr(response.hits.total, 'value') else response.hits.total
+
+            logger.info(f"Fetched {len(genes)} genes")
+            logger.info(f"Total matching genes: {total_results}")
 
             return genes, total_results
 
         except Exception as e:
-            logger.error(f"Error fetching paginated genes: {str(e)}")
+            logger.error(f"Error fetching paginated genes from Elasticsearch: {str(e)}")
             raise ServiceError(e)
+
+    def _build_es_query(self, query: Optional[str], isolate_name: Optional[str],
+                        filter_criteria: Optional[dict]) -> dict:
+        """Build a properly structured Elasticsearch query for both full-text search and filters."""
+        es_query = {"bool": {"must": []}}
+
+        # ✅ Full-text search on gene_name and product
+        if query:
+            es_query["bool"]["must"].append(
+                {"multi_match": {"query": query, "fields": ["gene_name", "product", "pfam", "interpro"]}}
+            )
+
+        # ✅ Filter by isolate_name
+        if isolate_name:
+            es_query["bool"]["must"].append({"term": {"isolate_name": isolate_name}})
+
+        # ✅ Merge additional filters (ensuring `bool.must` is at the right level)
+        if filter_criteria:
+            if "bool" in filter_criteria and "must" in filter_criteria["bool"]:
+                # ✅ Extend the main `bool.must` with all filters from `filter_criteria`
+                es_query["bool"]["must"].extend(filter_criteria["bool"]["must"])
+            else:
+                # ✅ If `filter_criteria` is a simple dictionary, process normally
+                for field, value in filter_criteria.items():
+                    if isinstance(value, list):
+                        es_query["bool"]["must"].append({"terms": {field: value}})
+                    else:
+                        es_query["bool"]["must"].append({"term": {field: value}})
+
+        logger.info(f"DEBUG - Final Elasticsearch Query (Fixed): {json.dumps(es_query, indent=2)}")
+        return es_query
+
+    async def get_faceted_search(self, species_acronym: Optional[str] = None,
+                                 essentiality: Optional[str] = None,
+                                 isolates: Optional[List[str]] = None,
+                                 cog_funcat: Optional[str] = None,
+                                 kegg: Optional[str] = None,
+                                 go_term: Optional[str] = None,
+                                 pfam: Optional[str] = None,
+                                 interpro: Optional[str] = None,
+                                 limit: int = None):
+        try:
+            s = Search(index="gene_index")
+
+            filters = []
+            if species_acronym:
+                s = s.filter("term", species_acronym=species_acronym)
+            if essentiality:
+                s = s.filter("term", essentiality={"value": essentiality.lower()})
+            if cog_funcat:
+                s = s.filter("term", cog_funcats={"value": cog_funcat.lower()})
+            if kegg:
+                s = s.filter("prefix", kegg={"value": kegg.lower()})
+            if go_term:
+                s = s.filter("prefix", go_term={"value": go_term.lower()})
+            if pfam:
+                s = s.filter("prefix", pfam={"value": pfam.lower()})
+            if interpro:
+                s = s.filter("prefix", interpro={"value": interpro.lower()})
+
+            if filters:
+                s = s.query(Q("bool", filter=filters))
+
+            if isolates:
+                s = s.filter("terms", isolate_name=isolates)
+
+            # Aggregations for faceted search
+            s.aggs.bucket('pfam_terms', A('terms', field='pfam', size=limit))
+            s.aggs.bucket('interpro_terms', A('terms', field='interpro', size=limit))
+            s.aggs.bucket('essentiality_terms', A('terms', field='essentiality', size=limit))
+
+            # Print final query to debug
+            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+
+            # Execute search
+            response = s.execute()
+
+            return {
+                "pfam": self.process_aggregation_results(
+                    {b.key: b.doc_count for b in response.aggregations.pfam_terms.buckets}),
+                "interpro": self.process_aggregation_results(
+                    {b.key: b.doc_count for b in response.aggregations.interpro_terms.buckets}),
+                "essentiality": self.process_aggregation_results(
+                    {b.key: b.doc_count for b in response.aggregations.essentiality_terms.buckets})
+            }
+
+        except Exception as e:
+            logger.error(f"Error fetching faceted search: {str(e)}")
+            raise ServiceError(e)
+
+    def process_aggregation_results(self, aggregation):
+        """Removes empty keys from aggregation results."""
+        return {k: v for k, v in aggregation.items() if k.strip()}

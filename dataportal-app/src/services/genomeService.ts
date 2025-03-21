@@ -17,7 +17,7 @@ export class GenomeService {
             });
 
             const rawResponse = await ApiService.get("/genomes/autocomplete", params);
-            console.log("response: ", rawResponse);
+            // console.log("response: ", rawResponse);
 
             // Transform raw response to match AutocompleteResponse
             return transformAutocompleteResponse(rawResponse);
@@ -28,25 +28,11 @@ export class GenomeService {
     }
 
     /**
-     * Fetch genomes by strain IDs.
-     */
-    static async fetchGenomeByStrainIds(strainIds: number[]): Promise<GenomeMeta[]> {
-        try {
-            const params = new URLSearchParams({ids: strainIds.join(",")});
-            const rawResponse = await ApiService.get("/genomes/by-ids", params);
-            return rawResponse.map(transformGenomeMeta);
-        } catch (error) {
-            console.error(`Error fetching genome with strain IDs ${strainIds}:`, error);
-            throw error;
-        }
-    }
-
-    /**
      * Fetch genomes by isolate names.
      */
     static async fetchGenomeByIsolateNames(isolateNames: string[]): Promise<GenomeMeta[]> {
         try {
-            const params = new URLSearchParams({names: isolateNames.join(",")});
+            const params = new URLSearchParams({isolates: isolateNames.join(",")});
             const rawResponse = await ApiService.get("/genomes/by-isolate-names", params);
             return rawResponse.map(transformGenomeMeta);
         } catch (error) {
@@ -64,7 +50,7 @@ export class GenomeService {
         pageSize: number,
         sortField: string,
         sortOrder: string,
-        selectedSpecies?: number[]
+        selectedSpecies?: string[]
     ): Promise<GenomeResponse> {
         try {
             const params = new URLSearchParams({
@@ -92,7 +78,7 @@ export class GenomeService {
      * Fetch genomes by search query and species filter.
      */
     static async fetchGenomesBySearch(
-        species: number[],
+        species: string[],
         genome: string,
         sortField: string,
         sortOrder: string

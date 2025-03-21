@@ -77,7 +77,7 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({typeStrains, linkTem
                 >
                     {typeStrains.map((strain) => (
                         <a
-                            key={strain.id}
+                            key={strain.isolate_name}
                             href={generateLink(strain.isolate_name)}
                             className="vf-link"
                             style={{

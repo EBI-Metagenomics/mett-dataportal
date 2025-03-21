@@ -2,17 +2,28 @@ import ftplib
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
 import pandas as pd
 from Bio import SeqIO
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from elasticsearch_dsl import connections
+from dataportal.models import StrainDocument
 
-from dataportal.models import Species, Strain, Contig
+# Load environment variables for Elasticsearch
+ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
+ES_USER = os.getenv("ES_USER")
+ES_PASSWORD = os.getenv("ES_PASSWORD")
+
+# Establish Elasticsearch connection
+connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
+
+SPECIES_ACRONYM_MAPPING = {
+    "Bacteroides uniformis": "BU",
+    "Phocaeicola vulgatus": "PV"
+}
 
 
 class Command(BaseCommand):
-    help = "Imports strains and contigs from FTP and optionally sets type strains."
+    help = "Imports strains and contigs from FTP and indexes them into Elasticsearch."
 
     def add_arguments(self, parser):
         parser.add_argument("--ftp-server", type=str, default="ftp.ebi.ac.uk")
@@ -42,11 +53,14 @@ class Command(BaseCommand):
         prefix_df = pd.read_csv(csv_path, sep="\t")
         prefix_mapping = dict(zip(prefix_df["assembly"], prefix_df["prefix"]))
 
+        # Initialize assembly accession counter
+        self.assembly_accession_counter = 1
+
         # Connect to FTP and import strains and contigs
         self.stdout.write("Starting strain and contig import...")
         self.import_strains_and_contigs(ftp_server, ftp_directory, prefix_mapping)
 
-        # Set type strains if isolate names are provided
+        # Update type strain field in Elasticsearch
         if type_strain_isolates:
             self.set_type_strains(type_strain_isolates)
 
@@ -56,13 +70,9 @@ class Command(BaseCommand):
         fasta_files = [f for f in ftp.nlst() if f.endswith(".fa")]
         self.stdout.write(f"Found {len(fasta_files)} FASTA files to process.")
 
-        with ThreadPoolExecutor(
-            max_workers=1
-        ) as executor:  # Reduced to 1 to avoid overloading
+        with ThreadPoolExecutor(max_workers=1) as executor:  # Avoid overload
             futures = [
-                executor.submit(
-                    self.download_and_process_file, ftp, file, prefix_mapping
-                )
+                executor.submit(self.download_and_process_file, ftp, file, prefix_mapping)
                 for file in fasta_files
             ]
 
@@ -73,9 +83,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"Error processing file: {e}")
 
         ftp.quit()
-        self.stdout.write(
-            "Strain and contig data successfully imported into the database."
-        )
+        self.stdout.write(self.style.SUCCESS("Strain and contig data successfully indexed into Elasticsearch."))
 
     def download_and_process_file(self, ftp, file, prefix_mapping):
         try:
@@ -83,72 +91,76 @@ class Command(BaseCommand):
             isolate_name = prefix_mapping.get(file)
 
             if not isolate_name:
-                self.stdout.write(
-                    f"No matching isolate found for assembly {assembly_name}"
-                )
+                self.stdout.write(f"No matching isolate found for assembly {assembly_name}")
                 return
 
-            # Determine species and create strain entry if needed
-            species = Species.objects.filter(acronym=isolate_name.split("_")[0]).first()
-            if not species:
-                self.stdout.write(
-                    f"No matching species found for isolate acronym {isolate_name.split('_')[0]}"
-                )
+            # Determine species name
+            species_acronym, species_name = self.get_species_info(isolate_name)
+            if not species_name:
+                self.stdout.write(f"No matching species found for isolate {isolate_name}")
                 return
 
-            self.stdout.write(f"Creating strain {isolate_name} ...")
+            self.stdout.write(f"Processing strain {isolate_name} ...")
 
-            # Create strain
-            with transaction.atomic():
-                strain, created = Strain.objects.get_or_create(
-                    isolate_name=isolate_name,
-                    assembly_name=assembly_name,
-                    assembly_accession=None,
-                    fasta_file=file,
-                    type_strain=False,
-                    species=species,
-                )
+            # Generate Assembly Accession
+            assembly_accession = f"AA{self.assembly_accession_counter:05d}"
+            self.assembly_accession_counter += 1  # Increment for next strain
 
-                # Retry download with reconnection if necessary
-                local_file_path = f"/tmp/{file}"
-                success = self.download_with_retry(ftp, file, local_file_path)
-                if not success:
-                    self.stdout.write(
-                        f"Failed to download {file} after multiple attempts."
-                    )
-                    return
+            # Retry download with reconnection if necessary
+            local_file_path = f"/tmp/{file}"
+            success = self.download_with_retry(ftp, file, local_file_path)
+            if not success:
+                self.stdout.write(f"Failed to download {file} after multiple attempts.")
+                return
 
-                # Bulk insert contigs
-                contigs = []
-                with open(local_file_path, "r") as fasta_local_file:
-                    for record in SeqIO.parse(fasta_local_file, "fasta"):
-                        contigs.append(
-                            Contig(
-                                strain=strain, seq_id=record.id, length=len(record.seq)
-                            )
-                        )
-                Contig.objects.bulk_create(contigs, batch_size=1000)
-                self.stdout.write(
-                    f"Inserted {len(contigs)} contigs for strain {isolate_name}"
-                )
+            # Extract contigs
+            contigs = []
+            with open(local_file_path, "r") as fasta_local_file:
+                for record in SeqIO.parse(fasta_local_file, "fasta"):
+                    contigs.append({"seq_id": record.id, "length": len(record.seq)})
 
-                # Clean up local file
-                os.remove(local_file_path)
-
-            self.stdout.write(
-                f"Successfully processed strain: {isolate_name} with assembly: {assembly_name}"
+            # Create strain document
+            strain_doc = StrainDocument(
+                meta={"id": isolate_name},
+                isolate_name=isolate_name,
+                assembly_name=assembly_name,
+                assembly_accession=assembly_accession,
+                fasta_file=file,
+                gff_file=None,
+                type_strain=False,
+                species_scientific_name=species_name,
+                species_acronym=species_acronym,
+                contigs=contigs,
             )
+
+            # Save strain document to Elasticsearch
+            strain_doc.save()
+            self.stdout.write(f"Indexed strain {isolate_name} with {len(contigs)} contigs and accession {assembly_accession}.")
+
+            # Clean up local file
+            os.remove(local_file_path)
 
         except Exception as e:
             self.stdout.write(f"Error processing {file}: {e}")
+
+    def get_species_info(self, isolate_name):
+        """ Extract species acronym and species name from isolate name. """
+        species_acronym = isolate_name.split("_")[0] if "_" in isolate_name else None
+        species_mapping = {
+            "BU": "Bacteroides uniformis",
+            "PV": "Phocaeicola vulgatus",
+            # Add more mappings as needed
+        }
+
+        species_name = species_mapping.get(species_acronym, None)
+
+        return species_acronym, species_name
 
     def download_with_retry(self, ftp, file, local_file_path, retries=3, delay=5):
         for attempt in range(retries):
             try:
                 if attempt > 0:
-                    self.stdout.write(
-                        f"Reconnecting and retrying download for {file} (Attempt {attempt + 1})..."
-                    )
+                    self.stdout.write(f"Reconnecting and retrying download for {file} (Attempt {attempt + 1})...")
                     ftp = self.reconnect_ftp(ftp.host)
 
                 ftp.voidcmd("TYPE I")
@@ -161,9 +173,7 @@ class Command(BaseCommand):
                 if attempt < retries - 1:
                     time.sleep(delay)
                 else:
-                    self.stdout.write(
-                        f"Download failed after {retries} attempts for {file}."
-                    )
+                    self.stdout.write(f"Download failed after {retries} attempts for {file}.")
                     return False
 
     def reconnect_ftp(self, ftp_server):
@@ -183,8 +193,15 @@ class Command(BaseCommand):
                     raise
 
     def set_type_strains(self, isolate_names):
+        """ Updates existing strains in Elasticsearch to set them as type strains """
         self.stdout.write("Setting type strains for specified isolates.")
-        updated_count = Strain.objects.filter(isolate_name__in=isolate_names).update(
-            type_strain=True
-        )
-        self.stdout.write(f"Successfully updated {updated_count} type strains.")
+
+        for isolate_name in isolate_names:
+            strain = StrainDocument.get(id=isolate_name, ignore=404)
+            if strain:
+                strain.type_strain = True
+                strain.save()
+                self.stdout.write(f"Updated strain {isolate_name} to type_strain=True")
+
+        self.stdout.write(self.style.SUCCESS(f"Updated {len(isolate_names)} type strains in Elasticsearch."))
+

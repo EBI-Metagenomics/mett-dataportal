@@ -75,7 +75,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
             <tbody className="vf-table__body">
             {results.map((result, index) => (
                 <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}><i>{result.species.scientific_name || 'Unknown Species'}</i>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}><i>{result.species_scientific_name || 'Unknown Species'}</i>
                     </td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.isolate_name || 'Unknown Isolate'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
@@ -100,7 +100,6 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     <button
                             className={styles.toggleButton}
                             onClick={() => onToggleGenomeSelect({
-                                id: result.id,
                                 isolate_name: result.isolate_name,
                                 type_strain: result.type_strain
                             })}
@@ -117,12 +116,12 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                         >
                             <i
                                 className={`icon icon-common ${
-                                    selectedGenomes.some(genome => genome.id === result.id)
+                                    selectedGenomes.some(genome => genome.isolate_name === result.isolate_name)
                                         ? "icon-minus-circle"
                                         : "icon-plus-circle"
                                 }`}
                                 style={{
-                                    color: selectedGenomes.some(genome => genome.id === result.id)
+                                    color: selectedGenomes.some(genome => genome.isolate_name === result.isolate_name)
                                         ? "#B0B0B0"
                                         : "#007BFF",
                                     fontSize: "18px",

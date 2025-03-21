@@ -18,3 +18,4 @@ biopython==1.84
 pandas==2.2.3
 django-debug-toolbar==4.4.6
 cachetools==5.5.0
+elasticsearch-dsl==8.17.1

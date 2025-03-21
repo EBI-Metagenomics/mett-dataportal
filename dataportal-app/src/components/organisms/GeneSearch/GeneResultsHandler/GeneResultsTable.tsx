@@ -17,8 +17,8 @@ interface GeneResultsTableProps {
 
 const generateLink = (template: string, result: any) => {
     return template
-        .replace('${strain_name}', result.strain.isolate_name)
-        .replace('${gene_id}', result.id);
+        .replace('${strain_name}', result.isolate_name)
+        .replace('${locus_tag}', result.locus_tag);
 };
 
 const handleNavigation = (
@@ -70,23 +70,70 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 <th onClick={() => handleSort('strain')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Strain
+                    {sortField === 'strain' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th onClick={() => handleSort('gene_name')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Gene
+                    {sortField === 'gene_name' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
+                </th>
+                <th onClick={() => handleSort('alias')}
+                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
+                    Alias
+                    {sortField === 'alias' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th onClick={() => handleSort('seq_id')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Seq Id
+                    {sortField === 'seq_id' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th onClick={() => handleSort('locus_tag')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Locus Tag
+                    {sortField === 'locus_tag' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
                 <th onClick={() => handleSort('product')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                     Product
+                    {sortField === 'product' ? (
+                        <span
+                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                            style={{paddingLeft: '5px'}}></span>
+                    ) : (
+                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                    )}
                 </th>
+                <th className={`vf-table__heading ${styles.vfTableHeading}`}>UniProt Id</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`}>Essentiality</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
             </tr>
@@ -94,30 +141,27 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
             <tbody className="vf-table__body">
             {results.map((geneMeta, index) => (
                 <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.strain.isolate_name || 'Unknown Strain'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || 'Unknown Gene Name'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.isolate_name || '---'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || '---'}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.alias || '---'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.seq_id || 'Unknown'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.locus_tag || 'Unknown Locus Tag'}</td>
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.product || ''}</td>
+                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.uniprot_id || ''}</td>
 
                     <td className={`vf-table__cell ${styles.vfTableCellIcon}`}>
-                        {geneMeta.essentiality_data && geneMeta.essentiality_data.length > 0 ? (
-                            // Filter for only 'solid' media type
-                            geneMeta.essentiality_data
-                                .filter((essentiality) => essentiality.media === 'solid')
-                                .map((essentiality, index) => (
-                                    <span
-                                        key={`${geneMeta.id}-${index}`}
-                                        title={`${essentiality.essentiality}`}
-                                        className={styles.essentialityIcon}
-                                    >
-                                        {getIconForEssentiality(essentiality.essentiality)}
-                                    </span>
-                                ))
+                        {geneMeta.essentiality && geneMeta.essentiality !== "Unknown" ? (
+                            <span
+                                title={geneMeta.essentiality}
+                                className={styles.essentialityIcon}
+                            >
+                                {getIconForEssentiality(geneMeta.essentiality)}
+                            </span>
                         ) : (
                             '---'
                         )}
                     </td>
+
 
                     <td className={`vf-table__cell ${styles.vfTableCell}`}>
                         {viewState ? (

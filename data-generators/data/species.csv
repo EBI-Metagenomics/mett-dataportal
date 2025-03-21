@@ -1,3 +1,3 @@
-id,scientific_name,common_name,acronym,taxonomy_id
-1,Bacteroides uniformis,Bacteroides,BU,"820"
-2,Phocaeicola vulgatus,Bacteroides vulgatus,PV,"821"
+scientific_name,common_name,acronym,taxonomy_id
+Bacteroides uniformis,Bacteroides,BU,"820"
+Phocaeicola vulgatus,Bacteroides vulgatus,PV,"821"

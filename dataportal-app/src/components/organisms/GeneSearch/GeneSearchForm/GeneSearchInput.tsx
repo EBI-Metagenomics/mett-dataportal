@@ -79,7 +79,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                     value &&
                     typeof option !== 'string' &&
                     typeof value !== 'string' &&
-                    option.gene_id === value.gene_id
+                    option.locus_tag === value.locus_tag
                 }
                 renderInput={(params) => (
                     <TextField

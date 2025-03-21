@@ -23,12 +23,12 @@ const GeneViewerPage: React.FC = () => {
     const [geneResults, setGeneResults] = useState<any[]>([]);
     const [totalPages, setTotalPages] = useState(1);
 
-    const [sortField, setSortField] = useState<string>('species');
+    const [sortField, setSortField] = useState<string>('locus_tag');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     const {strainName} = useParams<{ strainName?: string }>();
     const searchParams = new URLSearchParams(location.search);
-    const geneId = searchParams.get('gene_id');
+    const geneId = searchParams.get('locus_tag');
     const [height, setHeight] = useState(500);
 
     const [includeEssentiality, setIncludeEssentiality] = useState(true);
@@ -46,10 +46,10 @@ const GeneViewerPage: React.FC = () => {
             setLoading(true); // Show spinner
             try {
                 if (geneId) {
-                    const geneResponse = await GeneService.fetchGeneById(Number(geneId));
+                    const geneResponse = await GeneService.fetchGeneByLocusTag(geneId);
                     setGeneMeta(geneResponse);
 
-                    const genomeResponse = await GenomeService.fetchGenomeByStrainIds([geneResponse.strain.id]);
+                    const genomeResponse = await GenomeService.fetchGenomeByIsolateNames([geneResponse.isolate_name]);
                     setGenomeMeta(genomeResponse[0]);
                 } else if (strainName) {
                     const genomeResponse = await GenomeService.fetchGenomeByIsolateNames([strainName]);
@@ -85,7 +85,7 @@ const GeneViewerPage: React.FC = () => {
                 genomeMeta,
                 process.env.REACT_APP_GFF_INDEXES_PATH
                     ? process.env.REACT_APP_GFF_INDEXES_PATH : '',
-                getEssentialityDataUrl(genomeMeta.id),
+                getEssentialityDataUrl(genomeMeta.isolate_name),
                 includeEssentiality
             ) : [];
     }, [genomeMeta, includeEssentiality]);
@@ -93,7 +93,7 @@ const GeneViewerPage: React.FC = () => {
      const selectedGenomes = useMemo(() => {
         return genomeMeta
             ? [{
-                id: genomeMeta.id,
+                id: genomeMeta.isolate_name,
                 isolate_name: genomeMeta.isolate_name,
                 type_strain: genomeMeta.type_strain
             }]
@@ -143,7 +143,7 @@ const GeneViewerPage: React.FC = () => {
         assembly,
         tracks,
         sessionConfig,
-        getEssentialityDataUrl(genomeMeta?.id || 0));
+        getEssentialityDataUrl(genomeMeta?.isolate_name || ''));
 
     useEffect(() => {
         const waitForInitialization = async () => {
@@ -230,9 +230,9 @@ const GeneViewerPage: React.FC = () => {
 
 
     const handleGeneSearch = async () => {
-        if (genomeMeta?.id) {
+        if (genomeMeta?.isolate_name) {
             setLoading(true);
-            const response = await GeneService.fetchGeneBySearch(genomeMeta.id, geneSearchQuery);
+            const response = await GeneService.fetchGeneBySearch(genomeMeta.isolate_name, geneSearchQuery);
             setGeneResults(response.results || []);
             setTotalPages(response.num_pages || 1);
             setTimeout(() => setLoading(false), SPINNER_DELAY);
@@ -298,7 +298,7 @@ const GeneViewerPage: React.FC = () => {
                 <section>
                     {genomeMeta ? (
                         <div className="genome-meta-info">
-                            <h2><i>{genomeMeta.species.scientific_name}</i>: {genomeMeta.isolate_name}</h2>
+                            <h2><i>{genomeMeta.species_scientific_name}</i>: {genomeMeta.isolate_name}</h2>
                             <p><strong>Assembly Name:&nbsp;</strong>
                                 <a href={genomeMeta.fasta_url} target="_blank"
                                    rel="noopener noreferrer">{genomeMeta.assembly_name}

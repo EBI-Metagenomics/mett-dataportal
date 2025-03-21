@@ -1,26 +1,24 @@
-from typing import Optional, List, Dict
+from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict
 
 
 class SpeciesSchema(BaseModel):
-    id: int
     scientific_name: str
     common_name: str
     acronym: str
+    taxonomy_id: int
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class StrainSuggestionSchema(BaseModel):
-    id: int
     isolate_name: str
     assembly_name: str
 
     model_config = ConfigDict(from_attributes=True)
 
 class StrainMinSchema(BaseModel):
-    id: int
     isolate_name: str
     assembly_name: str
 
@@ -35,8 +33,8 @@ class ContigSchema(BaseModel):
 
 
 class GenomeResponseSchema(BaseModel):
-    id: int
-    species: SpeciesSchema
+    species_scientific_name: Optional[str] = None
+    species_acronym: Optional[str] = None
     isolate_name: str
     assembly_name: Optional[str]
     assembly_accession: Optional[str]
@@ -51,52 +49,52 @@ class GenomeResponseSchema(BaseModel):
 
 
 class GeneAutocompleteResponseSchema(BaseModel):
-    gene_id: int
-    gene_name: Optional[str]
-    isolate_name: str
-    product: Optional[str] = None
     locus_tag: Optional[str] = None
-    kegg: Optional[str] = None
-    pfam: Optional[str] = None
-    interpro: Optional[str] = None
-    dbxref: Optional[str] = None
+    gene_name: Optional[str] = None
+    alias: Optional[List[str]] = None
+    isolate_name: Optional[str] = None
+    species_scientific_name: Optional[str] = None
+    species_acronym: Optional[str] = None
+    product: Optional[str] = None
+    kegg: Optional[List[str]] = None
+    uniprot_id: Optional[str] = None
+    pfam: Optional[List[str]] = None
+    cog_id: Optional[str] = None
+    interpro: Optional[List[str]] = None
+    essentiality: Optional[str] = "Unknown"
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class EssentialityTagSchema(BaseModel):
-    id: int
     name: str
     label: str
 
     model_config = ConfigDict(from_attributes=True)
 
-
-class GeneEssentialitySchema(BaseModel):
-    media: str
-    essentiality: Optional[str]
+class DBXRefSchema(BaseModel):
+    db: str
+    ref: str
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class GeneResponseSchema(BaseModel):
-    id: int
-    seq_id: Optional[str] = None
-    gene_name: Optional[str] = None
-    description: Optional[str] = None
-    strain: StrainMinSchema
     locus_tag: Optional[str] = None
-    cog: Optional[str] = None
-    kegg: Optional[str] = None
-    pfam: Optional[str] = None
-    interpro: Optional[str] = None
-    dbxref: Optional[str] = None
-    ec_number: Optional[str] = None
+    gene_name: Optional[str] = None
+    alias: Optional[List[str]] = None
     product: Optional[str] = None
     start_position: Optional[int] = None
     end_position: Optional[int] = None
-    annotations: Optional[dict] = None
-    essentiality_data: Optional[List[GeneEssentialitySchema]] = None
+    seq_id: Optional[str] = None
+    isolate_name: Optional[str] = None
+    uniprot_id: Optional[str] = None
+    essentiality: Optional[str] = "Unknown"
+    cog_funcats: Optional[List[str]] = None
+    cog_id: Optional[str] = None
+    kegg: Optional[List[str]] = None
+    pfam: Optional[List[str]] = None
+    interpro: Optional[List[str]] = None
+    ec_number: Optional[str] = None
+    dbxref: Optional[List[DBXRefSchema]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -119,16 +117,11 @@ class GenePaginationSchema(BasePaginationSchema):
     results: List[GeneResponseSchema]
 
 
-class EssentialityDataSchema(BaseModel):
-    media: str
-    essentiality: str
-
-
 class EssentialityByContigSchema(BaseModel):
     locus_tag: str
     start: Optional[int]
     end: Optional[int]
-    essentiality_data: List[EssentialityDataSchema]
+    essentiality: str
 
 
 __all__ = [
@@ -140,5 +133,4 @@ __all__ = [
     "GeneResponseSchema",
     "GenomePaginationSchema",
     "SpeciesSchema",
-    "EssentialityDataSchema",
 ]

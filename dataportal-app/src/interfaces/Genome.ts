@@ -1,16 +1,14 @@
-import {Species} from "./Species";
-
 export interface Contig {
     seq_id: string;
     length: number;
 }
 
 export interface GenomeMeta {
-    id: number;
-    species: Species;
+    species_scientific_name?: string;
+    species_acronym: string;
     isolate_name: string;
     assembly_name: string;
-    assembly_accession: string | null;
+    assembly_accession?: string | null;
     fasta_file: string;
     gff_file: string;
     fasta_url: string;
@@ -20,7 +18,6 @@ export interface GenomeMeta {
 }
 
 export interface BaseGenome {
-    id: number;
     isolate_name: string;
     type_strain: boolean;
 }
@@ -35,14 +32,12 @@ export interface GenomeResponse {
 }
 
 export interface AutocompleteResponse {
-    id: number,
-    isolate_name: string,
-    assembly_name: string
+    isolate_name: string;
+    assembly_name: string;
 }
 
 export interface GenomeMinIntf {
-    id: number,
-    isolate_name: string,
-    assembly_name: string
+    isolate_name: string;
+    assembly_name: string;
 }
 

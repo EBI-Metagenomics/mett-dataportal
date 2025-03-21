@@ -1,47 +1,42 @@
-import {GenomeMinIntf} from "./Genome";
-
-export interface GeneEssentiality {
-    id: number;
-    media: string;
-    essentiality: string;
-}
-
 export interface GeneMeta {
-    id: number;
+    locus_tag?: string;
+    gene_name?: string;
+    alias?: string[];
+    product?: string;
+    start_position?: number;
+    end_position?: number;
     seq_id: string;
-    gene_name: string;
-    description: string;
-    strain: GenomeMinIntf;
-    locus_tag: string;
-    cog: string | null;
-    kegg: string | null;
-    pfam: string | null;
-    interpro: string | null;
-    dbxref: string | null;
-    ec_number: string | null;
-    product: string | null;
-    start_position: number | null;
-    end_position: number | null;
-    annotations: Record<string, any> | null;
-    essentiality_data: GeneEssentiality[] | null;
+    isolate_name: string;
+    uniprot_id?: string | null;
+    essentiality?: string;
+    cog_funcats?: string[] | null;
+    cog_id?: string | null;
+    kegg?: string[] | null;
+    pfam?: string[] | null;
+    interpro?: string[] | null;
+    ec_number?: string | null;
+    dbxref?: { db: string; ref: string }[] | null;
 }
 
 export interface Gene {
-    id: number;
-    name: string;
-    description: string;
+    locus_tag?: string;
+    gene_name?: string;
+    alias?: string[];
+    product?: string;
 }
 
 export interface GeneSuggestion {
-    gene_id: number;
     gene_name: string | '';
-    isolate_name: string;
-    product: string | null;
     locus_tag: string;
-    kegg: string | null;
-    pfam: string | null;
-    interpro: string | null;
-    dbxref: string | null;
+    alias: string[] | '';
+    isolate_name?: string;
+    species_scientific_name?: string;
+    species_acronym?: string;
+    product?: string | null;
+    kegg?: string[] | null;
+    pfam?: string[] | null;
+    interpro?: string[] | null;
+    cog_id?: string | null;
 }
 
 export interface PaginatedResponse<T> {
@@ -53,7 +48,6 @@ export interface PaginatedResponse<T> {
 }
 
 export interface GeneEssentialityTag {
-    id: number;
     name: string;
     label: string;
 }
