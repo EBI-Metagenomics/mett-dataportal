@@ -4,4 +4,4 @@ metadata:
   name: mett-elasticsearch-config-dev
   namespace: mett-dataportal-hl-dev
 data:
-  DB_HOST: "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:32527"
+  ES_HOST: "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:32527"

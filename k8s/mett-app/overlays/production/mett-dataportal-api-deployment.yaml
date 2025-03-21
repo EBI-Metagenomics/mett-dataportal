@@ -24,21 +24,21 @@ spec:
           name: mett-dataportal-api-dev
           env:
             # Database configuration
-            - name: DB_HOST
+            - name: ES_HOST
               valueFrom:
                 configMapKeyRef:
                   name: mett-elasticsearch-config-dev
-                  key: DB_HOST
-            - name: DB_USER
+                  key: ES_HOST
+            - name: ES_USER
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config-dev
-                  key: POSTGRES_USER
-            - name: DB_PASSWORD
+                  name: mett-elasticsearch-credentials
+                  key: ELASTIC_USERNAME
+            - name: ES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mett-elasticsearch-config-dev
-                  key: POSTGRES_PASSWORD
+                  name: mett-elasticsearch-credentials
+                  key: ELASTIC_PASSWORD
 
             # Application-specific environment variables
             - name: DJANGO_DEBUG
