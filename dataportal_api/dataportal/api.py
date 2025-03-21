@@ -5,7 +5,6 @@ from django.http import JsonResponse
 from ninja import NinjaAPI, Router
 from ninja.errors import HttpError
 
-from .models import EssentialityTag
 from .schemas import (
     StrainSuggestionSchema,
     SpeciesSchema,

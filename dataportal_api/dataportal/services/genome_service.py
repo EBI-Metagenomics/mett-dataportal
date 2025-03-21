@@ -8,7 +8,7 @@ from django.db.models import Q
 from elasticsearch_dsl import Search
 
 from dataportal import settings
-from dataportal.elasticsearch.models import StrainDocument
+from dataportal.models import StrainDocument
 from dataportal.schemas import (
     GenomePaginationSchema,
     GenomeResponseSchema,

@@ -3,7 +3,7 @@ import pandas as pd
 from django.core.management.base import BaseCommand
 from elasticsearch_dsl import connections
 from elasticsearch.helpers import bulk
-from dataportal.elasticsearch.models import SpeciesDocument
+from dataportal.models import SpeciesDocument
 
 # Load environment variables for Elasticsearch
 ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")

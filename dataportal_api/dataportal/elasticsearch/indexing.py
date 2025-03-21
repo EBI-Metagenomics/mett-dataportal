@@ -1,5 +1,5 @@
 from elasticsearch_dsl import connections
-from dataportal.elasticsearch.models import SpeciesDocument, StrainDocument, GeneDocument
+from dataportal.models import SpeciesDocument, StrainDocument, GeneDocument
 import os
 
 # Load environment variables for Elasticsearch

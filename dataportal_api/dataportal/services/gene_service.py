@@ -6,7 +6,7 @@ from asgiref.sync import sync_to_async
 from django.db.models import Q
 from elasticsearch_dsl import Search, A
 
-from dataportal.elasticsearch.models import GeneDocument
+from dataportal.models import GeneDocument
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
 from dataportal.utils.constants import (
     GENE_DEFAULT_SORT_FIELD,
