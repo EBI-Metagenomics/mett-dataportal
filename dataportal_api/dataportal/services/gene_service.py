@@ -8,6 +8,7 @@ from elasticsearch_dsl import Search, A
 
 from dataportal.models import GeneDocument
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
+from dataportal.services.gene_faceted_search import GeneFacetedSearch
 from dataportal.utils.constants import (
     GENE_DEFAULT_SORT_FIELD,
     DEFAULT_SORT,
@@ -430,54 +431,35 @@ class GeneService:
                                  go_term: Optional[str] = None,
                                  pfam: Optional[str] = None,
                                  interpro: Optional[str] = None,
-                                 limit: int = None):
+                                 limit: int = 20):
         try:
-            s = Search(index="gene_index")
+            gs = GeneFacetedSearch(
+                query='',
+                species_acronym=species_acronym,
+                essentiality=essentiality,
+                isolates=isolates,
+                cog_funcat=cog_funcat,
+                kegg=kegg,
+                go_term=go_term,
+                pfam=pfam,
+                interpro=interpro,
+                limit=limit
+            )
 
-            filters = []
-            if species_acronym:
-                s = s.filter("term", species_acronym=species_acronym)
-            if essentiality:
-                s = s.filter("term", essentiality={"value": essentiality.lower()})
-            if cog_funcat:
-                s = s.filter("term", cog_funcats={"value": cog_funcat.lower()})
-            if kegg:
-                s = s.filter("prefix", kegg={"value": kegg.lower()})
-            if go_term:
-                s = s.filter("prefix", go_term={"value": go_term.lower()})
-            if pfam:
-                s = s.filter("prefix", pfam={"value": pfam.lower()})
-            if interpro:
-                s = s.filter("prefix", interpro={"value": interpro.lower()})
-
-            if filters:
-                s = s.query(Q("bool", filter=filters))
-
-            if isolates:
-                s = s.filter("terms", isolate_name=isolates)
-
-            # Aggregations for faceted search
-            s.aggs.bucket('pfam_terms', A('terms', field='pfam', size=limit))
-            s.aggs.bucket('interpro_terms', A('terms', field='interpro', size=limit))
-            s.aggs.bucket('essentiality_terms', A('terms', field='essentiality', size=limit))
-
-            # Print final query to debug
-            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
-
-            # Execute search
-            response = s.execute()
+            response = gs.execute()
 
             return {
                 "pfam": self.process_aggregation_results(
-                    {b.key: b.doc_count for b in response.aggregations.pfam_terms.buckets}),
+                    {b[0]: b[1] for b in getattr(response.facets, 'pfam', [])}),
                 "interpro": self.process_aggregation_results(
-                    {b.key: b.doc_count for b in response.aggregations.interpro_terms.buckets}),
+                    {b[0]: b[1] for b in getattr(response.facets, 'interpro', [])}),
                 "essentiality": self.process_aggregation_results(
-                    {b.key: b.doc_count for b in response.aggregations.essentiality_terms.buckets})
+                    {b[0]: b[1] for b in getattr(response.facets, 'essentiality', [])}),
+                "total_hits": response.hits.total.value
             }
 
         except Exception as e:
-            logger.error(f"Error fetching faceted search: {str(e)}")
+            logger.exception("Error fetching faceted search")
             raise ServiceError(e)
 
     def process_aggregation_results(self, aggregation):

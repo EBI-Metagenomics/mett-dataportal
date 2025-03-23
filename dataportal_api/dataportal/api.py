@@ -241,7 +241,6 @@ async def get_faceted_search(request, species_acronym: Optional[str] = None,
                                                  cog_funcats, kegg, go_term, pfam, interpro,
                                                  limit)
 
-
 # API Endpoint to retrieve gene by locus tag
 @gene_router.get("/{locus_tag}", response=GeneResponseSchema)
 async def get_gene_by_locus_tag(request, locus_tag: str):
