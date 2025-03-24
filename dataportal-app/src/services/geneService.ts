@@ -1,5 +1,12 @@
 import {ApiService} from "./api";
-import {Gene, GeneEssentialityTag, GeneMeta, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
+import {
+    Gene,
+    GeneEssentialityTag,
+    GeneFacetResponse,
+    GeneMeta,
+    GeneSuggestion,
+    PaginatedResponse
+} from "../interfaces/Gene";
 import {cacheResponse} from "./cachingDecorator";
 
 export class GeneService {
@@ -180,6 +187,44 @@ export class GeneService {
         } catch (error) {
             console.error(`Error fetching essentiality data for ${refName}:`, error);
             return {};
+        }
+    }
+
+    /**
+     * faceted search.
+     */
+    static async fetchGeneFacets(
+        speciesAcronym?: string,
+        isolates?: string[],
+        essentiality?: string,
+        cogFuncat?: string,
+        kegg?: string,
+        goTerm?: string,
+        pfam?: string,
+        interpro?: string,
+        limit: number = 20
+    ): Promise<GeneFacetResponse> {
+        try {
+            const params = new URLSearchParams({
+                ...(speciesAcronym && {species_acronym: speciesAcronym}),
+                ...(essentiality && {essentiality}),
+                ...(cogFuncat && {cog_funcat: cogFuncat}),
+                ...(kegg && {kegg}),
+                ...(goTerm && {go_term: goTerm}),
+                ...(pfam && {pfam}),
+                ...(interpro && {interpro}),
+                ...(limit && {limit: String(limit)}),
+            });
+
+            if (isolates?.length) {
+                isolates.forEach((i) => params.append("isolates", i));
+            }
+
+            const response = await ApiService.get<GeneFacetResponse>("genes/faceted-search", params);
+            return response;
+        } catch (error) {
+            console.error("Error fetching gene facets:", error);
+            throw error;
         }
     }
 }
