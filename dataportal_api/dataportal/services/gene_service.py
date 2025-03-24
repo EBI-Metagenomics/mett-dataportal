@@ -450,11 +450,17 @@ class GeneService:
 
             return {
                 "pfam": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'pfam', [])}),
+                    {b[0]: b[1] for b in getattr(response.facets, 'pfam', [])},
+                    selected_values=[pfam] if pfam else []
+                ),
                 "interpro": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'interpro', [])}),
+                    {b[0]: b[1] for b in getattr(response.facets, 'interpro', [])},
+                    selected_values=[interpro] if interpro else []
+                ),
                 "essentiality": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'essentiality', [])}),
+                    {b[0]: b[1] for b in getattr(response.facets, 'essentiality', [])},
+                    selected_values=[essentiality] if essentiality else []
+                ),
                 "total_hits": response.hits.total.value
             }
 
@@ -462,6 +468,13 @@ class GeneService:
             logger.exception("Error fetching faceted search")
             raise ServiceError(e)
 
-    def process_aggregation_results(self, aggregation):
+    def process_aggregation_results(self, aggregation_dict, selected_values=None):
         """Removes empty keys from aggregation results."""
-        return {k: v for k, v in aggregation.items() if k.strip()}
+        return [
+            {
+                "value": key,
+                "count": count,
+                "selected": key in selected_values
+            }
+            for key, count in aggregation_dict.items() if key.strip()
+        ]
