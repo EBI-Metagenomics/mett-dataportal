@@ -19,7 +19,7 @@ spec:
         runAsUser: 7123
         runAsGroup: 1347
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.105
+        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.106
           imagePullPolicy: Always
           name: mett-dataportal-api-dev
           env:
@@ -41,7 +41,7 @@ spec:
                   key: ES_MAX_RETRIES
             - name: ES_USER
               valueFrom:
-                configMapKeyRef:
+                secretKeyRef:
                   name: mett-elasticsearch-credentials
                   key: ELASTIC_USERNAME
             - name: ES_PASSWORD
