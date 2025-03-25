@@ -1,14 +1,25 @@
 import React from 'react';
 import styles from './HomePageHeadBand.module.scss';
 import {GenomeMeta} from "../../../interfaces/Genome";
+import SpeciesFilter from "@components/Filters/SpeciesFilter";
 
 
 interface HomePageHeadBandProps {
     typeStrains: GenomeMeta[];
     linkTemplate: string;
+    speciesList: { acronym: string; scientific_name: string, common_name: string, taxonomy_id: number }[];
+    selectedSpecies: string[];
+    handleSpeciesSelect: (species_acronym: string) => Promise<void>,
+
 }
 
-const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({typeStrains, linkTemplate}) => {
+const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
+                                                               typeStrains,
+                                                               linkTemplate,
+                                                               speciesList,
+                                                               selectedSpecies,
+                                                               handleSpeciesSelect
+                                                           }) => {
     const generateLink = (strainName: string) => linkTemplate.replace('$strain_name', strainName);
 
     // console.log(typeStrains)
@@ -113,6 +124,36 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({typeStrains, linkTem
                         </a>
                     ))}
                 </div>
+            </div>
+
+
+            <div
+                className="vf-section-header vf-grid__col--span-3 | vf-u-fullbleed"
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '1.1rem',
+                    padding: '0.2rem 0',
+                    gap: '1rem',
+                }}
+            >
+                <h3
+                    className="vf-section-header__heading"
+                    style={{
+                        fontSize: '1.1rem',
+                        fontWeight: 'bold',
+                        margin: '0',
+                    }}
+                >
+                    Species:
+                </h3>
+                {/* Species Filter */}
+                <SpeciesFilter
+                    speciesList={speciesList}
+                    selectedSpecies={selectedSpecies}
+                    onSpeciesSelect={handleSpeciesSelect}
+                />
+
             </div>
         </section>
     );

@@ -102,7 +102,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 </th>
                 <th onClick={() => handleSort('seq_id')}
                     className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
-                    Seq Id
+                    SeqId
                     {sortField === 'seq_id' ? (
                         <span
                             className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
@@ -133,7 +133,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                         <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
                     )}
                 </th>
-                <th className={`vf-table__heading ${styles.vfTableHeading}`}>UniProt Id</th>
+                <th className={`vf-table__heading ${styles.vfTableHeading}`}>UniProtId</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`}>Essentiality</th>
                 <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
             </tr>

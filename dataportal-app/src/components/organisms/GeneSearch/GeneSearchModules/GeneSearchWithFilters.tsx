@@ -12,7 +12,7 @@ interface GeneSearchWithFiltersProps {
     onSortClick: (sortField: string, sortOrder: 'asc' | 'desc') => void;
     sortField: string;
     sortOrder: 'asc' | 'desc';
-    selectedGenomes?: any[];
+    selectedGenomes: any[];
     linkData: any;
     viewState?: any;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -54,21 +54,22 @@ const GeneSearchWithFilters: React.FC<GeneSearchWithFiltersProps> = ({
             </div>
 
             <div className={styles.rightPane}>
-                <GeneSearchForm
-                    searchQuery={searchQuery}
-                    onSearchQueryChange={onSearchQueryChange}
-                    onSearchSubmit={() => onSearchSubmit()}
-                    selectedSpecies={selectedSpecies}
-                    results={results}
-                    onSortClick={onSortClick}
-                    sortField={sortField}
-                    sortOrder={sortOrder}
-                    selectedGenomes={selectedGenomes}
-                    linkData={linkData}
-                    viewState={viewState}
-                    essentialityFilter={essentialityFilter}
-                    setLoading={setLoading}
-                />
+                {/*<GeneSearchForm*/}
+                {/*    searchQuery={searchQuery}*/}
+                {/*    onSearchQueryChange={onSearchQueryChange}*/}
+                {/*    onSearchSubmit={() => onSearchSubmit()}*/}
+                {/*    selectedSpecies={selectedSpecies}*/}
+                {/*    results={results}*/}
+                {/*    onSortClick={onSortClick}*/}
+                {/*    sortField={sortField}*/}
+                {/*    sortOrder={sortOrder}*/}
+                {/*    selectedGenomes={selectedGenomes}*/}
+                {/*    linkData={linkData}*/}
+                {/*    viewState={viewState}*/}
+                {/*    essentialityFilter={essentialityFilter}*/}
+                {/*    setLoading={setLoading}*/}
+                {/*    handleRemoveGenome={}*/}
+                {/*/>*/}
             </div>
         </div>
     );

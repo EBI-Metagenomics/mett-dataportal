@@ -8,6 +8,7 @@ import {
     PaginatedResponse
 } from "../interfaces/Gene";
 import {cacheResponse} from "./cachingDecorator";
+import {DEFAULT_PER_PAGE_CNT} from "../utils/appConstants";
 
 export class GeneService {
     /**
@@ -16,7 +17,7 @@ export class GeneService {
     private static buildParams(
         query: string,
         page: number = 1,
-        perPage: number = 10,
+        perPage: number = DEFAULT_PER_PAGE_CNT,
         speciesAcronym?: string,
         genomeIds?: string
     ): URLSearchParams {
@@ -34,7 +35,7 @@ export class GeneService {
      */
     static async fetchGeneAutocompleteSuggestions(
         query: string,
-        limit: number = 10,
+        limit: number = DEFAULT_PER_PAGE_CNT,
         speciesAcronym?: string,
         genomeIds?: string,
         essentialityFilter?: string[]
@@ -134,7 +135,7 @@ export class GeneService {
     static async fetchGenesByGenome(
         isolate_name: string,
         page: number = 1,
-        perPage: number = 10
+        perPage: number = DEFAULT_PER_PAGE_CNT
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
             const params = this.buildParams("", page, perPage);
@@ -195,30 +196,25 @@ export class GeneService {
      */
     static async fetchGeneFacets(
         speciesAcronym?: string,
-        isolates?: string[],
+        isolates?: string,
         essentiality?: string,
-        cogFuncat?: string,
+        cogId?: string,
         kegg?: string,
         goTerm?: string,
         pfam?: string,
-        interpro?: string,
-        limit: number = 20
+        interpro?: string
     ): Promise<GeneFacetResponse> {
         try {
             const params = new URLSearchParams({
                 ...(speciesAcronym && {species_acronym: speciesAcronym}),
+                ...(isolates && {isolates: isolates}),
                 ...(essentiality && {essentiality}),
-                ...(cogFuncat && {cog_funcat: cogFuncat}),
+                ...(cogId && {cog_id: cogId}),
                 ...(kegg && {kegg}),
                 ...(goTerm && {go_term: goTerm}),
                 ...(pfam && {pfam}),
                 ...(interpro && {interpro}),
-                ...(limit && {limit: String(limit)}),
             });
-
-            if (isolates?.length) {
-                isolates.forEach((i) => params.append("isolates", i));
-            }
 
             const response = await ApiService.get<GeneFacetResponse>("genes/faceted-search", params);
             return response;

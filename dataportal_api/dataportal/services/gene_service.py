@@ -3,8 +3,7 @@ import logging
 from typing import Optional, List, Tuple, Dict
 
 from asgiref.sync import sync_to_async
-from django.db.models import Q
-from elasticsearch_dsl import Search, A
+from elasticsearch_dsl import Search, ElasticsearchDslException
 
 from dataportal.models import GeneDocument
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
@@ -16,7 +15,7 @@ from dataportal.utils.constants import (
     SORT_DESC,
     SORT_ASC,
     GENE_ESSENTIALITY,
-    GENE_ESSENTIALITY_MEDIA,
+    GENE_ESSENTIALITY_MEDIA, DEFAULT_FACET_LIMIT,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -424,21 +423,22 @@ class GeneService:
         return es_query
 
     async def get_faceted_search(self, species_acronym: Optional[str] = None,
-                                 essentiality: Optional[str] = None,
                                  isolates: Optional[List[str]] = None,
-                                 cog_funcat: Optional[str] = None,
+                                 essentiality: Optional[str] = None,
+                                 cog_id: Optional[str] = None,
                                  kegg: Optional[str] = None,
                                  go_term: Optional[str] = None,
                                  pfam: Optional[str] = None,
                                  interpro: Optional[str] = None,
-                                 limit: int = 20):
+                                 limit: Optional[int] = DEFAULT_FACET_LIMIT):
+
         try:
             gs = GeneFacetedSearch(
                 query='',
                 species_acronym=species_acronym,
                 essentiality=essentiality,
                 isolates=isolates,
-                cog_funcat=cog_funcat,
+                cog_id=cog_id,
                 kegg=kegg,
                 go_term=go_term,
                 pfam=pfam,
@@ -446,19 +446,33 @@ class GeneService:
                 limit=limit
             )
 
-            response = gs.execute()
+            try:
+                response = gs.execute()
+            except ElasticsearchDslException as es_exc:
+                logger.error("Elasticsearch error occurred during faceted search")
+                logger.error(f"ES error message: {str(es_exc)}")
+                raise ServiceError("Elasticsearch query failed.")
 
             return {
+
                 "pfam": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'pfam', [])},
+                    {b[0]: b[1] for b in (getattr(response.facets, 'pfam') or [])},
                     selected_values=[pfam] if pfam else []
                 ),
                 "interpro": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'interpro', [])},
+                    {b[0]: b[1] for b in (getattr(response.facets, 'interpro') or [])},
                     selected_values=[interpro] if interpro else []
                 ),
+                "kegg": self.process_aggregation_results(
+                    {b[0]: b[1] for b in (getattr(response.facets, 'kegg') or [])},
+                    selected_values=[kegg] if kegg else []
+                ),
+                "cog_id": self.process_aggregation_results(
+                    {b[0]: b[1] for b in (getattr(response.facets, 'cog_id') or [])},
+                    selected_values=[cog_id] if cog_id else []
+                ),
                 "essentiality": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'essentiality', [])},
+                    {b[0]: b[1] for b in (getattr(response.facets, 'essentiality') or [])},
                     selected_values=[essentiality] if essentiality else []
                 ),
                 "total_hits": response.hits.total.value

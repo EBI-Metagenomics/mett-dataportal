@@ -13,7 +13,12 @@ export const getEssentialityDataUrl = (isolate_name: string) => `${API_BASE_URL}
 
 export const API_GENE_SEARCH_ADVANCED = `${API_BASE_URL}/genes/search/advanced`;
 
-export const SPINNER_DELAY = 200; // Configurable delay in milliseconds
+export const SPINNER_DELAY = 200;
+export const DEFAULT_PER_PAGE_CNT = 20;
+export const FACET_INITIAL_VISIBLE_CNT = 10;
+export const FACET_STEP_CNT = 10;
+
+
 
 export const DISPLAY_SETTINGS = {
     DEFAULT_BUFFER: 10000,

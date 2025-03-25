@@ -55,8 +55,5 @@ export interface GeneEssentialityTag {
 }
 
 export interface GeneFacetResponse {
-    pfam: FacetItem[];
-    interpro: FacetItem[];
-    essentiality: FacetItem[];
-    total_hits: number;
+    [facetGroup: string]: FacetItem[] | number;
 }
