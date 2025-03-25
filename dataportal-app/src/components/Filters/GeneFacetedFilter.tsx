@@ -76,7 +76,8 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                 * Showing {Math.min(showCount, total)} out of {total} entries
               </div>
               {showCount < total && (
-                <button className={styles.loadMoreButton} onClick={() => handleLoadMore(facetGroup, total)}>
+                // <button className={`vf-button vf-button--primary vf-button--sm ${styles.loadMoreButton}`} onClick={() => handleLoadMore(facetGroup, total)}>
+                <button className={`${styles.loadMoreButton}`} onClick={() => handleLoadMore(facetGroup, total)}>
                   Load more
                 </button>
               )}

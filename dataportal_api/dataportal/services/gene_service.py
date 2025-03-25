@@ -282,15 +282,19 @@ class GeneService:
 
         filters = {}
         try:
-            # Match key:values where values can contain commas
-            key, values_str = filter_str.split(":", 1)
-            key = key.strip()
-            values = [v.strip() for v in values_str.split(",")]
-            filters[key] = values
-        except ValueError:
-            logger.error(f"Invalid filter format: {filter_str}")
+            filter_groups = filter_str.split(";")
+            for group in filter_groups:
+                if not group.strip():
+                    continue
+                key, values_str = group.split(":", 1)
+                key = key.strip()
+                values = [v.strip() for v in values_str.split(",") if v.strip()]
+                if values:
+                    filters[key] = values
+        except ValueError as e:
+            logger.error(f"Invalid filter format: {filter_str} — {e}")
             raise ServiceError(
-                "Invalid filter format. Use 'key:value' pairs separated by commas."
+                "Invalid filter format. Use 'key:val1,val2;key2:val3,...'"
             )
 
         logger.debug(f"Parsed filters: {filters}")
@@ -311,27 +315,21 @@ class GeneService:
     async def _apply_filters_for_type_strain(
             self, query: dict, filters: Dict[str, list]
     ) -> dict:
-        """Apply additional filters for type strain in Elasticsearch query."""
+        if not filters:
+            return query
 
         if "bool" not in query:
             query["bool"] = {"must": []}
 
-        must_filters = []
-
-        # ✅ Add type strain filter
-        # must_filters.append({"term": {"strain.type_strain": True}})
-
-        # ✅ Apply additional filters
-        for key, values in filters.items():
-            if key == GENE_ESSENTIALITY:
-                must_filters.append({"terms": {GENE_ESSENTIALITY: values}})
-            else:
-                must_filters.append({"terms": {key: values}})
+        must_filters = [
+            {"terms": {key: values}}
+            for key, values in filters.items()
+            if values
+        ]
 
         query["bool"]["must"].extend(must_filters)
 
-        logger.info(f"DEBUG - Filters after _apply_filters_for_type_strain: {json.dumps(query, indent=2)}")
-
+        logger.debug(f"Applied filters to query: {json.dumps(must_filters, indent=2)}")
         return query
 
     def _create_pagination_schema(
