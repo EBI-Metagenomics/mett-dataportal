@@ -14,7 +14,7 @@ import {
 } from "../../../../utils/appConstants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 import TypeStrainsFilter from "@components/Filters/TypeStrainsFilter";
-import SelectedGenomes from "@components/organisms/SelectedGenomes";
+import SelectedGenomes from "@components/Filters/SelectedGenomes";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -295,9 +295,9 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                     onChange={handlePageSizeChange}
                                     className={styles.pageSizeSelect}
                                 >
-                                    <option value={DEFAULT_PER_PAGE_CNT}>Show 20</option>
+                                    <option value={DEFAULT_PER_PAGE_CNT}>Show 10</option>
+                                    <option value={20}>Show 20</option>
                                     <option value={50}>Show 50</option>
-                                    <option value={100}>Show 100</option>
                                 </select>
                             </div>
                             <div className={styles.paginationBar}>

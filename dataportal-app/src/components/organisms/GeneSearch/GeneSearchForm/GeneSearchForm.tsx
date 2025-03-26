@@ -15,7 +15,7 @@ import {
     FACET_STEP_CNT
 } from "../../../../utils/appConstants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
-import SelectedGenomes from "@components/organisms/SelectedGenomes";
+import SelectedGenomes from "@components/Filters/SelectedGenomes";
 import GeneFacetedFilter from "@components/Filters/GeneFacetedFilter";
 
 type ViewModel = ReturnType<typeof createViewState>;
@@ -240,7 +240,16 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             try {
                 const speciesAcronym = selectedSpecies?.[0];
                 const isolates = selectedGenomes.map(genome => genome.isolate_name).join(',');
-                const response = await GeneService.fetchGeneFacets(speciesAcronym, isolates);
+                const response = await GeneService.fetchGeneFacets(
+                    speciesAcronym,
+                    isolates,
+                    selectedFacets.essentiality?.join(','),
+                    selectedFacets.cog_id?.join(','),
+                    selectedFacets.kegg?.join(','),
+                    selectedFacets.go_term?.join(','),
+                    selectedFacets.pfam?.join(','),
+                    selectedFacets.interpro?.join(',')
+                );
 
                 // selected state
                 const updatedFacets: GeneFacetResponse = {};
@@ -248,12 +257,26 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     if (!Array.isArray(items)) continue;
 
                     const selectedValues = selectedFacets[facetGroup] || [];
-                    updatedFacets[facetGroup] = items.map(item => ({
+
+                    // Map response values and mark selected
+                    const responseMap = new Map(items.map(item => [item.value, {
                         ...item,
                         selected: selectedValues.includes(item.value),
-                    }));
-                }
+                    }]));
 
+                    // Inject selected values not present in API response
+                    selectedValues.forEach(sel => {
+                        if (!responseMap.has(sel)) {
+                            responseMap.set(sel, {
+                                value: sel,
+                                count: 0,
+                                selected: true
+                            });
+                        }
+                    });
+
+                    updatedFacets[facetGroup] = Array.from(responseMap.values());
+                }
                 setFacets(updatedFacets);
             } catch (e) {
                 console.error('Error loading facets', e);
@@ -373,9 +396,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                 onChange={handlePageSizeChange}
                                 className={styles.pageSizeSelect}
                             >
-                                <option value={DEFAULT_PER_PAGE_CNT}>Show 20</option>
+                                <option value={DEFAULT_PER_PAGE_CNT}>Show 10</option>
+                                <option value={20}>Show 20</option>
                                 <option value={50}>Show 50</option>
-                                <option value={100}>Show 100</option>
                             </select>
                         </div>
                         <div className={styles.paginationBar}>

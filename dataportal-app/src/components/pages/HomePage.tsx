@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm';
-import SelectedGenomes from '../organisms/SelectedGenomes';
+import SelectedGenomes from '../Filters/SelectedGenomes';
 import {GenomeService} from '../../services/genomeService';
 import {SpeciesService} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";

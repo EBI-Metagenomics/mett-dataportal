@@ -11,9 +11,10 @@ interface SelectedGenomesProps {
 const SelectedGenomes: React.FC<SelectedGenomesProps> = ({selectedGenomes, onRemoveGenome}) => {
     return (
         <div className={styles.selectedGenomesContainer}>
-            <div style={{float: "left", width: "100%"}}>
-                <h3>Selected Genomes</h3>
-            </div>
+            {/*<div style={{float: "left", width: "100%"}}>*/}
+            {/*    <h3>Selected Genomes</h3>*/}
+            {/*</div>*/}
+            <h3 className={`vf-section-header__subheading ${styles.vfGeneSubHeading}`}>Selected Genomes</h3>
             <div style={{float: "left"}}>
                 {selectedGenomes.map((genome) => (
                     <Chip
@@ -25,6 +26,8 @@ const SelectedGenomes: React.FC<SelectedGenomesProps> = ({selectedGenomes, onRem
                     />
                 ))}
             </div>
+
+            <p>&nbsp;</p>
         </div>
     );
 };
