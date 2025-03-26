@@ -20,7 +20,7 @@ from dataportal.utils.constants import (
     FIELD_SEQ_ID,
     ES_FIELD_UNIPROT, GENE_FIELD_DBXREF, GENE_FIELD_EC_NUMBER,
     GENE_FIELD_START, GENE_FIELD_END, UNKNOWN_ESSENTIALITY, ES_FIELD_COG_FUNCATS,
-    ES_FIELD_LOCUS_TAG, ES_FIELD_SPECIES_ACRONYM, ES_FIELD_SPECIES_NAME,
+    ES_FIELD_LOCUS_TAG, ES_FIELD_SPECIES_ACRONYM, ES_FIELD_SPECIES_SCIENTIFIC_NAME,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -88,7 +88,7 @@ class GeneService:
                     ES_FIELD_ALIAS: getattr(hit, ES_FIELD_ALIAS, []),
                     ES_FIELD_PRODUCT: getattr(hit, ES_FIELD_PRODUCT, None),
                     ES_FIELD_LOCUS_TAG: getattr(hit, ES_FIELD_LOCUS_TAG, None),
-                    ES_FIELD_SPECIES_NAME: getattr(hit, ES_FIELD_SPECIES_NAME, None),
+                    ES_FIELD_SPECIES_SCIENTIFIC_NAME: getattr(hit, ES_FIELD_SPECIES_SCIENTIFIC_NAME, None),
                     ES_FIELD_SPECIES_ACRONYM: getattr(hit, ES_FIELD_SPECIES_ACRONYM, None),
                     ES_FIELD_ISOLATE_NAME: getattr(hit, ES_FIELD_ISOLATE_NAME, None),
                     ES_FIELD_KEGG: getattr(hit, ES_FIELD_KEGG, []),

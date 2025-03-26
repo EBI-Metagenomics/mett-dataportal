@@ -32,8 +32,7 @@ from dataportal.utils.constants import (
     SPECIES_FIELD_COMMON_NAME,
     SPECIES_FIELD_SCIENTIFIC_NAME,
     SPECIES_FIELD_ACRONYM,
-    STRAIN_FIELD_SPECIES_ACRONYM,
-    ES_FIELD_SPECIES_NAME,
+    ES_FIELD_SPECIES_SCIENTIFIC_NAME,
     ES_FIELD_SPECIES_ACRONYM,
 )
 from dataportal.utils.exceptions import ServiceError, GenomeNotFoundError
@@ -81,7 +80,7 @@ class GenomeService:
             sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
-            filter_criteria={STRAIN_FIELD_SPECIES_ACRONYM: species_acronym},
+            filter_criteria={ES_FIELD_SPECIES_ACRONYM: species_acronym},
             page=page,
             per_page=per_page,
             sortField=sortField,
@@ -98,7 +97,7 @@ class GenomeService:
             sortField: str = STRAIN_FIELD_ISOLATE_NAME,
             sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
-        filter_criteria = {STRAIN_FIELD_SPECIES_ACRONYM: species_acronym, STRAIN_FIELD_ISOLATE_NAME: query}
+        filter_criteria = {ES_FIELD_SPECIES_ACRONYM: species_acronym, STRAIN_FIELD_ISOLATE_NAME: query}
         return await self._search_paginated_strains(
             filter_criteria=filter_criteria,
             page=page,
@@ -325,10 +324,10 @@ class GenomeService:
 
             # Map "species" to its actual field
             if sortField == STRAIN_FIELD_SPECIES:
-                sortField = STRAIN_FIELD_SPECIES_ACRONYM
+                sortField = ES_FIELD_SPECIES_ACRONYM
 
             # Use .keyword for text fields
-            if sortField in [STRAIN_FIELD_ISOLATE_NAME, ES_FIELD_SPECIES_NAME]:
+            if sortField in [STRAIN_FIELD_ISOLATE_NAME, ES_FIELD_SPECIES_SCIENTIFIC_NAME]:
                 sortField = f"{sortField}.keyword"
 
             sort_order = "asc" if sortOrder == SORT_ASC else "desc"

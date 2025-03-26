@@ -28,13 +28,12 @@ GENE_DEFAULT_SORT_FIELD = "gene_name"
 GENE_SORT_FIELD_STRAIN = "strain"
 GENE_ESSENTIALITY = "essentiality"
 
-
 # Elasticsearch field constants
 ES_FIELD_GENE_NAME = "gene_name"
 ES_FIELD_ALIAS = "alias"
 ES_FIELD_PRODUCT = "product"
 ES_FIELD_LOCUS_TAG = "locus_tag"
-ES_FIELD_SPECIES_NAME = "species_scientific_name"
+ES_FIELD_SPECIES_SCIENTIFIC_NAME = "species_scientific_name"
 ES_FIELD_SPECIES_ACRONYM = "species_acronym"
 ES_FIELD_ISOLATE_NAME = "isolate_name"
 ES_FIELD_KEGG = "kegg"
@@ -43,20 +42,6 @@ ES_FIELD_PFAM = "pfam"
 ES_FIELD_COG_ID = "cog_id"
 ES_FIELD_COG_FUNCATS = "cog_funcats"
 ES_FIELD_INTERPRO = "interpro"
-ES_FIELD_SPECIES_ACRONYM = "species_acronym"
-
-# Autocomplete query fields
-GENE_AUTOCOMPLETE_FIELDS = [
-    f"{ES_FIELD_ALIAS}^3",
-    f"{ES_FIELD_ALIAS}.keyword^5",
-    f"{ES_FIELD_GENE_NAME}^2",
-    ES_FIELD_PRODUCT,
-    ES_FIELD_KEGG,
-    ES_FIELD_UNIPROT,
-    ES_FIELD_PFAM,
-    ES_FIELD_COG_ID,
-    ES_FIELD_INTERPRO,
-]
 
 # Search fields
 GENE_SEARCH_FIELDS = [
@@ -88,7 +73,6 @@ KEYWORD_SORT_FIELDS = {
 # Default values
 UNKNOWN_ESSENTIALITY = "Unknown"
 
-
 # Strain-related constants
 STRAIN_FIELD_ISOLATE_NAME = "isolate_name"
 STRAIN_FIELD_ASSEMBLY_NAME = "assembly_name"
@@ -102,7 +86,6 @@ STRAIN_FIELD_CONTIGS = "contigs"
 STRAIN_FIELD_CONTIG_SEQ_ID = "seq_id"
 STRAIN_FIELD_CONTIG_LEN = "length"
 STRAIN_FIELD_TYPE_STRAIN = "type_strain"
-STRAIN_FIELD_SPECIES_ACRONYM = "species_acronym"
 
 # species related constants
 SPECIES_FIELD_SCIENTIFIC_NAME = "scientific_name"
