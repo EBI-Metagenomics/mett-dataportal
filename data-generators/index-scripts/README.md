@@ -26,8 +26,3 @@ $ ./process_gff3.sh
 
 ### Additional Tracks
 
-#### Essentiality
-```bash
-$ python ./generate_essentiality_gff3.py
-
-```

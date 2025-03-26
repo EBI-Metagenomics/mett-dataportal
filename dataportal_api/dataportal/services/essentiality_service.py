@@ -106,20 +106,19 @@ class EssentialityService:
         """Fetch unique essentiality values from gene_index and process them."""
 
         try:
-            # ✅ Query Elasticsearch for unique `essentiality` values
+            # Query for unique `essentiality` values
             search_query = Search(index=self.INDEX_NAME).source([]).extra(
                 size=0, aggs={"unique_essentiality": {"terms": {"field": "essentiality", "size": 100}}}
             )
 
             logger.info(f"Final Elasticsearch Query (Formatted): {json.dumps(search_query.to_dict(), indent=2)}")
 
-            # ✅ Execute the query
+            # Execute
             response = await sync_to_async(search_query.execute)()
 
-            # ✅ Extract unique essentiality values
+            # Extract
             unique_values = [bucket["key"] for bucket in response.aggregations.unique_essentiality.buckets]
 
-            # ✅ Process values (convert to label format)
             processed_tags = [
                 EssentialityTagSchema(name=value, label=convert_to_camel_case(value.replace("_", " ")))
                 for value in unique_values

@@ -31,7 +31,10 @@ from dataportal.utils.constants import (
     STRAIN_FIELD_TYPE_STRAIN,
     SPECIES_FIELD_COMMON_NAME,
     SPECIES_FIELD_SCIENTIFIC_NAME,
-    SPECIES_FIELD_ACRONYM, STRAIN_FIELD_SPECIES_ACRONYM,
+    SPECIES_FIELD_ACRONYM,
+    STRAIN_FIELD_SPECIES_ACRONYM,
+    ES_FIELD_SPECIES_NAME,
+    ES_FIELD_SPECIES_ACRONYM,
 )
 from dataportal.utils.exceptions import ServiceError, GenomeNotFoundError
 
@@ -114,24 +117,22 @@ class GenomeService:
             search = search.query(
                 "bool",
                 should=[
-                    {"wildcard": {"isolate_name.keyword": f"*{query}*"}},
-                    {"wildcard": {"assembly_name.keyword": f"*{query}*"}}
+                    {"wildcard": {f"{STRAIN_FIELD_ISOLATE_NAME}.keyword": f"*{query}*"}},
+                    {"wildcard": {f"{STRAIN_FIELD_ASSEMBLY_NAME}.keyword": f"*{query}*"}}
                 ],
                 minimum_should_match=1
             )
 
             if species_acronym:
-                search = search.filter("term", species_acronym=species_acronym)
+                search = search.filter("term", **{ES_FIELD_SPECIES_ACRONYM: species_acronym})
 
             search = search[: (limit or self.limit)]
 
-            search = search.source(["id", "isolate_name", "assembly_name"])
+            search = search.source(["id", STRAIN_FIELD_ISOLATE_NAME, STRAIN_FIELD_ASSEMBLY_NAME])
 
-            # Print final query to debug
             logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
             response = await sync_to_async(search.execute)()
 
-            # Process results
             return [
                 {
                     STRAIN_FIELD_ISOLATE_NAME: hit.isolate_name,
@@ -208,8 +209,8 @@ class GenomeService:
                     else None
                 )
                 strain_data["gff_url"] = (
-                    f"{settings.GFF_FTP_PATH.format(strain_data['isolate_name'])}/{strain_data['gff_file']}"
-                    if strain_data.get("gff_file") and strain_data.get("isolate_name")
+                    f"{settings.GFF_FTP_PATH.format(strain_data[STRAIN_FIELD_ISOLATE_NAME])}/{strain_data['gff_file']}"
+                    if strain_data.get("gff_file") and strain_data.get(STRAIN_FIELD_ISOLATE_NAME)
                     else None
                 )
 
@@ -308,27 +309,26 @@ class GenomeService:
             # Dynamically apply filters
             for field, value in filter_criteria.items():
                 if isinstance(value, str):
-                    if field == "isolate_name":
-                        # Use a combination of wildcard and term query
+                    if field == STRAIN_FIELD_ISOLATE_NAME:
                         search = search.query(
                             "bool",
                             should=[
                                 {"wildcard": {f"{field}.keyword": f"*{value.lower()}*"}},
-                                {"term": {f"{field}.keyword": value}}  #
+                                {"term": {f"{field}.keyword": value}},
                             ],
-                            minimum_should_match=1
+                            minimum_should_match=1,
                         )
                     else:
                         search = search.query("wildcard", **{field: f"*{value}*"})
                 else:
                     search = search.query("term", **{field: value})
 
-            # Ensure "species" is mapped to "species_scientific_name"
-            if sortField == "species":
-                sortField = "species_acronym"
+            # Map "species" to its actual field
+            if sortField == STRAIN_FIELD_SPECIES:
+                sortField = STRAIN_FIELD_SPECIES_ACRONYM
 
-            # Ensure sorting uses `.keyword` for text fields
-            if sortField in ["isolate_name", "species_scientific_name"]:
+            # Use .keyword for text fields
+            if sortField in [STRAIN_FIELD_ISOLATE_NAME, ES_FIELD_SPECIES_NAME]:
                 sortField = f"{sortField}.keyword"
 
             sort_order = "asc" if sortOrder == SORT_ASC else "desc"
@@ -337,13 +337,11 @@ class GenomeService:
             # Apply pagination
             search = search[(page - 1) * per_page: page * per_page]
 
-            # Print final query to debug
             logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
 
             response = await sync_to_async(search.execute)()
             total_results = response.hits.total.value if hasattr(response.hits.total, 'value') else len(response)
 
-            # Compute additional fields and format response
             results = []
             for hit in response:
                 strain_data = hit.to_dict()
@@ -355,8 +353,8 @@ class GenomeService:
                     else None
                 )
                 strain_data["gff_url"] = (
-                    f"{settings.GFF_FTP_PATH.format(strain_data['isolate_name'])}/{strain_data['gff_file']}"
-                    if strain_data.get("gff_file") and strain_data.get("isolate_name")
+                    f"{settings.GFF_FTP_PATH.format(strain_data[STRAIN_FIELD_ISOLATE_NAME])}/{strain_data['gff_file']}"
+                    if strain_data.get("gff_file") and strain_data.get(STRAIN_FIELD_ISOLATE_NAME)
                     else None
                 )
 
