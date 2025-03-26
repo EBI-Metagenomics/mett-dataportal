@@ -20,7 +20,8 @@ from dataportal.utils.constants import (
     KEYWORD_SORT_FIELDS, FIELD_SEQ_ID,
     ES_FIELD_UNIPROT, GENE_FIELD_DBXREF, GENE_FIELD_EC_NUMBER,
     GENE_FIELD_START, GENE_FIELD_END, UNKNOWN_ESSENTIALITY, ES_FIELD_COG_FUNCATS,
-    SPECIES_FIELD_ACRONYM, ES_FIELD_LOCUS_TAG, ES_FIELD_SPECIES_ACRONYM,
+    SPECIES_FIELD_ACRONYM, ES_FIELD_LOCUS_TAG, ES_FIELD_SPECIES_ACRONYM, GENE_AUTOCOMPLETE_FIELDS,
+    ES_FIELD_SPECIES_NAME,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -41,32 +42,38 @@ class GeneService:
             species_acronym: Optional[str] = None,
             isolates: Optional[List[str]] = None,
     ) -> List[Dict]:
-        """ Provides autocomplete suggestions for genes based on query & filters. """
+        """Provides autocomplete suggestions for genes based on query & filters."""
 
         try:
-
             s = Search(index=self.INDEX_NAME)
             s = s.query(
                 "multi_match",
                 query=query,
                 fields=[
-                    "alias^3", "alias.keyword^5", "gene_name^2", "product", "kegg",
-                    "uniprot_id", "pfam", "cog_id", "interpro"
+                    f"{ES_FIELD_ALIAS}^3",
+                    f"{ES_FIELD_ALIAS}.keyword^5",
+                    f"{ES_FIELD_GENE_NAME}^2",
+                    ES_FIELD_PRODUCT,
+                    ES_FIELD_KEGG,
+                    ES_FIELD_UNIPROT,
+                    ES_FIELD_PFAM,
+                    ES_FIELD_COG_ID,
+                    ES_FIELD_INTERPRO,
                 ],
                 type="best_fields"
             )
 
             if species_acronym:
-                s = s.filter("term", species_acronym=species_acronym)
+                s = s.filter("term", **{ES_FIELD_SPECIES_ACRONYM: species_acronym})
 
             if isolates:
-                s = s.filter("terms", isolate_name=isolates)
+                s = s.filter("terms", **{ES_FIELD_ISOLATE_NAME: isolates})
 
             parsed_filters = self._parse_filters(filter)
             for key, values in parsed_filters.items():
-                if key == "essentiality":
+                if key == GENE_ESSENTIALITY:
                     normalized_values = [v.lower() for v in values]
-                    s = s.filter("terms", essentiality=normalized_values)
+                    s = s.filter("terms", **{GENE_ESSENTIALITY: normalized_values})
                 else:
                     s = s.filter("terms", **{key: values})
 
@@ -78,19 +85,19 @@ class GeneService:
 
             results = [
                 {
-                    "gene_name": getattr(hit, "gene_name", None),
-                    "alias": getattr(hit, "alias", []),
-                    "product": getattr(hit, "product", None),
-                    "locus_tag": getattr(hit, "locus_tag", None),
-                    "species_scientific_name": getattr(hit, "species_scientific_name", None),
-                    "species_acronym": getattr(hit, "species_acronym", None),
-                    "isolate_name": getattr(hit, "isolate_name", None),
-                    "kegg": getattr(hit, "kegg", []),
-                    "uniprot_id": getattr(hit, "uniprot_id", None),
-                    "pfam": getattr(hit, "pfam", []),
-                    "cog_id": getattr(hit, "cog_id", None),
-                    "interpro": getattr(hit, "interpro", []),
-                    "essentiality": getattr(hit, "essentiality", "Unknown")
+                    ES_FIELD_GENE_NAME: getattr(hit, ES_FIELD_GENE_NAME, None),
+                    ES_FIELD_ALIAS: getattr(hit, ES_FIELD_ALIAS, []),
+                    ES_FIELD_PRODUCT: getattr(hit, ES_FIELD_PRODUCT, None),
+                    ES_FIELD_LOCUS_TAG: getattr(hit, ES_FIELD_LOCUS_TAG, None),
+                    ES_FIELD_SPECIES_NAME: getattr(hit, ES_FIELD_SPECIES_NAME, None),
+                    ES_FIELD_SPECIES_ACRONYM: getattr(hit, ES_FIELD_SPECIES_ACRONYM, None),
+                    ES_FIELD_ISOLATE_NAME: getattr(hit, ES_FIELD_ISOLATE_NAME, None),
+                    ES_FIELD_KEGG: getattr(hit, ES_FIELD_KEGG, []),
+                    ES_FIELD_UNIPROT: getattr(hit, ES_FIELD_UNIPROT, None),
+                    ES_FIELD_PFAM: getattr(hit, ES_FIELD_PFAM, []),
+                    ES_FIELD_COG_ID: getattr(hit, ES_FIELD_COG_ID, None),
+                    ES_FIELD_INTERPRO: getattr(hit, ES_FIELD_INTERPRO, []),
+                    GENE_ESSENTIALITY: getattr(hit, GENE_ESSENTIALITY, UNKNOWN_ESSENTIALITY),
                 }
                 for hit in response
             ]
