@@ -65,10 +65,10 @@ export class GeneService {
         sortOrder: string,
         selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
-        essentialityFilter?: string[]
+        selectedFacets?: Record<string, string[]>
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
-            const params = GeneService.buildParamsFetchGeneSearchResults(query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, essentialityFilter);
+            const params = GeneService.buildParamsFetchGeneSearchResults(query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets);
             const response = await ApiService.get<PaginatedResponse<GeneMeta>>("/genes/search/advanced", params);
             return response;
         } catch (error) {
@@ -85,7 +85,7 @@ export class GeneService {
         sortOrder: string,
         selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
-        essentialityFilter?: string[]
+        selectedFacets?: Record<string, string[]>
     ) {
         const params = new URLSearchParams({
             query: gene,
@@ -96,19 +96,30 @@ export class GeneService {
         });
 
         if (selectedGenomes?.length) {
-            params.append("isolates", selectedGenomes.map((genome) => genome.isolate_name).join(","));
+            params.append("isolates", selectedGenomes.map(g => g.isolate_name).join(","));
         }
 
         if (selectedSpecies?.length === 1) {
             params.append("species_acronym", String(selectedSpecies[0]));
         }
 
-        if (essentialityFilter?.length) {
-            const filterValue = `essentiality:${essentialityFilter.join(",")}`;
-            params.append("filter", filterValue);
+        if (selectedFacets) {
+            const filterParts: string[] = [];
+
+            for (const [key, values] of Object.entries(selectedFacets)) {
+                if (values.length > 0) {
+                    filterParts.push(`${key}:${values.join(",")}`);
+                }
+            }
+
+            if (filterParts.length > 0) {
+                params.append("filter", filterParts.join(";"));
+            }
         }
+
         return params;
     }
+
 
     /**
      * Fetch gene search results by genome ID.

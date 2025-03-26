@@ -1,7 +1,7 @@
 import json
 import logging
 
-from elasticsearch_dsl import FacetedSearch, TermsFacet
+from elasticsearch_dsl import FacetedSearch, TermsFacet, Q
 
 from dataportal.utils.constants import DEFAULT_FACET_LIMIT
 
@@ -15,7 +15,6 @@ class GeneFacetedSearch(FacetedSearch):
     def __init__(self, query='', filters=None, species_acronym=None, essentiality=None,
                  isolates=None, cog_id=None, kegg=None, go_term=None, pfam=None, interpro=None,
                  limit: int = DEFAULT_FACET_LIMIT):
-        # Just store values
         self.species_acronym = species_acronym
         self.essentiality = essentiality
         self.isolates = isolates
@@ -25,8 +24,6 @@ class GeneFacetedSearch(FacetedSearch):
         self.pfam = pfam
         self.interpro = interpro
 
-        logger.error("22222222222222")
-
         self.facets = {
             'pfam': TermsFacet(field='pfam', size=limit),
             'interpro': TermsFacet(field='interpro', size=limit),
@@ -35,7 +32,6 @@ class GeneFacetedSearch(FacetedSearch):
             'essentiality': TermsFacet(field='essentiality', size=limit)
         }
 
-        # Now call super safely (this will call build_search)
         super().__init__(query=query, filters=filters or {})
 
     def build_search(self):
@@ -44,9 +40,9 @@ class GeneFacetedSearch(FacetedSearch):
         if self.species_acronym:
             s = s.filter('term', species_acronym=self.species_acronym)
         if self.essentiality:
-            s = s.filter('term', essentiality=self.essentiality.lower())
+            s = s.filter('terms', essentiality=[self.essentiality])
         if self.cog_id:
-            s = s.filter('term', cog_id=self.cog_id.lower())
+            s = s.filter('terms', cog_id=[self.cog_id])
         if self.kegg:
             s = s.filter('prefix', kegg=self.kegg.lower())
         if self.go_term:

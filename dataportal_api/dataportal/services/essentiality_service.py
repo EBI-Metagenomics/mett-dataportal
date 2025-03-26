@@ -8,9 +8,8 @@ from elasticsearch_dsl import Search
 
 from dataportal.schemas import EssentialityTagSchema
 from dataportal.utils.constants import (
-    GENE_FIELD_LOCUS_TAG,
     GENE_ESSENTIALITY,
-    GENE_FIELD_START, GENE_FIELD_END,
+    GENE_FIELD_START, GENE_FIELD_END, ES_FIELD_LOCUS_TAG,
 )
 from dataportal.utils.exceptions import (
     ServiceError,
@@ -57,7 +56,7 @@ class EssentialityService:
                     cache_data[isolate_name][seq_id] = {}
 
                 cache_data[isolate_name][seq_id][locus_tag] = {
-                    GENE_FIELD_LOCUS_TAG: locus_tag,
+                    ES_FIELD_LOCUS_TAG: locus_tag,
                     GENE_FIELD_START: start,
                     GENE_FIELD_END: end,
                     GENE_ESSENTIALITY: essentiality
@@ -89,13 +88,13 @@ class EssentialityService:
         response = {}
         for gene_data in contig_data.values():
             # Ensure all required fields exist
-            locus_tag = gene_data.get(GENE_FIELD_LOCUS_TAG, "UNKNOWN")
+            locus_tag = gene_data.get(ES_FIELD_LOCUS_TAG, "UNKNOWN")
             start = gene_data.get(GENE_FIELD_START, 0)
             end = gene_data.get(GENE_FIELD_END, 0)
             essentiality = gene_data.get(GENE_ESSENTIALITY, "Unknown")
 
             response[locus_tag] = {
-                GENE_FIELD_LOCUS_TAG: locus_tag,
+                ES_FIELD_LOCUS_TAG: locus_tag,
                 GENE_FIELD_START: start,
                 GENE_FIELD_END: end,
                 GENE_ESSENTIALITY: essentiality

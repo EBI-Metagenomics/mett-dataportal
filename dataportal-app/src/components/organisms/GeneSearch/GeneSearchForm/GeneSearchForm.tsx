@@ -59,7 +59,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(DEFAULT_PER_PAGE_CNT);
-    const [essentialityTags, setEssentialityTags] = useState<GeneEssentialityTag[]>([]);
+    const [selectedFacets, setSelectedFacets] = useState<Record<string, string[]>>({});
+
 
     const [facets, setFacets] = useState<GeneFacetResponse>({});
 
@@ -75,19 +76,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         const newSize = parseInt(event.target.value, DEFAULT_PER_PAGE_CNT);
         setPageSize(newSize);
     };
-
-    useEffect(() => {
-        const essentialityTags = async () => {
-            try {
-                const response = await GeneService.fetchEssentialityTags();
-                setEssentialityTags(response);
-            } catch (error) {
-                console.error('Error fetching essentiality tags:', error);
-            }
-        };
-
-        essentialityTags();
-    }, []);
 
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
@@ -158,7 +146,12 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
-        async (page = 1, sortField: string, sortOrder: string, essentialityFilter: string[]) => {
+        async (
+            page = 1,
+            sortField: string,
+            sortOrder: string,
+            selectedFacetFilters: Record<string, string[]>
+        ) => {
             const genomeFilter = selectedGenomes?.length
                 ? selectedGenomes.map((genome) => ({
                     isolate_name: genome.isolate_name,
@@ -189,7 +182,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         sortOrder,
                         genomeFilter,
                         speciesFilter,
-                        essentialityFilter
+                        selectedFacetFilters
                     );
 
                     const apiDetails = {
@@ -209,7 +202,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         sortOrder,
                         genomeFilter,
                         speciesFilter,
-                        essentialityFilter
+                        selectedFacetFilters
                     );
                 }
                 if (response && response.results) {
@@ -241,21 +234,34 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
 
     useEffect(() => {
-        fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
+        fetchSearchResults(1, sortField, sortOrder, selectedFacets);
 
         const loadFacets = async () => {
             try {
                 const speciesAcronym = selectedSpecies?.[0];
                 const isolates = selectedGenomes.map(genome => genome.isolate_name).join(',');
                 const response = await GeneService.fetchGeneFacets(speciesAcronym, isolates);
-                setFacets(response);
+
+                // selected state
+                const updatedFacets: GeneFacetResponse = {};
+                for (const [facetGroup, items] of Object.entries(response)) {
+                    if (!Array.isArray(items)) continue;
+
+                    const selectedValues = selectedFacets[facetGroup] || [];
+                    updatedFacets[facetGroup] = items.map(item => ({
+                        ...item,
+                        selected: selectedValues.includes(item.value),
+                    }));
+                }
+
+                setFacets(updatedFacets);
             } catch (e) {
                 console.error('Error loading facets', e);
             }
         };
 
         loadFacets();
-    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, essentialityFilter]);
+    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, selectedFacets]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,36 +289,37 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         // console.log('selectedGeneId:' + selectedGeneId)
         event.preventDefault();
         setQuery(searchInput);
-        fetchSearchResults(1, sortField, sortOrder, essentialityFilter);
+        fetchSearchResults(1, sortField, sortOrder, selectedFacets);
     };
 
     const handleToggleFacet = (group: string, value: string) => {
-        // Optional: keep track of selected facet values
         const updated = {...facets};
         const groupValues = updated[group] as FacetItem[];
+
         updated[group] = groupValues.map(item =>
             item.value === value ? {...item, selected: !item.selected} : item
         );
 
         setFacets(updated);
 
-        // Trigger search with updated filters
-        // You can extract selected values by group:
-        const selected: Record<string, string[]> = {};
+        // Extract selected facet values by group
+        const newSelected: Record<string, string[]> = {};
         for (const [key, val] of Object.entries(updated)) {
             if (Array.isArray(val)) {
                 const selectedVals = val.filter(v => v.selected).map(v => v.value);
-                if (selectedVals.length) selected[key] = selectedVals;
+                if (selectedVals.length) newSelected[key] = selectedVals;
             }
         }
 
-        fetchSearchResults(1, sortField, sortOrder, selected['essentiality']);
+        setSelectedFacets(newSelected);
+
+        fetchSearchResults(1, sortField, sortOrder, newSelected);
     };
 
 
     const handlePageClick = (page: number) => {
         setCurrentPage(page);
-        fetchSearchResults(page, sortField, sortOrder, essentialityFilter);
+        fetchSearchResults(page, sortField, sortOrder, selectedFacets);
     };
 
     return (
