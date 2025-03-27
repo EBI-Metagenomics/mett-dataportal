@@ -180,19 +180,6 @@ export class GeneService {
         }
     }
 
-    /**
-     * Fetch essentiality tags with caching enabled.
-     */
-    @cacheResponse(60 * 60 * 1000) // Cache for 60 minutes
-    static async fetchEssentialityTags(): Promise<GeneEssentialityTag[]> {
-        try {
-            return await ApiService.get<GeneEssentialityTag[]>(`/genes/essentiality/tags`);
-        } catch (error) {
-            console.error("Error fetching essentiality tags:", error);
-            throw error;
-        }
-    }
-
     @cacheResponse(60 * 60 * 1000) // Cache for 60 minutes
     static async fetchEssentialityData(apiUrl: string, refName: string): Promise<Record<string, any>> {
         // Fetch data from the API if not in the cache

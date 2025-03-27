@@ -1,4 +1,4 @@
-import {GenomeMeta} from "../../../interfaces/Genome";
+import {GenomeMeta} from "../../../../interfaces/Genome";
 
 const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
     name: genomeMeta.assembly_name,

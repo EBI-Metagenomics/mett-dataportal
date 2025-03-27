@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import GeneSearchInput from './GeneSearchInput';
-import styles from "@components/organisms/GeneSearch/GeneSearchForm/GeneSearchForm.module.scss";
-import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsHandler/GeneResultsTable";
+import styles from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm.module.scss";
+import GeneResultsTable from "@components/organisms/Gene/GeneResultsHandler/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
 import {GeneService} from '../../../../services/geneService';
 import {createViewState} from '@jbrowse/react-app';
@@ -32,7 +32,6 @@ interface GeneSearchFormProps {
     selectedGenomes: BaseGenome[];
     linkData: LinkData;
     viewState?: ViewModel;
-    essentialityFilter: string[];
     handleRemoveGenome: (genomeId: string) => void;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -45,7 +44,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            viewState,
                                                            sortField,
                                                            sortOrder,
-                                                           essentialityFilter,
                                                            handleRemoveGenome,
                                                            setLoading,
                                                        }) => {

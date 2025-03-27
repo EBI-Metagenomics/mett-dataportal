@@ -1,4 +1,4 @@
-import {GenomeMeta} from "../../../interfaces/Genome";
+import {GenomeMeta} from "../../../../interfaces/Genome";
 
 const getTracks
         = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string, includeEssentiality: boolean) => {

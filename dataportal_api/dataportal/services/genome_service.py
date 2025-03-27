@@ -116,7 +116,7 @@ class GenomeService:
 
             search = search.source(["id", STRAIN_FIELD_ISOLATE_NAME, STRAIN_FIELD_ASSEMBLY_NAME])
 
-            logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
+            # logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
             response = await sync_to_async(search.execute)()
 
             return [
@@ -158,7 +158,7 @@ class GenomeService:
     ) -> List[GenomeResponseSchema]:
         if not isolate_names:
             return []
-        logger.info(f"Getting genomes for isolate names: {isolate_names}")
+        # logger.info(f"Getting genomes for isolate names: {isolate_names}")
         filter_criteria = {"isolate_name.keyword": isolate_names}
         try:
             strains = await self._fetch_and_validate_strains(
@@ -268,7 +268,7 @@ class GenomeService:
             # Apply pagination
             search = search[(page - 1) * per_page: page * per_page]
 
-            logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
+            # logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
 
             response = await sync_to_async(search.execute)()
             total_results = (

@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import styles from "@components/organisms/GeneSearch/GeneSearchForm/GeneSearchInput.module.scss";
+import styles from "@components/organisms/Gene/GeneSearchForm/GeneSearchInput.module.scss";
 import {Autocomplete, TextField} from "@mui/material";
 import {GeneSuggestion} from "../../../../interfaces/Gene";
 

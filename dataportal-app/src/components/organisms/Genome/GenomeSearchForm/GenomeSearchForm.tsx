@@ -1,8 +1,8 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import Pagination from "../../../molecules/Pagination";
-import GenomeSearchInput from "@components/organisms/GenomeSearch/GenomeSearchForm/GenomeSearchInput";
-import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResultsHandler/GenomeResultsTable";
-import styles from "@components/organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm.module.scss";
+import GenomeSearchInput from "@components/organisms/Genome/GenomeSearchForm/GenomeSearchInput";
+import GenomeResultsTable from "@components/organisms/Genome/GenomeResultsHandler/GenomeResultsTable";
+import styles from "@components/organisms/Genome/GenomeSearchForm/GenomeSearchForm.module.scss";
 import {GenomeService} from "../../../../services/genomeService";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {AutocompleteResponse, BaseGenome, GenomeMeta} from "../../../../interfaces/Genome";

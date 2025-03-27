@@ -1,15 +1,12 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useLocation} from 'react-router-dom'
-import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm/GeneSearchForm';
-import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm';
-import SelectedGenomes from '../Filters/SelectedGenomes';
+import GeneSearchForm from '@components/organisms/Gene/GeneSearchForm/GeneSearchForm';
+import GenomeSearchForm from '@components/organisms/Genome/GenomeSearchForm/GenomeSearchForm';
 import {GenomeService} from '../../services/genomeService';
 import {SpeciesService} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
-import SpeciesFilter from '@components/Filters/SpeciesFilter';
-import TypeStrainsFilter from '@components/Filters/TypeStrainsFilter';
 import {SPINNER_DELAY} from "../../utils/appConstants";
 
 // Define the type for each tab
@@ -63,8 +60,6 @@ const HomePage: React.FC = () => {
     const [genomeSortOrder, setGenomeSortOrder] = useState<'asc' | 'desc'>('asc');
     const [geneSortField, setGeneSortField] = useState<string>('locus_tag');
     const [geneSortOrder, setGeneSortOrder] = useState<'asc' | 'desc'>('asc');
-
-    const essentialityFilter = useMemo(() => [], []);
 
 
     const spinner = loading && (
@@ -305,7 +300,6 @@ const HomePage: React.FC = () => {
                             sortField={geneSortField}
                             sortOrder={geneSortOrder}
                             linkData={geneLinkData}
-                            essentialityFilter={essentialityFilter}
                             handleRemoveGenome={handleRemoveGenome}
                             setLoading={setLoading}
                         />

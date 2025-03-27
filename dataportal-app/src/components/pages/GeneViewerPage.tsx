@@ -1,9 +1,9 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {useParams} from 'react-router-dom';
-import getAssembly from '@components/organisms/GeneViewer/assembly';
-import getTracks from '@components/organisms/GeneViewer/tracks';
-import getDefaultSessionConfig from '@components/organisms/GeneViewer/defaultSessionConfig';
-import useGeneViewerState from '@components/organisms/GeneViewer/geneViewerState';
+import getAssembly from '@components/organisms/Gene/GeneViewer/assembly';
+import getTracks from '@components/organisms/Gene/GeneViewer/tracks';
+import getDefaultSessionConfig from '@components/organisms/Gene/GeneViewer/defaultSessionConfig';
+import useGeneViewerState from '@components/organisms/Gene/GeneViewer/geneViewerState';
 import styles from "./GeneViewerPage.module.scss";
 import "./GeneViewerPage.module.scss";
 import {GenomeService} from "../../services/genomeService";
@@ -12,8 +12,7 @@ import {JBrowseApp} from "@jbrowse/react-app";
 import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
 import {getEssentialityDataUrl, SPINNER_DELAY, ZOOM_LEVELS} from "../../utils/appConstants";
-import GeneSearchWithFilters from "@components/organisms/GeneSearch/GeneSearchModules/GeneSearchWithFilters";
-import GeneSearchForm from "@components/organisms/GeneSearch/GeneSearchForm/GeneSearchForm";
+import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -32,7 +31,6 @@ const GeneViewerPage: React.FC = () => {
     const [height, setHeight] = useState(500);
 
     const [includeEssentiality, setIncludeEssentiality] = useState(true);
-    const essentialityFilter = useMemo(() => [], []);
     const selectedSpecies = useMemo(() => [], []);
 
     const spinner = loading && (
@@ -90,7 +88,7 @@ const GeneViewerPage: React.FC = () => {
             ) : [];
     }, [genomeMeta, includeEssentiality]);
 
-     const selectedGenomes = useMemo(() => {
+    const selectedGenomes = useMemo(() => {
         return genomeMeta
             ? [{
                 id: genomeMeta.isolate_name,
@@ -370,21 +368,6 @@ const GeneViewerPage: React.FC = () => {
                 {/* Gene Search Section */}
                 <div className={styles.geneSearchContainer}>
                     <section>
-                        {/*{genomeMeta?.type_strain ? (*/}
-                        {/*    <GeneSearchWithFilters*/}
-                        {/*        searchQuery={geneSearchQuery}*/}
-                        {/*        onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}*/}
-                        {/*        onSearchSubmit={handleGeneSearch}*/}
-                        {/*        selectedGenomes={selectedGenomes}*/}
-                        {/*        results={geneResults}*/}
-                        {/*        onSortClick={handleGeneSortClick}*/}
-                        {/*        sortField={sortField}*/}
-                        {/*        sortOrder={sortOrder}*/}
-                        {/*        linkData={linkData}*/}
-                        {/*        viewState={viewState}*/}
-                        {/*        setLoading={setLoading}*/}
-                        {/*    />*/}
-                        {/*) : (*/}
                         <GeneSearchForm
                             searchQuery={geneSearchQuery}
                             onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
@@ -397,7 +380,6 @@ const GeneViewerPage: React.FC = () => {
                             sortOrder={sortOrder}
                             linkData={linkData}
                             viewState={viewState}
-                            essentialityFilter={essentialityFilter}
                             setLoading={setLoading}
                             handleRemoveGenome={handleRemoveGenome}
                         />

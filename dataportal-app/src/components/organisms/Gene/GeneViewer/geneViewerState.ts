@@ -4,7 +4,7 @@ import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
 import {createRoot, hydrateRoot} from 'react-dom/client';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
-import CustomEssentialityPlugin from "../../../plugins/CustomEssentialityPlugin";
+import CustomEssentialityPlugin from "../../../../plugins/CustomEssentialityPlugin";
 
 interface Track {
     type: string;

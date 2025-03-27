@@ -93,7 +93,8 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                     checked={facet.selected}
                                                     onChange={() => onToggleFacet(facetGroup, facet.value)}
                                                 />
-                                                {facet.value} <span className={styles.countBadge}>{facet.count}</span>
+                                                {facet.value.toUpperCase()} <span
+                                                className={styles.countBadge}>{facet.count}</span>
                                             </label>
                                         </li>
                                     ))}

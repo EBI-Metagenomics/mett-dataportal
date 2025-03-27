@@ -82,7 +82,7 @@ class GeneService:
 
             s = s[:limit]
 
-            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+            # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
 
             response = s.execute()
 
@@ -92,7 +92,7 @@ class GeneService:
                 gene_dict = model_to_dict(gene_obj)
                 results.append(gene_dict)
 
-            logger.info(f"Autocomplete results: {results}")
+            # logger.info(f"Autocomplete results: {results}")
             return results
 
         except Exception as e:
@@ -159,7 +159,7 @@ class GeneService:
             # Build query filters
             es_query = self._build_es_query(query, isolate_name, filter)
 
-            logger.info(f"Final Elasticsearch Query (Formatted): {json.dumps(es_query, indent=2)}")
+            # logger.info(f"Final Elasticsearch Query (Formatted): {json.dumps(es_query, indent=2)}")
 
             # Call the common function
             genes, total_results = await self._fetch_paginated_genes(
@@ -345,7 +345,7 @@ class GeneService:
                 .extra(track_total_hits=True)
             )
 
-            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+            # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
 
             response = await sync_to_async(s.execute)()
 
@@ -398,7 +398,7 @@ class GeneService:
                     else:
                         es_query["bool"]["must"].append({"term": {field: value}})
 
-        logger.info(f"DEBUG - Final Elasticsearch Query (Fixed): {json.dumps(es_query, indent=2)}")
+        # logger.info(f"DEBUG - Final Elasticsearch Query (Fixed): {json.dumps(es_query, indent=2)}")
         return es_query
 
     async def get_faceted_search(self, species_acronym: Optional[str] = None,
