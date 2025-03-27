@@ -5,35 +5,23 @@ from typing import Optional
 
 from asgiref.sync import sync_to_async
 from django.db.models import Q
+from django.forms.models import model_to_dict
 from elasticsearch_dsl import Search
 
-from dataportal import settings
 from dataportal.models import StrainDocument
 from dataportal.schemas import (
     GenomePaginationSchema,
     GenomeResponseSchema,
 )
+from dataportal.unmanaged_models.strain_data import strain_from_hit
 from dataportal.utils.constants import (
-    FIELD_ID,
     STRAIN_FIELD_ISOLATE_NAME,
     STRAIN_FIELD_ASSEMBLY_NAME,
-    STRAIN_FIELD_ASSEMBLY_ACCESSION,
-    STRAIN_FIELD_FASTA_FILE,
-    STRAIN_FIELD_GFF_FILE,
     STRAIN_FIELD_SPECIES,
-    STRAIN_FIELD_FASTA_URL,
-    STRAIN_FIELD_GFF_URL,
-    STRAIN_FIELD_CONTIGS,
-    STRAIN_FIELD_CONTIG_SEQ_ID,
-    STRAIN_FIELD_CONTIG_LEN,
     SORT_ASC,
     DEFAULT_PER_PAGE_CNT,
-    STRAIN_FIELD_TYPE_STRAIN,
-    SPECIES_FIELD_COMMON_NAME,
-    SPECIES_FIELD_SCIENTIFIC_NAME,
-    SPECIES_FIELD_ACRONYM,
     ES_FIELD_SPECIES_SCIENTIFIC_NAME,
-    ES_FIELD_SPECIES_ACRONYM,
+    ES_FIELD_SPECIES_ACRONYM, ES_INDEX_STRAIN,
 )
 from dataportal.utils.exceptions import ServiceError, GenomeNotFoundError
 
@@ -41,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 
 class GenomeService:
-    INDEX_NAME = "strain_index"
 
     def __init__(self, limit: int = 10):
         self.limit = limit
@@ -111,7 +98,7 @@ class GenomeService:
             self, query: str, limit: int = None, species_acronym: Optional[str] = None
     ):
         try:
-            search = Search(index=self.INDEX_NAME)
+            search = Search(index=ES_INDEX_STRAIN)
 
             search = search.query(
                 "bool",
@@ -187,7 +174,7 @@ class GenomeService:
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         """Fetch and validate strains from Elasticsearch and compute additional fields."""
         try:
-            search = Search(index=self.INDEX_NAME)
+            search = Search(index=ES_INDEX_STRAIN)
 
             for field, value in filter_criteria.items():
                 if isinstance(value, list):
@@ -199,22 +186,9 @@ class GenomeService:
 
             results = []
             for hit in response:
-                strain_data = hit.to_dict()
-
-                # Compute fasta_url and gff_url
-                strain_data["fasta_url"] = (
-                    f"{settings.ASSEMBLY_FTP_PATH}/{strain_data['fasta_file']}"
-                    if strain_data.get("fasta_file")
-                    else None
-                )
-                strain_data["gff_url"] = (
-                    f"{settings.GFF_FTP_PATH.format(strain_data[STRAIN_FIELD_ISOLATE_NAME])}/{strain_data['gff_file']}"
-                    if strain_data.get("gff_file") and strain_data.get(STRAIN_FIELD_ISOLATE_NAME)
-                    else None
-                )
-
-                # Validate and append
-                results.append(schema.model_validate(strain_data))
+                strain_obj = strain_from_hit(hit)
+                strain_dict = model_to_dict(strain_obj)
+                results.append(schema.model_validate(strain_dict))
 
             return results
 
@@ -228,7 +202,7 @@ class GenomeService:
         """Search and paginate strains in Elasticsearch."""
         try:
             strains, total_results = await self._fetch_paginated_strains(
-                filter_criteria, page, per_page, sortField, sortOrder
+                filter_criteria, page, per_page, sortField, sortOrder, schema=GenomeResponseSchema
             )
             return await self._create_pagination_schema(strains, total_results, page, per_page)
         except Exception as e:
@@ -244,14 +218,16 @@ class GenomeService:
             else:
                 filter_kwargs = filter_criteria
 
+            # Fetch ORM strain with related species
             strain = await sync_to_async(
                 lambda: StrainDocument.objects.select_related(STRAIN_FIELD_SPECIES).get(
                     **filter_kwargs
                 )
             )()
-
-            serialized_strain = await self._serialize_strain(strain)
-            return GenomeResponseSchema.model_validate(serialized_strain)
+            strain_obj = strain_from_hit(strain)
+            strain_dict = model_to_dict(strain_obj)
+            # Validate using Pydantic schema
+            return GenomeResponseSchema.model_validate(strain_dict)
 
         except StrainDocument.DoesNotExist:
             logger.error(error_message)
@@ -260,50 +236,12 @@ class GenomeService:
             logger.error(f"{error_message}: {e}", exc_info=True)
             raise ServiceError(e)
 
-    async def _serialize_strain(self, strain):
-        contigs = await sync_to_async(
-            lambda: list(
-                strain.contigs.values(
-                    STRAIN_FIELD_CONTIG_SEQ_ID, STRAIN_FIELD_CONTIG_LEN
-                )
-            )
-        )()
-
-        species = strain.species
-
-        return {
-            FIELD_ID: strain.id,
-            STRAIN_FIELD_SPECIES: {
-                FIELD_ID: species.id,
-                SPECIES_FIELD_SCIENTIFIC_NAME: species.scientific_name,
-                SPECIES_FIELD_COMMON_NAME: species.common_name or None,
-                SPECIES_FIELD_ACRONYM: species.acronym or None,
-            },
-            STRAIN_FIELD_ISOLATE_NAME: strain.isolate_name,
-            STRAIN_FIELD_ASSEMBLY_NAME: strain.assembly_name,
-            STRAIN_FIELD_ASSEMBLY_ACCESSION: strain.assembly_accession,
-            STRAIN_FIELD_FASTA_FILE: strain.fasta_file,
-            STRAIN_FIELD_GFF_FILE: strain.gff_file,
-            STRAIN_FIELD_FASTA_URL: (
-                f"{settings.ASSEMBLY_FTP_PATH}/{strain.fasta_file}"
-                if strain.fasta_file
-                else None
-            ),
-            STRAIN_FIELD_GFF_URL: (
-                f"{settings.GFF_FTP_PATH.format(strain.isolate_name)}/{strain.gff_file}"
-                if strain.gff_file
-                else None
-            ),
-            STRAIN_FIELD_TYPE_STRAIN: strain.type_strain,
-            STRAIN_FIELD_CONTIGS: contigs,
-        }
-
     async def _fetch_paginated_strains(
-            self, filter_criteria, page, per_page, sortField, sortOrder
+            self, filter_criteria, page, per_page, sortField, sortOrder, schema
     ):
         """Fetch paginated strains from Elasticsearch with optimized searching."""
         try:
-            search = Search(index=self.INDEX_NAME)
+            search = Search(index=ES_INDEX_STRAIN)
 
             # Dynamically apply filters
             for field, value in filter_criteria.items():
@@ -323,13 +261,7 @@ class GenomeService:
                     search = search.query("term", **{field: value})
 
             # Map "species" to its actual field
-            if sortField == STRAIN_FIELD_SPECIES:
-                sortField = ES_FIELD_SPECIES_ACRONYM
-
-            # Use .keyword for text fields
-            if sortField in [STRAIN_FIELD_ISOLATE_NAME, ES_FIELD_SPECIES_SCIENTIFIC_NAME]:
-                sortField = f"{sortField}.keyword"
-
+            sortField = self._resolve_sort_field(sortField)
             sort_order = "asc" if sortOrder == SORT_ASC else "desc"
             search = search.sort({sortField: {"order": sort_order}})
 
@@ -339,43 +271,38 @@ class GenomeService:
             logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
 
             response = await sync_to_async(search.execute)()
-            total_results = response.hits.total.value if hasattr(response.hits.total, 'value') else len(response)
+            total_results = (
+                response.hits.total.value
+                if hasattr(response.hits.total, 'value')
+                else len(response)
+            )
 
             results = []
             for hit in response:
-                strain_data = hit.to_dict()
-
-                # Compute fasta_url and gff_url
-                strain_data["fasta_url"] = (
-                    f"{settings.ASSEMBLY_FTP_PATH}/{strain_data['fasta_file']}"
-                    if strain_data.get("fasta_file")
-                    else None
-                )
-                strain_data["gff_url"] = (
-                    f"{settings.GFF_FTP_PATH.format(strain_data[STRAIN_FIELD_ISOLATE_NAME])}/{strain_data['gff_file']}"
-                    if strain_data.get("gff_file") and strain_data.get(STRAIN_FIELD_ISOLATE_NAME)
-                    else None
-                )
-
-                results.append(strain_data)
+                strain_obj = strain_from_hit(hit)
+                strain_dict = model_to_dict(strain_obj)
+                results.append(schema.model_validate(strain_dict))
 
             return results, total_results
 
         except Exception as e:
-            logger.error(f"Error fetching paginated strains: {e}")
+            logger.error(f"Error fetching paginated strains: {e}", exc_info=True)
             raise ServiceError(f"Error fetching paginated strains: {str(e)}")
 
     async def _create_pagination_schema(self, strains, total_results, page, per_page):
         """Create pagination schema for search results."""
-        serialized_strains = [
-            GenomeResponseSchema.model_validate(strain) for strain in strains
-        ]
-
         return GenomePaginationSchema(
-            results=serialized_strains,
+            results=strains,
             page_number=page,
             num_pages=(total_results + per_page - 1) // per_page,
             has_previous=page > 1,
             has_next=(page * per_page) < total_results,
             total_results=total_results,
         )
+
+    def _resolve_sort_field(self, field: str) -> str:
+        if field == STRAIN_FIELD_SPECIES:
+            return ES_FIELD_SPECIES_ACRONYM
+        if field in [STRAIN_FIELD_ISOLATE_NAME, ES_FIELD_SPECIES_SCIENTIFIC_NAME]:
+            return f"{field}.keyword"
+        return field
