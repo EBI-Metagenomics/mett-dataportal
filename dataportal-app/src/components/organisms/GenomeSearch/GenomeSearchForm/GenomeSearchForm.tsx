@@ -5,9 +5,16 @@ import GenomeResultsTable from "@components/organisms/GenomeSearch/GenomeResults
 import styles from "@components/organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm.module.scss";
 import {GenomeService} from "../../../../services/genomeService";
 import {LinkData} from "../../../../interfaces/Auxiliary";
-import {AutocompleteResponse, BaseGenome} from "../../../../interfaces/Genome";
-import {API_GENOME_SEARCH, API_GENOMES_BY_ISOLATE_NAMES, getAPIUrlGenomeSearchWithSpecies} from "../../../../utils/appConstants";
+import {AutocompleteResponse, BaseGenome, GenomeMeta} from "../../../../interfaces/Genome";
+import {
+    API_GENOME_SEARCH,
+    API_GENOMES_BY_ISOLATE_NAMES,
+    DEFAULT_PER_PAGE_CNT,
+    getAPIUrlGenomeSearchWithSpecies
+} from "../../../../utils/appConstants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
+import TypeStrainsFilter from "@components/Filters/TypeStrainsFilter";
+import SelectedGenomes from "@components/Filters/SelectedGenomes";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -20,7 +27,10 @@ interface SearchGenomeFormProps {
     sortField: string,
     sortOrder: 'asc' | 'desc';
     selectedGenomes: BaseGenome[];
+    typeStrains: GenomeMeta[];
     onToggleGenomeSelect: (genome: BaseGenome) => void;
+    handleRemoveGenome: (genomeId: string) => void;
+    handleTypeStrainToggle: (isolate_name: string) => void;
     // onGenomeSelect: (genome: { id: number; name: string }) => void;
     linkData: LinkData;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -30,7 +40,10 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                selectedSpecies,
                                                                selectedTypeStrains,
                                                                selectedGenomes,
+                                                               typeStrains,
                                                                onToggleGenomeSelect,
+                                                               handleTypeStrainToggle,
+                                                               handleRemoveGenome,
                                                                // onGenomeSelect,
                                                                onSortClick,
                                                                sortField,
@@ -46,9 +59,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     const [totalPages, setTotalPages] = useState<number>(1);
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
-    const [pageSize, setPageSize] = useState<number>(10);
-
-    const [resetFlag, setResetFlag] = useState<boolean>(false);
+    const [pageSize, setPageSize] = useState<number>(DEFAULT_PER_PAGE_CNT);
 
     const [apiRequestDetails, setApiRequestDetails] = useState<{
         url: string;
@@ -58,9 +69,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     } | null>(null);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const newSize = parseInt(event.target.value, 10);
+        const newSize = parseInt(event.target.value, DEFAULT_PER_PAGE_CNT);
         setPageSize(newSize);
-        setResetFlag(true);
     };
 
     // Fetch suggestions for autocomplete based on the query and selected species
@@ -186,7 +196,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 setTimeout(() => setLoading(false), remainingTime > 0 ? remainingTime : 0);
             }
         },
-        [query, isolateName, selectedSpecies, selectedTypeStrains]
+        [query, isolateName, selectedSpecies, selectedTypeStrains, pageSize]
     );
 
 
@@ -233,80 +243,94 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             <div>
                 <p/>
             </div>
-            <div className={`vf-grid__col--span-3 ${styles.vfGenomeSection}`}>
-                <form onSubmit={handleSubmit}
-                      className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
-                    <h2 className={`vf-section-header__subheading ${styles.vfGenomeSubHeading}`}>Genome Search</h2>
-                    <div>
-                        <p/>
-                    </div>
-                    <GenomeSearchInput
-                        query={query}
-                        onInputChange={handleInputChange}
-                        suggestions={suggestions}
-                        onSuggestionClick={handleSuggestionClick}
-                        onSuggestionsClear={() => setSuggestions([])}
-                    />
+            <div className={styles.leftPane}>
 
-                </form>
+                {/* Type Strains Filter */}
+                <TypeStrainsFilter
+                    typeStrains={typeStrains}
+                    selectedTypeStrains={selectedTypeStrains}
+                    selectedSpecies={selectedSpecies}
+                    onTypeStrainToggle={handleTypeStrainToggle}
+                />
+
+                <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
+            </div>
+            <div className={styles.rightPane}>
+                <div className={`vf-grid__col--span-3 ${styles.vfGenomeSection}`}>
+                    <form onSubmit={handleSubmit}
+                          className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
+                        <h2 className={`vf-section-header__subheading ${styles.vfGenomeSubHeading}`}>Genome Search</h2>
+                        <div>
+                            <p/>
+                        </div>
+                        <GenomeSearchInput
+                            query={query}
+                            onInputChange={handleInputChange}
+                            suggestions={suggestions}
+                            onSuggestionClick={handleSuggestionClick}
+                            onSuggestionsClear={() => setSuggestions([])}
+                        />
+
+                    </form>
+                    <div>
+                        <p>&nbsp;</p>
+                    </div>
+                    <div className="vf-grid__col--span-3" id="results-table"
+                         style={{display: results.length > 0 ? 'block' : 'none'}}>
+                        <GenomeResultsTable
+                            results={results}
+                            onSortClick={onSortClick}
+                            selectedGenomes={selectedGenomes}
+                            onToggleGenomeSelect={onToggleGenomeSelect}
+                            linkData={linkData}
+                            setLoading={setLoading}
+                        />
+                        {/* Page size dropdown and pagination */}
+                        <div className={styles.paginationContainer}>
+                            <div className={styles.pageSizeDropdown}>
+                                <label htmlFor="pageSize">Page Size: </label>
+                                <select
+                                    id="pageSize"
+                                    value={pageSize}
+                                    onChange={handlePageSizeChange}
+                                    className={styles.pageSizeSelect}
+                                >
+                                    <option value={DEFAULT_PER_PAGE_CNT}>Show 10</option>
+                                    <option value={20}>Show 20</option>
+                                    <option value={50}>Show 50</option>
+                                </select>
+                            </div>
+                            <div className={styles.paginationBar}>
+                                {totalPages > 1 && (
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        hasPrevious={hasPrevious}
+                                        hasNext={hasNext}
+                                        onPageClick={handlePageClick}
+                                    />
+                                )}</div>
+                        </div>
+                    </div>
+                    <div><p/></div>
+                    <div className={styles.rightPaneButtons}>
+                        <button className="vf-button vf-button--primary vf-button--sm"
+                                onClick={() => copyToClipboard(generateCurlRequest(apiRequestDetails))}>Copy cURL
+                            Request
+                        </button>
+                        <button className="vf-button vf-button--primary vf-button--sm"
+                                onClick={() => copyToClipboard(generateHttpRequest(apiRequestDetails))}>Copy HTTP
+                            Request
+                        </button>
+                    </div>
+                    <div><p/></div>
+
+                </div>
                 <div>
                     <p>&nbsp;</p>
+                    <p>&nbsp;</p>
+                    <p>&nbsp;</p>
                 </div>
-                <div className="vf-grid__col--span-3" id="results-table"
-                     style={{display: results.length > 0 ? 'block' : 'none'}}>
-                    <GenomeResultsTable
-                        results={results}
-                        onSortClick={onSortClick}
-                        selectedGenomes={selectedGenomes}
-                        onToggleGenomeSelect={onToggleGenomeSelect}
-                        linkData={linkData}
-                        setLoading={setLoading}
-                    />
-                    {/* Page size dropdown and pagination */}
-                    <div className={styles.paginationContainer}>
-                        <div className={styles.pageSizeDropdown}>
-                            <label htmlFor="pageSize">Page Size: </label>
-                            <select
-                                id="pageSize"
-                                value={pageSize}
-                                onChange={handlePageSizeChange}
-                                className={styles.pageSizeSelect}
-                            >
-                                <option value={10}>Show 10</option>
-                                <option value={20}>Show 20</option>
-                                <option value={50}>Show 50</option>
-                            </select>
-                        </div>
-                        <div className={styles.paginationBar}>
-                            {totalPages > 1 && (
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    hasPrevious={hasPrevious}
-                                    hasNext={hasNext}
-                                    onPageClick={handlePageClick}
-                                />
-                            )}</div>
-                    </div>
-                </div>
-                <div><p/></div>
-                <div className={styles.rightPaneButtons}>
-                    <button className="vf-button vf-button--primary vf-button--sm"
-                            onClick={() => copyToClipboard(generateCurlRequest(apiRequestDetails))}>Copy cURL
-                        Request
-                    </button>
-                    <button className="vf-button vf-button--primary vf-button--sm"
-                            onClick={() => copyToClipboard(generateHttpRequest(apiRequestDetails))}>Copy HTTP
-                        Request
-                    </button>
-                </div>
-                <div><p/></div>
-
-            </div>
-            <div>
-                <p>&nbsp;</p>
-                <p>&nbsp;</p>
-                <p>&nbsp;</p>
             </div>
         </section>
     );

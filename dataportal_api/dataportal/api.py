@@ -26,7 +26,7 @@ from .utils.constants import (
     ROUTER_GENOME,
     ROUTER_GENE,
     ROUTER_SPECIES,
-    STRAIN_FIELD_ISOLATE_NAME, URL_PREFIX_GENES, URL_PREFIX_GENOMES, URL_PREFIX_SPECIES,
+    STRAIN_FIELD_ISOLATE_NAME, URL_PREFIX_GENES, URL_PREFIX_GENOMES, URL_PREFIX_SPECIES, DEFAULT_FACET_LIMIT,
 )
 from .utils.decorators import log_endpoint_access
 from .utils.errors import raise_http_error
@@ -230,16 +230,19 @@ async def search_genes_by_string(
 @gene_router.get("/faceted-search")
 async def get_faceted_search(request, species_acronym: Optional[str] = None,
                              essentiality: Optional[str] = None,
-                             isolates: Optional[List[str]] = None,
-                             cog_funcats: Optional[str] = None,
+                             isolates: Optional[str] = "",
+                             cog_ids: Optional[str] = None,
                              kegg: Optional[str] = None,
                              go_term: Optional[str] = None,
                              pfam: Optional[str] = None,
                              interpro: Optional[str] = None,
-                             limit: int = DEFAULT_PER_PAGE_CNT):
-    return await gene_service.get_faceted_search(species_acronym, essentiality, isolates,
-                                                 cog_funcats, kegg, go_term, pfam, interpro,
+                             limit: int = DEFAULT_FACET_LIMIT):
+    isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
+    logger.info(f"Isolates received: {isolate_names_list} (type: {type(isolate_names_list)})")
+    return await gene_service.get_faceted_search(species_acronym, isolate_names_list, essentiality,
+                                                 cog_ids, kegg, go_term, pfam, interpro,
                                                  limit)
+
 
 # API Endpoint to retrieve gene by locus tag
 @gene_router.get("/{locus_tag}", response=GeneResponseSchema)

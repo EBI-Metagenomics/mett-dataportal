@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '../organisms/GeneSearch/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '../organisms/GenomeSearch/GenomeSearchForm/GenomeSearchForm';
-import SelectedGenomes from '../organisms/SelectedGenomes';
+import SelectedGenomes from '../Filters/SelectedGenomes';
 import {GenomeService} from '../../services/genomeService';
 import {SpeciesService} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
@@ -260,39 +260,15 @@ const HomePage: React.FC = () => {
                 <HomePageHeadBand
                     typeStrains={typeStrains}
                     linkTemplate="/genome/$strain_name"
+                    speciesList={speciesList}
+                    selectedSpecies={selectedSpecies}
+                    handleSpeciesSelect={handleSpeciesSelect}
                 />
             </div>
 
             <div className="layout-container">
-                {/* Left Panel */}
-                <div className={styles.leftPane}>
-                    {/* Species Filter */}
-                    <SpeciesFilter
-                        speciesList={speciesList}
-                        selectedSpecies={selectedSpecies}
-                        onSpeciesSelect={handleSpeciesSelect}
-                    />
 
-                    {/* Type Strains Filter */}
-                    <TypeStrainsFilter
-                        typeStrains={typeStrains}
-                        selectedTypeStrains={selectedTypeStrains}
-                        selectedSpecies={selectedSpecies}
-                        onTypeStrainToggle={handleTypeStrainToggle}
-                    />
-
-                    <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
-                </div>
-
-                {/* Right Panel - Search Form */}
-                {/*<div className={styles.rightPane}>*/}
-                {/*    <div className={styles.rightPaneButtons}>*/}
-                {/*        <button className="vf-button vf-button--primary vf-button--sm"*/}
-                {/*                onClick={() => downloadTableData(genomeResults, 'csv')}>Download CSV*/}
-                {/*        </button>*/}
-                {/*    </div>*/}
-                {/*</div>*/}
-                <div className={styles.rightPane}>
+                <div>
                     <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick}/>
                     {activeTab === 'vf-tabs__section--1' && (
                         <GenomeSearchForm
@@ -303,12 +279,15 @@ const HomePage: React.FC = () => {
                             // onGenomeSelect={handleGenomeSelect}
                             selectedSpecies={selectedSpecies}
                             selectedTypeStrains={selectedTypeStrains}
+                            typeStrains={typeStrains}
                             onSortClick={handleGenomeSortClick}
                             sortField={genomeSortField}
                             sortOrder={genomeSortOrder}
                             results={genomeResults}
                             selectedGenomes={selectedGenomes}
                             onToggleGenomeSelect={handleToggleGenomeSelect}
+                            handleTypeStrainToggle={handleTypeStrainToggle}
+                            handleRemoveGenome={handleRemoveGenome}
                             linkData={genomeLinkData}
                             setLoading={setLoading}
                         />
@@ -327,6 +306,7 @@ const HomePage: React.FC = () => {
                             sortOrder={geneSortOrder}
                             linkData={geneLinkData}
                             essentialityFilter={essentialityFilter}
+                            handleRemoveGenome={handleRemoveGenome}
                             setLoading={setLoading}
                         />
                     )}

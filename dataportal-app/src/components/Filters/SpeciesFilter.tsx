@@ -13,23 +13,25 @@ interface SpeciesFilterProps {
 }
 
 const SpeciesFilter: React.FC<SpeciesFilterProps> = ({speciesList, selectedSpecies, onSpeciesSelect}) => (
-    <div className={styles.speciesSection}>
-        <h3>Species</h3>
-        <ul>
-            {speciesList.map(species => (
-                <li key={species.acronym}>
-                    <label>
-                        <input
-                            type="checkbox"
-                            checked={selectedSpecies.includes(species.acronym)}
-                            onChange={() => onSpeciesSelect(species.acronym)}
-                        />
-                        <i>{species.scientific_name}</i>
-                    </label>
-                </li>
+        <div
+            style={{
+                display: 'flex',
+                gap: '1.5rem',
+                alignItems: 'center',
+            }}
+        >
+            {speciesList.map((species) => (
+                <label key={species.acronym}>
+                    <input
+                        type="checkbox"
+                        checked={selectedSpecies.includes(species.acronym)}
+                        onChange={() => onSpeciesSelect(species.acronym)}
+                    />
+                    <i>{species.scientific_name}</i>
+                </label>
             ))}
-        </ul>
-    </div>
-);
+        </div>
+    )
+;
 
 export default SpeciesFilter;

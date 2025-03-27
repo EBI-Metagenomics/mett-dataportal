@@ -228,6 +228,10 @@ const GeneViewerPage: React.FC = () => {
         });
     }
 
+    const handleRemoveGenome = (isolate_name: string) => {
+        //pass
+    };
+
 
     const handleGeneSearch = async () => {
         if (genomeMeta?.isolate_name) {
@@ -366,37 +370,38 @@ const GeneViewerPage: React.FC = () => {
                 {/* Gene Search Section */}
                 <div className={styles.geneSearchContainer}>
                     <section>
-                        {genomeMeta?.type_strain ? (
-                            <GeneSearchWithFilters
-                                searchQuery={geneSearchQuery}
-                                onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                                onSearchSubmit={handleGeneSearch}
-                                selectedGenomes={selectedGenomes}
-                                results={geneResults}
-                                onSortClick={handleGeneSortClick}
-                                sortField={sortField}
-                                sortOrder={sortOrder}
-                                linkData={linkData}
-                                viewState={viewState}
-                                setLoading={setLoading}
-                            />
-                        ) : (
-                            <GeneSearchForm
-                                searchQuery={geneSearchQuery}
-                                onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                                onSearchSubmit={handleGeneSearch}
-                                selectedSpecies={selectedSpecies}
-                                selectedGenomes={selectedGenomes}
-                                results={geneResults}
-                                onSortClick={handleGeneSortClick}
-                                sortField={sortField}
-                                sortOrder={sortOrder}
-                                linkData={linkData}
-                                viewState={viewState}
-                                essentialityFilter={essentialityFilter}
-                                setLoading={setLoading}
-                            />
-                        )}
+                        {/*{genomeMeta?.type_strain ? (*/}
+                        {/*    <GeneSearchWithFilters*/}
+                        {/*        searchQuery={geneSearchQuery}*/}
+                        {/*        onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}*/}
+                        {/*        onSearchSubmit={handleGeneSearch}*/}
+                        {/*        selectedGenomes={selectedGenomes}*/}
+                        {/*        results={geneResults}*/}
+                        {/*        onSortClick={handleGeneSortClick}*/}
+                        {/*        sortField={sortField}*/}
+                        {/*        sortOrder={sortOrder}*/}
+                        {/*        linkData={linkData}*/}
+                        {/*        viewState={viewState}*/}
+                        {/*        setLoading={setLoading}*/}
+                        {/*    />*/}
+                        {/*) : (*/}
+                        <GeneSearchForm
+                            searchQuery={geneSearchQuery}
+                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
+                            onSearchSubmit={handleGeneSearch}
+                            selectedSpecies={selectedSpecies}
+                            selectedGenomes={selectedGenomes}
+                            results={geneResults}
+                            onSortClick={handleGeneSortClick}
+                            sortField={sortField}
+                            sortOrder={sortOrder}
+                            linkData={linkData}
+                            viewState={viewState}
+                            essentialityFilter={essentialityFilter}
+                            setLoading={setLoading}
+                            handleRemoveGenome={handleRemoveGenome}
+                        />
+                        {/*)}*/}
                     </section>
 
                 </div>

@@ -11,7 +11,8 @@ interface TypeStrainsFilterProps {
 
 const TypeStrainsFilter: React.FC<TypeStrainsFilterProps> = ({ typeStrains, selectedTypeStrains, selectedSpecies, onTypeStrainToggle }) => (
     <div className={styles.typeStrains}>
-        <h3>Type Strains</h3>
+        {/*<h3>Type Strains</h3>*/}
+        <h3 className={`vf-section-header__subheading ${styles.vfGeneSubHeading}`}>Type Strains</h3>
         <ul>
             {typeStrains.map((strain) => {
                 const isStrainEnabled = selectedSpecies.length === 0 || selectedSpecies.includes(strain.species_acronym);
@@ -31,6 +32,7 @@ const TypeStrainsFilter: React.FC<TypeStrainsFilterProps> = ({ typeStrains, sele
                 );
             })}
         </ul>
+        <p>&nbsp;</p>
     </div>
 );
 

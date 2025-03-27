@@ -1,6 +1,14 @@
 import {ApiService} from "./api";
-import {Gene, GeneEssentialityTag, GeneMeta, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
+import {
+    Gene,
+    GeneEssentialityTag,
+    GeneFacetResponse,
+    GeneMeta,
+    GeneSuggestion,
+    PaginatedResponse
+} from "../interfaces/Gene";
 import {cacheResponse} from "./cachingDecorator";
+import {DEFAULT_PER_PAGE_CNT} from "../utils/appConstants";
 
 export class GeneService {
     /**
@@ -9,7 +17,7 @@ export class GeneService {
     private static buildParams(
         query: string,
         page: number = 1,
-        perPage: number = 10,
+        perPage: number = DEFAULT_PER_PAGE_CNT,
         speciesAcronym?: string,
         genomeIds?: string
     ): URLSearchParams {
@@ -27,7 +35,7 @@ export class GeneService {
      */
     static async fetchGeneAutocompleteSuggestions(
         query: string,
-        limit: number = 10,
+        limit: number = DEFAULT_PER_PAGE_CNT,
         speciesAcronym?: string,
         genomeIds?: string,
         essentialityFilter?: string[]
@@ -57,10 +65,10 @@ export class GeneService {
         sortOrder: string,
         selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
-        essentialityFilter?: string[]
+        selectedFacets?: Record<string, string[]>
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
-            const params = GeneService.buildParamsFetchGeneSearchResults(query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, essentialityFilter);
+            const params = GeneService.buildParamsFetchGeneSearchResults(query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets);
             const response = await ApiService.get<PaginatedResponse<GeneMeta>>("/genes/search/advanced", params);
             return response;
         } catch (error) {
@@ -77,7 +85,7 @@ export class GeneService {
         sortOrder: string,
         selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
-        essentialityFilter?: string[]
+        selectedFacets?: Record<string, string[]>
     ) {
         const params = new URLSearchParams({
             query: gene,
@@ -88,19 +96,30 @@ export class GeneService {
         });
 
         if (selectedGenomes?.length) {
-            params.append("isolates", selectedGenomes.map((genome) => genome.isolate_name).join(","));
+            params.append("isolates", selectedGenomes.map(g => g.isolate_name).join(","));
         }
 
         if (selectedSpecies?.length === 1) {
             params.append("species_acronym", String(selectedSpecies[0]));
         }
 
-        if (essentialityFilter?.length) {
-            const filterValue = `essentiality:${essentialityFilter.join(",")}`;
-            params.append("filter", filterValue);
+        if (selectedFacets) {
+            const filterParts: string[] = [];
+
+            for (const [key, values] of Object.entries(selectedFacets)) {
+                if (values.length > 0) {
+                    filterParts.push(`${key}:${values.join(",")}`);
+                }
+            }
+
+            if (filterParts.length > 0) {
+                params.append("filter", filterParts.join(";"));
+            }
         }
+
         return params;
     }
+
 
     /**
      * Fetch gene search results by genome ID.
@@ -127,7 +146,7 @@ export class GeneService {
     static async fetchGenesByGenome(
         isolate_name: string,
         page: number = 1,
-        perPage: number = 10
+        perPage: number = DEFAULT_PER_PAGE_CNT
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
             const params = this.buildParams("", page, perPage);
@@ -180,6 +199,39 @@ export class GeneService {
         } catch (error) {
             console.error(`Error fetching essentiality data for ${refName}:`, error);
             return {};
+        }
+    }
+
+    /**
+     * faceted search.
+     */
+    static async fetchGeneFacets(
+        speciesAcronym?: string,
+        isolates?: string,
+        essentiality?: string,
+        cogId?: string,
+        kegg?: string,
+        goTerm?: string,
+        pfam?: string,
+        interpro?: string
+    ): Promise<GeneFacetResponse> {
+        try {
+            const params = new URLSearchParams({
+                ...(speciesAcronym && {species_acronym: speciesAcronym}),
+                ...(isolates && {isolates: isolates}),
+                ...(essentiality && {essentiality}),
+                ...(cogId && {cog_id: cogId}),
+                ...(kegg && {kegg}),
+                ...(goTerm && {go_term: goTerm}),
+                ...(pfam && {pfam}),
+                ...(interpro && {interpro}),
+            });
+
+            const response = await ApiService.get<GeneFacetResponse>("genes/faceted-search", params);
+            return response;
+        } catch (error) {
+            console.error("Error fetching gene facets:", error);
+            throw error;
         }
     }
 }

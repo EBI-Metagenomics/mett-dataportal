@@ -8,9 +8,8 @@ from elasticsearch_dsl import Search
 
 from dataportal.schemas import EssentialityTagSchema
 from dataportal.utils.constants import (
-    GENE_FIELD_LOCUS_TAG,
     GENE_ESSENTIALITY,
-    GENE_FIELD_START, GENE_FIELD_END,
+    GENE_FIELD_START, GENE_FIELD_END, ES_FIELD_LOCUS_TAG,
 )
 from dataportal.utils.exceptions import (
     ServiceError,
@@ -57,7 +56,7 @@ class EssentialityService:
                     cache_data[isolate_name][seq_id] = {}
 
                 cache_data[isolate_name][seq_id][locus_tag] = {
-                    GENE_FIELD_LOCUS_TAG: locus_tag,
+                    ES_FIELD_LOCUS_TAG: locus_tag,
                     GENE_FIELD_START: start,
                     GENE_FIELD_END: end,
                     GENE_ESSENTIALITY: essentiality
@@ -89,13 +88,13 @@ class EssentialityService:
         response = {}
         for gene_data in contig_data.values():
             # Ensure all required fields exist
-            locus_tag = gene_data.get(GENE_FIELD_LOCUS_TAG, "UNKNOWN")
+            locus_tag = gene_data.get(ES_FIELD_LOCUS_TAG, "UNKNOWN")
             start = gene_data.get(GENE_FIELD_START, 0)
             end = gene_data.get(GENE_FIELD_END, 0)
             essentiality = gene_data.get(GENE_ESSENTIALITY, "Unknown")
 
             response[locus_tag] = {
-                GENE_FIELD_LOCUS_TAG: locus_tag,
+                ES_FIELD_LOCUS_TAG: locus_tag,
                 GENE_FIELD_START: start,
                 GENE_FIELD_END: end,
                 GENE_ESSENTIALITY: essentiality
@@ -107,20 +106,19 @@ class EssentialityService:
         """Fetch unique essentiality values from gene_index and process them."""
 
         try:
-            # ✅ Query Elasticsearch for unique `essentiality` values
+            # Query for unique `essentiality` values
             search_query = Search(index=self.INDEX_NAME).source([]).extra(
                 size=0, aggs={"unique_essentiality": {"terms": {"field": "essentiality", "size": 100}}}
             )
 
             logger.info(f"Final Elasticsearch Query (Formatted): {json.dumps(search_query.to_dict(), indent=2)}")
 
-            # ✅ Execute the query
+            # Execute
             response = await sync_to_async(search_query.execute)()
 
-            # ✅ Extract unique essentiality values
+            # Extract
             unique_values = [bucket["key"] for bucket in response.aggregations.unique_essentiality.buckets]
 
-            # ✅ Process values (convert to label format)
             processed_tags = [
                 EssentialityTagSchema(name=value, label=convert_to_camel_case(value.replace("_", " ")))
                 for value in unique_values

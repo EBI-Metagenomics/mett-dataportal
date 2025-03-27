@@ -3,8 +3,7 @@ import logging
 from typing import Optional, List, Tuple, Dict
 
 from asgiref.sync import sync_to_async
-from django.db.models import Q
-from elasticsearch_dsl import Search, A
+from elasticsearch_dsl import Search, ElasticsearchDslException
 
 from dataportal.models import GeneDocument
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
@@ -16,7 +15,12 @@ from dataportal.utils.constants import (
     SORT_DESC,
     SORT_ASC,
     GENE_ESSENTIALITY,
-    GENE_ESSENTIALITY_MEDIA,
+    DEFAULT_FACET_LIMIT, ES_FIELD_PFAM, ES_FIELD_INTERPRO, ES_FIELD_KEGG, ES_FIELD_COG_ID,
+    ES_FIELD_GENE_NAME, ES_FIELD_ALIAS, ES_FIELD_PRODUCT, ES_FIELD_ISOLATE_NAME, GENE_SORT_FIELD_STRAIN,
+    FIELD_SEQ_ID,
+    ES_FIELD_UNIPROT, GENE_FIELD_DBXREF, GENE_FIELD_EC_NUMBER,
+    GENE_FIELD_START, GENE_FIELD_END, UNKNOWN_ESSENTIALITY, ES_FIELD_COG_FUNCATS,
+    ES_FIELD_LOCUS_TAG, ES_FIELD_SPECIES_ACRONYM, ES_FIELD_SPECIES_SCIENTIFIC_NAME,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -37,32 +41,38 @@ class GeneService:
             species_acronym: Optional[str] = None,
             isolates: Optional[List[str]] = None,
     ) -> List[Dict]:
-        """ Provides autocomplete suggestions for genes based on query & filters. """
+        """Provides autocomplete suggestions for genes based on query & filters."""
 
         try:
-
             s = Search(index=self.INDEX_NAME)
             s = s.query(
                 "multi_match",
                 query=query,
                 fields=[
-                    "alias^3", "alias.keyword^5", "gene_name^2", "product", "kegg",
-                    "uniprot_id", "pfam", "cog_id", "interpro"
+                    f"{ES_FIELD_ALIAS}^3",
+                    f"{ES_FIELD_ALIAS}.keyword^5",
+                    f"{ES_FIELD_GENE_NAME}^2",
+                    ES_FIELD_PRODUCT,
+                    ES_FIELD_KEGG,
+                    ES_FIELD_UNIPROT,
+                    ES_FIELD_PFAM,
+                    ES_FIELD_COG_ID,
+                    ES_FIELD_INTERPRO,
                 ],
                 type="best_fields"
             )
 
             if species_acronym:
-                s = s.filter("term", species_acronym=species_acronym)
+                s = s.filter("term", **{ES_FIELD_SPECIES_ACRONYM: species_acronym})
 
             if isolates:
-                s = s.filter("terms", isolate_name=isolates)
+                s = s.filter("terms", **{ES_FIELD_ISOLATE_NAME: isolates})
 
             parsed_filters = self._parse_filters(filter)
             for key, values in parsed_filters.items():
-                if key == "essentiality":
+                if key == GENE_ESSENTIALITY:
                     normalized_values = [v.lower() for v in values]
-                    s = s.filter("terms", essentiality=normalized_values)
+                    s = s.filter("terms", **{GENE_ESSENTIALITY: normalized_values})
                 else:
                     s = s.filter("terms", **{key: values})
 
@@ -74,19 +84,19 @@ class GeneService:
 
             results = [
                 {
-                    "gene_name": getattr(hit, "gene_name", None),
-                    "alias": getattr(hit, "alias", []),
-                    "product": getattr(hit, "product", None),
-                    "locus_tag": getattr(hit, "locus_tag", None),
-                    "species_scientific_name": getattr(hit, "species_scientific_name", None),
-                    "species_acronym": getattr(hit, "species_acronym", None),
-                    "isolate_name": getattr(hit, "isolate_name", None),
-                    "kegg": getattr(hit, "kegg", []),
-                    "uniprot_id": getattr(hit, "uniprot_id", None),
-                    "pfam": getattr(hit, "pfam", []),
-                    "cog_id": getattr(hit, "cog_id", None),
-                    "interpro": getattr(hit, "interpro", []),
-                    "essentiality": getattr(hit, "essentiality", "Unknown")
+                    ES_FIELD_GENE_NAME: getattr(hit, ES_FIELD_GENE_NAME, None),
+                    ES_FIELD_ALIAS: getattr(hit, ES_FIELD_ALIAS, []),
+                    ES_FIELD_PRODUCT: getattr(hit, ES_FIELD_PRODUCT, None),
+                    ES_FIELD_LOCUS_TAG: getattr(hit, ES_FIELD_LOCUS_TAG, None),
+                    ES_FIELD_SPECIES_SCIENTIFIC_NAME: getattr(hit, ES_FIELD_SPECIES_SCIENTIFIC_NAME, None),
+                    ES_FIELD_SPECIES_ACRONYM: getattr(hit, ES_FIELD_SPECIES_ACRONYM, None),
+                    ES_FIELD_ISOLATE_NAME: getattr(hit, ES_FIELD_ISOLATE_NAME, None),
+                    ES_FIELD_KEGG: getattr(hit, ES_FIELD_KEGG, []),
+                    ES_FIELD_UNIPROT: getattr(hit, ES_FIELD_UNIPROT, None),
+                    ES_FIELD_PFAM: getattr(hit, ES_FIELD_PFAM, []),
+                    ES_FIELD_COG_ID: getattr(hit, ES_FIELD_COG_ID, None),
+                    ES_FIELD_INTERPRO: getattr(hit, ES_FIELD_INTERPRO, []),
+                    GENE_ESSENTIALITY: getattr(hit, GENE_ESSENTIALITY, UNKNOWN_ESSENTIALITY),
                 }
                 for hit in response
             ]
@@ -217,11 +227,11 @@ class GeneService:
 
             # Filters for genome IDs and species ID
             if isolate_names_list:
-                filter_criteria["bool"]["must"].append({"terms": {"isolate_name": isolate_names_list}})
+                filter_criteria["bool"]["must"].append({"terms": {ES_FIELD_ISOLATE_NAME: isolate_names_list}})
             if species_acronym:
-                filter_criteria["bool"]["must"].append({"term": {"species_acronym": species_acronym}})
+                filter_criteria["bool"]["must"].append({"term": {ES_FIELD_SPECIES_ACRONYM: species_acronym}})
 
-            # apply additional filters
+            # Apply additional filters
             parsed_filters = self._parse_filters(filter)
             type_strain_filters = await self._apply_filters_for_type_strain({}, parsed_filters)
 
@@ -246,35 +256,25 @@ class GeneService:
 
     # helper methods
 
-    def _serialize_gene_essentiality(self, gene_essentiality):
-        return {
-            GENE_ESSENTIALITY_MEDIA: gene_essentiality.media,
-            GENE_ESSENTIALITY: (
-                gene_essentiality.essentiality.name
-                if gene_essentiality.essentiality
-                else None
-            ),
-        }
-
     def _serialize_gene(self, gene_data: GeneDocument) -> GeneResponseSchema:
         return GeneResponseSchema(
-            locus_tag=gene_data.get("locus_tag"),
-            gene_name=gene_data.get("gene_name"),
-            alias=gene_data.get("alias") or None,
-            seq_id=gene_data.get("seq_id"),
-            isolate_name=gene_data.get("isolate_name"),
-            uniprot_id=gene_data.get("uniprot_id"),
-            cog_funcats=gene_data.get("cog_funcats"),
-            cog_id=gene_data.get("cog_id"),
-            kegg=gene_data.get("kegg"),
-            pfam=gene_data.get("pfam"),
-            interpro=gene_data.get("interpro"),
-            dbxref=gene_data.get("dbxref"),
-            ec_number=gene_data.get("ec_number"),
-            product=gene_data.get("product"),
-            start_position=gene_data.get("start"),
-            end_position=gene_data.get("end"),
-            essentiality=gene_data.get("essentiality", "Unknown")
+            locus_tag=gene_data.get(ES_FIELD_LOCUS_TAG),
+            gene_name=gene_data.get(ES_FIELD_GENE_NAME),
+            alias=gene_data.get(ES_FIELD_ALIAS) or None,
+            seq_id=gene_data.get(FIELD_SEQ_ID),
+            isolate_name=gene_data.get(ES_FIELD_ISOLATE_NAME),
+            uniprot_id=gene_data.get(ES_FIELD_UNIPROT),
+            cog_funcats=gene_data.get(ES_FIELD_COG_FUNCATS),
+            cog_id=gene_data.get(ES_FIELD_COG_ID),
+            kegg=gene_data.get(ES_FIELD_KEGG),
+            pfam=gene_data.get(ES_FIELD_PFAM),
+            interpro=gene_data.get(ES_FIELD_INTERPRO),
+            dbxref=gene_data.get(GENE_FIELD_DBXREF),
+            ec_number=gene_data.get(GENE_FIELD_EC_NUMBER),
+            product=gene_data.get(ES_FIELD_PRODUCT),
+            start_position=gene_data.get(GENE_FIELD_START),
+            end_position=gene_data.get(GENE_FIELD_END),
+            essentiality=gene_data.get(GENE_ESSENTIALITY, UNKNOWN_ESSENTIALITY),
         )
 
     def _parse_filters(self, filter_str: Optional[str]) -> Dict[str, List[str]]:
@@ -283,15 +283,19 @@ class GeneService:
 
         filters = {}
         try:
-            # Match key:values where values can contain commas
-            key, values_str = filter_str.split(":", 1)
-            key = key.strip()
-            values = [v.strip() for v in values_str.split(",")]
-            filters[key] = values
-        except ValueError:
-            logger.error(f"Invalid filter format: {filter_str}")
+            filter_groups = filter_str.split(";")
+            for group in filter_groups:
+                if not group.strip():
+                    continue
+                key, values_str = group.split(":", 1)
+                key = key.strip()
+                values = [v.strip() for v in values_str.split(",") if v.strip()]
+                if values:
+                    filters[key] = values
+        except ValueError as e:
+            logger.error(f"Invalid filter format: {filter_str} — {e}")
             raise ServiceError(
-                "Invalid filter format. Use 'key:value' pairs separated by commas."
+                "Invalid filter format. Use 'key:val1,val2;key2:val3,...'"
             )
 
         logger.debug(f"Parsed filters: {filters}")
@@ -312,27 +316,21 @@ class GeneService:
     async def _apply_filters_for_type_strain(
             self, query: dict, filters: Dict[str, list]
     ) -> dict:
-        """Apply additional filters for type strain in Elasticsearch query."""
+        if not filters:
+            return query
 
         if "bool" not in query:
             query["bool"] = {"must": []}
 
-        must_filters = []
-
-        # ✅ Add type strain filter
-        # must_filters.append({"term": {"strain.type_strain": True}})
-
-        # ✅ Apply additional filters
-        for key, values in filters.items():
-            if key == GENE_ESSENTIALITY:
-                must_filters.append({"terms": {GENE_ESSENTIALITY: values}})
-            else:
-                must_filters.append({"terms": {key: values}})
+        must_filters = [
+            {"terms": {key: values}}
+            for key, values in filters.items()
+            if values
+        ]
 
         query["bool"]["must"].extend(must_filters)
 
-        logger.info(f"DEBUG - Filters after _apply_filters_for_type_strain: {json.dumps(query, indent=2)}")
-
+        logger.debug(f"Applied filters to query: {json.dumps(must_filters, indent=2)}")
         return query
 
     def _create_pagination_schema(
@@ -360,13 +358,16 @@ class GeneService:
         start = (page - 1) * per_page
         order_prefix = "desc" if sort_order == SORT_DESC else "asc"
 
-        # Ensure "species" is mapped to "species_scientific_name"
-        if sort_field == "strain":
-            sort_field = "isolate_name"
+        # Map logical sort field to index field
+        if sort_field == GENE_SORT_FIELD_STRAIN:
+            sort_field = ES_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
-        sort_by = f"{sort_by}.keyword" if sort_by in ["gene_name", "alias", "seq_id", "locus_tag",
-                                                      "product"] else sort_by
+        sort_by = f"{sort_by}.keyword" if sort_by in [ES_FIELD_GENE_NAME,
+                                                      ES_FIELD_ALIAS,
+                                                      FIELD_SEQ_ID,
+                                                      ES_FIELD_LOCUS_TAG,
+                                                      ES_FIELD_PRODUCT] else sort_by
 
         try:
             logger.debug(f"Sorting by: {sort_by} ({order_prefix})")
@@ -404,11 +405,22 @@ class GeneService:
 
         if query:
             es_query["bool"]["must"].append(
-                {"multi_match": {"query": query, "fields": ["gene_name", "alias", "product", "pfam", "interpro"]}}
+                {
+                    "multi_match": {
+                        "query": query,
+                        "fields": [
+                            ES_FIELD_GENE_NAME,
+                            ES_FIELD_ALIAS,
+                            ES_FIELD_PRODUCT,
+                            ES_FIELD_PFAM,
+                            ES_FIELD_INTERPRO
+                        ]
+                    }
+                }
             )
 
         if isolate_name:
-            es_query["bool"]["must"].append({"term": {"isolate_name": isolate_name}})
+            es_query["bool"]["must"].append({"term": {ES_FIELD_ISOLATE_NAME: isolate_name}})
 
         if filter_criteria:
             if "bool" in filter_criteria and "must" in filter_criteria["bool"]:
@@ -424,21 +436,22 @@ class GeneService:
         return es_query
 
     async def get_faceted_search(self, species_acronym: Optional[str] = None,
-                                 essentiality: Optional[str] = None,
                                  isolates: Optional[List[str]] = None,
-                                 cog_funcat: Optional[str] = None,
+                                 essentiality: Optional[str] = None,
+                                 cog_id: Optional[str] = None,
                                  kegg: Optional[str] = None,
                                  go_term: Optional[str] = None,
                                  pfam: Optional[str] = None,
                                  interpro: Optional[str] = None,
-                                 limit: int = 20):
+                                 limit: Optional[int] = DEFAULT_FACET_LIMIT):
+
         try:
             gs = GeneFacetedSearch(
                 query='',
                 species_acronym=species_acronym,
                 essentiality=essentiality,
                 isolates=isolates,
-                cog_funcat=cog_funcat,
+                cog_id=cog_id,
                 kegg=kegg,
                 go_term=go_term,
                 pfam=pfam,
@@ -446,15 +459,34 @@ class GeneService:
                 limit=limit
             )
 
-            response = gs.execute()
+            try:
+                response = gs.execute()
+            except ElasticsearchDslException as es_exc:
+                logger.error("Elasticsearch error occurred during faceted search")
+                logger.error(f"ES error message: {str(es_exc)}")
+                raise ServiceError("Elasticsearch query failed.")
 
             return {
-                "pfam": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'pfam', [])}),
-                "interpro": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'interpro', [])}),
-                "essentiality": self.process_aggregation_results(
-                    {b[0]: b[1] for b in getattr(response.facets, 'essentiality', [])}),
+                ES_FIELD_PFAM: self.process_aggregation_results(
+                    {b[0]: b[1] for b in (getattr(response.facets, ES_FIELD_PFAM) or [])},
+                    selected_values=[pfam] if pfam else []
+                ),
+                ES_FIELD_INTERPRO: self.process_aggregation_results(
+                    {b[0]: b[1] for b in (getattr(response.facets, ES_FIELD_INTERPRO) or [])},
+                    selected_values=[interpro] if interpro else []
+                ),
+                ES_FIELD_KEGG: self.process_aggregation_results(
+                    {b[0]: b[1] for b in (getattr(response.facets, ES_FIELD_KEGG) or [])},
+                    selected_values=[kegg] if kegg else []
+                ),
+                ES_FIELD_COG_ID: self.process_aggregation_results(
+                    {b[0]: b[1] for b in (getattr(response.facets, ES_FIELD_COG_ID) or [])},
+                    selected_values=[cog_id] if cog_id else []
+                ),
+                GENE_ESSENTIALITY: self.process_aggregation_results(
+                    {b[0]: b[1] for b in (getattr(response.facets, GENE_ESSENTIALITY) or [])},
+                    selected_values=[essentiality] if essentiality else []
+                ),
                 "total_hits": response.hits.total.value
             }
 
@@ -462,6 +494,20 @@ class GeneService:
             logger.exception("Error fetching faceted search")
             raise ServiceError(e)
 
-    def process_aggregation_results(self, aggregation):
-        """Removes empty keys from aggregation results."""
-        return {k: v for k, v in aggregation.items() if k.strip()}
+    def process_aggregation_results(
+            self,
+            aggregation_dict: Dict[str, int],
+            selected_values: Optional[List[str]] = None
+    ) -> List[Dict[str, object]]:
+        """Removes empty keys from aggregation results and marks selected items."""
+        selected_values = selected_values or []
+
+        return [
+            {
+                "value": key,
+                "count": count,
+                "selected": key in selected_values
+            }
+            for key, count in aggregation_dict.items()
+            if key.strip()
+        ]

@@ -1,3 +1,5 @@
+import {FacetItem} from "./Auxiliary";
+
 export interface GeneMeta {
     locus_tag?: string;
     gene_name?: string;
@@ -50,4 +52,8 @@ export interface PaginatedResponse<T> {
 export interface GeneEssentialityTag {
     name: string;
     label: string;
+}
+
+export interface GeneFacetResponse {
+    [facetGroup: string]: FacetItem[] | number;
 }

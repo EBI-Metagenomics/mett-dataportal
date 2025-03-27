@@ -1,0 +1,18 @@
+
+.selectedGenomesContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+}
+
+.vfGeneSubHeading {
+  font-size: 1.2em;
+  font-weight: 500;
+  width: 100%;
+  float: right;
+}
+
+.genomeChip {
+  margin: 4px;
+}
