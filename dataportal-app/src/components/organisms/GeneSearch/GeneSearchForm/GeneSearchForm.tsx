@@ -5,7 +5,7 @@ import GeneResultsTable from "@components/organisms/GeneSearch/GeneResultsHandle
 import Pagination from "@components/molecules/Pagination";
 import {GeneService} from '../../../../services/geneService';
 import {createViewState} from '@jbrowse/react-app';
-import {GeneEssentialityTag, GeneFacetResponse, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
+import {GeneFacetResponse, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
 import {FacetItem, LinkData} from "../../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../../interfaces/Genome";
 import {
@@ -91,7 +91,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             DEFAULT_PER_PAGE_CNT,
                             selectedSpecies[0],
                             undefined,
-                            essentialityFilter
+                            selectedFacets
                         );
                     }
                     // If genome is selected (used in GeneViewerPage.tsx)
@@ -102,7 +102,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             DEFAULT_PER_PAGE_CNT,
                             undefined,
                             genomeIds,
-                            essentialityFilter
+                            selectedFacets
                         );
                     } else {
                         response = await GeneService.fetchGeneAutocompleteSuggestions(
@@ -110,7 +110,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             DEFAULT_PER_PAGE_CNT,
                             undefined,
                             undefined,
-                            essentialityFilter
+                            selectedFacets
                         );
                     }
 
@@ -124,7 +124,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         },
-        [selectedSpecies, selectedGenomes, essentialityFilter]
+        [selectedSpecies, selectedGenomes, selectedFacets]
     );
 
 
