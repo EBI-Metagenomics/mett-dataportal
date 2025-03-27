@@ -359,11 +359,6 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
         raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
 
 
-@gene_router.get("/essentiality/tags", response=list[EssentialityTagSchema])
-async def list_essentiality_tags(request):
-    return await essentiality_service.get_unique_essentiality_tags()
-
-
 # API endpoint to retrieve essentiality data from cache for a specific strain ID.
 @genome_router.get("/{isolate_name}/essentiality/{ref_name}", response=Dict[str, EssentialityByContigSchema])
 async def get_essentiality_data_by_contig(request, isolate_name: str, ref_name: str):

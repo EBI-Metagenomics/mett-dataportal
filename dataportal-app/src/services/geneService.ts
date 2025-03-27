@@ -38,13 +38,22 @@ export class GeneService {
         limit: number = DEFAULT_PER_PAGE_CNT,
         speciesAcronym?: string,
         genomeIds?: string,
-        essentialityFilter?: string[]
+        selectedFacets?: Record<string, string[]>
     ): Promise<GeneSuggestion[]> {
         try {
             const params = this.buildParams(query, 1, limit, speciesAcronym, genomeIds);
-            if (essentialityFilter && essentialityFilter.length > 0) {
-                const filterValue = `essentiality:${essentialityFilter.join(",")}`;
-                params.append("filter", filterValue);
+            if (selectedFacets) {
+                const filterParts: string[] = [];
+
+                for (const [key, values] of Object.entries(selectedFacets)) {
+                    if (values.length > 0) {
+                        filterParts.push(`${key}:${values.join(",")}`);
+                    }
+                }
+
+                if (filterParts.length > 0) {
+                    params.append("filter", filterParts.join(";"));
+                }
             }
             const response = await ApiService.get<GeneSuggestion[]>("genes/autocomplete", params);
             return response;
@@ -167,19 +176,6 @@ export class GeneService {
             return response;
         } catch (error) {
             console.error(`Error fetching gene with locus tag ${locus_tag}:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Fetch essentiality tags with caching enabled.
-     */
-    @cacheResponse(60 * 60 * 1000) // Cache for 60 minutes
-    static async fetchEssentialityTags(): Promise<GeneEssentialityTag[]> {
-        try {
-            return await ApiService.get<GeneEssentialityTag[]>(`/genes/essentiality/tags`);
-        } catch (error) {
-            console.error("Error fetching essentiality tags:", error);
             throw error;
         }
     }

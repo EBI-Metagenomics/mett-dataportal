@@ -1,26 +1,21 @@
-import json
 import logging
 from typing import List, Dict
 
-from asgiref.sync import sync_to_async
 from cachetools import LRUCache
 from elasticsearch_dsl import Search
 
-from dataportal.schemas import EssentialityTagSchema
 from dataportal.utils.constants import (
     GENE_ESSENTIALITY,
-    GENE_FIELD_START, GENE_FIELD_END, ES_FIELD_LOCUS_TAG,
+    GENE_FIELD_START, GENE_FIELD_END,
+    ES_FIELD_LOCUS_TAG, FIELD_SEQ_ID,
+    ES_FIELD_ISOLATE_NAME, ES_INDEX_GENE,
 )
-from dataportal.utils.exceptions import (
-    ServiceError,
-)
-from dataportal.utils.utils import convert_to_camel_case
 
 logger = logging.getLogger(__name__)
 
 
 class EssentialityService:
-    INDEX_NAME = "gene_index"
+    INDEX_NAME = ES_INDEX_GENE
 
     def __init__(self, limit: int = 10, cache_size: int = 10000):
         self.limit = limit
@@ -35,8 +30,9 @@ class EssentialityService:
 
         try:
             s = Search(index=self.INDEX_NAME).query(
-                "exists", field="essentiality"
-            ).source(["isolate_name", "seq_id", "locus_tag", "start", "end", "essentiality"])[:10000]
+                "exists", field=GENE_ESSENTIALITY
+            ).source([ES_FIELD_ISOLATE_NAME, FIELD_SEQ_ID, ES_FIELD_LOCUS_TAG, GENE_FIELD_START, GENE_FIELD_END,
+                      GENE_ESSENTIALITY])[:10000]
 
             response = s.execute()
             cache_data = {}
@@ -101,31 +97,3 @@ class EssentialityService:
             }
 
         return response
-
-    async def get_unique_essentiality_tags(self) -> list[EssentialityTagSchema]:
-        """Fetch unique essentiality values from gene_index and process them."""
-
-        try:
-            # Query for unique `essentiality` values
-            search_query = Search(index=self.INDEX_NAME).source([]).extra(
-                size=0, aggs={"unique_essentiality": {"terms": {"field": "essentiality", "size": 100}}}
-            )
-
-            logger.info(f"Final Elasticsearch Query (Formatted): {json.dumps(search_query.to_dict(), indent=2)}")
-
-            # Execute
-            response = await sync_to_async(search_query.execute)()
-
-            # Extract
-            unique_values = [bucket["key"] for bucket in response.aggregations.unique_essentiality.buckets]
-
-            processed_tags = [
-                EssentialityTagSchema(name=value, label=convert_to_camel_case(value.replace("_", " ")))
-                for value in unique_values
-            ]
-
-            return processed_tags
-
-        except Exception as e:
-            logger.error(f"Error fetching essentiality tags from Elasticsearch: {e}")
-            raise ServiceError(e)

@@ -1,16 +1,22 @@
-import json
 import logging
 
-from elasticsearch_dsl import FacetedSearch, TermsFacet, Q
+from elasticsearch_dsl import FacetedSearch, TermsFacet
 
-from dataportal.utils.constants import DEFAULT_FACET_LIMIT
+from dataportal.utils.constants import (
+    GENE_ESSENTIALITY,
+    DEFAULT_FACET_LIMIT,
+    ES_FIELD_PFAM, ES_FIELD_INTERPRO,
+    ES_FIELD_KEGG, ES_FIELD_COG_ID,
+    ES_FIELD_ISOLATE_NAME,
+    ES_FIELD_SPECIES_ACRONYM,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class GeneFacetedSearch(FacetedSearch):
-    index = 'gene_index'
-    fields = ['species_acronym', 'essentiality', 'cog_id', 'kegg', 'go_term', 'pfam', 'interpro', 'isolate_name']
+    fields = [ES_FIELD_SPECIES_ACRONYM, GENE_ESSENTIALITY, ES_FIELD_COG_ID,
+              ES_FIELD_KEGG, 'go_term', ES_FIELD_PFAM, ES_FIELD_INTERPRO, ES_FIELD_ISOLATE_NAME]
 
     def __init__(self, query='', filters=None, species_acronym=None, essentiality=None,
                  isolates=None, cog_id=None, kegg=None, go_term=None, pfam=None, interpro=None,
@@ -25,11 +31,11 @@ class GeneFacetedSearch(FacetedSearch):
         self.interpro = interpro
 
         self.facets = {
-            'pfam': TermsFacet(field='pfam', size=limit),
-            'interpro': TermsFacet(field='interpro', size=limit),
-            'kegg': TermsFacet(field='kegg', size=limit),
-            'cog_id': TermsFacet(field='cog_id', size=limit),
-            'essentiality': TermsFacet(field='essentiality', size=limit)
+            ES_FIELD_PFAM: TermsFacet(field=ES_FIELD_PFAM, size=limit),
+            ES_FIELD_INTERPRO: TermsFacet(field=ES_FIELD_INTERPRO, size=limit),
+            ES_FIELD_KEGG: TermsFacet(field=ES_FIELD_KEGG, size=limit),
+            ES_FIELD_COG_ID: TermsFacet(field=ES_FIELD_COG_ID, size=limit),
+            GENE_ESSENTIALITY: TermsFacet(field=GENE_ESSENTIALITY, size=limit)
         }
 
         super().__init__(query=query, filters=filters or {})
@@ -54,5 +60,5 @@ class GeneFacetedSearch(FacetedSearch):
         if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
             s = s.filter('terms', isolate_name=self.isolates)
 
-        logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+        # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
         return s
