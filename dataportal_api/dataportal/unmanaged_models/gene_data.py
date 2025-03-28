@@ -17,7 +17,7 @@ from dataportal.utils.constants import (
     ES_FIELD_INTERPRO,
     GENE_FIELD_EC_NUMBER,
     GENE_FIELD_DBXREF,
-    UNKNOWN_ESSENTIALITY, GENE_FIELD_START, GENE_FIELD_END,
+    UNKNOWN_ESSENTIALITY, GENE_FIELD_START, GENE_FIELD_END, ES_FIELD_EGGNOG,
 )
 
 
@@ -39,6 +39,7 @@ class GeneData(models.Model):
     locals()[ES_FIELD_INTERPRO] = models.JSONField(null=True, default=list)
     locals()[GENE_FIELD_EC_NUMBER] = models.CharField(max_length=100, null=True)
     locals()[GENE_FIELD_DBXREF] = models.JSONField(null=True, default=list)
+    locals()[ES_FIELD_EGGNOG] = models.CharField(max_length=255, null=True)
 
     class Meta:
         managed = False
@@ -65,4 +66,5 @@ def gene_from_hit(hit) -> GeneData:
         interpro=source.get(ES_FIELD_INTERPRO, []),
         ec_number=source.get(GENE_FIELD_EC_NUMBER),
         dbxref=source.get(GENE_FIELD_DBXREF, []),
+        eggnog=source.get(ES_FIELD_EGGNOG, []),
     )

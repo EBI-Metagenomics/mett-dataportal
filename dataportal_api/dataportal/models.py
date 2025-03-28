@@ -106,6 +106,8 @@ class GeneDocument(Document):
     pfam = Keyword(multi=True, normalizer=lowercase_normalizer)
     eggnog = Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)})
     interpro = Keyword(multi=True, normalizer=lowercase_normalizer)
+    uf_ontology_terms = Keyword(multi=True)
+    uf_prot_rec_fullname = Text(fields={"keyword": Keyword()})
 
     dbxref = Nested(
         properties={
