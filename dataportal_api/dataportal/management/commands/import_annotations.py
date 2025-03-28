@@ -31,12 +31,12 @@ SPECIES_ACRONYM_MAPPING = {
 }
 
 VALID_ESENTIALITY_VALUES = {
-            "essential",
-            "essential_liquid",
-            "essential_solid",
-            "not_essential",
-            "unclear",
-        }
+    "essential",
+    "essential_liquid",
+    "essential_solid",
+    "not_essential",
+    "unclear",
+}
 
 BATCH_SIZE = 500  # Bulk size for indexing
 
@@ -289,17 +289,30 @@ class Command(BaseCommand):
                     gene_name = attr_dict.get("Name")
                     locus_tag = attr_dict.get("locus_tag")
                     product = attr_dict.get("product")
-                    # cog = attr_dict.get("cog", "").split(",") if "cog" in attr_dict else []
-                    kegg = attr_dict.get("kegg", "").split(",") if "kegg" in attr_dict else []
-                    pfam = attr_dict.get("pfam", "").split(",") if "pfam" in attr_dict else []
+                    product_source = attr_dict.get("product_source")
+                    inference = attr_dict.get("inference")
+                    eggNOG = attr_dict.get("eggNOG") or attr_dict.get("eggnog")
+
+                    ontology_terms = [
+                        {"ontology_type": "GO", "ontology_id": term, "ontology_description": None}
+                        for term in attr_dict.get("Ontology_term", "").split(",")
+                        if term
+                    ]
+
+                    uf_ontology_terms = attr_dict.get("uf_ontology_term", "").split(
+                        ",") if "uf_ontology_term" in attr_dict else []
+                    uf_prot_rec_fullname = attr_dict.get("uf_prot_rec_fullname")
+
+                    kegg = attr_dict.get("kegg", "").split(",")
+                    pfam = attr_dict.get("pfam", "").split(",")
                     interpro = attr_dict.get("interpro", "").split(",")
+
                     dbxref_raw = attr_dict.get("Dbxref", "")
                     dbxref, uniprot_id, cog_id = self.parse_dbxref(dbxref_raw)
                     ec_number = attr_dict.get("eC_number")
-                    alias = attr_dict.get("Alias", "").split(",") if "Alias" in attr_dict else []
+                    alias = attr_dict.get("Alias", "").split(",")
 
-                    # Extract cog functional categories
-                    cog_funcats = attr_dict.get("cog", "").split(",") if "cog" in attr_dict else []
+                    cog_funcats = attr_dict.get("cog", "").split(",")
 
                     if not locus_tag:
                         continue
@@ -308,6 +321,7 @@ class Command(BaseCommand):
                         GeneDocument(
                             meta={"id": locus_tag},
                             gene_name=gene_name,
+                            alias=alias,
                             species_scientific_name=species_scientific_name,
                             species_acronym=self.get_species_acronym(species_scientific_name),
                             isolate_name=isolate_name,
@@ -316,7 +330,6 @@ class Command(BaseCommand):
                             product=product,
                             start=int(start),
                             end=int(end),
-                            # cog=cog,
                             cog_funcats=cog_funcats,
                             kegg=kegg,
                             pfam=pfam,
@@ -325,7 +338,12 @@ class Command(BaseCommand):
                             uniprot_id=uniprot_id,
                             cog_id=cog_id,
                             ec_number=ec_number,
-                            alias=alias
+                            product_source=product_source,
+                            inference=inference,
+                            eggnog=eggNOG,
+                            ontology_terms=ontology_terms,
+                            uf_ontology_terms=uf_ontology_terms,
+                            uf_prot_rec_fullname=uf_prot_rec_fullname,
                         )
                     )
 
@@ -342,7 +360,6 @@ class Command(BaseCommand):
         finally:
             if os.path.exists(local_gff_path):
                 os.remove(local_gff_path)  # Ensures file is deleted even if errors occur
-
 
     def update_strain_index(self, isolate, gff_file):
         """ Update the GFF file name in the strain index. """

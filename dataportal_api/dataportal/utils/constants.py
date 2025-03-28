@@ -66,6 +66,7 @@ ES_FIELD_PFAM = "pfam"
 ES_FIELD_COG_ID = "cog_id"
 ES_FIELD_COG_FUNCATS = "cog_funcats"
 ES_FIELD_INTERPRO = "interpro"
+ES_FIELD_EGGNOG = "eggnog"
 
 # Search fields
 GENE_SEARCH_FIELDS = [

@@ -95,6 +95,7 @@ class GeneResponseSchema(BaseModel):
     interpro: Optional[List[str]] = None
     ec_number: Optional[str] = None
     dbxref: Optional[List[DBXRefSchema]] = None
+    eggnog: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
