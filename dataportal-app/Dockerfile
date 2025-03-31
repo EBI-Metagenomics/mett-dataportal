@@ -17,31 +17,12 @@ FROM nginx:stable-alpine
 
 COPY --from=build /app/build /usr/share/nginx/html
 
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-        add_header Access-Control-Allow-Origin * always; \
-        add_header Accept-Ranges bytes; \
-        add_header Access-Control-Allow-Methods "GET, OPTIONS"; \
-        add_header Access-Control-Allow-Headers "*"; \
-    } \
-    location ~* \.(fa|fa\.gz|gff|gff3|gff3\.gz|json|txt)$ { \
-        add_header Access-Control-Allow-Origin * always; \
-        add_header Accept-Ranges bytes; \
-    } \
-    location /health { \
-        return 200 "healthy"; \
-        add_header Content-Type text/plain; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
+# custom nginx.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
+# Replace placeholder values and start Nginx
 CMD /bin/sh -c "\
     sed -i 's|REACT_APP_API_BASE_URL_PLACEHOLDER|$REACT_APP_API_BASE_URL|g' /usr/share/nginx/html/static/js/*.js && \
     sed -i 's|REACT_APP_ASSEMBLY_INDEXES_PATH_PLACEHOLDER|$REACT_APP_ASSEMBLY_INDEXES_PATH|g' /usr/share/nginx/html/static/js/*.js && \
