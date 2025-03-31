@@ -106,7 +106,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
             return this.filterFeaturesByRegion(cachedFeatures, region);
         }
 
-        console.log('Cache miss for GFF data. Fetching from:', this.gffLocation);
+        console.log('Not cached for GFF data. Fetching from:', this.gffLocation);
 
         try {
             // Fetch and decompress the GFF file

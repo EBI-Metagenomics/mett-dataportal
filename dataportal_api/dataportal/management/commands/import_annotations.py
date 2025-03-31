@@ -291,7 +291,7 @@ class Command(BaseCommand):
                     product = attr_dict.get("product")
                     product_source = attr_dict.get("product_source")
                     inference = attr_dict.get("inference")
-                    eggNOG = attr_dict.get("eggNOG") or attr_dict.get("eggnog")
+                    eggNOG = attr_dict.get("eggNOG") or attr_dict.get("eggnog") or None
 
                     ontology_terms = [
                         {"ontology_type": "GO", "ontology_id": term, "ontology_description": None}

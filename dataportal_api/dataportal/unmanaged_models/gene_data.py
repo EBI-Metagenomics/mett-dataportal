@@ -66,5 +66,5 @@ def gene_from_hit(hit) -> GeneData:
         interpro=source.get(ES_FIELD_INTERPRO, []),
         ec_number=source.get(GENE_FIELD_EC_NUMBER),
         dbxref=source.get(GENE_FIELD_DBXREF, []),
-        eggnog=source.get(ES_FIELD_EGGNOG, []),
+        eggnog=source.get(ES_FIELD_EGGNOG),
     )
