@@ -24,8 +24,21 @@ RUN echo 'server { \
     index index.html; \
     location / { \
         try_files $uri $uri/ /index.html; \
+        add_header Access-Control-Allow-Origin * always; \
+        add_header Accept-Ranges bytes; \
+        add_header Access-Control-Allow-Methods "GET, OPTIONS"; \
+        add_header Access-Control-Allow-Headers "*"; \
+    } \
+    location ~* \.(fa|fa\.gz|gff|gff3|gff3\.gz|json|txt)$ { \
+        add_header Access-Control-Allow-Origin * always; \
+        add_header Accept-Ranges bytes; \
+    } \
+    location /health { \
+        return 200 "healthy"; \
+        add_header Content-Type text/plain; \
     } \
 }' > /etc/nginx/conf.d/default.conf
+
 
 EXPOSE 80
 
