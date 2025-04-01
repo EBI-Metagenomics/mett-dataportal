@@ -107,7 +107,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     };
 
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
-    const [selectedStrainId, setSelectedStrainId] = useState<number | null>(null);
 
 
     // Fetch search results
@@ -210,13 +209,12 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         const newQuery = event.target.value;
         setQuery(newQuery);
         setIsolateName('');
-        setSelectedStrainId(null);
         debouncedFetchSuggestions(newQuery);
     };
 
     const handleSuggestionClick = (suggestion: AutocompleteResponse) => {
-        // console.log('suggestion: ' + suggestion)
-        // console.log('isolateName: ' + isolateName)
+        console.log('suggestion: ' + suggestion)
+        console.log('isolateName: ' + suggestion.isolate_name)
         // console.log('suggestion.strain_id: ' + suggestion.id)
         setQuery(suggestion.isolate_name);
         setIsolateName(suggestion.isolate_name);
@@ -227,7 +225,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        // console.log('selectedStrainId:' + selectedStrainId)
         event.preventDefault();
         fetchSearchResults(1, sortField, sortOrder);
     };

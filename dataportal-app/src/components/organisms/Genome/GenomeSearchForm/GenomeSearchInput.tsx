@@ -37,8 +37,29 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
         <div ref={wrapperRef} className={`vf-form__item ${styles.vfFormItem}`}>
             <Autocomplete
                 disablePortal
+                freeSolo
                 options={suggestions}
-                getOptionLabel={(option) => `${option.isolate_name} - (${option.assembly_name})`}
+                inputValue={query}
+                onInputChange={(event, newValue) => {
+                    onInputChange({
+                        target: {value: newValue || ''}
+                    } as React.ChangeEvent<HTMLInputElement>);
+                }}
+
+                onChange={(event, value) => {
+                    if (value && typeof value !== 'string') {
+                        onInputChange({
+                            target: {value: value.isolate_name}
+                        } as React.ChangeEvent<HTMLInputElement>);
+
+                        onSuggestionClick(value);
+                    }
+                }}
+                getOptionLabel={(option) =>
+                    typeof option === 'string'
+                        ? option
+                        : option.isolate_name
+                }
                 sx={{
                     width: '100%',
                     '& .MuiInputBase-root': {
@@ -58,19 +79,12 @@ const GenomeSearchInput: React.FC<GenomeSearchInputProps> = ({
                 renderInput={(params) => (
                     <TextField
                         {...params}
-                        // label="Search Genome"
                         placeholder="Try BU_909 or PV_ET47 ..."
-                        value={query}
-                        onChange={onInputChange}
                         variant="outlined"
                     />
                 )}
-                onChange={(event, value) => {
-                    if (value) {
-                        onSuggestionClick(value);
-                    }
-                }}
             />
+
             <button
                 type="submit"
                 className="vf-button vf-button--primary vf-button--sm"
