@@ -8,7 +8,6 @@ COPY dataportal-app/package-lock.json /app/
 RUN npm install
 
 COPY dataportal-app /app
-
 RUN REACT_APP_API_BASE_URL="REACT_APP_API_BASE_URL_PLACEHOLDER" \
     REACT_APP_ASSEMBLY_INDEXES_PATH="REACT_APP_ASSEMBLY_INDEXES_PATH_PLACEHOLDER" \
     REACT_APP_GFF_INDEXES_PATH="REACT_APP_GFF_INDEXES_PATH_PLACEHOLDER" npm run build
@@ -18,8 +17,15 @@ FROM nginx:stable-alpine
 
 COPY --from=build /app/build /usr/share/nginx/html
 
-# custom nginx.conf
-COPY ./dataportal-app/nginx.conf /etc/nginx/nginx.conf
+RUN echo 'server { \
+    listen 80; \
+    server_name localhost; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
