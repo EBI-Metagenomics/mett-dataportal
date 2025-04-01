@@ -24,6 +24,13 @@ spec:
             name: mett-dataportal-api-svc-dev
             port:
               number: 8000
+      - path: /static(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: mett-dataportal-api-svc-dev
+            port:
+              number: 8000
       - path: /
         pathType: Prefix
         backend:
