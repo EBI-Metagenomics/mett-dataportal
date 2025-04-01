@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import styles from './GeneFacetedFilter.module.scss';
 import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
+import {FACET_ORDER} from "../../utils/appConstants";
 
 interface GeneFacetedFilterProps {
     facets: GeneFacetResponse;
@@ -16,10 +17,23 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                                  initialVisibleCount = 10,
                                                                  loadMoreStep = 10,
                                                              }) => {
-    // Track how many visible items per group and filter text
+
     const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
     const [filterText, setFilterText] = useState<Record<string, string>>({});
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+    const orderedFacetEntries = Object.entries(facets)
+        .filter(([facetGroup, values]) => facetGroup !== 'total_hits' && Array.isArray(values))
+        .sort(([a], [b]) => {
+            const indexA = FACET_ORDER.indexOf(a);
+            const indexB = FACET_ORDER.indexOf(b);
+
+            // Unlisted facets go to the end, sorted alphabetically
+            if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
 
     useEffect(() => {
         const initialCollapsed = Object.entries(facets).reduce((acc, [key, values]) => {
@@ -57,7 +71,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
     return (
         <div className={styles.facetedFilter}>
             <h3 className={styles.title}>Filter by Facets</h3>
-            {Object.entries(facets).map(([facetGroup, values]) => {
+            {orderedFacetEntries.map(([facetGroup, values]) => {
                 if (facetGroup === 'total_hits' || !Array.isArray(values)) return null;
 
                 const search = filterText[facetGroup] || '';

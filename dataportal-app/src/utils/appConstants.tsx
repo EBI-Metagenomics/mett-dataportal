@@ -1,7 +1,7 @@
 export const ZOOM_LEVELS = {
     MIN: -2,
     MAX: 5,
-    NAV:2,
+    NAV: 2,
     DEFAULT: 2,
 };
 
@@ -18,7 +18,13 @@ export const DEFAULT_PER_PAGE_CNT = 10;
 export const FACET_INITIAL_VISIBLE_CNT = 10;
 export const FACET_STEP_CNT = 10;
 
-
+export const FACET_ORDER = [
+    'essentiality',
+    'pfam',
+    'interpro',
+    'kegg',
+    'cog_id',
+];
 
 export const DISPLAY_SETTINGS = {
     DEFAULT_BUFFER: 10000,

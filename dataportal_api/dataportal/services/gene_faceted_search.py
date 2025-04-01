@@ -31,11 +31,11 @@ class GeneFacetedSearch(FacetedSearch):
         self.interpro = interpro
 
         self.facets = {
+            GENE_ESSENTIALITY: TermsFacet(field=GENE_ESSENTIALITY, size=limit),
             ES_FIELD_PFAM: TermsFacet(field=ES_FIELD_PFAM, size=limit),
             ES_FIELD_INTERPRO: TermsFacet(field=ES_FIELD_INTERPRO, size=limit),
             ES_FIELD_KEGG: TermsFacet(field=ES_FIELD_KEGG, size=limit),
-            ES_FIELD_COG_ID: TermsFacet(field=ES_FIELD_COG_ID, size=limit),
-            GENE_ESSENTIALITY: TermsFacet(field=GENE_ESSENTIALITY, size=limit)
+            ES_FIELD_COG_ID: TermsFacet(field=ES_FIELD_COG_ID, size=limit)
         }
 
         super().__init__(query=query, filters=filters or {})

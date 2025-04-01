@@ -433,11 +433,11 @@ class GeneService:
                 raise ServiceError("Elasticsearch query failed.")
 
             selected_map = {
+                GENE_ESSENTIALITY: essentiality,
                 ES_FIELD_PFAM: pfam,
                 ES_FIELD_INTERPRO: interpro,
                 ES_FIELD_KEGG: kegg,
                 ES_FIELD_COG_ID: cog_id,
-                GENE_ESSENTIALITY: essentiality
             }
 
             facet_results = {
