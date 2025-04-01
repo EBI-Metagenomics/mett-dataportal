@@ -3,9 +3,13 @@ from elasticsearch_dsl import connections
 
 
 def init_es_connection(host, user, password, timeout, max_retries):
+    if not user or not password:
+        print("⚠️ Skipping Elasticsearch init: missing credentials.")
+        return
+
     connections.create_connection(
         hosts=[host],
-        http_auth=(user, password),
+        basic_auth=(user, password),
         timeout=timeout,
         max_retries=max_retries,
         retry_on_timeout=True,

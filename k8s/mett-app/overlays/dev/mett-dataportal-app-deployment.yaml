@@ -16,7 +16,7 @@ spec:
         app: test-dataportal-react-app-dev
     spec:
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-react-app:v0.0.110e
+        - image: quay.io/microbiome-informatics/mett-dataportal-react-app:v0.0.110f
           imagePullPolicy: Always
           name: test-dataportal-react-app-dev
           env:
