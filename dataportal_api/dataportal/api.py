@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional, Dict
 
 from django.http import JsonResponse
-from ninja import NinjaAPI, Router
+from ninja import NinjaAPI, Router, Query, Path
 from ninja.errors import HttpError
 
 from .schemas import (
@@ -45,7 +45,7 @@ species_service = SpeciesService()
 
 api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
-    description="API for genome browser and contextual information.",
+    description="ME TT DataPortal Data Portal APIs to fetch Gut Microbes Genomes / Genes information.",
     urls_namespace="api",
     csrf=True,
     docs_url="/docs",
@@ -63,19 +63,28 @@ def custom_error_handler(request, exc):
 
 
 # Map the router to the class methods
-@genome_router.get("/autocomplete", response=List[StrainSuggestionSchema])
+@genome_router.get(
+    "/autocomplete",
+    response=List[StrainSuggestionSchema],
+    summary="Suggest isolates / genomes",
+    description="Returns isolate suggestions based on the input query. You can optionally filter by species acronym."
+)
 @log_endpoint_access("genome_autocomplete_suggestions")
 async def autocomplete_suggestions(
         request,
-        query: str,
-        limit: int = DEFAULT_PER_PAGE_CNT,
-        species_acronym: Optional[str] = None,
+        query: str = Query(..., description="Search term for isolate/genome name autocomplete."),
+        limit: int = Query(DEFAULT_PER_PAGE_CNT, description="Maximum number of suggestions to return."),
+        species_acronym: Optional[str] = Query(None,
+                                               description="Optional species acronym (BU or PV) to filter isolate suggestions.")
 ):
     return await genome_service.search_strains(query, limit, species_acronym)
 
 
 # API Endpoint to retrieve all species
-@species_router.get("/", response=List[SpeciesSchema])
+@species_router.get("/", response=List[SpeciesSchema],
+    summary="Get all species",
+    description="Get all available species"
+)
 async def get_all_species(request):
     try:
         species = await species_service.get_all_species()
@@ -87,13 +96,17 @@ async def get_all_species(request):
 
 
 # API Endpoint to retrieve all genomes
-@genome_router.get("/", response=GenomePaginationSchema)
+@genome_router.get("/", response=GenomePaginationSchema,
+    summary="Get all genomes",
+    description="Retrieves a paginated list of all genomes available in the system. "
+        "Supports optional sorting by 'isolate_name' or 'species'. "
+)
 async def get_all_genomes(
-        request,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: Optional[str] = DEFAULT_SORT,
+    request,
+    page: int = Query(1, description="Page number"),
+    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of items per page"),
+    sortField: Optional[str] = Query(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort by"),
+    sortOrder: Optional[str] = Query(DEFAULT_SORT, description="Sort order: asc or desc"),
 ):
     try:
         return await genome_service.get_genomes(page, per_page, sortField, sortOrder)
@@ -104,7 +117,13 @@ async def get_all_genomes(
 
 
 # API Endpoint to search genomes by query string
-@genome_router.get("/type-strains", response=List[GenomeResponseSchema])
+@genome_router.get("/type-strains", response=List[GenomeResponseSchema],
+       summary="Get all type strains",
+       description=(
+               "Returns a list of genomes that are designated as type strains. "
+               "Type strains represent reference genomes for a given species and are essential "
+               "for comparative analysis and classification.")
+)
 async def get_type_strains(request):
     try:
         return await genome_service.get_type_strains()
@@ -112,14 +131,23 @@ async def get_type_strains(request):
         raise HttpError(500, "An error occurred while fetching type strains.")
 
 
-@genome_router.get("/search", response=GenomePaginationSchema)
+@genome_router.get(
+    "/search",
+    response=GenomePaginationSchema,
+    summary="Search genomes by query",
+    description=(
+        "Searches genomes using a free-text query string. "
+        "Returns a paginated list of matching genome records. "
+        "Supports optional sorting by isolate_name or 'species'."
+    )
+)
 async def search_genomes_by_string(
-        request,
-        query: str,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: Optional[str] = DEFAULT_SORT,
+    request,
+    query: str = Query(..., description="Search term to match against genome names or metadata."),
+    page: int = Query(1, description="Page number to retrieve."),
+    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."),
+    sortField: Optional[str] = Query(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."),
+    sortOrder: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
 ):
     sortField = sortField or STRAIN_FIELD_ISOLATE_NAME
     sortOrder = sortOrder or DEFAULT_SORT
@@ -133,8 +161,20 @@ async def search_genomes_by_string(
         )
 
 
-@genome_router.get("/by-isolate-names", response=List[GenomeResponseSchema])
-async def get_genomes_by_isolate_names(request, isolates: str):
+@genome_router.get(
+    "/by-isolate-names",
+    response=List[GenomeResponseSchema],
+    summary="Get genomes by isolate names",
+    description=(
+        "Retrieves genome records for one or more isolate names. "
+        "Accepts a comma-separated list of isolate names as input. "
+        "Useful for batch lookups when isolate identifiers are known."
+    )
+)
+async def get_genomes_by_isolate_names(
+    request,
+    isolates: str = Query(..., description="Comma-separated list of isolate names (e.g., 'BU_61,BU_909,BU_ATCC8492').")
+):
     try:
         if not isolates:
             raise_http_error(400, "Isolate names list is empty.")
@@ -145,14 +185,23 @@ async def get_genomes_by_isolate_names(request, isolates: str):
 
 
 # API Endpoint to retrieve genomes filtered by species_acronym
-@species_router.get("/{species_acronym}/genomes", response=GenomePaginationSchema)
+@species_router.get(
+    "/{species_acronym}/genomes",
+    response=GenomePaginationSchema,
+    summary="Get genomes by species",
+    description=(
+        "Retrieves a paginated list of genomes that belong to the specified species. "
+        "Supports optional sorting by 'isolate_name' or 'species'. "
+        "Useful for browsing all genomes under a given species acronym."
+    )
+)
 async def get_genomes_by_species(
-        request,
-        species_acronym: str,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: Optional[str] = DEFAULT_SORT,
+    request,
+    species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
+    page: int = Query(1, description="Page number to retrieve."),
+    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."),
+    sortField: Optional[str] = Query(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."),
+    sortOrder: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
 ):
     try:
         return await genome_service.get_genomes_by_species(
@@ -165,15 +214,24 @@ async def get_genomes_by_species(
 
 
 # API Endpoint to search genomes by species_acronym and query string
-@species_router.get("/{species_acronym}/genomes/search", response=GenomePaginationSchema)
+@species_router.get(
+    "/{species_acronym}/genomes/search",
+    response=GenomePaginationSchema,
+    summary="Search genomes by species and query string",
+    description=(
+        "Performs a search for genomes within a specific species using a free-text query. "
+        "Returns a paginated list of matching genome records. "
+        "Useful for narrowing down results within a species context, with optional sorting by 'isolate_name' or 'species'."
+    )
+)
 async def search_genomes_by_species_and_string(
-        request,
-        species_acronym: str,
-        query: str,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: Optional[str] = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: Optional[str] = DEFAULT_SORT,
+    request,
+    species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
+    query: str = Query(..., description="Search term to match against genome names or metadata."),
+    page: int = Query(1, description="Page number to retrieve."),
+    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."),
+    sortField: Optional[str] = Query(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."),
+    sortOrder: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
 ):
     try:
         return await genome_service.search_genomes_by_species_and_string(
@@ -186,14 +244,23 @@ async def search_genomes_by_species_and_string(
         )
 
 
-@gene_router.get("/autocomplete", response=List[GeneAutocompleteResponseSchema])
+@gene_router.get(
+    "/autocomplete",
+    response=List[GeneAutocompleteResponseSchema],
+    summary="Autocomplete gene names",
+    description=(
+        "Provides gene name suggestions based on a query string. "
+        "Supports optional filters such as essentiality, interpro, pfam and more. "
+        "Allows to limit suggestions to specific isolates. Useful for building search dropdowns or gene lookup helpers."
+    )
+)
 async def gene_autocomplete_suggestions(
-        request,
-        query: str,
-        filter: Optional[str] = None,
-        limit: int = DEFAULT_PER_PAGE_CNT,
-        species_acronym: Optional[str] = None,
-        isolates: Optional[str] = None,
+    request,
+    query: str = Query(..., description="Free-text input to search for gene metadata."),
+    filter: Optional[str] = Query(None, description="Optional gene filter, e.g., 'essentiality:essential_liquid;interpro:IPR035952'."),
+    limit: int = Query(DEFAULT_PER_PAGE_CNT, description="Maximum number of suggestions to return."),
+    species_acronym: Optional[str] = Query(None, description="Filter results by 'species_acronym'."),
+    isolates: Optional[str] = Query(None, description="Comma-separated isolate names to restrict the search scope.")
 ):
     isolate_list = (
         [gid.strip() for gid in isolates.split(",") if gid.strip()]
@@ -206,14 +273,23 @@ async def gene_autocomplete_suggestions(
 
 
 # API Endpoint to search genes by query string
-@gene_router.get("/search", response=GenePaginationSchema)
+@gene_router.get(
+    "/search",
+    response=GenePaginationSchema,
+    summary="Search genes by query string",
+    description=(
+        "Searches for genes using a free-text query. "
+        "Returns a paginated list of genes that match the input string across any genome or isolate. "
+        "Supports optional sorting by 'strain', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'."
+    )
+)
 async def search_genes_by_string(
-        request,
-        query: str,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+    request,
+    query: str = Query(..., description="Search term to match against gene names or locus tags."),
+    page: int = Query(1, description="Page number to retrieve."),
+    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."),
+    sort_field: Optional[str] = Query(None, description="Field to sort results by."),
+    sort_order: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
 ):
     try:
         return await gene_service.search_genes(
@@ -227,16 +303,27 @@ async def search_genes_by_string(
         )
 
 
-@gene_router.get("/faceted-search")
-async def get_faceted_search(request, species_acronym: Optional[str] = None,
-                             essentiality: Optional[str] = None,
-                             isolates: Optional[str] = "",
-                             cog_ids: Optional[str] = None,
-                             kegg: Optional[str] = None,
-                             go_term: Optional[str] = None,
-                             pfam: Optional[str] = None,
-                             interpro: Optional[str] = None,
-                             limit: int = DEFAULT_FACET_LIMIT):
+@gene_router.get(
+    "/faceted-search",
+    summary="Perform faceted search on genes",
+    description=(
+        "Returns filtered gene search results based on multiple metadata facets. "
+        "Supports filtering by species, essentiality, isolates, and annotation sources like COG, KEGG, GO terms, "
+        "Pfam, and InterPro. Useful for narrowing down genes based on specific functional or experimental criteria."
+    )
+)
+async def get_faceted_search(
+    request,
+    species_acronym: Optional[str] = Query(None, description="Species acronym to filter genes by (BU or PV)."),
+    essentiality: Optional[str] = Query(None, description="Essentiality status to filter genes (e.g., 'essential')."),
+    isolates: Optional[str] = Query("", description="Comma-separated list of isolate names."),
+    cog_ids: Optional[str] = Query(None, description="Comma-separated list of COG IDs to filter by."),
+    kegg: Optional[str] = Query(None, description="KEGG pathway or gene ID to filter by."),
+    go_term: Optional[str] = Query(None, description="GO term ID or label to filter by."),
+    pfam: Optional[str] = Query(None, description="Pfam domain ID to filter by."),
+    interpro: Optional[str] = Query(None, description="InterPro ID to filter by."),
+    limit: int = Query(DEFAULT_FACET_LIMIT, description="Maximum number of genes to return.")
+):
     isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
     logger.info(f"Isolates received: {isolate_names_list} (type: {type(isolate_names_list)})")
     return await gene_service.get_faceted_search(species_acronym, isolate_names_list, essentiality,
@@ -245,8 +332,20 @@ async def get_faceted_search(request, species_acronym: Optional[str] = None,
 
 
 # API Endpoint to retrieve gene by locus tag
-@gene_router.get("/{locus_tag}", response=GeneResponseSchema)
-async def get_gene_by_locus_tag(request, locus_tag: str):
+@gene_router.get(
+    "/{locus_tag}",
+    response=GeneResponseSchema,
+    summary="Get gene by locus tag",
+    description=(
+        "Retrieves detailed information for a specific gene using its unique locus tag. "
+        "Returns metadata and functional annotation associated with the gene. "
+        "This endpoint is useful for direct lookups when the locus tag is already known."
+    )
+)
+async def get_gene_by_locus_tag(
+    request,
+    locus_tag: str = Path(..., description="Unique locus tag identifier for the gene (e.g., 'ABC_123').")
+):
     try:
         return await gene_service.get_gene_by_locus_tag(locus_tag)
     except GeneNotFoundError as e:
@@ -260,13 +359,22 @@ async def get_gene_by_locus_tag(request, locus_tag: str):
 
 
 # API Endpoint to retrieve all genes
-@gene_router.get("/", response=GenePaginationSchema)
+@gene_router.get(
+    "/",
+    response=GenePaginationSchema,
+    summary="Get all genes",
+    description=(
+        "Retrieves a paginated list of all genes across all available genomes. "
+        "Supports optional sorting by 'strain', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
+        "Useful for browsing the full gene catalog without applying filters."
+    )
+)
 async def get_all_genes(
-        request,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+    request,
+    page: int = Query(1, description="Page number to retrieve."),
+    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."),
+    sort_field: Optional[str] = Query(None, description="Field to sort results by."),
+    sort_order: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
 ):
     try:
         return await gene_service.get_all_genes(page, per_page, sort_field, sort_order)
@@ -276,15 +384,24 @@ async def get_all_genes(
 
 
 # API Endpoint to retrieve genes filtered by a single genome ID
-@genome_router.get("/{isolate_name}/genes", response=GenePaginationSchema)
+@genome_router.get(
+    "/{isolate_name}/genes",
+    response=GenePaginationSchema,
+    summary="Get genes by genome isolate",
+    description=(
+        "Retrieves a paginated list of genes associated with a specific genome isolate. "
+        "Supports optional sorting by 'strain', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
+        "Useful for viewing all genes within a selected genome."
+    )
+)
 async def get_genes_by_genome(
-        request,
-        isolate_name: str,
-        filter: Optional[str] = None,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+    request,
+    isolate_name: str = Path(..., description="Unique isolate name identifying the genome."),
+    filter: Optional[str] = Query(None, description="Optional filter string to narrow gene results."),
+    page: int = Query(1, description="Page number to retrieve."),
+    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."),
+    sort_field: Optional[str] = Query(None, description="Field to sort results by."),
+    sort_order: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
 ):
     try:
         return await gene_service.get_genes_by_genome(
@@ -298,43 +415,63 @@ async def get_genes_by_genome(
 
 
 # API Endpoint to search genes by genome ID and gene string
-@genome_router.get("/{isolate_name}/genes/search", response=GenePaginationSchema)
-async def search_genes_by_genome_and_string(
-        request,
-        isolate_name: str,
-        query: str,
-        filter: Optional[str] = None,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
-):
-    try:
-        return await gene_service.search_genes(
-            query, isolate_name, filter, page, per_page, sort_field, sort_order
-        )
-    except ServiceError as e:
-        logger.error(f"Service error: {e}")
-        raise HttpError(
-            500,
-            f"Failed to fetch the genes information for genome_id - {isolate_name} and query - {query}",
-        )
-    except Exception as e:
-        raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
+# @genome_router.get(
+#     "/{isolate_name}/genes/search",
+#     response=GenePaginationSchema,
+#     summary="Search genes by genome isolate and query",
+#     description=(
+#         "Searches for genes within a specific genome isolate using a free-text query. "
+#         "Supports optional filtering, pagination, and sorting. "
+#         "Useful when you want to explore genes matching a term within a selected genome."
+#     )
+# )
+# async def search_genes_by_genome_and_string(
+#     request,
+#     isolate_name: str = Path(..., description="Unique isolate name identifying the genome."),
+#     query: str = Query(..., description="Free-text search query to match against gene names or annotations."),
+#     filter: Optional[str] = Query(None, description="Optional filter string to further narrow gene results."),
+#     page: int = Query(1, description="Page number to retrieve."),
+#     per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."),
+#     sort_field: Optional[str] = Query(None, description="Field to sort results by."),
+#     sort_order: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
+# ):
+#     try:
+#         return await gene_service.search_genes(
+#             query, isolate_name, filter, page, per_page, sort_field, sort_order
+#         )
+#     except ServiceError as e:
+#         logger.error(f"Service error: {e}")
+#         raise HttpError(
+#             500,
+#             f"Failed to fetch the genes information for genome_id - {isolate_name} and query - {query}",
+#         )
+#     except Exception as e:
+#         raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
 
 
 # API Endpoint to search genes across multiple genome IDs using a gene string
-@gene_router.get("/search/advanced", response=GenePaginationSchema)
+@gene_router.get(
+    "/search/advanced",
+    response=GenePaginationSchema,
+    summary="Advanced gene search across genomes and species",
+    description=(
+        "Performs an advanced gene search using a free-text query across multiple genome isolates "
+        "and/or a specific species. Supports filtering by species, essentiality, isolates, "
+        "and annotation sources like COG, KEGG, GO terms, Pfam, and InterPro. "
+        "Supports optional sorting by 'strain', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'."
+        "Useful for cross-genome comparisons or focused searches within a species context."
+    )
+)
 async def search_genes_by_multiple_genomes_and_species_and_string(
-        request,
-        isolates: str = "",
-        species_acronym: Optional[str] = None,
-        query: str = "",
-        filter: Optional[str] = None,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+    request,
+    isolates: str = Query("", description="Comma-separated list of isolate names to restrict the search scope."),
+    species_acronym: Optional[str] = Query(None, description="Optional species acronym to filter by."),
+    query: str = Query("", description="Free-text search string to match against gene names or annotations."),
+    filter: Optional[str] = Query(None, description="Additional gene filter, e.g., 'essential'."),
+    page: int = Query(1, description="Page number to retrieve."),
+    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."),
+    sort_field: Optional[str] = Query(None, description="Field to sort results by."),
+    sort_order: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
 ):
     try:
         logger.debug(
@@ -360,8 +497,21 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
 
 
 # API endpoint to retrieve essentiality data from cache for a specific strain ID.
-@genome_router.get("/{isolate_name}/essentiality/{ref_name}", response=Dict[str, EssentialityByContigSchema])
-async def get_essentiality_data_by_contig(request, isolate_name: str, ref_name: str):
+@genome_router.get(
+    "/{isolate_name}/essentiality/{ref_name}",
+    response=Dict[str, EssentialityByContigSchema],
+    summary="Get essentiality data by genome and contig",
+    description=(
+        "Retrieves cached essentiality data for a given genome isolate and reference name (e.g. contig_1). "
+        "Returns gene essentiality information grouped by contig. "
+        "This data is typically precomputed and used to visualize gene essentiality in genome browsers or analysis tools."
+    )
+)
+async def get_essentiality_data_by_contig(
+    request,
+    isolate_name: str = Path(..., description="Isolate name identifying the genome."),
+    ref_name: str = Path(..., description="Reference sequence (e.g. contig_1) name to retrieve essentiality data for.")
+):
     try:
         essentiality_data = await essentiality_service.get_essentiality_data_by_strain_and_ref(
             isolate_name, ref_name

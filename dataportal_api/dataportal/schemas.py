@@ -80,6 +80,9 @@ class DBXRefSchema(BaseModel):
 class GeneResponseSchema(BaseModel):
     locus_tag: Optional[str] = None
     gene_name: Optional[str] = None
+    # locus_tag: str = Field(..., example="ABC_123", description="Unique gene identifier (locus tag)")
+    # gene_name: Optional[str] = Field(None, example="rpoB", description="Gene name if available")
+
     alias: Optional[List[str]] = None
     product: Optional[str] = None
     start_position: Optional[int] = None

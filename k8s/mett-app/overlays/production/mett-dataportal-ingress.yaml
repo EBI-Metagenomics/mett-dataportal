@@ -7,34 +7,48 @@ metadata:
     nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
-  - host: www.gut-microbes.org
-    http:
-      paths:
-      - path: /api(/|$)(.*)
-        pathType: Prefix
-        backend:
-          service:
-            name: mett-dataportal-api-svc-dev
-            port:
-              number: 8000
-      - path: /api/docs
-        pathType: Prefix
-        backend:
-          service:
-            name: mett-dataportal-api-svc-dev
-            port:
-              number: 8000
-      - path: /static(/|$)(.*)
-        pathType: Prefix
-        backend:
-          service:
-            name: mett-dataportal-api-svc-dev
-            port:
-              number: 8000
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: mett-dataportal-react-app-svc-dev
-            port:
-              number: 80
+    - host: www.gut-microbes.org
+      http:
+        paths:
+        - path: /api(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-api-svc-dev
+              port:
+                number: 8000
+
+        - path: /api/docs
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-api-svc-dev
+              port:
+                number: 8000
+
+        #  /static-api/* to the django app
+        - path: /api-static(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-api-svc-dev
+              port:
+                number: 8000
+
+        #  /static/* to the React app
+        - path: /static(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-react-app-svc-dev
+              port:
+                number: 80
+
+        # All remaining routes to React app (client-side routing)
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-react-app-svc-dev
+              port:
+                number: 80
