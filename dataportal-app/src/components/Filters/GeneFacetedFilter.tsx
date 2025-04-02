@@ -3,6 +3,7 @@ import styles from './GeneFacetedFilter.module.scss';
 import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
 import {FACET_ORDER} from "../../utils/appConstants";
+import * as Popover from '@radix-ui/react-popover';
 
 interface GeneFacetedFilterProps {
     facets: GeneFacetResponse;
@@ -21,6 +22,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
     const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
     const [filterText, setFilterText] = useState<Record<string, string>>({});
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+    const [showInfoPopup, setShowInfoPopup] = useState(false);
 
     const orderedFacetEntries = Object.entries(facets)
         .filter(([facetGroup, values]) => facetGroup !== 'total_hits' && Array.isArray(values))
@@ -81,12 +83,45 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                 const total = filtered.length;
                 const showCount = visibleCount[facetGroup] || initialVisibleCount;
 
+
                 return (
                     <div key={facetGroup} className={styles.facetGroup}>
                         <h4 className={styles.groupTitle} onClick={() => toggleCollapse(facetGroup)}
                             style={{cursor: 'pointer'}}>
                             {facetGroup.replace('_', ' ').toUpperCase()} {collapsedGroups[facetGroup] ? '▸' : '▾'}
+                            {facetGroup === 'essentiality' && (
+                                <Popover.Root>
+                                    <Popover.Trigger asChild>
+                                        <button
+                                            className={styles.infoIcon}
+                                            onClick={(e) => e.stopPropagation()}
+                                            aria-label="Essentiality info"
+                                        >
+                                            ℹ️
+                                        </button>
+                                    </Popover.Trigger>
+                                    <Popover.Portal>
+                                        <Popover.Content
+                                            className={styles.popoverContent}
+                                            side="top"
+                                            align="end"
+                                            sideOffset={5}
+                                        >
+                                            <div className={styles.popoverInner}>
+                                                <p>
+                                                    <strong>Essentiality determination:</strong><br/>
+                                                    Gene essentiality was determined by analyzing transposon insertion
+                                                    libraries using the software package TRANSIT (DeJesus et al. 2015).
+                                                    Libraries were created using a Mariner transposon and by outgrowth of
+                                                    mutants in either liquid or solid mGAM (rich undefined) culture media.
+                                                </p>
+                                            </div>
+                                        </Popover.Content>
+                                    </Popover.Portal>
+                                </Popover.Root>
+                            )}
                         </h4>
+
 
                         {!collapsedGroups[facetGroup] && (
                             <>

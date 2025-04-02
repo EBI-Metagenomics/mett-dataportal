@@ -68,3 +68,28 @@
   font-size: 0.8rem;
   margin-bottom: 0.25rem;
 }
+
+// pop up
+.infoIcon {
+  font-size: 0.9rem;
+  margin-left: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.popoverContent {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 6px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.popoverInner {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
