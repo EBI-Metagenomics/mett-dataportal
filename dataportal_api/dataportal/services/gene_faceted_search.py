@@ -1,3 +1,4 @@
+import json
 import logging
 
 from elasticsearch_dsl import FacetedSearch, TermsFacet
@@ -50,15 +51,19 @@ class GeneFacetedSearch(FacetedSearch):
         if self.cog_id:
             s = s.filter('terms', cog_id=[self.cog_id])
         if self.kegg:
-            s = s.filter('prefix', kegg=self.kegg.lower())
+            kegg_values = self.kegg if isinstance(self.kegg, list) else [self.kegg]
+            s = s.filter('terms', kegg=[k.lower() for k in kegg_values])
         if self.go_term:
-            s = s.filter('prefix', go_term=self.go_term.lower())
+            go_values = self.go_term if isinstance(self.go_term, list) else [self.go_term]
+            s = s.filter('terms', go_term=[g.lower() for g in go_values])
         if self.pfam:
-            s = s.filter('prefix', pfam=self.pfam.lower())
+            pfam_values = self.pfam if isinstance(self.pfam, list) else [self.pfam]
+            s = s.filter('terms', pfam=pfam_values)
         if self.interpro:
-            s = s.filter('prefix', interpro=self.interpro.lower())
+            interpro_values = self.interpro if isinstance(self.interpro, list) else [self.interpro]
+            s = s.filter('terms', interpro=interpro_values)
         if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
             s = s.filter('terms', isolate_name=self.isolates)
 
-        # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+        logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
         return s

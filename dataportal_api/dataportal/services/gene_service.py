@@ -30,6 +30,7 @@ from dataportal.utils.exceptions import (
     GeneNotFoundError,
     ServiceError,
     InvalidGenomeIdError, )
+from dataportal.utils.utils import split_comma_param
 
 logger = logging.getLogger(__name__)
 
@@ -418,10 +419,10 @@ class GeneService:
                 essentiality=essentiality,
                 isolates=isolates,
                 cog_id=cog_id,
-                kegg=kegg,
-                go_term=go_term,
-                pfam=pfam,
-                interpro=interpro,
+                kegg=split_comma_param(kegg),
+                go_term=split_comma_param(go_term),
+                pfam=split_comma_param(pfam),
+                interpro=split_comma_param(interpro),
                 limit=limit
             )
 

@@ -1,5 +1,5 @@
 from django.conf import settings
-
+from urllib.parse import unquote
 
 def convert_to_camel_case(text: str) -> str:
     """Convert a string to CamelCase."""
@@ -12,3 +12,10 @@ def construct_file_urls(strain):
     gff_url = settings.GFF_FTP_PATH.format(strain.isolate_name) + "/" + strain.gff_file
 
     return fasta_url, gff_url, strain.fasta_file, strain.gff_file
+
+def split_comma_param(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    return [v.strip() for v in unquote(value).split(",")]
