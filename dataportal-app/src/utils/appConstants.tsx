@@ -1,8 +1,8 @@
 export const ZOOM_LEVELS = {
     MIN: -2,
     MAX: 5,
-    NAV: 2,
-    DEFAULT: 2,
+    NAV: 1.1,
+    DEFAULT: 3,
 };
 
 export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';

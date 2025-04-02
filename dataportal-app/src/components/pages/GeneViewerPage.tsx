@@ -179,7 +179,7 @@ const GeneViewerPage: React.FC = () => {
 
                             // Apply zoom with a delay
                             setTimeout(() => {
-                                linearGenomeView.zoomTo(ZOOM_LEVELS.DEFAULT);
+                                linearGenomeView.zoomTo(ZOOM_LEVELS.NAV);
                                 console.log('Zoom applied');
                                 setLoading(false); // Hide spinner after zoom
                             }, 200);
