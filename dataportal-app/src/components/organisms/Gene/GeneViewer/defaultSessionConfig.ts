@@ -80,6 +80,7 @@ const getDefaultSessionConfig = (
                 showGridlines: true,
                 scale: 1,
                 bpPerPx: 2,
+                offsetPx: 0,
             },
         ],
     };

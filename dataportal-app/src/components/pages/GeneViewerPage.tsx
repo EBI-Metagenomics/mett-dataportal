@@ -13,6 +13,7 @@ import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
 import {getEssentialityDataUrl, SPINNER_DELAY, ZOOM_LEVELS} from "../../utils/appConstants";
 import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm";
+import GeneViewerLegends from "@components/molecules/GeneViewerLegends";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -297,43 +298,41 @@ const GeneViewerPage: React.FC = () => {
                 </nav>
 
                 {/* Genome Metadata Section */}
-                <section>
-                    {genomeMeta ? (
-                        <div className="genome-meta-info">
-                            <h2><i>{genomeMeta.species_scientific_name}</i>: {genomeMeta.isolate_name}</h2>
-                            <p><strong>Assembly Name:&nbsp;</strong>
-                                <a href={genomeMeta.fasta_url} target="_blank"
-                                   rel="noopener noreferrer">{genomeMeta.assembly_name}
-                                    <span className={`icon icon-common icon-download ${styles.iconBlack}`}
-                                          style={{paddingLeft: '5px'}}></span>
-                                </a>
-                            </p>
-                            <p><strong>Annotations:&nbsp;</strong>
-                                <a href={genomeMeta.gff_url} target="_blank"
-                                   rel="noopener noreferrer">{genomeMeta.gff_file}
-                                    <span className={`icon icon-common icon-download ${styles.iconBlack}`}
-                                          style={{paddingLeft: '5px'}}></span>
-                                </a>
-                            </p>
-                            {/* commented ENA link for now till the assemblies become public */}
-                            {/*<p><strong>ENA Accession:&nbsp;</strong>*/}
-                            {/*    <a*/}
-                            {/*        href={*/}
-                            {/*            genomeMeta.assembly_accession*/}
-                            {/*                ? `${process.env.REACT_APP_ENA_BASE_URL}${genomeMeta.assembly_accession}`*/}
-                            {/*                : undefined*/}
-                            {/*        }*/}
-                            {/*        target="_blank"*/}
-                            {/*        rel="noopener noreferrer">*/}
-                            {/*        {genomeMeta.assembly_accession ? `XX000000${genomeMeta.assembly_accession}` : "Not Available"}*/}
-                            {/*        <span className="icon icon-common icon-external-link-alt"*/}
-                            {/*              style={{paddingLeft: '5px'}}></span>*/}
-                            {/*    </a>*/}
-                            {/*</p>*/}
+                <section className={styles.infoSection}>
+                    <div className={styles.infoGrid}>
+
+                        {/* Left pane: Genome metadata */}
+                        <div className={styles.leftPane}>
+                            {genomeMeta ? (
+                                <div className="genome-meta-info">
+                                    <h2><i>{genomeMeta.species_scientific_name}</i>: {genomeMeta.isolate_name}</h2>
+                                    <p><strong>Assembly Name:&nbsp;</strong>
+                                        <a href={genomeMeta.fasta_url} target="_blank" rel="noopener noreferrer">
+                                            {genomeMeta.assembly_name}
+                                            <span className={`icon icon-common icon-download ${styles.iconBlack}`}
+                                                  style={{paddingLeft: '5px'}}></span>
+                                        </a>
+                                    </p>
+                                    <p><strong>Annotations:&nbsp;</strong>
+                                        <a href={genomeMeta.gff_url} target="_blank" rel="noopener noreferrer">
+                                            {genomeMeta.gff_file}
+                                            <span className={`icon icon-common icon-download ${styles.iconBlack}`}
+                                                  style={{paddingLeft: '5px'}}></span>
+                                        </a>
+                                    </p>
+                                </div>
+                            ) : (
+                                <p>Loading genome meta information...</p>
+                            )}
                         </div>
-                    ) : (
-                        <p>Loading genome meta information...</p>
-                    )}
+                        {/* Right pane: Legend */}
+                        <div className={styles.rightPane}>
+                            {genomeMeta && (
+                                <GeneViewerLegends showEssentiality={genomeMeta.type_strain === true}/>
+                            )}
+                        </div>
+
+                    </div>
                 </section>
                 {/* Essentiality Toggle Checkbox */}
                 {genomeMeta?.type_strain && (

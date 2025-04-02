@@ -16,6 +16,30 @@
   justify-content: normal;
 }
 
+.infoSection {
+  margin-bottom: 2rem;
+}
+
+.infoGrid {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap; /* responsive */
+}
+
+.leftPane {
+  flex: 1;
+  min-width: 250px;
+}
+
+.rightPane {
+  flex: 2;
+  min-width: 300px;
+  margin-left: 15rem;
+}
+
 .geneSearchContainer {
   padding-left: 5px;
   padding-top: 5px;

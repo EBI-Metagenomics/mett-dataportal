@@ -1,0 +1,41 @@
+.viewerLegend {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  margin-left: auto;
+  max-width: 400px;
+}
+
+.legendHeader {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.25rem;
+}
+
+.legendColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.2rem;
+  row-gap: 0.3rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.colorSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.legendTitle {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
