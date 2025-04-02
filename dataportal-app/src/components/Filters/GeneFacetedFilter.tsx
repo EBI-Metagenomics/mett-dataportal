@@ -114,6 +114,12 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                     libraries using the software package TRANSIT (DeJesus et al. 2015).
                                                     Libraries were created using a Mariner transposon and by outgrowth of
                                                     mutants in either liquid or solid mGAM (rich undefined) culture media.
+                                                <p/>
+                                                    <a target="_blank" rel="noreferrer"
+                                                       href="https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1004401">
+                                                        DeJesus et al. 2015
+                                                    </a>
+
                                                 </p>
                                             </div>
                                         </Popover.Content>
