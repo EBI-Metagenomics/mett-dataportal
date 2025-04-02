@@ -6,12 +6,7 @@ import styles from "@components/organisms/Genome/GenomeSearchForm/GenomeSearchFo
 import {GenomeService} from "../../../../services/genomeService";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {AutocompleteResponse, BaseGenome, GenomeMeta} from "../../../../interfaces/Genome";
-import {
-    API_GENOME_SEARCH,
-    API_GENOMES_BY_ISOLATE_NAMES,
-    DEFAULT_PER_PAGE_CNT,
-    getAPIUrlGenomeSearchWithSpecies
-} from "../../../../utils/appConstants";
+import {DEFAULT_PER_PAGE_CNT} from "../../../../utils/appConstants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 import TypeStrainsFilter from "@components/Filters/TypeStrainsFilter";
 import SelectedGenomes from "@components/Filters/SelectedGenomes";
@@ -31,7 +26,6 @@ interface SearchGenomeFormProps {
     onToggleGenomeSelect: (genome: BaseGenome) => void;
     handleRemoveGenome: (genomeId: string) => void;
     handleTypeStrainToggle: (isolate_name: string) => void;
-    // onGenomeSelect: (genome: { id: number; name: string }) => void;
     linkData: LinkData;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -121,10 +115,9 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
             const qry = isolateName.trim() || query.trim();
             const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
-            const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : null;
+            const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : [];
 
             try {
-                let response;
                 const apiDetails = {
                     url: '',
                     method: 'GET',
@@ -132,55 +125,48 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     params: {},
                 };
 
-                if (typeStrainFilter) {
-                    // Fetch by strain IDs
-                    apiDetails.url = API_GENOMES_BY_ISOLATE_NAMES;
-                    apiDetails.params = {ids: typeStrainFilter.join(",")};
+                const params = new URLSearchParams({
+                    query: qry,
+                    page: String(page),
+                    per_page: String(pageSize),
+                    sortField,
+                    sortOrder,
+                });
 
-                    response = await GenomeService.fetchGenomeByIsolateNames(typeStrainFilter);
-                    setResults(response);
+                if (typeStrainFilter && typeStrainFilter.length) {
+                    params.append('isolates', typeStrainFilter.join(','));
+                }
+
+                if (speciesFilter && speciesFilter.length) {
+                    params.append('species_acronym', speciesFilter[0]);
+                }
+
+                const endpoint = "/genomes/search";
+                apiDetails.url = endpoint;
+                apiDetails.params = Object.fromEntries(params.entries());
+
+                const response = await GenomeService.fetchGenomeSearchResults(
+                    qry,
+                    page,
+                    pageSize,
+                    sortField,
+                    sortOrder,
+                    speciesFilter[0],
+                    typeStrainFilter
+                );
+
+                if (response && response.results) {
+                    setResults(response.results);
+                    setTotalPages(response.num_pages);
+                    setHasPrevious(response.has_previous ?? page > 1);
+                    setHasNext(response.has_next);
+                } else {
+                    setResults([]);
                     setTotalPages(1);
                     setHasPrevious(false);
                     setHasNext(false);
-                } else {
-                    // Standard genome search
-                    const params = new URLSearchParams({
-                        query: qry,
-                        page: String(page),
-                        per_page: String(pageSize),
-                        sortField,
-                        sortOrder,
-                    });
-
-                    const endpoint =
-                        speciesFilter.length === 1
-                            ? getAPIUrlGenomeSearchWithSpecies(speciesFilter[0])
-                            : API_GENOME_SEARCH;
-
-                    apiDetails.url = endpoint;
-                    apiDetails.params = Object.fromEntries(params.entries());
-
-                    response = await GenomeService.fetchGenomeSearchResults(
-                        qry,
-                        page,
-                        pageSize,
-                        sortField,
-                        sortOrder,
-                        speciesFilter
-                    );
-
-                    if (response && response.results) {
-                        setResults(response.results);
-                        setTotalPages(response.num_pages);
-                        setHasPrevious(response.has_previous ?? page > 1);
-                        setHasNext(response.has_next);
-                    } else {
-                        setResults([]);
-                        setTotalPages(1);
-                        setHasPrevious(false);
-                        setHasNext(false);
-                    }
                 }
+
                 // console.log('apiRequestDetails', apiDetails)
                 setApiRequestDetails(apiDetails);
             } catch (error) {

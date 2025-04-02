@@ -47,10 +47,21 @@ class GenomeService:
             per_page: int = DEFAULT_PER_PAGE_CNT,
             sortField: str = STRAIN_FIELD_ISOLATE_NAME,
             sortOrder: str = SORT_ASC,
+            isolates: Optional[List[str]] = None,
+            species_acronym: Optional[str] = None,
     ) -> GenomePaginationSchema:
-        """Search genomes in Elasticsearch by isolate name (partial match)."""
+        """Search genomes in Elasticsearch with optional isolate/species filters."""
+        filter_criteria = {}
+
+        if query:
+            filter_criteria[STRAIN_FIELD_ISOLATE_NAME] = query
+        if isolates:
+            filter_criteria["isolate_name.keyword"] = isolates
+        if species_acronym:
+            filter_criteria[ES_FIELD_SPECIES_ACRONYM] = species_acronym
+
         return await self._search_paginated_strains(
-            filter_criteria={STRAIN_FIELD_ISOLATE_NAME: query},
+            filter_criteria=filter_criteria,
             page=page,
             per_page=per_page,
             sortField=sortField,
@@ -257,8 +268,10 @@ class GenomeService:
                         )
                     else:
                         search = search.query("wildcard", **{field: f"*{value}*"})
+                elif isinstance(value, list):
+                    search = search.filter("terms", **{field: value})
                 else:
-                    search = search.query("term", **{field: value})
+                    search = search.filter("term", **{field: value})
 
             # Map "species" to its actual field
             sortField = self._resolve_sort_field(sortField)

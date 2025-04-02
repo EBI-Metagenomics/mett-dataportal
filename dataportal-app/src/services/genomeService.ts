@@ -50,7 +50,8 @@ export class GenomeService {
         pageSize: number,
         sortField: string,
         sortOrder: string,
-        selectedSpecies?: string[]
+        selectedSpecies?: string,
+        typeStrainFilter?: string[],
     ): Promise<GenomeResponse> {
         try {
             const params = new URLSearchParams({
@@ -59,12 +60,18 @@ export class GenomeService {
                 per_page: String(pageSize),
                 sortField,
                 sortOrder,
+
             });
 
-            const endpoint =
-                selectedSpecies && selectedSpecies.length === 1
-                    ? `/species/${selectedSpecies[0]}/genomes/search`
-                    : `/genomes/search`;
+            if (typeStrainFilter && typeStrainFilter.length) {
+                params.append('isolates', typeStrainFilter.join(','));
+            }
+
+            if (selectedSpecies) {
+                params.append('species_acronym', selectedSpecies);
+            }
+
+            const endpoint = "/genomes/search";
 
             const rawResponse = await ApiService.get(endpoint, params);
             return transformGenomeResponse(rawResponse);
