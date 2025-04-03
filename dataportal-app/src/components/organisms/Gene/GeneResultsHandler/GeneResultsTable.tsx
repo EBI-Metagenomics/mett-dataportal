@@ -1,9 +1,12 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './GeneResultsTable.module.scss';
 import {createViewState} from '@jbrowse/react-app';
 import {LinkData} from '../../../../interfaces/Auxiliary';
 import {GeneMeta} from '../../../../interfaces/Gene';
-import {getIconForEssentiality, ZOOM_LEVELS} from '../../../../utils/appConstants';
+import {TABLE_MAX_COLUMNS, ZOOM_LEVELS} from '../../../../utils/appConstants';
+import {GENE_TABLE_COLUMNS} from "@components/organisms/Gene/GeneResultsHandler/GeneTableColumns";
+import * as Dialog from '@radix-ui/react-dialog';
+
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -26,16 +29,16 @@ const handleNavigation = (
     contig: string,
     start: number,
     end: number,
-    setLoading: React.Dispatch<React.SetStateAction<boolean>> // Pass setLoading to handle spinner
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const view = viewState?.session?.views?.[0];
     if (view && typeof view.navToLocString === 'function') {
-        setLoading(true); // Show spinner before navigation
+        setLoading(true);
         try {
             view.navToLocString(`${contig}:${start}..${end}`);
             setTimeout(() => {
                 view.zoomTo(ZOOM_LEVELS.NAV);
-                setLoading(false); // Hide spinner after navigation
+                setLoading(false);
             }, 200);
         } catch (error) {
             console.error('Error during navigation:', error);
@@ -55,6 +58,16 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                            }) => {
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(
+        GENE_TABLE_COLUMNS.filter(col => col.defaultVisible !== false).map(col => col.key)
+    );
+    const [columnLimitError, setColumnLimitError] = useState(false);
+
+    useEffect(() => {
+        if (visibleColumns.length < TABLE_MAX_COLUMNS && columnLimitError) {
+            setColumnLimitError(false);
+        }
+    }, [visibleColumns]);
 
     const handleSort = (field: string) => {
         const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
@@ -63,137 +76,136 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
         onSortClick(field, newSortOrder);
     };
 
+    const handleCheckboxToggle = (key: string) => {
+        setVisibleColumns(prev => {
+            const isCurrentlyVisible = prev.includes(key);
+            const next = isCurrentlyVisible
+                ? prev.filter(col => col !== key)
+                : [...prev, key];
+
+            if (next.length > TABLE_MAX_COLUMNS) {
+                setColumnLimitError(true);
+                return prev; // ignore update
+            }
+
+            setColumnLimitError(false);
+            return next;
+        });
+    };
+
+
     return (
-        <table className="vf-table vf-table--sortable">
-            <thead className="vf-table__header">
-            <tr className="vf-table__row">
-                <th onClick={() => handleSort('strain')}
-                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
-                    Strain
-                    {sortField === 'strain' ? (
-                        <span
-                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
-                            style={{paddingLeft: '5px'}}></span>
-                    ) : (
-                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
-                    )}
-                </th>
-                <th onClick={() => handleSort('gene_name')}
-                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
-                    Gene
-                    {sortField === 'gene_name' ? (
-                        <span
-                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
-                            style={{paddingLeft: '5px'}}></span>
-                    ) : (
-                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
-                    )}
-                </th>
-                <th onClick={() => handleSort('alias')}
-                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
-                    Alias
-                    {sortField === 'alias' ? (
-                        <span
-                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
-                            style={{paddingLeft: '5px'}}></span>
-                    ) : (
-                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
-                    )}
-                </th>
-                <th onClick={() => handleSort('seq_id')}
-                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
-                    SeqId
-                    {sortField === 'seq_id' ? (
-                        <span
-                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
-                            style={{paddingLeft: '5px'}}></span>
-                    ) : (
-                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
-                    )}
-                </th>
-                <th onClick={() => handleSort('locus_tag')}
-                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
-                    Locus Tag
-                    {sortField === 'locus_tag' ? (
-                        <span
-                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
-                            style={{paddingLeft: '5px'}}></span>
-                    ) : (
-                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
-                    )}
-                </th>
-                <th onClick={() => handleSort('product')}
-                    className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
-                    Product
-                    {sortField === 'product' ? (
-                        <span
-                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
-                            style={{paddingLeft: '5px'}}></span>
-                    ) : (
-                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
-                    )}
-                </th>
-                <th className={`vf-table__heading ${styles.vfTableHeading}`}>UniProtId</th>
-                <th className={`vf-table__heading ${styles.vfTableHeading}`}>Essentiality</th>
-                <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
-            </tr>
-            </thead>
-            <tbody className="vf-table__body">
-            {results.map((geneMeta, index) => (
-                <tr key={index} className="vf-table__row">
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.isolate_name || '---'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.gene_name || '---'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.alias || '---'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.seq_id || 'Unknown'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.locus_tag || 'Unknown Locus Tag'}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.product || ''}</td>
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>{geneMeta.uniprot_id || ''}</td>
+        <section>
+            <div className={styles.toolbar}>
+                <Dialog.Root>
+                    <Dialog.Trigger asChild>
+                        <button
+                            type="button"
+                            title="Show/Hide Columns"
+                            className={`vf-button vf-button--sm vf-button--secondary ${styles.vfColumnSelectorBtn}`}
+                        >
+                            <span className="icon icon-common icon-columns"></span>
+                        </button>
+                    </Dialog.Trigger>
 
-                    <td className={`vf-table__cell ${styles.vfTableCellIcon}`}>
-                        {geneMeta.essentiality && geneMeta.essentiality !== "Unknown" ? (
-                            <span
-                                title={geneMeta.essentiality}
-                                className={styles.essentialityIcon}
-                            >
-                                {getIconForEssentiality(geneMeta.essentiality)}
-                            </span>
-                        ) : (
-                            '---'
-                        )}
-                    </td>
+                    <Dialog.Portal>
+                        <Dialog.Overlay className={styles.dialogOverlay}/>
+                        <Dialog.Content className={styles.dialogContent}>
+                            <Dialog.Title className={styles.columnSelectorTitle}>
+                                Select Columns to Display
+                            </Dialog.Title>
+                            <Dialog.Description className={styles.visuallyHidden}></Dialog.Description>
+                            <div className={styles.columnSelectorContent}>
+                                {columnLimitError && (
+                                    <div className={styles.errorText}>
+                                        You can select up to {TABLE_MAX_COLUMNS} columns only.
+                                    </div>
+                                )}
+                                {GENE_TABLE_COLUMNS.map((col) => (
+                                    <label key={col.key} className={styles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={visibleColumns.includes(col.key)}
+                                            onChange={() => handleCheckboxToggle(col.key)}
+                                            // disabled={!visibleColumns.includes(col.key) && visibleColumns.length >= TABLE_MAX_COLUMNS}
+                                        />
+                                        {col.label}
+                                    </label>
+                                ))}
+                            </div>
+                            <Dialog.Close asChild>
+                                <button className={styles.closeBtn}>Close</button>
+                            </Dialog.Close>
+                        </Dialog.Content>
+                    </Dialog.Portal>
+                </Dialog.Root>
+            </div>
 
-
-                    <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        {viewState ? (
-                            <a
-                                href="#"
-                                className="vf-link"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    handleNavigation(
-                                        viewState,
-                                        geneMeta.seq_id,
-                                        geneMeta.start_position ? geneMeta.start_position : 0,
-                                        geneMeta.end_position ? geneMeta.end_position : 1000,
-                                        setLoading
-                                    );
-                                }}
-                            >
-                                {linkData.alias}
-                            </a>
-                        ) : (
-                            <a href={generateLink(linkData.template, geneMeta)} target="_blank" rel="noreferrer">
-                                {linkData.alias}
-                                <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
-                                      style={{paddingLeft: '5px'}}></span>
-                            </a>
-                        )}
-                    </td>
+            <table className="vf-table vf-table--sortable">
+                <thead className="vf-table__header">
+                <tr className="vf-table__row">
+                    {GENE_TABLE_COLUMNS.filter(col => visibleColumns.includes(col.key)).map(col => (
+                        <th
+                            key={col.key}
+                            onClick={() => col.sortable && handleSort(col.key)}
+                            className={`vf-table__heading ${styles.vfTableHeading} ${col.sortable ? styles.clickableHeader : ''}`}
+                        >
+                            {col.label}
+                            {sortField === col.key ? (
+                                <span
+                                    className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                                    style={{paddingLeft: '5px'}}/>
+                            ) : col.sortable ? (
+                                <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}/>
+                            ) : null}
+                        </th>
+                    ))}
+                    <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
                 </tr>
-            ))}
-            </tbody>
-        </table>
-    );
+                </thead>
+                <tbody className="vf-table__body">
+                {results.map((geneMeta, index) => (
+                    <tr key={index} className={`vf-table__row ${styles.vfTableRow}`}>
+                        {GENE_TABLE_COLUMNS.filter(col => visibleColumns.includes(col.key)).map(col => (
+                            <td key={col.key} className={`vf-table__cell ${styles.vfTableCell}`}>
+                                {col.render(geneMeta)}
+                            </td>
+                        ))}
+
+
+                        <td className={`vf-table__cell ${styles.vfTableCell}`}>
+                            {viewState ? (
+                                <a
+                                    href="#"
+                                    className="vf-link"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handleNavigation(
+                                            viewState,
+                                            geneMeta.seq_id,
+                                            geneMeta.start_position ? geneMeta.start_position : 0,
+                                            geneMeta.end_position ? geneMeta.end_position : 1000,
+                                            setLoading
+                                        );
+                                    }}
+                                >
+                                    {linkData.alias}
+                                </a>
+                            ) : (
+                                <a href={generateLink(linkData.template, geneMeta)} target="_blank" rel="noreferrer">
+                                    {linkData.alias}
+                                    <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
+                                          style={{paddingLeft: '5px'}}></span>
+                                </a>
+                            )}
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+        </section>
+    )
+        ;
 };
 
 export default GeneResultsTable;
