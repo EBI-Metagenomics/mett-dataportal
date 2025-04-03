@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import styles from './GeneFacetedFilter.module.scss';
 import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
-import {FACET_ORDER} from "../../utils/appConstants";
+import {ESSENTIALITY_DETERMINATION_TXT, EXT_LINK_ESSENTIALITY_JOURNAL, FACET_ORDER} from "../../utils/appConstants";
 import * as Popover from '@radix-ui/react-popover';
 
 interface GeneFacetedFilterProps {
@@ -22,7 +22,6 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
     const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
     const [filterText, setFilterText] = useState<Record<string, string>>({});
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-    const [showInfoPopup, setShowInfoPopup] = useState(false);
 
     const orderedFacetEntries = Object.entries(facets)
         .filter(([facetGroup, values]) => facetGroup !== 'total_hits' && Array.isArray(values))
@@ -108,15 +107,14 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                             sideOffset={5}
                                         >
                                             <div className={styles.popoverInner}>
+
+                                                <strong>Essentiality determination:</strong><br/>
                                                 <p>
-                                                    <strong>Essentiality determination:</strong><br/>
-                                                    Gene essentiality was determined by analyzing transposon insertion
-                                                    libraries using the software package TRANSIT (DeJesus et al. 2015).
-                                                    Libraries were created using a Mariner transposon and by outgrowth of
-                                                    mutants in either liquid or solid mGAM (rich undefined) culture media.
-                                                <p/>
+                                                    {ESSENTIALITY_DETERMINATION_TXT}
+                                                </p>
+                                                <p>
                                                     <a target="_blank" rel="noreferrer"
-                                                       href="https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1004401">
+                                                       href={EXT_LINK_ESSENTIALITY_JOURNAL}>
                                                         DeJesus et al. 2015
                                                     </a>
 

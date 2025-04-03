@@ -13,6 +13,14 @@ export const getEssentialityDataUrl = (isolate_name: string) => `${API_BASE_URL}
 
 export const API_GENE_SEARCH_ADVANCED = `${API_BASE_URL}/genes/search/advanced`;
 
+export const EBI_FTP_SERVER = "https://ftp.ebi.ac.uk/pub/databases/mett/";
+export const EXT_LINK_ESSENTIALITY_JOURNAL = "https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1004401";
+export const ESSENTIALITY_DETERMINATION_TXT = "Gene essentiality was determined by analyzing transposon insertion\n" +
+    "                                                    libraries using the software package TRANSIT (DeJesus et al. 2015).\n" +
+    "                                                    Libraries were created using a Mariner transposon and by outgrowth\n" +
+    "                                                    of mutants in either liquid or solid mGAM (rich undefined) culture\n" +
+    "                                                    media.";
+
 export const SPINNER_DELAY = 200;
 export const DEFAULT_PER_PAGE_CNT = 10;
 export const FACET_INITIAL_VISIBLE_CNT = 10;
@@ -34,7 +42,7 @@ export const getColorForEssentiality = (essentiality: string): string => {
     switch (essentiality) {
         case 'essential':
             return '#FF0000'; // Red (critical importance)
-            // return '#FFD700'; // Gold (matches the star)
+        // return '#FFD700'; // Gold (matches the star)
         case 'essential_liquid':
             return '#1E90FF'; // Dodger Blue (fluid and vibrant for liquid)
         case 'essential_solid':
