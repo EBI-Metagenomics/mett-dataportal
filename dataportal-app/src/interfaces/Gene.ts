@@ -49,11 +49,6 @@ export interface PaginatedResponse<T> {
     has_next: boolean;
 }
 
-export interface GeneEssentialityTag {
-    name: string;
-    label: string;
-}
-
 export interface GeneFacetResponse {
     [facetGroup: string]: FacetItem[] | number;
 }

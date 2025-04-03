@@ -329,7 +329,7 @@ async def get_faceted_search(
         essentiality: Optional[str] = Query(None,
                                             description="Essentiality status to filter genes (e.g., 'essential')."),
         isolates: Optional[str] = Query("", description="Comma-separated list of isolate names."),
-        cog_ids: Optional[str] = Query(None, description="Comma-separated list of COG IDs to filter by."),
+        cog_id: Optional[str] = Query(None, description="Comma-separated list of COG IDs to filter by."),
         kegg: Optional[str] = Query(None, description="KEGG pathway or gene ID to filter by."),
         go_term: Optional[str] = Query(None, description="GO term ID or label to filter by."),
         pfam: Optional[str] = Query(None, description="Pfam domain ID to filter by."),
@@ -339,7 +339,7 @@ async def get_faceted_search(
     isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
     logger.info(f"Isolates received: {isolate_names_list} (type: {type(isolate_names_list)})")
     return await gene_service.get_faceted_search(species_acronym, isolate_names_list, essentiality,
-                                                 cog_ids, kegg, go_term, pfam, interpro,
+                                                 cog_id, kegg, go_term, pfam, interpro,
                                                  limit)
 
 

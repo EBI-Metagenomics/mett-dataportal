@@ -418,7 +418,7 @@ class GeneService:
                 species_acronym=species_acronym,
                 essentiality=essentiality,
                 isolates=isolates,
-                cog_id=cog_id,
+                cog_id=split_comma_param(cog_id),
                 kegg=split_comma_param(kegg),
                 go_term=split_comma_param(go_term),
                 pfam=split_comma_param(pfam),

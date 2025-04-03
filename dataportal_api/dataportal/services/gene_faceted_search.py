@@ -49,7 +49,8 @@ class GeneFacetedSearch(FacetedSearch):
         if self.essentiality:
             s = s.filter('terms', essentiality=[self.essentiality])
         if self.cog_id:
-            s = s.filter('terms', cog_id=[self.cog_id])
+            cog_id_values = self.cog_id if isinstance(self.cog_id, list) else [self.cog_id]
+            s = s.filter('terms', cog_id=[k for k in cog_id_values])
         if self.kegg:
             kegg_values = self.kegg if isinstance(self.kegg, list) else [self.kegg]
             s = s.filter('terms', kegg=[k.lower() for k in kegg_values])

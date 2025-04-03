@@ -1,12 +1,5 @@
 import {ApiService} from "./api";
-import {
-    Gene,
-    GeneEssentialityTag,
-    GeneFacetResponse,
-    GeneMeta,
-    GeneSuggestion,
-    PaginatedResponse
-} from "../interfaces/Gene";
+import {Gene, GeneFacetResponse, GeneMeta, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
 import {cacheResponse} from "./cachingDecorator";
 import {DEFAULT_PER_PAGE_CNT} from "../utils/appConstants";
 
