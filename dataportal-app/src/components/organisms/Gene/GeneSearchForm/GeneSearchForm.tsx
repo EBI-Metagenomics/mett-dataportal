@@ -383,6 +383,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         linkData={linkData}
                         viewState={viewState}
                         setLoading={setLoading}
+                        isTypeStrainAvailable={selectedGenomes.length?selectedGenomes.some(genome => genome.type_strain):true}
                     />
                     {/* Page size dropdown and pagination */}
                     <div className={styles.paginationContainer}>

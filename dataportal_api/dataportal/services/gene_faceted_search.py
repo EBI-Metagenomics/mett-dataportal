@@ -66,5 +66,5 @@ class GeneFacetedSearch(FacetedSearch):
         if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
             s = s.filter('terms', isolate_name=self.isolates)
 
-        logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+        # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
         return s

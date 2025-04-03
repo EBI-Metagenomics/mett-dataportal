@@ -16,6 +16,7 @@ interface GeneResultsTableProps {
     linkData: LinkData;
     viewState?: ViewModel;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    isTypeStrainAvailable: boolean;
 }
 
 const generateLink = (template: string, result: any) => {
@@ -55,11 +56,18 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                                linkData,
                                                                viewState,
                                                                setLoading,
+                                                               isTypeStrainAvailable,
                                                            }) => {
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    const availableColumns = GENE_TABLE_COLUMNS.filter(col =>
+        isTypeStrainAvailable || !col.onlyForTypeStrain
+    );
     const [visibleColumns, setVisibleColumns] = useState<string[]>(
-        GENE_TABLE_COLUMNS.filter(col => col.defaultVisible !== false).map(col => col.key)
+        availableColumns
+            .filter(col => col.defaultVisible !== false)
+            .map(col => col.key)
     );
     const [columnLimitError, setColumnLimitError] = useState(false);
 
@@ -121,7 +129,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                         You can select up to {TABLE_MAX_COLUMNS} columns only.
                                     </div>
                                 )}
-                                {GENE_TABLE_COLUMNS.map((col) => (
+                                {availableColumns.map((col) => (
                                     <label key={col.key} className={styles.checkboxLabel}>
                                         <input
                                             type="checkbox"
@@ -144,7 +152,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
             <table className="vf-table vf-table--sortable">
                 <thead className="vf-table__header">
                 <tr className="vf-table__row">
-                    {GENE_TABLE_COLUMNS.filter(col => visibleColumns.includes(col.key)).map(col => (
+                    {availableColumns.filter(col => visibleColumns.includes(col.key)).map(col => (
                         <th
                             key={col.key}
                             onClick={() => col.sortable && handleSort(col.key)}

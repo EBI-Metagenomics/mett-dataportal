@@ -346,7 +346,7 @@ class GeneService:
                 .extra(track_total_hits=True)
             )
 
-            # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
 
             response = await sync_to_async(s.execute)()
 

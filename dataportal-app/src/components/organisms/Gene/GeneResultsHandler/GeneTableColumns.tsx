@@ -7,6 +7,7 @@ export interface ColumnDefinition {
     label: string;
     sortable?: boolean;
     defaultVisible?: boolean;
+    onlyForTypeStrain?: boolean;
     render: (gene: GeneMeta) => React.ReactNode;
 }
 
@@ -30,6 +31,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         label: 'Alias',
         sortable: true,
         defaultVisible: true,
+        onlyForTypeStrain: true,
         render: gene => gene.alias?.join(', ') || '---',
     },
     {
@@ -58,6 +60,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         label: 'UniProtId',
         sortable: false,
         defaultVisible: true,
+        onlyForTypeStrain: true,
         render: gene => gene.uniprot_id || '',
     },
     {
@@ -65,6 +68,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         label: 'Essentiality',
         sortable: false,
         defaultVisible: true,
+        onlyForTypeStrain: true,
         render: gene =>
             gene.essentiality && gene.essentiality !== 'Unknown' ? (
                 <span title={gene.essentiality}>

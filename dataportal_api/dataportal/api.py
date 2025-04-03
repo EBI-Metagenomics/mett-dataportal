@@ -138,7 +138,7 @@ async def get_type_strains(request):
     description=(
         "Searches genomes using a free-text query string. "
         "Returns a paginated list of matching genome records. "
-        "Supports optional sorting by isolate_name or 'species'."
+        "Supports optional sorting by 'isolate_name' or 'species'."
     )
 )
 async def search_genomes_by_string(
@@ -290,7 +290,7 @@ async def gene_autocomplete_suggestions(
     description=(
             "Searches for genes using a free-text query. "
             "Returns a paginated list of genes that match the input string across any genome or isolate. "
-            "Supports optional sorting by 'strain', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'."
+            "Supports optional sorting by 'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'."
     )
 )
 async def search_genes_by_string(
@@ -377,7 +377,7 @@ async def get_gene_by_locus_tag(
     summary="Get all genes",
     description=(
             "Retrieves a paginated list of all genes across all available genomes. "
-            "Supports optional sorting by 'strain', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
+            "Supports optional sorting by 'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
             "Useful for browsing the full gene catalog without applying filters."
     )
 )
@@ -402,7 +402,7 @@ async def get_all_genes(
     summary="Get genes by genome isolate",
     description=(
             "Retrieves a paginated list of genes associated with a specific genome isolate. "
-            "Supports optional sorting by 'strain', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
+            "Supports optional sorting by 'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
             "Useful for viewing all genes within a selected genome."
     )
 )
@@ -435,7 +435,7 @@ async def get_genes_by_genome(
             "Performs an advanced gene search using a free-text query across multiple genome isolates "
             "and/or a specific species. Supports filtering by species, essentiality, isolates, "
             "and annotation sources like COG, KEGG, GO terms, Pfam, and InterPro. "
-            "Supports optional sorting by 'strain', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'."
+            "Supports optional sorting by 'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'."
             "Useful for cross-genome comparisons or focused searches within a species context."
     )
 )
