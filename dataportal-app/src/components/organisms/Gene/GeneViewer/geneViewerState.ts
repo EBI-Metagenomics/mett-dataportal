@@ -5,6 +5,7 @@ import {createRoot, hydrateRoot} from 'react-dom/client';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
 import CustomEssentialityPlugin from "../../../../plugins/CustomEssentialityPlugin";
+import {overrideTrackContainer} from "../../../../plugins/CustomTrackContainerPlugin/overrideTrackContainer";
 
 interface Track {
     type: string;
@@ -56,6 +57,8 @@ const useGeneViewerState = (
                     defaultSession: defaultSession ? {...defaultSession, name: 'defaultSession'} : undefined,
                 };
 
+                overrideTrackContainer();
+
                 const state = createViewState({
                     config,
                     plugins,
@@ -64,10 +67,12 @@ const useGeneViewerState = (
                     makeWorkerInstance,
                 });
 
-                // console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
+                state.pluginManager.configure();
+
+                console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
                 // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
 
-                const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
+                // const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
 
                 setViewState(state);
 

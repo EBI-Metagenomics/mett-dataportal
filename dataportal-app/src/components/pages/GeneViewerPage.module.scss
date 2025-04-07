@@ -138,6 +138,10 @@ header[class*="MuiAppBar-root"][class*="css-"] {
   display: none !important;
 }
 
+.jb-track-header .MuiIconButton-root {
+  display: none !important;
+}
+
 .spinnerOverlay {
     position: fixed;
     top: 0;
