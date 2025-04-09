@@ -58,6 +58,7 @@ class GeneService:
                     f"{ES_FIELD_ALIAS}.keyword^5",
                     f"{ES_FIELD_GENE_NAME}^2",
                     ES_FIELD_LOCUS_TAG,
+                    f"{ES_FIELD_LOCUS_TAG}.keyword^6",
                     ES_FIELD_PRODUCT,
                     ES_FIELD_KEGG,
                     ES_FIELD_UNIPROT_ID,
@@ -84,7 +85,7 @@ class GeneService:
 
             s = s[:limit]
 
-            # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
 
             response = s.execute()
 
