@@ -624,6 +624,58 @@
 							"response": []
 						},
 						{
+							"name": "Genomes-by-iso-species-query",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.results).to.be.an('array').length(1)",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genomes/search?query=90&isolates=BU_909&species_acronym=BU",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genomes",
+										"search"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "90"
+										},
+										{
+											"key": "isolates",
+											"value": "BU_909"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Genomes-by-GenomeString-negative",
 							"event": [
 								{
@@ -1075,7 +1127,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/faceted-search?species_acronym=BU&limit=10&pfam=pf00294",
+									"raw": "{{mett-current}}/api/genes/faceted-search?species_acronym=BU&limit=10&pfam=pf13715",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1095,7 +1147,7 @@
 										},
 										{
 											"key": "pfam",
-											"value": "pf00294"
+											"value": "pf13715"
 										}
 									]
 								}
@@ -1248,6 +1300,111 @@
 										{
 											"key": "query",
 											"value": "dnaA"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Autocomplete-LocusTag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(1); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=PV&query=PV_ATCC8482_03700",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "query",
+											"value": "PV_ATCC8482_03700"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Autocomplete-Alias",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.be.at.least(20); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?query=BVU&page=1&per_page=10&isolates=PV_ATCC8482",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"",
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "BVU"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "per_page",
+											"value": "10"
+										},
+										{
+											"key": "isolates",
+											"value": "PV_ATCC8482"
 										}
 									]
 								}
@@ -1516,6 +1673,62 @@
 										{
 											"key": "filter",
 											"value": "essentiality:essential_liquid,unclear"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Autocomplete-Essentiality-TypeStrain-Ess,Interpro",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Json data length matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(1); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&gisolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid;interpro:IPR035952",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "gisolates",
+											"value": "BU_ATCC8492"
+										},
+										{
+											"key": "query",
+											"value": "pr"
+										},
+										{
+											"key": "filter",
+											"value": "essentiality:essential_liquid;interpro:IPR035952"
 										}
 									]
 								}
@@ -1825,53 +2038,6 @@
 							"response": []
 						},
 						{
-							"name": "Genes-by-IsolateName-Single-GeneString-positive",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"pm.test(\"Results array contains exactly one record\", function () {",
-											"    const jsonData = pm.response.json(); ",
-											"    pm.expect(jsonData.results).to.be.an('array').with.lengthOf(1); ",
-											"});",
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/genomes/BU_ATCC8492/genes/search?query=dnaA",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"genomes",
-										"BU_ATCC8492",
-										"genes",
-										"search"
-									],
-									"query": [
-										{
-											"key": "query",
-											"value": "dnaA"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
 							"name": "GeneSort-by-SEQID-GeneString-positive",
 							"event": [
 								{
@@ -1927,52 +2093,6 @@
 										{
 											"key": "isolates",
 											"value": "BU_909"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Genes-by-IsolateName-Single-GeneString-negative",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"pm.test(\"Results array is empty\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.results).to.be.an('array').that.is.empty;",
-											"});"
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/genomes/ABC_6576/genes/search?query=",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"genomes",
-										"ABC_6576",
-										"genes",
-										"search"
-									],
-									"query": [
-										{
-											"key": "query",
-											"value": ""
 										}
 									]
 								}
@@ -2386,48 +2506,6 @@
 											"key": "query",
 											"value": "dna"
 										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Genes-Essentiality-Tags-Master",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"",
-											"pm.test(\"Results array contains e5 records\", function () {",
-											"    const jsonData = pm.response.json(); ",
-											"    pm.expect(jsonData).to.be.an('array').with.lengthOf(5); ",
-											"});",
-											"",
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/genes/essentiality/tags",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"genes",
-										"essentiality",
-										"tags"
 									]
 								}
 							},

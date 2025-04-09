@@ -32,6 +32,7 @@ export interface GeneSuggestion {
     locus_tag: string;
     alias: string[] | '';
     isolate_name?: string;
+    uniprot_id?: string | null;
     species_scientific_name?: string;
     species_acronym?: string;
     product?: string | null;

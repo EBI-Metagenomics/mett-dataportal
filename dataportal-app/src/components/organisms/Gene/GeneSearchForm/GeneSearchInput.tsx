@@ -47,8 +47,13 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                     const product = option.product || 'Unknown product';
                     const locusTag = option.locus_tag || 'Unknown locus tag';
                     const geneNamePart = option.gene_name ? ` - ${option.gene_name}` : '';
+                    const uniprot_id = option.uniprot_id ? ` - ${option.uniprot_id}` : '';
+                    const alias =
+                        Array.isArray(option.alias) && option.alias.some(a => a.trim())
+                            ? ` - ${option.alias.filter(a => a.trim()).join(', ')}`
+                            : '';
 
-                    return `${strainName}${geneNamePart} - (${product} - ${locusTag})`;
+                    return `${strainName}${geneNamePart}${alias} (${product} - ${locusTag}${uniprot_id})`;
                 }}
                 inputValue={query || ''}
                 onInputChange={(event, newValue, reason) => {
