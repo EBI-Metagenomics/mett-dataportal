@@ -57,6 +57,7 @@ class GeneService:
                     f"{ES_FIELD_ALIAS}^3",
                     f"{ES_FIELD_ALIAS}.keyword^5",
                     f"{ES_FIELD_GENE_NAME}^2",
+                    ES_FIELD_LOCUS_TAG,
                     ES_FIELD_PRODUCT,
                     ES_FIELD_KEGG,
                     ES_FIELD_UNIPROT_ID,
