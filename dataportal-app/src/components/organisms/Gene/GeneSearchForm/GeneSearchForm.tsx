@@ -243,6 +243,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     isolates,
                     selectedFacets.essentiality?.join(','),
                     selectedFacets.cog_id?.join(','),
+                    selectedFacets.cog_funcats?.join(','),
                     selectedFacets.kegg?.join(','),
                     selectedFacets.go_term?.join(','),
                     selectedFacets.pfam?.join(','),
