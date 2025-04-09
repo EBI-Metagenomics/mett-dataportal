@@ -20,7 +20,7 @@ const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
             gziLocation: {
                 uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz.gzi`,
             },
-        },
+        }
     },
 });
 

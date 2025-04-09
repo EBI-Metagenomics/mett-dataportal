@@ -9,7 +9,7 @@ from dataportal.utils.constants import (
     ES_FIELD_PFAM, ES_FIELD_INTERPRO,
     ES_FIELD_KEGG, ES_FIELD_COG_ID,
     ES_FIELD_ISOLATE_NAME,
-    ES_FIELD_SPECIES_ACRONYM,
+    ES_FIELD_SPECIES_ACRONYM, ES_FIELD_COG_FUNCATS,
 )
 
 logger = logging.getLogger(__name__)
@@ -17,15 +17,17 @@ logger = logging.getLogger(__name__)
 
 class GeneFacetedSearch(FacetedSearch):
     fields = [ES_FIELD_SPECIES_ACRONYM, GENE_ESSENTIALITY, ES_FIELD_COG_ID,
-              ES_FIELD_KEGG, 'go_term', ES_FIELD_PFAM, ES_FIELD_INTERPRO, ES_FIELD_ISOLATE_NAME]
+              ES_FIELD_KEGG, 'go_term', ES_FIELD_PFAM, ES_FIELD_INTERPRO, ES_FIELD_ISOLATE_NAME,
+              ES_FIELD_COG_FUNCATS]
 
     def __init__(self, query='', filters=None, species_acronym=None, essentiality=None,
-                 isolates=None, cog_id=None, kegg=None, go_term=None, pfam=None, interpro=None,
+                 isolates=None, cog_id=None, cog_funcats=None, kegg=None, go_term=None, pfam=None, interpro=None,
                  limit: int = DEFAULT_FACET_LIMIT):
         self.species_acronym = species_acronym
         self.essentiality = essentiality
         self.isolates = isolates
         self.cog_id = cog_id
+        self.cog_funcats = cog_funcats
         self.kegg = kegg
         self.go_term = go_term
         self.pfam = pfam
@@ -36,7 +38,8 @@ class GeneFacetedSearch(FacetedSearch):
             ES_FIELD_PFAM: TermsFacet(field=ES_FIELD_PFAM, size=limit),
             ES_FIELD_INTERPRO: TermsFacet(field=ES_FIELD_INTERPRO, size=limit),
             ES_FIELD_KEGG: TermsFacet(field=ES_FIELD_KEGG, size=limit),
-            ES_FIELD_COG_ID: TermsFacet(field=ES_FIELD_COG_ID, size=limit)
+            ES_FIELD_COG_ID: TermsFacet(field=ES_FIELD_COG_ID, size=limit),
+            ES_FIELD_COG_FUNCATS: TermsFacet(field=ES_FIELD_COG_FUNCATS, size=limit),
         }
 
         super().__init__(query=query, filters=filters or {})
@@ -65,6 +68,9 @@ class GeneFacetedSearch(FacetedSearch):
             s = s.filter('terms', interpro=interpro_values)
         if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
             s = s.filter('terms', isolate_name=self.isolates)
+        if self.cog_funcats:
+            cog_funcats_values = self.cog_funcats if isinstance(self.cog_funcats, list) else [self.cog_funcats]
+            s = s.filter('terms', cog_funcats=cog_funcats_values)
 
         # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
         return s

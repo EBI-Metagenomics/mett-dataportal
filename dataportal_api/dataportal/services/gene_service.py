@@ -24,7 +24,7 @@ from dataportal.utils.constants import (
     GENE_SORT_FIELD_STRAIN, FIELD_SEQ_ID,
     ES_FIELD_UNIPROT_ID, ES_FIELD_LOCUS_TAG,
     ES_FIELD_SPECIES_ACRONYM,
-    ES_INDEX_GENE, FACET_FIELDS,
+    ES_INDEX_GENE, FACET_FIELDS, ES_FIELD_COG_FUNCATS,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -408,6 +408,7 @@ class GeneService:
                                  isolates: Optional[List[str]] = None,
                                  essentiality: Optional[str] = None,
                                  cog_id: Optional[str] = None,
+                                 cog_funcats: Optional[str] = None,
                                  kegg: Optional[str] = None,
                                  go_term: Optional[str] = None,
                                  pfam: Optional[str] = None,
@@ -421,6 +422,7 @@ class GeneService:
                 essentiality=essentiality,
                 isolates=isolates,
                 cog_id=split_comma_param(cog_id),
+                cog_funcats=split_comma_param(cog_funcats),
                 kegg=split_comma_param(kegg),
                 go_term=split_comma_param(go_term),
                 pfam=split_comma_param(pfam),
@@ -441,6 +443,7 @@ class GeneService:
                 ES_FIELD_INTERPRO: interpro,
                 ES_FIELD_KEGG: kegg,
                 ES_FIELD_COG_ID: cog_id,
+                ES_FIELD_COG_FUNCATS: cog_funcats,
             }
 
             facet_results = {

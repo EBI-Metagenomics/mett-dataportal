@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './GeneViewerLegends.module.scss';
-import {getColorForEssentiality} from "../../utils/appConstants";
+import {getColorForEssentiality, getIconForEssentiality} from "../../utils/appConstants";
 
 interface GeneViewerLegendsProps {
     showEssentiality: boolean;
@@ -8,25 +8,52 @@ interface GeneViewerLegendsProps {
 
 const GeneViewerLegends: React.FC<GeneViewerLegendsProps> = ({showEssentiality}) => {
     const essentialityLegend = [
-        {label: 'Essential (Solid)', color: getColorForEssentiality('essential_solid')},
-        {label: 'Essential (Liquid)', color: getColorForEssentiality('essential_liquid')},
-        {label: 'Essential (Unspecified)', color: getColorForEssentiality('essential')},
-        {label: 'Non-Essential', color: getColorForEssentiality('not_essential')},
-        {label: 'Unknown', color: getColorForEssentiality('unclear')},
+        {
+            label: 'Essential (Solid)',
+            color: getColorForEssentiality('essential_solid'),
+            icon: getIconForEssentiality('essential_solid'),
+        },
+        {
+            label: 'Essential (Liquid)',
+            color: getColorForEssentiality('essential_liquid'),
+            icon: getIconForEssentiality('essential_liquid'),
+        },
+        {
+            label: 'Essential',
+            color: getColorForEssentiality('essential'),
+            icon: getIconForEssentiality('essential'),
+        },
+        {
+            label: 'Non-Essential',
+            color: getColorForEssentiality('not_essential'),
+            icon: getIconForEssentiality('not_essential'),
+        },
+        {
+            label: 'Unknown',
+            color: getColorForEssentiality('unclear'),
+            icon: getIconForEssentiality('unclear'),
+        },
     ];
+
 
     const codonLegend = [
         {label: 'Start Codon', color: 'green'},
         {label: 'Stop Codon', color: 'red'},
     ];
 
-    const renderLegendItems = (items: { label: string; color: string }[]) =>
+    const renderLegendItems = (
+        items: { label: string; color: string; icon?: string }[]
+    ) =>
         items.map((item, index) => (
             <div key={index} className={styles.legendItem}>
                 <span className={styles.colorSwatch} style={{backgroundColor: item.color}}></span>
-                {item.label}
+                <span className={styles.legendLabel}>
+        {item.label}
+                    {item.icon && <span className={styles.legendIcon}>{item.icon}</span>}
+      </span>
             </div>
         ));
+
 
     return (
         <div className={styles.viewerLegend}>

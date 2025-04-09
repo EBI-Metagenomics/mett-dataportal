@@ -51,8 +51,12 @@ const getTracks
                         color1: `jexl:getColorForEssentiality(get(feature, 'Essentiality'))`,
                         labels: {
                             name: `jexl:
-                                get(feature, 'locus_tag') + ' ' + get(feature, 'EssentialityVisual')
-                            `,
+                            (
+                              (get(feature, 'gene') && get(feature, 'gene') + ' / ' + get(feature, 'locus_tag')) 
+                              || get(feature, 'locus_tag')
+                            ) + 
+                            ' ' + (get(feature, 'EssentialityVisual') || '')
+                          `,
                         },
                         showForward: true,
                         showReverse: true,

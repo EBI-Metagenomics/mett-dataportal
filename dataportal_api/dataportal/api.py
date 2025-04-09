@@ -136,20 +136,20 @@ async def get_type_strains(request):
     response=GenomePaginationSchema,
     summary="Search genomes by query",
     description=(
-        "Searches genomes using a free-text query string. "
-        "Returns a paginated list of matching genome records. "
-        "Supports optional sorting by 'isolate_name' or 'species'."
+            "Searches genomes using a free-text query string. "
+            "Returns a paginated list of matching genome records. "
+            "Supports optional sorting by 'isolate_name' or 'species'."
     )
 )
 async def search_genomes_by_string(
-    request,
-    query: str = Query(..., description="Search term to match against genome names or metadata."),
-    page: int = Query(1, description="Page number to retrieve."),
-    per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."),
-    sortField: Optional[str] = Query(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."),
-    sortOrder: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
-    isolates: Optional[List[str]] = Query(None, description="Filter by a list of isolate names."),
-    species_acronym: Optional[str] = Query(None, description="Filter by species acronym."),
+        request,
+        query: str = Query(..., description="Search term to match against genome names or metadata."),
+        page: int = Query(1, description="Page number to retrieve."),
+        per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."),
+        sortField: Optional[str] = Query(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."),
+        sortOrder: Optional[str] = Query(DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."),
+        isolates: Optional[List[str]] = Query(None, description="Filter by a list of isolate names."),
+        species_acronym: Optional[str] = Query(None, description="Filter by species acronym."),
 ):
     sortField = sortField or STRAIN_FIELD_ISOLATE_NAME
     sortOrder = sortOrder or DEFAULT_SORT
@@ -330,6 +330,7 @@ async def get_faceted_search(
                                             description="Essentiality status to filter genes (e.g., 'essential')."),
         isolates: Optional[str] = Query("", description="Comma-separated list of isolate names."),
         cog_id: Optional[str] = Query(None, description="Comma-separated list of COG IDs to filter by."),
+        cog_funcats: Optional[str] = Query(None, description="Comma-separated list of COG functional categories to filter by."),
         kegg: Optional[str] = Query(None, description="KEGG pathway or gene ID to filter by."),
         go_term: Optional[str] = Query(None, description="GO term ID or label to filter by."),
         pfam: Optional[str] = Query(None, description="Pfam domain ID to filter by."),
@@ -339,7 +340,7 @@ async def get_faceted_search(
     isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
     logger.info(f"Isolates received: {isolate_names_list} (type: {type(isolate_names_list)})")
     return await gene_service.get_faceted_search(species_acronym, isolate_names_list, essentiality,
-                                                 cog_id, kegg, go_term, pfam, interpro,
+                                                 cog_id, cog_funcats, kegg, go_term, pfam, interpro,
                                                  limit)
 
 

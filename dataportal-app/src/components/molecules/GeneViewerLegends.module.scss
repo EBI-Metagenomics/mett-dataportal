@@ -16,7 +16,7 @@
 .legendColumns {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 1.2rem;
+  column-gap: 2.2rem;
   row-gap: 0.3rem;
 }
 
@@ -24,6 +24,15 @@
   display: flex;
   align-items: center;
   margin-bottom: 0.3rem;
+}
+
+.legendIcon {
+  margin-left: 4px;
+}
+.legendLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .colorSwatch {

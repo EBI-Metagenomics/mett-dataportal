@@ -66,18 +66,25 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
 
                 // Ensure attributes is an object before spreading
                 const attributes = featureData.attributes && typeof featureData.attributes === 'object'
-                    ? featureData.attributes
+                    ? featureData.attributes as Record<string, string>
                     : {};
 
                 const {attributes: _, ...featureWithoutAttributes} = featureData;
                 const Essentiality = '';
                 const EssentialityVisual = '';
 
+                const description = [
+                    attributes.gene ? `Gene: ${attributes.gene}` : null,
+                    `Locus Tag: ${attributes.locus_tag}`,
+                    `Essentiality: ${Essentiality || 'unknown'}`,
+                ].filter(Boolean).join('\n');
+
                 return new SimpleFeature({
                     ...featureWithoutAttributes,
-                    ...attributes, // Flatten attributes
+                    ...attributes,
                     Essentiality,
-                    EssentialityVisual
+                    EssentialityVisual,
+                    // description,
                 });
             });
         })
@@ -194,6 +201,12 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
 
             const EssentialityVisual = getIconForEssentiality(Essentiality);
 
+            const description = [
+                attributes.gene ? `Gene: ${attributes.gene}` : null,
+                `Locus Tag: ${locusTag}`,
+                `Essentiality: ${Essentiality}`,
+            ].filter(Boolean).join('\n');
+
             // Flatten attributes and add essentiality
             const {attributes: _, ...featureWithoutAttributes} = feature.toJSON();
             return new SimpleFeature({
@@ -201,6 +214,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 ...attributes,
                 Essentiality,
                 EssentialityVisual,
+                // description,
             });
         });
 
