@@ -32,6 +32,7 @@ export const FACET_ORDER = [
     'pfam',
     'interpro',
     'kegg',
+    'cog_funcats',
     'cog_id',
 ];
 
