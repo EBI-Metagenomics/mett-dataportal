@@ -40,6 +40,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-dev
                   key: REACT_APP_GFF_INDEXES_PATH
+            - name: REACT_APP_BACINTERACTOME_SHINY_APP_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: REACT_APP_BACINTERACTOME_SHINY_APP_URL
           ports:
             - containerPort: 80
               name: react-app

@@ -1,6 +1,6 @@
 import React from 'react';
 import {GeneMeta} from '../../../../interfaces/Gene';
-import {getIconForEssentiality} from '../../../../utils/appConstants';
+import {getBacinteractomeUniprotUrl, getIconForEssentiality} from '../../../../utils/appConstants';
 
 export interface ColumnDefinition {
     key: string;
@@ -62,6 +62,18 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         defaultVisible: true,
         onlyForTypeStrain: true,
         render: gene => gene.uniprot_id || '',
+        // render: gene =>
+        //     gene.uniprot_id ? (
+        //         <a
+        //             href={getBacinteractomeUniprotUrl(gene.uniprot_id)}
+        //             target="_blank"
+        //             rel="noreferrer"
+        //         >
+        //             {gene.uniprot_id}
+        //         </a>
+        //     ) : (
+        //         '---'
+        //     ),
     },
     {
         key: 'essentiality',
