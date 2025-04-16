@@ -61,7 +61,6 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         sortable: false,
         defaultVisible: true,
         onlyForTypeStrain: true,
-        // render: gene => gene.uniprot_id || '',
         render: gene =>
             gene.uniprot_id ? (
                 <a
