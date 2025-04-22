@@ -142,6 +142,9 @@ class GeneDocument(Document):
     class Index:
         name = "gene_index"
         settings = {
+            "index": {
+                "max_result_window": 500000
+            },
             "analysis": {
                 "analyzer": {
                     "autocomplete_analyzer": autocomplete_analyzer
