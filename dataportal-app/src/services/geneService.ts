@@ -71,6 +71,7 @@ export class GeneService {
         selectedFacets?: Record<string, string[]>
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
+            console.log("####query: ", query)
             const params = GeneService.buildParamsFetchGeneSearchResults(query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets);
             const response = await ApiService.get<PaginatedResponse<GeneMeta>>("/genes/search/advanced", params);
             return response;
@@ -81,7 +82,7 @@ export class GeneService {
     }
 
     static buildParamsFetchGeneSearchResults(
-        gene: string,
+        query: string,
         page: number,
         perPage: number,
         sortField: string,
@@ -91,7 +92,7 @@ export class GeneService {
         selectedFacets?: Record<string, string[]>
     ) {
         const params = new URLSearchParams({
-            query: gene,
+            query: query,
             page: String(page),
             per_page: String(perPage),
             sort_field: sortField,

@@ -205,6 +205,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         setQuery(suggestion.isolate_name);
         setIsolateName(suggestion.isolate_name);
         setSuggestions([]);
+        // fixed for query based on user selection
+        fetchSearchResults(1, sortField, sortOrder);
         // EMG-7006 - no auto selection of filters
         //onGenomeSelect({id: suggestion.strain_id, name: suggestion.isolate_name});
     };

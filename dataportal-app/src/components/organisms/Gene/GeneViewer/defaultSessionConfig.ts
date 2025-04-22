@@ -54,13 +54,12 @@ const getDefaultSessionConfig = (
                             {
                                 id: assembly.sequence.trackId,
                                 type: 'LinearReferenceSequenceDisplay',
-                                height: 180,
                                 showForward: true,
                                 showReverse: true,
                                 showLabels: true,
                                 showTranslation: false,
                                 showForwardStrand: true,
-                                showReverseStrand: false
+                                showReverseStrand: false,
                             },
                         ],
                     },

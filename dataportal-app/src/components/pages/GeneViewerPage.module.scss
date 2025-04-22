@@ -1,12 +1,3 @@
-.mainContainer {
-  max-width: 800px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 16px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
 
 .vfContent {
   width: 100% !important;
@@ -105,22 +96,18 @@
 }
 
 .jbrowseViewer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: block;
   width: 100%;
-  min-width: 800px;
-  margin: 0 auto;
-  overflow: hidden;
-  position: relative;
+  min-width: 1000px;
 }
 
+/* Let jbrowseContainer grow, and scroll vertically */
 .jbrowseContainer {
   width: 100%;
-  height: 500px;
-  overflow-y: hidden;
-  overflow-x: hidden;
   min-width: 800px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -128,14 +115,18 @@
 
 .sidePanel {
   flex-grow: 1;
-  height: calc(100% - 50px); /* Adjust height dynamically */
-  overflow-y: auto; /* Only side panel should scroll */
+  height: calc(100% - 50px);
+  overflow-y: auto;
 }
 
 header[data-testid="jbrowse-header"],
 header.MuiPaper-root.MuiAppBar-root[class*="css-"],
 header[class*="MuiAppBar-root"][class*="css-"] {
   display: none !important;
+}
+
+[class*="trackRenderingContainer"] {
+  min-height: 130px !important;
 }
 
 .spinnerOverlay {

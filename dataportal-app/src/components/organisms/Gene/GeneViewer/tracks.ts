@@ -58,6 +58,7 @@ const getTracks
                             ' ' + (get(feature, 'EssentialityVisual') || '')
                           `,
                         },
+                        height: 20,
                         showForward: true,
                         showReverse: true,
                         showTranslation: true,

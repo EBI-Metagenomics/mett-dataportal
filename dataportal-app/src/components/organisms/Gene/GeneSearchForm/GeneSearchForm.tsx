@@ -192,6 +192,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
                     setApiRequestDetails(apiDetails);
 
+                    console.log("****query: ", query)
                     response = await GeneService.fetchGeneSearchResultsAdvanced(
                         query,
                         page,
@@ -300,10 +301,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         // console.log('strain name: ' + suggestion.isolate_name)
         // console.log('suggestion.gene_name: ' + suggestion.gene_name)
         // console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
-        setQuery(suggestion.gene_name || suggestion.locus_tag + '(' + suggestion.isolate_name + ')');
+        setQuery(suggestion.gene_name || suggestion.locus_tag);
         setGeneName(suggestion.gene_name);
         setSelectedGeneId(suggestion.locus_tag);
         setSuggestions([]);
+        // fixed for query based on user selection
+        fetchSearchResults(1, sortField, sortOrder, selectedFacets);
+
     };
 
 

@@ -29,7 +29,7 @@ const GeneViewerPage: React.FC = () => {
     const {strainName} = useParams<{ strainName?: string }>();
     const searchParams = new URLSearchParams(location.search);
     const geneId = searchParams.get('locus_tag');
-    const [height, setHeight] = useState(500);
+    const [height, setHeight] = useState(450);
 
     const [includeEssentiality, setIncludeEssentiality] = useState(true);
     const selectedSpecies = useMemo(() => [], []);
@@ -56,7 +56,7 @@ const GeneViewerPage: React.FC = () => {
                 }
 
                 // Adjust height based on essentiality track
-                setHeight(genomeMeta?.type_strain ? 500 : 500);
+                // setHeight(genomeMeta?.type_strain ? 300 : 300);
 
             } catch (error) {
                 console.error('Error fetching gene/genome meta information', error);
@@ -225,6 +225,21 @@ const GeneViewerPage: React.FC = () => {
                 view.showTrack(trackId);
             }
         });
+
+        // if (viewState?.session) {
+        //     const activeWidgets = viewState.session.activeWidgets
+        //     const alreadyOpen =
+        //         Array.isArray(activeWidgets) && activeWidgets.includes('BaseFeatureWidget')
+        //
+        //     if (!alreadyOpen) {
+        //         try {
+        //             const widget = viewState.session.addWidget('BaseFeatureWidget', 'featureDetails')
+        //             viewState.session.showWidget(widget)
+        //         } catch (err) {
+        //             console.warn('Could not show feature panel:', err)
+        //         }
+        //     }
+        // }
     }
 
     const handleRemoveGenome = (isolate_name: string) => {
@@ -351,10 +366,18 @@ const GeneViewerPage: React.FC = () => {
                 )}
 
                 {/* JBrowse Component Section */}
-                <div style={{paddingTop: '5px', height: `${height}px`, overflow: 'hidden'}}>
+                <div
+                    style={{
+                        // paddingTop: '5px',
+                        maxHeight: `${height}px`,
+                        overflowY: 'auto',
+                        overflowX: 'auto',
+                        // border: '1px solid #ddd',
+                    }}
+                >
                     {viewState ? (
                         <div className={styles.jbrowseViewer}>
-                            <div className={styles.jbrowseContainer} style={{height: `${height}px`}}>
+                            <div className={styles.jbrowseContainer}>
                                 <JBrowseApp viewState={viewState}/>
                             </div>
                         </div>

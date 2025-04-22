@@ -380,6 +380,7 @@ class GeneService:
                         "fields": [
                             ES_FIELD_GENE_NAME,
                             ES_FIELD_ALIAS,
+                            ES_FIELD_LOCUS_TAG,
                             ES_FIELD_PRODUCT,
                             ES_FIELD_PFAM,
                             ES_FIELD_INTERPRO
