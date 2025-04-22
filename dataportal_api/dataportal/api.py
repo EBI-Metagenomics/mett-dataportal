@@ -19,6 +19,7 @@ from .services.essentiality_service import EssentialityService
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
 from .services.species_service import SpeciesService
+from .utils.cog_categories import COGCategoryService
 from .utils.constants import (
     DEFAULT_PER_PAGE_CNT,
     DEFAULT_SORT,
@@ -26,6 +27,7 @@ from .utils.constants import (
     ROUTER_GENE,
     ROUTER_SPECIES,
     STRAIN_FIELD_ISOLATE_NAME, URL_PREFIX_GENES, URL_PREFIX_GENOMES, URL_PREFIX_SPECIES, DEFAULT_FACET_LIMIT,
+    ROUTER_METADATA, URL_PREFIX_METADATA,
 )
 from .utils.decorators import log_endpoint_access
 from .utils.errors import raise_http_error
@@ -41,6 +43,7 @@ genome_service = GenomeService()
 gene_service = GeneService()
 essentiality_service = EssentialityService()
 species_service = SpeciesService()
+cog_cat_service = COGCategoryService()
 
 api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
@@ -53,6 +56,7 @@ api = NinjaAPI(
 genome_router = Router(tags=[ROUTER_GENOME])
 gene_router = Router(tags=[ROUTER_GENE])
 species_router = Router(tags=[ROUTER_SPECIES])
+metadata_router = Router(tags=[ROUTER_METADATA])
 
 
 def custom_error_handler(request, exc):
@@ -330,7 +334,8 @@ async def get_faceted_search(
                                             description="Essentiality status to filter genes (e.g., 'essential')."),
         isolates: Optional[str] = Query("", description="Comma-separated list of isolate names."),
         cog_id: Optional[str] = Query(None, description="Comma-separated list of COG IDs to filter by."),
-        cog_funcats: Optional[str] = Query(None, description="Comma-separated list of COG functional categories to filter by."),
+        cog_funcats: Optional[str] = Query(None,
+                                           description="Comma-separated list of COG functional categories to filter by."),
         kegg: Optional[str] = Query(None, description="KEGG pathway or gene ID to filter by."),
         go_term: Optional[str] = Query(None, description="GO term ID or label to filter by."),
         pfam: Optional[str] = Query(None, description="Pfam domain ID to filter by."),
@@ -510,8 +515,19 @@ async def get_essentiality_data_by_contig(
         )
 
 
+@metadata_router.get(
+    "/cog-categories",
+    summary="List all COG categories",
+    description="Returns a list of all standardized COG category codes with their functional descriptions.",
+    response=List[Dict[str, str]]
+)
+def get_all_categories(request):
+    return cog_cat_service.as_list()
+
+
 # Register routers with the main API
 api.add_router(URL_PREFIX_SPECIES, species_router)
 api.add_router(URL_PREFIX_GENOMES, genome_router)
 api.add_router(URL_PREFIX_GENES, gene_router)
+api.add_router(URL_PREFIX_METADATA, metadata_router)
 api.add_exception_handler(Exception, custom_error_handler)

@@ -2,9 +2,11 @@
 ROUTER_GENOME = "Genomes"
 ROUTER_GENE = "Genes"
 ROUTER_SPECIES = "Species"
+ROUTER_METADATA = "Metadata"
 URL_PREFIX_SPECIES = "/species"
 URL_PREFIX_GENOMES = "/genomes"
 URL_PREFIX_GENES = "/genes"
+URL_PREFIX_METADATA = "/metadata"
 
 # Generic constants
 FIELD_ID = "id"

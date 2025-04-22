@@ -4,6 +4,7 @@ import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
 import {ESSENTIALITY_DETERMINATION_TXT, EXT_LINK_ESSENTIALITY_JOURNAL, FACET_ORDER} from "../../utils/appConstants";
 import * as Popover from '@radix-ui/react-popover';
+import {MetadataService} from "../../services/metadataService";
 
 interface GeneFacetedFilterProps {
     facets: GeneFacetResponse;
@@ -22,6 +23,8 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
     const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
     const [filterText, setFilterText] = useState<Record<string, string>>({});
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+    const [cogCategoryDefs, setCogCategoryDefs] = useState<Record<string, string>>({});
+
 
     const orderedFacetEntries = Object.entries(facets)
         .filter(([facetGroup, values]) => facetGroup !== 'total_hits' && Array.isArray(values))
@@ -45,6 +48,16 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
             return acc;
         }, {} as Record<string, boolean>);
         setCollapsedGroups(initialCollapsed);
+
+        MetadataService.fetchCOGCategories()
+        .then((data) => {
+            const mapping = data.reduce((acc: Record<string, string>, item: { code: string, label: string }) => {
+                acc[item.code] = item.label;
+                return acc;
+            }, {});
+            setCogCategoryDefs(mapping);
+        });
+
     }, [facets]);
 
 
@@ -119,6 +132,40 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                     </a>
 
                                                 </p>
+                                            </div>
+                                        </Popover.Content>
+                                    </Popover.Portal>
+                                </Popover.Root>
+                            )}
+                            {facetGroup === 'cog_funcats' && (
+                                <Popover.Root>
+                                    <Popover.Trigger asChild>
+                                        <button
+                                            className={styles.infoIcon}
+                                            onClick={(e) => e.stopPropagation()}
+                                            aria-label="COG category info"
+                                        >
+                                            ℹ️
+                                        </button>
+                                    </Popover.Trigger>
+                                    <Popover.Portal>
+                                        <Popover.Content
+                                            className={styles.popoverContent}
+                                            side="top"
+                                            align="end"
+                                            sideOffset={5}
+                                        >
+                                            <div className={styles.popoverInner}>
+                                                <strong>COG Categories:</strong><br/>
+                                                <ul style={{
+                                                    maxHeight: '200px',
+                                                    overflowY: 'auto',
+                                                    paddingLeft: '1rem'
+                                                }}>
+                                                    {Object.entries(cogCategoryDefs).map(([code, label]) => (
+                                                        <li key={code}><b>{code}</b>: {label}</li>
+                                                    ))}
+                                                </ul>
                                             </div>
                                         </Popover.Content>
                                     </Popover.Portal>
