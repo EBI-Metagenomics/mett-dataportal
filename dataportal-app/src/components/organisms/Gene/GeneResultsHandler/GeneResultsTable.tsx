@@ -6,6 +6,8 @@ import {GeneMeta} from '../../../../interfaces/Gene';
 import {TABLE_MAX_COLUMNS, ZOOM_LEVELS} from '../../../../utils/appConstants';
 import {GENE_TABLE_COLUMNS} from "@components/organisms/Gene/GeneResultsHandler/GeneTableColumns";
 import * as Dialog from '@radix-ui/react-dialog';
+import {getFeatureByCoords} from "../../../../utils/jbrowseUtils";
+import { BaseTrackModel } from '@jbrowse/core/pluggableElementTypes/models';
 
 
 type ViewModel = ReturnType<typeof createViewState>;
@@ -41,9 +43,47 @@ const handleNavigation = (
                 view.zoomTo(ZOOM_LEVELS.NAV);
                 setLoading(false);
             }, 200);
+
+            // Close the feature panel if open
+            // console.log("***widgets: ", viewState.session.widgets)
+            if (viewState?.session?.widgets?.has('baseFeature')) {
+                const w = viewState.session.activeWidgets.get('baseFeature')
+                // console.log("*****##########", w)
+                viewState.session.hideWidget(w)
+            }
+
+            // Fetch feature from EssentialityAdapter
+            const feature = getFeatureByCoords(viewState, contig, start, end)
+
+            // if (viewState.session.widgets.has('baseFeature')) {
+            //     // console.log("***** old widget: ", viewState.session.widgets)
+            //     viewState.session.hideWidget('baseFeature')
+            // }
+            // const track = view.tracks.find((t: BaseTrackModel) => t.type === 'FeatureTrack')
+
+            // if (feature) {
+            //     const widget = viewState.session.addWidget('BaseFeatureWidget', 'baseFeature', {
+            //         view: view,
+            //         featureData: feature,
+            //         track: track,
+            //     })
+
+
+                // if (viewState.session.activeWidgets.has(widget.id)) {
+                //   viewState.session.activeWidgets.delete(widget.id)
+                // }
+                // viewState.session.activeWidgets.set(widget.id, widget)
+
+                //
+                // const activeWidget = viewState.session.widgets.get('baseFeature')
+                // console.log("***** new widget: ",activeWidget)
+                // console.log("***** active widgets: ",viewState.session.activeWidgets)
+                // viewState.session.showWidgetDrawer()
+                // viewState.session.showWidget(activeWidget)
+            // }
         } catch (error) {
             console.error('Error during navigation:', error);
-            setLoading(false); // Ensure spinner is hidden on error
+            setLoading(false);
         }
     } else {
         console.error('navToLocString is not available on the view object');

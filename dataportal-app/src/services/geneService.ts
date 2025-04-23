@@ -49,7 +49,7 @@ export class GeneService {
                 }
             }
             const response = await ApiService.get<GeneSuggestion[]>("genes/autocomplete", params);
-            console.log("****response", response)
+            // console.log("****response", response)
             return response;
         } catch (error) {
             console.error("Error fetching gene autocomplete suggestions:", error);

@@ -14,6 +14,7 @@ import {GeneMeta} from "../../interfaces/Gene";
 import {getEssentialityDataUrl, SPINNER_DELAY, ZOOM_LEVELS} from "../../utils/appConstants";
 import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm";
 import GeneViewerLegends from "@components/molecules/GeneViewerLegends";
+import DrawerWidget from "@components/atoms/DrawerWidget";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -379,6 +380,7 @@ const GeneViewerPage: React.FC = () => {
                         <div className={styles.jbrowseViewer}>
                             <div className={styles.jbrowseContainer}>
                                 <JBrowseApp viewState={viewState}/>
+                                {/*<DrawerWidget session={viewState.session} />*/}
                             </div>
                         </div>
                     ) : (

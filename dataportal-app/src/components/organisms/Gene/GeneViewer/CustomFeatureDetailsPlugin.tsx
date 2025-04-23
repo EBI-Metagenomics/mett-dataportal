@@ -126,7 +126,7 @@ export default class CustomFeatureDetailsPlugin extends Plugin {
                         if (propertiesToProcess.includes(key)) {
                             processedObj[key] = processValue(value);
                             console.log(`Processed key: ${key}`);
-                            console.log(`**** Processed value: ${processedObj[key]}`);
+                            // console.log(`**** Processed value: ${processedObj[key]}`);
                         } else if (typeof value === 'object' && processedKeys.size < propertiesToProcess.length) {
                             console.log(`ELSE IF Processed key: ${key}`);
                             // Recurse into nested objects only if not all keys are processed

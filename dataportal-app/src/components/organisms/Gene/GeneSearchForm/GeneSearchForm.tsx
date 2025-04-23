@@ -192,7 +192,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
                     setApiRequestDetails(apiDetails);
 
-                    console.log("****query: ", query)
+                    // console.log("****query: ", query)
                     response = await GeneService.fetchGeneSearchResultsAdvanced(
                         query,
                         page,
