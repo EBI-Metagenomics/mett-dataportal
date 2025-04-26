@@ -106,6 +106,7 @@ class GeneDocument(Document):
     pfam = Keyword(multi=True, normalizer=lowercase_normalizer)
     eggnog = Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)})
     interpro = Keyword(multi=True, normalizer=lowercase_normalizer)
+    has_amr_info = Boolean()
     uf_ontology_terms = Keyword(multi=True)
     uf_prot_rec_fullname = Text(fields={"keyword": Keyword()})
 
@@ -136,6 +137,20 @@ class GeneDocument(Document):
             "db_name": Keyword(),
             "db_accession": Keyword(),
             "db_description": Text()
+        }
+    )
+
+    amr = Nested(
+        properties={
+            "gene_symbol": Keyword(),
+            "sequence_name": Text(fields={"keyword": Keyword()}),
+            "scope": Keyword(),
+            "element_type": Keyword(),
+            "element_subtype": Keyword(),
+            "drug_class": Keyword(),
+            "drug_subclass": Keyword(),
+            "uf_keyword": Keyword(multi=True),
+            "uf_ecnumber": Keyword()
         }
     )
 

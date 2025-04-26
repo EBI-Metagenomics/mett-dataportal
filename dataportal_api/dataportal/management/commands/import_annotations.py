@@ -211,6 +211,26 @@ class Command(BaseCommand):
         }
         return species_mapping.get(species_acronym, None)
 
+    def parse_amr_attributes(self, attr_dict):
+        """Extract AMR-related fields from GFF attributes dict and return a list of AMR dicts."""
+        element_type = attr_dict.get("element_type", "").upper()
+        if element_type != "AMR":
+            return [], False
+
+        amr_entry = {
+            "gene_symbol": attr_dict.get("amrfinderplus_gene_symbol"),
+            "sequence_name": attr_dict.get("amrfinderplus_sequence_name"),
+            "scope": attr_dict.get("amrfinderplus_scope"),
+            "element_type": attr_dict.get("element_type"),
+            "element_subtype": attr_dict.get("element_subtype"),
+            "drug_class": attr_dict.get("drug_class"),
+            "drug_subclass": attr_dict.get("drug_subclass"),
+            "uf_keyword": [kw.strip() for kw in attr_dict.get("uf_keyword", "").split(",") if kw.strip()],
+            "uf_ecnumber": attr_dict.get("uf_prot_rec_ecnumber")
+        }
+
+        return [amr_entry], True
+
     def is_isolate_processed(self, isolate):
         """ Check if the isolate's data already exists in Elasticsearch. """
         response = GeneDocument.search().filter("term", isolate_name=isolate).execute()
@@ -314,6 +334,8 @@ class Command(BaseCommand):
 
                     cog_funcats = attr_dict.get("cog", "").split(",")
 
+                    amr_entries, has_amr_info = self.parse_amr_attributes(attr_dict)
+
                     if not locus_tag:
                         continue
 
@@ -341,6 +363,8 @@ class Command(BaseCommand):
                             product_source=product_source,
                             inference=inference,
                             eggnog=eggNOG,
+                            has_amr_info=has_amr_info,
+                            amr=amr_entries,
                             ontology_terms=ontology_terms,
                             uf_ontology_terms=uf_ontology_terms,
                             uf_prot_rec_fullname=uf_prot_rec_fullname,

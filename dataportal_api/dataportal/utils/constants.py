@@ -69,6 +69,7 @@ ES_FIELD_COG_ID = "cog_id"
 ES_FIELD_COG_FUNCATS = "cog_funcats"
 ES_FIELD_INTERPRO = "interpro"
 ES_FIELD_EGGNOG = "eggnog"
+ES_FIELD_AMR_INFO = "has_amr_info"
 
 # Search fields
 GENE_SEARCH_FIELDS = [
@@ -87,6 +88,7 @@ FACET_FIELDS = [
     ES_FIELD_COG_ID,
     ES_FIELD_COG_FUNCATS,
     GENE_ESSENTIALITY,
+    ES_FIELD_AMR_INFO,
 ]
 
 # Keyword sort fields
