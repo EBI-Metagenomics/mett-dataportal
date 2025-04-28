@@ -9,6 +9,7 @@ admin.site.site_header = "ME TT Data Portal Admin"
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api.urls),
+    path("", include("django_prometheus.urls")),
 ]
 
 if settings.DEBUG:

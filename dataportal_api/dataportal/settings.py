@@ -64,6 +64,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Application definition
 INSTALLED_APPS = [
+    "django_prometheus",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -79,6 +80,7 @@ if DEBUG:
     INSTALLED_APPS.append("debug_toolbar")
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -88,6 +90,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 MIDDLEWARE += ["dataportal.middleware.RemoveCOOPHeaderMiddleware"]
