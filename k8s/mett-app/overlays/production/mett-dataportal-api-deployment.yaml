@@ -19,7 +19,7 @@ spec:
         runAsUser: 7123
         runAsGroup: 1347
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.131
+        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.132
           imagePullPolicy: Always
           name: mett-dataportal-api-dev
           env:
@@ -84,6 +84,18 @@ spec:
           ports:
             - containerPort: 8000
               name: gunicorn
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+              scheme: HTTP
+              httpHeaders:
+                - name: Host
+                  value: 127.0.0.1
+            initialDelaySeconds: 20
+            periodSeconds: 300
+            successThreshold: 1
+            failureThreshold: 3
       imagePullSecrets:
         - name: quay-pull-secret
 

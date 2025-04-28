@@ -16,7 +16,7 @@ spec:
         app: mett-dataportal-react-app-dev
     spec:
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-react-app:v0.0.131
+        - image: quay.io/microbiome-informatics/mett-dataportal-react-app:v0.0.132
           imagePullPolicy: Always
           name: mett-dataportal-react-app-dev
           env:
@@ -48,6 +48,14 @@ spec:
           ports:
             - containerPort: 80
               name: react-app
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 20
+            periodSeconds: 300
+            successThreshold: 1
+            failureThreshold: 3
       imagePullSecrets:
         - name: quay-pull-secret
 
