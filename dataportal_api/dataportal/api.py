@@ -340,13 +340,14 @@ async def get_faceted_search(
         go_term: Optional[str] = Query(None, description="GO term ID or label to filter by."),
         pfam: Optional[str] = Query(None, description="Pfam domain ID to filter by."),
         interpro: Optional[str] = Query(None, description="InterPro ID to filter by."),
+        has_amr_info: Optional[bool] = Query(None, description="Filter genes that contain AMR information."),
         limit: int = Query(DEFAULT_FACET_LIMIT, description="Maximum number of genes to return.")
 ):
     isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
     logger.info(f"Isolates received: {isolate_names_list} (type: {type(isolate_names_list)})")
     return await gene_service.get_faceted_search(species_acronym, isolate_names_list, essentiality,
                                                  cog_id, cog_funcats, kegg, go_term, pfam, interpro,
-                                                 limit)
+                                                 has_amr_info, limit)
 
 
 # API Endpoint to retrieve gene by locus tag

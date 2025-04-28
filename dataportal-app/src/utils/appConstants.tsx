@@ -35,6 +35,7 @@ export const TABLE_MAX_COLUMNS = 12;
 
 export const FACET_ORDER = [
     'essentiality',
+    'has_amr_info',
     'pfam',
     'interpro',
     'kegg',

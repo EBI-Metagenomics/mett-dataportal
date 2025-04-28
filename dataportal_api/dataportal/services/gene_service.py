@@ -414,6 +414,7 @@ class GeneService:
                                  go_term: Optional[str] = None,
                                  pfam: Optional[str] = None,
                                  interpro: Optional[str] = None,
+                                 has_amr_info: Optional[bool] = None,
                                  limit: Optional[int] = DEFAULT_FACET_LIMIT):
 
         try:
@@ -428,6 +429,7 @@ class GeneService:
                 go_term=split_comma_param(go_term),
                 pfam=split_comma_param(pfam),
                 interpro=split_comma_param(interpro),
+                has_amr_info=has_amr_info,
                 limit=limit
             )
 
@@ -450,7 +452,8 @@ class GeneService:
             facet_results = {
                 field: self.process_aggregation_results(
                     {b[0]: b[1] for b in (getattr(response.facets, field) or [])},
-                    selected_values=[selected_map[field]] if selected_map.get(field) else []
+                    selected_values=[selected_map[field]] if selected_map.get(field) else [],
+                    facet_group=field
                 )
                 for field in FACET_FIELDS
             }
@@ -464,17 +467,28 @@ class GeneService:
     def process_aggregation_results(
             self,
             aggregation_dict: Dict[str, int],
-            selected_values: Optional[List[str]] = None
+            selected_values: Optional[List[str]] = None,
+            facet_group: Optional[str] = None
     ) -> List[Dict[str, object]]:
         """Removes empty keys from aggregation results and marks selected items."""
         selected_values = selected_values or []
 
-        return [
-            {
-                "value": key,
+        results = []
+        for key, count in aggregation_dict.items():
+            if not str(key).strip():
+                continue
+
+            # Special handling for has_amr_info
+            value = (
+                True if facet_group == "has_amr_info" and str(key) in ["1", "true", "True"] else
+                False if facet_group == "has_amr_info" and str(key) in ["0", "false", "False"] else
+                str(key)
+            )
+
+            results.append({
+                "value": value,
                 "count": count,
-                "selected": key in selected_values
-            }
-            for key, count in aggregation_dict.items()
-            if key.strip()
-        ]
+                "selected": str(value).lower() in [str(val).lower() for val in selected_values]
+            })
+
+        return results

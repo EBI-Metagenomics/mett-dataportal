@@ -9,7 +9,7 @@ from dataportal.utils.constants import (
     ES_FIELD_PFAM, ES_FIELD_INTERPRO,
     ES_FIELD_KEGG, ES_FIELD_COG_ID,
     ES_FIELD_ISOLATE_NAME,
-    ES_FIELD_SPECIES_ACRONYM, ES_FIELD_COG_FUNCATS,
+    ES_FIELD_SPECIES_ACRONYM, ES_FIELD_COG_FUNCATS, ES_FIELD_AMR_INFO,
 )
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class GeneFacetedSearch(FacetedSearch):
 
     def __init__(self, query='', filters=None, species_acronym=None, essentiality=None,
                  isolates=None, cog_id=None, cog_funcats=None, kegg=None, go_term=None, pfam=None, interpro=None,
-                 limit: int = DEFAULT_FACET_LIMIT):
+                 has_amr_info=None, limit: int = DEFAULT_FACET_LIMIT):
         self.species_acronym = species_acronym
         self.essentiality = essentiality
         self.isolates = isolates
@@ -32,6 +32,7 @@ class GeneFacetedSearch(FacetedSearch):
         self.go_term = go_term
         self.pfam = pfam
         self.interpro = interpro
+        self.has_amr_info = has_amr_info
 
         self.facets = {
             GENE_ESSENTIALITY: TermsFacet(field=GENE_ESSENTIALITY, size=limit),
@@ -40,6 +41,7 @@ class GeneFacetedSearch(FacetedSearch):
             ES_FIELD_KEGG: TermsFacet(field=ES_FIELD_KEGG, size=limit),
             ES_FIELD_COG_ID: TermsFacet(field=ES_FIELD_COG_ID, size=limit),
             ES_FIELD_COG_FUNCATS: TermsFacet(field=ES_FIELD_COG_FUNCATS, size=limit),
+            ES_FIELD_AMR_INFO: TermsFacet(field=ES_FIELD_AMR_INFO, size=2),
         }
 
         super().__init__(query=query, filters=filters or {})
@@ -71,6 +73,8 @@ class GeneFacetedSearch(FacetedSearch):
         if self.cog_funcats:
             cog_funcats_values = self.cog_funcats if isinstance(self.cog_funcats, list) else [self.cog_funcats]
             s = s.filter('terms', cog_funcats=cog_funcats_values)
+        if self.has_amr_info is not None:
+            s = s.filter('term', has_amr_info=self.has_amr_info)
 
         # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
         return s
