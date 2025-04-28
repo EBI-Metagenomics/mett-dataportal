@@ -9,6 +9,8 @@ export interface GeneMeta {
     end_position?: number;
     seq_id: string;
     isolate_name: string;
+    species_scientific_name: string;
+    species_acronym: string;
     uniprot_id?: string | null;
     essentiality?: string;
     cog_funcats?: string[] | null;

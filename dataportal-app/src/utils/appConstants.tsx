@@ -9,9 +9,11 @@ export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localh
 export const API_GENOMES_BY_ISOLATE_NAMES = `${API_BASE_URL}/genomes/by-isolate-names`;
 
 export const BACINTERACTOME_SHINY_APP_BASE_URL = process.env.REACT_APP_BACINTERACTOME_SHINY_APP_URL;
-export const getBacinteractomeUniprotUrl = (uniprot_id: string) => `${BACINTERACTOME_SHINY_APP_BASE_URL}?protein=${uniprot_id}`;
+export const getBacinteractomeUniprotUrl =
+    (uniprot_id: string, species_name: string) => `${BACINTERACTOME_SHINY_APP_BASE_URL}?protein=${uniprot_id}&species=${species_name}`;
 
-export const getAPIUrlGenomeSearchWithSpecies = (species_acronym: string) => `${API_BASE_URL}/species/${species_acronym}/genomes/search`;
+export const getAPIUrlGenomeSearchWithSpecies =
+    (species_acronym: string) => `${API_BASE_URL}/species/${species_acronym}/genomes/search`;
 export const API_GENOME_SEARCH = `${API_BASE_URL}/genomes/search`;
 export const getEssentialityDataUrl = (isolate_name: string) => `${API_BASE_URL}/genomes/${isolate_name}/essentiality`;
 

@@ -17,7 +17,11 @@ from dataportal.utils.constants import (
     ES_FIELD_INTERPRO,
     GENE_FIELD_EC_NUMBER,
     GENE_FIELD_DBXREF,
-    UNKNOWN_ESSENTIALITY, GENE_FIELD_START, GENE_FIELD_END, ES_FIELD_EGGNOG,
+    UNKNOWN_ESSENTIALITY, GENE_FIELD_START,
+    GENE_FIELD_END,
+    ES_FIELD_EGGNOG,
+    ES_FIELD_SPECIES_ACRONYM,
+    ES_FIELD_SPECIES_SCIENTIFIC_NAME,
 )
 
 
@@ -30,6 +34,8 @@ class GeneData(models.Model):
     locals()[GENE_FIELD_END_POS] = models.IntegerField(null=True)
     locals()[FIELD_SEQ_ID] = models.CharField(max_length=100, null=True)
     locals()[ES_FIELD_ISOLATE_NAME] = models.CharField(max_length=100, null=True)
+    locals()[ES_FIELD_SPECIES_SCIENTIFIC_NAME] = models.CharField(max_length=100, null=True)
+    locals()[ES_FIELD_SPECIES_ACRONYM] = models.CharField(max_length=100, null=True)
     locals()[ES_FIELD_UNIPROT_ID] = models.CharField(max_length=100, null=True)
     locals()[GENE_ESSENTIALITY] = models.CharField(max_length=100, null=True, default=UNKNOWN_ESSENTIALITY)
     locals()[ES_FIELD_COG_FUNCATS] = models.JSONField(null=True, default=list)
@@ -57,6 +63,8 @@ def gene_from_hit(hit) -> GeneData:
         end_position=source.get(GENE_FIELD_END, source.get(GENE_FIELD_END_POS)),
         seq_id=source.get(FIELD_SEQ_ID),
         isolate_name=source.get(ES_FIELD_ISOLATE_NAME),
+        species_scientific_name=source.get(ES_FIELD_SPECIES_SCIENTIFIC_NAME),
+        species_acronym=source.get(ES_FIELD_SPECIES_ACRONYM),
         uniprot_id=source.get(ES_FIELD_UNIPROT_ID),
         essentiality=source.get(GENE_ESSENTIALITY, UNKNOWN_ESSENTIALITY),
         cog_funcats=source.get(ES_FIELD_COG_FUNCATS, []),

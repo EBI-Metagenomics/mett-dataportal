@@ -89,6 +89,8 @@ class GeneResponseSchema(BaseModel):
     end_position: Optional[int] = None
     seq_id: Optional[str] = None
     isolate_name: Optional[str] = None
+    species_scientific_name: Optional[str] = None
+    species_acronym: Optional[str] = None
     uniprot_id: Optional[str] = None
     essentiality: Optional[str] = "Unknown"
     cog_funcats: Optional[List[str]] = None

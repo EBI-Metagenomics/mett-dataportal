@@ -64,7 +64,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         render: gene =>
             gene.uniprot_id ? (
                 <a
-                    href={getBacinteractomeUniprotUrl(gene.uniprot_id)}
+                    href={getBacinteractomeUniprotUrl(gene.uniprot_id, gene.species_scientific_name)}
                     target="_blank"
                     rel="noreferrer"
                 >
