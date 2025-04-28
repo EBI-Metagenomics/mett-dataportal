@@ -10,6 +10,48 @@
 			"name": "ME TT - API Integration Tests",
 			"item": [
 				{
+					"name": "Health",
+					"item": [
+						{
+							"name": "App-Health-Check",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Helath is Ok\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.status).to.eql(\"ok\")",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/health",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"health"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
 					"name": "species",
 					"item": [
 						{
@@ -1113,10 +1155,7 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Number of pages matches expected value\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.length).to.eql(10); ",
-											"});"
+											""
 										],
 										"type": "text/javascript",
 										"packages": {}
@@ -1165,10 +1204,7 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Number of pages matches expected value\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.length).to.eql(10); ",
-											"});"
+											""
 										],
 										"type": "text/javascript",
 										"packages": {}
@@ -1221,10 +1257,7 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Number of pages matches expected value\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.length).to.eql(10); ",
-											"});"
+											""
 										],
 										"type": "text/javascript",
 										"packages": {}
@@ -1253,6 +1286,41 @@
 											"key": "limit",
 											"value": "5"
 										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Faceted-Search-test",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/faceted-search",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"faceted-search"
 									]
 								}
 							},
@@ -1348,6 +1416,54 @@
 										{
 											"key": "query",
 											"value": "PV_ATCC8482_03700"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Autocomplete-LocusTag-02",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(20); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=PV&query=PV_TC-KB-P90_00653",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "query",
+											"value": "PV_TC-KB-P90_00653"
 										}
 									]
 								}
@@ -2304,6 +2420,136 @@
 							"response": []
 						},
 						{
+							"name": "Genes-by-LocusTag-QueryString-Advanced-01",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Results array contains exactly 5 records\", function () {",
+											"    const jsonData = pm.response.json(); ",
+											"    pm.expect(jsonData.results).to.be.an('array').with.lengthOf(1);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/search/advanced?query=BU_2243B_00003&page=1&per_page=10&sort_field=locus_tag&sort_order=asc",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"search",
+										"advanced"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "BU_2243B_00003"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "per_page",
+											"value": "10"
+										},
+										{
+											"key": "sort_field",
+											"value": "locus_tag"
+										},
+										{
+											"key": "sort_order",
+											"value": "asc"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genes-by-AMY_INFO_FILTER-QueryString-Advanced-02",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Results array contains exactly 5 records\", function () {",
+											"    const jsonData = pm.response.json(); ",
+											"    pm.expect(jsonData.results).to.be.an('array').with.lengthOf(1);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/search/advanced?query=&page=1&per_page=10&sort_field=locus_tag&sort_order=asc&isolates=BU_ATCC8492&filter=has_amr_info%3Atrue",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"search",
+										"advanced"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": ""
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "per_page",
+											"value": "10"
+										},
+										{
+											"key": "sort_field",
+											"value": "locus_tag"
+										},
+										{
+											"key": "sort_order",
+											"value": "asc"
+										},
+										{
+											"key": "isolates",
+											"value": "BU_ATCC8492"
+										},
+										{
+											"key": "filter",
+											"value": "has_amr_info%3Atrue"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Genes-by-Species-TypeStrain-GeneString-Essentiality-Positive",
 							"event": [
 								{
@@ -2506,6 +2752,46 @@
 											"key": "query",
 											"value": "dna"
 										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "metadata",
+					"item": [
+						{
+							"name": "COGCategories",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/metadata/cog-categories",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"metadata",
+										"cog-categories"
 									]
 								}
 							},

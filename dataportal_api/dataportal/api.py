@@ -15,6 +15,7 @@ from .schemas import (
     GeneResponseSchema,
     EssentialityByContigSchema,
 )
+from .services.app_health_service import AppHealthService
 from .services.essentiality_service import EssentialityService
 from .services.gene_service import GeneService
 from .services.genome_service import GenomeService
@@ -44,6 +45,7 @@ gene_service = GeneService()
 essentiality_service = EssentialityService()
 species_service = SpeciesService()
 cog_cat_service = COGCategoryService()
+app_health_service = AppHealthService()
 
 api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
@@ -57,6 +59,7 @@ genome_router = Router(tags=[ROUTER_GENOME])
 gene_router = Router(tags=[ROUTER_GENE])
 species_router = Router(tags=[ROUTER_SPECIES])
 metadata_router = Router(tags=[ROUTER_METADATA])
+health_router = Router()
 
 
 def custom_error_handler(request, exc):
@@ -526,9 +529,15 @@ def get_all_categories(request):
     return cog_cat_service.as_list()
 
 
+@health_router.get("/health")
+def health(request):
+    return app_health_service.healthz()
+
+
 # Register routers with the main API
 api.add_router(URL_PREFIX_SPECIES, species_router)
 api.add_router(URL_PREFIX_GENOMES, genome_router)
 api.add_router(URL_PREFIX_GENES, gene_router)
 api.add_router(URL_PREFIX_METADATA, metadata_router)
+api.add_router("/", health_router)
 api.add_exception_handler(Exception, custom_error_handler)
