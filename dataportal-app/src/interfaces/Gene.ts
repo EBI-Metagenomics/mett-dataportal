@@ -53,5 +53,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface GeneFacetResponse {
-    [facetGroup: string]: FacetItem[] | number;
+    total_hits: number;
+    operators: Record<string, 'AND' | 'OR'>;
+    [facetGroup: string]: FacetItem[] | number | Record<string, 'AND' | 'OR'>;
 }

@@ -22,7 +22,7 @@ class GeneFacetedSearch(FacetedSearch):
 
     def __init__(self, query='', filters=None, species_acronym=None, essentiality=None,
                  isolates=None, cog_id=None, cog_funcats=None, kegg=None, go_term=None, pfam=None, interpro=None,
-                 has_amr_info=None, limit: int = DEFAULT_FACET_LIMIT):
+                 has_amr_info=None, limit: int = DEFAULT_FACET_LIMIT, operators=None):
         self.species_acronym = species_acronym
         self.essentiality = essentiality
         self.isolates = isolates
@@ -33,6 +33,7 @@ class GeneFacetedSearch(FacetedSearch):
         self.pfam = pfam
         self.interpro = interpro
         self.has_amr_info = has_amr_info
+        self.operators = operators or {}
 
         self.facets = {
             GENE_ESSENTIALITY: TermsFacet(field=GENE_ESSENTIALITY, size=limit),
@@ -53,28 +54,36 @@ class GeneFacetedSearch(FacetedSearch):
             s = s.filter('term', species_acronym=self.species_acronym)
         if self.essentiality:
             s = s.filter('terms', essentiality=[self.essentiality])
-        if self.cog_id:
-            cog_id_values = self.cog_id if isinstance(self.cog_id, list) else [self.cog_id]
-            s = s.filter('terms', cog_id=[k for k in cog_id_values])
-        if self.kegg:
-            kegg_values = self.kegg if isinstance(self.kegg, list) else [self.kegg]
-            s = s.filter('terms', kegg=[k.lower() for k in kegg_values])
-        if self.go_term:
-            go_values = self.go_term if isinstance(self.go_term, list) else [self.go_term]
-            s = s.filter('terms', go_term=[g.lower() for g in go_values])
-        if self.pfam:
-            pfam_values = self.pfam if isinstance(self.pfam, list) else [self.pfam]
-            s = s.filter('terms', pfam=pfam_values)
-        if self.interpro:
-            interpro_values = self.interpro if isinstance(self.interpro, list) else [self.interpro]
-            s = s.filter('terms', interpro=interpro_values)
-        if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
-            s = s.filter('terms', isolate_name=self.isolates)
-        if self.cog_funcats:
-            cog_funcats_values = self.cog_funcats if isinstance(self.cog_funcats, list) else [self.cog_funcats]
-            s = s.filter('terms', cog_funcats=cog_funcats_values)
         if self.has_amr_info is not None:
             s = s.filter('term', has_amr_info=self.has_amr_info)
+        if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
+            s = s.filter('terms', isolate_name=self.isolates)
+
+        if self.pfam:
+            s = self._apply_filter(s, "pfam", self.pfam)
+        if self.interpro:
+            s = self._apply_filter(s, "interpro", self.interpro)
+        if self.cog_id:
+            s = self._apply_filter(s, "cog_id", self.cog_id)
+        if self.cog_funcats:
+            s = self._apply_filter(s, "cog_funcats", self.cog_funcats)
+        if self.kegg:
+            kegg_values = [k.lower() for k in (self.kegg if isinstance(self.kegg, list) else [self.kegg])]
+            s = self._apply_filter(s, "kegg", kegg_values)
+        if self.go_term:
+            go_values = [g.lower() for g in (self.go_term if isinstance(self.go_term, list) else [self.go_term])]
+            s = self._apply_filter(s, "go_term", go_values)
 
         # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
         return s
+
+    def _apply_filter(self, search_obj, field_name, values):
+        operator = (self.operators.get(field_name) or "OR").upper()
+        if not values:
+            return search_obj
+        if operator == "AND":
+            for val in values:
+                search_obj = search_obj.filter('term', **{field_name: val})
+        else:
+            search_obj = search_obj.filter('terms', **{field_name: values})
+        return search_obj

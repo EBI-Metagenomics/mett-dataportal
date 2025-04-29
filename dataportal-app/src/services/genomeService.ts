@@ -13,7 +13,8 @@ export class GenomeService {
         try {
             const params = new URLSearchParams({
                 query: inputQuery,
-                ...(selectedSpecies && {species_id: selectedSpecies}),
+                // ...(selectedSpecies && {species_acronym: selectedSpecies}),
+                ...(selectedSpecies && selectedSpecies.length === 1 && {species_acronym: selectedSpecies}),
             });
 
             const rawResponse = await ApiService.get("/genomes/autocomplete", params);
@@ -50,7 +51,7 @@ export class GenomeService {
         pageSize: number,
         sortField: string,
         sortOrder: string,
-        selectedSpecies?: string,
+        selectedSpecies?: string[],
         typeStrainFilter?: string[],
     ): Promise<GenomeResponse> {
         try {
@@ -67,11 +68,9 @@ export class GenomeService {
                 params.append('isolates', typeStrainFilter.join(','));
             }
 
-            if (selectedSpecies) {
-                params.append('species_acronym', selectedSpecies);
-            }
-
-            const endpoint = "/genomes/search";
+            const endpoint = (selectedSpecies && selectedSpecies.length === 1)
+                ? `/species/${selectedSpecies[0]}/genomes/search`
+                : `/genomes/search`;
 
             const rawResponse = await ApiService.get(endpoint, params);
             return transformGenomeResponse(rawResponse);

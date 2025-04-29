@@ -101,28 +101,6 @@ async def get_all_species(request):
     except Exception:
         raise_http_error(500, "An error occurred while fetching species.")
 
-
-# API Endpoint to retrieve all genomes
-@genome_router.get("/", response=GenomePaginationSchema,
-                   summary="Get all genomes",
-                   description="Retrieves a paginated list of all genomes available in the system. "
-                               "Supports optional sorting by 'isolate_name' or 'species'. "
-                   )
-async def get_all_genomes(
-        request,
-        page: int = Query(1, description="Page number"),
-        per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of items per page"),
-        sortField: Optional[str] = Query(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort by"),
-        sortOrder: Optional[str] = Query(DEFAULT_SORT, description="Sort order: asc or desc"),
-):
-    try:
-        return await genome_service.get_genomes(page, per_page, sortField, sortOrder)
-    except ServiceError:
-        raise HttpError(500, "An error occurred while fetching genomes.")
-    except Exception:
-        raise_http_error(500, "An error occurred while fetching genomes.")
-
-
 # API Endpoint to search genomes by query string
 @genome_router.get("/type-strains", response=List[GenomeResponseSchema],
                    summary="Get all type strains",
@@ -258,6 +236,26 @@ async def search_genomes_by_species_and_string(
             f"An error occurred while fetching genomes by species: {species_acronym} and query: {query}",
         )
 
+# API Endpoint to retrieve all genomes
+@genome_router.get("/", response=GenomePaginationSchema,
+                   summary="Get all genomes",
+                   description="Retrieves a paginated list of all genomes available in the system. "
+                               "Supports optional sorting by 'isolate_name' or 'species'. "
+                   )
+async def get_all_genomes(
+        request,
+        page: int = Query(1, description="Page number"),
+        per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of items per page"),
+        sortField: Optional[str] = Query(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort by"),
+        sortOrder: Optional[str] = Query(DEFAULT_SORT, description="Sort order: asc or desc"),
+):
+    try:
+        return await genome_service.get_genomes(page, per_page, sortField, sortOrder)
+    except ServiceError:
+        raise HttpError(500, "An error occurred while fetching genomes.")
+    except Exception:
+        raise_http_error(500, "An error occurred while fetching genomes.")
+
 
 @gene_router.get(
     "/autocomplete",
@@ -344,13 +342,29 @@ async def get_faceted_search(
         pfam: Optional[str] = Query(None, description="Pfam domain ID to filter by."),
         interpro: Optional[str] = Query(None, description="InterPro ID to filter by."),
         has_amr_info: Optional[bool] = Query(None, description="Filter genes that contain AMR information."),
+        pfam_operator: Optional[str] = Query("OR", description="Logical operator (AND/OR) for Pfam filtering."),
+        interpro_operator: Optional[str] = Query("OR", description="Logical operator (AND/OR) for InterPro filtering."),
+        cog_id_operator: Optional[str] = Query("OR", description="Logical operator (AND/OR) for COG ID filtering."),
+        cog_funcats_operator: Optional[str] = Query("OR",
+                                                    description="Logical operator (AND/OR) for COG functional categories filtering."),
+        kegg_operator: Optional[str] = Query("OR", description="Logical operator (AND/OR) for KEGG filtering."),
+        go_term_operator: Optional[str] = Query("OR", description="Logical operator (AND/OR) for GO term filtering."),
+
         limit: int = Query(DEFAULT_FACET_LIMIT, description="Maximum number of genes to return.")
 ):
     isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
     logger.info(f"Isolates received: {isolate_names_list} (type: {type(isolate_names_list)})")
     return await gene_service.get_faceted_search(species_acronym, isolate_names_list, essentiality,
                                                  cog_id, cog_funcats, kegg, go_term, pfam, interpro,
-                                                 has_amr_info, limit)
+                                                 has_amr_info, limit,
+                                                 operators={
+                                                     "pfam": pfam_operator,
+                                                     "interpro": interpro_operator,
+                                                     "cog_id": cog_id_operator,
+                                                     "cog_funcats": cog_funcats_operator,
+                                                     "kegg": kegg_operator,
+                                                     "go_term": go_term_operator
+                                                 })
 
 
 # API Endpoint to retrieve gene by locus tag
@@ -419,7 +433,9 @@ async def get_all_genes(
 async def get_genes_by_genome(
         request,
         isolate_name: str = Path(..., description="Unique isolate name identifying the genome."),
-        filter: Optional[str] = Query(None, description="Optional filter string to narrow gene results."),
+        filter: Optional[str] = Query(None, description="Additional gene filter, e.g., 'pfam:pf07715;interpro:ipr012910'."),
+        filter_operators: Optional[str] = Query(None,
+                                                description="Logical operator (AND/OR) per facet, e.g., 'pfam:AND;interpro:OR'"),
         page: int = Query(1, description="Page number to retrieve."),
         per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."),
         sort_field: Optional[str] = Query(None, description="Field to sort results by."),
@@ -427,7 +443,7 @@ async def get_genes_by_genome(
 ):
     try:
         return await gene_service.get_genes_by_genome(
-            isolate_name, filter, page, per_page, sort_field, sort_order
+            isolate_name, filter, filter_operators, page, per_page, sort_field, sort_order
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
@@ -454,7 +470,9 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
         isolates: str = Query("", description="Comma-separated list of isolate names to restrict the search scope."),
         species_acronym: Optional[str] = Query(None, description="Optional species acronym to filter by."),
         query: str = Query("", description="Free-text search string to match against gene names or annotations."),
-        filter: Optional[str] = Query(None, description="Additional gene filter, e.g., 'essential'."),
+        filter: Optional[str] = Query(None, description="Additional gene filter, e.g., 'pfam:pf07715;interpro:ipr012910'."),
+        filter_operators: Optional[str] = Query(None,
+                                                description="Logical operator (AND/OR) per facet, e.g., 'pfam:AND;interpro:OR'"),
         page: int = Query(1, description="Page number to retrieve."),
         per_page: int = Query(DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."),
         sort_field: Optional[str] = Query(None, description="Field to sort results by."),
@@ -471,6 +489,7 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
             species_acronym,
             query,
             filter,
+            filter_operators,
             page,
             per_page,
             sort_field,

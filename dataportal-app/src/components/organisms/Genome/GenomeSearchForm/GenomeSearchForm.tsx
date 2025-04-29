@@ -137,11 +137,10 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     params.append('isolates', typeStrainFilter.join(','));
                 }
 
-                if (speciesFilter && speciesFilter.length) {
-                    params.append('species_acronym', speciesFilter[0]);
-                }
+                const endpoint = (selectedSpecies && selectedSpecies.length === 1)
+                ? `/species/${selectedSpecies[0]}/genomes/search`
+                : `/genomes/`;
 
-                const endpoint = "/genomes/search";
                 apiDetails.url = endpoint;
                 apiDetails.params = Object.fromEntries(params.entries());
 
@@ -151,7 +150,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     pageSize,
                     sortField,
                     sortOrder,
-                    speciesFilter[0],
+                    speciesFilter,
                     typeStrainFilter
                 );
 

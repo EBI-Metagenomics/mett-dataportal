@@ -179,6 +179,7 @@ class GeneService:
             self,
             isolate_name: str,
             filter: Optional[str] = None,
+            filter_operators: Optional[str] = None,
             page: int = 1,
             per_page: int = DEFAULT_PER_PAGE_CNT,
             sort_field: Optional[str] = None,
@@ -187,7 +188,8 @@ class GeneService:
         try:
             filter_criteria = {"isolate_name": isolate_name}
             parsed_filters = self._parse_filters(filter)
-            filter_criteria = await self._apply_filters_for_type_strain(filter_criteria, parsed_filters)
+            parsed_filter_operators = self._parse_filter_operators(filter_operators)
+            filter_criteria = await self._apply_filters_for_type_strain(filter_criteria, parsed_filters, parsed_filter_operators)
 
             es_query = self._build_es_query(query=None, isolate_name=filter_criteria.get("isolate_name"),
                                             filter_criteria=filter_criteria)
@@ -208,6 +210,7 @@ class GeneService:
             species_acronym: Optional[int] = None,
             query: str = None,
             filter: Optional[str] = None,
+            filter_operators: Optional[str] = None,
             page: int = 1,
             per_page: int = DEFAULT_PER_PAGE_CNT,
             sort_field: Optional[str] = None,
@@ -227,7 +230,8 @@ class GeneService:
 
             # Apply additional filters
             parsed_filters = self._parse_filters(filter)
-            type_strain_filters = await self._apply_filters_for_type_strain({}, parsed_filters)
+            parsed_filter_operators = self._parse_filter_operators(filter_operators)
+            type_strain_filters = await self._apply_filters_for_type_strain({}, parsed_filters, parsed_filter_operators)
 
             if "bool" in type_strain_filters and "must" in type_strain_filters["bool"]:
                 filter_criteria["bool"]["must"].extend(type_strain_filters["bool"]["must"])
@@ -274,6 +278,26 @@ class GeneService:
         logger.debug(f"Parsed filters: {filters}")
         return filters
 
+    def _parse_filter_operators(self, filter_str: Optional[str]) -> Dict[str, str]:
+        if not filter_str:
+            return {}
+
+        operators = {}
+        try:
+            groups = filter_str.split(";")
+            for group in groups:
+                if not group.strip():
+                    continue
+                key, op = group.split(":", 1)
+                operators[key.strip()] = op.strip().upper()
+        except ValueError as e:
+            logger.error(f"Invalid filter_operators format: {filter_str} — {e}")
+            raise ServiceError(
+                "Invalid filter_operators format. Use 'key:AND;key2:OR,...'"
+            )
+
+        return operators
+
     async def _apply_essentiality_filter(self, query: dict, values: list) -> dict:
 
         if not values:
@@ -287,24 +311,29 @@ class GeneService:
         return query
 
     async def _apply_filters_for_type_strain(
-            self, query: dict, filters: Dict[str, list]
-    ) -> dict:
-        if not filters:
-            return query
+            self, base_filters: Dict, filters: Dict[str, List[str]], facet_operators: Optional[Dict[str, str]] = None
+    ) -> Dict:
+        facet_operators = facet_operators or {}
+        bool_query = {"bool": {"must": []}}
 
-        if "bool" not in query:
-            query["bool"] = {"must": []}
+        # Add base filters to the "must" clause first (these are required filters)
+        for key, val in base_filters.items():
+            bool_query["bool"]["must"].append({"term": {key: val}})
 
-        must_filters = [
-            {"terms": {key: values}}
-            for key, values in filters.items()
-            if values
-        ]
+        # Process additional filters with operators
+        for key, values in filters.items():
+            if not values:
+                continue
 
-        query["bool"]["must"].extend(must_filters)
+            operator = (facet_operators.get(key) or "OR").upper()
 
-        logger.debug(f"Applied filters to query: {json.dumps(must_filters, indent=2)}")
-        return query
+            if operator == "AND":
+                for val in values:
+                    bool_query["bool"]["must"].append({"term": {key: val}})
+            else:
+                bool_query["bool"]["must"].append({"terms": {key: values}})
+
+        return bool_query
 
     def _create_pagination_schema(
             self, serialized_genes, page, per_page, total_results
@@ -415,7 +444,8 @@ class GeneService:
                                  pfam: Optional[str] = None,
                                  interpro: Optional[str] = None,
                                  has_amr_info: Optional[bool] = None,
-                                 limit: Optional[int] = DEFAULT_FACET_LIMIT):
+                                 limit: Optional[int] = DEFAULT_FACET_LIMIT,
+                                 operators: Optional[Dict[str, str]] = None):
 
         try:
             gs = GeneFacetedSearch(
@@ -430,7 +460,8 @@ class GeneService:
                 pfam=split_comma_param(pfam),
                 interpro=split_comma_param(interpro),
                 has_amr_info=has_amr_info,
-                limit=limit
+                limit=limit,
+                operators=operators
             )
 
             try:
@@ -459,6 +490,14 @@ class GeneService:
             }
 
             facet_results["total_hits"] = response.hits.total.value
+            facet_results["operators"] = {
+                "pfam": operators.get("pfam", "OR"),
+                "interpro": operators.get("interpro", "OR"),
+                "cog_id": operators.get("cog_id", "OR"),
+                "cog_funcats": operators.get("cog_funcats", "OR"),
+                "kegg": operators.get("kegg", "OR"),
+                "go_term": operators.get("go_term", "OR")
+            }
             return facet_results
         except Exception as e:
             logger.exception("Error fetching faceted search")

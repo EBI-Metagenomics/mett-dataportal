@@ -68,11 +68,15 @@ export class GeneService {
         sortOrder: string,
         selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
-        selectedFacets?: Record<string, string[]>
+        selectedFacets?: Record<string, string[]>,
+        facetOperators?: Record<string, 'AND' | 'OR'>
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
             // console.log("####query: ", query)
-            const params = GeneService.buildParamsFetchGeneSearchResults(query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets);
+            const params =
+                GeneService.buildParamsFetchGeneSearchResults(
+                    query, page, perPage, sortField, sortOrder,
+                    selectedGenomes, selectedSpecies, selectedFacets, facetOperators);
             const response = await ApiService.get<PaginatedResponse<GeneMeta>>("/genes/search/advanced", params);
             return response;
         } catch (error) {
@@ -89,7 +93,8 @@ export class GeneService {
         sortOrder: string,
         selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
-        selectedFacets?: Record<string, string[]>
+        selectedFacets?: Record<string, string[]>,
+        facetOperators?: Record<string, 'AND' | 'OR'>
     ) {
         const params = new URLSearchParams({
             query: query,
@@ -118,6 +123,20 @@ export class GeneService {
 
             if (filterParts.length > 0) {
                 params.append("filter", filterParts.join(";"));
+            }
+        }
+
+        if (facetOperators) {
+            const filterOpParts: string[] = [];
+
+            for (const [key, values] of Object.entries(facetOperators)) {
+                if (values.length > 0) {
+                    filterOpParts.push(`${key}:${values}`);
+                }
+            }
+
+            if (filterOpParts.length > 0) {
+                params.append("filter_operators", filterOpParts.join(";"));
             }
         }
 
@@ -205,7 +224,8 @@ export class GeneService {
         kegg?: string,
         goTerm?: string,
         pfam?: string,
-        interpro?: string
+        interpro?: string,
+        facetOperators?: Record<string, 'AND' | 'OR'>
     ): Promise<GeneFacetResponse> {
         try {
             const params = new URLSearchParams({
@@ -218,6 +238,12 @@ export class GeneService {
                 ...(goTerm && {go_term: goTerm}),
                 ...(pfam && {pfam}),
                 ...(interpro && {interpro}),
+                ...(facetOperators?.pfam && {pfam_operator: facetOperators.pfam}),
+                ...(facetOperators?.interpro && {interpro_operator: facetOperators.interpro}),
+                ...(facetOperators?.cog_id && {cog_id_operator: facetOperators.cog_id}),
+                ...(facetOperators?.cog_funcats && {cog_funcats_operator: facetOperators.cog_funcats}),
+                ...(facetOperators?.kegg && {kegg_operator: facetOperators.kegg}),
+                ...(facetOperators?.go_term && {go_term_operator: facetOperators.go_term}),
             });
 
             const response = await ApiService.get<GeneFacetResponse>("genes/faceted-search", params);

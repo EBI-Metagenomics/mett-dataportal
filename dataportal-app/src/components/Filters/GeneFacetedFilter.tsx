@@ -11,6 +11,7 @@ interface GeneFacetedFilterProps {
     onToggleFacet: (facetGroup: string, value: string) => void;
     initialVisibleCount?: number;
     loadMoreStep?: number;
+    onOperatorChange?: (facetGroup: string, operator: 'AND' | 'OR') => void;
 }
 
 const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
@@ -18,12 +19,25 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                                  onToggleFacet,
                                                                  initialVisibleCount = 10,
                                                                  loadMoreStep = 10,
+                                                                 onOperatorChange,
                                                              }) => {
 
     const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
     const [filterText, setFilterText] = useState<Record<string, string>>({});
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
     const [cogCategoryDefs, setCogCategoryDefs] = useState<Record<string, string>>({});
+    const [facetOperators, setFacetOperators] = useState<Record<string, 'AND' | 'OR'>>({});
+    const [manualCollapsedGroups, setManualCollapsedGroups] = useState<Record<string, boolean>>({});
+
+
+    const handleOperatorChange = (facetGroup: string, operator: 'AND' | 'OR') => {
+        setFacetOperators(prev => ({
+            ...prev,
+            [facetGroup]: operator,
+        }));
+        onOperatorChange?.(facetGroup, operator);
+    };
+
 
     const getFacetLabel = (facetGroup: string, value: string | number | boolean): string => {
         if (facetGroup === 'has_amr_info') {
@@ -50,11 +64,14 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
         const initialCollapsed = Object.entries(facets).reduce((acc, [key, values]) => {
             if (key !== 'total_hits' && Array.isArray(values)) {
                 const hasSelection = values.some(v => v.selected);
-                acc[key] = !hasSelection; // collapse only if nothing selected
+                if (!manualCollapsedGroups[key]) {
+                    acc[key] = !hasSelection;
+                }
             }
             return acc;
         }, {} as Record<string, boolean>);
-        setCollapsedGroups(initialCollapsed);
+
+        setCollapsedGroups(prev => ({...prev, ...initialCollapsed}));
 
         MetadataService.fetchCOGCategories()
             .then((data) => {
@@ -64,7 +81,6 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                 }, {});
                 setCogCategoryDefs(mapping);
             });
-
     }, [facets]);
 
 
@@ -85,6 +101,10 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
         setCollapsedGroups(prev => ({
             ...prev,
             [group]: !prev[group]
+        }));
+        setManualCollapsedGroups(prev => ({
+            ...prev,
+            [group]: true
         }));
     };
 
@@ -195,6 +215,54 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                     value={search}
                                     onChange={(e) => handleFilterChange(facetGroup, e.target.value)}
                                 />
+                                <div className={styles.advancedOptions}>
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name={`operator-${facetGroup}`}
+                                            value="OR"
+                                            checked={facetOperators[facetGroup] !== 'AND'} // Default OR
+                                            onChange={() => handleOperatorChange(facetGroup, 'OR')}
+                                        />
+                                        Match Any
+                                    </label>
+                                    <label style={{marginLeft: '1rem'}}>
+                                        <input
+                                            type="radio"
+                                            name={`operator-${facetGroup}`}
+                                            value="AND"
+                                            checked={facetOperators[facetGroup] === 'AND'}
+                                            onChange={() => handleOperatorChange(facetGroup, 'AND')}
+                                        />
+                                        Match All
+                                    </label>
+                                    <Popover.Root>
+                                        <Popover.Trigger asChild>
+                                            <button
+                                                className={styles.simpleInfoIcon}
+                                                onClick={(e) => e.stopPropagation()}
+                                                aria-label="AND/OR info"
+                                            >
+                                                i
+                                            </button>
+                                        </Popover.Trigger>
+                                        <Popover.Portal>
+                                            <Popover.Content
+                                                className={styles.popoverContent}
+                                                side="top"
+                                                align="start"
+                                                sideOffset={5}
+                                            >
+                                                <div className={styles.popoverInner}>
+                                                    <strong>Match Any:</strong> returns genes
+                                                    matching <em>any</em> selected value.<br/><br/>
+                                                    <strong>Match All:</strong> returns genes
+                                                    matching <em>all</em> selected values simultaneously.
+                                                </div>
+                                            </Popover.Content>
+                                        </Popover.Portal>
+                                    </Popover.Root>
+                                </div>
 
                                 <ul className={styles.facetList}>
                                     {filtered.slice(0, showCount).map((facet: FacetItem) => (

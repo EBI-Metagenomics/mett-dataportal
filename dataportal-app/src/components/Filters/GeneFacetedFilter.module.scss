@@ -22,13 +22,18 @@
   list-style: none;
   padding-left: 0;
   margin: 0;
-
-
   max-height: 260px;
   overflow-y: auto;
   border: 0px solid #e0e0e0;
   border-radius: 4px;
-  padding: 6px;
+
+    cursor: pointer;
+}
+
+.facetList label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 .facetList li {
@@ -92,4 +97,43 @@
 .popoverInner {
   font-size: 0.9rem;
   line-height: 1.4;
+}
+
+.advancedOptions {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #333;
+  margin: 0.3rem 0 0.5rem 0;
+
+  label {
+    margin-right: 0.1rem;
+    cursor: pointer;
+  }
+
+  input[type="radio"] {
+    margin-right: 0.2rem;
+  }
+}
+
+.simpleInfoIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #f0f8ff; /* very light blue background (AliceBlue) */
+  color: #007bff; /* Bootstrap blue / vibrant blue */
+  font-size: 12px;
+  font-style: italic; /* make "i" italic */
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  border: 1px solid #007bff; /* same blue border */
+  user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.simpleInfoIcon:hover {
+  background-color: #e0f0ff; /* slightly darker on hover */
 }
