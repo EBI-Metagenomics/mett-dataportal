@@ -43,6 +43,16 @@ export const FACET_ORDER = [
     'cog_id',
 ];
 
+export const LOGICAL_OPERATOR_FACETS = [
+  'pfam',
+  'interpro',
+  'cog_id',
+  'cog_funcats',
+  'go_term',
+  'kegg'
+];
+
+
 export const DISPLAY_SETTINGS = {
     DEFAULT_BUFFER: 10000,
 };

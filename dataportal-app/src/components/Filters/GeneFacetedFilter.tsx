@@ -2,7 +2,12 @@ import React, {useEffect, useState} from 'react';
 import styles from './GeneFacetedFilter.module.scss';
 import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
-import {ESSENTIALITY_DETERMINATION_TXT, EXT_LINK_ESSENTIALITY_JOURNAL, FACET_ORDER} from "../../utils/appConstants";
+import {
+    ESSENTIALITY_DETERMINATION_TXT,
+    EXT_LINK_ESSENTIALITY_JOURNAL,
+    FACET_ORDER,
+    LOGICAL_OPERATOR_FACETS
+} from "../../utils/appConstants";
 import * as Popover from '@radix-ui/react-popover';
 import {MetadataService} from "../../services/metadataService";
 
@@ -41,7 +46,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
 
     const getFacetLabel = (facetGroup: string, value: string | number | boolean): string => {
         if (facetGroup === 'has_amr_info') {
-            return value === true || value === "true" ? "Yes" : "No";
+            return value === true || value === "true" ? "Available" : "Not Available";
         }
         return String(value).toUpperCase();
     };
@@ -215,54 +220,22 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                     value={search}
                                     onChange={(e) => handleFilterChange(facetGroup, e.target.value)}
                                 />
-                                <div className={styles.advancedOptions}>
-                                    <label>
+                                {LOGICAL_OPERATOR_FACETS.includes(facetGroup) && (
+                                    <div className={styles.logicWrapper}>
                                         <input
-                                            type="radio"
-                                            name={`operator-${facetGroup}`}
-                                            value="OR"
-                                            checked={facetOperators[facetGroup] !== 'AND'} // Default OR
-                                            onChange={() => handleOperatorChange(facetGroup, 'OR')}
-                                        />
-                                        Match Any
-                                    </label>
-                                    <label style={{marginLeft: '1rem'}}>
-                                        <input
-                                            type="radio"
-                                            name={`operator-${facetGroup}`}
-                                            value="AND"
+                                            id={`logic-toggle-${facetGroup}`}
+                                            type="checkbox"
+                                            className={styles.logicToggleSwitch}
                                             checked={facetOperators[facetGroup] === 'AND'}
-                                            onChange={() => handleOperatorChange(facetGroup, 'AND')}
+                                            onChange={(e) =>
+                                                handleOperatorChange(facetGroup, e.target.checked ? 'AND' : 'OR')
+                                            }
+                                            aria-label={`Toggle between Match Any and Match All for ${facetGroup}`}
                                         />
-                                        Match All
-                                    </label>
-                                    <Popover.Root>
-                                        <Popover.Trigger asChild>
-                                            <button
-                                                className={styles.simpleInfoIcon}
-                                                onClick={(e) => e.stopPropagation()}
-                                                aria-label="AND/OR info"
-                                            >
-                                                i
-                                            </button>
-                                        </Popover.Trigger>
-                                        <Popover.Portal>
-                                            <Popover.Content
-                                                className={styles.popoverContent}
-                                                side="top"
-                                                align="start"
-                                                sideOffset={5}
-                                            >
-                                                <div className={styles.popoverInner}>
-                                                    <strong>Match Any:</strong> returns genes
-                                                    matching <em>any</em> selected value.<br/><br/>
-                                                    <strong>Match All:</strong> returns genes
-                                                    matching <em>all</em> selected values simultaneously.
-                                                </div>
-                                            </Popover.Content>
-                                        </Popover.Portal>
-                                    </Popover.Root>
-                                </div>
+
+                                        <span className={styles.logicText}>of these should be present:</span>
+                                    </div>
+                                )}
 
                                 <ul className={styles.facetList}>
                                     {filtered.slice(0, showCount).map((facet: FacetItem) => (
@@ -295,7 +268,8 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                             </>
                         )}
                     </div>
-                );
+                )
+                    ;
             })}
         </div>
     );

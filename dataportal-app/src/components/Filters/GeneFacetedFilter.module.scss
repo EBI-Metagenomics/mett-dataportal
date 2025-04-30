@@ -137,3 +137,61 @@
 .simpleInfoIcon:hover {
   background-color: #e0f0ff; /* slightly darker on hover */
 }
+
+.logicToggleSwitch {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 52px;
+  height: 28px;
+  display: inline-block;
+  position: relative;
+  border-radius: 50px;
+  background-color: #666;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.logicToggleSwitch:before {
+  content: 'ANY';
+  display: block;
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: white;
+  top: 2px;
+  left: 2px;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  font-size: 10px;
+  font-weight: bold;
+  color: #666;
+  text-align: center;
+  line-height: 24px;
+  transition: all 0.3s ease;
+}
+
+.logicToggleSwitch:checked {
+  background-color: var(--vf-theme--primary);
+}
+
+.logicToggleSwitch:checked:before {
+  content: 'ALL';
+  left: 24px;
+  color: var(--vf-theme--primary);
+}
+
+.logicWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem; // controls spacing between toggle, text, icon
+  margin: 0.3rem 0 0.6rem;
+}
+
+.logicText {
+  font-size: 15px;
+  color: #333;
+  line-height: 1.2;
+}
