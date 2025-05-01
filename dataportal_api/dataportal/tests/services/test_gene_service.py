@@ -9,11 +9,13 @@ from dataportal.utils.exceptions import GeneNotFoundError
 
 class MockESResponse:
     def __init__(self, hits):
-        self.hits = type("Hits", (), {"total": type("Total", (), {"value": len(hits)})})()
+        self.hits = self
+        self.total = type("Total", (), {"value": len(hits)})()
         self._hits = hits
 
     def __iter__(self):
         return iter(self._hits)
+
 
 # Mocked gene hits
 mock_gene1 = MagicMock()
@@ -123,10 +125,13 @@ mock_gene2.to_dict.return_value = {
 mock_gene_hits = [mock_gene1, mock_gene2]
 
 
-@pytest.mark.asyncio
 @patch("dataportal.services.gene_service.sync_to_async")
+@pytest.mark.asyncio
 async def test_get_gene_by_locus_tag(mock_sync_to_async):
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse(mock_gene_hits[0]))
+    # Return a single mocked Elasticsearch hit (like Django ORM .get())
+    mock_doc = MagicMock()
+    mock_doc.to_dict.return_value = mock_gene1.to_dict.return_value
+    mock_sync_to_async.return_value = AsyncMock(return_value=mock_doc)
 
     service = GeneService()
     result = await service.get_gene_by_locus_tag("BU_ATCC8492_00001")
@@ -169,25 +174,24 @@ async def test_search_genes(mock_sync_to_async):
     mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse(mock_gene_hits))
 
     service = GeneService()
-    result = await service.search_genes(query="gene")
+    result = await service.search_genes(query="dnaA")
 
     assert len(result.results) == 2
-    assert all("gene" in gene.gene_name for gene in result.results)
+    assert all("dnaA" in gene.gene_name for gene in result.results)
 
 
-@pytest.mark.asyncio
 @patch("dataportal.services.gene_service.sync_to_async")
+@pytest.mark.asyncio
 async def test_get_genes_by_genome(mock_sync_to_async):
-    mock_response = MagicMock()
-    mock_response.__iter__.return_value = iter(mock_gene_hits)
-    mock_response.hits.total.value = 2
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse(mock_gene_hits))
+    # Wrap the entire list of hits in the mock response
+    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse([mock_gene1]))
 
     service = GeneService()
     result = await service.get_genes_by_genome(isolate_name="BU_ATCC8492")
 
-    assert len(result.results) == 2
-    assert all(g.strain_id == 101 for g in result.results)
+    assert len(result.results) == 1
+    assert all(g.isolate_name == "BU_ATCC8492" for g in result.results)
+
 
 
 @pytest.mark.asyncio
@@ -202,16 +206,16 @@ async def test_get_genes_by_multiple_genomes_and_string(mock_sync_to_async):
     result = await service.get_genes_by_multiple_genomes_and_string(isolates="BU_ATCC8492,PV_ATCC8482")
 
     assert len(result.results) == 2
-    assert all(g.strain_id in [101, 102] for g in result.results)
+    assert all(g.isolate_name in ["BU_ATCC8492", "PV_ATCC8482"] for g in result.results)
 
 
-@pytest.mark.asyncio
 @patch("dataportal.services.gene_service.sync_to_async")
+@pytest.mark.asyncio
 async def test_autocomplete_gene_suggestions(mock_sync_to_async):
     mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse(mock_gene_hits))
 
     service = GeneService()
-    result = await service.autocomplete_gene_suggestions(query="gene")
+    result = await service.autocomplete_gene_suggestions(query="dnaA")
 
     assert len(result) == 2
-    assert all("gene" in gene[ES_FIELD_GENE_NAME] for gene in result)
+    assert all("dnaA" in gene[ES_FIELD_GENE_NAME] for gene in result)
