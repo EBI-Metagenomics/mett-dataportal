@@ -1,26 +1,23 @@
 import factory
-
-from dataportal.models import Gene, EssentialityTag
-from dataportal.tests.factories.strain_factory import StrainFactory
+from dataportal.models import GeneDocument
 
 
-class GeneFactory(factory.django.DjangoModelFactory):
+class GeneFactory(factory.Factory):
     class Meta:
-        model = Gene
+        model = GeneDocument
 
-    id = factory.Sequence(lambda n: n + 1)
+    gene_id = factory.Sequence(lambda n: n + 1)
     gene_name = factory.Iterator(["geneA", "geneB", "geneC", "geneD"])
     locus_tag = factory.Sequence(lambda n: f"LOCUS{n}")
-    description = factory.Iterator(
-        ["Gene A description", "Gene B description", "Gene C description", "Gene D description"])
     product = factory.Iterator(["Product A", "Product B", "Product C", "Product D"])
-    start_position = factory.Sequence(lambda n: 100 + n * 100)
-    end_position = factory.Sequence(lambda n: 200 + n * 100)
-    strain = factory.SubFactory(StrainFactory)
+    start = factory.Sequence(lambda n: 100 + n * 100)
+    end = factory.Sequence(lambda n: 200 + n * 100)
+    isolate_name = factory.Iterator(["BU_ATCC8492"])
+    species_acronym = factory.Iterator(["BU"])
+    species_scientific_name = factory.Iterator(["Bacteroides uniformis"])
 
-
-class EssentialityTagFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = EssentialityTag
-
-    name = factory.Sequence(lambda n: f"EssentialityTag{n}")
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        obj = model_class(**kwargs)
+        obj.save()
+        return obj

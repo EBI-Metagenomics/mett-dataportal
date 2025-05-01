@@ -119,14 +119,17 @@ WSGI_APPLICATION = "dataportal.wsgi.application"
 
 DATABASES = {}  # No database, since we are using Elasticsearch
 
-# Establish Elasticsearch connection
-init_es_connection(
-    host=ES_HOST,
-    user=ES_USER,
-    password=ES_PASSWORD,
-    timeout=ES_TIMEOUT,
-    max_retries=ES_MAX_RETRIES,
-)
+IS_TESTING = "pytest" in sys.modules
+
+if not IS_TESTING:
+    # Establish Elasticsearch connection
+    init_es_connection(
+        host=ES_HOST,
+        user=ES_USER,
+        password=ES_PASSWORD,
+        timeout=ES_TIMEOUT,
+        max_retries=ES_MAX_RETRIES,
+    )
 
 if "pytest" in sys.argv[0]:
     DATABASES = {

@@ -29,7 +29,7 @@ async def test_get_all_species():
 @pytest.mark.asyncio
 async def test_get_species_by_id():
     service = SpeciesService()
-    result = await service.get_species_by_id(1)
+    result = await service.get_species_by_acronym("BU")
 
     assert result.scientific_name == "Bacteroides uniformis"
     assert result.id == 1
@@ -41,6 +41,6 @@ async def test_get_species_by_id_not_found():
     service = SpeciesService()
 
     with pytest.raises(Exception) as excinfo:
-        await service.get_species_by_id(999)
+        await service.get_species_by_acronym("ABC")
 
-    assert "Error retrieving species by ID" in str(excinfo.value)
+    assert "Error retrieving species by acronym" in str(excinfo.value)

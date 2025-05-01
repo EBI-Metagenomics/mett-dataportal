@@ -2,11 +2,11 @@ import factory
 import pytest
 from asgiref.sync import sync_to_async
 
-from dataportal.models import GeneEssentiality
+from dataportal.models import GeneDocument
 from dataportal.services.gene_service import GeneService
-from dataportal.tests.factories.gene_factory import GeneFactory, EssentialityTagFactory
+from dataportal.tests.factories.gene_factory import GeneFactory
 from dataportal.tests.factories.strain_factory import StrainFactory
-from dataportal.utils.constants import GENE_FIELD_NAME
+from dataportal.utils.constants import ES_FIELD_GENE_NAME
 from dataportal.utils.exceptions import GeneNotFoundError
 
 
@@ -98,18 +98,12 @@ class TestGeneService:
         result = await service.autocomplete_gene_suggestions(query="geneX")
 
         assert len(result) == 2  # Expect only "geneXX" and "geneXY" to match
-        assert all("gene" in gene[GENE_FIELD_NAME] for gene in result)
+        assert all("gene" in gene[ES_FIELD_GENE_NAME] for gene in result)
 
     @pytest.mark.asyncio
     async def test_get_essentiality_data_by_strain_and_ref(self):
         strain = await sync_to_async(StrainFactory.create)()
         gene = await sync_to_async(GeneFactory.create)(strain=strain)
-        essentiality_tag = await sync_to_async(EssentialityTagFactory.create)(name="Essential")
-        await sync_to_async(GeneEssentiality.objects.create)(
-            gene=gene,
-            media="solid",
-            essentiality=essentiality_tag,
-        )
 
         service = GeneService()
         await service.load_essentiality_data_by_strain()
@@ -123,12 +117,6 @@ class TestGeneService:
     async def test_load_essentiality_data_by_strain(self):
         strain = await sync_to_async(StrainFactory.create)()
         gene = await sync_to_async(GeneFactory.create)(strain=strain)
-        essentiality_tag = await sync_to_async(EssentialityTagFactory.create)(name="Essential")
-        await sync_to_async(GeneEssentiality.objects.create)(
-            gene=gene,
-            media="solid",
-            essentiality=essentiality_tag,
-        )
 
         service = GeneService()
         result = await service.load_essentiality_data_by_strain()

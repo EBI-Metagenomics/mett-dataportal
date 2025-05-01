@@ -2,7 +2,7 @@ import factory
 import pytest
 from asgiref.sync import sync_to_async
 
-from dataportal.models import Strain, Species
+from dataportal.models import StrainDocument, SpeciesDocument
 from dataportal.schemas import GenomePaginationSchema, GenomeResponseSchema
 from dataportal.services.genome_service import GenomeService
 from dataportal.tests.factories.species_factory import SpeciesFactory
@@ -23,8 +23,8 @@ def shared_species():
 @pytest.fixture(autouse=True)
 def cleanup_test_database(django_db_blocker):
     with django_db_blocker.unblock():
-        Strain.objects.all().delete()
-        Species.objects.all().delete()
+        StrainDocument.objects.all().delete()
+        SpeciesDocument.objects.all().delete()
         # Reset sequences to avoid conflicts
         from django.db import connection
         with connection.cursor() as cursor:
