@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 
-from dataportal.api import api
+from dataportal.api.router import api
 
 admin.site.site_header = "ME TT Data Portal Admin"
 
