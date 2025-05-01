@@ -113,7 +113,7 @@ class GeneService:
             raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
         except Exception as e:
             logger.error(f"Error in get_gene_by_locus_tag: {e}")
-            raise ServiceError(e)
+            raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
 
     def fetch_gene_by_locus_tag(self, locus_tag: str):
         s = Search(index=self.INDEX_NAME).query("match", locus_tag=locus_tag)

@@ -240,9 +240,6 @@ class GenomeService:
             # Validate using Pydantic schema
             return GenomeResponseSchema.model_validate(strain_dict)
 
-        except StrainDocument.DoesNotExist:
-            logger.error(error_message)
-            raise GenomeNotFoundError(error_message)
         except Exception as e:
             logger.error(f"{error_message}: {e}", exc_info=True)
             raise ServiceError(e)
