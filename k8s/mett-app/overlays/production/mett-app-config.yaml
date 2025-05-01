@@ -14,5 +14,5 @@ data:
   REACT_APP_ENA_BASE_URL: "https://www.ebi.ac.uk/ena/browser/view/"
   REACT_APP_ASSEMBLY_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/fasta_files"
   REACT_APP_GFF_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/gff3_files"
-  REACT_APP_BACINTERACTOME_SHINY_APP_URL: "http://hx-rke-wp-webadmin-39-master-1.caas.ebi.ac.uk:30080/shiny-apps/app/bacinteractome"
+  REACT_APP_BACINTERACTOME_SHINY_APP_URL: "http://platform-hx.mgnify.org/shiny-apps/app/bacinteractome"
   HTTPS: "false"
