@@ -64,6 +64,13 @@ const getTracks
                         showTranslation: true,
                         showLabels: true,
                     },
+                    mouseover: `jexl:
+                      (get(feature, 'gene') && 'Gene: ' + get(feature, 'gene')  + '<br/>'  || '') +
+                      (get(feature, 'locus_tag') && 'Locus Tag: ' + get(feature, 'locus_tag') + '<br/>' || '') +
+                      (get(feature, 'product') && 'Product: ' + get(feature, 'product') + '<br/>' || '') +
+                      (get(feature, 'Alias') && 'Alias: ' + get(feature, 'Alias') + '<br/>'  || '') +
+                      (get(feature, 'Essentiality') && 'Essentiality: ' + get(feature, 'Essentiality') + '<br/>' || '')
+                    `,
                 }
             ],
         });

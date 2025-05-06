@@ -52,35 +52,6 @@ const handleNavigation = (
                 viewState.session.hideWidget(w)
             }
 
-            // Fetch feature from EssentialityAdapter
-            const feature = getFeatureByCoords(viewState, contig, start, end)
-
-            // if (viewState.session.widgets.has('baseFeature')) {
-            //     // console.log("***** old widget: ", viewState.session.widgets)
-            //     viewState.session.hideWidget('baseFeature')
-            // }
-            // const track = view.tracks.find((t: BaseTrackModel) => t.type === 'FeatureTrack')
-
-            // if (feature) {
-            //     const widget = viewState.session.addWidget('BaseFeatureWidget', 'baseFeature', {
-            //         view: view,
-            //         featureData: feature,
-            //         track: track,
-            //     })
-
-
-                // if (viewState.session.activeWidgets.has(widget.id)) {
-                //   viewState.session.activeWidgets.delete(widget.id)
-                // }
-                // viewState.session.activeWidgets.set(widget.id, widget)
-
-                //
-                // const activeWidget = viewState.session.widgets.get('baseFeature')
-                // console.log("***** new widget: ",activeWidget)
-                // console.log("***** active widgets: ",viewState.session.activeWidgets)
-                // viewState.session.showWidgetDrawer()
-                // viewState.session.showWidget(activeWidget)
-            // }
         } catch (error) {
             console.error('Error during navigation:', error);
             setLoading(false);

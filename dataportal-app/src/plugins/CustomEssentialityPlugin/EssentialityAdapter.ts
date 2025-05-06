@@ -76,6 +76,8 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 const description = [
                     attributes.gene ? `Gene: ${attributes.gene}` : null,
                     `Locus Tag: ${attributes.locus_tag}`,
+                    `Product: ${attributes.product}`,
+                    `Alias: ${attributes.alias}`,
                     `Essentiality: ${Essentiality || 'unknown'}`,
                 ].filter(Boolean).join('\n');
 
