@@ -176,3 +176,8 @@ header[class*="MuiAppBar-root"][class*="css-"] {
     margin-right: 8px;
     transform: scale(1.2);
 }
+
+button[data-testid="minimize_view"],
+button[data-testid="close_view"] {
+  display: none !important;
+}
