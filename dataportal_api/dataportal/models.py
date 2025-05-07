@@ -154,6 +154,8 @@ class GeneDocument(Document):
         }
     )
 
+    protein_sequence = Text(fields={"keyword": Keyword()})
+
     class Index:
         name = "gene_index"
         settings = {

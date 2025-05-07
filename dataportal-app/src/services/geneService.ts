@@ -1,5 +1,5 @@
 import {ApiService} from "./api";
-import {Gene, GeneFacetResponse, GeneMeta, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
+import {Gene, GeneFacetResponse, GeneMeta, GeneProteinSeq, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
 import {cacheResponse} from "./cachingDecorator";
 import {DEFAULT_PER_PAGE_CNT} from "../utils/appConstants";
 
@@ -194,7 +194,21 @@ export class GeneService {
         }
     }
 
-    @cacheResponse(60 * 60 * 1000) // Cache for 60 minutes
+    /**
+     * Fetch protein sequence information for a gene by its locus tag.
+     */
+    @cacheResponse(60 * 60 * 1000) // Cache for 60 minutes, uses first arg (locus_tag) as key
+    static async fetchGeneProteinSeq(locus_tag: string): Promise<GeneProteinSeq> {
+        try {
+            const response = await ApiService.get<GeneProteinSeq>(`/genes/protein/${locus_tag}`);
+            return response;
+        } catch (error) {
+            console.error(`Error fetching protein sequence for locus tag ${locus_tag}:`, error);
+            throw error;
+        }
+    }
+
+    @cacheResponse(60 * 60 * 1000, (apiUrl: string, refName: string) => `${apiUrl}:${refName}`) // Cache for 60 minutes, uses combined key
     static async fetchEssentialityData(apiUrl: string, refName: string): Promise<Record<string, any>> {
         // Fetch data from the API if not in the cache
         try {

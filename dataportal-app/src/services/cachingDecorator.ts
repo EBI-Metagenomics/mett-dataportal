@@ -1,16 +1,20 @@
-export function cacheResponse(duration: number) {
-    let cache: { result: any; timestamp: number } | null = null;
+export function cacheResponse(duration: number, keyGenerator?: (...args: any[]) => string) {
+    const cacheMap = new Map<string, { result: any; timestamp: number }>();
 
     return function (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
 
         descriptor.value = async function (...args: any[]) {
-            if (cache && (Date.now() - cache.timestamp < duration)) {
-                return cache.result;
+            // Generate cache key based on provided function or use first argument
+            const cacheKey = keyGenerator ? keyGenerator(...args) : args[0];
+
+            const cached = cacheMap.get(cacheKey);
+            if (cached && (Date.now() - cached.timestamp < duration)) {
+                return cached.result;
             }
 
             const result = await originalMethod.apply(this, args);
-            cache = { result, timestamp: Date.now() };
+            cacheMap.set(cacheKey, {result, timestamp: Date.now()});
             return result;
         };
 

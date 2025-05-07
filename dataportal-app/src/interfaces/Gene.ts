@@ -29,6 +29,12 @@ export interface Gene {
     product?: string;
 }
 
+
+export interface GeneProteinSeq {
+    locus_tag?: string;
+    protein_sequence?: string;
+}
+
 export interface GeneSuggestion {
     gene_name: string | '';
     locus_tag: string;

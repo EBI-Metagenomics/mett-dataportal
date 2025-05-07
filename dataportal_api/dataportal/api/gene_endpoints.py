@@ -7,6 +7,7 @@ from ninja.errors import HttpError
 from ..schemas import (
     GeneAutocompleteResponseSchema,
     GenePaginationSchema,
+    GeneProteinSeqSchema,
     GeneResponseSchema,
 )
 from ..services.gene_service import GeneService
@@ -241,3 +242,30 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
+
+
+@gene_router.get(
+    "/protein/{locus_tag}",
+    response=GeneProteinSeqSchema,
+    summary="Get protein sequence by locus tag",
+    description=(
+        "Retrieves the protein sequence for a specific gene using its unique locus tag. "
+        "Returns the amino acid sequence in FASTA format. "
+        "This endpoint is useful for protein sequence analysis and visualization."
+    ),
+    include_in_schema=False
+)
+async def get_gene_protein_seq(
+    request,
+    locus_tag: str = Path(..., description="Unique locus tag identifier for the gene (e.g., 'BU_ATCC8492_00001').")
+):
+    try:
+        return await gene_service.get_gene_protein_seq(locus_tag)
+    except GeneNotFoundError as e:
+        logger.error(f"Gene not found: {e.locus_tag}")
+        raise HttpError(404, str(e))
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(
+            500, f"Failed to fetch the protein sequence for locus_tag - {locus_tag}"
+        )

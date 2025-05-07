@@ -6,7 +6,7 @@ from asgiref.sync import sync_to_async
 from django.forms.models import model_to_dict
 from elasticsearch_dsl import Search, ElasticsearchDslException
 
-from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
+from dataportal.schemas import GenePaginationSchema, GeneResponseSchema, GeneProteinSeqSchema
 from dataportal.services.gene_faceted_search import GeneFacetedSearch
 from dataportal.unmanaged_models.gene_data import gene_from_hit
 from dataportal.utils.constants import (
@@ -531,3 +531,31 @@ class GeneService:
             })
 
         return results
+
+    async def get_gene_protein_seq(self, locus_tag: str) -> GeneProteinSeqSchema:
+        """Fetch protein sequence information for a gene by its locus tag."""
+        try:
+            s = Search(index=self.INDEX_NAME)
+            s = s.query("match", locus_tag=locus_tag)
+            s = s.source([ES_FIELD_LOCUS_TAG, "protein_sequence"])
+            
+            response = await sync_to_async(s.execute)()
+
+            logger.info(f"Response: {response}")
+
+            if not response.hits:
+                raise GeneNotFoundError(f"Could not find gene with locus tag: {locus_tag}")
+
+            hit = response.hits[0]
+            logger.info(f"Hit.locus_tag: {hit.locus_tag}")
+            logger.info(f"Hit.protein_sequence: {hit.protein_sequence}")
+            return GeneProteinSeqSchema(
+                locus_tag=hit.locus_tag,
+                protein_sequence=hit.protein_sequence
+            )
+
+        except GeneNotFoundError:
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching protein sequence for locus tag {locus_tag}: {e}")
+            raise ServiceError(f"Error fetching protein sequence: {str(e)}")

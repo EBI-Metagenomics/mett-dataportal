@@ -15,7 +15,7 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     private isTypeStrain: boolean;
     private includeEssentiality: boolean;
 
-    private cache: Map<string, SimpleFeature[]> = new Map(); // Cache for features by region key
+    private cache: Map<string, SimpleFeature[]> = new Map();
     private gffCache: Map<string, SimpleFeatureSerialized[]>;
 
     // Generate a cache key
@@ -43,6 +43,30 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         return [];
     }
 
+    private async fetchProteinSequence(feature: SimpleFeature): Promise<SimpleFeature> {
+        // console.log('*****fetchProteinSequence', feature);
+        const attributes = feature.get('attributes') || {};
+        const locusTag = attributes.locus_tag;
+
+        if (!locusTag) {
+            return feature;
+        }
+
+        try {
+            // console.log('Fetching protein sequence for:', locusTag);
+            const proteinData = await GeneService.fetchGeneProteinSeq(locusTag);
+            // console.log(`Fetched protein sequence for ${locusTag}:`, proteinData.protein_sequence?.substring(0, 20) + '...');
+
+            feature.set('attributes', {
+                ...attributes,
+                protein_sequence: proteinData.protein_sequence
+            });
+        } catch (error) {
+            console.warn(`Failed to fetch protein sequence for ${locusTag}:`, error);
+        }
+        return feature;
+    }
+
     getFeatures(region: any): Observable<SimpleFeature> {
         const cacheKey = this.getCacheKey(region);
         // console.log('EssentialityAdapter - getFeatures called for region:', region);
@@ -53,42 +77,20 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         }
 
         // Fetch and process features if not cached
-        const featuresPromise = this.fetchGFF(region).then((gffFeatures) => {
+        const featuresPromise = this.fetchGFF(region).then(async (gffFeatures) => {
+            const featuresWithProtein = await Promise.all(
+                gffFeatures.map(serializedFeature => {
+                    const feature = new SimpleFeature(serializedFeature);
+                    return this.fetchProteinSequence(feature);
+                })
+            );
+
             if (this.isTypeStrain && this.includeEssentiality) {
-                return GeneService.fetchEssentialityData(this.apiUrl, region.refName).then((essentialityData) =>
-                    this.mergeAnnotationsWithEssentiality(gffFeatures, essentialityData),
-                );
+                const essentialityData = await GeneService.fetchEssentialityData(this.apiUrl, region.refName);
+                return this.mergeAnnotationsWithEssentiality(featuresWithProtein, essentialityData);
             }
-            // For non-type strains or includeEssentiality is false, flatten attributes
-            return gffFeatures.map((serializedFeature) => {
-                const feature = new SimpleFeature(serializedFeature);
-                const featureData = feature.toJSON();
 
-                // Ensure attributes is an object before spreading
-                const attributes = featureData.attributes && typeof featureData.attributes === 'object'
-                    ? featureData.attributes as Record<string, string>
-                    : {};
-
-                const {attributes: _, ...featureWithoutAttributes} = featureData;
-                const Essentiality = '';
-                const EssentialityVisual = '';
-
-                const description = [
-                    attributes.gene ? `Gene: ${attributes.gene}` : null,
-                    `Locus Tag: ${attributes.locus_tag}`,
-                    `Product: ${attributes.product}`,
-                    `Alias: ${attributes.alias}`,
-                    `Essentiality: ${Essentiality || 'unknown'}`,
-                ].filter(Boolean).join('\n');
-
-                return new SimpleFeature({
-                    ...featureWithoutAttributes,
-                    ...attributes,
-                    Essentiality,
-                    EssentialityVisual,
-                    // description,
-                });
-            });
+            return featuresWithProtein;
         })
             .catch((error) => {
                 console.error('Error in getFeatures pipeline:', error);
@@ -110,15 +112,11 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     async fetchGFF(region: any): Promise<SimpleFeatureSerialized[]> {
         // Check if the GFF data is already in the cache
         if (this.gffCache.has(this.gffLocation)) {
-            // console.log('Cache hit for GFF data:', this.gffLocation);
             const cachedFeatures = this.gffCache.get(this.gffLocation) || [];
             return this.filterFeaturesByRegion(cachedFeatures, region);
         }
 
-        console.log('Not cached for GFF data. Fetching from:', this.gffLocation);
-
         try {
-            // Fetch and decompress the GFF file
             const gffFile = await openLocation({
                 locationType: 'UriLocation',
                 uri: this.gffLocation,
@@ -126,8 +124,6 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
 
             const compressedData = await unzip(gffFile);
             const gffContents = new TextDecoder('utf-8').decode(compressedData);
-
-            // console.log('GFF file successfully decompressed.');
 
             // Parse the GFF file and cache the features
             const features: SimpleFeatureSerialized[] = [];
@@ -157,8 +153,6 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 }
             }
 
-            // console.log('Total GFF features parsed:', features.length);
-
             // Cache the parsed features
             this.gffCache.set(this.gffLocation, features);
 
@@ -186,31 +180,28 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
     }
 
     mergeAnnotationsWithEssentiality(
-        gffFeatures: SimpleFeatureSerialized[],
+        gffFeatures: SimpleFeature[],
         essentialityData: Record<string, any>,
     ): SimpleFeature[] {
-        // console.log('Merging annotations with essentiality data...');
-        // console.log('Number of GFF features:', gffFeatures.length);
-        // console.log('Number of essentiality entries:', Object.keys(essentialityData).length);
+        return gffFeatures.map((feature) => {
+            const featureData = feature.toJSON();
+            const attributes = featureData.attributes && typeof featureData.attributes === 'object'
+                ? featureData.attributes as Record<string, string>
+                : {};
 
-        const mergedFeatures = gffFeatures.map((serializedFeature) => {
-            const feature = new SimpleFeature(serializedFeature);
-            const attributes = feature.get('attributes') || {};
+            const {attributes: _, ...featureWithoutAttributes} = featureData;
             const locusTag = attributes.locus_tag;
-
-            // Extract essentiality directly from essentialityData
             const Essentiality = essentialityData[locusTag]?.essentiality?.toLowerCase() || 'unknown';
-
             const EssentialityVisual = getIconForEssentiality(Essentiality);
 
             const description = [
                 attributes.gene ? `Gene: ${attributes.gene}` : null,
                 `Locus Tag: ${locusTag}`,
-                `Essentiality: ${Essentiality}`,
+                `Product: ${attributes.product}`,
+                `Alias: ${attributes.alias}`,
+                `Essentiality: ${Essentiality || 'unknown'}`,
             ].filter(Boolean).join('\n');
 
-            // Flatten attributes and add essentiality
-            const {attributes: _, ...featureWithoutAttributes} = feature.toJSON();
             return new SimpleFeature({
                 ...featureWithoutAttributes,
                 ...attributes,
@@ -219,10 +210,6 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 // description,
             });
         });
-
-        // console.log('Final merged features count:', mergedFeatures.length);
-        // console.log('Final merged features:', mergedFeatures);
-        return mergedFeatures;
     }
 
 

@@ -80,9 +80,6 @@ class DBXRefSchema(BaseModel):
 class GeneResponseSchema(BaseModel):
     locus_tag: Optional[str] = None
     gene_name: Optional[str] = None
-    # locus_tag: str = Field(..., example="ABC_123", description="Unique gene identifier (locus tag)")
-    # gene_name: Optional[str] = Field(None, example="rpoB", description="Gene name if available")
-
     alias: Optional[List[str]] = None
     product: Optional[str] = None
     start_position: Optional[int] = None
@@ -101,6 +98,13 @@ class GeneResponseSchema(BaseModel):
     ec_number: Optional[str] = None
     dbxref: Optional[List[DBXRefSchema]] = None
     eggnog: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GeneProteinSeqSchema(BaseModel):
+    locus_tag: Optional[str] = None
+    protein_sequence: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

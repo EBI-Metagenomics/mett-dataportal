@@ -1,4 +1,5 @@
 import os
+import tempfile
 import csv
 import ftplib
 import time
@@ -237,7 +238,7 @@ class Command(BaseCommand):
         return response.hits.total.value > 0
 
     def process_isolate(self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map, max_retries=5):
-        """ Process GFF files for a given isolate with retry logic. """
+        """ Process GFF files and protein sequences for a given isolate. """
         if self.is_isolate_processed(isolate):
             logging.info(f"Skipping already processed isolate: {isolate}")
             return
@@ -249,8 +250,15 @@ class Command(BaseCommand):
                 species_scientific_name = self.get_species_name(isolate)
 
                 ftp = self.reconnect_ftp(ftp_server)
+                
+                # Process GFF files
                 isolate_path = f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
                 gff_files = ftp.nlst(isolate_path)
+                
+                # Process protein sequences
+                protein_path = f"{ftp_directory}/{isolate}/functional_annotation/prokka/{isolate}.faa"
+                protein_sequences = self.fetch_protein_sequences(ftp, protein_path)
+                
                 ftp.quit()
 
                 if not gff_files:
@@ -259,7 +267,7 @@ class Command(BaseCommand):
 
                 for gff_file in gff_files:
                     if gff_file.endswith("_annotations.gff"):
-                        self.process_gff_file(gff_file, isolate, ftp_server, species_scientific_name, isolate)
+                        self.process_gff_file(gff_file, isolate, ftp_server, species_scientific_name, isolate, protein_sequences)
                         self.update_strain_index(isolate, gff_file)
 
                 logging.info(f"Successfully processed isolate: {isolate}")
@@ -272,13 +280,44 @@ class Command(BaseCommand):
                 else:
                     logging.error(f"Failed to process isolate {isolate} after {max_retries} attempts.")
 
-    def process_gff_file(self, gff_file, isolate, ftp_server, species_scientific_name, isolate_name):
+    def fetch_protein_sequences(self, ftp, protein_path):
+        """Fetch and parse protein sequences from FAA file."""
+        try:
+            protein_sequences = {}
+            current_locus_tag = None
+            current_sequence = []
+        
+            with tempfile.NamedTemporaryFile(mode='w+b', delete=False) as temp_file:
+                ftp.retrbinary(f"RETR {protein_path}", temp_file.write)
+                temp_file.seek(0)
+                
+                for line in temp_file:
+                    line = line.decode('utf-8').strip()
+                    if line.startswith('>'):
+                        if current_locus_tag:
+                            protein_sequences[current_locus_tag] = ''.join(current_sequence)
+
+                        current_locus_tag = line.split()[0][1:]  
+                        current_sequence = []
+                    elif line: 
+                        current_sequence.append(line)
+                
+                if current_locus_tag:
+                    protein_sequences[current_locus_tag] = ''.join(current_sequence)
+
+            os.unlink(temp_file.name)
+            return protein_sequences
+            
+        except Exception as e:
+            logging.error(f"Error fetching protein sequences: {e}")
+            return {}
+
+    def process_gff_file(self, gff_file, isolate, ftp_server, species_scientific_name, isolate_name, protein_sequences):
         """ Process GFF file and index gene data into Elasticsearch. """
         try:
             ftp = self.reconnect_ftp(ftp_server)
             local_gff_path = os.path.join("/tmp", os.path.basename(gff_file))
 
-            # Check if the file exists before downloading
             try:
                 ftp.size(gff_file)
             except ftplib.error_perm:
@@ -339,6 +378,9 @@ class Command(BaseCommand):
                     if not locus_tag:
                         continue
 
+                    # protein sequence for this gene
+                    protein_sequence = protein_sequences.get(locus_tag, '')
+
                     genes_to_index.append(
                         GeneDocument(
                             meta={"id": locus_tag},
@@ -368,6 +410,7 @@ class Command(BaseCommand):
                             ontology_terms=ontology_terms,
                             uf_ontology_terms=uf_ontology_terms,
                             uf_prot_rec_fullname=uf_prot_rec_fullname,
+                            protein_sequence=protein_sequence,
                         )
                     )
 
