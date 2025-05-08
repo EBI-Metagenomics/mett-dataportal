@@ -1,9 +1,9 @@
-django==5.1.2
+django==5.2.1
 python-decouple==3.8
 requests==2.32.3
 django-filter==24.2
 django-compressor==4.5.1
-django-ninja==1.2.2
+django-ninja==1.4.1
 django-admin-inline-paginator==0.4.0
 django-unfold==0.33.0
 pydantic-settings==2.6.1
@@ -11,7 +11,7 @@ django-sass-processor==1.4.1
 django-cors-headers==4.4.0
 libsass==0.23.0
 whitenoise==6.7.0
-gunicorn==22.0.0
+gunicorn==23.0.0
 cachetools==5.5.0
 elasticsearch-dsl==8.17.1
 django-prometheus==2.3.1

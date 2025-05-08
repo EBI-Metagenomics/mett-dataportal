@@ -547,8 +547,8 @@ class GeneService:
                 raise GeneNotFoundError(f"Could not find gene with locus tag: {locus_tag}")
 
             hit = response.hits[0]
-            logger.info(f"Hit.locus_tag: {hit.locus_tag}")
-            logger.info(f"Hit.protein_sequence: {hit.protein_sequence}")
+            # logger.info(f"Hit.locus_tag: {hit.locus_tag}")
+            # logger.info(f"Hit.protein_sequence: {hit.protein_sequence}")
             return GeneProteinSeqSchema(
                 locus_tag=hit.locus_tag,
                 protein_sequence=hit.protein_sequence

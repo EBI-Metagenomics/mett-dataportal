@@ -17,7 +17,7 @@ etc.) .
 
 ### Requirements
 
-- **Python Version**: This project requires **Python 3.12**. Please ensure that you have this version installed to avoid
+- **Python Version**: This project requires **Python 3.13**. Please ensure that you have this version installed to avoid
   compatibility issues.
 - You can download the latest version [here](https://www.python.org/downloads/).
 
