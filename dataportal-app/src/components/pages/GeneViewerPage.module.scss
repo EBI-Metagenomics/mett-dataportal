@@ -1,4 +1,3 @@
-
 .vfContent {
   width: 100% !important;
   min-width: 800px;
@@ -119,9 +118,13 @@
   overflow-y: auto;
 }
 
-header[data-testid="jbrowse-header"],
-header.MuiPaper-root.MuiAppBar-root[class*="css-"],
-header[class*="MuiAppBar-root"][class*="css-"] {
+header.MuiToolbar-root.MuiToolbar-gutters.MuiToolbar-dense[class*="css-"],
+header[class*="MuiToolbar-root.MuiToolbar-gutters"] [class*="css-"],
+header[class*="MuiToolbar-gutters"] [class*="css-"] {
+  display: none !important;
+}
+
+.css-1900r1d-MuiToolbar-root {
   display: none !important;
 }
 
@@ -179,5 +182,9 @@ header[class*="MuiAppBar-root"][class*="css-"] {
 
 button[data-testid="minimize_view"],
 button[data-testid="close_view"] {
+  display: none !important;
+}
+
+div[class*="MuiToolbar-root"][class*="MuiToolbar-gutters"][class*="MuiToolbar-dense"] {
   display: none !important;
 }

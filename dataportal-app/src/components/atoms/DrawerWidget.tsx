@@ -1,7 +1,8 @@
 import React from 'react'
 import { observer } from 'mobx-react'
-import { Drawer } from '@mui/material'
+import { Drawer, IconButton } from '@mui/material'
 import BaseFeatureWidgetModel  from '@jbrowse/plugin-linear-genome-view'
+import CloseIcon from '@mui/icons-material/Close'
 
 interface Props {
   session: {
@@ -30,7 +31,23 @@ const DrawerWidget = observer(function DrawerWidget({ session }: Props) {
       }}
     >
       <div style={{ width: session.drawerWidth ?? 384 }}>
-        {widget && session.renderWidget ? session.renderWidget(widget) : null}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid #eee' }}>
+          <span style={{ fontWeight: 600 }}>Feature Details</span>
+          <IconButton
+            aria-label="close"
+            size="small"
+            onClick={() => {
+              if (session.visibleWidget) {
+                session.hideWidget(session.visibleWidget)
+              }
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </div>
+        <div>
+          {widget && session.renderWidget ? session.renderWidget(widget) : null}
+        </div>
       </div>
     </Drawer>
   )
