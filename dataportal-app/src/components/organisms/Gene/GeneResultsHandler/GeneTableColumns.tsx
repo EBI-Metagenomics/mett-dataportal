@@ -117,4 +117,18 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         defaultVisible: false,
         render: gene => gene.cog_id || '---',
     },
+    {
+        key: 'amr',
+        label: 'AMR',
+        sortable: false,
+        defaultVisible: false,
+        render: gene =>
+            gene.amr && gene.amr.length > 0
+                ? gene.amr.map((amr, idx) =>
+                    <div key={idx}>
+                        {amr.drug_class ? `${amr.drug_class}` : ''} {amr.drug_subclass ? `(${amr.drug_subclass})` : ''}
+                    </div>
+                  )
+                : '---',
+    },
 ];

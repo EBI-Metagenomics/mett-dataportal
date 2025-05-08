@@ -20,6 +20,20 @@ export interface GeneMeta {
     interpro?: string[] | null;
     ec_number?: string | null;
     dbxref?: { db: string; ref: string }[] | null;
+    amr?: AMR[] | null;
+    has_amr_info?: boolean | null;
+}
+
+export interface AMR {
+    gene_symbol?: string;
+    sequence_name?: string;
+    scope?: string;
+    element_type?: string;
+    element_subtype?: string;
+    drug_class?: string | null;
+    drug_subclass?: string | null;
+    uf_keyword?: string[] | null;
+    uf_ecnumber?: string | null;
 }
 
 export interface Gene {

@@ -1,5 +1,7 @@
 from django.db import models
 from dataportal.utils.constants import (
+    ES_FIELD_AMR,
+    ES_FIELD_AMR_INFO,
     ES_FIELD_LOCUS_TAG,
     ES_FIELD_GENE_NAME,
     ES_FIELD_ALIAS,
@@ -46,6 +48,8 @@ class GeneData(models.Model):
     locals()[GENE_FIELD_EC_NUMBER] = models.CharField(max_length=100, null=True)
     locals()[GENE_FIELD_DBXREF] = models.JSONField(null=True, default=list)
     locals()[ES_FIELD_EGGNOG] = models.CharField(max_length=255, null=True)
+    locals()[ES_FIELD_AMR] = models.JSONField(null=True, default=list)
+    locals()[ES_FIELD_AMR_INFO] = models.BooleanField(null=True, default=False)
 
     class Meta:
         managed = False
@@ -75,4 +79,6 @@ def gene_from_hit(hit) -> GeneData:
         ec_number=source.get(GENE_FIELD_EC_NUMBER),
         dbxref=source.get(GENE_FIELD_DBXREF, []),
         eggnog=source.get(ES_FIELD_EGGNOG),
+        amr=source.get(ES_FIELD_AMR, []),
+        has_amr_info=source.get(ES_FIELD_AMR_INFO),
     )

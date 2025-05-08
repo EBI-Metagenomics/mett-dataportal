@@ -27,6 +27,9 @@ export const ESSENTIALITY_DETERMINATION_TXT = "Gene essentiality was determined 
     "                                                    of mutants in either liquid or solid mGAM (rich undefined) culture\n" +
     "                                                    media.";
 
+export const AMR_DETERMINATION_TXT = "Antimicrobial resistance (AMR) information was determined by analyzing the\n" +
+    "                                                    antimicrobial resistance genes in the isolate's genome.";
+
 export const SPINNER_DELAY = 200;
 export const DEFAULT_PER_PAGE_CNT = 10;
 export const FACET_INITIAL_VISIBLE_CNT = 10;

@@ -67,6 +67,20 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
         return feature;
     }
 
+    private flattenAttributes(features: SimpleFeature[]): SimpleFeature[] {
+        return features.map(feature => {
+            const featureData = feature.toJSON();
+            const attributes = featureData.attributes && typeof featureData.attributes === 'object'
+                ? featureData.attributes as Record<string, string>
+                : {};
+            const {attributes: _, ...featureWithoutAttributes} = featureData;
+            return new SimpleFeature({
+                ...featureWithoutAttributes,
+                ...attributes,
+            });
+        });
+    }
+
     getFeatures(region: any): Observable<SimpleFeature> {
         const cacheKey = this.getCacheKey(region);
         // console.log('EssentialityAdapter - getFeatures called for region:', region);
@@ -85,12 +99,13 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 })
             );
 
+            const flattenedFeatures = this.flattenAttributes(featuresWithProtein);
             if (this.isTypeStrain && this.includeEssentiality) {
                 const essentialityData = await GeneService.fetchEssentialityData(this.apiUrl, region.refName);
-                return this.mergeAnnotationsWithEssentiality(featuresWithProtein, essentialityData);
+                return this.mergeAnnotationsWithEssentiality(flattenedFeatures, essentialityData);
             }
 
-            return featuresWithProtein;
+            return flattenedFeatures;
         })
             .catch((error) => {
                 console.error('Error in getFeatures pipeline:', error);
@@ -190,8 +205,11 @@ export default class EssentialityAdapter extends BaseFeatureDataAdapter {
                 : {};
 
             const {attributes: _, ...featureWithoutAttributes} = featureData;
-            const locusTag = attributes.locus_tag;
-            const Essentiality = essentialityData[locusTag]?.essentiality?.toLowerCase() || 'unknown';
+            const locusTag = featureData.locus_tag;
+            const Essentiality =
+                locusTag && typeof locusTag === 'string' && essentialityData[locusTag]
+                    ? essentialityData[locusTag].essentiality?.toLowerCase() || 'unknown'
+                    : 'unknown';
             const EssentialityVisual = getIconForEssentiality(Essentiality);
 
             const description = [

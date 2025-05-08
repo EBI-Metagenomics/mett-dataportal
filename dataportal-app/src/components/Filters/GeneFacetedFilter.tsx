@@ -3,6 +3,7 @@ import styles from './GeneFacetedFilter.module.scss';
 import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
 import {
+    AMR_DETERMINATION_TXT,
     ESSENTIALITY_DETERMINATION_TXT,
     EXT_LINK_ESSENTIALITY_JOURNAL,
     FACET_ORDER,
@@ -46,7 +47,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
 
     const getFacetLabel = (facetGroup: string, value: string | number | boolean): string => {
         if (facetGroup === 'has_amr_info') {
-            return value === true || value === "true" ? "Available" : "Not Available";
+            return value === true || value === "true" ? "Present" : "Absent";
         }
         return String(value).toUpperCase();
     };
@@ -134,9 +135,41 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                     <div key={facetGroup} className={styles.facetGroup}>
                         <h4 className={styles.groupTitle} onClick={() => toggleCollapse(facetGroup)}
                             style={{cursor: 'pointer'}}>
-                            {facetGroup === 'has_amr_info'
-                                ? 'AMR INFO'
-                                : facetGroup.replace('_', ' ').toUpperCase()} {collapsedGroups[facetGroup] ? '▸' : '▾'}
+                             {collapsedGroups[facetGroup] ? '▸' : '▾'}
+                             {' '}
+                             {facetGroup === 'has_amr_info'
+                                 ? 'AMR'
+                                 : facetGroup.replace('_', ' ').toUpperCase()}
+                             {' '}
+                             {facetGroup === 'has_amr_info' && (
+                                <Popover.Root>
+                                    <Popover.Trigger asChild>
+                                        <button
+                                            className={styles.infoIcon}
+                                            onClick={(e) => e.stopPropagation()}
+                                            aria-label="AMR"
+                                        >
+                                            ℹ️
+                                        </button>
+                                    </Popover.Trigger>
+                                    <Popover.Portal>
+                                        <Popover.Content
+                                            className={styles.popoverContent}
+                                            side="top"
+                                            align="end"
+                                            sideOffset={5}
+                                        >
+                                            <div className={styles.popoverInner}>
+
+                                                <strong>AMR:</strong><br/>
+                                                <p>
+                                                    {AMR_DETERMINATION_TXT}
+                                                </p>
+                                            </div>
+                                        </Popover.Content>
+                                    </Popover.Portal>
+                                </Popover.Root>
+                            )}
 
                             {facetGroup === 'essentiality' && (
                                 <Popover.Root>
@@ -207,7 +240,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                         </Popover.Content>
                                     </Popover.Portal>
                                 </Popover.Root>
-                            )}
+                            )}  
                         </h4>
 
 

@@ -62,7 +62,6 @@ class GeneAutocompleteResponseSchema(BaseModel):
     cog_id: Optional[str] = None
     interpro: Optional[List[str]] = None
     essentiality: Optional[str] = "Unknown"
-
     model_config = ConfigDict(from_attributes=True)
 
 class EssentialityTagSchema(BaseModel):
@@ -76,6 +75,17 @@ class DBXRefSchema(BaseModel):
     ref: str
 
     model_config = ConfigDict(from_attributes=True)
+
+class AMRSchema(BaseModel):
+    gene_symbol: Optional[str] = None
+    sequence_name: Optional[str] = None
+    scope: Optional[str] = None
+    element_type: Optional[str] = None
+    element_subtype: Optional[str] = None
+    drug_class: Optional[str] = None
+    drug_subclass: Optional[str] = None
+    uf_keyword: Optional[List[str]] = None
+    uf_ecnumber: Optional[str] = None
 
 class GeneResponseSchema(BaseModel):
     locus_tag: Optional[str] = None
@@ -98,7 +108,8 @@ class GeneResponseSchema(BaseModel):
     ec_number: Optional[str] = None
     dbxref: Optional[List[DBXRefSchema]] = None
     eggnog: Optional[str] = None
-
+    amr: Optional[List[AMRSchema]] = None
+    has_amr_info: Optional[bool] = None
     model_config = ConfigDict(from_attributes=True)
 
 

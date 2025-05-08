@@ -59,6 +59,7 @@ ES_FIELD_COG_ID = "cog_id"
 ES_FIELD_COG_FUNCATS = "cog_funcats"
 ES_FIELD_INTERPRO = "interpro"
 ES_FIELD_EGGNOG = "eggnog"
+ES_FIELD_AMR = "amr"
 ES_FIELD_AMR_INFO = "has_amr_info"
 
 # Search fields
