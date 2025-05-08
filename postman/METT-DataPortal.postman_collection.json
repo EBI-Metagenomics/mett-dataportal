@@ -23,7 +23,7 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Helath is Ok\", function () {",
+											"pm.test(\"Health is Ok\", function () {",
 											"    const jsonData = pm.response.json();",
 											"    pm.expect(jsonData.status).to.eql(\"ok\")",
 											"});"
@@ -92,45 +92,6 @@
 								}
 							},
 							"response": []
-						},
-						{
-							"name": "Species-List-Positive Copy",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"pm.test(\"Array length is greater than or equal to 2\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.length).to.be.at.least(2); ",
-											"});",
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/species/",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"species",
-										""
-									]
-								}
-							},
-							"response": []
 						}
 					]
 				},
@@ -138,7 +99,7 @@
 					"name": "genomes",
 					"item": [
 						{
-							"name": "Autocomplete-genomes-01",
+							"name": "Autocomplete-genomes",
 							"event": [
 								{
 									"listen": "test",
@@ -193,57 +154,7 @@
 							"response": []
 						},
 						{
-							"name": "Autocomplete-species-string",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});",
-											"",
-											"pm.test(\"Array length is equal to 10\", function () {",
-											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData.length).to.eql(10); ",
-											"});",
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/genomes/autocomplete?query=bu&limit=10",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"genomes",
-										"autocomplete"
-									],
-									"query": [
-										{
-											"key": "query",
-											"value": "bu"
-										},
-										{
-											"key": "limit",
-											"value": "10"
-										}
-									]
-								},
-								"description": "Generated from cURL: curl -X GET \"http://localhost:8000/api/search/autocomplete/?query=Bacteroides&limit=5\"\n"
-							},
-							"response": []
-						},
-						{
-							"name": "Autocomplete-with-species",
+							"name": "Autocomplete-with-Filter-species",
 							"event": [
 								{
 									"listen": "test",
@@ -1155,6 +1066,25 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
+											"pm.test(\"Response has expected structure\", function () {",
+											"    const json = pm.response.json();",
+											"    pm.expect(json).to.have.property(\"pfam\");",
+											"    pm.expect(json).to.have.property(\"interpro\");",
+											"    pm.expect(json).to.have.property(\"kegg\");",
+											"    pm.expect(json).to.have.property(\"cog_id\");",
+											"    pm.expect(json).to.have.property(\"cog_funcats\");",
+											"    pm.expect(json).to.have.property(\"essentiality\");",
+											"    pm.expect(json).to.have.property(\"has_amr_info\");",
+											"    pm.expect(json).to.have.property(\"total_hits\");",
+											"    pm.expect(json).to.have.property(\"operators\");",
+											"});",
+											"",
+											"pm.test(\"Selected pfam filter is correctly marked\", function () {",
+											"    const pfam = pm.response.json().pfam;",
+											"    const selectedPfam = pfam.find(item => item.value === \"pf13715\");",
+											"    pm.expect(selectedPfam).to.not.be.undefined;",
+											"    pm.expect(selectedPfam.selected).to.eql(true);",
+											"});",
 											""
 										],
 										"type": "text/javascript",
@@ -1204,6 +1134,31 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
+											"pm.test(\"Response has expected structure\", function () {",
+											"    const json = pm.response.json();",
+											"    pm.expect(json).to.have.property(\"pfam\");",
+											"    pm.expect(json).to.have.property(\"interpro\");",
+											"    pm.expect(json).to.have.property(\"kegg\");",
+											"    pm.expect(json).to.have.property(\"cog_id\");",
+											"    pm.expect(json).to.have.property(\"cog_funcats\");",
+											"    pm.expect(json).to.have.property(\"essentiality\");",
+											"    pm.expect(json).to.have.property(\"has_amr_info\");",
+											"    pm.expect(json).to.have.property(\"total_hits\");",
+											"    pm.expect(json).to.have.property(\"operators\");",
+											"});",
+											"",
+											"pm.test(\"Selected pfam and interpro filters are correctly marked\", function () {",
+											"    const json = pm.response.json();",
+											"",
+											"    const selectedPfam = json.pfam.find(item => item.value === \"pf00294\");",
+											"    const selectedInterpro = json.interpro.find(item => item.value === \"ipr011611\");",
+											"",
+											"    pm.expect(selectedPfam).to.not.be.undefined;",
+											"    pm.expect(selectedPfam.selected).to.eql(true);",
+											"",
+											"    pm.expect(selectedInterpro).to.not.be.undefined;",
+											"    pm.expect(selectedInterpro.selected).to.eql(true);",
+											"});",
 											""
 										],
 										"type": "text/javascript",
@@ -1247,7 +1202,7 @@
 							"response": []
 						},
 						{
-							"name": "Gene-Faceted-Search-Interpro-pfam Copy",
+							"name": "Gene-Faceted-Search-SpeciesFiltered",
 							"event": [
 								{
 									"listen": "test",
@@ -1257,6 +1212,34 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
+											"pm.test(\"Response has expected structure\", function () {",
+											"    const json = pm.response.json();",
+											"    pm.expect(json).to.have.property(\"pfam\");",
+											"    pm.expect(json).to.have.property(\"interpro\");",
+											"    pm.expect(json).to.have.property(\"kegg\");",
+											"    pm.expect(json).to.have.property(\"cog_id\");",
+											"    pm.expect(json).to.have.property(\"cog_funcats\");",
+											"    pm.expect(json).to.have.property(\"essentiality\");",
+											"    pm.expect(json).to.have.property(\"has_amr_info\");",
+											"    pm.expect(json).to.have.property(\"total_hits\");",
+											"    pm.expect(json).to.have.property(\"operators\");",
+											"});",
+											"",
+											"pm.test(\"No selected filters are present\", function () {",
+											"    const json = pm.response.json();",
+											"",
+											"    const allSelected = [",
+											"        ...json.pfam,",
+											"        ...json.interpro,",
+											"        ...json.kegg,",
+											"        ...json.cog_id,",
+											"        ...json.cog_funcats,",
+											"        ...json.essentiality,",
+											"        ...json.has_amr_info",
+											"    ].filter(item => item.selected === true);",
+											"",
+											"    pm.expect(allSelected.length).to.eql(0);",
+											"});",
 											""
 										],
 										"type": "text/javascript",
@@ -1937,14 +1920,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_02153",
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00001",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genes",
-										"BU_ATCC8492_02153"
+										"BU_ATCC8492_00001"
 									]
 								}
 							},
@@ -2752,6 +2735,46 @@
 											"key": "query",
 											"value": "dna"
 										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genes-by-ProteinSequence-01",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Results array contains the protein sequence\", function () {",
+											"    const jsonData = pm.response.json(); ",
+											"    jsonData.protein_sequen",
+											"    pm.expect(jsonData.protein_sequence).that.is.not.empty;",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/protein/BU_2243B_00003",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"protein",
+										"BU_2243B_00003"
 									]
 								}
 							},
