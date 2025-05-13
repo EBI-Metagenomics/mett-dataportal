@@ -1,12 +1,12 @@
 import {FacetItem} from "./Auxiliary";
 
 export interface GeneMeta {
-    locus_tag?: string;
+    locus_tag: string;
     gene_name?: string;
     alias?: string[];
     product?: string;
-    start_position?: number;
-    end_position?: number;
+    start_position: number;
+    end_position: number;
     seq_id: string;
     isolate_name: string;
     species_scientific_name: string;
@@ -43,31 +43,21 @@ export interface Gene {
     product?: string;
 }
 
-
 export interface GeneProteinSeq {
-    locus_tag?: string;
-    protein_sequence?: string;
+    locus_tag: string;
+    protein_sequence: string;
 }
 
 export interface GeneSuggestion {
-    gene_name: string | '';
     locus_tag: string;
-    alias: string[] | '';
-    isolate_name?: string;
-    uniprot_id?: string | null;
-    species_scientific_name?: string;
-    species_acronym?: string;
-    product?: string | null;
-    kegg?: string[] | null;
-    pfam?: string[] | null;
-    interpro?: string[] | null;
-    cog_id?: string | null;
+    gene_name?: string;
+    product?: string;
 }
 
 export interface PaginatedResponse<T> {
     results: T[];
-    num_pages: number;
     page_number: number;
+    num_pages: number;
     has_previous: boolean;
     has_next: boolean;
 }
@@ -75,5 +65,5 @@ export interface PaginatedResponse<T> {
 export interface GeneFacetResponse {
     total_hits: number;
     operators: Record<string, 'AND' | 'OR'>;
-    [facetGroup: string]: FacetItem[] | number | Record<string, 'AND' | 'OR'>;
+    [key: string]: number | Record<string, 'AND' | 'OR'> | FacetItem[];
 }

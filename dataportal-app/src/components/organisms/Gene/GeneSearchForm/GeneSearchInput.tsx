@@ -12,12 +12,12 @@ interface GeneSearchInputProps {
 }
 
 const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
-                                                             query,
-                                                             onInputChange,
-                                                             suggestions,
-                                                             onSuggestionClick,
-                                                             onSuggestionsClear,
-                                                         }) => {
+    query,
+    onInputChange,
+    suggestions,
+    onSuggestionClick,
+    onSuggestionsClear,
+}) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const [isSelecting, setIsSelecting] = useState(false);
 
@@ -35,25 +35,18 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
     }, [onSuggestionsClear]);
 
     return (
-        <div ref={wrapperRef} className={`vf-form__item ${styles.vfFormItem}`}>
+        <div ref={wrapperRef} className={`vf-form__item ${styles.vfFormItem}`} style={{width: '100%'}}>
             <Autocomplete
                 disablePortal
                 freeSolo
                 options={suggestions || []}
-                style={{zIndex: 1000}}
+                style={{zIndex: 1000, flex: 1}}
                 getOptionLabel={(option) => {
                     if (typeof option === 'string') return option;
-                    const strainName = option.isolate_name || 'Unknown strain';
                     const product = option.product || 'Unknown product';
                     const locusTag = option.locus_tag || 'Unknown locus tag';
                     const geneNamePart = option.gene_name ? ` - ${option.gene_name}` : '';
-                    const uniprot_id = option.uniprot_id ? ` - ${option.uniprot_id}` : '';
-                    const alias =
-                        Array.isArray(option.alias) && option.alias.some(a => a.trim())
-                            ? ` - ${option.alias.filter(a => a.trim()).join(', ')}`
-                            : '';
-
-                    return `${strainName}${geneNamePart}${alias} (${product} - ${locusTag}${uniprot_id})`;
+                    return `${geneNamePart} (${product} - ${locusTag})`;
                 }}
                 inputValue={query || ''}
                 onInputChange={(event, newValue, reason) => {
@@ -69,12 +62,9 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                 onChange={(event, value) => {
                     if (value && typeof value !== 'string') {
                         setIsSelecting(true);
-                        const strainName = value.isolate_name || 'Unknown strain';
                         const geneNamePart = value.gene_name || value.locus_tag || 'Unknown locus tag';
-                        const displayValue = `${geneNamePart} (${strainName})`;
-
                         onInputChange({
-                            target: {value: displayValue},
+                            target: {value: geneNamePart},
                         } as React.ChangeEvent<HTMLInputElement>);
                         onSuggestionClick(value);
                     }
@@ -94,8 +84,11 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                         sx={{
                             '& .MuiInputBase-root': {
                                 height: '41px',
+                                width: '100%',
+                                minWidth: 0,
                             },
                         }}
+                        fullWidth
                     />
                 )}
             />
@@ -103,6 +96,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                 type="submit"
                 className="vf-button vf-button--primary vf-button--sm"
                 onClick={onSuggestionsClear}
+                style={{height: '41px'}}
             >
                 <span className="vf-button__text">Search</span>
             </button>

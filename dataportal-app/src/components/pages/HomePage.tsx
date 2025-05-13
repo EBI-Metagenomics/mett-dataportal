@@ -7,7 +7,9 @@ import {SpeciesService} from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
-import {SPINNER_DELAY} from "../../utils/appConstants";
+import {SPINNER_DELAY, DEFAULT_PER_PAGE_CNT} from "../../utils/appConstants";
+import {GeneService} from '../../services/geneService';
+import {GeneMeta} from '../../interfaces/Gene';
 
 // Define the type for each tab
 interface Tab {
@@ -48,11 +50,11 @@ const HomePage: React.FC = () => {
 
     // State for Genome Search
     const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
-    const [genomeResults, setGenomeResults] = useState<any[]>([]);
+    const [genomeResults, setGenomeResults] = useState<GenomeMeta[]>([]);
 
     // State for Gene Search
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
-    const [geneResults, setGeneResults] = useState<any[]>([]);
+    const [geneResults, setGeneResults] = useState<GeneMeta[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
 
     // sorting state
@@ -61,6 +63,7 @@ const HomePage: React.FC = () => {
     const [geneSortField, setGeneSortField] = useState<string>('locus_tag');
     const [geneSortOrder, setGeneSortOrder] = useState<'asc' | 'desc'>('asc');
 
+    const [totalPages, setTotalPages] = useState<number>(1);
 
     const spinner = loading && (
         <div className={styles.spinnerOverlay}>
@@ -97,99 +100,126 @@ const HomePage: React.FC = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, genomeSortField, genomeSortOrder);
-            // console.log('Fetched results:', response.results);
-            setGenomeResults(response.results);
+            setLoading(true);
+            try {
+                const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, genomeSortField, genomeSortOrder);
+                setGenomeResults(response.results);
+            } catch (error) {
+                console.error('Error fetching genome data:', error);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchData();
-    }, [genomeSearchQuery, selectedSpecies]);
+    }, [genomeSearchQuery, selectedSpecies, genomeSortField, genomeSortOrder]);
 
     const handleSpeciesSelect = async (species_acronym: string) => {
-        setLoading(true); // Show spinner
-        const startTime = Date.now(); // Track start time
+        setLoading(true);
+        try {
+            let updatedSelectedSpecies: string[];
+            if (selectedSpecies.includes(species_acronym)) {
+                updatedSelectedSpecies = selectedSpecies.filter((acronym) => acronym !== species_acronym);
+            } else {
+                updatedSelectedSpecies = [...selectedSpecies, species_acronym];
+            }
 
-        let updatedSelectedSpecies: string[];
-        if (selectedSpecies.includes(species_acronym)) {
-            updatedSelectedSpecies = selectedSpecies.filter((acronym) => acronym !== species_acronym);
-        } else {
-            updatedSelectedSpecies = [...selectedSpecies, species_acronym];
+            setSelectedSpecies(updatedSelectedSpecies);
+
+            if (updatedSelectedSpecies.length === 0) {
+                setSelectedTypeStrains([]);
+            } else {
+                const validTypeStrains = typeStrains.filter((strain) =>
+                    updatedSelectedSpecies.includes(strain.species_acronym)
+                );
+
+                const updatedSelectedTypeStrains = selectedTypeStrains.filter((isolate_name) =>
+                    validTypeStrains.some((strain) => strain.isolate_name === isolate_name)
+                );
+
+                setSelectedTypeStrains(updatedSelectedTypeStrains);
+
+                if (updatedSelectedTypeStrains.length > 0) {
+                    const filteredResults = genomeResults.filter((result) =>
+                        updatedSelectedTypeStrains.includes(result.isolate_name)
+                    );
+                    setGenomeResults(filteredResults);
+                } else {
+                    await handleGenomeSearch();
+                }
+            }
+        } catch (error) {
+            console.error('Error in handleSpeciesSelect:', error);
+        } finally {
+            setLoading(false);
         }
+    };
 
-        setSelectedSpecies(updatedSelectedSpecies);
+    const handleTypeStrainToggle = async (isolate_name: string) => {
+        setLoading(true);
+        try {
+            let updatedSelectedTypeStrains: string[];
 
-        if (updatedSelectedSpecies.length === 0) {
-            setSelectedTypeStrains([]);
-        } else {
-            const validTypeStrains = typeStrains.filter((strain) =>
-                updatedSelectedSpecies.includes(strain.species_acronym)
-            );
-
-            const updatedSelectedTypeStrains = selectedTypeStrains.filter((isolate_name) =>
-                validTypeStrains.some((strain) => strain.isolate_name === isolate_name)
-            );
+            if (selectedTypeStrains.includes(isolate_name)) {
+                updatedSelectedTypeStrains = selectedTypeStrains.filter((id) => id !== isolate_name);
+            } else {
+                updatedSelectedTypeStrains = [...selectedTypeStrains, isolate_name];
+            }
 
             setSelectedTypeStrains(updatedSelectedTypeStrains);
 
             if (updatedSelectedTypeStrains.length > 0) {
                 const filteredResults = genomeResults.filter((result) =>
-                    updatedSelectedTypeStrains.includes(result.strain_id)
+                    updatedSelectedTypeStrains.includes(result.isolate_name)
                 );
                 setGenomeResults(filteredResults);
             } else {
                 await handleGenomeSearch();
             }
+        } catch (error) {
+            console.error('Error in handleTypeStrainToggle:', error);
+        } finally {
+            setLoading(false);
         }
-
-        const elapsedTime = Date.now() - startTime; // Calculate elapsed time
-        const remainingTime = SPINNER_DELAY - elapsedTime;
-
-        setTimeout(() => {
-            setLoading(false); // Hide spinner after delay
-        }, remainingTime > 0 ? remainingTime : 0);
     };
-
-
-    const handleTypeStrainToggle = async (isolate_name: string) => {
-        setLoading(true); // Show spinner
-        const startTime = Date.now(); // Track start time
-
-        let updatedSelectedTypeStrains: string[];
-
-        if (selectedTypeStrains.includes(isolate_name)) {
-            updatedSelectedTypeStrains = selectedTypeStrains.filter((id) => id !== isolate_name);
-        } else {
-            updatedSelectedTypeStrains = [...selectedTypeStrains, isolate_name];
-        }
-
-        setSelectedTypeStrains(updatedSelectedTypeStrains);
-
-        if (updatedSelectedTypeStrains.length > 0) {
-            const filteredResults = genomeResults.filter((result) =>
-                updatedSelectedTypeStrains.includes(result.strain_id)
-            );
-            setGenomeResults(filteredResults);
-        } else {
-            await handleGenomeSearch();
-        }
-
-        const elapsedTime = Date.now() - startTime; // Calculate elapsed time
-        const remainingTime = SPINNER_DELAY - elapsedTime;
-
-        setTimeout(() => {
-            setLoading(false); // Hide spinner after delay
-        }, remainingTime > 0 ? remainingTime : 0);
-    };
-
 
     const handleGenomeSearch = async (field = genomeSortField, order = genomeSortOrder) => {
-        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, field, order);
-        setGenomeResults(response.results);
+        setLoading(true);
+        try {
+            const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, field, order);
+            setGenomeResults(response.results);
+        } catch (error) {
+            console.error('Error in handleGenomeSearch:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    //todo to be removed
-    const handleGeneSearch = async (field = geneSortField, order = geneSortOrder) => {
-        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, geneSearchQuery, field, order);
-        setGenomeResults(response.results);
+    const handleGeneSearch = async (field?: string, order?: 'asc' | 'desc') => {
+        setLoading(true);
+        try {
+            const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                geneSearchQuery,
+                1, // page
+                DEFAULT_PER_PAGE_CNT, // pageSize
+                field || geneSortField,
+                order || geneSortOrder,
+                selectedGenomes.map(genome => ({
+                    isolate_name: genome.isolate_name,
+                    type_strain: genome.type_strain
+                })),
+                selectedSpecies
+            );
+            setGeneResults(response.results || []);
+            setTotalPages(response.num_pages || 1);
+        } catch (error) {
+            console.error('Error searching genes:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGeneResultsChange = (results: GeneMeta[]) => {
+        setGeneResults(results);
     };
 
     const handleGenomeSelect = (genome: BaseGenome) => {
@@ -228,14 +258,13 @@ const HomePage: React.FC = () => {
         const newSortOrder = geneSortField === field && geneSortOrder === 'asc' ? 'desc' : 'asc';
         setGeneSortField(field);
         setGeneSortOrder(newSortOrder);
-        // console.log('Sorting Genes by:', {field, order: newSortOrder});
-        //handleGeneSearch(field, newSortOrder);
+        await handleGeneSearch(field, newSortOrder);
     };
 
 
     const geneLinkData = {
-        template: '/genome/${strain_name}?locus_tag=${locus_tag}',
-        alias: 'Browse'
+        template: '/genome/${strain_name}',
+        alias: 'Select'
     };
 
     const genomeLinkData = {
@@ -302,6 +331,8 @@ const HomePage: React.FC = () => {
                             linkData={geneLinkData}
                             handleRemoveGenome={handleRemoveGenome}
                             setLoading={setLoading}
+                            onResultsChange={handleGeneResultsChange}
+                            isTypeStrainAvailable={selectedGenomes.some(genome => genome.type_strain === true)}
                         />
                     )}
                 </div>

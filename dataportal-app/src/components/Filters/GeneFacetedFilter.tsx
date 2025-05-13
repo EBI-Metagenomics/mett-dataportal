@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import styles from './GeneFacetedFilter.module.scss';
 import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
@@ -11,6 +11,7 @@ import {
 } from "../../utils/appConstants";
 import * as Popover from '@radix-ui/react-popover';
 import {MetadataService} from "../../services/metadataService";
+import {useFacets} from '../../contexts/FacetContext';
 
 interface GeneFacetedFilterProps {
     facets: GeneFacetResponse;
@@ -21,29 +22,40 @@ interface GeneFacetedFilterProps {
 }
 
 const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
-                                                                 facets,
-                                                                 onToggleFacet,
-                                                                 initialVisibleCount = 10,
-                                                                 loadMoreStep = 10,
-                                                                 onOperatorChange,
-                                                             }) => {
+    facets,
+    onToggleFacet,
+    initialVisibleCount = 10,
+    loadMoreStep = 10,
+    onOperatorChange,
+}) => {
+    const { state, toggleCollapse, setVisibleCount, setFilterText, setOperator } = useFacets();
+    const [cogCategoryDefs, setCogCategoryDefs] = React.useState<Record<string, string>>({});
 
-    const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
-    const [filterText, setFilterText] = useState<Record<string, string>>({});
-    const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-    const [cogCategoryDefs, setCogCategoryDefs] = useState<Record<string, string>>({});
-    const [facetOperators, setFacetOperators] = useState<Record<string, 'AND' | 'OR'>>({});
-    const [manualCollapsedGroups, setManualCollapsedGroups] = useState<Record<string, boolean>>({});
+    React.useEffect(() => {
+        MetadataService.fetchCOGCategories()
+            .then((data) => {
+                const mapping = data.reduce((acc: Record<string, string>, item: { code: string, label: string }) => {
+                    acc[item.code] = item.label;
+                    return acc;
+                }, {});
+                setCogCategoryDefs(mapping);
+            });
+    }, []);
 
-
-    const handleOperatorChange = (facetGroup: string, operator: 'AND' | 'OR') => {
-        setFacetOperators(prev => ({
-            ...prev,
-            [facetGroup]: operator,
-        }));
-        onOperatorChange?.(facetGroup, operator);
+    const handleLoadMore = (group: string, total: number) => {
+        setVisibleCount(group, Math.min((state.visibleCounts[group] || initialVisibleCount) + loadMoreStep, total));
     };
 
+    const handleFilterChange = (group: string, text: string) => {
+        setFilterText(group, text);
+        // Reset visible count to show from start of filtered results
+        setVisibleCount(group, initialVisibleCount);
+    };
+
+    const handleOperatorChange = (facetGroup: string, operator: 'AND' | 'OR') => {
+        setOperator(facetGroup, operator);
+        onOperatorChange?.(facetGroup, operator);
+    };
 
     const getFacetLabel = (facetGroup: string, value: string | number | boolean): string => {
         if (facetGroup === 'has_amr_info') {
@@ -51,7 +63,6 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
         }
         return String(value).toUpperCase();
     };
-
 
     const orderedFacetEntries = Object.entries(facets)
         .filter(([facetGroup, values]) => facetGroup !== 'total_hits' && Array.isArray(values))
@@ -66,76 +77,26 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
             return indexA - indexB;
         });
 
-    useEffect(() => {
-        const initialCollapsed = Object.entries(facets).reduce((acc, [key, values]) => {
-            if (key !== 'total_hits' && Array.isArray(values)) {
-                const hasSelection = values.some(v => v.selected);
-                if (!manualCollapsedGroups[key]) {
-                    acc[key] = !hasSelection;
-                }
-            }
-            return acc;
-        }, {} as Record<string, boolean>);
-
-        setCollapsedGroups(prev => ({...prev, ...initialCollapsed}));
-
-        MetadataService.fetchCOGCategories()
-            .then((data) => {
-                const mapping = data.reduce((acc: Record<string, string>, item: { code: string, label: string }) => {
-                    acc[item.code] = item.label;
-                    return acc;
-                }, {});
-                setCogCategoryDefs(mapping);
-            });
-    }, [facets]);
-
-
-    const handleLoadMore = (group: string, total: number) => {
-        setVisibleCount((prev) => ({
-            ...prev,
-            [group]: Math.min((prev[group] || initialVisibleCount) + loadMoreStep, total),
-        }));
-    };
-
-    const handleFilterChange = (group: string, text: string) => {
-        setFilterText((prev) => ({...prev, [group]: text}));
-        // Reset visible count to show from start of filtered results
-        setVisibleCount((prev) => ({...prev, [group]: initialVisibleCount}));
-    };
-
-    const toggleCollapse = (group: string) => {
-        setCollapsedGroups(prev => ({
-            ...prev,
-            [group]: !prev[group]
-        }));
-        setManualCollapsedGroups(prev => ({
-            ...prev,
-            [group]: true
-        }));
-    };
-
-
     return (
         <div className={styles.facetedFilter}>
             <h3 className={styles.title}>Filter by Facets</h3>
             {orderedFacetEntries.map(([facetGroup, values]) => {
                 if (facetGroup === 'total_hits' || !Array.isArray(values)) return null;
 
-                const search = filterText[facetGroup] || '';
+                const search = state.filterTexts[facetGroup] || '';
                 const selected = values.filter(f => f.selected);
                 const unselected = values.filter(
                     f => !f.selected && String(f.value).toLowerCase().includes(search.toLowerCase())
                 );
                 const filtered = [...selected, ...unselected];
                 const total = filtered.length;
-                const showCount = visibleCount[facetGroup] || initialVisibleCount;
-
+                const showCount = state.visibleCounts[facetGroup] || initialVisibleCount;
 
                 return (
                     <div key={facetGroup} className={styles.facetGroup}>
                         <h4 className={styles.groupTitle} onClick={() => toggleCollapse(facetGroup)}
                             style={{cursor: 'pointer'}}>
-                             {collapsedGroups[facetGroup] ? '▸' : '▾'}
+                             {state.collapsedGroups[facetGroup] ? '▸' : '▾'}
                              {' '}
                              {facetGroup === 'has_amr_info'
                                  ? 'AMR'
@@ -160,7 +121,6 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                             sideOffset={5}
                                         >
                                             <div className={styles.popoverInner}>
-
                                                 <strong>AMR:</strong><br/>
                                                 <p>
                                                     {AMR_DETERMINATION_TXT}
@@ -190,7 +150,6 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                             sideOffset={5}
                                         >
                                             <div className={styles.popoverInner}>
-
                                                 <strong>Essentiality determination:</strong><br/>
                                                 <p>
                                                     {ESSENTIALITY_DETERMINATION_TXT}
@@ -200,7 +159,6 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                        href={EXT_LINK_ESSENTIALITY_JOURNAL}>
                                                         DeJesus et al. 2015
                                                     </a>
-
                                                 </p>
                                             </div>
                                         </Popover.Content>
@@ -243,8 +201,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                             )}  
                         </h4>
 
-
-                        {!collapsedGroups[facetGroup] && (
+                        {!state.collapsedGroups[facetGroup] && (
                             <>
                                 <input
                                     type="text"
@@ -259,7 +216,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                             id={`logic-toggle-${facetGroup}`}
                                             type="checkbox"
                                             className={styles.logicToggleSwitch}
-                                            checked={facetOperators[facetGroup] === 'AND'}
+                                            checked={state.facetOperators[facetGroup] === 'AND'}
                                             onChange={(e) =>
                                                 handleOperatorChange(facetGroup, e.target.checked ? 'AND' : 'OR')
                                             }
@@ -291,7 +248,6 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                         * Showing {Math.min(showCount, total)} out of {total} entries
                                     </div>
                                     {showCount < total && (
-                                        // <button className={`vf-button vf-button--primary vf-button--sm ${styles.loadMoreButton}`} onClick={() => handleLoadMore(facetGroup, total)}>
                                         <button className={`${styles.loadMoreButton}`}
                                                 onClick={() => handleLoadMore(facetGroup, total)}>
                                             Load more
@@ -301,8 +257,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                             </>
                         )}
                     </div>
-                )
-                    ;
+                );
             })}
         </div>
     );

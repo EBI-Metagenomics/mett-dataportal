@@ -1,9 +1,7 @@
-
 .vfGeneSection {
   float: left;
   width: 100%;
 }
-
 
 .leftPane {
   text-align: left;
@@ -16,10 +14,15 @@
   float: right;
 }
 
-
 .vfGeneSubHeading {
   width: 100%;
   float: right;
+}
+
+.searchForm {
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 800px;
 }
 
 .vf-button {
@@ -61,7 +64,6 @@
     cursor: pointer;
 }
 
-
 .vf-button--sm {
   margin-top: 10px;
   display: block;
@@ -73,6 +75,7 @@
 .paginationBar {
   margin-right: 300px;
 }
+
 .rightPaneButtons {
   float: right;
 }

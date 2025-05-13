@@ -7,5 +7,9 @@ export interface LinkData {
 export interface FacetItem {
     value: string;
     count: number;
-    selected: boolean;
+    selected?: boolean;
+}
+
+export interface FacetOperator {
+    [key: string]: 'AND' | 'OR';
 }

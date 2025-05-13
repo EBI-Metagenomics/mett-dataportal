@@ -1,33 +1,46 @@
-.vf-form__input {
-  width: 70%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
+.searchForm {
+  max-width: 600px;
+  margin: 0 auto 20px auto;
+  width: 100%;
 }
 
-.vf-form__item {
-  width: 70% !important;
-}
 
 .vf-button {
-  margin-top: 10px;
-  display: block;
-  width: 100%;
-  padding: 10px;
+  margin-top: 0;
+  display: inline-block;
+  width: auto;
+  padding: 10px 20px;
   font-size: 16px;
+  margin-left: 10px;
 }
 
 .vfFormItem {
   width: 100% !important;
+  display: flex;
+  gap: 10px;
 }
 
 .vf-form__input {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 600;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
+}
+
+.vf-button {
+  margin-top: 0;
+  display: inline-block;
+  width: 120px;
+  min-width: 100px;
+  padding: 10px 0;
+  font-size: 16px;
+  margin-left: 10px;
+}
+
+.vf-form__item {
+  width: 100% !important;
 }
 
 .vfDropdownMenu {
@@ -41,7 +54,6 @@
   width: calc(100% - 100px);
   z-index: 1000;
 }
-
 
 .suggestionItem {
   padding: 8px 12px;

@@ -258,6 +258,10 @@ const GeneViewerPage: React.FC = () => {
         }
     };
 
+    const handleGeneResultsChange = (results: GeneMeta[]) => {
+        setGeneResults(results);
+    };
+
     const handleGeneSortClick = async (field: string) => {
         const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
         setSortField(field);
@@ -406,6 +410,8 @@ const GeneViewerPage: React.FC = () => {
                             viewState={viewState}
                             setLoading={setLoading}
                             handleRemoveGenome={handleRemoveGenome}
+                            onResultsChange={handleGeneResultsChange}
+                            isTypeStrainAvailable={genomeMeta?.type_strain === true}
                         />
                         {/*)}*/}
                     </section>
