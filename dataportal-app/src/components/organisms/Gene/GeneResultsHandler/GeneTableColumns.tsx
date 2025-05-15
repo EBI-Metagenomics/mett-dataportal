@@ -119,7 +119,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
     },
     {
         key: 'amr',
-        label: 'AMR',
+        label: 'AMR class/subclass',
         sortable: false,
         defaultVisible: false,
         render: gene =>

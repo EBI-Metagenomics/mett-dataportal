@@ -4,7 +4,7 @@ import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
 import {
     AMR_DETERMINATION_TXT,
-    ESSENTIALITY_DETERMINATION_TXT,
+    ESSENTIALITY_DETERMINATION_TXT, EXT_LINK_AMR_DETERMINATION,
     EXT_LINK_ESSENTIALITY_JOURNAL,
     FACET_ORDER,
     LOGICAL_OPERATOR_FACETS
@@ -165,6 +165,13 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                 <p>
                                                     {AMR_DETERMINATION_TXT}
                                                 </p>
+                                                <p>
+                                                    <a target="_blank" rel="noreferrer"
+                                                       href={EXT_LINK_AMR_DETERMINATION}>
+                                                        NCBI Antimicrobial Resistance Gene Finder (AMRFinderPlus)
+                                                    </a>
+
+                                                </p>
                                             </div>
                                         </Popover.Content>
                                     </Popover.Portal>
@@ -287,9 +294,11 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                 </ul>
 
                                 <div className={styles.loadMoreSection}>
-                                    <div className={styles.entryNote}>
-                                        * Showing {Math.min(showCount, total)} out of {total} entries
-                                    </div>
+                                    {facetGroup != 'essentiality' && facetGroup != 'has_amr_info' && (
+                                        <div className={styles.entryNote}>
+                                            * Showing {Math.min(showCount, total)} out of {total} entries
+                                        </div>
+                                    )}
                                     {showCount < total && (
                                         // <button className={`vf-button vf-button--primary vf-button--sm ${styles.loadMoreButton}`} onClick={() => handleLoadMore(facetGroup, total)}>
                                         <button className={`${styles.loadMoreButton}`}
