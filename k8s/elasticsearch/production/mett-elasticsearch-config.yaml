@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mett-elasticsearch-config-dev
-  namespace: mett-dataportal-hl-dev
+  name: mett-elasticsearch-config-prod
+  namespace: mett-dataportal-hl-prod
 data:
-  ES_HOST: "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:32527"
+  ES_HOST: "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:32557"
   ES_TIMEOUT: "30"
   ES_MAX_RETRIES: "5"
