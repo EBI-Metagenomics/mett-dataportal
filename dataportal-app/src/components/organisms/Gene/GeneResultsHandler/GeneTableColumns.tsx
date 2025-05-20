@@ -111,6 +111,13 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         render: gene => gene.kegg?.join(', ') || '---',
     },
     {
+        key: 'cog_funcats',
+        label: 'COG Catergories',
+        sortable: false,
+        defaultVisible: false,
+        render: gene => gene.cog_funcats || '---',
+    },
+    {
         key: 'cog_id',
         label: 'COG Id',
         sortable: false,

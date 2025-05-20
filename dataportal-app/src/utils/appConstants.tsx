@@ -34,7 +34,7 @@ export const SPINNER_DELAY = 200;
 export const DEFAULT_PER_PAGE_CNT = 10;
 export const FACET_INITIAL_VISIBLE_CNT = 10;
 export const FACET_STEP_CNT = 10;
-export const TABLE_MAX_COLUMNS = 12;
+export const TABLE_MAX_COLUMNS = 15;
 
 export const FACET_ORDER = [
     'essentiality',

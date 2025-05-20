@@ -135,13 +135,17 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                     <div key={facetGroup} className={styles.facetGroup}>
                         <h4 className={styles.groupTitle} onClick={() => toggleCollapse(facetGroup)}
                             style={{cursor: 'pointer'}}>
-                             {collapsedGroups[facetGroup] ? '▸' : '▾'}
-                             {' '}
-                             {facetGroup === 'has_amr_info'
-                                 ? 'AMR'
-                                 : facetGroup.replace('_', ' ').toUpperCase()}
-                             {' '}
-                             {facetGroup === 'has_amr_info' && (
+                            {collapsedGroups[facetGroup] ? '▸' : '▾'}
+                            {' '}
+                            {
+                                facetGroup === 'has_amr_info'
+                                    ? 'AMR'
+                                    : facetGroup === 'cog_funcats'
+                                        ? 'COG CATEGORIES'
+                                        : facetGroup.replace('_', ' ').toUpperCase()
+                            }
+                            {' '}
+                            {facetGroup === 'has_amr_info' && (
                                 <Popover.Root>
                                     <Popover.Trigger asChild>
                                         <button
@@ -247,7 +251,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                         </Popover.Content>
                                     </Popover.Portal>
                                 </Popover.Root>
-                            )}  
+                            )}
                         </h4>
 
 
