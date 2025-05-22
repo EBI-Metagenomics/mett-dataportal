@@ -12,3 +12,4 @@ pytest-asyncio==0.26.0
 pytest-cov==4.0.0
 pytest-html==3.2.0
 pytest-env==1.1.5
+biopython==1.85
