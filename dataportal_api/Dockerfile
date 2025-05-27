@@ -9,10 +9,13 @@ COPY dataportal_api/dataportal /app/dataportal
 COPY dataportal_api/manage.py /app/
 
 # Collect static files
-RUN python manage.py collectstatic --noinput
+# RUN python manage.py collectstatic --noinput
+
+# Optional: precompile Celery app to speed up container start
+# RUN python -m compileall /app
 
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

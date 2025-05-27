@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mett-dataportal-celery-worker
+  namespace: mett-dataportal-hl-dev
+  labels:
+    app: mett-dataportal-celery-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mett-dataportal-celery-worker
+  template:
+    metadata:
+      labels:
+        app: mett-dataportal-celery-worker
+    spec:
+      securityContext:
+        runAsUser: 7123
+        runAsGroup: 1347
+      containers:
+        - name: celery-worker
+          image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145
+          imagePullPolicy: Always
+          command: ["celery"]
+          args: ["-A", "dataportal", "worker", "-l", "INFO"]
+          env:
+            - name: CELERY_BROKER_URL
+              value: redis://redis:6379/0
+            - name: CELERY_RESULT_BACKEND
+              value: redis://redis:6379/1
+            # App-specific config and secrets
+            - name: DJANGO_DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: DJANGO_DEBUG
+            - name: TIME_ZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: TIME_ZONE
+            - name: ALLOWED_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: ALLOWED_HOSTS
+            - name: DATA_PORTAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: DATA_PORTAL_URL
+            - name: ASSEMBLY_FTP_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: ASSEMBLY_FTP_PATH
+            - name: GFF_FTP_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: GFF_FTP_PATH
+            - name: ES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-elasticsearch-config-dev
+                  key: ES_HOST
+            - name: ES_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-elasticsearch-config-dev
+                  key: ES_TIMEOUT
+            - name: ES_MAX_RETRIES
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-elasticsearch-config-dev
+                  key: ES_MAX_RETRIES
+            - name: ES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials
+                  key: ELASTIC_USERNAME
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials
+                  key: ELASTIC_PASSWORD
+      imagePullSecrets:
+        - name: quay-pull-secret
