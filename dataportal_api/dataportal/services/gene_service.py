@@ -480,14 +480,18 @@ class GeneService:
                 ES_FIELD_COG_FUNCATS: cog_funcats,
             }
 
-            facet_results = {
-                field: self.process_aggregation_results(
-                    {b[0]: b[1] for b in (getattr(response.facets, field) or [])},
+            facet_results = {}
+            for field in FACET_FIELDS:
+                facet_search = gs.get_facet_search(field)
+                response = facet_search.execute()
+
+                agg_data = getattr(response.aggregations, field, [])
+
+                facet_results[field] = self.process_aggregation_results(
+                    {b.key: b.doc_count for b in (agg_data or [])},
                     selected_values=[selected_map[field]] if selected_map.get(field) else [],
                     facet_group=field
                 )
-                for field in FACET_FIELDS
-            }
 
             facet_results["total_hits"] = response.hits.total.value
             facet_results["operators"] = {
@@ -509,7 +513,7 @@ class GeneService:
             selected_values: Optional[List[str]] = None,
             facet_group: Optional[str] = None
     ) -> List[Dict[str, object]]:
-        """Removes empty keys from aggregation results and marks selected items."""
+        # Removes empty keys from aggregation result
         selected_values = selected_values or []
 
         results = []
@@ -517,7 +521,7 @@ class GeneService:
             if not str(key).strip():
                 continue
 
-            # Special handling for has_amr_info
+            # has_amr_info
             value = (
                 True if facet_group == "has_amr_info" and str(key) in ["1", "true", "True"] else
                 False if facet_group == "has_amr_info" and str(key) in ["0", "false", "False"] else
@@ -533,7 +537,7 @@ class GeneService:
         return results
 
     async def get_gene_protein_seq(self, locus_tag: str) -> GeneProteinSeqSchema:
-        """Fetch protein sequence information for a gene by its locus tag."""
+        # Fetch protein sequence
         try:
             s = Search(index=self.INDEX_NAME)
             s = s.query("match", locus_tag=locus_tag)

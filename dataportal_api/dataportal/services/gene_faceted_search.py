@@ -1,4 +1,3 @@
-import json
 import logging
 
 from elasticsearch_dsl import FacetedSearch, TermsFacet
@@ -48,42 +47,67 @@ class GeneFacetedSearch(FacetedSearch):
         super().__init__(query=query, filters=filters or {})
 
     def build_search(self):
+        # Build the search
+        self._hits_search = self._build_filtered_search()
+
+        # Build a custom search per facet for aggregation
+        self._facet_searches = {}
+        for facet_field in self.facets:
+            if self.operators.get(facet_field, "OR").upper() == "OR":
+                self._facet_searches[facet_field] = self._build_filtered_search(skip_field=facet_field)
+            else:
+                self._facet_searches[facet_field] = self._hits_search
+
+        return self._hits_search
+
+    def _build_filtered_search(self, skip_field=None):
         s = super().build_search()
 
+        # Attach facets
+        if skip_field:
+            if skip_field in self.facets:
+                s.aggs.bucket(skip_field, self.facets[skip_field].get_aggregation())
+        else:
+            for facet_name, facet in self.facets.items():
+                s.aggs.bucket(facet_name, facet.get_aggregation())
+
+        # Core filters
         if self.species_acronym:
-            s = s.filter('term', species_acronym=self.species_acronym)
+            s = s.filter("term", species_acronym=self.species_acronym)
         if self.essentiality:
-            s = s.filter('terms', essentiality=[self.essentiality])
+            s = s.filter("terms", essentiality=[self.essentiality])
         if self.has_amr_info is not None:
-            s = s.filter('term', has_amr_info=self.has_amr_info)
-        if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
-            s = s.filter('terms', isolate_name=self.isolates)
+            s = s.filter("term", has_amr_info=self.has_amr_info)
+        if self.isolates:
+            s = s.filter("terms", isolate_name=self.isolates)
 
-        if self.pfam:
-            s = self._apply_filter(s, "pfam", self.pfam)
-        if self.interpro:
-            s = self._apply_filter(s, "interpro", self.interpro)
-        if self.cog_id:
-            s = self._apply_filter(s, "cog_id", self.cog_id)
-        if self.cog_funcats:
-            s = self._apply_filter(s, "cog_funcats", self.cog_funcats)
-        if self.kegg:
-            kegg_values = [k.lower() for k in (self.kegg if isinstance(self.kegg, list) else [self.kegg])]
-            s = self._apply_filter(s, "kegg", kegg_values)
-        if self.go_term:
-            go_values = [g.lower() for g in (self.go_term if isinstance(self.go_term, list) else [self.go_term])]
-            s = self._apply_filter(s, "go_term", go_values)
+        # Functional filters
+        for field_name in [
+            "pfam", "interpro", "cog_id", "cog_funcats", "kegg", "go_term"
+        ]:
+            if field_name == skip_field:
+                continue
 
-        # logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
+            values = self._get_cleaned_values(field_name)
+            if not values:
+                continue
+
+            operator = self.operators.get(field_name, "OR").upper()
+            if operator == "AND":
+                for val in values:
+                    s = s.filter("term", **{field_name: val})
+            else:
+                s = s.filter("terms", **{field_name: values})
+
         return s
 
-    def _apply_filter(self, search_obj, field_name, values):
-        operator = (self.operators.get(field_name) or "OR").upper()
-        if not values:
-            return search_obj
-        if operator == "AND":
-            for val in values:
-                search_obj = search_obj.filter('term', **{field_name: val})
-        else:
-            search_obj = search_obj.filter('terms', **{field_name: values})
-        return search_obj
+    def _get_cleaned_values(self, field_name):
+        val = getattr(self, field_name)
+        if not val:
+            return None
+        if field_name in ["kegg", "go_term"]:
+            return [v.lower() for v in val] if isinstance(val, list) else [val.lower()]
+        return val if isinstance(val, list) else [val]
+
+    def get_facet_search(self, facet_field):
+        return self._facet_searches.get(facet_field, self._hits_search)
