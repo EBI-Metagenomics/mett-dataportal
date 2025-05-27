@@ -21,14 +21,28 @@ spec:
       containers:
         - name: celery-worker
           image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145
-          imagePullPolicy: Always
-          command: ["celery"]
-          args: ["-A", "dataportal", "worker", "-l", "INFO"]
+          resources:
+            requests:
+              cpu: "2"
+              memory: "13Gi"
+            limits:
+              cpu: "2"
+              memory: "16Gi"
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - celery -A hmmerapi worker -l DEBUG -Q downloads_queue --concurrency=4 --max-tasks-per-child=10
           env:
             - name: CELERY_BROKER_URL
-              value: redis://redis:6379/0
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: CELERY_BROKER_URL
             - name: CELERY_RESULT_BACKEND
-              value: redis://redis:6379/1
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: CELERY_RESULT_BACKEND
             # App-specific config and secrets
             - name: DJANGO_DEBUG
               valueFrom:
