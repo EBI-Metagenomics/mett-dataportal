@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-config-dev
-  namespace: mett-dataportal-hl-dev
+  namespace: mett-dataportal-hl
 data:
   POSTGRES_DB: mett-dataportal-db
   POSTGRES_USER: mett_dataportal-usr

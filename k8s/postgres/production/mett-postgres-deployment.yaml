@@ -32,17 +32,17 @@ spec:
         - name: POSTGRES_DB
           valueFrom:
             configMapKeyRef:
-              name: postgres-config-dev
+              name: mett-postgres-config
               key: POSTGRES_DB
         - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
-              name: postgres-config-dev
+              name: mett-postgres-config
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: postgres-secret-dev
+              name: mett-postgres-secret
               key: POSTGRES_PASSWORD
         securityContext:
           runAsUser: 999
