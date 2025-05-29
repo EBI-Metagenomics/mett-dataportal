@@ -20,7 +20,7 @@ spec:
         runAsGroup: 1347
       containers:
         - name: test-celery-worker
-          image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145a
+          image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145c
           resources:
             requests:
               cpu: "2"
