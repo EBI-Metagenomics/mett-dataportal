@@ -53,32 +53,32 @@ spec:
             - name: DJANGO_DEBUG
               valueFrom:
                 configMapKeyRef:
-                  name: test-app-config-dev
+                  name: mett-app-config-test
                   key: DJANGO_DEBUG
             - name: TIME_ZONE
               valueFrom:
                 configMapKeyRef:
-                  name: test-app-config-dev
+                  name: mett-app-config-test
                   key: TIME_ZONE
             - name: ALLOWED_HOSTS
               valueFrom:
                 configMapKeyRef:
-                  name: test-app-config-dev
+                  name: mett-app-config-test
                   key: ALLOWED_HOSTS
             - name: DATA_PORTAL_URL
               valueFrom:
                 configMapKeyRef:
-                  name: test-app-config-dev
+                  name: mett-app-config-test
                   key: DATA_PORTAL_URL
             - name: ASSEMBLY_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: test-app-config-dev
+                  name: mett-app-config-test
                   key: ASSEMBLY_FTP_PATH
             - name: GFF_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: test-app-config-dev
+                  name: mett-app-config-test
                   key: GFF_FTP_PATH
           resources:
             requests:

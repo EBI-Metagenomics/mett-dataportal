@@ -20,7 +20,7 @@ spec:
         runAsGroup: 1347
       containers:
         - name: test-celery-worker
-          image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145
+          image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145a
           resources:
             requests:
               cpu: "2"
@@ -28,51 +28,55 @@ spec:
             limits:
               cpu: "2"
               memory: "8Gi"
-          command: ["/bin/sh"]
-          args:
-            - -c
-            - celery -A hmmerapi worker -l DEBUG -Q downloads_queue --concurrency=4 --max-tasks-per-child=10
+          command: [ "celery" ]
+          args: [
+            "-A", "dataportal", "worker",
+            "-l", "INFO",
+            "-Q", "pyhmmer_queue",
+            "--concurrency=2",
+            "--max-tasks-per-child=10"
+          ]
           env:
             - name: CELERY_BROKER_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: CELERY_BROKER_URL
             - name: CELERY_RESULT_BACKEND
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: CELERY_RESULT_BACKEND
             # App-specific config and secrets
             - name: DJANGO_DEBUG
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: DJANGO_DEBUG
             - name: TIME_ZONE
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: TIME_ZONE
             - name: ALLOWED_HOSTS
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: ALLOWED_HOSTS
             - name: DATA_PORTAL_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: DATA_PORTAL_URL
             - name: ASSEMBLY_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: ASSEMBLY_FTP_PATH
             - name: GFF_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: GFF_FTP_PATH
             - name: ES_HOST
               valueFrom:
