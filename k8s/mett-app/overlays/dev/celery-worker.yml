@@ -18,6 +18,10 @@ spec:
       securityContext:
         runAsUser: 7123
         runAsGroup: 1347
+      volumes:
+        - name: pyhmmer-data
+          persistentVolumeClaim:
+            claimName: mett-test-pyhmmer-pvc
       containers:
         - name: test-celery-worker
           image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145c
@@ -108,10 +112,6 @@ spec:
                   key: ELASTIC_PASSWORD
       imagePullSecrets:
         - name: quay-pull-secret
-      volumes:
-        - name: pyhmmer-data
-          persistentVolumeClaim:
-            claimName: mett-test-pyhmmer-pvc
 #      affinity:
 #        nodeAffinity:
 #          requiredDuringSchedulingIgnoredDuringExecution:

@@ -9,3 +9,5 @@ spec:
   resources:
     requests:
       storage: 20Gi
+  volumeName: mett-test-pyhmmer-pv
+  storageClassName: ""
