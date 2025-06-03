@@ -22,8 +22,8 @@ spec:
         - name: celery-worker
           image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145
           volumeMounts:
-            - name: faa-data
-              mountPath: /data/faa
+            - name: pyhmmer-data
+              mountPath: /data/pyhmmer
           resources:
             requests:
               cpu: "2"
@@ -105,9 +105,9 @@ spec:
       imagePullSecrets:
         - name: quay-pull-secret
       volumes:
-        - name: faa-data
+        - name: pyhmmer-data
           persistentVolumeClaim:
-            claimName: mett-faa-pvc
+            claimName: mett-pyhmmer-pvc
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

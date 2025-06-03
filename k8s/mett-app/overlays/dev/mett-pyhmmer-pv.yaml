@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: mett-test-faa-pv
+  name: mett-test-pyhmmer-pv
 spec:
   capacity:
     storage: 10Gi

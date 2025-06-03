@@ -8,7 +8,7 @@ DEFAULT_SORT = SORT_ASC
 DEFAULT_PER_PAGE_CNT = 20
 DEFAULT_FACET_LIMIT = 10000
 
-PV_FAA_PATH = "/data/faa/"
+PV_PYHMMER_PATH = "/data/pyhmmer/"
 
 # Indexes
 ES_INDEX_SPECIES = "species_index"
