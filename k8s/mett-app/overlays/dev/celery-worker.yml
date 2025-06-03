@@ -21,6 +21,9 @@ spec:
       containers:
         - name: test-celery-worker
           image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145c
+          volumeMounts:
+            - name: faa-data
+              mountPath: /data/faa
           resources:
             requests:
               cpu: "2"
@@ -105,3 +108,7 @@ spec:
                   key: ELASTIC_PASSWORD
       imagePullSecrets:
         - name: quay-pull-secret
+      volumes:
+        - name: faa-data
+          persistentVolumeClaim:
+            claimName: mett-test-faa-pvc

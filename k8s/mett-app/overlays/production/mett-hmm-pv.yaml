@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mett-faa-pv
+spec:
+  capacity:
+    storage: 12Gi
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: local-storage
+  local:
+    path: /mnt/data/pyhmmer_targets
+#  nodeAffinity:
+#    required:
+#      nodeSelectorTerms:
+#        - matchExpressions:
+#            - key: kubernetes.io/hostname
+#              operator: In
+#              values:
+#                - my-node

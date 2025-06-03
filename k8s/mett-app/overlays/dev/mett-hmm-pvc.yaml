@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mett-test-faa-pvc
+  namespace: mett-dataportal-hl-dev
+spec:
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: local-storage
+  resources:
+    requests:
+      storage: 10Gi

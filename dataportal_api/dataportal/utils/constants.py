@@ -8,6 +8,8 @@ DEFAULT_SORT = SORT_ASC
 DEFAULT_PER_PAGE_CNT = 20
 DEFAULT_FACET_LIMIT = 10000
 
+PV_FAA_PATH = "/data/faa/"
+
 # Indexes
 ES_INDEX_SPECIES = "species_index"
 ES_INDEX_STRAIN = "strain_index"
@@ -93,3 +95,4 @@ KEYWORD_SORT_FIELDS = {
 
 # Default values
 UNKNOWN_ESSENTIALITY = "Unknown"
+

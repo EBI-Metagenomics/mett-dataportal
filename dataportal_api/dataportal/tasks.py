@@ -1,14 +1,17 @@
 from celery import shared_task
 from pyhmmer import hmmer, easel
 
+from dataportal.utils.constants import PV_FAA_PATH
+
+
 @shared_task
-def run_sequence_search(query_seq_str, target_fasta_path):
+def run_sequence_search(query_seq_str, target_fasta_file):
 
     alphabet = easel.Alphabet.amino()
     query_seq = easel.TextSequence(name=b"query", sequence=query_seq_str.encode())
     query_seq.digitize(alphabet)
 
-    with easel.SequenceFile(target_fasta_path, digital=True, alphabet=alphabet) as targets:
+    with easel.SequenceFile(PV_FAA_PATH + target_fasta_file, digital=True, alphabet=alphabet) as targets:
 
         results = hmmer.phmmer([query_seq], targets)
 
