@@ -1,20 +1,17 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: mett-faa-pv
+  name: mett-pyhmmer-pv
 spec:
   capacity:
-    storage: 12Gi
+    storage: 20Gi
+  volumeMode: Filesystem
   accessModes:
-    - ReadOnlyMany
-  storageClassName: local-storage
-  local:
-    path: /mnt/data/pyhmmer_targets
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: mett-pyhmmer-data
-              operator: In
-              values:
-                - "true"
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - nfsvers=3
+  nfs:
+    server: hh-isi-srv-vlan1496.ebi.ac.uk
+    path: /ifs/public/metagenomics/mett/pyhmmer/prod
+

@@ -95,4 +95,5 @@ python manage.py migrate
 ### Kubernetes Node Affinity 
 ```bash
 $ kubectl label node hh-rke-wp-webadmin-52-worker-1.caas.ebi.ac.uk mett-pyhmmer-data=true
+$ kubectl get nodes -l mett-pyhmmer-data=true
 ```

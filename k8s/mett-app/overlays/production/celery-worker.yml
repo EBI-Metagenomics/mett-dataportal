@@ -27,14 +27,18 @@ spec:
           resources:
             requests:
               cpu: "2"
-              memory: "13Gi"
+              memory: "12Gi"
             limits:
               cpu: "2"
               memory: "16Gi"
-          command: ["/bin/sh"]
-          args:
-            - -c
-            - celery -A hmmerapi worker -l DEBUG -Q downloads_queue --concurrency=4 --max-tasks-per-child=10
+          command: [ "celery" ]
+          args: [
+            "-A", "dataportal", "worker",
+            "-l", "INFO",
+            "-Q", "pyhmmer_queue",
+            "--concurrency=2",
+            "--max-tasks-per-child=10"
+          ]
           env:
             - name: CELERY_BROKER_URL
               valueFrom:
@@ -108,12 +112,12 @@ spec:
         - name: pyhmmer-data
           persistentVolumeClaim:
             claimName: mett-pyhmmer-pvc
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: mett-pyhmmer-data
-                    operator: In
-                    values:
-                      - "true"
+#      affinity:
+#        nodeAffinity:
+#          requiredDuringSchedulingIgnoredDuringExecution:
+#            nodeSelectorTerms:
+#              - matchExpressions:
+#                  - key: mett-pyhmmer-data
+#                    operator: In
+#                    values:
+#                      - "true"
