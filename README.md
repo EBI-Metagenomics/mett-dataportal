@@ -90,3 +90,9 @@ python manage.py migrate
 ## Data Portal APP (React based application)
 
 ### Requirements
+
+
+### Kubernetes Node Affinity 
+```bash
+$ kubectl label node hh-rke-wp-webadmin-52-worker-1.caas.ebi.ac.uk mett-pyhmmer-data=true
+```

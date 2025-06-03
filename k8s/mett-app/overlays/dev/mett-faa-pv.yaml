@@ -10,11 +10,12 @@ spec:
   storageClassName: local-storage
   local:
     path: /mnt/data/pyhmmer_targets
-#  nodeAffinity:
-#    required:
-#      nodeSelectorTerms:
-#        - matchExpressions:
-#            - key: kubernetes.io/hostname
-#              operator: In
-#              values:
-#                - my-node
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: mett-pyhmmer-data
+              operator: In
+              values:
+                - "true"
+

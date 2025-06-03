@@ -108,3 +108,12 @@ spec:
         - name: faa-data
           persistentVolumeClaim:
             claimName: mett-faa-pvc
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: mett-pyhmmer-data
+                    operator: In
+                    values:
+                      - "true"
