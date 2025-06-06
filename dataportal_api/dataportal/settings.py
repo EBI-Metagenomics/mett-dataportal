@@ -138,6 +138,15 @@ if not IS_TESTING:
         max_retries=ES_MAX_RETRIES,
     )
 
+    DATABASES["pyhmmer"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("PYHMMER_DB_NAME", "pyhmmer_db"),
+        "USER": os.environ.get("PYHMMER_DB_USER", "pyhmmer_user"),
+        "PASSWORD": os.environ.get("PYHMMER_DB_PASSWORD", "changeme"),
+        "HOST": os.environ.get("PYHMMER_DB_HOST", "localhost"),
+        "PORT": os.environ.get("PYHMMER_DB_PORT", "5432"),
+    }
+
 if "pytest" in sys.argv[0]:
     DATABASES = {
         "default": {
