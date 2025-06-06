@@ -1,4 +1,5 @@
 # Generic constants
+
 FIELD_ID = "id"
 FIELD_SEQ_ID = "seq_id"
 FIELD_ASSEMBLY = "assembly"
@@ -7,8 +8,6 @@ SORT_DESC = "desc"
 DEFAULT_SORT = SORT_ASC
 DEFAULT_PER_PAGE_CNT = 20
 DEFAULT_FACET_LIMIT = 10000
-
-PV_PYHMMER_PATH = "/data/pyhmmer/"
 
 # Indexes
 ES_INDEX_SPECIES = "species_index"
@@ -95,4 +94,6 @@ KEYWORD_SORT_FIELDS = {
 
 # Default values
 UNKNOWN_ESSENTIALITY = "Unknown"
+
+# Hmmer Constants
 

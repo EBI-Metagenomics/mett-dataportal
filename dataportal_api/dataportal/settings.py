@@ -1,10 +1,12 @@
+import logging
 import os
 import sys
 from pathlib import Path
-import logging
 
 from elasticsearch_dsl import connections
+
 from .elasticsearch_client import init_es_connection
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -77,6 +79,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "dataportal",
     "ninja",
+    "django_celery_results",
+    "pyhmmer_search.apps.PyhmmerSearchConfig",
 ]
 
 if DEBUG:
@@ -203,11 +207,24 @@ CORS_ALLOW_PRIVATE_NETWORK = True
 APPEND_SLASH = False
 
 DEFAULT_LIMIT = 10
+
 ASSEMBLY_FTP_PATH = os.environ.get(
     "ASSEMBLY_FTP_PATH",
     "https://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
 )
+
 GFF_FTP_PATH = os.environ.get(
     "GFF_FTP_PATH",
     "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/",
 )
+
+PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/")
+HMMER_DATABASES = {
+    "bu_type_strains": PYHMMER_FAA_BASE_PATH + "bu_typestrains_deduplicated.faa",
+    "bu_all": PYHMMER_FAA_BASE_PATH + "bu_all_strains_deduplicated.faa",
+    "pv_type_strains": PYHMMER_FAA_BASE_PATH + "pv_typestrains_deduplicated.faa",
+    "pv_all": PYHMMER_FAA_BASE_PATH + "pv_all_strains_deduplicated.faa",
+    "bu_pv_type_strains": PYHMMER_FAA_BASE_PATH + "bu_pv_typestrains_deduplicated.faa",
+    "bu_pv_all": PYHMMER_FAA_BASE_PATH + "bu_pv_all_strains_deduplicated.faa",
+}
+
