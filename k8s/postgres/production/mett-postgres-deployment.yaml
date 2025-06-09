@@ -16,6 +16,7 @@ spec:
       initContainers:
       - name: init-fix-permissions
         image: busybox
+        imagePullPolicy: IfNotPresent
         command: ["sh", "-c", "chown -R 999:999 /var/lib/postgresql/data && chmod -R 700 /var/lib/postgresql/data"]
         securityContext:
           runAsUser: 0
@@ -26,20 +27,21 @@ spec:
       containers:
       - name: mett-postgres-db
         image: postgres:17
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5432
         env:
-        - name: PYHMMER_DB
+        - name: POSTGRES_DB
           valueFrom:
             configMapKeyRef:
               name: mett-postgres-config
               key: PYHMMER_DB
-        - name: PYHMMER_DB_USER
+        - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
               name: mett-postgres-config
               key: PYHMMER_DB_USER
-        - name: PYHMMER_DB_PASSWORD
+        - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mett-postgres-secret

@@ -124,7 +124,7 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = "dataportal.wsgi.application"
 
-DATABASES = {}  # No database, since we are using Elasticsearch
+DATABASES = {}
 
 IS_TESTING = "pytest" in sys.modules
 
@@ -138,11 +138,11 @@ if not IS_TESTING:
         max_retries=ES_MAX_RETRIES,
     )
 
-    DATABASES["pyhmmer"] = {
+    DATABASES["default"] = {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("PYHMMER_DB_NAME", "pyhmmer_db"),
-        "USER": os.environ.get("PYHMMER_DB_USER", "pyhmmer_user"),
-        "PASSWORD": os.environ.get("PYHMMER_DB_PASSWORD", "changeme"),
+        "NAME": os.environ.get("PYHMMER_DB", "mett-pyhmmer-db"),
+        "USER": os.environ.get("PYHMMER_DB_USER", "mett-pyhmmer-usr"),
+        "PASSWORD": os.environ.get("PYHMMER_DB_PASSWORD", "mettpgpass"),
         "HOST": os.environ.get("PYHMMER_DB_HOST", "localhost"),
         "PORT": os.environ.get("PYHMMER_DB_PORT", "5432"),
     }
@@ -156,7 +156,7 @@ if "pytest" in sys.argv[0]:
     }
 
     MIGRATION_MODULES = {
-        "dataportal": None,  # Disable migrations
+        "dataportal": None,
     }
 
 AUTH_PASSWORD_VALIDATORS = [

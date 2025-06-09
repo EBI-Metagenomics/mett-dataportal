@@ -16,6 +16,7 @@ spec:
       containers:
       - name: mett-postgres-dev
         image: postgres:17
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5432
         env:
