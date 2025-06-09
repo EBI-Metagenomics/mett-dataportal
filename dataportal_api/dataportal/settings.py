@@ -138,13 +138,14 @@ if not IS_TESTING:
         max_retries=ES_MAX_RETRIES,
     )
 
+    # PostgreSQL database for meta information
     DATABASES["default"] = {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("PYHMMER_DB", "mett-pyhmmer-db"),
-        "USER": os.environ.get("PYHMMER_DB_USER", "mett-pyhmmer-usr"),
-        "PASSWORD": os.environ.get("PYHMMER_DB_PASSWORD", "mettpgpass"),
-        "HOST": os.environ.get("PYHMMER_DB_HOST", "localhost"),
-        "PORT": os.environ.get("PYHMMER_DB_PORT", "5432"),
+        "NAME": os.environ.get("DATAPORTAL_DB", "mett-dataportal-db"),
+        "USER": os.environ.get("DATAPORTAL_DB_USER", "mett-dataportal-usr"),
+        "PASSWORD": os.environ.get("DATAPORTAL_DB_PASSWORD", "changeme"),
+        "HOST": os.environ.get("DATAPORTAL_DB_HOST", "localhost"),
+        "PORT": os.environ.get("DATAPORTAL_DB_PORT", "5432"),
     }
 
 if "pytest" in sys.argv[0]:

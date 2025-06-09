@@ -18,9 +18,10 @@ class MessageSchema(Schema):
 
 
 class SearchRequestSchema(ModelSchema):
-    database_id: str = Field(alias="database")
-
     database: Literal[tuple(HmmerJob.DbChoices.values)]
+    threshold: Literal["evalue", "bitscore"]
+    threshold_value: float
+    input: str
 
     @field_validator("input", mode="after", check_fields=False)
     @classmethod
@@ -29,17 +30,12 @@ class SearchRequestSchema(ModelSchema):
             with SequenceFile(io.BytesIO(value.encode())) as fh:
                 fh.guess_alphabet()
             return value
-        except ValueError:
+        except Exception:
             raise PydanticCustomError("invalid_input", "Sequence is not valid")
 
     class Meta:
         model = HmmerJob
-        exclude = [
-            "id",
-            "database",
-            "task",
-            "algo",
-        ]
+        exclude = ["id", "task", "algo"]
 
 
 class TaskResultSchema(ModelSchema):

@@ -4,8 +4,8 @@ metadata:
   name: mett-postgres-config
   namespace: mett-dataportal-hl-dev
 data:
-  PYHMMER_DB_HOST: "hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk"
-  PYHMMER_DB_PORT: "31508"
-  PYHMMER_DB: "mett-pyhmmer-db"
-  PYHMMER_DB_USER: "mett-pyhmmer-usr"
+  DATAPORTAL_DB_HOST: "hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk"
+  DATAPORTAL_DB_PORT: "31508"
+  DATAPORTAL_DB: "mett-dataportal-db"
+  DATAPORTAL_DB_USER: "mett-dataportal-usr"
 

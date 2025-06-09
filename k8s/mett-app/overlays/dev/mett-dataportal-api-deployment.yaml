@@ -24,31 +24,31 @@ spec:
           name: test-dataportal-api-dev
           env:
             # Database configuration
-            - name: PYHMMER_DB_HOST
+            - name: DATAPORTAL_DB_HOST
               valueFrom:
                 configMapKeyRef:
                   name: mett-postgres-config
-                  key: PYHMMER_DB_HOST
-            - name: PYHMMER_DB_PORT
+                  key: DATAPORTAL_DB_HOST
+            - name: DATAPORTAL_DB_PORT
               valueFrom:
                 configMapKeyRef:
                   name: mett-postgres-config
-                  key: PYHMMER_DB_PORT
-            - name: PYHMMER_DB
+                  key: DATAPORTAL_DB_PORT
+            - name: DATAPORTAL_DB
               valueFrom:
                 configMapKeyRef:
                   name: mett-postgres-config
-                  key: PYHMMER_DB
-            - name: PYHMMER_DB_USER
+                  key: DATAPORTAL_DB
+            - name: DATAPORTAL_DB_USER
               valueFrom:
                 configMapKeyRef:
                   name: mett-postgres-config
-                  key: PYHMMER_DB_USER
-            - name: PYHMMER_DB_PASSWORD
+                  key: DATAPORTAL_DB_USER
+            - name: DATAPORTAL_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: mett-postgres-secret
-                  key: PYHMMER_DB_PASSWORD
+                  key: DATAPORTAL_DB_PASSWORD
             # Elasticsearch configuration
             - name: ES_HOST
               valueFrom:

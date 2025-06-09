@@ -38,6 +38,9 @@ class HmmerJob(models.Model):
     def __str__(self):
         return f"{self.algo} search on {self.database} ({self.id})"
 
+    class Meta:
+        app_label = "pyhmmer_search"
+
 
 
 class Database(models.Model):
@@ -50,3 +53,6 @@ class Database(models.Model):
     version = models.CharField(max_length=32)
     release_date = models.DateField(default=datetime.date.today)
     order = models.IntegerField(default=-1)
+
+    class Meta:
+        app_label = "pyhmmer_search"

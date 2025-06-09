@@ -35,17 +35,17 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: mett-postgres-config
-              key: PYHMMER_DB
+              key: DATAPORTAL_DB
         - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
               name: mett-postgres-config
-              key: PYHMMER_DB_USER
+              key: DATAPORTAL_DB_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mett-postgres-secret
-              key: PYHMMER_DB_PASSWORD
+              key: DATAPORTAL_DB_PASSWORD
         securityContext:
           runAsUser: 999
           runAsGroup: 999

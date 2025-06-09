@@ -17,7 +17,7 @@ api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
     description="ME TT DataPortal Data Portal APIs to fetch Gut Microbes Genomes / Genes information.",
     urls_namespace="api",
-    csrf=True,
+    csrf=False,
     docs_url="/docs",
 )
 
