@@ -2,6 +2,8 @@ import json
 import logging
 import math
 import uuid
+import time
+from django.utils import timezone
 
 from django.shortcuts import get_object_or_404
 from django_celery_results.models import TaskResult
@@ -30,32 +32,80 @@ pyhmmer_router = Router(tags=["pyhmmer"])
 @pyhmmer_router.post("/search", response=SearchResponseSchema)
 def search(request: HttpRequest, body: SearchRequestSchema):
     try:
+        # Create the job
         job = HmmerJob(**body.dict(), algo=HmmerJob.AlgoChoices.PHMMER)
         job.clean()
         job.save()
+        logger.info(f"Created job with ID: {job.id}")
 
-        run_search.delay(job.id)
+        # Start the task
+        result = run_search.delay(job.id)
+        task_id = result.id
+        logger.info(f"Started search task with ID: {task_id}")
+        
+        # Create task result entry
+        task_result = TaskResult.objects.create(
+            task_id=task_id,
+            status='PENDING',
+            result=None,
+            traceback=None,
+            meta=None,
+            date_done=None,
+            date_created=timezone.now()
+        )
+        logger.info(f"Created task result for task ID: {task_id}")
+        
+        # Link the task to the job
+        job.task = task_result
+        job.save(update_fields=["task"])
+        logger.info(f"Linked task {task_id} to job {job.id}")
 
         return {"id": job.id}
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise e
+        logger.error(f"Error in search: {str(e)}", exc_info=True)
+        raise HttpError(500, f"Error creating search job: {str(e)}")
 
 @pyhmmer_router.post("/testtask")
 def search(request: HttpRequest):
     try:
-        result = test_task.delay()
+        # Create the job first
         job = HmmerJob.objects.create(
             input="mock-seq",  # dummy
             database=HmmerJob.DbChoices.BU_TYPE_STRAINS
         )
+        
+        # Run the test task
+        result = test_task.delay()
+        task_id = result.id
+        logger.info(f"Started test task with ID: {task_id}")
+        
+        # Create task result entry
+        task_result = TaskResult.objects.create(
+            task_id=task_id,
+            status='PENDING',
+            result=None,
+            traceback=None,
+            meta=None,
+            date_done=None,
+            date_created=timezone.now()
+        )
+        logger.info(f"Created task result for task ID: {task_id}")
+        
+        # Link the task to the job
+        job.task = task_result
+        job.save(update_fields=["task"])
+        logger.info(f"Linked task {task_id} to job {job.id}")
+        
+        # Verify task status using AsyncResult
+        from celery.result import AsyncResult
+        async_result = AsyncResult(task_id)
+        logger.info(f"Task {task_id} status from AsyncResult: {async_result.status}")
+        
         return {"job_id": str(job.id)}
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise e
+        logger.error(f"Error in testtask: {str(e)}", exc_info=True)
+        raise HttpError(500, f"Error creating test task: {str(e)}")
 
 
 @pyhmmer_router.get("/search/{uuid:id}", response=JobDetailsResponseSchema)
@@ -65,18 +115,21 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         job = get_object_or_404(HmmerJob, id=id)
         logger.info(f"Found job: {job}")
 
-        try:
-            status = job.task.status if job.task else "PENDING"
-            logger.info(f"Job status: {status}")
-        except AttributeError as e:
-            logger.error(f"Error getting task status: {str(e)}")
-            status = "PENDING"
+        # Get task status using AsyncResult
+        from celery.result import AsyncResult
+        task_status = "PENDING"
+        task_result = None
+        if job.task:
+            async_result = AsyncResult(job.task.task_id)
+            task_status = async_result.status
+            task_result = async_result.result
+            logger.info(f"Task {job.task.task_id} status: {task_status}")
 
-        if status != "SUCCESS":
-            logger.info(f"Job not successful, returning status: {status}")
+        if task_status != "SUCCESS":
+            logger.info(f"Job not successful, returning status: {task_status}")
             return {
-                "status": status,
-                "task": None,
+                "status": task_status,
+                "task": job.task,
                 "database": None,
                 "id": job.id,
                 "algo": job.algo,
@@ -98,13 +151,9 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
             logger.error(f"Database with id {job.database} does not exist")
             raise HttpError(500, f"Database {job.database} not found")
         
-        # Get the task result
-        task_result = job.task
-        logger.info(f"Task result: {task_result}")
-
         response = {
-            "status": status,
-            "task": task_result,
+            "status": task_status,
+            "task": job.task,
             "database": database,
             "id": job.id,
             "algo": job.algo,
@@ -118,3 +167,88 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
     except Exception as e:
         logger.error(f"Unexpected error in get_result: {str(e)}", exc_info=True)
         raise HttpError(500, f"Internal server error: {str(e)}")
+
+@pyhmmer_router.get("/debug/task/{task_id}")
+def debug_task(request, task_id: str):
+    try:
+        from celery.result import AsyncResult
+        
+        # First try to get the task status directly
+        task_result = AsyncResult(task_id)
+        logger.info(f"Task {task_id} status from AsyncResult: {task_result.status}")
+        
+        # If the task exists, get its linked jobs
+        if task_result.status != 'PENDING' or task_result.result is not None:
+            linked_jobs = HmmerJob.objects.filter(task__task_id=task_id)
+            logger.info(f"Found {linked_jobs.count()} jobs linked to task {task_id}")
+            
+            return {
+                "task": {
+                    "id": task_id,
+                    "status": task_result.status,
+                    "result": task_result.result,
+                    "date_created": task_result.date_created if hasattr(task_result, 'date_created') else None,
+                    "date_done": task_result.date_done if hasattr(task_result, 'date_done') else None,
+                    "traceback": task_result.traceback,
+                    "meta": task_result.info
+                },
+                "linked_jobs": [
+                    {
+                        "id": str(job.id),
+                        "status": task_result.status,  # Use the same task status
+                        "input": job.input,
+                        "database": job.database,
+                        "task_id": task_id
+                    }
+                    for job in linked_jobs
+                ]
+            }
+        
+        # If the task doesn't exist, try to find a job with this ID
+        try:
+            job = HmmerJob.objects.get(id=task_id)
+            if job.task:
+                # Get the actual task status
+                job_task = AsyncResult(job.task.task_id)
+                logger.info(f"Found job {task_id} with task {job.task.task_id}, status: {job_task.status}")
+                
+                return {
+                    "task": {
+                        "id": job.task.task_id,
+                        "status": job_task.status,
+                        "result": job_task.result,
+                        "date_created": job_task.date_created if hasattr(job_task, 'date_created') else None,
+                        "date_done": job_task.date_done if hasattr(job_task, 'date_done') else None,
+                        "traceback": job_task.traceback,
+                        "meta": job_task.info
+                    },
+                    "linked_jobs": [
+                        {
+                            "id": str(job.id),
+                            "status": job_task.status,
+                            "input": job.input,
+                            "database": job.database,
+                            "task_id": job.task.task_id
+                        }
+                    ]
+                }
+        except HmmerJob.DoesNotExist:
+            pass
+        
+        # If we get here, neither a task nor a job was found
+        return {
+            "task": {
+                "id": task_id,
+                "status": "PENDING",
+                "result": None,
+                "date_created": None,
+                "date_done": None,
+                "traceback": None,
+                "meta": None
+            },
+            "linked_jobs": []
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in debug_task: {str(e)}", exc_info=True)
+        raise HttpError(500, f"Error getting task info: {str(e)}")

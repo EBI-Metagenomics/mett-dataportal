@@ -4,8 +4,8 @@ metadata:
   name: mett-postgres-config
   namespace: mett-dataportal-hl-dev
 data:
-  DATAPORTAL_DB_HOST: "hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk"
-  DATAPORTAL_DB_PORT: "31508"
+  DATAPORTAL_DB_HOST: "mett-postgres-service.mett-dataportal-hl-dev.svc.cluster.local"
+  DATAPORTAL_DB_PORT: "5432"
   DATAPORTAL_DB: "mett-dataportal-db"
   DATAPORTAL_DB_USER: "mett-dataportal-usr"
 

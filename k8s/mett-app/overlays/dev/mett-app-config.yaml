@@ -17,5 +17,5 @@ data:
   REACT_APP_ASSEMBLY_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/fasta_files"
   REACT_APP_GFF_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/gff3_files"
   REACT_APP_BACINTERACTOME_SHINY_APP_URL: "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:30080/shiny-apps/app/bacinteractome"
-  PYHMMER_FAA_BASE_PATH: "/data/pyhmmer/"
+  PYHMMER_FAA_BASE_PATH: "/data/pyhmmer/output/"
   HTTPS: "false"
