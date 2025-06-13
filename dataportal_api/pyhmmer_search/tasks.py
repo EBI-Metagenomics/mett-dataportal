@@ -44,16 +44,22 @@ def run_search(self, job_id: str):
         with SequenceFile(io.BytesIO(job.input.encode())) as query_file:
             with open(db_path, "rb") as db_f:
                 with SequenceFile(db_f) as target_file:
+                    # Get the alphabet from the target file
+                    alphabet = target_file.alphabet
+                    logger.info(f"Using alphabet: {alphabet}")
+                    
                     # Create pipeline with default configuration
                     pipeline = Pipeline(
-                        target_file,  # First positional argument - the target database
+                        alphabet,  # First positional argument - the alphabet
                         background=0.1,  # Default background frequency
                         bias_filter=True,  # Enable bias filter
                         null2=True,  # Use null2 model
                         domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
                         domT=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.BITSCORE else None,
                     )
-                    for hits in pipeline.search(query_file):
+                    
+                    # Search using the pipeline
+                    for hits in pipeline.search(query_file, target_file):
                         for hit in hits:
                             if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
                                 if hit.evalue < job.threshold_value:
