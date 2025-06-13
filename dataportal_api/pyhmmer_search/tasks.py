@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from celery import shared_task
 from django_celery_results.models import TaskResult
-from pyhmmer.easel import SequenceFile, Alphabet
+from pyhmmer.easel import SequenceFile, Alphabet, TextSequence
 from pyhmmer.plan7 import Pipeline, HMMFile, Background
 
 from dataportal import settings
@@ -42,49 +42,60 @@ def run_search(self, job_id: str):
 
         # phmmer search
         with SequenceFile(io.BytesIO(job.input.encode())) as query_file:
+            # First, determine the alphabet from the query file
+            query_alphabet = query_file.alphabet
+            if not query_alphabet:
+                raise ValueError("Could not determine alphabet from query sequence")
+            logger.info(f"Query file alphabet: {query_alphabet}")
+
             with open(db_path, "rb") as db_f:
-                with SequenceFile(db_f) as target_file:
-                    # Get the alphabet from the target file
-                    alphabet = target_file.alphabet
-                    if not alphabet:
-                        raise ValueError("Could not determine alphabet from target file")
-                    logger.info(f"Using alphabet: {alphabet}")
-                    
-                    # Create background model with explicit alphabet type
-                    try:
-                        background = Background(alphabet=alphabet)
-                        logger.info(f"Created background model for alphabet: {alphabet}")
-                    except Exception as e:
-                        logger.error(f"Failed to create background model: {str(e)}")
-                        raise ValueError(f"Failed to create background model: {str(e)}")
-                    
-                    # Create pipeline with default configuration
-                    pipeline = Pipeline(
-                        alphabet,  # First positional argument - the alphabet
-                        background=background,  # Background model
-                        bias_filter=True,  # Enable bias filter
-                        null2=True,  # Use null2 model
-                        domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
-                        domT=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.BITSCORE else None,
-                    )
-                    
-                    # Search using the pipeline
-                    for hits in pipeline.search(query_file, target_file):
-                        for hit in hits:
-                            if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
-                                if hit.evalue < job.threshold_value:
-                                    results.append({
-                                        "target": hit.name.decode(),
-                                        "evalue": hit.evalue,
-                                        "score": hit.score,
-                                    })
-                            elif job.threshold == HmmerJob.ThresholdChoices.BITSCORE:
-                                if hit.score > job.threshold_value:
-                                    results.append({
-                                        "target": hit.name.decode(),
-                                        "evalue": hit.evalue,
-                                        "score": hit.score,
-                                    })
+                # Read the first few bytes to check the file format
+                header = db_f.read(1024)
+                db_f.seek(0)  # Reset file pointer
+                
+                logger.info(f"Database file header: {header[:100]}")
+                
+                # Try to determine if it's a FASTA file
+                if header.startswith(b'>'):
+                    logger.info("Detected FASTA format")
+                    with SequenceFile(db_f, format="fasta", alphabet=query_alphabet) as target_file:
+                        # Create background model with explicit alphabet type
+                        try:
+                            background = Background(alphabet=query_alphabet)
+                            logger.info(f"Created background model for alphabet: {query_alphabet}")
+                        except Exception as e:
+                            logger.error(f"Failed to create background model: {str(e)}")
+                            raise ValueError(f"Failed to create background model: {str(e)}")
+                        
+                        # Create pipeline with default configuration
+                        pipeline = Pipeline(
+                            query_alphabet,  # First positional argument - the alphabet
+                            background=background,  # Background model
+                            bias_filter=True,  # Enable bias filter
+                            null2=True,  # Use null2 model
+                            domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
+                            domT=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.BITSCORE else None,
+                        )
+                        
+                        # Search using the pipeline
+                        for hits in pipeline.search(query_file, target_file):
+                            for hit in hits:
+                                if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
+                                    if hit.evalue < job.threshold_value:
+                                        results.append({
+                                            "target": hit.name.decode(),
+                                            "evalue": hit.evalue,
+                                            "score": hit.score,
+                                        })
+                                elif job.threshold == HmmerJob.ThresholdChoices.BITSCORE:
+                                    if hit.score > job.threshold_value:
+                                        results.append({
+                                            "target": hit.name.decode(),
+                                            "evalue": hit.evalue,
+                                            "score": hit.score,
+                                        })
+                else:
+                    raise ValueError(f"Unsupported database file format. Expected FASTA format.")
 
         logger.info(f"{len(results)} hits passed the filter for job {job_id}")
         
