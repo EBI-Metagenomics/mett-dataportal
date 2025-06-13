@@ -5,7 +5,7 @@ from django.utils import timezone
 from celery import shared_task
 from django_celery_results.models import TaskResult
 from pyhmmer.easel import SequenceFile
-from pyhmmer.plan7 import Pipeline, HMMFile
+from pyhmmer.plan7 import Pipeline, HMMFile, Background
 
 from dataportal import settings
 from dataportal.celery import app
@@ -48,10 +48,14 @@ def run_search(self, job_id: str):
                     alphabet = target_file.alphabet
                     logger.info(f"Using alphabet: {alphabet}")
                     
+                    # Create background model
+                    background = Background(alphabet)
+                    logger.info(f"Created background model for alphabet: {alphabet}")
+                    
                     # Create pipeline with default configuration
                     pipeline = Pipeline(
                         alphabet,  # First positional argument - the alphabet
-                        background=0.1,  # Default background frequency
+                        background=background,  # Background model
                         bias_filter=True,  # Enable bias filter
                         null2=True,  # Use null2 model
                         domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
