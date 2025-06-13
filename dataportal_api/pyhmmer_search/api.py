@@ -27,9 +27,7 @@ def search(request: HttpRequest, body: SearchRequestSchema):
         job.clean()
         job.save()
 
-        # run_search.delay(job.id)
-
-        test_task.delay()
+        run_search.delay(job.id)
 
         return {"id": job.id}
     except Exception as e:
@@ -37,6 +35,16 @@ def search(request: HttpRequest, body: SearchRequestSchema):
         traceback.print_exc()
         raise e
 
+@pyhmmer_router.post("/testtask")
+def search(request: HttpRequest):
+    try:
+        result = test_task.delay()
+        return {"job_id": result.id}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise e
 
 @pyhmmer_router.get("/search/{uuid:id}", response=JobDetailsResponseSchema)
 def get_job_details(request, id: str):

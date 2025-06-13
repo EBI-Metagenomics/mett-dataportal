@@ -24,7 +24,7 @@ spec:
             claimName: mett-test-pyhmmer-pvc
       containers:
         - name: test-celery-worker
-          image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145f
+          image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.146
           volumeMounts:
             - name: pyhmmer-data
               mountPath: /data/pyhmmer
