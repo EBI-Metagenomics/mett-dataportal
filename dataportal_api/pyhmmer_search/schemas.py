@@ -1,5 +1,5 @@
 import io
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
 from django_celery_results.models import TaskResult
 from ninja import ModelSchema
@@ -55,14 +55,14 @@ class SearchResponseSchema(Schema):
 
 
 class JobDetailsResponseSchema(ModelSchema):
-    task: TaskResultSchema
-    database: DatabaseResponseSchema
+    task: Optional[TaskResultSchema] = None
+    database: Optional[DatabaseResponseSchema] = None
+    status: str
 
     class Meta:
         model = HmmerJob
-        exclude = [
-                    "algo",
-                ]
+        exclude = ["algo"]
+
 
 class JobsResponseSchema(ModelSchema):
     task: TaskResultSchema
@@ -116,3 +116,12 @@ class GapPenaltiesSchema(Schema):
     popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
     pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
     mx: Optional[Literal["BLOSUM62", "BLOSUM45", "BLOSUM90", "PAM30", "PAM70", "PAM250"]] = "BLOSUM62"
+
+
+
+class ResultQuerySchema(Schema):
+    page: int = Field(default=1, gt=0)
+    page_size: int = Field(default=50, gt=0)
+    taxonomy_ids: Optional[List[int]] = Field(default=None)
+    architecture: Optional[str] = Field(default=None)
+    with_domains: Optional[bool] = Field(default=False)

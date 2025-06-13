@@ -15,6 +15,7 @@ COPY dataportal_api/manage.py /app/
 # Optional: precompile Celery app to speed up container start
 # RUN python -m compileall /app
 
+ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
