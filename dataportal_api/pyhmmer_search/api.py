@@ -13,7 +13,7 @@ from ninja import Router
 
 from .models import HmmerJob
 from .schemas import SearchRequestSchema, SearchResponseSchema, JobDetailsResponseSchema
-from .tasks import run_search
+from .tasks import run_search, test_task
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,9 @@ def search(request: HttpRequest, body: SearchRequestSchema):
         job.clean()
         job.save()
 
-        run_search.delay(job.id)
+        # run_search.delay(job.id)
+
+        test_task.delay()
 
         return {"id": job.id}
     except Exception as e:

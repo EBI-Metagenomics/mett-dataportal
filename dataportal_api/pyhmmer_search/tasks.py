@@ -1,6 +1,7 @@
 import io
 import logging
 
+from celery import shared_task
 from django_celery_results.models import TaskResult
 from pyhmmer.easel import SequenceFile
 from pyhmmer.plan7 import Pipeline
@@ -12,7 +13,7 @@ from .models import HmmerJob
 logger = logging.getLogger(__name__)
 
 
-@app.task(bind=True)
+@shared_task(bind=True)
 def run_search(self, job_id: str):
     logger.info(f"Running HMMER search for job {job_id}")
     job = HmmerJob.objects.select_related("task").get(id=job_id)
@@ -58,6 +59,8 @@ def run_search(self, job_id: str):
     return results
 
 
-@app.task
-def test_add(x, y):
-    return x + y
+@shared_task
+def test_task():
+    logger.info(">>> Test task is running")
+    print(">>> Hello from test_task")
+    return "OK"
