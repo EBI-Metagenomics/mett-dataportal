@@ -46,13 +46,14 @@ def run_search(self, job_id: str):
                 with SequenceFile(db_f) as target_file:
                     # Create pipeline with default configuration
                     pipeline = Pipeline(
+                        target_file,  # First positional argument - the target database
                         background=0.1,  # Default background frequency
                         bias_filter=True,  # Enable bias filter
                         null2=True,  # Use null2 model
                         domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
                         domT=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.BITSCORE else None,
                     )
-                    for hits in pipeline.search(query_file, target_file):
+                    for hits in pipeline.search(query_file):
                         for hit in hits:
                             if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
                                 if hit.evalue < job.threshold_value:
