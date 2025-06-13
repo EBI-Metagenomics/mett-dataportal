@@ -13,7 +13,7 @@ from .models import HmmerJob
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
 def run_search(self, job_id: str):
     logger.info(f"Running HMMER search for job {job_id}")
     job = HmmerJob.objects.select_related("task").get(id=job_id)
@@ -59,8 +59,8 @@ def run_search(self, job_id: str):
     return results
 
 
-@shared_task
-def test_task():
+@shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
+def test_task(self):
     logger.info(">>> Test task is running")
     print(">>> Hello from test_task")
     return "OK"

@@ -19,9 +19,11 @@ spec:
         runAsUser: 7123
         runAsGroup: 1347
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145e
+        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145f
           imagePullPolicy: Always
           name: test-dataportal-api-dev
+          command: ["python"]
+          args: ["manage.py", "runserver", "0.0.0.0:8000"]
           env:
             # Database configuration
             - name: DATAPORTAL_DB_HOST
@@ -106,6 +108,16 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-test
                   key: GFF_FTP_PATH
+            - name: CELERY_BROKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: CELERY_BROKER_URL
+            - name: CELERY_RESULT_BACKEND
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: CELERY_RESULT_BACKEND
           resources:
             requests:
               memory: "4Gi"
