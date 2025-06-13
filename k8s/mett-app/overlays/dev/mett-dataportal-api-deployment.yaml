@@ -111,12 +111,12 @@ spec:
             - name: CELERY_BROKER_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: CELERY_BROKER_URL
             - name: CELERY_RESULT_BACKEND
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-test
                   key: CELERY_RESULT_BACKEND
           resources:
             requests:
