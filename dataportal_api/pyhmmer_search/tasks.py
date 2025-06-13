@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from celery import shared_task
 from django_celery_results.models import TaskResult
-from pyhmmer.easel import SequenceFile
+from pyhmmer.easel import SequenceFile, Alphabet
 from pyhmmer.plan7 import Pipeline, HMMFile, Background
 
 from dataportal import settings
@@ -46,11 +46,17 @@ def run_search(self, job_id: str):
                 with SequenceFile(db_f) as target_file:
                     # Get the alphabet from the target file
                     alphabet = target_file.alphabet
+                    if not alphabet:
+                        raise ValueError("Could not determine alphabet from target file")
                     logger.info(f"Using alphabet: {alphabet}")
                     
-                    # Create background model
-                    background = Background(alphabet)
-                    logger.info(f"Created background model for alphabet: {alphabet}")
+                    # Create background model with explicit alphabet type
+                    try:
+                        background = Background(alphabet=alphabet)
+                        logger.info(f"Created background model for alphabet: {alphabet}")
+                    except Exception as e:
+                        logger.error(f"Failed to create background model: {str(e)}")
+                        raise ValueError(f"Failed to create background model: {str(e)}")
                     
                     # Create pipeline with default configuration
                     pipeline = Pipeline(
