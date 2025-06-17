@@ -3,6 +3,8 @@ import logging
 import math
 import uuid
 import time
+from typing import List
+
 from django.utils import timezone
 
 from django.shortcuts import get_object_or_404
@@ -22,12 +24,19 @@ from django.http import HttpRequest
 from ninja import Router
 
 from .models import HmmerJob, Database
-from .schemas import SearchRequestSchema, SearchResponseSchema, JobDetailsResponseSchema, ResultQuerySchema
+from .schemas import SearchRequestSchema, SearchResponseSchema, JobDetailsResponseSchema, ResultQuerySchema, \
+    DatabaseResponseSchema
 from .tasks import run_search, test_task
 
 logger = logging.getLogger(__name__)
 
 pyhmmer_router = Router(tags=["pyhmmer"])
+
+
+@pyhmmer_router.get("/databases", response=List[DatabaseResponseSchema], tags=["search"])
+def get_databases(request):
+    return Database.objects.all().order_by("order")
+
 
 
 @pyhmmer_router.post("/search", response=SearchResponseSchema)
