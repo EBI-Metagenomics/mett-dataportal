@@ -36,6 +36,9 @@ def run_search(self, job_id: str):
         # Log input details
         logger.info(f"Job input (first 100 chars): {job.input[:100]}")
         logger.info(f"Job input type: {type(job.input)}, length: {len(job.input)}")
+        logger.info(f"Job input repr: {repr(job.input)}")
+        raw_bytes = job.input.encode("utf-8")
+        logger.info(f"Job input raw bytes: {raw_bytes[:100]}")
 
         # Update task state using Celery's state management
         self.update_state(state='STARTED')
@@ -60,18 +63,18 @@ def run_search(self, job_id: str):
 
         # phmmer search
         try:
-            # Try to open with autodetect
-            try:
-                query_file = SequenceFile(io.BytesIO(job.input.encode()))
-                logger.info("Successfully opened query sequence as SequenceFile (autodetect).")
-            except Exception as e:
-                logger.error(f"Autodetect failed: {e}")
-                # Try to force FASTA format
-                query_file = SequenceFile(io.BytesIO(job.input.encode()), format="fasta")
-                logger.info("Successfully opened query sequence as SequenceFile (forced FASTA).")
-
+            # Always force FASTA format for query
+            query_file = SequenceFile(io.BytesIO(raw_bytes), format="fasta")
+            logger.info("Successfully opened query sequence as SequenceFile (forced FASTA).")
             query_alphabet = query_file.alphabet
             logger.info(f"Query file alphabet: {query_alphabet}")
+            # Log all sequence names and content
+            query_file.seek(0)
+            for i, seq in enumerate(query_file):
+                logger.info(f"Query Seq {i}: name={seq.name}, desc={getattr(seq, 'description', None)}, seq={str(seq)}")
+                if i > 2:
+                    break
+            query_file.seek(0)
             if not query_alphabet:
                 logger.error("Could not determine alphabet from query sequence. Logging sequence details:")
                 _log_query_sequences(query_file)
