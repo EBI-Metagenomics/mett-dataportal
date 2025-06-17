@@ -52,6 +52,8 @@ We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config file
 
 Scripts -
 
+
+#### Elasticsearch Database setup
 ```shell
 $ python manage.py create_es_index
 $ python manage.py import_species --csv ../data-generators/data/species.csv
@@ -62,6 +64,14 @@ $ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory
 $ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --assembly BU_ATCC8492
 
 ```
+
+#### Pyhmmer Database Migrations
+
+```shell
+$ python manage.py migrate pyhmmer_search
+```
+
+
 
 #### Code style
 
