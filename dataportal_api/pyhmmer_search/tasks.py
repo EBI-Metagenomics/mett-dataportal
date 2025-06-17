@@ -28,8 +28,10 @@ def _log_query_sequences(raw_bytes):
 
 @shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
 def run_search(self, job_id: str):
-    from pyhmmer.easel import TextSequence, Alphabet, SequenceFile, SequenceBlock
+    import json
+    from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
     from pyhmmer.plan7 import Pipeline, Background
+    from django.utils import timezone
 
     task_id = self.request.id
     logger.info(f"Running HMMER search for job {job_id} with task ID {task_id}")
@@ -46,7 +48,7 @@ def run_search(self, job_id: str):
         if not db_path:
             raise ValueError(f"Invalid database ID '{job.database}'")
 
-        # Prepare the alphabet and background model
+        # Prepare alphabet and background
         alphabet = Alphabet.amino()
         background = Background(alphabet)
         pipeline = Pipeline(
@@ -57,11 +59,9 @@ def run_search(self, job_id: str):
             domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
             domT=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.BITSCORE else None,
         )
-        logger.info("Pipeline and background model initialized")
 
-        # Prepare query sequence
+        # Parse query
         lines = job.input.strip().splitlines()
-
         if not lines or not lines[0].startswith(">") or len(lines) < 2:
             raise ValueError("Invalid FASTA input format for query.")
 
@@ -69,23 +69,26 @@ def run_search(self, job_id: str):
         sequence = ''.join(lines[1:])
         text_seq = TextSequence(name=name, sequence=sequence)
         digital_seq = text_seq.digitize(alphabet)
-        logger.info(f"Digitized query sequence: {text_seq.name.decode()}")
 
-        # Read and digitize target sequences
+        # Read target sequences
         with SequenceFile(db_path, format="fasta") as target_file:
             digital_targets = [seq.digitize(alphabet) for seq in target_file]
         logger.info(f"Digitized {len(digital_targets)} target sequences from {db_path}")
 
+        # Run search
+        results = []
         block = DigitalSequenceBlock(alphabet)
         block.extend(digital_targets)
 
-        # Run the search
-        results = []
         hits = pipeline.search_seq(digital_seq, block)
-        for hit in hits:
 
-            logger.debug(f"Top hits: {[hit.name.decode() for hit in hits[:5]]}")
+        try:
+            hit_list = list(hits)
+            logger.debug(f"Top hits: {[hit.name.decode() for hit in hit_list[:5]]}")
+        except Exception as e:
+            logger.debug(f"Could not log top hits due to error: {e}")
 
+        for hit in hit_list:
             if job.threshold == HmmerJob.ThresholdChoices.EVALUE and hit.evalue < job.threshold_value:
                 results.append({
                     "target": hit.name.decode(),
@@ -101,10 +104,9 @@ def run_search(self, job_id: str):
 
         logger.info(f"{len(results)} hits passed the filter for job {job_id}")
 
-        # Update task result in DB
         if job.task:
             job.task.status = 'SUCCESS'
-            job.task.result = results
+            job.task.result = json.dumps(results)
             job.task.date_done = timezone.now()
             job.task.save()
             logger.info(f"Updated database record for task {task_id} to SUCCESS")
@@ -120,6 +122,7 @@ def run_search(self, job_id: str):
             job.task.save()
             logger.info(f"Updated database record for task {task_id} to FAILURE")
         raise
+
 
 
 @shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")

@@ -8,8 +8,8 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django_celery_results.models import TaskResult
 from ninja import Router, Query
-from ninja.errors import HttpError
 
+from ninja.errors import HttpError
 from dataportal import settings
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 pyhmmer_router = Router(tags=["pyhmmer"])
 
+
 @pyhmmer_router.post("/search", response=SearchResponseSchema)
 def search(request: HttpRequest, body: SearchRequestSchema):
     try:
@@ -42,7 +43,7 @@ def search(request: HttpRequest, body: SearchRequestSchema):
         result = run_search.delay(job.id)
         task_id = result.id
         logger.info(f"Started search task with ID: {task_id}")
-        
+
         # Create task result entry
         task_result = TaskResult.objects.create(
             task_id=task_id,
@@ -54,7 +55,7 @@ def search(request: HttpRequest, body: SearchRequestSchema):
             date_created=timezone.now()
         )
         logger.info(f"Created task result for task ID: {task_id}")
-        
+
         # Link the task to the job
         job.task = task_result
         job.save(update_fields=["task"])
@@ -65,6 +66,7 @@ def search(request: HttpRequest, body: SearchRequestSchema):
         logger.error(f"Error in search: {str(e)}", exc_info=True)
         raise HttpError(500, f"Error creating search job: {str(e)}")
 
+
 @pyhmmer_router.post("/testtask")
 def search(request: HttpRequest):
     try:
@@ -73,12 +75,12 @@ def search(request: HttpRequest):
             input="mock-seq",  # dummy
             database=HmmerJob.DbChoices.BU_TYPE_STRAINS
         )
-        
+
         # Run the test task
         result = test_task.delay()
         task_id = result.id
         logger.info(f"Started test task with ID: {task_id}")
-        
+
         # Create task result entry
         task_result = TaskResult.objects.create(
             task_id=task_id,
@@ -90,17 +92,17 @@ def search(request: HttpRequest):
             date_created=timezone.now()
         )
         logger.info(f"Created task result for task ID: {task_id}")
-        
+
         # Link the task to the job
         job.task = task_result
         job.save(update_fields=["task"])
         logger.info(f"Linked task {task_id} to job {job.id}")
-        
+
         # Verify task status using AsyncResult
         from celery.result import AsyncResult
         async_result = AsyncResult(task_id)
         logger.info(f"Task {task_id} status from AsyncResult: {async_result.status}")
-        
+
         return {"job_id": str(job.id)}
 
     except Exception as e:
@@ -110,26 +112,40 @@ def search(request: HttpRequest):
 
 @pyhmmer_router.get("/search/{uuid:id}", response=JobDetailsResponseSchema)
 def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
+    import json
+    from celery.result import AsyncResult
+
     try:
         logger.info(f"Fetching job with ID: {id}")
         job = get_object_or_404(HmmerJob, id=id)
         logger.info(f"Found job: {job}")
 
-        # Get task status using AsyncResult
-        from celery.result import AsyncResult
         task_status = "PENDING"
-        task_result = None
+        task_result_data = None
+
         if job.task:
             async_result = AsyncResult(job.task.task_id)
             task_status = async_result.status
-            task_result = async_result.result
             logger.info(f"Task {job.task.task_id} status: {task_status}")
+
+            # Attempt to load result from DB
+            raw_result = job.task.result
+            try:
+                task_result_data = json.loads(raw_result) if isinstance(raw_result, str) else raw_result
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to decode JSON result: {raw_result}")
+                task_result_data = raw_result  # fallback
 
         if task_status != "SUCCESS":
             logger.info(f"Job not successful, returning status: {task_status}")
             return {
                 "status": task_status,
-                "task": job.task,
+                "task": {
+                    "status": job.task.status if job.task else "PENDING",
+                    "date_created": job.task.date_created if job.task else None,
+                    "date_done": job.task.date_done if job.task else None,
+                    "result": None
+                },
                 "database": None,
                 "id": job.id,
                 "algo": job.algo,
@@ -144,16 +160,20 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
             raise HttpError(500, f"Database {job.database} not configured")
 
         try:
-            # Get the database object
             database = Database.objects.get(id=job.database)
             logger.info(f"Found database: {database}")
         except Database.DoesNotExist:
             logger.error(f"Database with id {job.database} does not exist")
             raise HttpError(500, f"Database {job.database} not found")
-        
+
         response = {
             "status": task_status,
-            "task": job.task,
+            "task": {
+                "status": job.task.status,
+                "date_created": job.task.date_created,
+                "date_done": job.task.date_done,
+                "result": task_result_data or []
+            },
             "database": database,
             "id": job.id,
             "algo": job.algo,
@@ -161,27 +181,29 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
             "threshold": job.threshold,
             "threshold_value": job.threshold_value
         }
-        logger.info(f"Returning response: {response}")
+        logger.info(f"Returning response with {len(task_result_data or [])} hits")
         return response
 
     except Exception as e:
         logger.error(f"Unexpected error in get_result: {str(e)}", exc_info=True)
         raise HttpError(500, f"Internal server error: {str(e)}")
 
+
+
 @pyhmmer_router.get("/debug/task/{task_id}")
 def debug_task(request, task_id: str):
     try:
         from celery.result import AsyncResult
-        
+
         # First try to get the task status directly
         task_result = AsyncResult(task_id)
         logger.info(f"Task {task_id} status from AsyncResult: {task_result.status}")
-        
+
         # If the task exists, get its linked jobs
         if task_result.status != 'PENDING' or task_result.result is not None:
             linked_jobs = HmmerJob.objects.filter(task__task_id=task_id)
             logger.info(f"Found {linked_jobs.count()} jobs linked to task {task_id}")
-            
+
             return {
                 "task": {
                     "id": task_id,
@@ -203,7 +225,7 @@ def debug_task(request, task_id: str):
                     for job in linked_jobs
                 ]
             }
-        
+
         # If the task doesn't exist, try to find a job with this ID
         try:
             job = HmmerJob.objects.get(id=task_id)
@@ -211,7 +233,7 @@ def debug_task(request, task_id: str):
                 # Get the actual task status
                 job_task = AsyncResult(job.task.task_id)
                 logger.info(f"Found job {task_id} with task {job.task.task_id}, status: {job_task.status}")
-                
+
                 return {
                     "task": {
                         "id": job.task.task_id,
@@ -234,7 +256,7 @@ def debug_task(request, task_id: str):
                 }
         except HmmerJob.DoesNotExist:
             pass
-        
+
         # If we get here, neither a task nor a job was found
         return {
             "task": {
@@ -248,7 +270,7 @@ def debug_task(request, task_id: str):
             },
             "linked_jobs": []
         }
-        
+
     except Exception as e:
         logger.error(f"Error in debug_task: {str(e)}", exc_info=True)
         raise HttpError(500, f"Error getting task info: {str(e)}")

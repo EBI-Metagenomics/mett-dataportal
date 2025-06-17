@@ -39,9 +39,21 @@ class SearchRequestSchema(ModelSchema):
 
 
 class TaskResultSchema(ModelSchema):
+    result: Optional[List[dict]] = Field(default_factory=list)
+
+    @field_validator("result", mode="before")
+    @classmethod
+    def parse_result(cls, value):
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                return []
+        return value
+
     class Meta:
         model = TaskResult
-        fields = ["status", "date_created", "date_done"]
+        fields = ["status", "date_created", "date_done", "result"]
 
 
 class DatabaseResponseSchema(ModelSchema):
