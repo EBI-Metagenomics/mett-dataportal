@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 
+from celery.schedules import crontab
 from elasticsearch_dsl import connections
 
 from .elasticsearch_client import init_es_connection
@@ -234,6 +235,13 @@ GFF_FTP_PATH = os.environ.get(
     "GFF_FTP_PATH",
     "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/",
 )
+
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-task-results-weekly": {
+        "task": "pyhmmer_search.tasks.cleanup_old_tasks",
+        "schedule": crontab(day_of_week="sunday", hour=3),
+    },
+}
 
 PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/")
 HMMER_DATABASES = {

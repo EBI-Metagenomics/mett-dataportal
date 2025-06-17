@@ -171,3 +171,14 @@ def test_task(self):
 
     logger.info(f">>> Completed test task {task_id}")
     return "OK"
+
+
+@shared_task
+def cleanup_old_tasks():
+    from django_celery_results.models import TaskResult
+    from django.utils import timezone
+    from datetime import timedelta
+
+    cutoff = timezone.now() - timedelta(days=30)
+    deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
+    return f"Deleted {deleted} old task results"
