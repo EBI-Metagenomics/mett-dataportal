@@ -6,7 +6,7 @@ export interface PyhmmerDatabase {
 }
 
 export interface PyhmmerSearchRequest {
-    database: string; // Literal from backend
+    database: string;
     threshold: 'evalue' | 'bitscore';
     threshold_value: number;
     input: string;

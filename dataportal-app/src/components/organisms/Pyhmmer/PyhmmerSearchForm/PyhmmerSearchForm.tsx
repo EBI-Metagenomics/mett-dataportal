@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import styles from './PyhmmerSearchForm.module.scss';
+import { PyhmmerService } from '../../../../services/pyhmmerService';
+import PyhmmerResultsTable, { PyhmmerResult } from '../PyhmmerResultsTable/PyhmmerResultsTable';
 
 const PyhmmerSearchForm: React.FC = () => {
     const [activeTab, setActiveTab] = useState('phmmer');
@@ -15,8 +17,70 @@ const PyhmmerSearchForm: React.FC = () => {
     const [subMatrix, setSubMatrix] = useState('BLOSUM62');
     const [biasFilter, setBiasFilter] = useState(false);
 
+    // Results state
+    const [results, setResults] = useState<PyhmmerResult[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | undefined>(undefined);
+
+    // Helper to poll for job status
+    const pollJobStatus = async (jobId: string, maxAttempts = 20, delay = 1500) => {
+        let attempts = 0;
+        while (attempts < maxAttempts) {
+            const job = await PyhmmerService.getJobDetails(jobId);
+            if (job.status === 'SUCCESS' && job.task && Array.isArray(job.task.result)) {
+                return job.task.result;
+            } else if (job.status === 'FAILURE') {
+                throw new Error('Job failed');
+            }
+            await new Promise(res => setTimeout(res, delay));
+            attempts++;
+        }
+        throw new Error('Timed out waiting for results');
+    };
+
+    // Map backend result to PyhmmerResult[]
+    const mapResults = (raw: any[]): PyhmmerResult[] => {
+        return raw.map((hit: any) => ({
+            query: hit.query || hit.query_name || '-',
+            target: hit.target || hit.target_name || hit.name || '-',
+            evalue: hit.evalue ?? hit.Evalue ?? '-',
+            score: hit.score ?? hit.Score ?? '-',
+            bias: hit.bias ?? '-',
+            description: hit.description ?? hit.desc ?? '-',
+        }));
+    };
+
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        setLoading(true);
+        setError(undefined);
+        setResults([]);
+        try {
+            // Compose request
+            const req = {
+                database,
+                threshold: evalueType,
+                threshold_value: parseFloat(significanceEValueSeq),
+                input: sequence,
+            };
+            const { id } = await PyhmmerService.search(req);
+            const rawResults = await pollJobStatus(id);
+            setResults(mapResults(rawResults));
+        } catch (err: any) {
+            setError(err.message || 'Error running search');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className={styles.pyhmmerFormWrapper}>
+            {/* Tabs */}
+            <div className={styles.tabs}>
+                <button className={activeTab === 'phmmer' ? styles.activeTab : ''} onClick={() => setActiveTab('phmmer')}>phmmer</button>
+                <button className={activeTab === 'hmmscan' ? styles.activeTab : ''} onClick={() => setActiveTab('hmmscan')}>hmmscan</button>
+                <button className={activeTab === 'hmmsearch' ? styles.activeTab : ''} onClick={() => setActiveTab('hmmsearch')}>hmmsearch</button>
+            </div>
 
             <h3 className={styles.sectionTitle}>protein sequence vs protein sequence database</h3>
 
@@ -36,9 +100,9 @@ const PyhmmerSearchForm: React.FC = () => {
                     </div>
                 </div>
                 <div className={styles.buttonRow}>
-                    <button className={styles.submitBtn}>Submit</button>
-                    <button className={styles.resetBtn}>Reset</button>
-                    <button className={styles.cleanBtn}>Clean</button>
+                    <button className={styles.submitBtn} onClick={handleSubmit}>Submit</button>
+                    <button className={styles.resetBtn} type="button" onClick={() => setSequence('')}>Reset</button>
+                    <button className={styles.cleanBtn} type="button" onClick={() => setSequence('')}>Clean</button>
                 </div>
             </div>
 
@@ -120,6 +184,11 @@ const PyhmmerSearchForm: React.FC = () => {
                         Turn off bias composition filter
                     </label>
                 </div>
+            </div>
+
+            {/* Results Table */}
+            <div className={styles.formSection}>
+                <PyhmmerResultsTable results={results} loading={loading} error={error} />
             </div>
         </div>
     );
