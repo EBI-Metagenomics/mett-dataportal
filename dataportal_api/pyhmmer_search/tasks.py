@@ -92,6 +92,7 @@ def run_search(self, job_id: str):
             if job.threshold == HmmerJob.ThresholdChoices.EVALUE and hit.evalue < job.threshold_value:
                 results.append({
                     "target": hit.name.decode(),
+                    "description": hit.description.decode(),
                     "evalue": hit.evalue,
                     "score": hit.score,
                 })
