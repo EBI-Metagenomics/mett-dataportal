@@ -22,6 +22,10 @@ def run_search(self, job_id: str):
         job = HmmerJob.objects.select_related("task").get(id=job_id)
         logger.info(f"Found job {job_id} with task {job.task.task_id if job.task else 'No task'}")
 
+        # Log input details
+        logger.info(f"Job input (first 100 chars): {job.input[:100]}")
+        logger.info(f"Job input type: {type(job.input)}, length: {len(job.input)}")
+
         # Update task state using Celery's state management
         self.update_state(state='STARTED')
         logger.info(f"Updated task {task_id} state to STARTED")
@@ -33,6 +37,9 @@ def run_search(self, job_id: str):
             logger.info(f"Updated database record for task {task_id} to STARTED")
 
         db_path = settings.HMMER_DATABASES[job.database]
+        logger.info(f"Database path for job: {db_path}")
+        import os
+        logger.info(f"Database file exists: {os.path.exists(db_path)}")
         if not db_path:
             raise ValueError(f"Invalid database ID '{job.database}'")
 
@@ -41,61 +48,66 @@ def run_search(self, job_id: str):
         results = []
 
         # phmmer search
-        with SequenceFile(io.BytesIO(job.input.encode())) as query_file:
-            # First, determine the alphabet from the query file
-            query_alphabet = query_file.alphabet
-            if not query_alphabet:
-                raise ValueError("Could not determine alphabet from query sequence")
-            logger.info(f"Query file alphabet: {query_alphabet}")
+        try:
+            with SequenceFile(io.BytesIO(job.input.encode())) as query_file:
+                logger.info("Successfully opened query sequence as SequenceFile.")
+                # First, determine the alphabet from the query file
+                query_alphabet = query_file.alphabet
+                logger.info(f"Query file alphabet: {query_alphabet}")
+                if not query_alphabet:
+                    logger.error("Could not determine alphabet from query sequence. Query file summary:")
+                    for seq in query_file:
+                        logger.error(f"Seq: {seq.name}, Alphabet: {seq.alphabet}, Length: {len(seq)}")
+                    raise ValueError("Could not determine alphabet from query sequence")
 
-            with open(db_path, "rb") as db_f:
-                # Read the first few bytes to check the file format
-                header = db_f.read(1024)
-                db_f.seek(0)  # Reset file pointer
-                
-                logger.info(f"Database file header: {header[:100]}")
-                
-                # Try to determine if it's a FASTA file
-                if header.startswith(b'>'):
-                    logger.info("Detected FASTA format")
-                    with SequenceFile(db_f, format="fasta", alphabet=query_alphabet) as target_file:
-                        # Create background model with explicit alphabet type
-                        try:
-                            background = Background(alphabet=query_alphabet)
-                            logger.info(f"Created background model for alphabet: {query_alphabet}")
-                        except Exception as e:
-                            logger.error(f"Failed to create background model: {str(e)}")
-                            raise ValueError(f"Failed to create background model: {str(e)}")
-                        
-                        # Create pipeline with default configuration
-                        pipeline = Pipeline(
-                            query_alphabet,  # First positional argument - the alphabet
-                            background=background,  # Background model
-                            bias_filter=True,  # Enable bias filter
-                            null2=True,  # Use null2 model
-                            domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
-                            domT=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.BITSCORE else None,
-                        )
-                        
-                        # Search using the pipeline
-                        for hits in pipeline.search(query_file, target_file):
-                            for hit in hits:
-                                if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
-                                    if hit.evalue < job.threshold_value:
-                                        results.append({
-                                            "target": hit.name.decode(),
-                                            "evalue": hit.evalue,
-                                            "score": hit.score,
-                                        })
-                                elif job.threshold == HmmerJob.ThresholdChoices.BITSCORE:
-                                    if hit.score > job.threshold_value:
-                                        results.append({
-                                            "target": hit.name.decode(),
-                                            "evalue": hit.evalue,
-                                            "score": hit.score,
-                                        })
-                else:
-                    raise ValueError(f"Unsupported database file format. Expected FASTA format.")
+                with open(db_path, "rb") as db_f:
+                    # Read the first few bytes to check the file format
+                    header = db_f.read(1024)
+                    db_f.seek(0)  # Reset file pointer
+                    logger.info(f"Database file header (first 100 bytes): {header[:100]}")
+                    # Try to determine if it's a FASTA file
+                    if header.startswith(b'>'):
+                        logger.info("Detected FASTA format")
+                        with SequenceFile(db_f, format="fasta", alphabet=query_alphabet) as target_file:
+                            # Create background model with explicit alphabet type
+                            try:
+                                background = Background(alphabet=query_alphabet)
+                                logger.info(f"Created background model for alphabet: {query_alphabet}")
+                            except Exception as e:
+                                logger.error(f"Failed to create background model: {str(e)}")
+                                raise ValueError(f"Failed to create background model: {str(e)}")
+                            # Create pipeline with default configuration
+                            pipeline = Pipeline(
+                                query_alphabet,  # First positional argument - the alphabet
+                                background=background,  # Background model
+                                bias_filter=True,  # Enable bias filter
+                                null2=True,  # Use null2 model
+                                domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
+                                domT=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.BITSCORE else None,
+                            )
+                            # Search using the pipeline
+                            for hits in pipeline.search(query_file, target_file):
+                                for hit in hits:
+                                    if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
+                                        if hit.evalue < job.threshold_value:
+                                            results.append({
+                                                "target": hit.name.decode(),
+                                                "evalue": hit.evalue,
+                                                "score": hit.score,
+                                            })
+                                    elif job.threshold == HmmerJob.ThresholdChoices.BITSCORE:
+                                        if hit.score > job.threshold_value:
+                                            results.append({
+                                                "target": hit.name.decode(),
+                                                "evalue": hit.evalue,
+                                                "score": hit.score,
+                                            })
+                    else:
+                        logger.error("Unsupported database file format. Expected FASTA format.")
+                        raise ValueError(f"Unsupported database file format. Expected FASTA format.")
+        except Exception as e:
+            logger.error(f"Exception during query/target file handling: {str(e)}", exc_info=True)
+            raise
 
         logger.info(f"{len(results)} hits passed the filter for job {job_id}")
         
