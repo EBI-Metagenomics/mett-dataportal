@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mett-celery-beat
+  namespace: mett-dataportal-hl-dev
+  labels:
+    app: mett-celery-beat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mett-celery-beat
+  template:
+    metadata:
+      labels:
+        app: mett-celery-beat
+    spec:
+      securityContext:
+        runAsUser: 7123
+        runAsGroup: 1347
+      containers:
+        - name: celery-beat
+          image: quay.io/microbiome-informatics/mett-dataportal-api
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          command: ["celery"]
+          args: [
+            "-A", "dataportal", "beat",
+            "-l", "INFO",
+            "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"
+          ]
+          envFrom:
+            - configMapRef:
+                name: mett-postgres-config
+            - configMapRef:
+                name: mett-app-config-dev
+            - configMapRef:
+                name: mett-elasticsearch-config-dev
+          env:
+            - name: DATAPORTAL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-postgres-secret
+                  key: DATAPORTAL_DB_PASSWORD
+            - name: ES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials
+                  key: ELASTIC_USERNAME
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials
+                  key: ELASTIC_PASSWORD
+      imagePullSecrets:
+        - name: quay-pull-secret

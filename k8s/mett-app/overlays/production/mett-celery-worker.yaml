@@ -24,7 +24,7 @@ spec:
             claimName: mett-pyhmmer-pvc
       containers:
         - name: celery-worker
-          image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145
+          image: quay.io/microbiome-informatics/mett-dataportal-api
           volumeMounts:
             - name: pyhmmer-data
               mountPath: /data/pyhmmer
@@ -44,6 +44,39 @@ spec:
             "--max-tasks-per-child=10"
           ]
           env:
+            # Database configuration
+            - name: DATAPORTAL_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_HOST
+            - name: DATAPORTAL_DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_PORT
+            - name: DATAPORTAL_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB
+            - name: DATAPORTAL_DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_USER
+            - name: DATAPORTAL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-postgres-secret
+                  key: DATAPORTAL_DB_PASSWORD
+            - name: PYTHONPATH
+              value: "/app"
+            - name: PYHMMER_FAA_BASE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-test
+                  key: PYHMMER_FAA_BASE_PATH
             - name: CELERY_BROKER_URL
               valueFrom:
                 configMapKeyRef:

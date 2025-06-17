@@ -66,11 +66,15 @@ $ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory
 ```
 
 #### Pyhmmer Database Migrations
-
 ```shell
 $ python manage.py migrate pyhmmer_search
 ```
 
+
+#### Celery Beat Migrations
+```shell
+$ python manage.py migrate django_celery_beat
+```
 
 
 #### Code style
@@ -88,19 +92,6 @@ To manually run them:
 pip install -r requirements-dev.txt
 pytest
 ```
-
-#### Initial Database table setup
-
-```shell
-python manage.py makemigrations
-python manage.py makemigrations dataportal --empty
-python manage.py migrate
-```
-
-## Data Portal APP (React based application)
-
-### Requirements
-
 
 ### Kubernetes Node Affinity 
 ```bash
