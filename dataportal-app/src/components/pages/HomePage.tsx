@@ -1,13 +1,14 @@
-import React, {useEffect, useState} from 'react';
-import {useLocation} from 'react-router-dom'
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom'
 import GeneSearchForm from '@components/organisms/Gene/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '@components/organisms/Genome/GenomeSearchForm/GenomeSearchForm';
-import {GenomeService} from '../../services/genomeService';
-import {SpeciesService} from "../../services/speciesService";
+import PyhmmerSearchForm from '@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchForm';
+import { GenomeService } from '../../services/genomeService';
+import { SpeciesService } from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
-import {BaseGenome, GenomeMeta} from "../../interfaces/Genome";
-import {SPINNER_DELAY} from "../../utils/appConstants";
+import { BaseGenome, GenomeMeta } from "../../interfaces/Genome";
+import { SPINNER_DELAY } from "../../utils/appConstants";
 
 // Define the type for each tab
 interface Tab {
@@ -22,7 +23,7 @@ interface TabNavigationProps {
     onTabClick: (tabId: string) => void;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClick}) => (
+const TabNavigation: React.FC<TabNavigationProps> = ({ tabs, activeTab, onTabClick }) => (
     <div className={styles["tabs-container"]}>
         {tabs.map((tab) => (
             <button
@@ -244,8 +245,9 @@ const HomePage: React.FC = () => {
     };
 
     const tabs: Tab[] = [
-        {id: 'vf-tabs__section--1', label: 'Genome Search'},
-        {id: 'vf-tabs__section--2', label: 'Gene Search'}
+        { id: 'vf-tabs__section--1', label: 'Genome Search' },
+        { id: 'vf-tabs__section--2', label: 'Gene Search' },
+        { id: 'vf-tabs__section--3', label: 'pyhmmer Search' }
     ];
 
     return (
@@ -264,7 +266,7 @@ const HomePage: React.FC = () => {
             <div className="layout-container">
 
                 <div>
-                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick}/>
+                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick} />
                     {activeTab === 'vf-tabs__section--1' && (
                         <GenomeSearchForm
                             // key={`${genomeResults.length}-${sortField}-${sortOrder}`}
@@ -303,6 +305,9 @@ const HomePage: React.FC = () => {
                             handleRemoveGenome={handleRemoveGenome}
                             setLoading={setLoading}
                         />
+                    )}
+                    {activeTab === 'vf-tabs__section--3' && (
+                        <PyhmmerSearchForm />
                     )}
                 </div>
             </div>
