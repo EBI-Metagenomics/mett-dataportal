@@ -97,7 +97,7 @@ class HmmerJobStatusSchema(Schema):
     error_message: Optional[str] = Field(..., description="The error message of the job")
 
 
-# Helper Schemas for defining complex request schemas
+
 class CutOffSchema(Schema):
     threshold: Literal["evalue", "bitscore"] = "evalue"
     incE: Optional[float] = Field(0.01, gt=0, le=10)
@@ -137,3 +137,9 @@ class ResultQuerySchema(Schema):
     taxonomy_ids: Optional[List[int]] = Field(default=None)
     architecture: Optional[str] = Field(default=None)
     with_domains: Optional[bool] = Field(default=False)
+
+
+class DomainDetailsResponseSchema(Schema):
+    status: str
+    target: str
+    domains: Optional[list] = None

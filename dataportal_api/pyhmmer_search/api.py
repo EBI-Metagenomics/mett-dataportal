@@ -24,7 +24,7 @@ from django.http import HttpRequest
 from ninja import Router
 
 from .models import HmmerJob, Database
-from .schemas import SearchRequestSchema, SearchResponseSchema, JobDetailsResponseSchema, ResultQuerySchema, \
+from .schemas import DomainDetailsResponseSchema, SearchRequestSchema, SearchResponseSchema, JobDetailsResponseSchema, ResultQuerySchema, \
     DatabaseResponseSchema
 from .tasks import run_search, test_task
 
@@ -283,3 +283,38 @@ def debug_task(request, task_id: str):
     except Exception as e:
         logger.error(f"Error in debug_task: {str(e)}", exc_info=True)
         raise HttpError(500, f"Error getting task info: {str(e)}")
+
+
+@pyhmmer_router.get("/search/{uuid:id}/domains", response=DomainDetailsResponseSchema)
+def get_domain_details(request, id: uuid.UUID, target: str):
+    import json
+    from celery.result import AsyncResult
+
+    try:
+        logger.info(f"Fetching domain details for job {id}, target {target}")
+        job = get_object_or_404(HmmerJob, id=id)
+        if not job.task:
+            return {"status": "PENDING", "target": target, "domains": None}
+        async_result = AsyncResult(job.task.task_id)
+        if async_result.status != "SUCCESS":
+            return {"status": async_result.status, "target": target, "domains": None}
+        raw_result = job.task.result
+        try:
+            task_result_data = json.loads(raw_result) if isinstance(raw_result, str) else raw_result
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to decode JSON result: {raw_result}")
+            task_result_data = raw_result
+        # Find the hit for the given target
+        hit = None
+        for h in (task_result_data or []):
+            if h.get("target") == target or h.get("target_name") == target or h.get("name") == target:
+                hit = h
+                break
+        if not hit:
+            return {"status": "NOT_FOUND", "target": target, "domains": None}
+        # Return the domains/alignment details (assuming 'domains' or similar key)
+        domains = hit.get("domains") or hit.get("alignments") or []
+        return {"status": "SUCCESS", "target": target, "domains": domains}
+    except Exception as e:
+        logger.error(f"Error in get_domain_details: {str(e)}", exc_info=True)
+        raise HttpError(500, f"Internal server error: {str(e)}")

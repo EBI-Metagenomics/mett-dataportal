@@ -89,19 +89,44 @@ def run_search(self, job_id: str):
             logger.debug(f"Could not log top hits due to error: {e}")
 
         for hit in hit_list:
+            # Build domains info for this hit
+            domains = []
+            for domain in hit.domains:
+                domain_dict = {
+                    "ienv": domain.env_from,
+                    "jenv": domain.env_to,
+                    # "seq_from": domain.seq_from,
+                    # "seq_to": domain.seq_to,
+                    # "hmm_from": domain.hmm_from,
+                    # "hmm_to": domain.hmm_to,
+                    "bitscore": domain.score,
+                    "ievalue": domain.i_evalue,
+                    "cevalue": domain.c_evalue,
+                    "bias": getattr(domain, 'bias', None),
+                    # Add alignment display if available
+                    # "alignment_display": ...
+                }
+                # Optionally, add pretty alignment if available
+                if hasattr(domain, 'alignment') and domain.alignment is not None:
+                    try:
+                        domain_dict["alignment_display"] = domain.alignment.pretty()
+                    except Exception:
+                        pass
+                domains.append(domain_dict)
+
+            hit_dict = {
+                "target": hit.name.decode(),
+                "description": hit.description.decode(),
+                "evalue": hit.evalue,
+                "score": hit.score,
+                "num_hits": len(hit_list) or None,
+                "num_significant": sum(1 for h in hit_list if h.evalue < 0.01),  # Example threshold
+                "domains": domains
+            }
             if job.threshold == HmmerJob.ThresholdChoices.EVALUE and hit.evalue < job.threshold_value:
-                results.append({
-                    "target": hit.name.decode(),
-                    "description": hit.description.decode(),
-                    "evalue": hit.evalue,
-                    "score": hit.score,
-                })
+                results.append(hit_dict)
             elif job.threshold == HmmerJob.ThresholdChoices.BITSCORE and hit.score > job.threshold_value:
-                results.append({
-                    "target": hit.name.decode(),
-                    "evalue": hit.evalue,
-                    "score": hit.score,
-                })
+                results.append(hit_dict)
 
         logger.info(f"{len(results)} hits passed the filter for job {job_id}")
 
