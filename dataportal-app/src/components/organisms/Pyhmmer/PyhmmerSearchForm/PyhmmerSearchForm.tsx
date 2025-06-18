@@ -1,11 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import styles from './PyhmmerSearchForm.module.scss';
-import { PyhmmerService } from '../../../../services/pyhmmerService';
-import PyhmmerResultsTable, { PyhmmerResult } from '../PyhmmerResultsTable/PyhmmerResultsTable';
+import {PyhmmerService} from '../../../../services/pyhmmerService';
+import PyhmmerResultsTable, {PyhmmerResult} from '../PyhmmerResultsHandler/PyhmmerResultsTable';
 import {EXAMPLE_SEQUENCE} from "../../../../utils/appConstants";
 
 const PyhmmerSearchForm: React.FC = () => {
-    const [activeTab, setActiveTab] = useState('phmmer');
     const [evalueType, setEvalueType] = useState<'evalue' | 'bitscore'>('evalue');
     const [sequence, setSequence] = useState('');
     const [database, setDatabase] = useState('bu_all');
@@ -15,8 +14,8 @@ const PyhmmerSearchForm: React.FC = () => {
     const [reportEValueHit, setReportEValueHit] = useState('1');
     const [gapOpen, setGapOpen] = useState('0.02');
     const [gapExtend, setGapExtend] = useState('0.4');
-    const [subMatrix, setSubMatrix] = useState('BLOSUM62');
-    const [biasFilter, setBiasFilter] = useState(false);
+    // const [subMatrix, setSubMatrix] = useState('BLOSUM62');
+    // const [biasFilter, setBiasFilter] = useState(false);
 
     // Results state
     const [results, setResults] = useState<PyhmmerResult[]>([]);
@@ -24,6 +23,20 @@ const PyhmmerSearchForm: React.FC = () => {
     const [error, setError] = useState<string | undefined>(undefined);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    const [databases, setDatabases] = useState<{ id: string; name: string }[]>([]);
+
+    useEffect(() => {
+        const fetchDatabases = async () => {
+            try {
+                const response = await PyhmmerService.getDatabases();
+                setDatabases(response);
+            } catch {
+                setDatabases([]);
+            }
+        };
+        fetchDatabases();
+    }, []);
 
     // Helper to poll for job status
     const pollJobStatus = async (jobId: string, maxAttempts = 20, delay = 1500) => {
@@ -66,7 +79,7 @@ const PyhmmerSearchForm: React.FC = () => {
                 threshold_value: parseFloat(significanceEValueSeq),
                 input: sequence,
             };
-            const { id } = await PyhmmerService.search(req);
+            const {id} = await PyhmmerService.search(req);
             const rawResults = await pollJobStatus(id);
             setResults(mapResults(rawResults));
         } catch (err: any) {
@@ -95,132 +108,121 @@ const PyhmmerSearchForm: React.FC = () => {
     };
 
     return (
-        <div className={styles.pyhmmerFormWrapper}>
-            {/* Tabs */}
-            <div className={styles.tabs}>
-                <button className={activeTab === 'phmmer' ? styles.activeTab : ''} onClick={() => setActiveTab('phmmer')}>phmmer</button>
-                <button className={activeTab === 'hmmscan' ? styles.activeTab : ''} onClick={() => setActiveTab('hmmscan')}>hmmscan</button>
-                <button className={activeTab === 'hmmsearch' ? styles.activeTab : ''} onClick={() => setActiveTab('hmmsearch')}>hmmsearch</button>
-            </div>
-
-            <h3 className={styles.sectionTitle}>protein sequence vs protein sequence database</h3>
-
-            {/* Sequence Input */}
-            <div className={styles.formSection}>
-                <label className={styles.label}>Sequence</label>
-                <div className={styles.sequenceInputBox}>
-                    <textarea
-                        className={styles.textarea}
-                        value={sequence}
-                        onChange={e => setSequence(e.target.value)}
-                        placeholder="Paste in your sequence, use the example, drag a file over or choose a file to upload"
-                        rows={7}
-                    />
-                    <div className={styles.sequenceInputHelp}>
-                        Paste in your sequence, use the{' '}
-                        <a href="#" onClick={handleUseExample}>example</a>, drag a file over or{' '}
-                        <a href="#" onClick={e => { e.preventDefault(); fileInputRef.current?.click(); }}>choose a file to upload</a>
-                        <input
-                            type="file"
-                            accept=".fa,.fasta,.txt,.faa,.csv"
-                            style={{ display: 'none' }}
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                        />
+        <section className={styles.pyhmmerSection}>
+            <div className={styles.leftPane}>
+                <p/>
+                {/* Sequence database */}
+                <div className={styles.formSection}>
+                    <label className={styles.label}>Sequence database</label>
+                    <select className={styles.select} value={database} onChange={e => setDatabase(e.target.value)}>
+                        {databases.map(db => (
+                            <option key={db.id} value={db.id}>{db.name}</option>
+                        ))}
+                    </select>
+                </div>
+                {/* Cut off */}
+                <div className={styles.formSection}>
+                    <label className={styles.label}>Cut off</label>
+                    <div className={styles.radioRow}>
+                        <label>
+                            <input
+                                type="radio"
+                                checked={evalueType === 'evalue'}
+                                onChange={() => setEvalueType('evalue')}
+                            />
+                            E-value
+                        </label>
+                        <label>
+                            <input
+                                type="radio"
+                                checked={evalueType === 'bitscore'}
+                                onChange={() => setEvalueType('bitscore')}
+                            />
+                            Bit Score
+                        </label>
+                    </div>
+                    <div className={styles.cutoffGrid}>
+                        <div></div>
+                        <div className={styles.cutoffHeader}>Sequence</div>
+                        <div className={styles.cutoffHeader}>Hit</div>
+                        <div className={styles.cutoffLabel}>Significance E-values</div>
+                        <input type="text" value={significanceEValueSeq}
+                               onChange={e => setSignificanceEValueSeq(e.target.value)} className={styles.input}/>
+                        <input type="text" value={significanceEValueHit}
+                               onChange={e => setSignificanceEValueHit(e.target.value)} className={styles.input}/>
+                        <div className={styles.cutoffLabel}>Report E-values</div>
+                        <input type="text" value={reportEValueSeq} onChange={e => setReportEValueSeq(e.target.value)}
+                               className={styles.input}/>
+                        <input type="text" value={reportEValueHit} onChange={e => setReportEValueHit(e.target.value)}
+                               className={styles.input}/>
                     </div>
                 </div>
-                <div className={styles.buttonRow}>
-                    <button className={styles.submitBtn} onClick={handleSubmit}>Submit</button>
-                    <button className={styles.resetBtn} type="button" onClick={() => setSequence('')}>Reset</button>
-                    <button className={styles.cleanBtn} type="button" onClick={() => setSequence('')}>Clean</button>
-                </div>
-            </div>
-
-            {/* Sequence database */}
-            <div className={styles.formSection}>
-                <label className={styles.label}>Sequence database</label>
-                <select className={styles.select} value={database} onChange={e => setDatabase(e.target.value)}>
-                    <option>Reference Proteomes (2025_01)</option>
-                    {/* Add more options as needed */}
-                </select>
-            </div>
-
-            {/* Cut off */}
-            <div className={styles.formSection}>
-                <label className={styles.label}>Cut off</label>
-                <div className={styles.radioRow}>
-                    <label>
-                        <input
-                            type="radio"
-                            checked={evalueType === 'evalue'}
-                            onChange={() => setEvalueType('evalue')}
-                        />
-                        E-value
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            checked={evalueType === 'bitscore'}
-                            onChange={() => setEvalueType('bitscore')}
-                        />
-                        Bit Score
-                    </label>
-                </div>
-                <div className={styles.cutoffGrid}>
-                    <div></div>
-                    <div className={styles.cutoffHeader}>Sequence</div>
-                    <div className={styles.cutoffHeader}>Hit</div>
-                    <div className={styles.cutoffLabel}>Significance E-values</div>
-                    <input type="text" value={significanceEValueSeq} onChange={e => setSignificanceEValueSeq(e.target.value)} className={styles.input} />
-                    <input type="text" value={significanceEValueHit} onChange={e => setSignificanceEValueHit(e.target.value)} className={styles.input} />
-                    <div className={styles.cutoffLabel}>Report E-values</div>
-                    <input type="text" value={reportEValueSeq} onChange={e => setReportEValueSeq(e.target.value)} className={styles.input} />
-                    <input type="text" value={reportEValueHit} onChange={e => setReportEValueHit(e.target.value)} className={styles.input} />
-                </div>
-            </div>
-
-            {/* Gap penalties */}
-            <div className={styles.formSection}>
-                <label className={styles.label}>Gap penalties</label>
-                <div className={styles.gapRow}>
-                    <div>
-                        <div>Open</div>
-                        <input type="text" value={gapOpen} onChange={e => setGapOpen(e.target.value)} className={styles.inputSmall} />
-                    </div>
-                    <div>
-                        <div>Extend</div>
-                        <input type="text" value={gapExtend} onChange={e => setGapExtend(e.target.value)} className={styles.inputSmall} />
-                    </div>
-                    <div>
-                        <div>Substitution scoring matrix</div>
-                        <select value={subMatrix} onChange={e => setSubMatrix(e.target.value)} className={styles.selectSmall}>
-                            <option>BLOSUM62</option>
-                            {/* Add more options as needed */}
-                        </select>
+                {/* Gap penalties */}
+                <div className={styles.formSection}>
+                    <label className={styles.label}>Gap penalties</label>
+                    <div className={styles.gapRow}>
+                        <div>
+                            <div>Open</div>
+                            <input type="text" value={gapOpen} onChange={e => setGapOpen(e.target.value)}
+                                   className={styles.inputSmall}/>
+                        </div>
+                        <div>
+                            <div>Extend</div>
+                            <input type="text" value={gapExtend} onChange={e => setGapExtend(e.target.value)}
+                                   className={styles.inputSmall}/>
+                        </div>
+                        {/*<div>*/}
+                        {/*    <div>Substitution scoring matrix</div>*/}
+                        {/*    <select value={subMatrix} onChange={e => setSubMatrix(e.target.value)} className={styles.selectSmall}>*/}
+                        {/*        <option>BLOSUM62</option>*/}
+                        {/*        /!* Add more options as needed *!/*/}
+                        {/*    </select>*/}
+                        {/*</div>*/}
                     </div>
                 </div>
-            </div>
 
-            {/* Filter */}
-            <div className={styles.formSection}>
-                <label className={styles.label}>Filter</label>
-                <div>
-                    <label>
-                        <input
-                            type="checkbox"
-                            checked={biasFilter}
-                            onChange={e => setBiasFilter(e.target.checked)}
+            </div>
+            <div className={styles.rightPane}>
+                {/*<h3 className={styles.sectionTitle}>protein sequence vs protein sequence database</h3>*/}
+                {/* Sequence Input */}
+                <div className={styles.formSection}>
+                    <label className={styles.label}>Sequence</label>
+                    <div className={styles.sequenceInputBox}>
+                        <textarea
+                            className={styles.textarea}
+                            value={sequence}
+                            onChange={e => setSequence(e.target.value)}
+                            placeholder="Paste in your sequence, use the example, drag a file over or choose a file to upload"
+                            rows={7}
                         />
-                        Turn off bias composition filter
-                    </label>
+                        <div className={styles.sequenceInputHelp}>
+                            Paste in your sequence, use the{' '}
+                            <a href="#" onClick={handleUseExample}>example</a>, drag a file over or{' '}
+                            <a href="#" onClick={e => {
+                                e.preventDefault();
+                                fileInputRef.current?.click();
+                            }}>choose a file to upload</a>
+                            <input
+                                type="file"
+                                accept=".fa,.fasta,.txt,.faa,.csv"
+                                style={{display: 'none'}}
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                            />
+                        </div>
+                    </div>
+                    <div className={styles.buttonRow}>
+                        <button className={styles.submitBtn} onClick={handleSubmit}>Submit</button>
+                        <button className={styles.resetBtn} type="button" onClick={() => setSequence('')}>Reset</button>
+                        <button className={styles.cleanBtn} type="button" onClick={() => setSequence('')}>Clean</button>
+                    </div>
+                </div>
+                {/* Results Table */}
+                <div className={styles.formSection}>
+                    <PyhmmerResultsTable results={results} loading={loading} error={error}/>
                 </div>
             </div>
-
-            {/* Results Table */}
-            <div className={styles.formSection}>
-                <PyhmmerResultsTable results={results} loading={loading} error={error} />
-            </div>
-        </div>
+        </section>
     );
 };
 
