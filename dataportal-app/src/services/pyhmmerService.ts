@@ -6,7 +6,7 @@ import {
 } from '../interfaces/Pyhmmer';
 import { ApiService } from './api';
 
-const API_BASE = '/api/pyhmmer';
+const API_BASE = '/pyhmmer';
 
 export class PyhmmerService {
     static async getDatabases(): Promise<PyhmmerDatabase[]> {

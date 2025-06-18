@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import styles from './PyhmmerSearchForm.module.scss';
 import { PyhmmerService } from '../../../../services/pyhmmerService';
 import PyhmmerResultsTable, { PyhmmerResult } from '../PyhmmerResultsTable/PyhmmerResultsTable';
+import {EXAMPLE_SEQUENCE} from "../../../../utils/appConstants";
 
 const PyhmmerSearchForm: React.FC = () => {
     const [activeTab, setActiveTab] = useState('phmmer');
     const [evalueType, setEvalueType] = useState<'evalue' | 'bitscore'>('evalue');
     const [sequence, setSequence] = useState('');
-    const [database, setDatabase] = useState('Reference Proteomes (2025_01)');
+    const [database, setDatabase] = useState('bu_all');
     const [significanceEValueSeq, setSignificanceEValueSeq] = useState('0.01');
     const [significanceEValueHit, setSignificanceEValueHit] = useState('0.03');
     const [reportEValueSeq, setReportEValueSeq] = useState('1');
@@ -21,6 +22,8 @@ const PyhmmerSearchForm: React.FC = () => {
     const [results, setResults] = useState<PyhmmerResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | undefined>(undefined);
+
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Helper to poll for job status
     const pollJobStatus = async (jobId: string, maxAttempts = 20, delay = 1500) => {
@@ -73,6 +76,24 @@ const PyhmmerSearchForm: React.FC = () => {
         }
     };
 
+    // Handler for using the example sequence
+    const handleUseExample = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setSequence(EXAMPLE_SEQUENCE);
+    };
+
+    // Handler for file upload
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setSequence(event.target?.result as string || '');
+            };
+            reader.readAsText(file);
+        }
+    };
+
     return (
         <div className={styles.pyhmmerFormWrapper}>
             {/* Tabs */}
@@ -96,7 +117,16 @@ const PyhmmerSearchForm: React.FC = () => {
                         rows={7}
                     />
                     <div className={styles.sequenceInputHelp}>
-                        Paste in your sequence, use the <a href="#">example</a>, drag a file over or <a href="#">choose a file to upload</a>
+                        Paste in your sequence, use the{' '}
+                        <a href="#" onClick={handleUseExample}>example</a>, drag a file over or{' '}
+                        <a href="#" onClick={e => { e.preventDefault(); fileInputRef.current?.click(); }}>choose a file to upload</a>
+                        <input
+                            type="file"
+                            accept=".fa,.fasta,.txt,.faa,.csv"
+                            style={{ display: 'none' }}
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                        />
                     </div>
                 </div>
                 <div className={styles.buttonRow}>

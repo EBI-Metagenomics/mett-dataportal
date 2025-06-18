@@ -36,6 +36,9 @@ export const FACET_INITIAL_VISIBLE_CNT = 10;
 export const FACET_STEP_CNT = 10;
 export const TABLE_MAX_COLUMNS = 15;
 
+// Example sequence constant
+export const EXAMPLE_SEQUENCE = `>Example protein sequence\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV`;
+
 export const FACET_ORDER = [
     'essentiality',
     'has_amr_info',
