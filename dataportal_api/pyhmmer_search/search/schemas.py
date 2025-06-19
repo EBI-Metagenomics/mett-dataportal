@@ -1,5 +1,6 @@
 import io
-from typing import Literal, Optional, List
+import json
+from typing import Literal, Optional, List, Tuple
 
 from django_celery_results.models import TaskResult
 from ninja import ModelSchema
@@ -10,6 +11,66 @@ from pydantic_core import PydanticCustomError
 from pyhmmer.easel import SequenceFile
 
 from .models import HmmerJob, Database
+
+
+# Enhanced Alignment Models based on pyhmmer.plan7.Alignment
+class PyhmmerAlignmentSchema(Schema):
+    """Schema for pyhmmer.plan7.Alignment data"""
+    hmm_name: str = Field(..., description="Name of the query HMM")
+    hmm_accession: Optional[str] = Field(None, description="Accession of the query HMM")
+    hmm_from: int = Field(..., description="Start coordinate in the query HMM")
+    hmm_to: int = Field(..., description="End coordinate in the query HMM")
+    hmm_length: Optional[int] = Field(None, description="Length of the query HMM in the alignment")
+    hmm_sequence: str = Field(..., description="Sequence of the query HMM in the alignment")
+
+    target_name: str = Field(..., description="Name of the target sequence")
+    target_from: int = Field(..., description="Start coordinate in the target sequence")
+    target_to: int = Field(..., description="End coordinate in the target sequence")
+    target_length: Optional[int] = Field(None, description="Length of the target sequence in the alignment")
+    target_sequence: str = Field(..., description="Sequence of the target sequence in the alignment")
+
+    identity_sequence: str = Field(..., description="Identity sequence between query and target")
+    posterior_probabilities: Optional[str] = Field(None, description="Posterior probability annotation")
+
+
+class LegacyAlignmentDisplay(Schema):
+    """Legacy alignment display for backward compatibility"""
+    hmmfrom: int
+    hmmto: int
+    sqfrom: int
+    sqto: int
+    model: str
+    aseq: str
+    mline: str
+    ppline: Optional[str] = None
+    identity: Tuple[float, int]
+    similarity: Tuple[float, int]
+
+
+class DomainSchema(Schema):
+    """Enhanced domain schema with both new and legacy alignment support"""
+    env_from: Optional[int] = Field(None, description="Start coordinate of domain envelope")
+    env_to: Optional[int] = Field(None, description="End coordinate of domain envelope")
+    bitscore: float = Field(..., description="Bit score of the domain")
+    ievalue: float = Field(..., description="Independent E-value of the domain")
+    cevalue: Optional[float] = Field(None, description="Conditional E-value of the domain")
+    bias: Optional[float] = Field(None, description="Bias score contribution")
+    strand: Optional[str] = Field(None, description="Strand where domain is located (+/-)")
+
+    # Alignment data
+    alignment: Optional[PyhmmerAlignmentSchema] = Field(None, description="PyHMMER alignment data")
+    alignment_display: Optional[LegacyAlignmentDisplay] = Field(None, description="Legacy alignment display")
+
+
+class HitSchema(Schema):
+    """Enhanced hit schema with better field descriptions"""
+    target: str = Field(..., description="Target sequence name")
+    description: str = Field(..., description="Target sequence description")
+    evalue: str = Field(..., description="E-value formatted as string")
+    score: str = Field(..., description="Bit score formatted as string")
+    num_hits: Optional[int] = Field(None, description="Total number of hits")
+    num_significant: Optional[int] = Field(None, description="Number of significant hits")
+    domains: List[DomainSchema] = Field(..., description="List of domains for this hit")
 
 
 # Response Schemas

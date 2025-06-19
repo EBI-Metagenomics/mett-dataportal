@@ -1,19 +1,18 @@
 import json
 import logging
+from typing import Optional
 
 from Bio import pairwise2
-from Bio.pairwise2 import format_alignment
 from celery import shared_task
 from django.utils import timezone
 from django_celery_results.models import TaskResult
 from pyhmmer.easel import DigitalSequenceBlock
 from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
 from pyhmmer.plan7 import Pipeline, Background, Builder
-from typing import Dict, Any, List, Optional, Tuple
-from pydantic import BaseModel, Field
 
 from dataportal import settings
 from .models import HmmerJob
+from .schemas import PyhmmerAlignmentSchema, LegacyAlignmentDisplay, DomainSchema, HitSchema
 
 logger = logging.getLogger(__name__)
 
@@ -32,37 +31,68 @@ def _log_query_sequences(raw_bytes):
         logger.error(f"Error logging query sequences: {e}")
 
 
-class AlignmentDisplay(BaseModel):
-    hmmfrom: int
-    hmmto: int
-    sqfrom: int
-    sqto: int
-    model: str
-    aseq: str
-    mline: str
-    ppline: Optional[str] = None
-    identity: Tuple[float, int]
-    similarity: Tuple[float, int]
+def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
+    """Extract alignment data from pyhmmer.plan7.Alignment object"""
+    try:
+        if alignment is None:
+            return None
+
+        return PyhmmerAlignmentSchema(
+            hmm_name=alignment.hmm_name.decode() if hasattr(alignment.hmm_name, 'decode') else str(alignment.hmm_name),
+            hmm_accession=alignment.hmm_accession.decode() if alignment.hmm_accession and hasattr(
+                alignment.hmm_accession, 'decode') else str(
+                alignment.hmm_accession) if alignment.hmm_accession else None,
+            hmm_from=alignment.hmm_from,
+            hmm_to=alignment.hmm_to,
+            hmm_length=getattr(alignment, 'hmm_length', None),
+            hmm_sequence=alignment.hmm_sequence,
+
+            target_name=alignment.target_name.decode() if hasattr(alignment.target_name, 'decode') else str(
+                alignment.target_name),
+            target_from=alignment.target_from,
+            target_to=alignment.target_to,
+            target_length=getattr(alignment, 'target_length', None),
+            target_sequence=alignment.target_sequence,
+
+            identity_sequence=alignment.identity_sequence,
+            posterior_probabilities=getattr(alignment, 'posterior_probabilities', None),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to extract pyhmmer alignment: {e}")
+        return None
 
 
-class Domain(BaseModel):
-    env_from: Optional[int]
-    env_to: Optional[int]
-    bitscore: float
-    ievalue: float
-    cevalue: Optional[float]
-    bias: Optional[float]
-    alignment_display: Optional[AlignmentDisplay] = None
+def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDisplay]:
+    """Create legacy alignment display from pyhmmer alignment for backward compatibility"""
+    try:
+        if alignment is None:
+            return None
 
+        # Calculate identity
+        matches = sum(1 for a, b in zip(alignment.hmm_sequence, alignment.target_sequence)
+                      if a == b and a != '-')
+        min_len = min(len(alignment.hmm_sequence), len(alignment.target_sequence))
+        identity_pct = matches / min_len if min_len > 0 else 0
 
-class Hit(BaseModel):
-    target: str
-    description: str
-    evalue: Any  # will be formatted as string
-    score: Any   # will be formatted as string
-    num_hits: Optional[int]
-    num_significant: Optional[int]
-    domains: List[Domain]
+        # Create match line
+        mline = ''.join('|' if a == b and a != '-' else ' '
+                        for a, b in zip(alignment.hmm_sequence, alignment.target_sequence))
+
+        return LegacyAlignmentDisplay(
+            hmmfrom=alignment.hmm_from,
+            hmmto=alignment.hmm_to,
+            sqfrom=alignment.target_from,
+            sqto=alignment.target_to,
+            model=alignment.hmm_sequence,
+            aseq=alignment.target_sequence,
+            mline=mline,
+            ppline=getattr(alignment, 'posterior_probabilities', None),
+            identity=(identity_pct, matches),
+            similarity=(identity_pct, matches),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to create legacy alignment display: {e}")
+        return None
 
 
 @shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
@@ -146,78 +176,58 @@ def run_search(self, job_id: str):
             domains = []
             if hasattr(hit, "domains") and hit.domains:
                 for domain in hit.domains:
+                    # Extract alignment from pyhmmer.plan7.Alignment
                     alignment = getattr(domain, "alignment", None)
-                    if alignment is not None:
-                        try:
-                            pretty_alignment = alignment.pretty()
-                            sqfrom = getattr(alignment, "sqfrom", None)
-                            sqto = getattr(alignment, "sqto", None)
-                            hmmfrom = getattr(alignment, "hmmfrom", None)
-                            hmmto = getattr(alignment, "hmmto", None)
-                            model = getattr(alignment, "model", None)
-                            aseq = getattr(alignment, "aseq", None)
-                            mline = getattr(alignment, "mline", None)
-                            ppline = getattr(alignment, "ppline", None)
-                            matches = sum(1 for a, b in zip(model, aseq) if a == b and a != '-') if model and aseq else 0
-                            min_len = min(len(model), len(aseq)) if model and aseq else 0
-                            identity_pct = matches / min_len if min_len else 0
-                            alignment_display = AlignmentDisplay(
-                                hmmfrom=hmmfrom,
-                                hmmto=hmmto,
-                                sqfrom=sqfrom,
-                                sqto=sqto,
-                                model=model,
-                                aseq=aseq,
-                                mline=mline,
-                                ppline=ppline,
-                                identity=(identity_pct, matches),
-                                similarity=(identity_pct, matches),
-                            )
-                        except Exception:
-                            alignment_display = None
-                    else:
-                        alignment_display = None
-                    domain_obj = Domain(
+
+                    # Extract both new and legacy alignment formats
+                    pyhmmer_alignment = extract_pyhmmer_alignment(alignment)
+                    legacy_alignment = create_legacy_alignment_display(alignment)
+
+                    domain_obj = DomainSchema(
                         env_from=domain.env_from,
                         env_to=domain.env_to,
                         bitscore=domain.score,
                         ievalue=domain.i_evalue,
                         cevalue=getattr(domain, "c_evalue", None),
                         bias=getattr(domain, "bias", None),
-                        alignment_display=alignment_display,
+                        strand=getattr(domain, "strand", None),
+                        alignment=pyhmmer_alignment,
+                        alignment_display=legacy_alignment,
                     )
                     domains.append(domain_obj)
             else:
+                # For hits without domains (phmmer case), try to create alignment
                 target_seq = target_sequences.get(hit.name.decode())
-                alignment_display = None
+                pyhmmer_alignment = None
+                legacy_alignment = None
+
                 if target_seq is not None:
                     try:
                         query_seq_str = str(sequence)
-                        target_seq_str = str(target_seq.sequence.decode())
-                        logger.info(f"Aligning query ({len(query_seq_str)}) to target ({len(target_seq_str)}) for hit {hit.name.decode()}")
-                        alignment_display = parse_biopython_alignment(query_seq_str, target_seq_str)
-                        if alignment_display:
-                            logger.info(f"Alignment for {hit.name.decode()} successful. Alignment preview:\n{alignment_display.model[:50]}...")
-                        else:
-                            logger.warning(f"No alignment produced for {hit.name.decode()}.")
+                        target_seq_str = str(target_seq.sequence)
+                        logger.info(f"Creating Biopython alignment for hit {hit.name.decode()}")
+                        legacy_alignment = parse_biopython_alignment(query_seq_str, target_seq_str)
+                        if legacy_alignment:
+                            logger.info(f"Biopython alignment for {hit.name.decode()} successful")
                     except Exception as e:
-                        logger.warning(f"Alignment failed for {hit.name.decode()}: {e}")
-                        alignment_display = None
-                else:
-                    logger.warning(f"Target sequence not found for hit {hit.name.decode()}")
-                domain_obj = Domain(
+                        logger.warning(f"Biopython alignment failed for {hit.name.decode()}: {e}")
+
+                domain_obj = DomainSchema(
                     env_from=getattr(hit, "envelope_from", None),
                     env_to=getattr(hit, "envelope_to", None),
                     bitscore=hit.score,
                     ievalue=hit.evalue,
                     cevalue=getattr(hit, "c_evalue", None),
                     bias=getattr(hit, "bias", None),
-                    alignment_display=alignment_display,
+                    strand=None,
+                    alignment=pyhmmer_alignment,
+                    alignment_display=legacy_alignment,
                 )
                 domains.append(domain_obj)
-            hit_obj = Hit(
+
+            hit_obj = HitSchema(
                 target=hit.name.decode(),
-                description=hit.description.decode(),
+                description=hit.description.decode() if hit.description else "",
                 evalue=f"{hit.evalue:.2e}",
                 score=f"{hit.score:.2f}",
                 num_hits=len(hit_list) or None,
@@ -225,13 +235,13 @@ def run_search(self, job_id: str):
                 domains=domains
             )
             if (
-                job.threshold == HmmerJob.ThresholdChoices.EVALUE
-                and hit.evalue < job.threshold_value
+                    job.threshold == HmmerJob.ThresholdChoices.EVALUE
+                    and hit.evalue < job.threshold_value
             ):
                 results.append(hit_obj)
             elif (
-                job.threshold == HmmerJob.ThresholdChoices.BITSCORE
-                and hit.score > job.threshold_value
+                    job.threshold == HmmerJob.ThresholdChoices.BITSCORE
+                    and hit.score > job.threshold_value
             ):
                 results.append(hit_obj)
 
@@ -305,42 +315,53 @@ def test_task(self):
     logger.info(f">>> Completed test task {task_id}")
     return "OK"
 
-def parse_biopython_alignment(query: str, target: str) -> Optional[AlignmentDisplay]:
-    alignments = pairwise2.align.globalxx(query, target)
-    if not alignments:
+
+def parse_biopython_alignment(query: str, target: str) -> Optional[LegacyAlignmentDisplay]:
+    """Create legacy alignment display using Biopython for phmmer cases"""
+    try:
+        alignments = pairwise2.align.globalxx(query, target)
+        if not alignments:
+            return None
+        aln = alignments[0]
+        aligned_query, aligned_target, score, begin, end = aln
+        mline = ''.join('|' if a == b and a != '-' else ' ' for a, b in zip(aligned_query, aligned_target))
+
+        def first_non_gap(seq):
+            for i, c in enumerate(seq):
+                if c != '-':
+                    return i
+            return 0
+
+        def last_non_gap(seq):
+            for i in range(len(seq) - 1, -1, -1):
+                if seq[i] != '-':
+                    return i
+            return len(seq) - 1
+
+        hmmfrom = first_non_gap(aligned_query) + 1
+        hmmto = last_non_gap(aligned_query) + 1
+        sqfrom = first_non_gap(aligned_target) + 1
+        sqto = last_non_gap(aligned_target) + 1
+        matches = sum(1 for a, b in zip(aligned_query, aligned_target) if a == b and a != '-')
+        min_len = min(len(query), len(target))
+        identity_pct = matches / min_len if min_len else 0
+
+        return LegacyAlignmentDisplay(
+            hmmfrom=hmmfrom,
+            hmmto=hmmto,
+            sqfrom=sqfrom,
+            sqto=sqto,
+            model=aligned_query,
+            aseq=aligned_target,
+            mline=mline,
+            ppline=None,
+            identity=(identity_pct, matches),
+            similarity=(identity_pct, matches),
+        )
+    except Exception as e:
+        logger.warning(f"Biopython alignment parsing failed: {e}")
         return None
-    aln = alignments[0]
-    aligned_query, aligned_target, score, begin, end = aln
-    mline = ''.join('|' if a == b and a != '-' else ' ' for a, b in zip(aligned_query, aligned_target))
-    def first_non_gap(seq):
-        for i, c in enumerate(seq):
-            if c != '-':
-                return i
-        return 0
-    def last_non_gap(seq):
-        for i in range(len(seq)-1, -1, -1):
-            if seq[i] != '-':
-                return i
-        return len(seq) - 1
-    hmmfrom = first_non_gap(aligned_query) + 1
-    hmmto = last_non_gap(aligned_query) + 1
-    sqfrom = first_non_gap(aligned_target) + 1
-    sqto = last_non_gap(aligned_target) + 1
-    matches = sum(1 for a, b in zip(aligned_query, aligned_target) if a == b and a != '-')
-    min_len = min(len(query), len(target))
-    identity_pct = matches / min_len if min_len else 0
-    return AlignmentDisplay(
-        hmmfrom=hmmfrom,
-        hmmto=hmmto,
-        sqfrom=sqfrom,
-        sqto=sqto,
-        model=aligned_query,
-        aseq=aligned_target,
-        mline=mline,
-        ppline=None,
-        identity=(identity_pct, matches),
-        similarity=(identity_pct, matches),
-    )
+
 
 @shared_task
 def cleanup_old_tasks():

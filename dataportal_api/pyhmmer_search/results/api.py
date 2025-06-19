@@ -20,6 +20,7 @@ from .schemas import (
     DomainDetailsResponseSchema,
     JobDetailsResponseSchema,
     ResultQuerySchema,
+    AlignmentDetailsResponseSchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -139,9 +140,73 @@ def get_domain_details(request, id: uuid.UUID, target: str):
                 break
         if not hit:
             return {"status": "NOT_FOUND", "target": target, "domains": None}
-        # Return the domains/alignment details (assuming 'domains' or similar key)
-        domains = hit.get("domains") or hit.get("alignments") or []
+        # Return the domains/alignment details
+        domains = hit.get("domains") or []
         return {"status": "SUCCESS", "target": target, "domains": domains}
     except Exception as e:
         logger.error(f"Error in get_domain_details: {str(e)}", exc_info=True)
+        raise HttpError(500, f"Internal server error: {str(e)}")
+
+
+@pyhmmer_router_result.get("/{uuid:id}/alignment", response=AlignmentDetailsResponseSchema)
+def get_alignment_details(request, id: uuid.UUID, target: str, domain_index: int = 0):
+    """Get detailed alignment information for a specific domain"""
+    from celery.result import AsyncResult
+
+    try:
+        logger.info(f"Fetching alignment details for job {id}, target {target}, domain {domain_index}")
+        job = get_object_or_404(HmmerJob, id=id)
+        if not job.task:
+            return {"status": "PENDING", "target": target, "domain_index": domain_index, "alignment": None,
+                    "legacy_alignment": None}
+
+        async_result = AsyncResult(job.task.task_id)
+        if async_result.status != "SUCCESS":
+            return {"status": async_result.status, "target": target, "domain_index": domain_index, "alignment": None,
+                    "legacy_alignment": None}
+
+        raw_result = job.task.result
+        try:
+            task_result_data = (
+                json.loads(raw_result) if isinstance(raw_result, str) else raw_result
+            )
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to decode JSON result: {raw_result}")
+            task_result_data = raw_result
+
+        # Find the hit for the given target
+        hit = None
+        for h in task_result_data or []:
+            if (
+                    h.get("target") == target
+                    or h.get("target_name") == target
+                    or h.get("name") == target
+            ):
+                hit = h
+                break
+
+        if not hit:
+            return {"status": "NOT_FOUND", "target": target, "domain_index": domain_index, "alignment": None,
+                    "legacy_alignment": None}
+
+        # Get the specific domain
+        domains = hit.get("domains") or []
+        if domain_index >= len(domains):
+            return {"status": "DOMAIN_NOT_FOUND", "target": target, "domain_index": domain_index, "alignment": None,
+                    "legacy_alignment": None}
+
+        domain = domains[domain_index]
+        alignment = domain.get("alignment")
+        legacy_alignment = domain.get("alignment_display")
+
+        return {
+            "status": "SUCCESS",
+            "target": target,
+            "domain_index": domain_index,
+            "alignment": alignment,
+            "legacy_alignment": legacy_alignment
+        }
+
+    except Exception as e:
+        logger.error(f"Error in get_alignment_details: {str(e)}", exc_info=True)
         raise HttpError(500, f"Internal server error: {str(e)}")
