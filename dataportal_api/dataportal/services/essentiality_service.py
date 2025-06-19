@@ -6,9 +6,12 @@ from elasticsearch_dsl import Search
 
 from dataportal.utils.constants import (
     GENE_ESSENTIALITY,
-    GENE_FIELD_START, GENE_FIELD_END,
-    ES_FIELD_LOCUS_TAG, FIELD_SEQ_ID,
-    ES_FIELD_ISOLATE_NAME, ES_INDEX_GENE,
+    GENE_FIELD_START,
+    GENE_FIELD_END,
+    ES_FIELD_LOCUS_TAG,
+    FIELD_SEQ_ID,
+    ES_FIELD_ISOLATE_NAME,
+    ES_INDEX_GENE,
 )
 
 logger = logging.getLogger(__name__)
@@ -21,7 +24,9 @@ class EssentialityService:
         self.limit = limit
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
-    async def load_essentiality_data_by_strain(self) -> Dict[str, Dict[str, Dict[str, List[Dict[str, str]]]]]:
+    async def load_essentiality_data_by_strain(
+        self,
+    ) -> Dict[str, Dict[str, Dict[str, List[Dict[str, str]]]]]:
         """Load essentiality data into cache from Elasticsearch."""
         if self.essentiality_cache:
             return self.essentiality_cache
@@ -29,10 +34,20 @@ class EssentialityService:
         logger.info("Loading essentiality data into cache from Elasticsearch...")
 
         try:
-            s = Search(index=self.INDEX_NAME).query(
-                "exists", field=GENE_ESSENTIALITY
-            ).source([ES_FIELD_ISOLATE_NAME, FIELD_SEQ_ID, ES_FIELD_LOCUS_TAG, GENE_FIELD_START, GENE_FIELD_END,
-                      GENE_ESSENTIALITY])[:10000]
+            s = (
+                Search(index=self.INDEX_NAME)
+                .query("exists", field=GENE_ESSENTIALITY)
+                .source(
+                    [
+                        ES_FIELD_ISOLATE_NAME,
+                        FIELD_SEQ_ID,
+                        ES_FIELD_LOCUS_TAG,
+                        GENE_FIELD_START,
+                        GENE_FIELD_END,
+                        GENE_ESSENTIALITY,
+                    ]
+                )[:10000]
+            )
 
             response = s.execute()
             cache_data = {}
@@ -55,7 +70,7 @@ class EssentialityService:
                     ES_FIELD_LOCUS_TAG: locus_tag,
                     GENE_FIELD_START: start,
                     GENE_FIELD_END: end,
-                    GENE_ESSENTIALITY: essentiality
+                    GENE_ESSENTIALITY: essentiality,
                 }
 
             self.essentiality_cache.update(cache_data)
@@ -67,18 +82,24 @@ class EssentialityService:
             logger.error(f"Error loading essentiality data: {e}")
             return {}
 
-    async def get_essentiality_data_by_strain_and_ref(self, isolate_name: str, ref_name: str) -> Dict[str, Dict]:
+    async def get_essentiality_data_by_strain_and_ref(
+        self, isolate_name: str, ref_name: str
+    ) -> Dict[str, Dict]:
         """Retrieve essentiality data for a given isolate and reference name."""
 
         if not self.essentiality_cache:
             await self.load_essentiality_data_by_strain()
 
-        logger.info(f"Fetching essentiality for isolate: {isolate_name}, reference: {ref_name}")
+        logger.info(
+            f"Fetching essentiality for isolate: {isolate_name}, reference: {ref_name}"
+        )
         isolate_data = self.essentiality_cache.get(isolate_name, {})
         contig_data = isolate_data.get(ref_name, {})
 
         if not contig_data:
-            logger.warning(f"No essentiality data found for isolate '{isolate_name}' and reference '{ref_name}'")
+            logger.warning(
+                f"No essentiality data found for isolate '{isolate_name}' and reference '{ref_name}'"
+            )
             return {}
 
         response = {}
@@ -93,7 +114,7 @@ class EssentialityService:
                 ES_FIELD_LOCUS_TAG: locus_tag,
                 GENE_FIELD_START: start,
                 GENE_FIELD_END: end,
-                GENE_ESSENTIALITY: essentiality
+                GENE_ESSENTIALITY: essentiality,
             }
 
         return response

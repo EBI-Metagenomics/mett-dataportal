@@ -31,12 +31,15 @@ class FtpFaaSource(FaaSource):
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
             self.strain_ids = [
-                a['href'].rstrip('/')
-                for a in soup.find_all('a', href=True)
-                if re.match(r'^[A-Z]{2}_.+/$', a['href'])
+                a["href"].rstrip("/")
+                for a in soup.find_all("a", href=True)
+                if re.match(r"^[A-Z]{2}_.+/$", a["href"])
             ]
             return [
-                (strain_id, f"{self.base_url}/{strain_id}/functional_annotation/prokka/{strain_id}.faa")
+                (
+                    strain_id,
+                    f"{self.base_url}/{strain_id}/functional_annotation/prokka/{strain_id}.faa",
+                )
                 for strain_id in self.strain_ids
             ]
         except requests.RequestException as e:
@@ -90,7 +93,9 @@ class SftpFaaSource(FaaSource):
                     subfolders = sftp.listdir(base_dir)
                     print(f"   └─ Found {len(subfolders)} subfolders")
                     for sub in subfolders:
-                        faa_path = f"{base_dir}/{sub}/functional_annotation/prokka/{sub}.faa"
+                        faa_path = (
+                            f"{base_dir}/{sub}/functional_annotation/prokka/{sub}.faa"
+                        )
                         try:
                             sftp.stat(faa_path)
                             self.faa_files.append((sub, faa_path))
@@ -114,8 +119,8 @@ class SftpFaaSource(FaaSource):
         try:
             print(f"⬇️ Fetching: {path}")
             sftp = self._get_sftp_client()
-            with sftp.file(path, 'r') as remote_file:
-                content = remote_file.read().decode('utf-8')
+            with sftp.file(path, "r") as remote_file:
+                content = remote_file.read().decode("utf-8")
             print(f"✅ Done: {path}")
             return content
         except Exception as e:
@@ -131,8 +136,13 @@ class SftpFaaSource(FaaSource):
 
 
 class FaaConsolidator:
-    def __init__(self, sources, output_dir="output", output_filename="all_proteins_codon_both_species.faa",
-                 max_workers=3):
+    def __init__(
+        self,
+        sources,
+        output_dir="output",
+        output_filename="all_proteins_codon_both_species.faa",
+        max_workers=3,
+    ):
         self.sources = sources
         self.output_dir = Path(output_dir)
         self.output_file = self.output_dir / output_filename
@@ -190,8 +200,8 @@ if __name__ == "__main__":
             "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/spire_uniformis_mags_mettannotator_results",
             "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/mgnify_uniformis_mags_mettannotator_results",
             "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/mgnify_vulgatus_mags_mettannotator_results",
-            "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/spire_vulgatus_mags_mettannotator_results2"
-        ]
+            "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/spire_vulgatus_mags_mettannotator_results2",
+        ],
     )
 
     consolidator = FaaConsolidator(
@@ -199,7 +209,7 @@ if __name__ == "__main__":
             FtpFaaSource(ftp_url),
             sftp_source,
         ],
-        max_workers=3
+        max_workers=3,
     )
 
     consolidator.consolidate()

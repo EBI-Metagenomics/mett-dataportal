@@ -27,7 +27,9 @@ def deduplicate_faa(input_faa, output_faa, type_strains=None):
                 }
             else:
                 dedup_map[seq_hash]["meta"].append(meta_entry)
-                if not dedup_map[seq_hash]["is_type"] and any(ts in acc for ts in type_strains):
+                if not dedup_map[seq_hash]["is_type"] and any(
+                    ts in acc for ts in type_strains
+                ):
                     dedup_map[seq_hash]["rep"] = record
                     dedup_map[seq_hash]["is_type"] = True
 

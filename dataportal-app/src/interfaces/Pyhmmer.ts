@@ -5,6 +5,11 @@ export interface PyhmmerDatabase {
     order?: number;
 }
 
+export interface PyhmmerMXChoice {
+    value: string;
+    label: string;
+}
+
 export interface PyhmmerResult {
     query: string;
     target: string;

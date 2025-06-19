@@ -96,4 +96,3 @@ KEYWORD_SORT_FIELDS = {
 UNKNOWN_ESSENTIALITY = "Unknown"
 
 # Hmmer Constants
-

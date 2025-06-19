@@ -24,7 +24,7 @@ def populate_initial_databases(apps, schema_editor):
                 "version": "1.0",
                 "release_date": datetime.date.today(),
                 "order": 0,
-            }
+            },
         )
 
 

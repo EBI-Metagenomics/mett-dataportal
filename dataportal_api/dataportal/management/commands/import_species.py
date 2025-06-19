@@ -13,6 +13,7 @@ ES_PASSWORD = os.getenv("ES_PASSWORD")
 # Establish Elasticsearch connection
 connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 
+
 class Command(BaseCommand):
     help = "Imports species data from a CSV file into Elasticsearch using elasticsearch-dsl."
 
@@ -39,14 +40,21 @@ class Command(BaseCommand):
                 scientific_name=row.scientific_name,
                 common_name=row.common_name if pd.notna(row.common_name) else "",
                 acronym=row.acronym if pd.notna(row.acronym) else "",
-                taxonomy_id=row.taxonomy_id
+                taxonomy_id=row.taxonomy_id,
             )
             for row in species_df.itertuples(index=False)
         ]
 
         # Bulk index species data
         if species_docs:
-            bulk(connections.get_connection(), (doc.to_dict(include_meta=True) for doc in species_docs))
-            self.stdout.write(self.style.SUCCESS(f"Successfully indexed {len(species_docs)} species records into Elasticsearch."))
+            bulk(
+                connections.get_connection(),
+                (doc.to_dict(include_meta=True) for doc in species_docs),
+            )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Successfully indexed {len(species_docs)} species records into Elasticsearch."
+                )
+            )
         else:
             self.stdout.write(self.style.WARNING("No records to index."))

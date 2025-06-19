@@ -16,10 +16,7 @@ ES_PASSWORD = os.getenv("ES_PASSWORD")
 # Establish Elasticsearch connection
 connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 
-SPECIES_ACRONYM_MAPPING = {
-    "Bacteroides uniformis": "BU",
-    "Phocaeicola vulgatus": "PV"
-}
+SPECIES_ACRONYM_MAPPING = {"Bacteroides uniformis": "BU", "Phocaeicola vulgatus": "PV"}
 
 
 class Command(BaseCommand):
@@ -72,7 +69,9 @@ class Command(BaseCommand):
 
         with ThreadPoolExecutor(max_workers=1) as executor:  # Avoid overload
             futures = [
-                executor.submit(self.download_and_process_file, ftp, file, prefix_mapping)
+                executor.submit(
+                    self.download_and_process_file, ftp, file, prefix_mapping
+                )
                 for file in fasta_files
             ]
 
@@ -83,7 +82,11 @@ class Command(BaseCommand):
                     self.stdout.write(f"Error processing file: {e}")
 
         ftp.quit()
-        self.stdout.write(self.style.SUCCESS("Strain and contig data successfully indexed into Elasticsearch."))
+        self.stdout.write(
+            self.style.SUCCESS(
+                "Strain and contig data successfully indexed into Elasticsearch."
+            )
+        )
 
     def download_and_process_file(self, ftp, file, prefix_mapping):
         try:
@@ -91,13 +94,17 @@ class Command(BaseCommand):
             isolate_name = prefix_mapping.get(file)
 
             if not isolate_name:
-                self.stdout.write(f"No matching isolate found for assembly {assembly_name}")
+                self.stdout.write(
+                    f"No matching isolate found for assembly {assembly_name}"
+                )
                 return
 
             # Determine species name
             species_acronym, species_name = self.get_species_info(isolate_name)
             if not species_name:
-                self.stdout.write(f"No matching species found for isolate {isolate_name}")
+                self.stdout.write(
+                    f"No matching species found for isolate {isolate_name}"
+                )
                 return
 
             self.stdout.write(f"Processing strain {isolate_name} ...")
@@ -135,7 +142,9 @@ class Command(BaseCommand):
 
             # Save strain document to Elasticsearch
             strain_doc.save()
-            self.stdout.write(f"Indexed strain {isolate_name} with {len(contigs)} contigs and accession {assembly_accession}.")
+            self.stdout.write(
+                f"Indexed strain {isolate_name} with {len(contigs)} contigs and accession {assembly_accession}."
+            )
 
             # Clean up local file
             os.remove(local_file_path)
@@ -144,7 +153,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Error processing {file}: {e}")
 
     def get_species_info(self, isolate_name):
-        """ Extract species acronym and species name from isolate name. """
+        """Extract species acronym and species name from isolate name."""
         species_acronym = isolate_name.split("_")[0] if "_" in isolate_name else None
         species_mapping = {
             "BU": "Bacteroides uniformis",
@@ -160,7 +169,9 @@ class Command(BaseCommand):
         for attempt in range(retries):
             try:
                 if attempt > 0:
-                    self.stdout.write(f"Reconnecting and retrying download for {file} (Attempt {attempt + 1})...")
+                    self.stdout.write(
+                        f"Reconnecting and retrying download for {file} (Attempt {attempt + 1})..."
+                    )
                     ftp = self.reconnect_ftp(ftp.host)
 
                 ftp.voidcmd("TYPE I")
@@ -173,7 +184,9 @@ class Command(BaseCommand):
                 if attempt < retries - 1:
                     time.sleep(delay)
                 else:
-                    self.stdout.write(f"Download failed after {retries} attempts for {file}.")
+                    self.stdout.write(
+                        f"Download failed after {retries} attempts for {file}."
+                    )
                     return False
 
     def reconnect_ftp(self, ftp_server):
@@ -193,7 +206,7 @@ class Command(BaseCommand):
                     raise
 
     def set_type_strains(self, isolate_names):
-        """ Updates existing strains in Elasticsearch to set them as type strains """
+        """Updates existing strains in Elasticsearch to set them as type strains"""
         self.stdout.write("Setting type strains for specified isolates.")
 
         for isolate_name in isolate_names:
@@ -203,5 +216,8 @@ class Command(BaseCommand):
                 strain.save()
                 self.stdout.write(f"Updated strain {isolate_name} to type_strain=True")
 
-        self.stdout.write(self.style.SUCCESS(f"Updated {len(isolate_names)} type strains in Elasticsearch."))
-
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Updated {len(isolate_names)} type strains in Elasticsearch."
+            )
+        )

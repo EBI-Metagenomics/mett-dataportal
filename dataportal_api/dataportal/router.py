@@ -27,6 +27,7 @@ URL_PREFIX_GENES = "/genes"
 URL_PREFIX_METADATA = "/metadata"
 URL_PREFIX_PYHMMER = "/pyhmmer"
 
+
 def custom_error_handler(request, exc):
     if isinstance(exc, HttpError):
         return JsonResponse({"error": str(exc)}, status=exc.status_code)

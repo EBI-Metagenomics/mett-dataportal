@@ -13,8 +13,18 @@ def run_all():
         ("bu_all_strains.faa", ["BU_"], False, "bu_all_strains_deduplicated.faa"),
         ("pv_typestrains.faa", ["PV_"], True, "pv_typestrains_deduplicated.faa"),
         ("pv_all_strains.faa", ["PV_"], False, "pv_all_strains_deduplicated.faa"),
-        ("bu_pv_typestrains.faa", ["BU_", "PV_"], True, "bu_pv_typestrains_deduplicated.faa"),
-        ("bu_pv_all_strains.faa", ["BU_", "PV_"], False, "bu_pv_all_strains_deduplicated.faa"),
+        (
+            "bu_pv_typestrains.faa",
+            ["BU_", "PV_"],
+            True,
+            "bu_pv_typestrains_deduplicated.faa",
+        ),
+        (
+            "bu_pv_all_strains.faa",
+            ["BU_", "PV_"],
+            False,
+            "bu_pv_all_strains_deduplicated.faa",
+        ),
     ]
 
     for raw, prefixes, only_type, final in combos:

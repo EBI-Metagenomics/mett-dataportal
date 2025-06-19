@@ -1,6 +1,6 @@
 import pytest
-from elasticsearch_dsl import connections
 from unittest.mock import MagicMock, patch
+
 
 @pytest.fixture(autouse=True, scope="session")
 def patch_elasticsearch_dsl():

@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import List
 from typing import Optional
@@ -21,9 +20,10 @@ from dataportal.utils.constants import (
     SORT_ASC,
     DEFAULT_PER_PAGE_CNT,
     ES_FIELD_SPECIES_SCIENTIFIC_NAME,
-    ES_FIELD_SPECIES_ACRONYM, ES_INDEX_STRAIN,
+    ES_FIELD_SPECIES_ACRONYM,
+    ES_INDEX_STRAIN,
 )
-from dataportal.utils.exceptions import ServiceError, GenomeNotFoundError
+from dataportal.utils.exceptions import ServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +41,14 @@ class GenomeService:
         )
 
     async def search_genomes_by_string(
-            self,
-            query: str,
-            page: int = 1,
-            per_page: int = DEFAULT_PER_PAGE_CNT,
-            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-            sortOrder: str = SORT_ASC,
-            isolates: Optional[List[str]] = None,
-            species_acronym: Optional[str] = None,
+        self,
+        query: str,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
+        isolates: Optional[List[str]] = None,
+        species_acronym: Optional[str] = None,
     ) -> GenomePaginationSchema:
         """Search genomes in Elasticsearch with optional isolate/species filters."""
         filter_criteria = {}
@@ -70,12 +70,12 @@ class GenomeService:
         )
 
     async def get_genomes_by_species(
-            self,
-            species_acronym: str,
-            page: int = 1,
-            per_page: int = DEFAULT_PER_PAGE_CNT,
-            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-            sortOrder: str = SORT_ASC,
+        self,
+        species_acronym: str,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
             filter_criteria={ES_FIELD_SPECIES_ACRONYM: species_acronym},
@@ -87,15 +87,18 @@ class GenomeService:
         )
 
     async def search_genomes_by_species_and_string(
-            self,
-            species_acronym: str,
-            query: str,
-            page: int = 1,
-            per_page: int = DEFAULT_PER_PAGE_CNT,
-            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-            sortOrder: str = SORT_ASC,
+        self,
+        species_acronym: str,
+        query: str,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
-        filter_criteria = {ES_FIELD_SPECIES_ACRONYM: species_acronym, STRAIN_FIELD_ISOLATE_NAME: query}
+        filter_criteria = {
+            ES_FIELD_SPECIES_ACRONYM: species_acronym,
+            STRAIN_FIELD_ISOLATE_NAME: query,
+        }
         return await self._search_paginated_strains(
             filter_criteria=filter_criteria,
             page=page,
@@ -106,7 +109,7 @@ class GenomeService:
         )
 
     async def search_strains(
-            self, query: str, limit: int = None, species_acronym: Optional[str] = None
+        self, query: str, limit: int = None, species_acronym: Optional[str] = None
     ):
         try:
             search = Search(index=ES_INDEX_STRAIN)
@@ -114,18 +117,30 @@ class GenomeService:
             search = search.query(
                 "bool",
                 should=[
-                    {"wildcard": {f"{STRAIN_FIELD_ISOLATE_NAME}.keyword": f"*{query}*"}},
-                    {"wildcard": {f"{STRAIN_FIELD_ASSEMBLY_NAME}.keyword": f"*{query}*"}}
+                    {
+                        "wildcard": {
+                            f"{STRAIN_FIELD_ISOLATE_NAME}.keyword": f"*{query}*"
+                        }
+                    },
+                    {
+                        "wildcard": {
+                            f"{STRAIN_FIELD_ASSEMBLY_NAME}.keyword": f"*{query}*"
+                        }
+                    },
                 ],
-                minimum_should_match=1
+                minimum_should_match=1,
             )
 
             if species_acronym:
-                search = search.filter("term", **{ES_FIELD_SPECIES_ACRONYM: species_acronym})
+                search = search.filter(
+                    "term", **{ES_FIELD_SPECIES_ACRONYM: species_acronym}
+                )
 
             search = search[: (limit or self.limit)]
 
-            search = search.source(["id", STRAIN_FIELD_ISOLATE_NAME, STRAIN_FIELD_ASSEMBLY_NAME])
+            search = search.source(
+                ["id", STRAIN_FIELD_ISOLATE_NAME, STRAIN_FIELD_ASSEMBLY_NAME]
+            )
 
             # logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
             response = await sync_to_async(search.execute)()
@@ -143,11 +158,11 @@ class GenomeService:
             return []
 
     async def get_genomes(
-            self,
-            page: int = 1,
-            per_page: int = DEFAULT_PER_PAGE_CNT,
-            sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-            sortOrder: str = SORT_ASC,
+        self,
+        page: int = 1,
+        per_page: int = DEFAULT_PER_PAGE_CNT,
+        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
+        sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
         return await self._search_paginated_strains(
             filter_criteria={},
@@ -165,7 +180,7 @@ class GenomeService:
         )
 
     async def get_genomes_by_isolate_names(
-            self, isolate_names: List[str]
+        self, isolate_names: List[str]
     ) -> List[GenomeResponseSchema]:
         if not isolate_names:
             return []
@@ -208,14 +223,21 @@ class GenomeService:
             raise ServiceError(f"{error_message}: {str(e)}")
 
     async def _search_paginated_strains(
-            self, filter_criteria, page, per_page, sortField, sortOrder, error_message
+        self, filter_criteria, page, per_page, sortField, sortOrder, error_message
     ):
         """Search and paginate strains in Elasticsearch."""
         try:
             strains, total_results = await self._fetch_paginated_strains(
-                filter_criteria, page, per_page, sortField, sortOrder, schema=GenomeResponseSchema
+                filter_criteria,
+                page,
+                per_page,
+                sortField,
+                sortOrder,
+                schema=GenomeResponseSchema,
             )
-            return await self._create_pagination_schema(strains, total_results, page, per_page)
+            return await self._create_pagination_schema(
+                strains, total_results, page, per_page
+            )
         except Exception as e:
             logger.error(f"{error_message}: {e}")
             raise ServiceError(e)
@@ -245,7 +267,7 @@ class GenomeService:
             raise ServiceError(e)
 
     async def _fetch_paginated_strains(
-            self, filter_criteria, page, per_page, sortField, sortOrder, schema
+        self, filter_criteria, page, per_page, sortField, sortOrder, schema
     ):
         """Fetch paginated strains from Elasticsearch with optimized searching."""
         try:
@@ -258,7 +280,11 @@ class GenomeService:
                         search = search.query(
                             "bool",
                             should=[
-                                {"wildcard": {f"{field}.keyword": f"*{value.lower()}*"}},
+                                {
+                                    "wildcard": {
+                                        f"{field}.keyword": f"*{value.lower()}*"
+                                    }
+                                },
                                 {"term": {f"{field}.keyword": value}},
                             ],
                             minimum_should_match=1,
@@ -276,14 +302,14 @@ class GenomeService:
             search = search.sort({sortField: {"order": sort_order}})
 
             # Apply pagination
-            search = search[(page - 1) * per_page: page * per_page]
+            search = search[(page - 1) * per_page : page * per_page]
 
             # logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
 
             response = await sync_to_async(search.execute)()
             total_results = (
                 response.hits.total.value
-                if hasattr(response.hits.total, 'value')
+                if hasattr(response.hits.total, "value")
                 else len(response)
             )
 

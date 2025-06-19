@@ -4,8 +4,8 @@ import pytest
 
 from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
 from dataportal.services.gene_service import GeneService
-from dataportal.utils.constants import ES_FIELD_GENE_NAME
 from dataportal.utils.exceptions import GeneNotFoundError
+
 
 class MockESResponse:
     def __init__(self, hits):
@@ -22,9 +22,7 @@ mock_gene1 = MagicMock()
 mock_gene1.to_dict.return_value = {
     "locus_tag": "BU_ATCC8492_00001",
     "gene_name": "dnaA",
-    "alias": [
-        "BACUNI_01739"
-    ],
+    "alias": ["BACUNI_01739"],
     "product": "Chromosomal replication initiator protein DnaA",
     "start_position": 1,
     "end_position": 1386,
@@ -34,18 +32,10 @@ mock_gene1.to_dict.return_value = {
     "species_acronym": "BU",
     "uniprot_id": "A7V2E8",
     "essentiality": "essential",
-    "cog_funcats": [
-        "L"
-    ],
+    "cog_funcats": ["L"],
     "cog_id": "COG0593",
-    "kegg": [
-        "ko:K02313"
-    ],
-    "pfam": [
-        "PF00308",
-        "PF08299",
-        "PF11638"
-    ],
+    "kegg": ["ko:K02313"],
+    "pfam": ["PF00308", "PF08299", "PF11638"],
     "interpro": [
         "IPR001957",
         "IPR010921",
@@ -54,29 +44,18 @@ mock_gene1.to_dict.return_value = {
         "IPR020591",
         "IPR024633",
         "IPR027417",
-        "IPR038454"
+        "IPR038454",
     ],
     "ec_number": "null",
-    "dbxref": [
-        {
-            "db": "COG",
-            "ref": "COG0593"
-        },
-        {
-            "db": "UniProt",
-            "ref": "A7V2E8"
-        }
-    ],
-    "eggnog": "411479.BACUNI_01739"
+    "dbxref": [{"db": "COG", "ref": "COG0593"}, {"db": "UniProt", "ref": "A7V2E8"}],
+    "eggnog": "411479.BACUNI_01739",
 }
 
 mock_gene2 = MagicMock()
 mock_gene2.to_dict.return_value = {
     "locus_tag": "PV_ATCC8482_00001",
     "gene_name": "dnaA",
-    "alias": [
-        "BVU_0001"
-    ],
+    "alias": ["BVU_0001"],
     "product": "Chromosomal replication initiator protein DnaA",
     "start_position": 1,
     "end_position": 1407,
@@ -86,18 +65,10 @@ mock_gene2.to_dict.return_value = {
     "species_acronym": "PV",
     "uniprot_id": "A6KWC5",
     "essentiality": "essential",
-    "cog_funcats": [
-        "L"
-    ],
+    "cog_funcats": ["L"],
     "cog_id": "COG0593",
-    "kegg": [
-        "ko:K02313"
-    ],
-    "pfam": [
-        "PF00308",
-        "PF08299",
-        "PF11638"
-    ],
+    "kegg": ["ko:K02313"],
+    "pfam": ["PF00308", "PF08299", "PF11638"],
     "interpro": [
         "IPR001957",
         "IPR010921",
@@ -106,20 +77,11 @@ mock_gene2.to_dict.return_value = {
         "IPR020591",
         "IPR024633",
         "IPR027417",
-        "IPR038454"
+        "IPR038454",
     ],
     "ec_number": "null",
-    "dbxref": [
-        {
-            "db": "COG",
-            "ref": "COG0593"
-        },
-        {
-            "db": "UniProt",
-            "ref": "A6KWC5"
-        }
-    ],
-    "eggnog": "435590.BVU_0001"
+    "dbxref": [{"db": "COG", "ref": "COG0593"}, {"db": "UniProt", "ref": "A6KWC5"}],
+    "eggnog": "435590.BVU_0001",
 }
 
 mock_gene_hits = [mock_gene1, mock_gene2]
@@ -156,7 +118,9 @@ async def test_get_all_genes(mock_sync_to_async):
     mock_response = MagicMock()
     mock_response.__iter__.return_value = iter(mock_gene_hits)
     mock_response.hits.total.value = 2
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse(mock_gene_hits))
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse(mock_gene_hits)
+    )
 
     service = GeneService()
     result = await service.get_all_genes()
@@ -192,7 +156,7 @@ async def test_autocomplete_gene_suggestions_with_filters(mock_sync_to_async):
         "gene_name": "pr",
         "isolate_name": "BU_ATCC8492",
         "essentiality": "essential_liquid",
-        "interpro": ["IPR035952"]
+        "interpro": ["IPR035952"],
     }
 
     # Mock the Search object's execute method
@@ -205,13 +169,14 @@ async def test_autocomplete_gene_suggestions_with_filters(mock_sync_to_async):
         query="pr",
         species_acronym="BU",
         isolates=["BU_ATCC8492"],
-        filter="essentiality:essential_liquid;interpro:IPR035952"
+        filter="essentiality:essential_liquid;interpro:IPR035952",
     )
 
     assert len(result) == 1
     assert result[0]["gene_name"] == "pr"
     assert result[0]["essentiality"] == "essential_liquid"
     assert "IPR035952" in result[0]["interpro"]
+
 
 @pytest.mark.asyncio
 @patch("dataportal.services.gene_service.sync_to_async")
@@ -226,7 +191,7 @@ async def test_get_faceted_search(mock_sync_to_async):
         "essentiality": [{"value": "essential", "count": 8, "selected": False}],
         "has_amr_info": [{"value": True, "count": 4, "selected": False}],
         "total_hits": 10,
-        "operators": {"pfam": "AND", "interpro": "OR"}
+        "operators": {"pfam": "AND", "interpro": "OR"},
     }
 
     # Mock the GeneFacetedSearch's execute method
@@ -239,22 +204,21 @@ async def test_get_faceted_search(mock_sync_to_async):
             cog_id=[("COG0593", 2)],
             cog_funcats=[("L", 1)],
             essentiality=[("essential", 8)],
-            has_amr_info=[(True, 4)]
+            has_amr_info=[(True, 4)],
         ),
-        hits=MagicMock(total=MagicMock(value=10))
+        hits=MagicMock(total=MagicMock(value=10)),
     )
     mock_sync_to_async.return_value = AsyncMock(return_value=mock_faceted_search)
 
     service = GeneService()
     result = await service.get_faceted_search(
-        species_acronym="BU",
-        limit=10,
-        pfam="pf13715"
+        species_acronym="BU", limit=10, pfam="pf13715"
     )
 
     assert result["pfam"][0]["selected"] is True
     assert result["total_hits"] == 10
     assert "operators" in result
+
 
 @pytest.mark.asyncio
 @patch("dataportal.services.gene_service.sync_to_async")
@@ -272,7 +236,7 @@ async def test_search_genes(mock_sync_to_async):
         page=1,
         per_page=10,
         sort_field="locus_tag",
-        sort_order="asc"
+        sort_order="asc",
     )
 
     assert isinstance(result, GenePaginationSchema)
@@ -294,7 +258,7 @@ async def test_search_genes_with_multiple_filters(mock_sync_to_async):
         isolate_name="BU_ATCC8492",
         filter="pfam:pf13715;essentiality:not_essential",
         page=1,
-        per_page=10
+        per_page=10,
     )
 
     assert isinstance(result, GenePaginationSchema)
@@ -309,7 +273,7 @@ async def test_get_gene_protein_seq(mock_sync_to_async):
     mock_doc = MagicMock()
     mock_doc.to_dict.return_value = {
         "locus_tag": "BU_2243B_00003",
-        "protein_sequence": "MAKRRRKYKY"
+        "protein_sequence": "MAKRRRKYKY",
     }
     mock_search = MagicMock()
     mock_search.execute.return_value = MockESResponse([mock_doc])
@@ -348,18 +312,15 @@ async def test_get_faceted_search_with_multiple_filters(mock_sync_to_async):
             cog_id=[("COG0593", 2)],
             cog_funcats=[("L", 1)],
             essentiality=[("essential", 8)],
-            has_amr_info=[(True, 4)]
+            has_amr_info=[(True, 4)],
         ),
-        hits=MagicMock(total=MagicMock(value=3))
+        hits=MagicMock(total=MagicMock(value=3)),
     )
     mock_sync_to_async.return_value = AsyncMock(return_value=mock_faceted_search)
 
     service = GeneService()
     result = await service.get_faceted_search(
-        species_acronym="BU",
-        limit=5,
-        interpro="ipr011611",
-        pfam="pf00294"
+        species_acronym="BU", limit=5, interpro="ipr011611", pfam="pf00294"
     )
 
     assert result["pfam"][0]["selected"] is True
@@ -379,9 +340,9 @@ async def test_search_genes_with_essentiality(mock_sync_to_async):
         "gene_name": "dnaA",
         "isolate_name": "BU_ATCC8492",
         "essentiality": "essential",
-        "species_acronym": "BU"
+        "species_acronym": "BU",
     }
-    
+
     # Mock the Search object's execute method
     mock_search = MagicMock()
     mock_search.execute.return_value = MockESResponse([mock_essential_gene])
@@ -393,7 +354,7 @@ async def test_search_genes_with_essentiality(mock_sync_to_async):
         isolate_name="BU_ATCC8492",
         filter="essentiality:essential",
         page=1,
-        per_page=10
+        per_page=10,
     )
 
     assert isinstance(result, GenePaginationSchema)

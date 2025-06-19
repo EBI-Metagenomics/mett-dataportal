@@ -20,10 +20,12 @@ def _log_query_sequences(raw_bytes):
     try:
         # For pyhmmer 0.11+, TextSequence.sequence is str
         lines = raw_bytes.decode().strip().splitlines()
-        name = lines[0].lstrip('>').encode()
-        sequence = ''.join(lines[1:])
+        name = lines[0].lstrip(">").encode()
+        sequence = "".join(lines[1:])
         text_seq = TextSequence(name=name, sequence=sequence)
-        logger.error(f"Seq: name={text_seq.name}, type={type(text_seq.sequence)}, first100={text_seq.sequence[:100]}")
+        logger.error(
+            f"Seq: name={text_seq.name}, type={type(text_seq.sequence)}, first100={text_seq.sequence[:100]}"
+        )
     except Exception as e:
         logger.error(f"Error logging query sequences: {e}")
 
@@ -34,11 +36,13 @@ def run_search(self, job_id: str):
     logger.info(f"Running HMMER search for job {job_id} with task ID {task_id}")
     try:
         job = HmmerJob.objects.select_related("task").get(id=job_id)
-        logger.info(f"Found job {job_id} with task {job.task.task_id if job.task else 'No task'}")
+        logger.info(
+            f"Found job {job_id} with task {job.task.task_id if job.task else 'No task'}"
+        )
 
-        self.update_state(state='STARTED')
+        self.update_state(state="STARTED")
         if job.task:
-            job.task.status = 'STARTED'
+            job.task.status = "STARTED"
             job.task.save()
 
         db_path = settings.HMMER_DATABASES[job.database]
@@ -53,8 +57,17 @@ def run_search(self, job_id: str):
             background=background,
             bias_filter=True,
             null2=True,
-            domE=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.EVALUE else None,
-            domT=job.threshold_value if job.threshold == HmmerJob.ThresholdChoices.BITSCORE else None,
+            domE=(
+                job.threshold_value
+                if job.threshold == HmmerJob.ThresholdChoices.EVALUE
+                else None
+            ),
+            domT=(
+                job.threshold_value
+                if job.threshold == HmmerJob.ThresholdChoices.BITSCORE
+                else None
+            ),
+            mx=job.mx if job.mx else "BLOSUM62",
         )
 
         # Parse query
@@ -63,7 +76,7 @@ def run_search(self, job_id: str):
             raise ValueError("Invalid FASTA input format for query.")
 
         name = lines[0].lstrip(">").encode("utf-8")
-        sequence = ''.join(lines[1:])
+        sequence = "".join(lines[1:])
         text_seq = TextSequence(name=name, sequence=sequence)
         digital_seq = text_seq.digitize(alphabet)
 
@@ -110,10 +123,14 @@ def run_search(self, job_id: str):
                             ppline = getattr(alignment, "ppline", None)
                         except Exception:
                             pretty_alignment = None
-                            sqfrom = sqto = hmmfrom = hmmto = model = aseq = mline = ppline = None
+                            sqfrom = sqto = hmmfrom = hmmto = model = aseq = mline = (
+                                ppline
+                            ) = None
                     else:
                         pretty_alignment = None
-                        sqfrom = sqto = hmmfrom = hmmto = model = aseq = mline = ppline = None
+                        sqfrom = sqto = hmmfrom = hmmto = model = aseq = mline = (
+                            ppline
+                        ) = None
 
                     if hasattr(domain, "segments") and domain.segments:
                         for i, (start, end) in enumerate(domain.segments):
@@ -123,7 +140,7 @@ def run_search(self, job_id: str):
                                 "bitscore": domain.score,
                                 "ievalue": domain.i_evalue,
                                 "cevalue": domain.c_evalue,
-                                "bias": getattr(domain, 'bias', None),
+                                "bias": getattr(domain, "bias", None),
                                 "alignment_display": pretty_alignment,
                                 "sqfrom": sqfrom,
                                 "sqto": sqto,
@@ -146,7 +163,7 @@ def run_search(self, job_id: str):
                             "bitscore": f"{hit.score:.2f}",
                             "ievalue": domain.i_evalue,
                             "cevalue": domain.c_evalue,
-                            "bias": getattr(domain, 'bias', None),
+                            "bias": getattr(domain, "bias", None),
                             "alignment_display": pretty_alignment,
                         }
                         domains.append(domain_dict)
@@ -159,27 +176,38 @@ def run_search(self, job_id: str):
                         query_seq_str = str(sequence)
                         target_seq_str = str(target_seq.sequence.decode())
                         logger.info(
-                            f"Aligning query ({len(query_seq_str)}) to target ({len(target_seq_str)}) for hit {hit.name.decode()}")
-                        alignments = pairwise2.align.globalxx(query_seq_str, target_seq_str)
+                            f"Aligning query ({len(query_seq_str)}) to target ({len(target_seq_str)}) for hit {hit.name.decode()}"
+                        )
+                        alignments = pairwise2.align.globalxx(
+                            query_seq_str, target_seq_str
+                        )
                         if alignments:
                             alignment_str = format_alignment(*alignments[0])
-                            logger.info(f"Alignment for {hit.name.decode()} successful.")
+                            logger.info(
+                                f"Alignment for {hit.name.decode()} successful."
+                            )
                         else:
-                            logger.warning(f"No alignment produced for {hit.name.decode()}.")
+                            logger.warning(
+                                f"No alignment produced for {hit.name.decode()}."
+                            )
                     except Exception as e:
                         logger.warning(f"Alignment failed for {hit.name.decode()}: {e}")
                         alignment_str = None
                 else:
-                    logger.warning(f"Target sequence not found for hit {hit.name.decode()}")
-                domains.append({
-                    "env_from": getattr(hit, "envelope_from", None),
-                    "env_to": getattr(hit, "envelope_to", None),
-                    "bitscore": f"{hit.score:.2f}",
-                    "ievalue": hit.evalue,
-                    "cevalue": getattr(hit, "c_evalue", None),
-                    "bias": getattr(hit, "bias", None),
-                    "alignment_display": alignment_str,
-                })
+                    logger.warning(
+                        f"Target sequence not found for hit {hit.name.decode()}"
+                    )
+                domains.append(
+                    {
+                        "env_from": getattr(hit, "envelope_from", None),
+                        "env_to": getattr(hit, "envelope_to", None),
+                        "bitscore": f"{hit.score:.2f}",
+                        "ievalue": hit.evalue,
+                        "cevalue": getattr(hit, "c_evalue", None),
+                        "bias": getattr(hit, "bias", None),
+                        "alignment_display": alignment_str,
+                    }
+                )
 
             hit_dict = {
                 "target": hit.name.decode(),
@@ -188,17 +216,23 @@ def run_search(self, job_id: str):
                 "score": f"{hit.score:.2f}",
                 "num_hits": len(hit_list) or None,
                 "num_significant": sum(1 for h in hit_list if h.evalue < 0.01),
-                "domains": domains
+                "domains": domains,
             }
-            if job.threshold == HmmerJob.ThresholdChoices.EVALUE and hit.evalue < job.threshold_value:
+            if (
+                job.threshold == HmmerJob.ThresholdChoices.EVALUE
+                and hit.evalue < job.threshold_value
+            ):
                 results.append(hit_dict)
-            elif job.threshold == HmmerJob.ThresholdChoices.BITSCORE and hit.score > job.threshold_value:
+            elif (
+                job.threshold == HmmerJob.ThresholdChoices.BITSCORE
+                and hit.score > job.threshold_value
+            ):
                 results.append(hit_dict)
 
         logger.info(f"{len(results)} hits passed the filter for job {job_id}")
 
         if job.task:
-            job.task.status = 'SUCCESS'
+            job.task.status = "SUCCESS"
             job.task.result = json.dumps(results)
             job.task.date_done = timezone.now()
             job.task.save()
@@ -208,8 +242,8 @@ def run_search(self, job_id: str):
 
     except Exception as e:
         logger.error(f"Error in run_search for job {job_id}: {str(e)}", exc_info=True)
-        if 'job' in locals() and job.task:
-            job.task.status = 'FAILURE'
+        if "job" in locals() and job.task:
+            job.task.status = "FAILURE"
             job.task.result = str(e)
             job.task.date_done = timezone.now()
             job.task.save()
@@ -224,12 +258,12 @@ def test_task(self):
 
     try:
         # Update task state using Celery's state management
-        self.update_state(state='STARTED')
+        self.update_state(state="STARTED")
         logger.info(f"Updated task {task_id} state to STARTED")
 
         # Update database record
         task_result = TaskResult.objects.get(task_id=task_id)
-        task_result.status = 'STARTED'
+        task_result.status = "STARTED"
         task_result.save()
         logger.info(f"Updated database record for task {task_id} to STARTED")
 
@@ -240,10 +274,12 @@ def test_task(self):
         linked_jobs = HmmerJob.objects.filter(task__task_id=task_id)
         logger.info(f"Found {linked_jobs.count()} jobs linked to task {task_id}")
         for job in linked_jobs:
-            logger.info(f"Linked job: {job.id}, Status: {job.task.status if job.task else 'No task'}")
+            logger.info(
+                f"Linked job: {job.id}, Status: {job.task.status if job.task else 'No task'}"
+            )
 
         # Update database record with success
-        task_result.status = 'SUCCESS'
+        task_result.status = "SUCCESS"
         task_result.result = "OK"
         task_result.date_done = timezone.now()
         task_result.save()
@@ -252,8 +288,8 @@ def test_task(self):
     except Exception as e:
         logger.error(f"Error in test_task: {str(e)}", exc_info=True)
         # Update database record with failure
-        if 'task_result' in locals():
-            task_result.status = 'FAILURE'
+        if "task_result" in locals():
+            task_result.status = "FAILURE"
             task_result.result = str(e)
             task_result.date_done = timezone.now()
             task_result.save()

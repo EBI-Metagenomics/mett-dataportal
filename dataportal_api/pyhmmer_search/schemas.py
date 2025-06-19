@@ -22,6 +22,9 @@ class SearchRequestSchema(ModelSchema):
     threshold: Literal["evalue", "bitscore"]
     threshold_value: float
     input: str
+    mx: Optional[
+        Literal["BLOSUM62", "BLOSUM45", "BLOSUM90", "PAM30", "PAM70", "PAM250"]
+    ] = "BLOSUM62"
 
     @field_validator("input", mode="after", check_fields=False)
     @classmethod
@@ -93,9 +96,12 @@ class HmmerJobCreatedSchema(Schema):
 class HmmerJobStatusSchema(Schema):
     id: UUID4 = Field(..., description="The id of the job")
     status: str = Field(..., description="The status of the job")
-    result_url: Optional[str] = Field(..., description="URL to get the result of the job")
-    error_message: Optional[str] = Field(..., description="The error message of the job")
-
+    result_url: Optional[str] = Field(
+        ..., description="URL to get the result of the job"
+    )
+    error_message: Optional[str] = Field(
+        ..., description="The error message of the job"
+    )
 
 
 class CutOffSchema(Schema):
@@ -127,8 +133,9 @@ class CutOffSchema(Schema):
 class GapPenaltiesSchema(Schema):
     popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
     pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
-    mx: Optional[Literal["BLOSUM62", "BLOSUM45", "BLOSUM90", "PAM30", "PAM70", "PAM250"]] = "BLOSUM62"
-
+    mx: Optional[
+        Literal["BLOSUM62", "BLOSUM45", "BLOSUM90", "PAM30", "PAM70", "PAM250"]
+    ] = "BLOSUM62"
 
 
 class ResultQuerySchema(Schema):

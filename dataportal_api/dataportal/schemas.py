@@ -18,6 +18,7 @@ class StrainSuggestionSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class StrainMinSchema(BaseModel):
     isolate_name: str
     assembly_name: str
@@ -64,17 +65,20 @@ class GeneAutocompleteResponseSchema(BaseModel):
     essentiality: Optional[str] = "Unknown"
     model_config = ConfigDict(from_attributes=True)
 
+
 class EssentialityTagSchema(BaseModel):
     name: str
     label: str
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class DBXRefSchema(BaseModel):
     db: str
     ref: str
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class AMRSchema(BaseModel):
     gene_symbol: Optional[str] = None
@@ -86,6 +90,7 @@ class AMRSchema(BaseModel):
     drug_subclass: Optional[str] = None
     uf_keyword: Optional[List[str]] = None
     uf_ecnumber: Optional[str] = None
+
 
 class GeneResponseSchema(BaseModel):
     locus_tag: Optional[str] = None

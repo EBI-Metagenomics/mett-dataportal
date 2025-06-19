@@ -5,12 +5,21 @@ from django_celery_results.models import TaskResult
 
 
 class HmmerJob(models.Model):
+    class MXChoices(models.TextChoices):
+        BLOSUM62 = "BLOSUM62"
+        BLOSUM45 = "BLOSUM45"
+        BLOSUM90 = "BLOSUM90"
+        PAM30 = "PAM30"
+        PAM70 = "PAM70"
+        PAM250 = "PAM250"
+
     class AlgoChoices(models.TextChoices):
         PHMMER = "phmmer"
 
     class ThresholdChoices(models.TextChoices):
         EVALUE = "evalue", "E-value"
         BITSCORE = "bitscore", "Bit score"
+        CUT_GA = "cut_ga", "Cut GA"
 
     class DbChoices(models.TextChoices):
         BU_TYPE_STRAINS = "bu_type_strains", "BU Type Strains"
@@ -21,7 +30,9 @@ class HmmerJob(models.Model):
         BU_PV_ALL = "bu_pv_all", "BU+PV All Strains"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    algo = models.CharField(max_length=16, choices=AlgoChoices.choices, default=AlgoChoices.PHMMER)
+    algo = models.CharField(
+        max_length=16, choices=AlgoChoices.choices, default=AlgoChoices.PHMMER
+    )
     database = models.CharField(max_length=32, choices=DbChoices.choices)
     input = models.TextField()
 
@@ -33,7 +44,17 @@ class HmmerJob(models.Model):
 
     threshold_value = models.FloatField(default=1.0)
 
-    task = models.OneToOneField(TaskResult, related_name="+", null=True, blank=True, on_delete=models.CASCADE)
+    task = models.OneToOneField(
+        TaskResult, related_name="+", null=True, blank=True, on_delete=models.CASCADE
+    )
+
+    mx = models.CharField(
+        max_length=16,
+        null=True,
+        blank=True,
+        choices=MXChoices.choices,
+        default=MXChoices.BLOSUM62,
+    )
 
     def __str__(self):
         return f"{self.algo} search on {self.database} ({self.id})"
@@ -42,13 +63,14 @@ class HmmerJob(models.Model):
         app_label = "pyhmmer_search"
 
 
-
 class Database(models.Model):
     class TypeChoices(models.TextChoices):
         SEQ = "seq"
 
     id = models.CharField(max_length=32, primary_key=True, unique=True)
-    type = models.CharField(max_length=16, choices=TypeChoices.choices, default=TypeChoices.SEQ)
+    type = models.CharField(
+        max_length=16, choices=TypeChoices.choices, default=TypeChoices.SEQ
+    )
     name = models.CharField(max_length=32)
     version = models.CharField(max_length=32)
     release_date = models.DateField(default=datetime.date.today)

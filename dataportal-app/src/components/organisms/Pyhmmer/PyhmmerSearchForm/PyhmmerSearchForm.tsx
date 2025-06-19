@@ -2,7 +2,7 @@ import React, {useState, useRef, useEffect} from 'react';
 import styles from './PyhmmerSearchForm.module.scss';
 import {PyhmmerService} from '../../../../services/pyhmmerService';
 import {EXAMPLE_SEQUENCE} from "../../../../utils/appConstants";
-import {PyhmmerResult} from "../../../../interfaces/Pyhmmer";
+import {PyhmmerMXChoice, PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import PyhmmerResultsTable from "@components/organisms/Pyhmmer/PyhmmerResultsHandler/PyhmmerResultsTable";
 
 const PyhmmerSearchForm: React.FC = () => {
@@ -15,7 +15,7 @@ const PyhmmerSearchForm: React.FC = () => {
     const [reportEValueHit, setReportEValueHit] = useState('1');
     const [gapOpen, setGapOpen] = useState('0.02');
     const [gapExtend, setGapExtend] = useState('0.4');
-    // const [subMatrix, setSubMatrix] = useState('BLOSUM62');
+    const [subMatrix, setSubMatrix] = useState('BLOSUM62');
     // const [biasFilter, setBiasFilter] = useState(false);
 
     // Results state
@@ -26,6 +26,7 @@ const PyhmmerSearchForm: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const [databases, setDatabases] = useState<{ id: string; name: string }[]>([]);
+    const [mxChoices, setMXChoices] = useState<PyhmmerMXChoice[]>([]);
 
     useEffect(() => {
         const fetchDatabases = async () => {
@@ -36,7 +37,16 @@ const PyhmmerSearchForm: React.FC = () => {
                 setDatabases([]);
             }
         };
+        const fetchMXChoices = async () => {
+            try {
+                const response = await PyhmmerService.getMXChoices();
+                setMXChoices(response);
+            } catch {
+                setMXChoices([]);
+            }
+        };
         fetchDatabases();
+        fetchMXChoices();
     }, []);
 
     // Helper to poll for job status
@@ -174,13 +184,14 @@ const PyhmmerSearchForm: React.FC = () => {
                             <input type="text" value={gapExtend} onChange={e => setGapExtend(e.target.value)}
                                    className={styles.inputSmall}/>
                         </div>
-                        {/*<div>*/}
-                        {/*    <div>Substitution scoring matrix</div>*/}
-                        {/*    <select value={subMatrix} onChange={e => setSubMatrix(e.target.value)} className={styles.selectSmall}>*/}
-                        {/*        <option>BLOSUM62</option>*/}
-                        {/*        /!* Add more options as needed *!/*/}
-                        {/*    </select>*/}
-                        {/*</div>*/}
+                        <div>
+                            <div>Substitution scoring matrix</div>
+                            <select value={subMatrix} onChange={e => setSubMatrix(e.target.value)} className={styles.selectSmall}>
+                                {mxChoices.map(choice => (
+                                    <option key={choice.value} value={choice.value}>{choice.label}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 

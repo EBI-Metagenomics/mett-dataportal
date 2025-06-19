@@ -16,8 +16,8 @@ def get_sources(use_sftp=False):
                 "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/spire_uniformis_mags_mettannotator_results",
                 "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/mgnify_uniformis_mags_mettannotator_results",
                 "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/mgnify_vulgatus_mags_mettannotator_results",
-                "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/spire_vulgatus_mags_mettannotator_results2"
-            ]
+                "/hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MAGs_for_pangenomes_Fall2024/spire_vulgatus_mags_mettannotator_results2",
+            ],
         )
         sources.append(sftp_source)
 
@@ -38,12 +38,16 @@ def fetch_all_sequences(use_sftp=False):
     return all_entries  # List of (strain_id, content)
 
 
-def consolidate_filtered(all_entries, output_filename, strain_prefixes=None, only_type_strains=False):
+def consolidate_filtered(
+    all_entries, output_filename, strain_prefixes=None, only_type_strains=False
+):
     TYPE_STRAINS = {"BU_ATCC8492", "PV_ATCC8482"}
 
     filtered = []
     for strain_id, content in all_entries:
-        if strain_prefixes and not any(strain_id.startswith(pfx) for pfx in strain_prefixes):
+        if strain_prefixes and not any(
+            strain_id.startswith(pfx) for pfx in strain_prefixes
+        ):
             continue
         if only_type_strains and strain_id not in TYPE_STRAINS:
             continue

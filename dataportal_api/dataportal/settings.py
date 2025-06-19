@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 from celery.schedules import crontab
-from elasticsearch_dsl import connections
 
 from .elasticsearch_client import init_es_connection
 
@@ -83,7 +82,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    'django.contrib.staticfiles',
+    "django.contrib.staticfiles",
     "corsheaders",
     "dataportal",
     "ninja",
@@ -192,7 +191,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "/api-static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -253,4 +252,3 @@ HMMER_DATABASES = {
     "bu_pv_type_strains": PYHMMER_FAA_BASE_PATH + "bu_pv_typestrains_deduplicated.faa",
     "bu_pv_all": PYHMMER_FAA_BASE_PATH + "bu_pv_all_strains_deduplicated.faa",
 }
-

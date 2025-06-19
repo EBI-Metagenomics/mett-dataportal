@@ -6,12 +6,14 @@ from dataportal.schemas import GenomePaginationSchema, GenomeResponseSchema
 from dataportal.services.genome_service import GenomeService
 from dataportal.services.essentiality_service import EssentialityService
 from dataportal.utils.constants import STRAIN_FIELD_ISOLATE_NAME
-from dataportal.utils.exceptions import GenomeNotFoundError, ServiceError
+from dataportal.utils.exceptions import ServiceError
 
 
 class MockESResponse:
     def __init__(self, hits):
-        self.hits = type("Hits", (), {"total": type("Total", (), {"value": len(hits)})})()
+        self.hits = type(
+            "Hits", (), {"total": type("Total", (), {"value": len(hits)})}
+        )()
         self._hits = hits
 
     def __iter__(self):
@@ -31,7 +33,7 @@ def mock_strain_hits():
         "fasta_url": "http://example.com/file1.fna",
         "gff_url": "http://example.com/file1.gff",
         "species_scientific_name": "Bacteroides uniformis",
-        "species_acronym": "BU"
+        "species_acronym": "BU",
     }
     hit1.isolate_name = "BU_ATCC8492"
     hit1.assembly_name = "ASM001"
@@ -47,7 +49,7 @@ def mock_strain_hits():
         "fasta_url": "http://example.com/file2.fna",
         "gff_url": "http://example.com/file2.gff",
         "species_scientific_name": "Phocaeicola vulgatus",
-        "species_acronym": "PV"
+        "species_acronym": "PV",
     }
     hit2.isolate_name = "PV_ATCC8482"
     hit2.assembly_name = "ASM002"
@@ -58,7 +60,9 @@ def mock_strain_hits():
 @patch("dataportal.services.genome_service.sync_to_async")
 @pytest.mark.asyncio
 async def test_get_type_strains(mock_sync_to_async, mock_strain_hits):
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse(mock_strain_hits))
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse(mock_strain_hits)
+    )
 
     service = GenomeService()
     result = await service.get_type_strains()
@@ -73,7 +77,9 @@ async def test_get_type_strains(mock_sync_to_async, mock_strain_hits):
 @patch("dataportal.services.genome_service.sync_to_async")
 @pytest.mark.asyncio
 async def test_get_genomes_by_species(mock_sync_to_async, mock_strain_hits):
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse([mock_strain_hits[0]]))
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse([mock_strain_hits[0]])
+    )
 
     service = GenomeService()
     result = await service.get_genomes_by_species(species_acronym="BU")
@@ -110,7 +116,9 @@ async def test_get_genome_by_strain_name_not_found(mock_sync_to_async):
 @patch("dataportal.services.genome_service.sync_to_async")
 @pytest.mark.asyncio
 async def test_search_strains(mock_sync_to_async, mock_strain_hits):
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse(mock_strain_hits))
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse(mock_strain_hits)
+    )
 
     service = GenomeService()
     result = await service.search_strains(query="BU")
@@ -122,7 +130,9 @@ async def test_search_strains(mock_sync_to_async, mock_strain_hits):
 @patch("dataportal.services.genome_service.sync_to_async")
 @pytest.mark.asyncio
 async def test_search_strains_with_species_filter(mock_sync_to_async, mock_strain_hits):
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse([mock_strain_hits[0]]))
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse([mock_strain_hits[0]])
+    )
 
     service = GenomeService()
     result = await service.search_strains(query="90", species_acronym="BU")
@@ -134,7 +144,9 @@ async def test_search_strains_with_species_filter(mock_sync_to_async, mock_strai
 @patch("dataportal.services.genome_service.sync_to_async")
 @pytest.mark.asyncio
 async def test_get_genomes_by_isolate_names(mock_sync_to_async, mock_strain_hits):
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse(mock_strain_hits))
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse(mock_strain_hits)
+    )
 
     service = GenomeService()
     result = await service.get_genomes_by_isolate_names(["BU_ATCC8492", "PV_ATCC8482"])
@@ -146,8 +158,12 @@ async def test_get_genomes_by_isolate_names(mock_sync_to_async, mock_strain_hits
 
 @patch("dataportal.services.genome_service.sync_to_async")
 @pytest.mark.asyncio
-async def test_get_genomes_by_isolate_names_single(mock_sync_to_async, mock_strain_hits):
-    mock_sync_to_async.return_value = AsyncMock(return_value=MockESResponse([mock_strain_hits[0]]))
+async def test_get_genomes_by_isolate_names_single(
+    mock_sync_to_async, mock_strain_hits
+):
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse([mock_strain_hits[0]])
+    )
 
     service = GenomeService()
     result = await service.get_genomes_by_isolate_names(["BU_ATCC8492"])
@@ -157,7 +173,9 @@ async def test_get_genomes_by_isolate_names_single(mock_sync_to_async, mock_stra
     assert result[0].species_scientific_name == "Bacteroides uniformis"
 
 
-@patch("dataportal.services.essentiality_service.EssentialityService.load_essentiality_data_by_strain")
+@patch(
+    "dataportal.services.essentiality_service.EssentialityService.load_essentiality_data_by_strain"
+)
 @pytest.mark.asyncio
 async def test_get_essentiality_data(mock_load_cache):
     # Mock the cache data
@@ -168,7 +186,7 @@ async def test_get_essentiality_data(mock_load_cache):
                     "locus_tag": "BU_ATCC8492_00001",
                     "start": 1671862,
                     "end": 1672323,
-                    "essentiality": "essential"
+                    "essentiality": "essential",
                 }
             }
         }
@@ -179,7 +197,9 @@ async def test_get_essentiality_data(mock_load_cache):
     # Set the cache directly
     service.essentiality_cache = mock_cache_data
     # The cache will be populated by our mock
-    result = await service.get_essentiality_data_by_strain_and_ref("BU_ATCC8492", "contig_1")
+    result = await service.get_essentiality_data_by_strain_and_ref(
+        "BU_ATCC8492", "contig_1"
+    )
 
     assert "BU_ATCC8492_00001" in result
     assert result["BU_ATCC8492_00001"]["essentiality"] == "essential"
