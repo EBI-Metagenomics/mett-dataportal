@@ -19,7 +19,6 @@ class HmmerJob(models.Model):
     class ThresholdChoices(models.TextChoices):
         EVALUE = "evalue", "E-value"
         BITSCORE = "bitscore", "Bit score"
-        CUT_GA = "cut_ga", "Cut GA"
 
     class DbChoices(models.TextChoices):
         BU_TYPE_STRAINS = "bu_type_strains", "BU Type Strains"
@@ -41,6 +40,18 @@ class HmmerJob(models.Model):
         choices=ThresholdChoices.choices,
         default=ThresholdChoices.EVALUE,
     )
+
+    E = models.FloatField(default=1.0, null=True, blank=True)
+    domE = models.FloatField(default=1.0, null=True, blank=True)
+    T = models.FloatField(default=7.0, null=True, blank=True)
+    domT = models.FloatField(default=5.0, null=True, blank=True)
+    incE = models.FloatField(default=0.01, null=True, blank=True)
+    incdomE = models.FloatField(default=0.03, null=True, blank=True)
+    incT = models.FloatField(default=25.0, null=True, blank=True)
+    incdomT = models.FloatField(default=22.0, null=True, blank=True)
+
+    popen = models.FloatField(default=0.02, null=True, blank=True)
+    pextend = models.FloatField(default=0.4, null=True, blank=True)
 
     threshold_value = models.FloatField(default=1.0)
 

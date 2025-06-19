@@ -9,6 +9,8 @@ from django_celery_results.models import TaskResult
 from pyhmmer.easel import DigitalSequenceBlock
 from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
 from pyhmmer.plan7 import Pipeline, Background, Builder
+from typing import Dict, Any, List, Optional, Tuple
+from pydantic import BaseModel, Field
 
 from dataportal import settings
 from .models import HmmerJob
@@ -36,7 +38,7 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
     try:
         if alignment is None:
             return None
-
+            
         return PyhmmerAlignmentSchema(
             hmm_name=alignment.hmm_name.decode() if hasattr(alignment.hmm_name, 'decode') else str(alignment.hmm_name),
             hmm_accession=alignment.hmm_accession.decode() if alignment.hmm_accession and hasattr(
@@ -46,14 +48,14 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
             hmm_to=alignment.hmm_to,
             hmm_length=getattr(alignment, 'hmm_length', None),
             hmm_sequence=alignment.hmm_sequence,
-
+            
             target_name=alignment.target_name.decode() if hasattr(alignment.target_name, 'decode') else str(
                 alignment.target_name),
             target_from=alignment.target_from,
             target_to=alignment.target_to,
             target_length=getattr(alignment, 'target_length', None),
             target_sequence=alignment.target_sequence,
-
+            
             identity_sequence=alignment.identity_sequence,
             posterior_probabilities=getattr(alignment, 'posterior_probabilities', None),
         )
@@ -67,17 +69,17 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
     try:
         if alignment is None:
             return None
-
+            
         # Calculate identity
-        matches = sum(1 for a, b in zip(alignment.hmm_sequence, alignment.target_sequence)
-                      if a == b and a != '-')
+        matches = sum(1 for a, b in zip(alignment.hmm_sequence, alignment.target_sequence) 
+                     if a == b and a != '-')
         min_len = min(len(alignment.hmm_sequence), len(alignment.target_sequence))
         identity_pct = matches / min_len if min_len > 0 else 0
-
+        
         # Create match line
-        mline = ''.join('|' if a == b and a != '-' else ' '
-                        for a, b in zip(alignment.hmm_sequence, alignment.target_sequence))
-
+        mline = ''.join('|' if a == b and a != '-' else ' ' 
+                       for a, b in zip(alignment.hmm_sequence, alignment.target_sequence))
+        
         return LegacyAlignmentDisplay(
             hmmfrom=alignment.hmm_from,
             hmmto=alignment.hmm_to,
@@ -117,22 +119,38 @@ def run_search(self, job_id: str):
         # Prepare alphabet and background
         alphabet = Alphabet.amino()
         background = Background(alphabet)
-        pipeline = Pipeline(
-            alphabet,
-            background=background,
-            bias_filter=True,
-            null2=True,
-            domE=(
-                job.threshold_value
-                if job.threshold == HmmerJob.ThresholdChoices.EVALUE
-                else None
-            ),
-            domT=(
-                job.threshold_value
-                if job.threshold == HmmerJob.ThresholdChoices.BITSCORE
-                else None
-            ),
-        )
+        
+        # Configure pipeline with threshold parameters only
+        pipeline_kwargs = {
+            'alphabet': alphabet,
+            'background': background,
+            'bias_filter': True,
+            'null2': True,
+        }
+        
+        # Add threshold parameters based on threshold type
+        if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
+            if job.incE is not None:
+                pipeline_kwargs['incE'] = job.incE
+            if job.incdomE is not None:
+                pipeline_kwargs['incdomE'] = job.incdomE
+            if job.E is not None:
+                pipeline_kwargs['E'] = job.E
+            if job.domE is not None:
+                pipeline_kwargs['domE'] = job.domE
+        else:  # bitscore
+            if job.incT is not None:
+                pipeline_kwargs['incT'] = job.incT
+            if job.incdomT is not None:
+                pipeline_kwargs['incdomT'] = job.incdomT
+            if job.T is not None:
+                pipeline_kwargs['T'] = job.T
+            if job.domT is not None:
+                pipeline_kwargs['domT'] = job.domT
+            
+        pipeline = Pipeline(**pipeline_kwargs)
+        
+        logger.info(f"Configured pipeline with parameters: {pipeline_kwargs}")
 
         # Parse query
         lines = job.input.strip().splitlines()
@@ -155,9 +173,18 @@ def run_search(self, job_id: str):
             for seq in target_file:
                 target_sequences[seq.name.decode()] = seq
 
-        # Create a Builder and set the score_matrix
-        builder = Builder(alphabet)
-        builder.score_matrix = job.mx if job.mx else "BLOSUM62"
+        # Create a Builder and configure it with gap penalties and score matrix
+        builder_kwargs = {}
+        if job.popen is not None:
+            builder_kwargs['popen'] = job.popen
+        if job.pextend is not None:
+            builder_kwargs['pextend'] = job.pextend
+        if job.mx:
+            builder_kwargs['score_matrix'] = job.mx
+            
+        builder = Builder(alphabet, **builder_kwargs)
+        
+        logger.info(f"Configured builder with parameters: {builder_kwargs}")
 
         # Run search using the builder
         results = []
@@ -178,11 +205,11 @@ def run_search(self, job_id: str):
                 for domain in hit.domains:
                     # Extract alignment from pyhmmer.plan7.Alignment
                     alignment = getattr(domain, "alignment", None)
-
+                    
                     # Extract both new and legacy alignment formats
                     pyhmmer_alignment = extract_pyhmmer_alignment(alignment)
                     legacy_alignment = create_legacy_alignment_display(alignment)
-
+                    
                     domain_obj = DomainSchema(
                         env_from=domain.env_from,
                         env_to=domain.env_to,
@@ -200,7 +227,7 @@ def run_search(self, job_id: str):
                 target_seq = target_sequences.get(hit.name.decode())
                 pyhmmer_alignment = None
                 legacy_alignment = None
-
+                
                 if target_seq is not None:
                     try:
                         query_seq_str = str(sequence)
@@ -211,7 +238,7 @@ def run_search(self, job_id: str):
                             logger.info(f"Biopython alignment for {hit.name.decode()} successful")
                     except Exception as e:
                         logger.warning(f"Biopython alignment failed for {hit.name.decode()}: {e}")
-
+                
                 domain_obj = DomainSchema(
                     env_from=getattr(hit, "envelope_from", None),
                     env_to=getattr(hit, "envelope_to", None),
@@ -224,7 +251,7 @@ def run_search(self, job_id: str):
                     alignment_display=legacy_alignment,
                 )
                 domains.append(domain_obj)
-
+                
             hit_obj = HitSchema(
                 target=hit.name.decode(),
                 description=hit.description.decode() if hit.description else "",
@@ -235,13 +262,13 @@ def run_search(self, job_id: str):
                 domains=domains
             )
             if (
-                    job.threshold == HmmerJob.ThresholdChoices.EVALUE
-                    and hit.evalue < job.threshold_value
+                job.threshold == HmmerJob.ThresholdChoices.EVALUE
+                and hit.evalue < job.threshold_value
             ):
                 results.append(hit_obj)
             elif (
-                    job.threshold == HmmerJob.ThresholdChoices.BITSCORE
-                    and hit.score > job.threshold_value
+                job.threshold == HmmerJob.ThresholdChoices.BITSCORE
+                and hit.score > job.threshold_value
             ):
                 results.append(hit_obj)
 
@@ -325,19 +352,19 @@ def parse_biopython_alignment(query: str, target: str) -> Optional[LegacyAlignme
         aln = alignments[0]
         aligned_query, aligned_target, score, begin, end = aln
         mline = ''.join('|' if a == b and a != '-' else ' ' for a, b in zip(aligned_query, aligned_target))
-
+        
         def first_non_gap(seq):
             for i, c in enumerate(seq):
                 if c != '-':
                     return i
             return 0
-
+            
         def last_non_gap(seq):
             for i in range(len(seq) - 1, -1, -1):
                 if seq[i] != '-':
                     return i
             return len(seq) - 1
-
+            
         hmmfrom = first_non_gap(aligned_query) + 1
         hmmto = last_non_gap(aligned_query) + 1
         sqfrom = first_non_gap(aligned_target) + 1
@@ -345,7 +372,7 @@ def parse_biopython_alignment(query: str, target: str) -> Optional[LegacyAlignme
         matches = sum(1 for a, b in zip(aligned_query, aligned_target) if a == b and a != '-')
         min_len = min(len(query), len(target))
         identity_pct = matches / min_len if min_len else 0
-
+        
         return LegacyAlignmentDisplay(
             hmmfrom=hmmfrom,
             hmmto=hmmto,

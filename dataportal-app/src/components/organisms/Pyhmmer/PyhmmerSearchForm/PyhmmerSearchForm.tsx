@@ -9,14 +9,21 @@ const PyhmmerSearchForm: React.FC = () => {
     const [evalueType, setEvalueType] = useState<'evalue' | 'bitscore'>('evalue');
     const [sequence, setSequence] = useState('');
     const [database, setDatabase] = useState('bu_all');
+    
+    // Cutoff parameters
     const [significanceEValueSeq, setSignificanceEValueSeq] = useState('0.01');
     const [significanceEValueHit, setSignificanceEValueHit] = useState('0.03');
     const [reportEValueSeq, setReportEValueSeq] = useState('1');
     const [reportEValueHit, setReportEValueHit] = useState('1');
+    const [significanceBitScoreSeq, setSignificanceBitScoreSeq] = useState('25');
+    const [significanceBitScoreHit, setSignificanceBitScoreHit] = useState('22');
+    const [reportBitScoreSeq, setReportBitScoreSeq] = useState('7');
+    const [reportBitScoreHit, setReportBitScoreHit] = useState('5');
+    
+    // Gap penalties
     const [gapOpen, setGapOpen] = useState('0.02');
     const [gapExtend, setGapExtend] = useState('0.4');
     const [subMatrix, setSubMatrix] = useState('BLOSUM62');
-    // const [biasFilter, setBiasFilter] = useState(false);
 
     // Results state
     const [results, setResults] = useState<PyhmmerResult[]>([]);
@@ -85,12 +92,26 @@ const PyhmmerSearchForm: React.FC = () => {
         setError(undefined);
         setResults([]);
         try {
-            // Compose request
+            // Compose request with all parameters
             const req = {
                 database,
                 threshold: evalueType,
-                threshold_value: parseFloat(significanceEValueSeq),
+                threshold_value: evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq),
                 input: sequence,
+                mx: subMatrix,
+                // E-value parameters
+                E: evalueType === 'evalue' ? parseFloat(reportEValueSeq) : null,
+                domE: evalueType === 'evalue' ? parseFloat(reportEValueHit) : null,
+                incE: evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : null,
+                incdomE: evalueType === 'evalue' ? parseFloat(significanceEValueHit) : null,
+                // Bit score parameters
+                T: evalueType === 'bitscore' ? parseFloat(reportBitScoreSeq) : null,
+                domT: evalueType === 'bitscore' ? parseFloat(reportBitScoreHit) : null,
+                incT: evalueType === 'bitscore' ? parseFloat(significanceBitScoreSeq) : null,
+                incdomT: evalueType === 'bitscore' ? parseFloat(significanceBitScoreHit) : null,
+                // Gap penalties
+                popen: parseFloat(gapOpen),
+                pextend: parseFloat(gapExtend),
             };
             const {id} = await PyhmmerService.search(req);
             const rawResults = await pollJobStatus(id);
@@ -158,16 +179,34 @@ const PyhmmerSearchForm: React.FC = () => {
                         <div></div>
                         <div className={styles.cutoffHeader}>Sequence</div>
                         <div className={styles.cutoffHeader}>Hit</div>
-                        <div className={styles.cutoffLabel}>Significance E-values</div>
-                        <input type="text" value={significanceEValueSeq}
-                               onChange={e => setSignificanceEValueSeq(e.target.value)} className={styles.input}/>
-                        <input type="text" value={significanceEValueHit}
-                               onChange={e => setSignificanceEValueHit(e.target.value)} className={styles.input}/>
-                        <div className={styles.cutoffLabel}>Report E-values</div>
-                        <input type="text" value={reportEValueSeq} onChange={e => setReportEValueSeq(e.target.value)}
-                               className={styles.input}/>
-                        <input type="text" value={reportEValueHit} onChange={e => setReportEValueHit(e.target.value)}
-                               className={styles.input}/>
+                        
+                        {evalueType === 'evalue' ? (
+                            <>
+                                <div className={styles.cutoffLabel}>Significance E-values</div>
+                                <input type="text" value={significanceEValueSeq}
+                                       onChange={e => setSignificanceEValueSeq(e.target.value)} className={styles.input}/>
+                                <input type="text" value={significanceEValueHit}
+                                       onChange={e => setSignificanceEValueHit(e.target.value)} className={styles.input}/>
+                                <div className={styles.cutoffLabel}>Report E-values</div>
+                                <input type="text" value={reportEValueSeq} onChange={e => setReportEValueSeq(e.target.value)}
+                                       className={styles.input}/>
+                                <input type="text" value={reportEValueHit} onChange={e => setReportEValueHit(e.target.value)}
+                                       className={styles.input}/>
+                            </>
+                        ) : (
+                            <>
+                                <div className={styles.cutoffLabel}>Significance Bit scores</div>
+                                <input type="text" value={significanceBitScoreSeq}
+                                       onChange={e => setSignificanceBitScoreSeq(e.target.value)} className={styles.input}/>
+                                <input type="text" value={significanceBitScoreHit}
+                                       onChange={e => setSignificanceBitScoreHit(e.target.value)} className={styles.input}/>
+                                <div className={styles.cutoffLabel}>Report Bit scores</div>
+                                <input type="text" value={reportBitScoreSeq} onChange={e => setReportBitScoreSeq(e.target.value)}
+                                       className={styles.input}/>
+                                <input type="text" value={reportBitScoreHit} onChange={e => setReportBitScoreHit(e.target.value)}
+                                       className={styles.input}/>
+                            </>
+                        )}
                     </div>
                 </div>
                 {/* Gap penalties */}

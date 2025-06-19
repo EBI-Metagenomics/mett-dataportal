@@ -29,6 +29,23 @@ export interface PyhmmerSearchRequest {
     threshold: 'evalue' | 'bitscore';
     threshold_value: number;
     input: string;
+    mx?: string;
+    
+    // E-value parameters
+    E?: number | null;
+    domE?: number | null;
+    incE?: number | null;
+    incdomE?: number | null;
+    
+    // Bit score parameters
+    T?: number | null;
+    domT?: number | null;
+    incT?: number | null;
+    incdomT?: number | null;
+    
+    // Gap penalties
+    popen?: number;
+    pextend?: number;
 }
 
 
