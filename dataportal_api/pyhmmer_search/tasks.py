@@ -8,7 +8,7 @@ from django.utils import timezone
 from django_celery_results.models import TaskResult
 from pyhmmer.easel import DigitalSequenceBlock
 from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
-from pyhmmer.plan7 import Pipeline, Background
+from pyhmmer.plan7 import Pipeline, Background, Builder
 
 from dataportal import settings
 from .models import HmmerJob
@@ -67,7 +67,6 @@ def run_search(self, job_id: str):
                 if job.threshold == HmmerJob.ThresholdChoices.BITSCORE
                 else None
             ),
-            mx=job.mx if job.mx else "BLOSUM62",
         )
 
         # Parse query
@@ -91,12 +90,16 @@ def run_search(self, job_id: str):
             for seq in target_file:
                 target_sequences[seq.name.decode()] = seq
 
-        # Run search
+        # Create a Builder and set the score_matrix
+        builder = Builder(alphabet)
+        builder.score_matrix = job.mx if job.mx else "BLOSUM62"
+
+        # Run search using the builder
         results = []
         block = DigitalSequenceBlock(alphabet)
         block.extend(digital_targets)
 
-        hits = pipeline.search_seq(digital_seq, block)
+        hits = pipeline.search_seq(digital_seq, block, builder=builder)
 
         try:
             hit_list = list(hits)
@@ -184,7 +187,7 @@ def run_search(self, job_id: str):
                         if alignments:
                             alignment_str = format_alignment(*alignments[0])
                             logger.info(
-                                f"Alignment for {hit.name.decode()} successful."
+                                f"Alignment for {hit.name.decode()} successful. Alignment preview:\n{alignment_str[:100]}"
                             )
                         else:
                             logger.warning(
