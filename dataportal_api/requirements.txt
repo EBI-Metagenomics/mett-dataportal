@@ -20,3 +20,5 @@ pyhmmer==0.11.1
 celery[redis]>=5.5.2
 django-celery-results==2.6.0
 django-celery-beat==2.8.1
+biopython==1.85
+

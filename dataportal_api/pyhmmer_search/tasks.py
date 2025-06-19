@@ -1,14 +1,16 @@
-import io
+import json
 import logging
-from django.utils import timezone
 
+from Bio import pairwise2
+from Bio.pairwise2 import format_alignment
 from celery import shared_task
+from django.utils import timezone
 from django_celery_results.models import TaskResult
-from pyhmmer.easel import SequenceFile, Alphabet, TextSequence, DigitalSequenceBlock
-from pyhmmer.plan7 import Pipeline, HMMFile, Background
+from pyhmmer.easel import DigitalSequenceBlock
+from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
+from pyhmmer.plan7 import Pipeline, Background
 
 from dataportal import settings
-from dataportal.celery import app
 from .models import HmmerJob
 
 logger = logging.getLogger(__name__)
@@ -28,11 +30,6 @@ def _log_query_sequences(raw_bytes):
 
 @shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
 def run_search(self, job_id: str):
-    import json
-    from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
-    from pyhmmer.plan7 import Pipeline, Background
-    from django.utils import timezone
-
     task_id = self.request.id
     logger.info(f"Running HMMER search for job {job_id} with task ID {task_id}")
     try:
@@ -75,6 +72,12 @@ def run_search(self, job_id: str):
             digital_targets = [seq.digitize(alphabet) for seq in target_file]
         logger.info(f"Digitized {len(digital_targets)} target sequences from {db_path}")
 
+        # Also build a mapping from name to TextSequence for alignment
+        target_sequences = {}
+        with SequenceFile(db_path, format="fasta") as target_file:
+            for seq in target_file:
+                target_sequences[seq.name.decode()] = seq
+
         # Run search
         results = []
         block = DigitalSequenceBlock(alphabet)
@@ -91,28 +94,92 @@ def run_search(self, job_id: str):
         for hit in hit_list:
             # Build domains info for this hit
             domains = []
-            for domain in hit.domains:
-                domain_dict = {
-                    "ienv": domain.env_from,
-                    "jenv": domain.env_to,
-                    # "seq_from": domain.seq_from,
-                    # "seq_to": domain.seq_to,
-                    # "hmm_from": domain.hmm_from,
-                    # "hmm_to": domain.hmm_to,
-                    "bitscore": domain.score,
-                    "ievalue": domain.i_evalue,
-                    "cevalue": domain.c_evalue,
-                    "bias": getattr(domain, 'bias', None),
-                    # Add alignment display if available
-                    # "alignment_display": ...
-                }
-                # Optionally, add pretty alignment if available
-                if hasattr(domain, 'alignment') and domain.alignment is not None:
+            if hasattr(hit, "domains") and hit.domains:
+                for domain in hit.domains:
+                    alignment = getattr(domain, "alignment", None)
+                    if alignment is not None:
+                        try:
+                            pretty_alignment = alignment.pretty()
+                            sqfrom = getattr(alignment, "sqfrom", None)
+                            sqto = getattr(alignment, "sqto", None)
+                            hmmfrom = getattr(alignment, "hmmfrom", None)
+                            hmmto = getattr(alignment, "hmmto", None)
+                            model = getattr(alignment, "model", None)
+                            aseq = getattr(alignment, "aseq", None)
+                            mline = getattr(alignment, "mline", None)
+                            ppline = getattr(alignment, "ppline", None)
+                        except Exception:
+                            pretty_alignment = None
+                            sqfrom = sqto = hmmfrom = hmmto = model = aseq = mline = ppline = None
+                    else:
+                        pretty_alignment = None
+                        sqfrom = sqto = hmmfrom = hmmto = model = aseq = mline = ppline = None
+
+                    if hasattr(domain, "segments") and domain.segments:
+                        for i, (start, end) in enumerate(domain.segments):
+                            domain_dict = {
+                                "env_from": domain.env_from,
+                                "env_to": domain.env_to,
+                                "bitscore": domain.score,
+                                "ievalue": domain.i_evalue,
+                                "cevalue": domain.c_evalue,
+                                "bias": getattr(domain, 'bias', None),
+                                "alignment_display": pretty_alignment,
+                                "sqfrom": sqfrom,
+                                "sqto": sqto,
+                                "hmmfrom": hmmfrom,
+                                "hmmto": hmmto,
+                                "model": model,
+                                "aseq": aseq,
+                                "mline": mline,
+                                "ppline": ppline,
+                            }
+                            domains.append(domain_dict)
+                    else:
+                        domain_dict = {
+                            "env_from": domain.env_from,
+                            "env_to": domain.env_to,
+                            "seq_from": getattr(domain, "seq_from", None),
+                            "seq_to": getattr(domain, "seq_to", None),
+                            "hmm_from": getattr(domain, "hmm_from", None),
+                            "hmm_to": getattr(domain, "hmm_to", None),
+                            "bitscore": domain.score,
+                            "ievalue": domain.i_evalue,
+                            "cevalue": domain.c_evalue,
+                            "bias": getattr(domain, 'bias', None),
+                            "alignment_display": pretty_alignment,
+                        }
+                        domains.append(domain_dict)
+            else:
+                # Fallback for phmmer: create a pseudo-domain from hit and compute alignment
+                target_seq = target_sequences.get(hit.name.decode())
+                alignment_str = None
+                if target_seq is not None:
                     try:
-                        domain_dict["alignment_display"] = domain.alignment.pretty()
-                    except Exception:
-                        pass
-                domains.append(domain_dict)
+                        query_seq_str = str(sequence)
+                        target_seq_str = str(target_seq.sequence.decode())
+                        logger.info(
+                            f"Aligning query ({len(query_seq_str)}) to target ({len(target_seq_str)}) for hit {hit.name.decode()}")
+                        alignments = pairwise2.align.globalxx(query_seq_str, target_seq_str)
+                        if alignments:
+                            alignment_str = format_alignment(*alignments[0])
+                            logger.info(f"Alignment for {hit.name.decode()} successful.")
+                        else:
+                            logger.warning(f"No alignment produced for {hit.name.decode()}.")
+                    except Exception as e:
+                        logger.warning(f"Alignment failed for {hit.name.decode()}: {e}")
+                        alignment_str = None
+                else:
+                    logger.warning(f"Target sequence not found for hit {hit.name.decode()}")
+                domains.append({
+                    "env_from": getattr(hit, "envelope_from", None),
+                    "env_to": getattr(hit, "envelope_to", None),
+                    "bitscore": hit.score,
+                    "ievalue": hit.evalue,
+                    "cevalue": getattr(hit, "c_evalue", None),
+                    "bias": getattr(hit, "bias", None),
+                    "alignment_display": alignment_str,
+                })
 
             hit_dict = {
                 "target": hit.name.decode(),
@@ -120,7 +187,7 @@ def run_search(self, job_id: str):
                 "evalue": hit.evalue,
                 "score": hit.score,
                 "num_hits": len(hit_list) or None,
-                "num_significant": sum(1 for h in hit_list if h.evalue < 0.01),  # Example threshold
+                "num_significant": sum(1 for h in hit_list if h.evalue < 0.01),
                 "domains": domains
             }
             if job.threshold == HmmerJob.ThresholdChoices.EVALUE and hit.evalue < job.threshold_value:
@@ -148,7 +215,6 @@ def run_search(self, job_id: str):
             job.task.save()
             logger.info(f"Updated database record for task {task_id} to FAILURE")
         raise
-
 
 
 @shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
