@@ -9,6 +9,8 @@ from django_celery_results.models import TaskResult
 from pyhmmer.easel import DigitalSequenceBlock
 from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
 from pyhmmer.plan7 import Pipeline, Background, Builder
+from typing import Dict, Any, List, Optional, Tuple
+from pydantic import BaseModel, Field
 
 from dataportal import settings
 from .models import HmmerJob
@@ -28,6 +30,39 @@ def _log_query_sequences(raw_bytes):
         )
     except Exception as e:
         logger.error(f"Error logging query sequences: {e}")
+
+
+class AlignmentDisplay(BaseModel):
+    hmmfrom: int
+    hmmto: int
+    sqfrom: int
+    sqto: int
+    model: str
+    aseq: str
+    mline: str
+    ppline: Optional[str] = None
+    identity: Tuple[float, int]
+    similarity: Tuple[float, int]
+
+
+class Domain(BaseModel):
+    env_from: Optional[int]
+    env_to: Optional[int]
+    bitscore: float
+    ievalue: float
+    cevalue: Optional[float]
+    bias: Optional[float]
+    alignment_display: Optional[AlignmentDisplay] = None
+
+
+class Hit(BaseModel):
+    target: str
+    description: str
+    evalue: Any  # will be formatted as string
+    score: Any   # will be formatted as string
+    num_hits: Optional[int]
+    num_significant: Optional[int]
+    domains: List[Domain]
 
 
 @shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
@@ -108,7 +143,6 @@ def run_search(self, job_id: str):
             logger.debug(f"Could not log top hits due to error: {e}")
 
         for hit in hit_list:
-            # Build domains info for this hit
             domains = []
             if hasattr(hit, "domains") and hit.domains:
                 for domain in hit.domains:
@@ -124,124 +158,93 @@ def run_search(self, job_id: str):
                             aseq = getattr(alignment, "aseq", None)
                             mline = getattr(alignment, "mline", None)
                             ppline = getattr(alignment, "ppline", None)
+                            matches = sum(1 for a, b in zip(model, aseq) if a == b and a != '-') if model and aseq else 0
+                            min_len = min(len(model), len(aseq)) if model and aseq else 0
+                            identity_pct = matches / min_len if min_len else 0
+                            alignment_display = AlignmentDisplay(
+                                hmmfrom=hmmfrom,
+                                hmmto=hmmto,
+                                sqfrom=sqfrom,
+                                sqto=sqto,
+                                model=model,
+                                aseq=aseq,
+                                mline=mline,
+                                ppline=ppline,
+                                identity=(identity_pct, matches),
+                                similarity=(identity_pct, matches),
+                            )
                         except Exception:
-                            pretty_alignment = None
-                            sqfrom = sqto = hmmfrom = hmmto = model = aseq = mline = (
-                                ppline
-                            ) = None
+                            alignment_display = None
                     else:
-                        pretty_alignment = None
-                        sqfrom = sqto = hmmfrom = hmmto = model = aseq = mline = (
-                            ppline
-                        ) = None
-
-                    if hasattr(domain, "segments") and domain.segments:
-                        for i, (start, end) in enumerate(domain.segments):
-                            domain_dict = {
-                                "env_from": domain.env_from,
-                                "env_to": domain.env_to,
-                                "bitscore": domain.score,
-                                "ievalue": domain.i_evalue,
-                                "cevalue": domain.c_evalue,
-                                "bias": getattr(domain, "bias", None),
-                                "alignment_display": pretty_alignment,
-                                "sqfrom": sqfrom,
-                                "sqto": sqto,
-                                "hmmfrom": hmmfrom,
-                                "hmmto": hmmto,
-                                "model": model,
-                                "aseq": aseq,
-                                "mline": mline,
-                                "ppline": ppline,
-                            }
-                            domains.append(domain_dict)
-                    else:
-                        domain_dict = {
-                            "env_from": domain.env_from,
-                            "env_to": domain.env_to,
-                            "seq_from": getattr(domain, "seq_from", None),
-                            "seq_to": getattr(domain, "seq_to", None),
-                            "hmm_from": getattr(domain, "hmm_from", None),
-                            "hmm_to": getattr(domain, "hmm_to", None),
-                            "bitscore": f"{hit.score:.2f}",
-                            "ievalue": domain.i_evalue,
-                            "cevalue": domain.c_evalue,
-                            "bias": getattr(domain, "bias", None),
-                            "alignment_display": pretty_alignment,
-                        }
-                        domains.append(domain_dict)
+                        alignment_display = None
+                    domain_obj = Domain(
+                        env_from=domain.env_from,
+                        env_to=domain.env_to,
+                        bitscore=domain.score,
+                        ievalue=domain.i_evalue,
+                        cevalue=getattr(domain, "c_evalue", None),
+                        bias=getattr(domain, "bias", None),
+                        alignment_display=alignment_display,
+                    )
+                    domains.append(domain_obj)
             else:
-                # Fallback for phmmer: create a pseudo-domain from hit and compute alignment
                 target_seq = target_sequences.get(hit.name.decode())
-                alignment_str = None
+                alignment_display = None
                 if target_seq is not None:
                     try:
                         query_seq_str = str(sequence)
                         target_seq_str = str(target_seq.sequence.decode())
-                        logger.info(
-                            f"Aligning query ({len(query_seq_str)}) to target ({len(target_seq_str)}) for hit {hit.name.decode()}"
-                        )
-                        alignments = pairwise2.align.globalxx(
-                            query_seq_str, target_seq_str
-                        )
-                        if alignments:
-                            alignment_str = format_alignment(*alignments[0])
-                            logger.info(
-                                f"Alignment for {hit.name.decode()} successful. Alignment preview:\n{alignment_str[:100]}"
-                            )
+                        logger.info(f"Aligning query ({len(query_seq_str)}) to target ({len(target_seq_str)}) for hit {hit.name.decode()}")
+                        alignment_display = parse_biopython_alignment(query_seq_str, target_seq_str)
+                        if alignment_display:
+                            logger.info(f"Alignment for {hit.name.decode()} successful. Alignment preview:\n{alignment_display.model[:50]}...")
                         else:
-                            logger.warning(
-                                f"No alignment produced for {hit.name.decode()}."
-                            )
+                            logger.warning(f"No alignment produced for {hit.name.decode()}.")
                     except Exception as e:
                         logger.warning(f"Alignment failed for {hit.name.decode()}: {e}")
-                        alignment_str = None
+                        alignment_display = None
                 else:
-                    logger.warning(
-                        f"Target sequence not found for hit {hit.name.decode()}"
-                    )
-                domains.append(
-                    {
-                        "env_from": getattr(hit, "envelope_from", None),
-                        "env_to": getattr(hit, "envelope_to", None),
-                        "bitscore": f"{hit.score:.2f}",
-                        "ievalue": hit.evalue,
-                        "cevalue": getattr(hit, "c_evalue", None),
-                        "bias": getattr(hit, "bias", None),
-                        "alignment_display": alignment_str,
-                    }
+                    logger.warning(f"Target sequence not found for hit {hit.name.decode()}")
+                domain_obj = Domain(
+                    env_from=getattr(hit, "envelope_from", None),
+                    env_to=getattr(hit, "envelope_to", None),
+                    bitscore=hit.score,
+                    ievalue=hit.evalue,
+                    cevalue=getattr(hit, "c_evalue", None),
+                    bias=getattr(hit, "bias", None),
+                    alignment_display=alignment_display,
                 )
-
-            hit_dict = {
-                "target": hit.name.decode(),
-                "description": hit.description.decode(),
-                "evalue": f"{hit.evalue:.2e}",
-                "score": f"{hit.score:.2f}",
-                "num_hits": len(hit_list) or None,
-                "num_significant": sum(1 for h in hit_list if h.evalue < 0.01),
-                "domains": domains,
-            }
+                domains.append(domain_obj)
+            hit_obj = Hit(
+                target=hit.name.decode(),
+                description=hit.description.decode(),
+                evalue=f"{hit.evalue:.2e}",
+                score=f"{hit.score:.2f}",
+                num_hits=len(hit_list) or None,
+                num_significant=sum(1 for h in hit_list if h.evalue < 0.01),
+                domains=domains
+            )
             if (
                 job.threshold == HmmerJob.ThresholdChoices.EVALUE
                 and hit.evalue < job.threshold_value
             ):
-                results.append(hit_dict)
+                results.append(hit_obj)
             elif (
                 job.threshold == HmmerJob.ThresholdChoices.BITSCORE
                 and hit.score > job.threshold_value
             ):
-                results.append(hit_dict)
+                results.append(hit_obj)
 
         logger.info(f"{len(results)} hits passed the filter for job {job_id}")
 
         if job.task:
             job.task.status = "SUCCESS"
-            job.task.result = json.dumps(results)
+            job.task.result = json.dumps([h.model_dump() for h in results])
             job.task.date_done = timezone.now()
             job.task.save()
             logger.info(f"Updated database record for task {task_id} to SUCCESS")
 
-        return results
+        return [h.model_dump() for h in results]
 
     except Exception as e:
         logger.error(f"Error in run_search for job {job_id}: {str(e)}", exc_info=True)
@@ -302,6 +305,42 @@ def test_task(self):
     logger.info(f">>> Completed test task {task_id}")
     return "OK"
 
+def parse_biopython_alignment(query: str, target: str) -> Optional[AlignmentDisplay]:
+    alignments = pairwise2.align.globalxx(query, target)
+    if not alignments:
+        return None
+    aln = alignments[0]
+    aligned_query, aligned_target, score, begin, end = aln
+    mline = ''.join('|' if a == b and a != '-' else ' ' for a, b in zip(aligned_query, aligned_target))
+    def first_non_gap(seq):
+        for i, c in enumerate(seq):
+            if c != '-':
+                return i
+        return 0
+    def last_non_gap(seq):
+        for i in range(len(seq)-1, -1, -1):
+            if seq[i] != '-':
+                return i
+        return len(seq) - 1
+    hmmfrom = first_non_gap(aligned_query) + 1
+    hmmto = last_non_gap(aligned_query) + 1
+    sqfrom = first_non_gap(aligned_target) + 1
+    sqto = last_non_gap(aligned_target) + 1
+    matches = sum(1 for a, b in zip(aligned_query, aligned_target) if a == b and a != '-')
+    min_len = min(len(query), len(target))
+    identity_pct = matches / min_len if min_len else 0
+    return AlignmentDisplay(
+        hmmfrom=hmmfrom,
+        hmmto=hmmto,
+        sqfrom=sqfrom,
+        sqto=sqto,
+        model=aligned_query,
+        aseq=aligned_target,
+        mline=mline,
+        ppline=None,
+        identity=(identity_pct, matches),
+        similarity=(identity_pct, matches),
+    )
 
 @shared_task
 def cleanup_old_tasks():

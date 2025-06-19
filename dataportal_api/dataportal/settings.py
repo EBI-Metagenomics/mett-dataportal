@@ -88,7 +88,7 @@ INSTALLED_APPS = [
     "ninja",
     "django_celery_results",
     "django_celery_beat",
-    "pyhmmer_search.apps.PyhmmerSearchConfig",
+    "pyhmmer_search.search.apps.PyhmmerSearchConfig",
 ]
 
 if DEBUG:
