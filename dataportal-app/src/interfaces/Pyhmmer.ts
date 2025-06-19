@@ -5,6 +5,20 @@ export interface PyhmmerDatabase {
     order?: number;
 }
 
+export interface PyhmmerResult {
+    query: string;
+    target: string;
+    evalue: number;
+    score: number;
+    num_hits: number;
+    num_significant: number;
+    bias?: number;
+    description?: string;
+
+    [key: string]: unknown;
+}
+
+
 export interface PyhmmerSearchRequest {
     database: string;
     threshold: 'evalue' | 'bitscore';

@@ -1,8 +1,9 @@
 import React, {useState, useRef, useEffect} from 'react';
 import styles from './PyhmmerSearchForm.module.scss';
 import {PyhmmerService} from '../../../../services/pyhmmerService';
-import PyhmmerResultsTable, {PyhmmerResult} from '../PyhmmerResultsHandler/PyhmmerResultsTable';
 import {EXAMPLE_SEQUENCE} from "../../../../utils/appConstants";
+import {PyhmmerResult} from "../../../../interfaces/Pyhmmer";
+import PyhmmerResultsTable from "@components/organisms/Pyhmmer/PyhmmerResultsHandler/PyhmmerResultsTable";
 
 const PyhmmerSearchForm: React.FC = () => {
     const [evalueType, setEvalueType] = useState<'evalue' | 'bitscore'>('evalue');
@@ -61,6 +62,8 @@ const PyhmmerSearchForm: React.FC = () => {
             target: hit.target || hit.target_name || hit.name || '-',
             evalue: hit.evalue ?? hit.Evalue ?? '-',
             score: hit.score ?? hit.Score ?? '-',
+            num_hits: hit.num_hits ?? hit.num_hits ?? '-',
+            num_significant: hit.num_significant ?? hit.num_significant ?? '-',
             bias: hit.bias ?? '-',
             description: hit.description ?? hit.desc ?? '-',
         }));

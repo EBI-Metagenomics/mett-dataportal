@@ -143,7 +143,7 @@ def run_search(self, job_id: str):
                             "seq_to": getattr(domain, "seq_to", None),
                             "hmm_from": getattr(domain, "hmm_from", None),
                             "hmm_to": getattr(domain, "hmm_to", None),
-                            "bitscore": domain.score,
+                            "bitscore": f"{hit.score:.2f}",
                             "ievalue": domain.i_evalue,
                             "cevalue": domain.c_evalue,
                             "bias": getattr(domain, 'bias', None),
@@ -174,7 +174,7 @@ def run_search(self, job_id: str):
                 domains.append({
                     "env_from": getattr(hit, "envelope_from", None),
                     "env_to": getattr(hit, "envelope_to", None),
-                    "bitscore": hit.score,
+                    "bitscore": f"{hit.score:.2f}",
                     "ievalue": hit.evalue,
                     "cevalue": getattr(hit, "c_evalue", None),
                     "bias": getattr(hit, "bias", None),
@@ -184,8 +184,8 @@ def run_search(self, job_id: str):
             hit_dict = {
                 "target": hit.name.decode(),
                 "description": hit.description.decode(),
-                "evalue": hit.evalue,
-                "score": hit.score,
+                "evalue": f"{hit.evalue:.2e}",
+                "score": f"{hit.score:.2f}",
                 "num_hits": len(hit_list) or None,
                 "num_significant": sum(1 for h in hit_list if h.evalue < 0.01),
                 "domains": domains
