@@ -3,6 +3,7 @@ import styles from './PyhmmerResultsTable.module.scss';
 import {GeneService} from '../../../../services/geneService';
 import {PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import Pagination from '@components/molecules/Pagination';
+import { saveAs } from 'file-saver';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -10,12 +11,14 @@ interface PyhmmerResultsTableProps {
     results: PyhmmerResult[];
     loading: boolean;
     error?: string;
+    jobId?: string;
 }
 
-const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loading, error}) => {
+const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loading, error, jobId}) => {
     const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+    const [pageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+    const [downloading, setDownloading] = useState<string | null>(null);
 
     const totalPages = Math.ceil((results?.length || 0) / pageSize);
     const hasPrevious = currentPage > 1;
@@ -42,9 +45,24 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
         setCurrentPage(page);
     };
 
-    const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        setPageSize(Number(event.target.value));
-        setCurrentPage(1);
+    const handleDownload = async (format: 'tab' | 'fasta' | 'aligned_fasta') => {
+        if (!jobId) return;
+        setDownloading(format);
+        try {
+            const url = `/api/pyhmmer/results/${jobId}/download?format=${format}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Download failed');
+            const blob = await response.blob();
+            let filename = '';
+            if (format === 'tab') filename = `pyhmmer_hits_${jobId}.tsv`;
+            if (format === 'fasta') filename = `pyhmmer_hits_${jobId}.fasta.gz`;
+            if (format === 'aligned_fasta') filename = `pyhmmer_hits_${jobId}.aligned.fasta.gz`;
+            saveAs(blob, filename);
+        } catch {
+            alert('Failed to download file.');
+        } finally {
+            setDownloading(null);
+        }
     };
 
     if (loading) {
@@ -58,6 +76,32 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
     }
     return (
         <>
+        {/* Download buttons */}
+        {jobId && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginBottom: 12 }}>
+                <button
+                    className="vf-button vf-button--sm"
+                    onClick={() => handleDownload('tab')}
+                    disabled={!!downloading}
+                >
+                    {downloading === 'tab' ? 'Downloading...' : 'Tab Delimited'}
+                </button>
+                <button
+                    className="vf-button vf-button--sm"
+                    onClick={() => handleDownload('fasta')}
+                    disabled={!!downloading}
+                >
+                    {downloading === 'fasta' ? 'Downloading...' : 'FASTA'}
+                </button>
+                <button
+                    className="vf-button vf-button--sm"
+                    onClick={() => handleDownload('aligned_fasta')}
+                    disabled={!!downloading}
+                >
+                    {downloading === 'aligned_fasta' ? 'Downloading...' : 'Aligned FASTA'}
+                </button>
+            </div>
+        )}
         <table className={styles.resultsTable}>
             <thead>
             <tr>

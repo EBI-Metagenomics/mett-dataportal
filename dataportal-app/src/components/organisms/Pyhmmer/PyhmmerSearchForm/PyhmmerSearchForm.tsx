@@ -287,7 +287,12 @@ const PyhmmerSearchForm: React.FC = () => {
                     />
                 </div>
                 <div style={{ flex: 2, paddingLeft: 16 }}>
-                    <PyhmmerResultsTable results={results} loading={loading} error={error}/>
+                    <PyhmmerResultsTable
+                        results={results}
+                        loading={loading}
+                        error={error}
+                        jobId={selectedJobId}
+                    />
                 </div>
             </div>
         </section>

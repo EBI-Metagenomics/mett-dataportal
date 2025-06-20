@@ -5,6 +5,9 @@ import uuid
 from django.shortcuts import get_object_or_404
 from ninja import Router, Query
 from ninja.errors import HttpError
+from django.http import StreamingHttpResponse, HttpResponse
+import gzip
+from io import BytesIO, StringIO
 
 from dataportal import settings
 
@@ -210,3 +213,84 @@ def get_alignment_details(request, id: uuid.UUID, target: str, domain_index: int
     except Exception as e:
         logger.error(f"Error in get_alignment_details: {str(e)}", exc_info=True)
         raise HttpError(500, f"Internal server error: {str(e)}")
+
+
+@pyhmmer_router_result.get("/{uuid:id}/download")
+def download_results(request, id: uuid.UUID, format: str = 'tab'):
+    """
+    Download significant hits in various formats: tab, fasta, aligned_fasta (all significant hits only)
+    """
+    from celery.result import AsyncResult
+    import csv
+
+    job = get_object_or_404(HmmerJob, id=id)
+    if not job.task:
+        raise HttpError(404, "Job not found or not finished")
+    async_result = AsyncResult(job.task.task_id)
+    if async_result.status != "SUCCESS":
+        raise HttpError(400, "Job not finished")
+    raw_result = job.task.result
+    try:
+        task_result_data = (
+            json.loads(raw_result) if isinstance(raw_result, str) else raw_result
+        )
+    except json.JSONDecodeError:
+        task_result_data = raw_result
+
+    # Only significant hits
+    significant_hits = [h for h in (task_result_data or []) if h.get('num_significant', 0) > 0 or (h.get('domains') and len(h.get('domains')) > 0)]
+
+    if format == 'tab':
+        def tab_stream():
+            output = StringIO()
+            writer = csv.writer(output, delimiter='\t')
+            writer.writerow(["Target", "E-value", "Score", "Hits", "Significant Hits", "Description"])
+            for h in significant_hits:
+                writer.writerow([
+                    h.get('target', ''),
+                    h.get('evalue', ''),
+                    h.get('score', ''),
+                    h.get('num_hits', ''),
+                    h.get('num_significant', ''),
+                    h.get('description', '')
+                ])
+            yield output.getvalue()
+        response = StreamingHttpResponse(tab_stream(), content_type='text/tab-separated-values')
+        response['Content-Disposition'] = f'attachment; filename="pyhmmer_hits_{id}.tsv"'
+        return response
+
+    elif format == 'fasta':
+        def fasta_stream():
+            buf = BytesIO()
+            with gzip.GzipFile(fileobj=buf, mode='w') as gz:
+                for h in significant_hits:
+                    fasta = f">{h.get('target', '')}\n{h.get('sequence', '')}\n"
+                    gz.write(fasta.encode('utf-8'))
+            buf.seek(0)
+            yield buf.read()
+        response = StreamingHttpResponse(fasta_stream(), content_type='application/gzip')
+        response['Content-Disposition'] = f'attachment; filename="pyhmmer_hits_{id}.fasta.gz"'
+        return response
+
+    elif format == 'aligned_fasta':
+        def aligned_fasta_stream():
+            buf = BytesIO()
+            with gzip.GzipFile(fileobj=buf, mode='w') as gz:
+                for h in significant_hits:
+                    # For each domain, if alignment exists, output aligned FASTA
+                    domains = h.get('domains', [])
+                    for d in domains:
+                        aln = d.get('alignment')
+                        if aln:
+                            # Use target_name and target_sequence from alignment
+                            header = f">{aln.get('target_name', '')}"
+                            seq = aln.get('target_sequence', '')
+                            gz.write((header + "\n" + seq + "\n").encode('utf-8'))
+            buf.seek(0)
+            yield buf.read()
+        response = StreamingHttpResponse(aligned_fasta_stream(), content_type='application/gzip')
+        response['Content-Disposition'] = f'attachment; filename="pyhmmer_hits_{id}.aligned.fasta.gz"'
+        return response
+
+    else:
+        raise HttpError(400, "Invalid format. Use one of: tab, fasta, aligned_fasta")
