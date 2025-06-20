@@ -239,6 +239,7 @@ const PyhmmerSearchForm: React.FC = () => {
                 {/*<h3 className={styles.sectionTitle}>protein sequence vs protein sequence database</h3>*/}
                 {/* Sequence Input */}
                 <div className={styles.formSection}>
+                    <p/>
                     <label className={styles.label}>Sequence</label>
                     <div className={styles.sequenceInputBox}>
                         <textarea
