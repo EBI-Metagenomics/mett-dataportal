@@ -13,8 +13,8 @@ export interface PyhmmerMXChoice {
 export interface PyhmmerResult {
     query: string;
     target: string;
-    evalue: number;
-    score: number;
+    evalue: string;
+    score: string;
     num_hits: number;
     num_significant: number;
     bias?: number;

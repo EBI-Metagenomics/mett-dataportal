@@ -1,32 +1,118 @@
+.pyhmmerSection {
+  padding: 0.5rem;
+  background-color: #f9f9f9;
+}
+
+.formContainer {
+  display: flex;
+  //gap: 24px;
+  //margin-bottom: 32px;
+}
+
 .leftPane {
-  text-align: left;
-  width: 25%;
-  float: left;
+  flex: 1;
+  min-width: 400px;
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .rightPane {
-  width: 75%;
-  float: right;
+  flex: 1.5;
+  min-width: 400px;
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.pyhmmerFormWrapper {
+.resultsContainer {
+  margin-top: 12px;
   background: #fff;
+  padding: 24px;
   border-radius: 8px;
-  padding: 32px 24px;
-  max-width: 700px;
-  margin: 0 auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  font-family: inherit;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .formSection {
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .label {
   display: block;
   font-weight: 500;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+}
+
+.radioRow {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+}
+
+.cutoffGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.cutoffHeader {
+  font-weight: 500;
+  text-align: center;
+}
+
+.cutoffLabel {
+  justify-self: start;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+.gapRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 16px;
+  align-items: end;
+  & > div > div {
+    margin-bottom: 8px;
+  }
+}
+
+.inputSmall {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.selectSmall {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #fff;
 }
 
 .sequenceInputBox {
@@ -38,7 +124,7 @@
 }
 .textarea {
   width: 100%;
-  min-height: 60px;
+  min-height: 100px;
   border: none;
   background: transparent;
   font-family: monospace;
@@ -81,77 +167,6 @@
   background: #bdbdbd;
   color: #333;
   &:hover { background: #a0a0a0; }
-}
-
-.select {
-  width: 90%;
-  padding: 7px 10px;
-  border-radius: 4px;
-  border: 1px solid #bdbdbd;
-  font-size: 1rem;
-  background: #fafafa;
-}
-
-.radioRow {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 10px;
-  label {
-    font-weight: 400;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-}
-
-.cutoffGrid {
-  display: grid;
-  grid-template-columns: 50px 1fr 1fr;
-  gap: 8px 12px;
-  align-items: center;
-  margin-top: 8px;
-}
-.cutoffHeader {
-  font-weight: 500;
-  text-align: center;
-}
-.cutoffLabel {
-  font-size: 0.98em;
-  color: #616161;
-}
-.input {
-  width: 90%;
-  padding: 5px 8px;
-  border-radius: 4px;
-  border: 1px solid #bdbdbd;
-  font-size: 1rem;
-}
-
-.gapRow {
-  display: flex;
-  gap: 32px;
-  > div {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 20px;
-  }
-}
-.inputSmall {
-  width: 70px;
-  padding: 5px 8px;
-  border-radius: 4px;
-  border: 1px solid #bdbdbd;
-  font-size: 1rem;
-}
-.selectSmall {
-  width: 120px;
-  padding: 5px 8px;
-  border-radius: 4px;
-  border: 1px solid #bdbdbd;
-  font-size: 1rem;
-  background: #fafafa;
 }
 
 // Filter section
