@@ -216,7 +216,7 @@ def get_alignment_details(request, id: uuid.UUID, target: str, domain_index: int
 
 
 @pyhmmer_router_result.get("/{uuid:id}/download")
-def download_results(request, id: uuid.UUID, format: str = 'tab'):
+def download_results(request, id: uuid.UUID, format: str = 'tsv'):
     """
     Download significant hits in various formats: tab, fasta, aligned_fasta (all significant hits only)
     """
@@ -240,8 +240,8 @@ def download_results(request, id: uuid.UUID, format: str = 'tab'):
     # Only significant hits
     significant_hits = [h for h in (task_result_data or []) if h.get('num_significant', 0) > 0 or (h.get('domains') and len(h.get('domains')) > 0)]
 
-    if format == 'tab':
-        def tab_stream():
+    if format == 'tsv':
+        def tsv_stream():
             output = StringIO()
             writer = csv.writer(output, delimiter='\t')
             writer.writerow(["Target", "E-value", "Score", "Hits", "Significant Hits", "Description"])
@@ -255,7 +255,7 @@ def download_results(request, id: uuid.UUID, format: str = 'tab'):
                     h.get('description', '')
                 ])
             yield output.getvalue()
-        response = StreamingHttpResponse(tab_stream(), content_type='text/tab-separated-values')
+        response = StreamingHttpResponse(tsv_stream(), content_type='text/tab-separated-values')
         response['Content-Disposition'] = f'attachment; filename="pyhmmer_hits_{id}.tsv"'
         return response
 
@@ -264,8 +264,13 @@ def download_results(request, id: uuid.UUID, format: str = 'tab'):
             buf = BytesIO()
             with gzip.GzipFile(fileobj=buf, mode='w') as gz:
                 for h in significant_hits:
-                    fasta = f">{h.get('target', '')}\n{h.get('sequence', '')}\n"
-                    gz.write(fasta.encode('utf-8'))
+                    domains = h.get('domains', [])
+                    if domains:
+                        aln = domains[0].get('alignment')
+                        if aln and aln.get('target_sequence'):
+                            seq = aln['target_sequence'].replace('-', '')
+                            header = f">{h.get('target', '')}"
+                            gz.write((header + "\n" + seq + "\n").encode('utf-8'))
             buf.seek(0)
             yield buf.read()
         response = StreamingHttpResponse(fasta_stream(), content_type='application/gzip')
@@ -277,14 +282,14 @@ def download_results(request, id: uuid.UUID, format: str = 'tab'):
             buf = BytesIO()
             with gzip.GzipFile(fileobj=buf, mode='w') as gz:
                 for h in significant_hits:
-                    # For each domain, if alignment exists, output aligned FASTA
                     domains = h.get('domains', [])
-                    for d in domains:
+                    for i, d in enumerate(domains):
                         aln = d.get('alignment')
-                        if aln:
-                            # Use target_name and target_sequence from alignment
-                            header = f">{aln.get('target_name', '')}"
-                            seq = aln.get('target_sequence', '')
+                        if aln and aln.get('target_sequence'):
+                            seq = aln['target_sequence']
+                            header = f">{h.get('target', '')}"
+                            if len(domains) > 1:
+                                header += f"_{i+1}"
                             gz.write((header + "\n" + seq + "\n").encode('utf-8'))
             buf.seek(0)
             yield buf.read()
@@ -293,4 +298,4 @@ def download_results(request, id: uuid.UUID, format: str = 'tab'):
         return response
 
     else:
-        raise HttpError(400, "Invalid format. Use one of: tab, fasta, aligned_fasta")
+        raise HttpError(400, "Invalid format. Use one of: tsv, fasta, aligned_fasta")

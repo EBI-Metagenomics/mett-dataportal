@@ -121,35 +121,13 @@ def run_search(self, job_id: str):
         alphabet = Alphabet.amino()
         background = Background(alphabet)
         
-        # Configure pipeline with threshold parameters only
+        # Configure pipeline with threshold parameters
         pipeline_kwargs = {
-            'alphabet': alphabet,
-            'background': background,
-            'bias_filter': True,
-            'null2': True,
+            'E': job.E, 'domE': job.domE, 'incE': job.incE, 'incdomE': job.incdomE,
+            'T': job.T, 'domT': job.domT, 'incT': job.incT, 'incdomT': job.incdomT,
         }
-        
-        # Add threshold parameters based on threshold type
-        if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
-            if job.incE is not None:
-                pipeline_kwargs['incE'] = job.incE
-            if job.incdomE is not None:
-                pipeline_kwargs['incdomE'] = job.incdomE
-            if job.E is not None:
-                pipeline_kwargs['E'] = job.E
-            if job.domE is not None:
-                pipeline_kwargs['domE'] = job.domE
-        else:  # bitscore
-            if job.incT is not None:
-                pipeline_kwargs['incT'] = job.incT
-            if job.incdomT is not None:
-                pipeline_kwargs['incdomT'] = job.incdomT
-            if job.T is not None:
-                pipeline_kwargs['T'] = job.T
-            if job.domT is not None:
-                pipeline_kwargs['domT'] = job.domT
-            
-        pipeline = Pipeline(**pipeline_kwargs)
+        # Filter out None values before passing to Pipeline
+        pipeline = Pipeline(alphabet, **{k: v for k, v in pipeline_kwargs.items() if v is not None})
         
         logger.info(f"Configured pipeline with parameters: {pipeline_kwargs}")
 
@@ -224,7 +202,7 @@ def run_search(self, job_id: str):
                     )
                     domains.append(domain_obj)
             else:
-                # For hits without domains (phmmer case), try to create alignment
+                # For hits without domains (phmmer case), create alignment with Biopython
                 target_seq = target_sequences.get(hit.name.decode())
                 pyhmmer_alignment = None
                 legacy_alignment = None
@@ -233,13 +211,30 @@ def run_search(self, job_id: str):
                     try:
                         query_seq_str = str(sequence)
                         target_seq_str = str(target_seq.sequence)
-                        logger.info(f"Creating Biopython alignment for hit {hit.name.decode()}")
+                        alignments = pairwise2.align.globalxx(query_seq_str, target_seq_str)
+                        if alignments:
+                            aln = alignments[0]
+                            aligned_query, aligned_target, score, begin, end = aln
+                            pyhmmer_alignment = PyhmmerAlignmentSchema(
+                                hmm_name=name.decode(),
+                                hmm_accession=None,
+                                hmm_from=1,
+                                hmm_to=len(query_seq_str),
+                                hmm_length=len(query_seq_str),
+                                hmm_sequence=aligned_query,
+                                target_name=hit.name.decode(),
+                                target_from=1,
+                                target_to=len(target_seq_str),
+                                target_length=len(target_seq_str),
+                                target_sequence=aligned_target,
+                                identity_sequence=''.join('|' if a == b else ' ' for a, b in zip(aligned_query, aligned_target)),
+                                posterior_probabilities=None
+                            )
                         legacy_alignment = parse_biopython_alignment(query_seq_str, target_seq_str)
-                        if legacy_alignment:
-                            logger.info(f"Biopython alignment for {hit.name.decode()} successful")
+
                     except Exception as e:
                         logger.warning(f"Biopython alignment failed for {hit.name.decode()}: {e}")
-                
+
                 domain_obj = DomainSchema(
                     env_from=getattr(hit, "envelope_from", None),
                     env_to=getattr(hit, "envelope_to", None),
@@ -253,6 +248,10 @@ def run_search(self, job_id: str):
                 )
                 domains.append(domain_obj)
                 
+            first_domain_seq = None
+            if domains and domains[0].alignment and domains[0].alignment.target_sequence:
+                first_domain_seq = domains[0].alignment.target_sequence.replace('-', '')
+
             # Truncate bracketed content from description
             desc = hit.description.decode() if hit.description else ""
             desc = re.sub(r"\s*\[.*\]$", "", desc)
@@ -261,6 +260,7 @@ def run_search(self, job_id: str):
                 description=desc,
                 evalue=f"{hit.evalue:.2e}",
                 score=f"{hit.score:.2f}",
+                sequence=first_domain_seq,
                 num_hits=len(hit_list) or None,
                 num_significant=sum(1 for h in hit_list if h.evalue < 0.01),
                 domains=domains
