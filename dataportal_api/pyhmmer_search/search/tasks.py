@@ -11,6 +11,7 @@ from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
 from pyhmmer.plan7 import Pipeline, Background, Builder
 from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel, Field
+import re
 
 from dataportal import settings
 from .models import HmmerJob
@@ -252,9 +253,12 @@ def run_search(self, job_id: str):
                 )
                 domains.append(domain_obj)
                 
+            # Truncate bracketed content from description
+            desc = hit.description.decode() if hit.description else ""
+            desc = re.sub(r"\s*\[.*\]$", "", desc)
             hit_obj = HitSchema(
                 target=hit.name.decode(),
-                description=hit.description.decode() if hit.description else "",
+                description=desc,
                 evalue=f"{hit.evalue:.2e}",
                 score=f"{hit.score:.2f}",
                 num_hits=len(hit_list) or None,

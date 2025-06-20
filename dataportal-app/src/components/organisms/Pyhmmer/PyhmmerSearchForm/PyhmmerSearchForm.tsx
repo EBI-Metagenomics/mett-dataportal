@@ -4,6 +4,9 @@ import {PyhmmerService} from '../../../../services/pyhmmerService';
 import {PyhmmerMXChoice, PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import PyhmmerResultsTable from "@components/organisms/Pyhmmer/PyhmmerResultsHandler/PyhmmerResultsTable";
 import PyhmmerSearchInput from "@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchInput";
+import PyhmmerSearchHistory, { SearchHistoryItem } from "@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchHistory";
+
+const HISTORY_KEY = 'pyhmmer_search_history';
 
 const PyhmmerSearchForm: React.FC = () => {
     const [evalueType, setEvalueType] = useState<'evalue' | 'bitscore'>('evalue');
@@ -33,6 +36,10 @@ const PyhmmerSearchForm: React.FC = () => {
     const [databases, setDatabases] = useState<{ id: string; name: string }[]>([]);
     const [mxChoices, setMXChoices] = useState<PyhmmerMXChoice[]>([]);
 
+    // Search history state
+    const [history, setHistory] = useState<SearchHistoryItem[]>([]);
+    const [selectedJobId, setSelectedJobId] = useState<string | undefined>(undefined);
+
     useEffect(() => {
         const fetchDatabases = async () => {
             try {
@@ -52,6 +59,11 @@ const PyhmmerSearchForm: React.FC = () => {
         };
         fetchDatabases();
         fetchMXChoices();
+        // Load history from localStorage
+        const stored = localStorage.getItem(HISTORY_KEY);
+        if (stored) {
+            setHistory(JSON.parse(stored));
+        }
     }, []);
 
     // Helper to poll for job status
@@ -84,6 +96,18 @@ const PyhmmerSearchForm: React.FC = () => {
         }));
     };
 
+    // Save search to localStorage
+    const saveSearchToHistory = (jobId: string, query: string) => {
+        const date = new Date().toLocaleString();
+        const newItem: SearchHistoryItem = { jobId, query, date };
+        let updated = [newItem, ...history.filter(h => h.jobId !== jobId)];
+        // Limit to 20 most recent
+        if (updated.length > 20) updated = updated.slice(0, 20);
+        setHistory(updated);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    };
+
+    // Handle new search submit
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         setLoading(true);
@@ -115,6 +139,8 @@ const PyhmmerSearchForm: React.FC = () => {
             const rawResults = await pollJobStatus(id);
             if (rawResults) {
                 setResults(mapResults(rawResults));
+                setSelectedJobId(id);
+                saveSearchToHistory(id, sequence.slice(0, 40) + (sequence.length > 40 ? '...' : ''));
             }
         } catch (err) {
             if (err instanceof Error) {
@@ -122,6 +148,26 @@ const PyhmmerSearchForm: React.FC = () => {
             } else {
                 setError('An unknown error occurred while running the search.');
             }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle selecting a past search
+    const handleSelectHistory = async (jobId: string) => {
+        setSelectedJobId(jobId);
+        setLoading(true);
+        setError(undefined);
+        setResults([]);
+        try {
+            const job = await PyhmmerService.getJobDetails(jobId);
+            if (job.status === 'SUCCESS' && job.task && Array.isArray(job.task.result)) {
+                setResults(mapResults(job.task.result));
+            } else {
+                setError('No results found for this job.');
+            }
+        } catch {
+            setError('Failed to load past search results.');
         } finally {
             setLoading(false);
         }
@@ -231,8 +277,18 @@ const PyhmmerSearchForm: React.FC = () => {
                 </div>
             </div>
 
-            <div className={styles.resultsContainer}>
-                <PyhmmerResultsTable results={results} loading={loading} error={error}/>
+            {/* Results two-column layout */}
+            <div className={styles.resultsContainer} style={{ display: 'flex', gap: 24 }}>
+                <div style={{ flex: 0.7, minWidth: 220, maxWidth: 320, borderRight: '1px solid #eee', paddingRight: 16 }}>
+                    <PyhmmerSearchHistory
+                        history={history}
+                        onSelect={handleSelectHistory}
+                        selectedJobId={selectedJobId}
+                    />
+                </div>
+                <div style={{ flex: 2, paddingLeft: 16 }}>
+                    <PyhmmerResultsTable results={results} loading={loading} error={error}/>
+                </div>
             </div>
         </section>
     );
