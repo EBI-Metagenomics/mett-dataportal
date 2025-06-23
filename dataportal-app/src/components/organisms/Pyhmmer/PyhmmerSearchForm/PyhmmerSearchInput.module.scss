@@ -15,23 +15,27 @@
   padding: 12px;
   margin-bottom: 8px;
 }
-.textarea {
+
+.vf-form__textarea {
   width: 100%;
-  min-height: 100px;
+  min-height: 50px;
   border: none;
   background: transparent;
   font-family: monospace;
-  font-size: 1rem;
+  font-size: 0.5rem;
   resize: vertical;
   outline: none;
 }
+
 .sequenceInputHelp {
   font-size: 0.95em;
   color: #757575;
   margin-top: 4px;
+
   a {
     color: #1976d2;
     text-decoration: none;
+
     &:hover {
       text-decoration: underline;
     }
@@ -42,6 +46,7 @@
   display: flex;
   gap: 12px;
   margin-top: 8px;
+
   button {
     min-width: 80px;
     padding: 7px 18px;
@@ -53,18 +58,30 @@
     transition: background 0.2s;
   }
 }
-.submitBtn {
-  background: #1976d2;
-  color: #fff;
-  &:hover { background: #125ea2; }
+
+.vf-button {
+  margin-top: 10px;
+  display: block;
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
 }
+
+
 .resetBtn {
   background: #757575;
   color: #fff;
-  &:hover { background: #5a5a5a; }
+
+  &:hover {
+    background: #5a5a5a;
+  }
 }
+
 .cleanBtn {
   background: #bdbdbd;
   color: #333;
-  &:hover { background: #a0a0a0; }
+
+  &:hover {
+    background: #a0a0a0;
+  }
 } 

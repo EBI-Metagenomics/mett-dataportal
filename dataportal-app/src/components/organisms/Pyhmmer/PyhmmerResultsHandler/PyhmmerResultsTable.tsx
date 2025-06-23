@@ -3,7 +3,7 @@ import styles from './PyhmmerResultsTable.module.scss';
 import {GeneService} from '../../../../services/geneService';
 import {PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import Pagination from '@components/molecules/Pagination';
-import { saveAs } from 'file-saver';
+import {saveAs} from 'file-saver';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -76,85 +76,88 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
     }
     return (
         <>
-        {/* Download buttons */}
-        {jobId && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginBottom: 12 }}>
-                <button
-                    className="vf-button vf-button--sm"
-                    onClick={() => handleDownload('tab')}
-                    disabled={!!downloading}
-                >
-                    {downloading === 'tab' ? 'Downloading...' : 'Tab Delimited'}
-                </button>
-                <button
-                    className="vf-button vf-button--sm"
-                    onClick={() => handleDownload('fasta')}
-                    disabled={!!downloading}
-                >
-                    {downloading === 'fasta' ? 'Downloading...' : 'FASTA'}
-                </button>
-                <button
-                    className="vf-button vf-button--sm"
-                    onClick={() => handleDownload('aligned_fasta')}
-                    disabled={!!downloading}
-                >
-                    {downloading === 'aligned_fasta' ? 'Downloading...' : 'Aligned FASTA'}
-                </button>
-            </div>
-        )}
-        <table className={styles.resultsTable}>
-            <thead>
-            <tr>
-                <th>Target</th>
-                <th>E-value</th>
-                <th>Score</th>
-                <th>Hits</th>
-                <th>Significant Hits</th>
-                <th>Description</th>
-            </tr>
-            </thead>
-            <tbody>
-            {paginatedResults.map((result, idx) => (
-                <tr key={idx}>
-                    <td>
-                        <a
-                            href="#"
-                            onClick={e => {
-                                e.preventDefault();
-                                handleTargetClick(result.target, idx);
-                            }}
-                            style={{
-                                pointerEvents: loadingIdx === idx ? 'none' : 'auto',
-                                opacity: loadingIdx === idx ? 0.5 : 1
-                            }}
-                        >
-                            {loadingIdx === idx ? 'Loading...' : result.target}
-                        </a>
-                    </td>
-                    <td>{result.evalue}</td>
-                    <td>{result.score}</td>
-                    <td>{result.num_hits}</td>
-                    <td>{result.num_significant}</td>
-                    <td>{result.description ?? '-'}</td>
+            {/* Download buttons */}
+            {jobId && (
+                <div style={{display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8}}>
+                    <button
+                        className="vf-button vf-button--sm"
+                        style={{minWidth: 90, padding: '5px 14px', fontSize: '0.98em'}}
+                        onClick={() => handleDownload('tab')}
+                        disabled={!!downloading}
+                    >
+                        {downloading === 'tab' ? 'Downloading...' : 'Tab Delimited'}
+                    </button>
+                    <button
+                        className="vf-button vf-button--sm"
+                        style={{minWidth: 90, padding: '5px 14px', fontSize: '0.98em'}}
+                        onClick={() => handleDownload('fasta')}
+                        disabled={!!downloading}
+                    >
+                        {downloading === 'fasta' ? 'Downloading...' : 'FASTA'}
+                    </button>
+                    <button
+                        className="vf-button vf-button--sm"
+                        style={{minWidth: 110, padding: '5px 14px', fontSize: '0.98em'}}
+                        onClick={() => handleDownload('aligned_fasta')}
+                        disabled={!!downloading}
+                    >
+                        {downloading === 'aligned_fasta' ? 'Downloading...' : 'Aligned FASTA'}
+                    </button>
+                </div>
+            )}
+            <table className={styles.resultsTable}>
+                <thead>
+                <tr>
+                    <th>Target</th>
+                    <th>E-value</th>
+                    <th>Score</th>
+                    <th>Hits</th>
+                    <th>Significant Hits</th>
+                    <th>Description</th>
                 </tr>
-            ))}
-            </tbody>
-        </table>
-        {/* Page size dropdown and pagination */}
-        <div className={styles.paginationContainer}>
+                </thead>
+                <tbody>
+                {paginatedResults.map((result, idx) => (
+                    <tr key={idx}>
+                        <td>
+                            <a
+                                href="#"
+                                onClick={e => {
+                                    e.preventDefault();
+                                    handleTargetClick(result.target, idx);
+                                }}
+                                style={{
+                                    pointerEvents: loadingIdx === idx ? 'none' : 'auto',
+                                    opacity: loadingIdx === idx ? 0.5 : 1
+                                }}
+                            >
+                                {loadingIdx === idx ? 'Loading...' : result.target}
+                            </a>
+                        </td>
+                        <td>{result.evalue}</td>
+                        <td>{result.score}</td>
+                        <td>{result.num_hits}</td>
+                        <td>{result.num_significant}</td>
+                        <td>{result.description ?? '-'}</td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+            {/* Page size dropdown and pagination */}
+            <div className={styles.paginationContainer}>
 
-            <div className={styles.paginationBar}>
-                {totalPages > 1 && (
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        hasPrevious={hasPrevious}
-                        hasNext={hasNext}
-                        onPageClick={handlePageClick}
-                    />
-                )}
+                <div className={styles.paginationBar}>
+                    {totalPages > 1 && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            hasPrevious={hasPrevious}
+                            hasNext={hasNext}
+                            onPageClick={handlePageClick}
+                        />
+                    )}
+                </div>
             </div>
-        </div>
         </>
     );
 };
