@@ -72,7 +72,7 @@ export class GeneService {
         facetOperators?: Record<string, 'AND' | 'OR'>
     ): Promise<PaginatedResponse<GeneMeta>> {
         try {
-            // console.log("####query: ", query)
+            console.log("####query: ", query)
             const params =
                 GeneService.buildParamsFetchGeneSearchResults(
                     query, page, perPage, sortField, sortOrder,
@@ -112,10 +112,20 @@ export class GeneService {
             params.append("species_acronym", String(selectedSpecies[0]));
         }
 
+        console.log("**** selectedFacets",selectedFacets);
+
         if (selectedFacets) {
             const filterParts: string[] = [];
 
-            for (const [key, values] of Object.entries(selectedFacets)) {
+            for (const [key, rawValue] of Object.entries(selectedFacets)) {
+                let values: string[] = [];
+
+                if (Array.isArray(rawValue)) {
+                    values = rawValue.map(String);
+                } else if (rawValue !== undefined && rawValue !== null) {
+                    values = [String(rawValue)];
+                }
+
                 if (values.length > 0) {
                     filterParts.push(`${key}:${values.join(",")}`);
                 }

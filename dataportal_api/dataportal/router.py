@@ -9,8 +9,11 @@ from dataportal.api.genome_endpoints import genome_router
 from dataportal.api.health_endpoints import health_router
 from dataportal.api.metadata_endpoints import metadata_router
 from dataportal.api.species_endpoints import species_router
+
 from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
+
+from dataportal.api.api_natural_query import router as natural_query_router
 
 logger = logging.getLogger(__name__)
 
@@ -45,3 +48,5 @@ api.add_router(URL_PREFIX_PYHMMER_SEARCH, pyhmmer_router_search)
 api.add_router(URL_PREFIX_PYHMMER_RESULT, pyhmmer_router_result)
 api.add_router("/", health_router)
 api.add_exception_handler(Exception, custom_error_handler)
+
+api.add_router("/query", natural_query_router)
