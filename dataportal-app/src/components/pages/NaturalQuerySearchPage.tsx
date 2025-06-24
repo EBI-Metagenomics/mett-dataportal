@@ -203,7 +203,7 @@ const NaturalQuerySearchPage = () => {
                                     <td className="vf-table__cell">{gene.product}</td>
                                     <td className="vf-table__cell">{gene.species_scientific_name}</td>
                                     <td className="vf-table__cell">{gene.essentiality || "-"}</td>
-                                    <td className="vf-table__cell">{gene.amr ? "Yes" : "No"}</td>
+                                    <td className="vf-table__cell">{gene.has_amr_info ? "Yes" : "No"}</td>
                                 </tr>
                             ))}
                             </tbody>
