@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mett-app-config-test
+  name: mett-app-config-dev
   namespace: mett-dataportal-hl-dev
 data:
   DJANGO_DEBUG: "False"

@@ -7,20 +7,45 @@ metadata:
     nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
-  - host: www.gut-microbes.org
-    http:
-      paths:
-      - path: /api(/|$)(.*)
-        pathType: Prefix
-        backend:
-          service:
-            name: test-dataportal-api-svc-dev
-            port:
-              number: 8000
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: test-dataportal-react-app-svc-dev
-            port:
-              number: 80
+    - host: www.gut-microbes.org
+      http:
+        paths:
+        - path: /apidev(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-api-svc-dev
+              port:
+                number: 8000
+
+        - path: /apidev/docs
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-api-svc-dev
+              port:
+                number: 8000
+
+        - path: /apidev-static(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-api-svc-dev
+              port:
+                number: 8000
+
+        - path: /static-appdev(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-react-app-svc-dev
+              port:
+                number: 80
+
+        - path: /appdev(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-react-app-svc-dev
+              port:
+                number: 80

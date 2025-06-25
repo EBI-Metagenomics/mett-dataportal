@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: gutmicrobes-hl-ingress-dev
-  namespace: mett-dataportal-hl-dev
+  name: gutmicrobes-hl-ingress
+  namespace: mett-dataportal-hl
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
@@ -14,7 +14,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-api-svc-dev
+              name: mett-dataportal-api-svc
               port:
                 number: 8000
 
@@ -22,7 +22,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-api-svc-dev
+              name: mett-dataportal-api-svc
               port:
                 number: 8000
 
@@ -31,12 +31,36 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-api-svc-dev
+              name: mett-dataportal-api-svc
               port:
                 number: 8000
 
         #  /static/* to the React app
         - path: /static(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-react-app-svc
+              port:
+                number: 80
+
+        - path: /apidev(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-api-svc-dev
+              port:
+                number: 8000
+
+        - path: /apidev/docs
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-api-svc-dev
+              port:
+                number: 8000
+
+        - path: /appdev(/|$)(.*)
           pathType: Prefix
           backend:
             service:
@@ -49,6 +73,6 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-react-app-svc-dev
+              name: mett-dataportal-react-app-svc
               port:
                 number: 80
