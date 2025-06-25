@@ -25,13 +25,13 @@ jobs:
 
       - name: Build the Django Docker image (Dev)
         run: |
-          docker build -t quay.io/microbiome-informatics/mett-dataportal-api:dev \
+          docker build -t quay.io/microbiome-informatics/mett-dataportal-api:${{ env.IMAGE_TAG }} \
             --build-arg DJANGO_FORCE_SCRIPT_NAME=/apidev \
             -f ./dataportal_api/Dockerfile .
 
       - name: Push the Django Docker image (Dev)
         run: |
-          docker push quay.io/microbiome-informatics/mett-dataportal-api:dev
+          docker push quay.io/microbiome-informatics/mett-dataportal-api:${{ env.IMAGE_TAG }}
 
   # Dev build for React app
   build-and-push-react-dev:
@@ -53,19 +53,11 @@ jobs:
 
       - name: Build the React Docker image (Dev)
         run: |
-          docker build -t quay.io/microbiome-informatics/mett-dataportal-react-app:dev \
+          docker build -t quay.io/microbiome-informatics/mett-dataportal-react-app:${{ env.IMAGE_TAG }} \
             --build-arg REACT_APP_BASENAME=/appdev \
             -f ./dataportal-app/Dockerfile .
 
       - name: Push the React Docker image (Dev)
         run: |
-          docker push quay.io/microbiome-informatics/mett-dataportal-react-app:dev
-      
-
-      - name: Build the React Docker image
-        run: |
-          docker build -t quay.io/microbiome-informatics/mett-dataportal-react-app:${{ env.IMAGE_TAG }} -f ./dataportal-app/Dockerfile .
-
-      - name: Push the React Docker image
-        run: |
           docker push quay.io/microbiome-informatics/mett-dataportal-react-app:${{ env.IMAGE_TAG }}
+      
