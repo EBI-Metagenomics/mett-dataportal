@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mett-dataportal-api-dev
-  namespace: mett-dataportal-hl-dev
+  name: mett-dataportal-api
+  namespace: mett-dataportal-hl
   labels:
-    app: mett-dataportal-api-dev
+    app: mett-dataportal-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mett-dataportal-api-dev
+      app: mett-dataportal-api
   template:
     metadata:
       labels:
-        app: mett-dataportal-api-dev
+        app: mett-dataportal-api
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
@@ -25,23 +25,23 @@ spec:
       containers:
         - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145
           imagePullPolicy: Always
-          name: mett-dataportal-api-dev
+          name: mett-dataportal-api
           env:
             # Database configuration
             - name: ES_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config-dev
+                  name: mett-elasticsearch-config
                   key: ES_HOST
             - name: ES_TIMEOUT
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config-dev
+                  name: mett-elasticsearch-config
                   key: ES_TIMEOUT
             - name: ES_MAX_RETRIES
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config-dev
+                  name: mett-elasticsearch-config
                   key: ES_MAX_RETRIES
             - name: ES_USER
               valueFrom:
@@ -58,32 +58,32 @@ spec:
             - name: DJANGO_DEBUG
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config
                   key: DJANGO_DEBUG
             - name: TIME_ZONE
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config
                   key: TIME_ZONE
             - name: ALLOWED_HOSTS
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config
                   key: ALLOWED_HOSTS
             - name: DATA_PORTAL_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config
                   key: DATA_PORTAL_URL
             - name: ASSEMBLY_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config
                   key: ASSEMBLY_FTP_PATH
             - name: GFF_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config
                   key: GFF_FTP_PATH
           ports:
             - containerPort: 8000
@@ -108,14 +108,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mett-dataportal-api-svc-dev
-  namespace: mett-dataportal-hl-dev
+  name: mett-dataportal-api-svc
+  namespace: mett-dataportal-hl
   labels:
-    app: mett-dataportal-api-dev
+    app: mett-dataportal-api
 spec:
   type: NodePort
   selector:
-    app: mett-dataportal-api-dev
+    app: mett-dataportal-api
   ports:
     - port: 8000
       targetPort: 8000

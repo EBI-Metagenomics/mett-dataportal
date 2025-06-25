@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mett-app-config-dev
-  namespace: mett-dataportal-hl-dev
+  name: mett-app-config
+  namespace: mett-dataportal-hl
 data:
   DJANGO_DEBUG: "False"
   TIME_ZONE: "Europe/London"

@@ -1,6 +1,6 @@
 resources:
+  - mett-dataportal-namespace.yaml
+  - mett-app-config.yaml
   - mett-dataportal-api-deployment.yaml
   - mett-dataportal-app-deployment.yaml
   - mett-dataportal-ingress.yaml
-  - mett-dataportal-namespace.yaml
-  - mett-app-config.yaml
