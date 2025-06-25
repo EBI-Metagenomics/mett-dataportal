@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mett-postgres-volume-claim
-  namespace: mett-dataportal-hl-dev
+  namespace: mett-dataportal-hl
 spec:
   storageClassName: standard-nfs-production
   accessModes:

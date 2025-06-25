@@ -44,7 +44,7 @@ spec:
               port:
                 number: 80
 
-        - path: /apidev(/|$)(.*)
+        - path: /apidev/api(/|$)(.*)
           pathType: Prefix
           backend:
             service:
@@ -52,13 +52,21 @@ spec:
               port:
                 number: 8000
 
-        - path: /apidev/docs
+        - path: /apidev/api/docs
           pathType: Prefix
           backend:
             service:
               name: mett-dataportal-api-svc-dev
               port:
                 number: 8000
+
+        - path: /appdev/static(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: mett-dataportal-react-app-svc-dev
+              port:
+                number: 80
 
         - path: /appdev(/|$)(.*)
           pathType: Prefix
