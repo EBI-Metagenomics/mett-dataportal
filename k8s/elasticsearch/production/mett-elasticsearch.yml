@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: elasticsearch-prod
-  namespace: mett-dataportal-hl-prod
+  namespace: mett-dataportal-hl
 spec:
   serviceName: elasticsearch-service-prod
   replicas: 3
@@ -84,7 +84,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: elasticsearch-service-prod
-  namespace: mett-dataportal-hl-prod
+  namespace: mett-dataportal-hl
 spec:
   type: NodePort
   selector:
