@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mett-redis
-  namespace: mett-dataportal-hl-dev
+  namespace: mett-dataportal-hl
   labels:
     app: mett-redis
 spec:
@@ -44,7 +44,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mett-redis
-  namespace: mett-dataportal-hl-dev
+  namespace: mett-dataportal-hl
   labels:
     app: mett-redis
 spec:
