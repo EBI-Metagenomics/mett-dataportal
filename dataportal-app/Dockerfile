@@ -60,8 +60,8 @@ RUN echo 'server { \
 EXPOSE 80
 
 CMD /bin/sh -c "\
-    find /usr/share/nginx/html/static/js -type f -name '*.js' -exec sed -i 's|VITE_API_BASE_URL_PLACEHOLDER|'\"\$VITE_API_BASE_URL\"'|g' {} + && \
-    find /usr/share/nginx/html/static/js -type f -name '*.js' -exec sed -i 's|VITE_ASSEMBLY_INDEXES_PATH_PLACEHOLDER|'\"\$VITE_ASSEMBLY_INDEXES_PATH\"'|g' {} + && \
-    find /usr/share/nginx/html/static/js -type f -name '*.js' -exec sed -i 's|VITE_GFF_INDEXES_PATH_PLACEHOLDER|'\"\$VITE_GFF_INDEXES_PATH\"'|g' {} + && \
-    find /usr/share/nginx/html/static/js -type f -name '*.js' -exec sed -i 's|VITE_BACINTERACTOME_SHINY_APP_URL_PLACEHOLDER|'\"\$VITE_BACINTERACTOME_SHINY_APP_URL\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_API_BASE_URL_PLACEHOLDER|'\"\$VITE_API_BASE_URL\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_ASSEMBLY_INDEXES_PATH_PLACEHOLDER|'\"\$VITE_ASSEMBLY_INDEXES_PATH\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_GFF_INDEXES_PATH_PLACEHOLDER|'\"\$VITE_GFF_INDEXES_PATH\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_BACINTERACTOME_SHINY_APP_URL_PLACEHOLDER|'\"\$VITE_BACINTERACTOME_SHINY_APP_URL\"'|g' {} + && \
     nginx -g 'daemon off;'"
