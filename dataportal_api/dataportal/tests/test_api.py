@@ -2,6 +2,7 @@ import pytest
 from django.test import Client
 from unittest.mock import MagicMock, patch
 
+
 @pytest.fixture
 def api_client():
     return Client()
@@ -45,5 +46,3 @@ def test_species_list_empty(mock_sync_to_async, api_client):
     response = api_client.get("/api/species/")
     assert response.status_code == 200
     assert response.json() == []
-
-

@@ -23,13 +23,10 @@ connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 logging.basicConfig(
     level=logging.DEBUG,  # ✅ Set to DEBUG to capture all logs
     format="%(asctime)s %(levelname)s:%(message)s",
-    handlers=[logging.StreamHandler()]  # ✅ Ensure logs appear in the console
+    handlers=[logging.StreamHandler()],  # ✅ Ensure logs appear in the console
 )
 
-SPECIES_ACRONYM_MAPPING = {
-    "Bacteroides uniformis": "BU",
-    "Phocaeicola vulgatus": "PV"
-}
+SPECIES_ACRONYM_MAPPING = {"Bacteroides uniformis": "BU", "Phocaeicola vulgatus": "PV"}
 
 VALID_ESENTIALITY_VALUES = {
     "essential",
@@ -63,21 +60,20 @@ class Command(BaseCommand):
             default="../data-generators/data/essentiality_table_all_libraries_240818_14102024.csv",
         )
         parser.add_argument(
-            "--expected-records", type=int, default=449621, help="Expected number of total records in gene_index"
+            "--expected-records",
+            type=int,
+            default=449621,
+            help="Expected number of total records in gene_index",
         )
-        parser.add_argument(
-            "--isolate", type=str, help="Specific isolate to process"
-        )
-        parser.add_argument(
-            "--assembly", type=str, help="Specific assembly to process"
-        )
+        parser.add_argument("--isolate", type=str, help="Specific isolate to process")
+        parser.add_argument("--assembly", type=str, help="Specific assembly to process")
 
     def get_species_acronym(self, species_scientific_name):
-        """ Returns species acronym based on static mapping. """
+        """Returns species acronym based on static mapping."""
         return SPECIES_ACRONYM_MAPPING.get(species_scientific_name, None)
 
     def parse_dbxref(self, dbxref_string):
-        """ Convert dbxref string into a structured format and extract IDs. """
+        """Convert dbxref string into a structured format and extract IDs."""
         if not dbxref_string or dbxref_string.strip() == "":
             return [], None, None
 
@@ -131,7 +127,9 @@ class Command(BaseCommand):
                     if assembly == target_assembly
                 ]
                 if not isolates:
-                    logging.warning(f"No isolates found for assembly: {target_assembly}")
+                    logging.warning(
+                        f"No isolates found for assembly: {target_assembly}"
+                    )
                     return
             else:
                 # Fetch list of isolates from FTP if none specified
@@ -146,7 +144,11 @@ class Command(BaseCommand):
             with ThreadPoolExecutor(max_workers=2) as executor:
                 futures = {
                     executor.submit(
-                        self.process_isolate, isolate, ftp_server, ftp_directory, isolate_to_assembly_map
+                        self.process_isolate,
+                        isolate,
+                        ftp_server,
+                        ftp_directory,
+                        isolate_to_assembly_map,
                     ): isolate
                     for isolate in isolates
                 }
@@ -174,13 +176,15 @@ class Command(BaseCommand):
 
         # Print failed isolates
         if failed_isolates:
-            logging.warning(f"The following isolates failed to process: {failed_isolates}")
+            logging.warning(
+                f"The following isolates failed to process: {failed_isolates}"
+            )
             print(f"\nFailed isolates:\n{failed_isolates}")
         else:
             logging.info("All isolates processed successfully.")
 
     def load_isolate_mapping(self, mapping_task_file):
-        """ Load isolate-to-assembly mapping from TSV file. """
+        """Load isolate-to-assembly mapping from TSV file."""
         mapping = {}
         with open(mapping_task_file, mode="r") as file:
             reader = csv.DictReader(file, delimiter="\t")
@@ -190,26 +194,23 @@ class Command(BaseCommand):
         return mapping
 
     def reconnect_ftp(self, ftp_server):
-        """ Handle FTP connection with retry logic. """
+        """Handle FTP connection with retry logic."""
         retries = 3
         for attempt in range(retries):
             try:
                 ftp = ftplib.FTP(ftp_server)
                 ftp.login()
                 return ftp
-            except ftplib.all_errors as e:
+            except ftplib.all_errors:
                 if attempt < retries - 1:
                     time.sleep(2)
                 else:
                     raise
 
     def get_species_name(self, isolate_name):
-        """ Extract species name from isolate name (assuming acronym-based species names). """
+        """Extract species name from isolate name (assuming acronym-based species names)."""
         species_acronym = isolate_name.split("_")[0]
-        species_mapping = {
-            "BU": "Bacteroides uniformis",
-            "PV": "Phocaeicola vulgatus"
-        }
+        species_mapping = {"BU": "Bacteroides uniformis", "PV": "Phocaeicola vulgatus"}
         return species_mapping.get(species_acronym, None)
 
     def parse_amr_attributes(self, attr_dict):
@@ -226,19 +227,25 @@ class Command(BaseCommand):
             "element_subtype": attr_dict.get("element_subtype"),
             "drug_class": attr_dict.get("drug_class"),
             "drug_subclass": attr_dict.get("drug_subclass"),
-            "uf_keyword": [kw.strip() for kw in attr_dict.get("uf_keyword", "").split(",") if kw.strip()],
-            "uf_ecnumber": attr_dict.get("uf_prot_rec_ecnumber")
+            "uf_keyword": [
+                kw.strip()
+                for kw in attr_dict.get("uf_keyword", "").split(",")
+                if kw.strip()
+            ],
+            "uf_ecnumber": attr_dict.get("uf_prot_rec_ecnumber"),
         }
 
         return [amr_entry], True
 
     def is_isolate_processed(self, isolate):
-        """ Check if the isolate's data already exists in Elasticsearch. """
+        """Check if the isolate's data already exists in Elasticsearch."""
         response = GeneDocument.search().filter("term", isolate_name=isolate).execute()
         return response.hits.total.value > 0
 
-    def process_isolate(self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map, max_retries=5):
-        """ Process GFF files and protein sequences for a given isolate. """
+    def process_isolate(
+        self, isolate, ftp_server, ftp_directory, isolate_to_assembly_map, max_retries=5
+    ):
+        """Process GFF files and protein sequences for a given isolate."""
         if self.is_isolate_processed(isolate):
             logging.info(f"Skipping already processed isolate: {isolate}")
             return
@@ -250,15 +257,17 @@ class Command(BaseCommand):
                 species_scientific_name = self.get_species_name(isolate)
 
                 ftp = self.reconnect_ftp(ftp_server)
-                
+
                 # Process GFF files
-                isolate_path = f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
+                isolate_path = (
+                    f"{ftp_directory}/{isolate}/functional_annotation/merged_gff/"
+                )
                 gff_files = ftp.nlst(isolate_path)
-                
+
                 # Process protein sequences
                 protein_path = f"{ftp_directory}/{isolate}/functional_annotation/prokka/{isolate}.faa"
                 protein_sequences = self.fetch_protein_sequences(ftp, protein_path)
-                
+
                 ftp.quit()
 
                 if not gff_files:
@@ -267,18 +276,30 @@ class Command(BaseCommand):
 
                 for gff_file in gff_files:
                     if gff_file.endswith("_annotations.gff"):
-                        self.process_gff_file(gff_file, isolate, ftp_server, species_scientific_name, isolate, protein_sequences)
+                        self.process_gff_file(
+                            gff_file,
+                            isolate,
+                            ftp_server,
+                            species_scientific_name,
+                            isolate,
+                            protein_sequences,
+                        )
                         self.update_strain_index(isolate, gff_file)
 
                 logging.info(f"Successfully processed isolate: {isolate}")
                 return
 
             except Exception as e:
-                logging.error(f"Error processing isolate {isolate} on attempt {attempt + 1}: {e}", exc_info=True)
+                logging.error(
+                    f"Error processing isolate {isolate} on attempt {attempt + 1}: {e}",
+                    exc_info=True,
+                )
                 if attempt < max_retries - 1:
                     time.sleep(2)
                 else:
-                    logging.error(f"Failed to process isolate {isolate} after {max_retries} attempts.")
+                    logging.error(
+                        f"Failed to process isolate {isolate} after {max_retries} attempts."
+                    )
 
     def fetch_protein_sequences(self, ftp, protein_path):
         """Fetch and parse protein sequences from FAA file."""
@@ -286,34 +307,44 @@ class Command(BaseCommand):
             protein_sequences = {}
             current_locus_tag = None
             current_sequence = []
-        
-            with tempfile.NamedTemporaryFile(mode='w+b', delete=False) as temp_file:
+
+            with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as temp_file:
                 ftp.retrbinary(f"RETR {protein_path}", temp_file.write)
                 temp_file.seek(0)
-                
-                for line in temp_file:
-                    line = line.decode('utf-8').strip()
-                    if line.startswith('>'):
-                        if current_locus_tag:
-                            protein_sequences[current_locus_tag] = ''.join(current_sequence)
 
-                        current_locus_tag = line.split()[0][1:]  
+                for line in temp_file:
+                    line = line.decode("utf-8").strip()
+                    if line.startswith(">"):
+                        if current_locus_tag:
+                            protein_sequences[current_locus_tag] = "".join(
+                                current_sequence
+                            )
+
+                        current_locus_tag = line.split()[0][1:]
                         current_sequence = []
-                    elif line: 
+                    elif line:
                         current_sequence.append(line)
-                
+
                 if current_locus_tag:
-                    protein_sequences[current_locus_tag] = ''.join(current_sequence)
+                    protein_sequences[current_locus_tag] = "".join(current_sequence)
 
             os.unlink(temp_file.name)
             return protein_sequences
-            
+
         except Exception as e:
             logging.error(f"Error fetching protein sequences: {e}")
             return {}
 
-    def process_gff_file(self, gff_file, isolate, ftp_server, species_scientific_name, isolate_name, protein_sequences):
-        """ Process GFF file and index gene data into Elasticsearch. """
+    def process_gff_file(
+        self,
+        gff_file,
+        isolate,
+        ftp_server,
+        species_scientific_name,
+        isolate_name,
+        protein_sequences,
+    ):
+        """Process GFF file and index gene data into Elasticsearch."""
         try:
             ftp = self.reconnect_ftp(ftp_server)
             local_gff_path = os.path.join("/tmp", os.path.basename(gff_file))
@@ -353,13 +384,20 @@ class Command(BaseCommand):
                     eggNOG = attr_dict.get("eggNOG") or attr_dict.get("eggnog") or None
 
                     ontology_terms = [
-                        {"ontology_type": "GO", "ontology_id": term, "ontology_description": None}
+                        {
+                            "ontology_type": "GO",
+                            "ontology_id": term,
+                            "ontology_description": None,
+                        }
                         for term in attr_dict.get("Ontology_term", "").split(",")
                         if term
                     ]
 
-                    uf_ontology_terms = attr_dict.get("uf_ontology_term", "").split(
-                        ",") if "uf_ontology_term" in attr_dict else []
+                    uf_ontology_terms = (
+                        attr_dict.get("uf_ontology_term", "").split(",")
+                        if "uf_ontology_term" in attr_dict
+                        else []
+                    )
                     uf_prot_rec_fullname = attr_dict.get("uf_prot_rec_fullname")
 
                     kegg = attr_dict.get("kegg", "").split(",")
@@ -379,7 +417,7 @@ class Command(BaseCommand):
                         continue
 
                     # protein sequence for this gene
-                    protein_sequence = protein_sequences.get(locus_tag, '')
+                    protein_sequence = protein_sequences.get(locus_tag, "")
 
                     genes_to_index.append(
                         GeneDocument(
@@ -387,7 +425,9 @@ class Command(BaseCommand):
                             gene_name=gene_name,
                             alias=alias,
                             species_scientific_name=species_scientific_name,
-                            species_acronym=self.get_species_acronym(species_scientific_name),
+                            species_acronym=self.get_species_acronym(
+                                species_scientific_name
+                            ),
                             isolate_name=isolate_name,
                             seq_id=seq_id,
                             locus_tag=locus_tag,
@@ -415,34 +455,44 @@ class Command(BaseCommand):
                     )
 
                     if len(genes_to_index) >= BATCH_SIZE:
-                        bulk(connections.get_connection(), (doc.to_dict(include_meta=True) for doc in genes_to_index))
+                        bulk(
+                            connections.get_connection(),
+                            (doc.to_dict(include_meta=True) for doc in genes_to_index),
+                        )
                         genes_to_index.clear()
 
             if genes_to_index:
-                bulk(connections.get_connection(), (doc.to_dict(include_meta=True) for doc in genes_to_index))
+                bulk(
+                    connections.get_connection(),
+                    (doc.to_dict(include_meta=True) for doc in genes_to_index),
+                )
 
         except Exception as e:
             logging.error(f"Error processing GFF file {gff_file}: {e}", exc_info=True)
 
         finally:
             if os.path.exists(local_gff_path):
-                os.remove(local_gff_path)  # Ensures file is deleted even if errors occur
+                os.remove(
+                    local_gff_path
+                )  # Ensures file is deleted even if errors occur
 
     def update_strain_index(self, isolate, gff_file):
-        """ Update the GFF file name in the strain index. """
+        """Update the GFF file name in the strain index."""
         try:
             strain = StrainDocument.get(id=isolate, ignore=404)
             if strain:
                 strain.gff_file = os.path.basename(gff_file)
                 strain.save()
-                logging.info(f"Updated strain_index for isolate {isolate} with GFF file: {gff_file}")
+                logging.info(
+                    f"Updated strain_index for isolate {isolate} with GFF file: {gff_file}"
+                )
             else:
                 logging.warning(f"Strain {isolate} not found in strain_index.")
         except Exception as e:
             logging.error(f"Error updating strain_index for isolate {isolate}: {e}")
 
     def import_essentiality_data(self, essentiality_csv):
-        """ Import essentiality data and update genes in Elasticsearch efficiently. """
+        """Import essentiality data and update genes in Elasticsearch efficiently."""
         try:
             if not os.path.exists(essentiality_csv):
                 logging.error(f"Essentiality CSV file not found: {essentiality_csv}")
@@ -452,15 +502,19 @@ class Command(BaseCommand):
             for chunk in pd.read_csv(essentiality_csv, chunksize=10000):
                 for row in chunk.itertuples():
                     locus_tag = str(row.locus_tag).strip()
-                    essentiality_value = str(row.unified_final_call_240817).strip().lower()
+                    essentiality_value = (
+                        str(row.unified_final_call_240817).strip().lower()
+                    )
 
                     if essentiality_value in VALID_ESENTIALITY_VALUES:
-                        updates.append({
-                            "_op_type": "update",
-                            "_index": "gene_index",
-                            "_id": locus_tag,
-                            "doc": {"essentiality": essentiality_value},
-                        })
+                        updates.append(
+                            {
+                                "_op_type": "update",
+                                "_index": "gene_index",
+                                "_id": locus_tag,
+                                "doc": {"essentiality": essentiality_value},
+                            }
+                        )
 
                         if len(updates) >= BATCH_SIZE:
                             self._execute_bulk(updates)
@@ -475,25 +529,35 @@ class Command(BaseCommand):
             logging.error(f"Error importing essentiality data: {e}", exc_info=True)
 
     def _execute_bulk(self, updates):
-        """ Helper function to execute bulk updates and log errors. """
+        """Helper function to execute bulk updates and log errors."""
         try:
-            success, failed = bulk(connections.get_connection(), updates, raise_on_error=False)
-            logging.info(f"Bulk indexing complete. Success: {success}, Failed: {len(failed)}")
+            success, failed = bulk(
+                connections.get_connection(), updates, raise_on_error=False
+            )
+            logging.info(
+                f"Bulk indexing complete. Success: {success}, Failed: {len(failed)}"
+            )
 
             if failed:
-                logging.error(f"Failed documents: {failed[:5]} ...")  # Log first 5 failed docs for debugging
+                logging.error(
+                    f"Failed documents: {failed[:5]} ..."
+                )  # Log first 5 failed docs for debugging
 
         except BulkIndexError as e:
             logging.error(f"Bulk indexing error: {e.errors}")
 
     def validate_gene_index(self, expected_count):
-        """ Validate the total number of records in gene_index. """
+        """Validate the total number of records in gene_index."""
         from elasticsearch_dsl import Search
+
         s = Search(index="gene_index")
         total_docs = s.count()
 
         if total_docs < expected_count:
             logging.warning(
-                f"Expected {expected_count} records, but found {total_docs}. Missing {expected_count - total_docs} records.")
+                f"Expected {expected_count} records, but found {total_docs}. Missing {expected_count - total_docs} records."
+            )
         else:
-            logging.info(f"Gene index contains the expected number of records: {total_docs}")
+            logging.info(
+                f"Gene index contains the expected number of records: {total_docs}"
+            )

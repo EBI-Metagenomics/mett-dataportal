@@ -4,5 +4,5 @@ metadata:
   name: postgres-config-dev
   namespace: mett-dataportal-hl-dev
 data:
-  POSTGRES_DB: mett-dataportal-db
-  POSTGRES_USER: mett_dataportal-usr
+  PYHMMER_DB: "mett-pyhmmer-db"
+  PYHMMER_DB_USER: "mett-pyhmmer-usr"

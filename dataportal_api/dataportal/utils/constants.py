@@ -1,4 +1,5 @@
 # Generic constants
+
 FIELD_ID = "id"
 FIELD_SEQ_ID = "seq_id"
 FIELD_ASSEMBLY = "assembly"
@@ -93,3 +94,5 @@ KEYWORD_SORT_FIELDS = {
 
 # Default values
 UNKNOWN_ESSENTIALITY = "Unknown"
+
+# Hmmer Constants

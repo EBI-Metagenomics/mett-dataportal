@@ -1,23 +1,29 @@
-from elasticsearch_dsl import Document, Text, Keyword, Integer, Boolean, analyzer, tokenizer, Nested, normalizer
+from elasticsearch_dsl import (
+    Document,
+    Text,
+    Keyword,
+    Integer,
+    Boolean,
+    analyzer,
+    tokenizer,
+    Nested,
+    normalizer,
+)
 
 edge_ngram_tokenizer = tokenizer(
     "edge_ngram_tokenizer",
     type="edge_ngram",
     min_gram=1,
     max_gram=20,
-    token_chars=["letter", "digit", "connector_punctuation"]
+    token_chars=["letter", "digit", "connector_punctuation"],
 )
 
 autocomplete_analyzer = analyzer(
-    "autocomplete_analyzer",
-    tokenizer=edge_ngram_tokenizer,
-    filter=["lowercase"]
+    "autocomplete_analyzer", tokenizer=edge_ngram_tokenizer, filter=["lowercase"]
 )
 
 lowercase_normalizer = normalizer(
-    "lowercase_normalizer",
-    type="custom",
-    filter=["lowercase"]
+    "lowercase_normalizer", type="custom", filter=["lowercase"]
 )
 
 
@@ -31,7 +37,7 @@ class SpeciesDocument(Document):
         name = "species_index"
 
     def save(self, **kwargs):
-        """ set `_id` as `acronym` """
+        """set `_id` as `acronym`"""
         self.meta.id = self.acronym
         return super().save(**kwargs)
 
@@ -45,9 +51,13 @@ class StrainDocument(Document):
     isolate_name = Text(
         analyzer=autocomplete_analyzer,
         search_analyzer="standard",
-        fields={"keyword": Keyword(normalizer=lowercase_normalizer)}
+        fields={"keyword": Keyword(normalizer=lowercase_normalizer)},
     )
-    assembly_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
+    assembly_name = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )
     assembly_accession = Keyword()
 
     fasta_file = Keyword()
@@ -55,42 +65,51 @@ class StrainDocument(Document):
 
     type_strain = Boolean()
 
-    contigs = Nested(
-        properties={
-            "seq_id": Keyword(),
-            "length": Integer()
-        }
-    )
+    contigs = Nested(properties={"seq_id": Keyword(), "length": Integer()})
 
     class Index:
         name = "strain_index"
         settings = {
             "analysis": {
-                "analyzer": {
-                    "autocomplete_analyzer": autocomplete_analyzer
-                },
-                "tokenizer": {
-                    "edge_ngram_tokenizer": edge_ngram_tokenizer
-                },
-                "normalizer": {
-                    "lowercase_normalizer": lowercase_normalizer
-                }
+                "analyzer": {"autocomplete_analyzer": autocomplete_analyzer},
+                "tokenizer": {"edge_ngram_tokenizer": edge_ngram_tokenizer},
+                "normalizer": {"lowercase_normalizer": lowercase_normalizer},
             }
         }
 
     def save(self, **kwargs):
-        """ set `_id` as `isolate_name` """
+        """set `_id` as `isolate_name`"""
         self.meta.id = self.isolate_name
         return super().save(**kwargs)
 
 
 class GeneDocument(Document):
     gene_id = Integer()
-    gene_name = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
-    alias = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
-    seq_id = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
-    locus_tag = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
-    product = Text(analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()})
+    gene_name = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )
+    alias = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )
+    seq_id = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )
+    locus_tag = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )
+    product = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )
     product_source = Text(fields={"keyword": Keyword()})
 
     species_scientific_name = Keyword()
@@ -110,12 +129,7 @@ class GeneDocument(Document):
     uf_ontology_terms = Keyword(multi=True)
     uf_prot_rec_fullname = Text(fields={"keyword": Keyword()})
 
-    dbxref = Nested(
-        properties={
-            "db": Keyword(),
-            "ref": Keyword()
-        }
-    )
+    dbxref = Nested(properties={"db": Keyword(), "ref": Keyword()})
 
     uniprot_id = Keyword()
     cog_id = Keyword()
@@ -128,7 +142,7 @@ class GeneDocument(Document):
         properties={
             "ontology_type": Keyword(),
             "ontology_id": Keyword(),
-            "ontology_description": Text(fields={"keyword": Keyword(ignore_above=256)})
+            "ontology_description": Text(fields={"keyword": Keyword(ignore_above=256)}),
         }
     )
 
@@ -136,7 +150,7 @@ class GeneDocument(Document):
         properties={
             "db_name": Keyword(),
             "db_accession": Keyword(),
-            "db_description": Text()
+            "db_description": Text(),
         }
     )
 
@@ -150,7 +164,7 @@ class GeneDocument(Document):
             "drug_class": Keyword(),
             "drug_subclass": Keyword(),
             "uf_keyword": Keyword(multi=True),
-            "uf_ecnumber": Keyword()
+            "uf_ecnumber": Keyword(),
         }
     )
 
@@ -159,24 +173,16 @@ class GeneDocument(Document):
     class Index:
         name = "gene_index"
         settings = {
-            "index": {
-                "max_result_window": 500000
-            },
+            "index": {"max_result_window": 500000},
             "analysis": {
-                "analyzer": {
-                    "autocomplete_analyzer": autocomplete_analyzer
-                },
-                "tokenizer": {
-                    "edge_ngram_tokenizer": edge_ngram_tokenizer
-                },
-                "normalizer": {
-                    "lowercase_normalizer": lowercase_normalizer
-                }
-            }
+                "analyzer": {"autocomplete_analyzer": autocomplete_analyzer},
+                "tokenizer": {"edge_ngram_tokenizer": edge_ngram_tokenizer},
+                "normalizer": {"lowercase_normalizer": lowercase_normalizer},
+            },
         }
         dynamic = "true"
 
     def save(self, **kwargs):
-        """ set `_id` as `locus_tag` """
+        """set `_id` as `locus_tag`"""
         self.meta.id = self.locus_tag
         return super().save(**kwargs)

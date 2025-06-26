@@ -1,6 +1,7 @@
 name: Dev - Build and Publish ME TT Data Portal Images (Django APIs & React App)
 
 on:
+
   workflow_dispatch:
 
 jobs:

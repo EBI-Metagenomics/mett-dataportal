@@ -1,5 +1,6 @@
 # need to see if it can be store in some database with dynamic flow to update
 
+
 class COGCategoryService:
     _categories = {
         "J": "Translation, ribosomal structure and biogenesis",
@@ -27,7 +28,7 @@ class COGCategoryService:
         "Q": "Secondary metabolites biosynthesis, transport and catabolism",
         "R": "General function prediction only",
         "S": "Function unknown",
-        "-": "Not in COGs"
+        "-": "Not in COGs",
     }
 
     @classmethod
@@ -43,4 +44,6 @@ class COGCategoryService:
     @classmethod
     def as_list(cls) -> list[dict]:
         """Return the categories as a list of dicts with 'code' and 'label'."""
-        return [{"code": code, "label": label} for code, label in cls._categories.items()]
+        return [
+            {"code": code, "label": label} for code, label in cls._categories.items()
+        ]

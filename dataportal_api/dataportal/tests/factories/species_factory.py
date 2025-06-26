@@ -6,18 +6,24 @@ class SpeciesFactory(factory.Factory):
     class Meta:
         model = SpeciesDocument
 
-    scientific_name = factory.Iterator([
-        "Bacteroides uniformis",
-        "Phocaeicola vulgatus",
-    ])
-    common_name = factory.Iterator([
-        "Bacteroides",
-        "Bacteroides vulgatus",
-    ])
-    acronym = factory.Iterator([
-        "BU",
-        "PV",
-    ])
+    scientific_name = factory.Iterator(
+        [
+            "Bacteroides uniformis",
+            "Phocaeicola vulgatus",
+        ]
+    )
+    common_name = factory.Iterator(
+        [
+            "Bacteroides",
+            "Bacteroides vulgatus",
+        ]
+    )
+    acronym = factory.Iterator(
+        [
+            "BU",
+            "PV",
+        ]
+    )
     taxonomy_id = factory.Sequence(lambda n: n + 100)
 
     @classmethod

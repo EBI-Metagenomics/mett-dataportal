@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mett-dataportal-celery-worker
+  namespace: mett-dataportal-hl-dev
+  labels:
+    app: mett-dataportal-celery-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mett-dataportal-celery-worker
+  template:
+    metadata:
+      labels:
+        app: mett-dataportal-celery-worker
+    spec:
+      securityContext:
+        runAsUser: 7123
+        runAsGroup: 1347
+      volumes:
+        - name: pyhmmer-data
+          persistentVolumeClaim:
+            claimName: mett-pyhmmer-pvc
+      containers:
+        - name: celery-worker
+          image: quay.io/microbiome-informatics/mett-dataportal-api
+          volumeMounts:
+            - name: pyhmmer-data
+              mountPath: /data/pyhmmer
+          resources:
+            requests:
+              cpu: "2"
+              memory: "12Gi"
+            limits:
+              cpu: "2"
+              memory: "16Gi"
+          command: [ "celery" ]
+          args: [
+            "-A", "dataportal", "worker",
+            "-l", "INFO",
+            "-Q", "pyhmmer_queue",
+            "--concurrency=2",
+            "--max-tasks-per-child=10"
+          ]
+          env:
+            # Database configuration
+            - name: DATAPORTAL_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_HOST
+            - name: DATAPORTAL_DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_PORT
+            - name: DATAPORTAL_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB
+            - name: DATAPORTAL_DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_USER
+            - name: DATAPORTAL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-postgres-secret
+                  key: DATAPORTAL_DB_PASSWORD
+            - name: PYTHONPATH
+              value: "/app"
+            - name: PYHMMER_FAA_BASE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-test
+                  key: PYHMMER_FAA_BASE_PATH
+            - name: CELERY_BROKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: CELERY_BROKER_URL
+            - name: CELERY_RESULT_BACKEND
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: CELERY_RESULT_BACKEND
+            # App-specific config and secrets
+            - name: DJANGO_DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: DJANGO_DEBUG
+            - name: TIME_ZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: TIME_ZONE
+            - name: ALLOWED_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: ALLOWED_HOSTS
+            - name: DATA_PORTAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: DATA_PORTAL_URL
+            - name: ASSEMBLY_FTP_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: ASSEMBLY_FTP_PATH
+            - name: GFF_FTP_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: GFF_FTP_PATH
+            - name: ES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-elasticsearch-config-dev
+                  key: ES_HOST
+            - name: ES_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-elasticsearch-config-dev
+                  key: ES_TIMEOUT
+            - name: ES_MAX_RETRIES
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-elasticsearch-config-dev
+                  key: ES_MAX_RETRIES
+            - name: ES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials
+                  key: ELASTIC_USERNAME
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials
+                  key: ELASTIC_PASSWORD
+      imagePullSecrets:
+        - name: quay-pull-secret
+#      affinity:
+#        nodeAffinity:
+#          requiredDuringSchedulingIgnoredDuringExecution:
+#            nodeSelectorTerms:
+#              - matchExpressions:
+#                  - key: mett-pyhmmer-data
+#                    operator: In
+#                    values:
+#                      - "true"

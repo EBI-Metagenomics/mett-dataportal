@@ -10,7 +10,10 @@ class AppHealthService:
     def healthz(self):
         try:
             if not self.get_es_client().ping():
-                return 503, {"status": "unhealthy", "reason": "Elasticsearch not reachable"}
+                return 503, {
+                    "status": "unhealthy",
+                    "reason": "Elasticsearch not reachable",
+                }
         except es_exceptions.ElasticsearchException as e:
             return 503, {"status": "unhealthy", "reason": str(e)}
 

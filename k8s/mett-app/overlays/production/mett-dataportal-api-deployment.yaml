@@ -23,11 +23,39 @@ spec:
         runAsUser: 7123
         runAsGroup: 1347
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-api:v0.0.145
+        - image: quay.io/microbiome-informatics/mett-dataportal-api
           imagePullPolicy: Always
           name: mett-dataportal-api
+          command: ["python"]
+          args: ["manage.py", "runserver", "0.0.0.0:8000"]
           env:
             # Database configuration
+            - name: DATAPORTAL_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_HOST
+            - name: DATAPORTAL_DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_PORT
+            - name: DATAPORTAL_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB
+            - name: DATAPORTAL_DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-postgres-config
+                  key: DATAPORTAL_DB_USER
+            - name: DATAPORTAL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-postgres-secret
+                  key: DATAPORTAL_DB_PASSWORD
+            # Elasticsearch configuration
             - name: ES_HOST
               valueFrom:
                 configMapKeyRef:
@@ -85,6 +113,23 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config
                   key: GFF_FTP_PATH
+            - name: CELERY_BROKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config
+                  key: CELERY_BROKER_URL
+            - name: CELERY_RESULT_BACKEND
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config
+                  key: CELERY_RESULT_BACKEND
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "3"
+            limits:
+              memory: "8Gi"
+              cpu: "4"
           ports:
             - containerPort: 8000
               name: gunicorn

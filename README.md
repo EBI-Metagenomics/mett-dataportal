@@ -52,6 +52,8 @@ We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config file
 
 Scripts -
 
+
+#### Elasticsearch Database setup
 ```shell
 $ python manage.py create_es_index
 $ python manage.py import_species --csv ../data-generators/data/species.csv
@@ -62,6 +64,18 @@ $ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory
 $ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --assembly BU_ATCC8492
 
 ```
+
+#### Pyhmmer Database Migrations
+```shell
+$ python manage.py migrate pyhmmer_search
+```
+
+
+#### Celery Beat Migrations
+```shell
+$ python manage.py migrate django_celery_beat
+```
+
 
 #### Code style
 
@@ -79,14 +93,8 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-#### Initial Database table setup
-
-```shell
-python manage.py makemigrations
-python manage.py makemigrations dataportal --empty
-python manage.py migrate
+### Kubernetes Node Affinity 
+```bash
+$ kubectl label node hh-rke-wp-webadmin-52-worker-1.caas.ebi.ac.uk mett-pyhmmer-data=true
+$ kubectl get nodes -l mett-pyhmmer-data=true
 ```
-
-## Data Portal APP (React based application)
-
-### Requirements

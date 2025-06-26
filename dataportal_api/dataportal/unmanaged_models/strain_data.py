@@ -21,7 +21,9 @@ class StrainData(models.Model):
     locals()[ES_FIELD_SPECIES_ACRONYM] = models.CharField(max_length=50)
     locals()[STRAIN_FIELD_ISOLATE_NAME] = models.CharField(max_length=255)
     locals()[STRAIN_FIELD_ASSEMBLY_NAME] = models.CharField(max_length=255)
-    locals()[STRAIN_FIELD_ASSEMBLY_ACCESSION] = models.CharField(max_length=100, null=True)
+    locals()[STRAIN_FIELD_ASSEMBLY_ACCESSION] = models.CharField(
+        max_length=100, null=True
+    )
     locals()[STRAIN_FIELD_FASTA_FILE] = models.CharField(max_length=255, null=True)
     locals()[STRAIN_FIELD_GFF_FILE] = models.CharField(max_length=255, null=True)
     locals()[STRAIN_FIELD_TYPE_STRAIN] = models.BooleanField(default=False)
@@ -53,7 +55,8 @@ def strain_from_hit(hit) -> StrainData:
         ),
         gff_url=(
             f"{settings.GFF_FTP_PATH.format(source.get(STRAIN_FIELD_ISOLATE_NAME))}/{source.get(STRAIN_FIELD_GFF_FILE)}"
-            if source.get(STRAIN_FIELD_GFF_FILE) and source.get(STRAIN_FIELD_ISOLATE_NAME)
+            if source.get(STRAIN_FIELD_GFF_FILE)
+            and source.get(STRAIN_FIELD_ISOLATE_NAME)
             else None
         ),
         contigs=source.get(STRAIN_FIELD_CONTIGS, []),

@@ -19,7 +19,8 @@ from dataportal.utils.constants import (
     ES_FIELD_INTERPRO,
     GENE_FIELD_EC_NUMBER,
     GENE_FIELD_DBXREF,
-    UNKNOWN_ESSENTIALITY, GENE_FIELD_START,
+    UNKNOWN_ESSENTIALITY,
+    GENE_FIELD_START,
     GENE_FIELD_END,
     ES_FIELD_EGGNOG,
     ES_FIELD_SPECIES_ACRONYM,
@@ -36,10 +37,14 @@ class GeneData(models.Model):
     locals()[GENE_FIELD_END_POS] = models.IntegerField(null=True)
     locals()[FIELD_SEQ_ID] = models.CharField(max_length=100, null=True)
     locals()[ES_FIELD_ISOLATE_NAME] = models.CharField(max_length=100, null=True)
-    locals()[ES_FIELD_SPECIES_SCIENTIFIC_NAME] = models.CharField(max_length=100, null=True)
+    locals()[ES_FIELD_SPECIES_SCIENTIFIC_NAME] = models.CharField(
+        max_length=100, null=True
+    )
     locals()[ES_FIELD_SPECIES_ACRONYM] = models.CharField(max_length=100, null=True)
     locals()[ES_FIELD_UNIPROT_ID] = models.CharField(max_length=100, null=True)
-    locals()[GENE_ESSENTIALITY] = models.CharField(max_length=100, null=True, default=UNKNOWN_ESSENTIALITY)
+    locals()[GENE_ESSENTIALITY] = models.CharField(
+        max_length=100, null=True, default=UNKNOWN_ESSENTIALITY
+    )
     locals()[ES_FIELD_COG_FUNCATS] = models.JSONField(null=True, default=list)
     locals()[ES_FIELD_COG_ID] = models.CharField(max_length=100, null=True)
     locals()[ES_FIELD_KEGG] = models.JSONField(null=True, default=list)

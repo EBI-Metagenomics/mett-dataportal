@@ -24,7 +24,7 @@ async def test_get_all_species(mock_sync_to_async):
         "scientific_name": "Bacteroides uniformis",
         "common_name": "BU",
         "taxonomy_id": 123,
-        "acronym": "BU"
+        "acronym": "BU",
     }
 
     doc2 = MagicMock()
@@ -32,7 +32,7 @@ async def test_get_all_species(mock_sync_to_async):
         "scientific_name": "Phocaeicola vulgatus",
         "common_name": "PV",
         "taxonomy_id": 456,
-        "acronym": "PV"
+        "acronym": "PV",
     }
 
     mock_sync_to_async.return_value = AsyncMock(return_value=[doc1, doc2])
@@ -54,7 +54,7 @@ async def test_get_species_by_acronym(mock_sync_to_async):
         "scientific_name": "Bacteroides uniformis",
         "common_name": "BU",
         "taxonomy_id": 123,
-        "acronym": "BU"
+        "acronym": "BU",
     }
 
     mock_sync_to_async.return_value = AsyncMock(return_value=[doc])

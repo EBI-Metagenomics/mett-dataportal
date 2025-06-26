@@ -1,0 +1,175 @@
+.pyhmmerSection {
+  padding: 0.1rem;
+  background-color: #f9f9f9;
+}
+
+.formContainer {
+  display: flex;
+  //gap: 24px;
+  //margin-bottom: 32px;
+}
+
+.leftPane {
+  flex: 1;
+  min-width: 400px;
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.rightPane {
+  flex: 1.5;
+  min-width: 400px;
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.resultsContainer {
+  margin-top: 4px;
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.formSection {
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+}
+
+.radioRow {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+}
+
+.cutoffGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.cutoffHeader {
+  font-weight: 500;
+  text-align: center;
+}
+
+.cutoffLabel {
+  justify-self: start;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+.gapRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 16px;
+  align-items: end;
+  & > div > div {
+    margin-bottom: 8px;
+  }
+}
+
+.inputSmall {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.selectSmall {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+}
+
+.sequenceInputBox {
+  border: 1px solid #bdbdbd;
+  border-radius: 4px;
+  background: #fafafa;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.textarea {
+  width: 100%;
+  min-height: 100px;
+  border: none;
+  background: transparent;
+  font-family: monospace;
+  font-size: 1rem;
+  resize: vertical;
+  outline: none;
+}
+.sequenceInputHelp {
+  font-size: 0.95em;
+  color: #757575;
+  margin-top: 4px;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  button {
+    min-width: 80px;
+    padding: 7px 18px;
+    border-radius: 4px;
+    border: none;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+}
+//.submitBtn {
+//  background: #1976d2;
+//  color: #fff;
+//  &:hover { background: #125ea2; }
+//}
+//.resetBtn {
+//  background: #757575;
+//  color: #fff;
+//  &:hover { background: #5a5a5a; }
+//}
+//.cleanBtn {
+//  background: #bdbdbd;
+//  color: #333;
+//  &:hover { background: #a0a0a0; }
+//}
+
+// Filter section
+.formSection:last-child {
+  margin-bottom: 0;
+}

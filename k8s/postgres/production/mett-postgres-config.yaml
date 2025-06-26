@@ -1,10 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: postgres-config-dev
+  name: mett-postgres-config
   namespace: mett-dataportal-hl
 data:
-  DB_HOST: "hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk"
-  DB_PORT: "31508"  # Wrapped in quotes to ensure it's treated as a string
-  POSTGRES_DB: "mett-dataportal-db"
-  POSTGRES_USER: "mett_dataportal-usr"
+  DATAPORTAL_DB_HOST: "mett-postgres-service.mett-dataportal-hl-dev.svc.cluster.local"
+  DATAPORTAL_DB_PORT: "5432"
+  DATAPORTAL_DB: "mett-dataportal-db"
+  DATAPORTAL_DB_USER: "mett-dataportal-usr"
+

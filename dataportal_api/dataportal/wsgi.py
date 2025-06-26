@@ -12,7 +12,6 @@ import os
 from asgiref.sync import async_to_sync
 from django.core.wsgi import get_wsgi_application
 
-from dataportal.services.gene_service import GeneService
 from dataportal.services.essentiality_service import EssentialityService
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dataportal.settings")

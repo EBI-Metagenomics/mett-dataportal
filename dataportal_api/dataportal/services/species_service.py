@@ -27,7 +27,9 @@ class SpeciesService:
             response = await sync_to_async(search.execute)()
 
             if not response:
-                raise_exception(f"Species with acronym {acronym} not found.", status_code=404)
+                raise_exception(
+                    f"Species with acronym {acronym} not found.", status_code=404
+                )
 
             return SpeciesSchema.model_validate(response[0].to_dict())
         except Exception as e:

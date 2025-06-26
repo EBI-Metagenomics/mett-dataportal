@@ -4,12 +4,13 @@ from django.http import JsonResponse
 from ninja import NinjaAPI
 from ninja.errors import HttpError
 
-from .gene_endpoints import gene_router
-from .genome_endpoints import genome_router
-from .health_endpoints import health_router
-from .metadata_endpoints import metadata_router
-from .species_endpoints import species_router
-
+from dataportal.api.gene_endpoints import gene_router
+from dataportal.api.genome_endpoints import genome_router
+from dataportal.api.health_endpoints import health_router
+from dataportal.api.metadata_endpoints import metadata_router
+from dataportal.api.species_endpoints import species_router
+from pyhmmer_search.results.api import pyhmmer_router_result
+from pyhmmer_search.search.api import pyhmmer_router_search
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
     description="ME TT DataPortal Data Portal APIs to fetch Gut Microbes Genomes / Genes information.",
     urls_namespace="api",
-    csrf=True,
+    csrf=False,
     docs_url="/docs",
 )
 
@@ -25,6 +26,9 @@ URL_PREFIX_SPECIES = "/species"
 URL_PREFIX_GENOMES = "/genomes"
 URL_PREFIX_GENES = "/genes"
 URL_PREFIX_METADATA = "/metadata"
+URL_PREFIX_PYHMMER_SEARCH = "/pyhmmer/search"
+URL_PREFIX_PYHMMER_RESULT = "/pyhmmer/result"
+
 
 def custom_error_handler(request, exc):
     if isinstance(exc, HttpError):
@@ -37,5 +41,7 @@ api.add_router(URL_PREFIX_SPECIES, species_router)
 api.add_router(URL_PREFIX_GENOMES, genome_router)
 api.add_router(URL_PREFIX_GENES, gene_router)
 api.add_router(URL_PREFIX_METADATA, metadata_router)
+api.add_router(URL_PREFIX_PYHMMER_SEARCH, pyhmmer_router_search)
+api.add_router(URL_PREFIX_PYHMMER_RESULT, pyhmmer_router_result)
 api.add_router("/", health_router)
 api.add_exception_handler(Exception, custom_error_handler)
