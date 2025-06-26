@@ -20,8 +20,25 @@ const bgzipPlugin = () => {
   };
 };
 
+// Custom plugin to handle JBrowse worker files
+const jbrowseWorkerPlugin = () => {
+  return {
+    name: 'jbrowse-worker-handler',
+    load(id) {
+      if (id.includes('makeWorkerInstance.js')) {
+        // Return a simple module that doesn't cause IIFE issues
+        return `
+          export default function makeWorkerInstance() {
+            return null;
+          }
+        `;
+      }
+    },
+  };
+};
+
 export default defineConfig({
-  plugins: [react(), bgzipPlugin()],
+  plugins: [react(), bgzipPlugin(), jbrowseWorkerPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -33,8 +50,6 @@ export default defineConfig({
       scss: {
         // Auto-import shared SCSS vars/mixins (optional)
         additionalData: `@use "@/styles/variables.scss" as *;`,
-        // Use modern Sass API
-        api: 'modern-compiler',
       },
     },
   },
@@ -44,6 +59,24 @@ export default defineConfig({
         '.js': 'jsx',
       },
     },
+  },
+  build: {
+    target: 'es2015',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+        },
+      },
+      external: [],
+    },
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
+  },
+  define: {
+    global: 'globalThis',
   },
   server: {
     fs: {
