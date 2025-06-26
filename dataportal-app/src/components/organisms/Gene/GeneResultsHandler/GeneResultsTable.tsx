@@ -120,6 +120,18 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
     return (
         <section>
             <div className={styles.toolbar}>
+            {onDownloadTSV && (
+                    <button
+                        type="button"
+                        title="Download TSV"
+                        className={`vf-button vf-button--sm vf-button--primary ${styles.vfDownloadBtn}`}
+                        onClick={onDownloadTSV}
+                        disabled={isLoading}
+                    >
+                        <span className={`icon icon-common ${isLoading ? 'icon-spinner' : 'icon-download'}`}></span>
+                        {isLoading ? ' Downloading...' : ' Download TSV'}
+                    </button>
+                )}
                 <Dialog.Root>
                     <Dialog.Trigger asChild>
                         <button
@@ -163,18 +175,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                     </Dialog.Portal>
                 </Dialog.Root>
 
-                {onDownloadTSV && (
-                    <button
-                        type="button"
-                        title="Download TSV"
-                        className={`vf-button vf-button--sm vf-button--primary ${styles.vfDownloadBtn}`}
-                        onClick={onDownloadTSV}
-                        disabled={isLoading}
-                    >
-                        <span className={`icon icon-common ${isLoading ? 'icon-spinner' : 'icon-download'}`}></span>
-                        {isLoading ? 'Downloading...' : 'Download TSV'}
-                    </button>
-                )}
+                
             </div>
 
             <table className="vf-table vf-table--sortable">

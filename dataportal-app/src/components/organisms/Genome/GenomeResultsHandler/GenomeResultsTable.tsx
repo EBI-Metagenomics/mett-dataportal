@@ -56,7 +56,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                         disabled={isLoading}
                     >
                         <span className={`icon icon-common ${isLoading ? 'icon-spinner' : 'icon-download'}`}></span>
-                        {isLoading ? 'Downloading...' : 'Download TSV'}
+                        {isLoading ? ' Downloading...' : ' Download TSV'}
                     </button>
                 </div>
             )}
