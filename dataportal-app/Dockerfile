@@ -5,10 +5,11 @@ WORKDIR /app
 
 ARG VITE_BASENAME=/
 ENV PUBLIC_URL=$VITE_BASENAME
+ENV NODE_OPTIONS="--max-old-space-size=8192"
 
 COPY dataportal-app/package.json /app/
 COPY dataportal-app/package-lock.json /app/
-RUN npm install
+RUN npm ci --only=production
 
 COPY dataportal-app /app
 RUN PUBLIC_URL=$PUBLIC_URL \
