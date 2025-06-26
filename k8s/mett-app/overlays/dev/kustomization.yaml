@@ -8,8 +8,8 @@ resources:
   - mett-redis.yaml
   - mett-dataportal-api-deployment.yaml
   - mett-dataportal-app-deployment.yaml
-  - mett-celery-beat.yaml
-  - mett-celery-worker.yaml
+#  - mett-celery-beat.yaml
+#  - mett-celery-worker.yaml
 
 
 images:
