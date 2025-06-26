@@ -8,13 +8,12 @@ import styles from "./GeneViewerPage.module.scss";
 import "./GeneViewerPage.module.scss";
 import {GenomeService} from "../../services/genomeService";
 import {GeneService} from '../../services/geneService';
-import {JBrowseApp} from "@jbrowse/react-app";
+import {JBrowseApp} from "@jbrowse/react-app2";
 import {GenomeMeta} from "../../interfaces/Genome";
 import {GeneMeta} from "../../interfaces/Gene";
 import {getEssentialityDataUrl, SPINNER_DELAY, ZOOM_LEVELS} from "../../utils/appConstants";
 import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm";
 import GeneViewerLegends from "@components/molecules/GeneViewerLegends";
-import DrawerWidget from "@components/atoms/DrawerWidget";
 
 const GeneViewerPage: React.FC = () => {
     const [geneMeta, setGeneMeta] = useState<GeneMeta | null>(null);
@@ -71,20 +70,20 @@ const GeneViewerPage: React.FC = () => {
 
     const assembly = useMemo(() => {
         if (genomeMeta) {
-            // console.log("base fasta indexes path: " + process.env.REACT_APP_ASSEMBLY_INDEXES_PATH)
-            return getAssembly(genomeMeta, process.env.REACT_APP_ASSEMBLY_INDEXES_PATH
-                ? process.env.REACT_APP_ASSEMBLY_INDEXES_PATH : '');
+            // console.log("base fasta indexes path: " + import.meta.env.VITE_ASSEMBLY_INDEXES_PATH)
+            return getAssembly(genomeMeta, import.meta.env.VITE_ASSEMBLY_INDEXES_PATH
+                ? import.meta.env.VITE_ASSEMBLY_INDEXES_PATH : '');
         }
         return null;
     }, [genomeMeta]);
 
     const tracks = useMemo(() => {
-        // console.log("base gff indexes path: " + process.env.REACT_APP_GFF_INDEXES_PATH)
+        // console.log("base gff indexes path: " + import.meta.env.VITE_GFF_INDEXES_PATH)
         return genomeMeta
             ? getTracks(
                 genomeMeta,
-                process.env.REACT_APP_GFF_INDEXES_PATH
-                    ? process.env.REACT_APP_GFF_INDEXES_PATH : '',
+                import.meta.env.VITE_GFF_INDEXES_PATH
+                    ? import.meta.env.VITE_GFF_INDEXES_PATH : '',
                 getEssentialityDataUrl(genomeMeta.isolate_name),
                 includeEssentiality
             ) : [];

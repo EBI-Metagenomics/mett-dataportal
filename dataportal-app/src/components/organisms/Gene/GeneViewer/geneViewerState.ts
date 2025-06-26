@@ -1,7 +1,6 @@
 import {useEffect, useState} from 'react';
-import {createViewState} from '@jbrowse/react-app';
-import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
-import {createRoot, hydrateRoot} from 'react-dom/client';
+import {createViewState} from '@jbrowse/react-app2';
+import makeWorkerInstance from '@jbrowse/react-app2/esm/makeWorkerInstance';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
 import CustomEssentialityPlugin from "../../../../plugins/CustomEssentialityPlugin";
@@ -59,15 +58,11 @@ const useGeneViewerState = (
                 const state = createViewState({
                     config,
                     plugins,
-                    hydrateFn: hydrateRoot,
-                    createRootFn: createRoot,
                     makeWorkerInstance,
                 });
 
                 // console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
                 // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
-
-                const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
 
                 setViewState(state);
 

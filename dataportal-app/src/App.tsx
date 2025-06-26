@@ -9,7 +9,7 @@ import Footer from "@components/organisms/Footer/Footer";
 const App: React.FC = () => {
     return (
         <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
-            <Router basename={process.env.REACT_APP_BASENAME || '/'}>
+            <Router basename={import.meta.env.VITE_BASENAME || '/'}>
                 <Header/>
                 <main
                     className="vf-body | vf-stack vf-stack--200"

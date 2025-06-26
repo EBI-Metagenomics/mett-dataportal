@@ -4,7 +4,7 @@ import styles from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm.mod
 import GeneResultsTable from "@components/organisms/Gene/GeneResultsHandler/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
 import {GeneService} from '../../../../services/geneService';
-import {createViewState} from '@jbrowse/react-app';
+import {createViewState} from '@jbrowse/react-app2';
 import {GeneFacetResponse, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
 import {FacetItem, LinkData} from "../../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../../interfaces/Genome";

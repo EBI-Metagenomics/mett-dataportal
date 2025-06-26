@@ -5,10 +5,10 @@ export const ZOOM_LEVELS = {
     DEFAULT: 3,
 };
 
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 export const API_GENOMES_BY_ISOLATE_NAMES = `${API_BASE_URL}/genomes/by-isolate-names`;
 
-export const BACINTERACTOME_SHINY_APP_BASE_URL = process.env.REACT_APP_BACINTERACTOME_SHINY_APP_URL;
+export const BACINTERACTOME_SHINY_APP_BASE_URL = import.meta.env.VITE_BACINTERACTOME_SHINY_APP_URL;
 export const getBacinteractomeUniprotUrl =
     (uniprot_id: string, species_name: string) => `${BACINTERACTOME_SHINY_APP_BASE_URL}?protein=${uniprot_id}&species=${species_name}`;
 
