@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import styles from './GeneResultsTable.module.scss';
-import {createViewState} from '@jbrowse/react-app';
+import {createViewState} from '@jbrowse/react-app2';
 import {LinkData} from '../../../../interfaces/Auxiliary';
 import {GeneMeta} from '../../../../interfaces/Gene';
 import {TABLE_MAX_COLUMNS, ZOOM_LEVELS} from '../../../../utils/appConstants';

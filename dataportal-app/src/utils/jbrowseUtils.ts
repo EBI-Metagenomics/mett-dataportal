@@ -2,7 +2,7 @@ import { firstValueFrom } from 'rxjs'
 import { filter } from 'rxjs/operators'
 import SimpleFeature from '@jbrowse/core/util/simpleFeature'
 import { BaseTrackModel } from '@jbrowse/core/pluggableElementTypes/models';
-import {ViewModel} from "@jbrowse/react-app/esm/createModel";
+import {ViewModel} from "@jbrowse/react-app2/esm/createModel";
 
 
 interface FeatureAdapter {

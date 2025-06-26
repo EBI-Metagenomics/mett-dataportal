@@ -20,31 +20,31 @@ spec:
           imagePullPolicy: Always
           name: mett-dataportal-react-app-dev
           env:
-            - name: REACT_APP_API_BASE_URL
+            - name: VITE_API_BASE_URL
               valueFrom:
                 configMapKeyRef:
                   name: mett-app-config-dev
-                  key: REACT_APP_API_BASE_URL
-            - name: REACT_APP_ENA_BASE_URL
+                  key: VITE_API_BASE_URL
+            - name: VITE_ENA_BASE_URL
               valueFrom:
                 configMapKeyRef:
                   name: mett-app-config-dev
-                  key: REACT_APP_ENA_BASE_URL
-            - name: REACT_APP_ASSEMBLY_INDEXES_PATH
+                  key: VITE_ENA_BASE_URL
+            - name: VITE_ASSEMBLY_INDEXES_PATH
               valueFrom:
                 configMapKeyRef:
                   name: mett-app-config-dev
-                  key: REACT_APP_ASSEMBLY_INDEXES_PATH
-            - name: REACT_APP_GFF_INDEXES_PATH
+                  key: VITE_ASSEMBLY_INDEXES_PATH
+            - name: VITE_GFF_INDEXES_PATH
               valueFrom:
                 configMapKeyRef:
                   name: mett-app-config-dev
-                  key: REACT_APP_GFF_INDEXES_PATH
-            - name: REACT_APP_BACINTERACTOME_SHINY_APP_URL
+                  key: VITE_GFF_INDEXES_PATH
+            - name: VITE_BACINTERACTOME_SHINY_APP_URL
               valueFrom:
                 configMapKeyRef:
                   name: mett-app-config-dev
-                  key: REACT_APP_BACINTERACTOME_SHINY_APP_URL
+                  key: VITE_BACINTERACTOME_SHINY_APP_URL
           ports:
             - containerPort: 80
               name: react-app
