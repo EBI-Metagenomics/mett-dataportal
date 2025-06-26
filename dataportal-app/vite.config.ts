@@ -59,40 +59,16 @@ export default defineConfig({
         '.js': 'jsx',
       },
     },
-    include: [
-      'react',
-      'react-dom',
-      '@jbrowse/core',
-      '@jbrowse/plugin-linear-genome-view',
-      '@jbrowse/product-core',
-      '@jbrowse/react-app2',
-      '@jbrowse/sv-core',
-    ],
   },
   build: {
     target: 'es2015',
-    minify: 'esbuild',
-    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          jbrowse: [
-            '@jbrowse/core',
-            '@jbrowse/plugin-linear-genome-view',
-            '@jbrowse/product-core',
-            '@jbrowse/react-app2',
-            '@jbrowse/sv-core',
-          ],
         },
       },
-      external: [],
     },
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true,
-    },
-    chunkSizeWarningLimit: 1000,
   },
   define: {
     global: 'globalThis',
@@ -105,3 +81,4 @@ export default defineConfig({
   },
   publicDir: 'public',
 })
+
