@@ -3,8 +3,25 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+// Custom plugin to handle bgzip files
+const bgzipPlugin = () => {
+  return {
+    name: 'bgzip-handler',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url && (req.url.includes('.fa.gz') || req.url.includes('.gff.gz'))) {
+          // Set proper headers for bgzip files
+          res.setHeader('Content-Type', 'application/octet-stream');
+          res.setHeader('Content-Encoding', 'identity');
+        }
+        next();
+      });
+    },
+  };
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), bgzipPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -33,7 +50,6 @@ export default defineConfig({
       // Allow serving files from outside the project root
       allow: ['..'],
     },
-    middlewareMode: true,
   },
   publicDir: 'public',
 })
