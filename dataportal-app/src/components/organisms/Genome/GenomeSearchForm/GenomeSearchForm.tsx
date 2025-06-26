@@ -61,6 +61,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         headers: any;
         body?: any
     } | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, DEFAULT_PER_PAGE_CNT);
@@ -222,6 +223,29 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         fetchSearchResults(page, sortField, sortOrder);
     };
 
+    const handleDownloadTSV = async () => {
+        try {
+            setIsDownloading(true);
+            // Show initial message for large downloads
+            alert('Starting download... This may take a while for large datasets.');
+            
+            await GenomeService.downloadGenomesTSV(
+                query,
+                sortField,
+                sortOrder,
+                selectedSpecies,
+                selectedTypeStrains
+            );
+            // Show success message
+            alert('Download completed successfully!');
+        } catch (error) {
+            console.error('Error downloading TSV:', error);
+            alert('Failed to download TSV file. Please try again or contact support if the problem persists.');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
         <section id="vf-tabs__section--2">
             <div>
@@ -268,6 +292,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                             onToggleGenomeSelect={onToggleGenomeSelect}
                             linkData={linkData}
                             setLoading={setLoading}
+                            onDownloadTSV={handleDownloadTSV}
+                            isLoading={isDownloading}
                         />
                         {/* Page size dropdown and pagination */}
                         <div className={styles.paginationContainer}>
