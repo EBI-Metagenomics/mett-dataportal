@@ -243,6 +243,8 @@ export class GeneService {
     ): Promise<GeneFacetResponse> {
         try {
             const params = new URLSearchParams();
+            
+            // Add all facet parameters
             if (speciesAcronym) params.append('species_acronym', speciesAcronym);
             if (isolates) params.append('isolates', isolates);
             if (essentiality) params.append('essentiality', essentiality);
@@ -252,16 +254,14 @@ export class GeneService {
             if (goTerm) params.append('go_term', goTerm);
             if (pfam) params.append('pfam', pfam);
             if (interpro) params.append('interpro', interpro);
-
-            if (facetOperators) {
-                const filterOpParts: string[] = [];
-                for (const [key, value] of Object.entries(facetOperators)) {
-                    filterOpParts.push(`${key}:${value}`);
-                }
-                if (filterOpParts.length > 0) {
-                    params.append('filter_operators', filterOpParts.join(';'));
-                }
-            }
+            
+            // Add facet operators as individual parameters (matching original approach)
+            if (facetOperators?.pfam) params.append('pfam_operator', facetOperators.pfam);
+            if (facetOperators?.interpro) params.append('interpro_operator', facetOperators.interpro);
+            if (facetOperators?.cog_id) params.append('cog_id_operator', facetOperators.cog_id);
+            if (facetOperators?.cog_funcats) params.append('cog_funcats_operator', facetOperators.cog_funcats);
+            if (facetOperators?.kegg) params.append('kegg_operator', facetOperators.kegg);
+            if (facetOperators?.go_term) params.append('go_term_operator', facetOperators.go_term);
 
             const response = await ApiService.get<GeneFacetResponse>('genes/faceted-search', params);
             return response;
