@@ -18,6 +18,7 @@ from ..utils.constants import (
     DEFAULT_PER_PAGE_CNT,
     DEFAULT_SORT,
     STRAIN_FIELD_ISOLATE_NAME,
+    SCROLL_MAX_RESULTS,
 )
 from ..utils.decorators import log_endpoint_access
 from ..utils.errors import raise_http_error
@@ -308,7 +309,7 @@ async def download_genomes_tsv(
         data_response = await genome_service.search_genomes_by_string(
             query=query,
             page=1,
-            per_page=1000000,  # Large number to get all records
+            per_page=SCROLL_MAX_RESULTS,  # Use constant for large downloads
             sortField=sortField or STRAIN_FIELD_ISOLATE_NAME,
             sortOrder=sortOrder or DEFAULT_SORT,
             isolates=isolates,

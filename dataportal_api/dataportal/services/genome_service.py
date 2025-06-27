@@ -6,8 +6,7 @@ from typing import Optional
 from asgiref.sync import sync_to_async
 from django.db.models import Q
 from django.forms.models import model_to_dict
-from elasticsearch_dsl import Search
-from elasticsearch_dsl import connections
+from elasticsearch_dsl import Search, connections
 
 from dataportal.models import StrainDocument
 from dataportal.schemas import (
@@ -24,6 +23,9 @@ from dataportal.utils.constants import (
     ES_FIELD_SPECIES_SCIENTIFIC_NAME,
     ES_FIELD_SPECIES_ACRONYM,
     ES_INDEX_STRAIN,
+    SCROLL_BATCH_SIZE,
+    SCROLL_MAX_RESULTS,
+    SCROLL_TIMEOUT,
 )
 from dataportal.utils.exceptions import ServiceError
 
@@ -392,17 +394,14 @@ class GenomeService:
     ):
         """Fetch all strains using Elasticsearch scroll API for large downloads."""
         try:
-            # Get the Elasticsearch client
             es_client = connections.get_connection()
-            
-            # Build the search body
             search_body = {
                 "query": {
                     "bool": {
                         "must": []
                     }
                 },
-                "size": 10000  # Increased batch size for better performance
+                "size": SCROLL_BATCH_SIZE
             }
 
             # Dynamically apply filters
@@ -447,13 +446,13 @@ class GenomeService:
                 lambda: es_client.search(
                     index=ES_INDEX_STRAIN,
                     body=search_body,
-                    scroll='5m'
+                    scroll=SCROLL_TIMEOUT
                 )
             )()
 
             results = []
             total_results = 0
-            max_results = 1000000  # Maximum results to prevent runaway queries
+            max_results = SCROLL_MAX_RESULTS
             batch_count = 0
             scroll_id = response['_scroll_id']
 
@@ -482,7 +481,7 @@ class GenomeService:
                     response = await sync_to_async(
                         lambda: es_client.scroll(
                             scroll_id=scroll_id,
-                            scroll='5m'
+                            scroll=SCROLL_TIMEOUT
                         )
                     )()
                     scroll_id = response['_scroll_id']

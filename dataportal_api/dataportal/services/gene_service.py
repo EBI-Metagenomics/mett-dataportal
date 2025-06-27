@@ -4,7 +4,7 @@ from typing import Optional, List, Tuple, Dict
 
 from asgiref.sync import sync_to_async
 from django.forms.models import model_to_dict
-from elasticsearch_dsl import Search, ElasticsearchDslException
+from elasticsearch_dsl import Search, connections, ElasticsearchDslException
 
 from dataportal.schemas import (
     GenePaginationSchema,
@@ -37,6 +37,9 @@ from dataportal.utils.constants import (
     ES_INDEX_GENE,
     FACET_FIELDS,
     ES_FIELD_COG_FUNCATS,
+    SCROLL_BATCH_SIZE,
+    SCROLL_MAX_RESULTS,
+    SCROLL_TIMEOUT,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -332,16 +335,11 @@ class GeneService:
         )
 
         try:
-            from elasticsearch_dsl import connections
-            
-            # Get the Elasticsearch client
             es_client = connections.get_connection()
-            
-            # Build the search body
             search_body = {
                 "query": query,
                 "sort": [{sort_by: {"order": order_prefix}}],
-                "size": 10000  # Increased batch size for better performance
+                "size": SCROLL_BATCH_SIZE
             }
 
             logger.info(f"Starting scroll search with query: {json.dumps(search_body, indent=2)}")
@@ -351,13 +349,13 @@ class GeneService:
                 lambda: es_client.search(
                     index=self.INDEX_NAME,
                     body=search_body,
-                    scroll='5m'
+                    scroll=SCROLL_TIMEOUT
                 )
             )()
 
             results = []
             total_results = 0
-            max_results = 1000000  # Maximum results to prevent runaway queries
+            max_results = SCROLL_MAX_RESULTS
             batch_count = 0
             scroll_id = response['_scroll_id']
 
@@ -387,7 +385,7 @@ class GeneService:
                     response = await sync_to_async(
                         lambda: es_client.scroll(
                             scroll_id=scroll_id,
-                            scroll='5m'
+                            scroll=SCROLL_TIMEOUT
                         )
                     )()
                     scroll_id = response['_scroll_id']
@@ -863,16 +861,11 @@ class GeneService:
         )
 
         try:
-            from elasticsearch_dsl import connections
-            
-            # Get the Elasticsearch client
             es_client = connections.get_connection()
-            
-            # Build the search body
             search_body = {
                 "query": es_query,
                 "sort": [{sort_by: {"order": order_prefix}}],
-                "size": 10000  # Increased batch size for better performance
+                "size": SCROLL_BATCH_SIZE
             }
 
             logger.info(f"Starting streaming scroll search with query: {json.dumps(search_body, indent=2)}")
@@ -882,12 +875,12 @@ class GeneService:
                 lambda: es_client.search(
                     index=self.INDEX_NAME,
                     body=search_body,
-                    scroll='5m'
+                    scroll=SCROLL_TIMEOUT
                 )
             )()
 
             total_results = 0
-            max_results = 1000000  # Maximum results to prevent runaway queries
+            max_results = SCROLL_MAX_RESULTS
             batch_count = 0
             scroll_id = response['_scroll_id']
 
@@ -918,7 +911,7 @@ class GeneService:
                     response = await sync_to_async(
                         lambda: es_client.scroll(
                             scroll_id=scroll_id,
-                            scroll='5m'
+                            scroll=SCROLL_TIMEOUT
                         )
                     )()
                     scroll_id = response['_scroll_id']
