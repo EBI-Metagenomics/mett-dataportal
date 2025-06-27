@@ -4,7 +4,7 @@ from typing import Optional, List, Tuple, Dict
 
 from asgiref.sync import sync_to_async
 from django.forms.models import model_to_dict
-from elasticsearch_dsl import Search, ElasticsearchDslException
+from elasticsearch_dsl import Search, connections, ElasticsearchDslException
 
 from dataportal.schemas import (
     GenePaginationSchema,
@@ -37,6 +37,9 @@ from dataportal.utils.constants import (
     ES_INDEX_GENE,
     FACET_FIELDS,
     ES_FIELD_COG_FUNCATS,
+    SCROLL_BATCH_SIZE,
+    SCROLL_MAX_RESULTS,
+    SCROLL_TIMEOUT,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -241,6 +244,7 @@ class GeneService:
         per_page: int = DEFAULT_PER_PAGE_CNT,
         sort_field: Optional[str] = None,
         sort_order: Optional[str] = SORT_ASC,
+        use_scroll: bool = False,
     ) -> GenePaginationSchema:
         """Fetch genes by multiple genomes, species, and optional search query."""
 
@@ -278,13 +282,22 @@ class GeneService:
                 filter_criteria=filter_criteria,
             )
 
-            genes, total_results = await self._fetch_paginated_genes(
-                query=es_query,
-                page=page,
-                per_page=per_page,
-                sort_field=sort_field,
-                sort_order=sort_order,
-            )
+            if use_scroll:
+                # Use scroll API for large downloads
+                genes, total_results = await self._fetch_all_genes_with_scroll(
+                    query=es_query,
+                    sort_field=sort_field,
+                    sort_order=sort_order,
+                )
+            else:
+                # Use regular pagination for normal requests
+                genes, total_results = await self._fetch_paginated_genes(
+                    query=es_query,
+                    page=page,
+                    per_page=per_page,
+                    sort_field=sort_field,
+                    sort_order=sort_order,
+                )
 
             return self._create_pagination_schema(genes, page, per_page, total_results)
 
@@ -293,6 +306,101 @@ class GeneService:
             raise InvalidGenomeIdError(isolates)
         except Exception as e:
             logger.error(f"Error in get_genes_by_multiple_genomes_and_string: {e}")
+            raise ServiceError(e)
+
+    async def _fetch_all_genes_with_scroll(
+        self,
+        query: dict,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = DEFAULT_SORT,
+    ) -> Tuple[List[GeneResponseSchema], int]:
+        """Fetch all genes using Elasticsearch scroll API for large downloads."""
+        order_prefix = "desc" if sort_order == SORT_DESC else "asc"
+
+        if sort_field == GENE_SORT_FIELD_STRAIN:
+            sort_field = ES_FIELD_ISOLATE_NAME
+
+        sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        sort_by = (
+            f"{sort_by}.keyword"
+            if sort_by
+            in [
+                ES_FIELD_GENE_NAME,
+                ES_FIELD_ALIAS,
+                FIELD_SEQ_ID,
+                ES_FIELD_LOCUS_TAG,
+                ES_FIELD_PRODUCT,
+            ]
+            else sort_by
+        )
+
+        try:
+            es_client = connections.get_connection()
+            search_body = {
+                "query": query,
+                "sort": [{sort_by: {"order": order_prefix}}],
+                "size": SCROLL_BATCH_SIZE
+            }
+
+            logger.info(f"Starting scroll search with query: {json.dumps(search_body, indent=2)}")
+
+            # Execute initial search
+            response = await sync_to_async(
+                lambda: es_client.search(
+                    index=self.INDEX_NAME,
+                    body=search_body,
+                    scroll=SCROLL_TIMEOUT
+                )
+            )()
+
+            results = []
+            total_results = 0
+            max_results = SCROLL_MAX_RESULTS
+            batch_count = 0
+            scroll_id = response['_scroll_id']
+
+            # Process all batches
+            while len(response['hits']['hits']) > 0 and total_results < max_results:
+                batch_count += 1
+                for hit_data in response['hits']['hits']:
+                    # Create a mock hit object that has to_dict() method
+                    class MockHit:
+                        def __init__(self, source):
+                            self._source = source
+                        
+                        def to_dict(self):
+                            return self._source
+                    
+                    mock_hit = MockHit(hit_data['_source'])
+                    gene_obj = gene_from_hit(mock_hit)
+                    gene_dict = model_to_dict(gene_obj)
+                    validated = GeneResponseSchema.model_validate(gene_dict)
+                    results.append(validated)
+                
+                total_results += len(response['hits']['hits'])
+                logger.info(f"Fetched {total_results} genes in {batch_count} batches...")
+
+                # Get next batch using scroll
+                try:
+                    response = await sync_to_async(
+                        lambda: es_client.scroll(
+                            scroll_id=scroll_id,
+                            scroll=SCROLL_TIMEOUT
+                        )
+                    )()
+                    scroll_id = response['_scroll_id']
+                except Exception as scroll_error:
+                    logger.error(f"Error in scroll batch {batch_count}: {scroll_error}")
+                    break
+
+            if total_results >= max_results:
+                logger.warning(f"Reached maximum result limit of {max_results}. Some results may be truncated.")
+
+            logger.info(f"Scroll search completed. Total genes fetched: {total_results}")
+            return results, total_results
+
+        except Exception as e:
+            logger.error(f"Error fetching genes with scroll API: {str(e)}")
             raise ServiceError(e)
 
     # helper methods
@@ -639,3 +747,183 @@ class GeneService:
                 f"Error fetching protein sequence for locus tag {locus_tag}: {e}"
             )
             raise ServiceError(f"Error fetching protein sequence: {str(e)}")
+
+    def convert_to_tsv(self, genes: List[GeneResponseSchema]) -> str:
+        """Convert gene data to TSV format for download."""
+        if not genes:
+            return ""
+        
+        # Define the columns to include in the TSV export
+        columns = [
+            'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag', 
+            'product', 'uniprot_id', 'essentiality', 'pfam', 'interpro', 
+            'kegg', 'cog_funcats', 'cog_id', 'amr'
+        ]
+        
+        # Create header row
+        header = '\t'.join(columns)
+        
+        # Create data rows
+        rows = []
+        for gene in genes:
+            row_data = []
+            for col in columns:
+                value = getattr(gene, col, '')
+                
+                # Handle special cases
+                if col == 'alias' and value:
+                    value = '; '.join(value) if isinstance(value, list) else str(value)
+                elif col == 'pfam' and value:
+                    value = '; '.join(value) if isinstance(value, list) else str(value)
+                elif col == 'interpro' and value:
+                    value = '; '.join(value) if isinstance(value, list) else str(value)
+                elif col == 'kegg' and value:
+                    value = '; '.join(value) if isinstance(value, list) else str(value)
+                elif col == 'amr' and value:
+                    # Format AMR data
+                    amr_parts = []
+                    for amr_item in value:
+                        if amr_item.get('drug_class'):
+                            amr_parts.append(f"{amr_item['drug_class']}({amr_item.get('drug_subclass', '')})")
+                    value = '; '.join(amr_parts) if amr_parts else ''
+                else:
+                    value = str(value) if value is not None else ''
+                
+                # Escape tabs and newlines in the value
+                value = value.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')
+                row_data.append(value)
+            
+            rows.append('\t'.join(row_data))
+        
+        return header + '\n' + '\n'.join(rows)
+
+    async def stream_genes_with_scroll(
+        self,
+        isolates: str = None,
+        species_acronym: Optional[int] = None,
+        query: str = None,
+        filter: Optional[str] = None,
+        filter_operators: Optional[str] = None,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[str] = SORT_ASC,
+    ):
+        """Stream genes directly from Elasticsearch scroll API without loading all into memory."""
+        isolate_names_list = (
+            [id.strip() for id in isolates.split(",")] if isolates else []
+        )
+        filter_criteria = {"bool": {"must": []}}
+
+        # Filters for genome IDs and species ID
+        if isolate_names_list:
+            filter_criteria["bool"]["must"].append(
+                {"terms": {ES_FIELD_ISOLATE_NAME: isolate_names_list}}
+            )
+        if species_acronym:
+            filter_criteria["bool"]["must"].append(
+                {"term": {ES_FIELD_SPECIES_ACRONYM: species_acronym}}
+            )
+
+        # Apply additional filters
+        parsed_filters = self._parse_filters(filter)
+        parsed_filter_operators = self._parse_filter_operators(filter_operators)
+        type_strain_filters = await self._apply_filters_for_type_strain(
+            {}, parsed_filters, parsed_filter_operators
+        )
+
+        if "bool" in type_strain_filters and "must" in type_strain_filters["bool"]:
+            filter_criteria["bool"]["must"].extend(
+                type_strain_filters["bool"]["must"]
+            )
+
+        es_query = self._build_es_query(
+            query=query,
+            isolate_name=filter_criteria.get("isolate_name"),
+            filter_criteria=filter_criteria,
+        )
+
+        # Sort configuration
+        order_prefix = "desc" if sort_order == SORT_DESC else "asc"
+        if sort_field == GENE_SORT_FIELD_STRAIN:
+            sort_field = ES_FIELD_ISOLATE_NAME
+
+        sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        sort_by = (
+            f"{sort_by}.keyword"
+            if sort_by
+            in [
+                ES_FIELD_GENE_NAME,
+                ES_FIELD_ALIAS,
+                FIELD_SEQ_ID,
+                ES_FIELD_LOCUS_TAG,
+                ES_FIELD_PRODUCT,
+            ]
+            else sort_by
+        )
+
+        try:
+            es_client = connections.get_connection()
+            search_body = {
+                "query": es_query,
+                "sort": [{sort_by: {"order": order_prefix}}],
+                "size": SCROLL_BATCH_SIZE
+            }
+
+            logger.info(f"Starting streaming scroll search with query: {json.dumps(search_body, indent=2)}")
+
+            # Execute initial search
+            response = await sync_to_async(
+                lambda: es_client.search(
+                    index=self.INDEX_NAME,
+                    body=search_body,
+                    scroll=SCROLL_TIMEOUT
+                )
+            )()
+
+            total_results = 0
+            max_results = SCROLL_MAX_RESULTS
+            batch_count = 0
+            scroll_id = response['_scroll_id']
+
+            # Process all batches
+            while len(response['hits']['hits']) > 0 and total_results < max_results:
+                batch_count += 1
+                for hit_data in response['hits']['hits']:
+                    # Create a mock hit object that has to_dict() method
+                    class MockHit:
+                        def __init__(self, source):
+                            self._source = source
+                        
+                        def to_dict(self):
+                            return self._source
+                    
+                    mock_hit = MockHit(hit_data['_source'])
+                    gene_obj = gene_from_hit(mock_hit)
+                    gene_dict = model_to_dict(gene_obj)
+                    validated = GeneResponseSchema.model_validate(gene_dict)
+                    
+                    total_results += 1
+                    yield validated
+                
+                logger.info(f"Streamed {total_results} genes in {batch_count} batches...")
+
+                # Get next batch using scroll
+                try:
+                    response = await sync_to_async(
+                        lambda: es_client.scroll(
+                            scroll_id=scroll_id,
+                            scroll=SCROLL_TIMEOUT
+                        )
+                    )()
+                    scroll_id = response['_scroll_id']
+                except Exception as scroll_error:
+                    logger.error(f"Error in scroll batch {batch_count}: {scroll_error}")
+                    break
+
+            if total_results >= max_results:
+                logger.warning(f"Reached maximum result limit of {max_results}. Some results may be truncated.")
+
+            logger.info(f"Streaming completed. Total genes streamed: {total_results}")
+
+        except Exception as e:
+            logger.error(f"Error streaming genes with scroll API: {str(e)}")
+            raise ServiceError(e)

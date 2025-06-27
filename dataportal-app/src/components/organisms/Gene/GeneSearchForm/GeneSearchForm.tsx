@@ -60,6 +60,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [selectedFacets, setSelectedFacets] = useState<Record<string, string[]>>({});
     const [facetOperators, setFacetOperators] = useState<Record<string, 'AND' | 'OR'>>({});
     const [reloadFacetsKey, setReloadFacetsKey] = useState(0);
+    const [isDownloading, setIsDownloading] = useState(false);
 
 
     const [facets, setFacets] = useState<GeneFacetResponse>({
@@ -357,6 +358,31 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         fetchSearchResults(page, sortField, sortOrder, selectedFacets, facetOperators);
     };
 
+    const handleDownloadTSV = async () => {
+        try {
+            setIsDownloading(true);
+            // Show initial message for large downloads
+            alert('Starting download... This may take a while for large datasets.');
+            
+            await GeneService.downloadGenesTSV(
+                query,
+                sortField,
+                sortOrder,
+                selectedGenomes,
+                selectedSpecies,
+                selectedFacets,
+                facetOperators
+            );
+            // Show success message
+            alert('Download completed successfully!');
+        } catch (error) {
+            console.error('Error downloading TSV:', error);
+            alert('Failed to download TSV file. Please try again or contact support if the problem persists.');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
         <section id="vf-tabs__section--2">
             <div>
@@ -407,6 +433,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         viewState={viewState}
                         setLoading={setLoading}
                         isTypeStrainAvailable={selectedGenomes.length ? selectedGenomes.some(genome => genome.type_strain) : true}
+                        onDownloadTSV={handleDownloadTSV}
+                        isLoading={isDownloading}
                     />
                     {/* Page size dropdown and pagination */}
                     <div className={styles.paginationContainer}>

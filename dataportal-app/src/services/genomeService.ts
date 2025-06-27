@@ -1,6 +1,7 @@
 import {ApiService} from "./api";
 import {AutocompleteResponse, GenomeMeta, GenomeResponse} from "../interfaces/Genome";
 import {transformAutocompleteResponse, transformGenomeMeta, transformGenomeResponse} from "../utils/transformer";
+import {DEFAULT_PER_PAGE_CNT, API_BASE_URL} from "../utils/appConstants";
 
 export class GenomeService {
     /**
@@ -121,6 +122,47 @@ export class GenomeService {
             return rawResponse.map(transformGenomeMeta);
         } catch (error) {
             console.error("Error fetching type strains:", error);
+            throw error;
+        }
+    }
+
+    /**
+     * Download genome data in TSV format.
+     */
+    static async downloadGenomesTSV(
+        query: string,
+        sortField: string,
+        sortOrder: string,
+        selectedSpecies: string[],
+        selectedTypeStrains: string[]
+    ): Promise<void> {
+        try {
+            const params = new URLSearchParams({
+                query,
+                sortField,
+                sortOrder,
+            });
+
+            if (selectedTypeStrains && selectedTypeStrains.length) {
+                params.append('isolates', selectedTypeStrains.join(','));
+            }
+
+            if (selectedSpecies && selectedSpecies.length === 1) {
+                params.append('species_acronym', selectedSpecies[0]);
+            }
+            
+            // Create download URL
+            const url = `${API_BASE_URL}/genomes/download/tsv?${params.toString()}`;
+            
+            // Trigger download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'genomes_export.tsv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading genomes TSV:', error);
             throw error;
         }
     }

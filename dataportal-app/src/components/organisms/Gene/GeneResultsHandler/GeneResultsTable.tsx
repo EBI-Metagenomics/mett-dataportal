@@ -19,6 +19,8 @@ interface GeneResultsTableProps {
     viewState?: ViewModel;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
     isTypeStrainAvailable: boolean;
+    onDownloadTSV?: () => void;
+    isLoading?: boolean;
 }
 
 const generateLink = (template: string, result: any) => {
@@ -68,6 +70,8 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                                viewState,
                                                                setLoading,
                                                                isTypeStrainAvailable,
+                                                               onDownloadTSV,
+                                                               isLoading,
                                                            }) => {
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -116,6 +120,18 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
     return (
         <section>
             <div className={styles.toolbar}>
+            {onDownloadTSV && (
+                    <button
+                        type="button"
+                        title="Download TSV"
+                        className={`vf-button vf-button--sm vf-button--primary ${styles.vfDownloadBtn}`}
+                        onClick={onDownloadTSV}
+                        disabled={isLoading}
+                    >
+                        <span className={`icon icon-common ${isLoading ? 'icon-spinner' : 'icon-download'}`}></span>
+                        {isLoading ? ' Downloading...' : ' Download TSV'}
+                    </button>
+                )}
                 <Dialog.Root>
                     <Dialog.Trigger asChild>
                         <button
@@ -158,6 +174,8 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                         </Dialog.Content>
                     </Dialog.Portal>
                 </Dialog.Root>
+
+                
             </div>
 
             <table className="vf-table vf-table--sortable">

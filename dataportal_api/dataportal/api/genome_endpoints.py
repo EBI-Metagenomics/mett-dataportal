@@ -18,6 +18,7 @@ from ..utils.constants import (
     DEFAULT_PER_PAGE_CNT,
     DEFAULT_SORT,
     STRAIN_FIELD_ISOLATE_NAME,
+    SCROLL_MAX_RESULTS,
 )
 from ..utils.decorators import log_endpoint_access
 from ..utils.errors import raise_http_error
@@ -269,3 +270,87 @@ async def get_essentiality_data_by_contig(
             500,
             f"Failed to retrieve essentiality data for strain {isolate_name} and refName {ref_name}.",
         )
+
+
+@genome_router.get(
+    "/download/tsv",
+    summary="Download all genomes in TSV format",
+    description=(
+        "Downloads all genomes matching the current filters in TSV (Tab-Separated Values) format. "
+        "This endpoint returns all records without pagination, suitable for bulk data export. "
+        "Supports the same filtering options as the search endpoints."
+    ),
+    include_in_schema=False,
+)
+async def download_genomes_tsv(
+    request,
+    query: str = Query(
+        "", description="Search term to match against genome names or metadata."
+    ),
+    sortField: Optional[str] = Query(
+        STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."
+    ),
+    sortOrder: Optional[str] = Query(
+        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+    ),
+    isolates: Optional[List[str]] = Query(
+        None, description="Filter by a list of isolate names."
+    ),
+    species_acronym: Optional[str] = Query(
+        None, description="Filter by species acronym."
+    ),
+):
+    try:
+        logger.debug(
+            f"Download TSV request received with params: query={query}, sortField={sortField}, sortOrder={sortOrder}"
+        )
+        
+        # Get all records without pagination using the existing service method
+        data_response = await genome_service.search_genomes_by_string(
+            query=query,
+            page=1,
+            per_page=SCROLL_MAX_RESULTS,  # Use constant for large downloads
+            sortField=sortField or STRAIN_FIELD_ISOLATE_NAME,
+            sortOrder=sortOrder or DEFAULT_SORT,
+            isolates=isolates,
+            species_acronym=species_acronym,
+            use_scroll=True,  # Use scroll API for large downloads
+        )
+        
+        # Use streaming response for large datasets
+        from django.http import StreamingHttpResponse
+        
+        def generate_tsv():
+            # Define the columns to include in the TSV export
+            columns = [
+                'isolate_name', 'species_scientific_name', 'species_acronym', 
+                'assembly_name', 'assembly_accession', 'type_strain'
+            ]
+            
+            # Yield header row
+            yield '\t'.join(columns) + '\n'
+            
+            # Yield data rows one by one
+            for genome in data_response.results:
+                row_data = []
+                for col in columns:
+                    value = getattr(genome, col, '')
+                    value = str(value) if value is not None else ''
+                    
+                    # Escape tabs and newlines in the value
+                    value = value.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')
+                    row_data.append(value)
+                
+                yield '\t'.join(row_data) + '\n'
+        
+        # Return streaming response
+        http_response = StreamingHttpResponse(
+            generate_tsv(),
+            content_type='text/tab-separated-values'
+        )
+        http_response['Content-Disposition'] = 'attachment; filename="genomes_export.tsv"'
+        return http_response
+        
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(500, f"Failed to download genomes: {str(e)}")
