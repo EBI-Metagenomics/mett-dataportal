@@ -608,6 +608,7 @@ class GeneService:
 
     async def get_faceted_search(
         self,
+        query: Optional[str] = None,
         species_acronym: Optional[str] = None,
         isolates: Optional[List[str]] = None,
         essentiality: Optional[str] = None,
@@ -624,7 +625,7 @@ class GeneService:
 
         try:
             gs = GeneFacetedSearch(
-                query="",
+                query=query or "",
                 species_acronym=species_acronym,
                 essentiality=essentiality,
                 isolates=isolates,

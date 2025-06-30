@@ -17,6 +17,9 @@ import {
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 import SelectedGenomes from "@components/Filters/SelectedGenomes";
 import GeneFacetedFilter from "@components/Filters/GeneFacetedFilter";
+import { useFacetedFilters } from '../../../../hooks/useFacetedFilters';
+import { useFilterStore } from '../../../../stores/filterStore';
+import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../../../utils/filterUtils';
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -57,17 +60,23 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasPrevious, setHasPrevious] = useState<boolean>(false);
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(DEFAULT_PER_PAGE_CNT);
-    const [selectedFacets, setSelectedFacets] = useState<Record<string, string[]>>({});
-    const [facetOperators, setFacetOperators] = useState<Record<string, 'AND' | 'OR'>>({});
-    const [reloadFacetsKey, setReloadFacetsKey] = useState(0);
     const [isDownloading, setIsDownloading] = useState(false);
 
-
-    const [facets, setFacets] = useState<GeneFacetResponse>({
-        total_hits: 0,
-        operators: {},
+    const filterStore = useFilterStore();
+    
+    // Use the new faceted filters hook
+    const {
+        facets,
+        loading: facetsLoading,
+        error: facetsError,
+        handleToggleFacet,
+        handleOperatorChange,
+        refreshFacets
+    } = useFacetedFilters({
+        selectedSpecies: selectedSpecies || [],
+        selectedGenomes,
+        searchQuery: query,
     });
-
 
     const [apiRequestDetails, setApiRequestDetails] = useState<{
         url: string;
@@ -80,6 +89,16 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         const newSize = parseInt(event.target.value, DEFAULT_PER_PAGE_CNT);
         setPageSize(newSize);
     };
+
+    // Convert faceted filters to legacy format for API calls
+    const getLegacyFilters = useCallback(() => {
+        return convertFacetedFiltersToLegacy(filterStore.facetedFilters);
+    }, [filterStore.facetedFilters]);
+
+    // Convert facet operators to legacy format for API calls
+    const getLegacyOperators = useCallback(() => {
+        return convertFacetOperatorsToLegacy(filterStore.facetOperators);
+    }, [filterStore.facetOperators]);
 
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
@@ -95,7 +114,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             DEFAULT_PER_PAGE_CNT,
                             selectedSpecies[0],
                             undefined,
-                            selectedFacets
+                            getLegacyFilters()
                         );
                     }
                     // If genome is selected (used in GeneViewerPage.tsx)
@@ -106,7 +125,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             DEFAULT_PER_PAGE_CNT,
                             undefined,
                             genomeIds,
-                            selectedFacets
+                            getLegacyFilters()
                         );
                     } else {
                         response = await GeneService.fetchGeneAutocompleteSuggestions(
@@ -114,7 +133,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             DEFAULT_PER_PAGE_CNT,
                             undefined,
                             undefined,
-                            selectedFacets
+                            getLegacyFilters()
                         );
                     }
 
@@ -128,7 +147,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         },
-        [selectedSpecies, selectedGenomes, selectedFacets]
+        [selectedSpecies, selectedGenomes, getLegacyFilters]
     );
 
 
@@ -199,9 +218,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
                     setApiRequestDetails(apiDetails);
 
-                    // console.log("****query: ", query)
-                    // console.log("****selectedFacetFilters: ", selectedFacetFilters)
-                    // console.log("****facetOperators: ", facetOperators)
                     response = await GeneService.fetchGeneSearchResultsAdvanced(
                         query,
                         page,
@@ -241,71 +257,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         [query, selectedGeneId, selectedSpecies, selectedGenomes, pageSize]
     );
 
-    const loadFacets = async () => {
-        try {
-            const speciesAcronym = selectedSpecies?.[0];
-            const isolates = selectedGenomes.map(genome => genome.isolate_name).join(',');
-
-            const response = await GeneService.fetchGeneFacets(
-                speciesAcronym,
-                isolates,
-                selectedFacets.essentiality?.join(','),
-                selectedFacets.cog_id?.join(','),
-                selectedFacets.cog_funcats?.join(','),
-                selectedFacets.kegg?.join(','),
-                selectedFacets.go_term?.join(','),
-                selectedFacets.pfam?.join(','),
-                selectedFacets.interpro?.join(','),
-                facetOperators
-            );
-
-            const updatedFacets: GeneFacetResponse = {
-                total_hits: response.total_hits || 0,
-                operators: response.operators || {},
-            };
-
-            for (const [facetGroup, items] of Object.entries(response)) {
-                if (
-                    facetGroup === 'total_hits' ||
-                    facetGroup === 'operators' ||
-                    !Array.isArray(items)
-                ) continue;
-
-                const selectedValues = selectedFacets[facetGroup] || [];
-
-                const responseMap = new Map(items.map(item => [item.value, {
-                    ...item,
-                    selected: selectedValues.includes(item.value),
-                }]));
-
-                selectedValues.forEach(sel => {
-                    if (!responseMap.has(sel)) {
-                        responseMap.set(sel, {
-                            value: sel,
-                            count: 0,
-                            selected: true,
-                        });
-                    }
-                });
-
-                updatedFacets[facetGroup] = Array.from(responseMap.values());
-            }
-
-            setFacets(updatedFacets);
-
-            if (response.operators) {
-                setFacetOperators(response.operators);
-            }
-        } catch (e) {
-            console.error('Error loading facets', e);
-        }
-    };
-
-
     useEffect(() => {
-        fetchSearchResults(1, sortField, sortOrder, selectedFacets, facetOperators);
-        loadFacets();
-    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, selectedFacets, reloadFacetsKey]);
+        fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, filterStore.facetedFilters, filterStore.facetOperators]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -318,44 +272,18 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
-        // console.log('suggestion: ' + suggestion)
-        // console.log('strain name: ' + suggestion.isolate_name)
-        // console.log('suggestion.gene_name: ' + suggestion.gene_name)
-        // console.log('suggestion.locus_tag: ' + suggestion.locus_tag)
         setQuery(suggestion.gene_name || suggestion.locus_tag);
         setGeneName(suggestion.gene_name);
         setSelectedGeneId(suggestion.locus_tag);
         setSuggestions([]);
-        // fixed for query based on user selection
-        fetchSearchResults(1, sortField, sortOrder, selectedFacets, facetOperators);
-
+        fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
     };
 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        // console.log('selectedGeneId:' + selectedGeneId)
         event.preventDefault();
         setQuery(searchInput);
-        fetchSearchResults(1, sortField, sortOrder, selectedFacets, facetOperators);
-    };
-
-    const handleToggleFacet = (facetGroup: string, value: string) => {
-        setSelectedFacets(prev => {
-            const existing = prev[facetGroup] || [];
-            const updated = existing.includes(value)
-                ? existing.filter(v => v !== value) // remove
-                : [...existing, value]; // add
-            return {
-                ...prev,
-                [facetGroup]: updated
-            };
-        });
-    };
-
-
-    const handlePageClick = (page: number) => {
-        setCurrentPage(page);
-        fetchSearchResults(page, sortField, sortOrder, selectedFacets, facetOperators);
+        fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
     };
 
     const handleDownloadTSV = async () => {
@@ -370,8 +298,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 sortOrder,
                 selectedGenomes,
                 selectedSpecies,
-                selectedFacets,
-                facetOperators
+                getLegacyFilters(),
+                getLegacyOperators()
             );
             // Show success message
             alert('Download completed successfully!');
@@ -384,7 +312,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     return (
-        <section id="vf-tabs__section--2">
+        <section id="genes">
             <div>
                 <p/>
             </div>
@@ -396,15 +324,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     onToggleFacet={handleToggleFacet}
                     initialVisibleCount={FACET_INITIAL_VISIBLE_CNT}
                     loadMoreStep={FACET_STEP_CNT}
-                    onOperatorChange={(group, op) => {
-                        setFacetOperators(prev => {
-                            const updated = {...prev, [group]: op};
-                            setTimeout(() => {
-                                setReloadFacetsKey(k => k + 1);
-                            }, 0);
-                            return updated;
-                        });
-                    }}
+                    onOperatorChange={handleOperatorChange}
                 />
             </div>
             <div className={styles.rightPane}>
@@ -458,7 +378,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                     totalPages={totalPages}
                                     hasPrevious={hasPrevious}
                                     hasNext={hasNext}
-                                    onPageClick={handlePageClick}
+                                    onPageClick={(page) => {
+                                        setCurrentPage(page);
+                                        fetchSearchResults(page, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+                                    }}
                                 />
                             )}
                         </div>

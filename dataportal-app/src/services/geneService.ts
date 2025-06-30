@@ -230,6 +230,7 @@ export class GeneService {
      * Fetch gene facets for filtering.
      */
     static async fetchGeneFacets(
+        query?: string,
         speciesAcronym?: string,
         isolates?: string,
         essentiality?: string,
@@ -239,12 +240,14 @@ export class GeneService {
         goTerm?: string,
         pfam?: string,
         interpro?: string,
+        hasAmrInfo?: string,
         facetOperators?: Record<string, 'AND' | 'OR'>
     ): Promise<GeneFacetResponse> {
         try {
             const params = new URLSearchParams();
             
-            // Add all facet parameters
+            if (query) params.append('query', query);
+            
             if (speciesAcronym) params.append('species_acronym', speciesAcronym);
             if (isolates) params.append('isolates', isolates);
             if (essentiality) params.append('essentiality', essentiality);
@@ -254,6 +257,7 @@ export class GeneService {
             if (goTerm) params.append('go_term', goTerm);
             if (pfam) params.append('pfam', pfam);
             if (interpro) params.append('interpro', interpro);
+            if (hasAmrInfo) params.append('has_amr_info', hasAmrInfo);
             
             // Add facet operators as individual parameters (matching original approach)
             if (facetOperators?.pfam) params.append('pfam_operator', facetOperators.pfam);

@@ -11,6 +11,7 @@ import {
 } from "../../utils/appConstants";
 import * as Popover from '@radix-ui/react-popover';
 import {MetadataService} from "../../services/metadataService";
+import { useFilterStore } from '../../stores/filterStore';
 
 interface GeneFacetedFilterProps {
     facets: GeneFacetResponse;
@@ -28,19 +29,15 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                                  onOperatorChange,
                                                              }) => {
 
+    const filterStore = useFilterStore();
     const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
     const [filterText, setFilterText] = useState<Record<string, string>>({});
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
     const [cogCategoryDefs, setCogCategoryDefs] = useState<Record<string, string>>({});
-    const [facetOperators, setFacetOperators] = useState<Record<string, 'AND' | 'OR'>>({});
     const [manualCollapsedGroups, setManualCollapsedGroups] = useState<Record<string, boolean>>({});
 
 
     const handleOperatorChange = (facetGroup: string, operator: 'AND' | 'OR') => {
-        setFacetOperators(prev => ({
-            ...prev,
-            [facetGroup]: operator,
-        }));
         onOperatorChange?.(facetGroup, operator);
     };
 
@@ -87,7 +84,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                 }, {});
                 setCogCategoryDefs(mapping);
             });
-    }, [facets]);
+    }, [facets, manualCollapsedGroups]);
 
 
     const handleLoadMore = (group: string, total: number) => {
@@ -270,7 +267,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                             id={`logic-toggle-${facetGroup}`}
                                             type="checkbox"
                                             className={styles.logicToggleSwitch}
-                                            checked={facetOperators[facetGroup] === 'AND'}
+                                            checked={filterStore.facetOperators[facetGroup as keyof typeof filterStore.facetOperators] === 'AND'}
                                             onChange={(e) =>
                                                 handleOperatorChange(facetGroup, e.target.checked ? 'AND' : 'OR')
                                             }

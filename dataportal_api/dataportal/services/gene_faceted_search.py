@@ -13,19 +13,22 @@ from dataportal.utils.constants import (
     ES_FIELD_SPECIES_ACRONYM,
     ES_FIELD_COG_FUNCATS,
     ES_FIELD_AMR_INFO,
+    ES_FIELD_GENE_NAME,
+    ES_FIELD_ALIAS,
+    ES_FIELD_PRODUCT,
+    GENE_SEARCH_FIELDS,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class GeneFacetedSearch(FacetedSearch):
-    fields = [
+    fields = GENE_SEARCH_FIELDS + [
         ES_FIELD_SPECIES_ACRONYM,
         GENE_ESSENTIALITY,
         ES_FIELD_COG_ID,
         ES_FIELD_KEGG,
         "go_term",
-        ES_FIELD_PFAM,
         ES_FIELD_INTERPRO,
         ES_FIELD_ISOLATE_NAME,
         ES_FIELD_COG_FUNCATS,

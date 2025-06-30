@@ -119,6 +119,9 @@ async def search_genes_by_string(
 )
 async def get_faceted_search(
     request,
+    query: Optional[str] = Query(
+        None, description="Search query across gene fields (gene name, product, etc.)"
+    ),
     species_acronym: Optional[str] = Query(
         None, description="Species acronym to filter genes by (BU or PV)."
     ),
@@ -174,6 +177,7 @@ async def get_faceted_search(
         f"Isolates received: {isolate_names_list} (type: {type(isolate_names_list)})"
     )
     return await gene_service.get_faceted_search(
+        query,
         species_acronym,
         isolate_names_list,
         essentiality,

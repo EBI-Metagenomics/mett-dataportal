@@ -1,0 +1,74 @@
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin: 2rem 0;
+}
+
+.errorContent {
+  text-align: center;
+  max-width: 500px;
+  
+  h2 {
+    color: #dc3545;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+  }
+  
+  p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+}
+
+.errorDetails {
+  margin: 1rem 0;
+  text-align: left;
+  
+  summary {
+    cursor: pointer;
+    color: #007bff;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    
+    &:hover {
+      color: #0056b3;
+    }
+  }
+  
+  pre {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    font-size: 0.875rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    color: #495057;
+  }
+}
+
+.reloadButton {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: #0056b3;
+  }
+  
+  &:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+  }
+} 
