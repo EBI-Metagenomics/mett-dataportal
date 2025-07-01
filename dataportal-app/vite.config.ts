@@ -1,7 +1,7 @@
 // vite.config.ts
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import { fileURLToPath, URL } from 'node:url'
 
 // Custom plugin to handle bgzip files
 const bgzipPlugin = () => {
@@ -41,8 +41,8 @@ export default defineConfig({
   plugins: [react(), bgzipPlugin(), jbrowseWorkerPlugin()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@components': path.resolve(__dirname, './src/components'),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
     },
   },
   css: {
