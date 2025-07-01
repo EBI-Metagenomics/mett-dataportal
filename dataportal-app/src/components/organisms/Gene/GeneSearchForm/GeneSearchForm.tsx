@@ -342,7 +342,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 getLegacyOperators()
             );
             // Show success message
-            alert('Download completed successfully!');
+            // alert('Download completed successfully!');
         } catch (error) {
             console.error('Error downloading TSV:', error);
             alert('Failed to download TSV file. Please try again or contact support if the problem persists.');
