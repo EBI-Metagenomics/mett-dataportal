@@ -254,12 +254,33 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setLoading(false); // Stop spinner
             }
         },
-        [query, selectedGeneId, selectedSpecies, selectedGenomes, pageSize]
+        [query, selectedGeneId, selectedSpecies, selectedGenomes, pageSize, getLegacyFilters, getLegacyOperators]
     );
 
+    // For GeneViewerPage, we need to load initial data but prevent excessive API calls
+    const isGeneViewerPage = selectedSpecies?.length === 0 && query.length === 0;
+    const lastGenomeRef = React.useRef<string | null>(null);
+    const hasLoadedInitialData = React.useRef(false);
+    
+    // Helper to check if filters are in their initial state (no user interaction)
+    const filtersAreInitial = Object.keys(filterStore.facetedFilters).length === 0 && Object.keys(filterStore.facetOperators).length === 0;
+
     useEffect(() => {
-        fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
-    }, [selectedSpecies, selectedGenomes, sortField, sortOrder, pageSize, filterStore.facetedFilters, filterStore.facetOperators]);
+        if (isGeneViewerPage && filtersAreInitial) {
+            const genomeId = selectedGenomes[0]?.isolate_name || null;
+            if (genomeId !== lastGenomeRef.current) {
+                lastGenomeRef.current = genomeId;
+                hasLoadedInitialData.current = false;
+            }
+            if (selectedGenomes.length > 0 && !hasLoadedInitialData.current) {
+                hasLoadedInitialData.current = true;
+                fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+            }
+        } else {
+            // For any user interaction, always fetch search results
+            fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+        }
+    }, [fetchSearchResults, sortField, sortOrder, selectedGenomes, isGeneViewerPage, filterStore.facetedFilters, filterStore.facetOperators]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {

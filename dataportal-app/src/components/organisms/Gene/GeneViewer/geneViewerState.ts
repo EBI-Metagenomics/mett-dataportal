@@ -28,7 +28,8 @@ const useGeneViewerState = (
     assembly: any,
     tracks: Track[],
     defaultSession: any,
-    apiUrl: string
+    apiUrl: string,
+    initKey?: number
 ) => {
     const [viewState, setViewState] = useState<ReturnType<typeof createViewState> | null>(null);
     const [initializationError, setInitializationError] = useState<Error | null>(null);
@@ -36,8 +37,11 @@ const useGeneViewerState = (
     useEffect(() => {
         const initialize = async () => {
             try {
+                // Don't treat missing assembly as an error - it's just loading
                 if (!assembly) {
-                    throw new Error('Assembly configuration is missing.');
+                    setViewState(null);
+                    setInitializationError(null);
+                    return;
                 }
 
                 const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
@@ -65,6 +69,7 @@ const useGeneViewerState = (
                 // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
 
                 setViewState(state);
+                setInitializationError(null); // Clear any previous errors
 
                 const assemblyManager = state.assemblyManager;
                 const assemblyInstance = assemblyManager.get(assembly.name);
@@ -73,11 +78,12 @@ const useGeneViewerState = (
                 }
             } catch (error) {
                 setInitializationError(error instanceof Error ? error : new Error(String(error)));
+                setViewState(null);
             }
         };
 
         initialize();
-    }, [assembly, tracks, defaultSession]);
+    }, [assembly, tracks, defaultSession, initKey]);
 
     return {viewState, initializationError};
 };

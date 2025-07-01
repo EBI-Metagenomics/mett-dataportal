@@ -30,7 +30,7 @@ const GeneViewerPage: React.FC = () => {
   useGeneViewerUrlSync();
   
   // Local state
-  const [height, setHeight] = useState(450);
+  const [height] = useState(450);
   const [includeEssentiality, setIncludeEssentiality] = useState(true);
 
   // Custom hooks for data management
@@ -40,20 +40,57 @@ const GeneViewerPage: React.FC = () => {
     setLoading: geneViewerData.setLoading,
   });
 
-  // JBrowse configuration
+  // At the top level, call the hook as usual (no useMemo)
   const geneViewerConfig = useGeneViewerConfig(
     geneViewerData.genomeMeta,
     geneViewerData.geneMeta,
     includeEssentiality
   );
 
-  // JBrowse state management
+  // Only re-initialize JBrowse view state when genome changes
+  const lastGenomeRef = React.useRef<string | null>(null);
+  const [jbrowseInitKey, setJbrowseInitKey] = useState(0);
+
+  useEffect(() => {
+    if (geneViewerData.genomeMeta?.isolate_name !== lastGenomeRef.current) {
+      lastGenomeRef.current = geneViewerData.genomeMeta?.isolate_name || null;
+      setJbrowseInitKey((k) => k + 1); // force re-init
+    }
+  }, [geneViewerData.genomeMeta?.isolate_name]);
+
   const { viewState, initializationError } = useGeneViewerState(
     geneViewerConfig.assembly,
     geneViewerConfig.tracks,
     geneViewerConfig.sessionConfig,
-    geneViewerData.genomeMeta?.isolate_name || ''
+    geneViewerData.genomeMeta?.isolate_name || '',
+    jbrowseInitKey
   );
+
+  // When includeEssentiality changes, update the track in the existing view state
+  useEffect(() => {
+    if (!viewState) return;
+    const session = viewState.session;
+    const view = session.views[0];
+    if (!view) return;
+
+    // Hide the track
+    view.hideTrack('structural_annotation');
+
+    // Find the new config for the track
+    const newTrack = geneViewerConfig.tracks.find(
+      (track: any) => track.trackId === 'structural_annotation'
+    );
+    if (newTrack) {
+      // Show the track with the new config (forces refresh)
+      view.showTrack('structural_annotation', {
+        ...newTrack,
+        adapter: {
+          ...newTrack.adapter,
+          includeEssentiality,
+        },
+      });
+    }
+  }, [includeEssentiality, viewState, geneViewerConfig.tracks]);
 
   // Navigation logic
   const navigation = useGeneViewerNavigation({
@@ -62,17 +99,6 @@ const GeneViewerPage: React.FC = () => {
     loading: geneViewerData.loading,
     setLoading: geneViewerData.setLoading,
   });
-
-  // Wait until assembly is ready
-  useEffect(() => {
-    const checkAssemblyReady = setInterval(() => {
-      if (geneViewerConfig.assembly) {
-        clearInterval(checkAssemblyReady);
-      }
-    }, 100);
-
-    return () => clearInterval(checkAssemblyReady);
-  }, [geneViewerConfig.assembly]);
 
   // Handle track refresh
   const handleRefreshTracks = () => {
@@ -86,16 +112,21 @@ const GeneViewerPage: React.FC = () => {
     console.error('GeneViewerPage error:', error, errorInfo);
   };
 
-  // Link data for gene search
-  const linkData = {
+  // Memoize props to prevent unnecessary re-renders and API calls
+  const selectedGenomes = React.useMemo(
+    () => geneViewerConfig.selectedGenomes,
+    [geneViewerConfig.selectedGenomes]
+  );
+
+  const linkData = React.useMemo(() => ({
     template: '/genome/${strain_name}',
     alias: 'Select'
-  };
+  }), []);
 
   // Handle genome removal (placeholder for now)
-  const handleRemoveGenome = (isolate_name: string) => {
+  const handleRemoveGenome = React.useCallback((isolate_name: string) => {
     // This could be implemented if needed
-  };
+  }, []);
 
   // Loading spinner
   const spinner = geneViewerData.loading && (
@@ -152,7 +183,7 @@ const GeneViewerPage: React.FC = () => {
                 onSearchQueryChange={e => filterStore.setGeneSearchQuery(e.target.value)}
                 onSearchSubmit={geneViewerSearch.handleGeneSearch}
                 selectedSpecies={[]} // Empty for gene viewer
-                selectedGenomes={geneViewerConfig.selectedGenomes}
+                selectedGenomes={selectedGenomes}
                 results={geneViewerSearch.geneResults}
                 onSortClick={geneViewerSearch.handleGeneSortClick}
                 sortField={filterStore.geneSortField}

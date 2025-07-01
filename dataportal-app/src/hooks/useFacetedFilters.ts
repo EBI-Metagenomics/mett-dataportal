@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFilterStore, FacetedFilters, FacetOperators } from '../stores/filterStore';
 import { GeneService } from '../services/geneService';
 import { GeneFacetResponse } from '../interfaces/Gene';
@@ -146,15 +146,30 @@ export const useFacetedFilters = ({
     await loadFacets();
   }, [loadFacets]);
 
-  // Load facets when dependencies change
+  // Track if we've loaded initial facets for GeneViewerPage
+  const isGeneViewerPage = selectedSpecies.length === 0 && searchQuery.length === 0;
+  const lastGenomeRef = React.useRef<string | null>(null);
+  const hasLoadedInitialFacets = React.useRef(false);
+
+  // Helper to check if filters are in their initial state (no user interaction)
+  const filtersAreInitial = Object.keys(filterStore.facetedFilters).length === 0 && Object.keys(filterStore.facetOperators).length === 0;
+
   useEffect(() => {
-    // Add a small delay to ensure URL sync happens first
-    const timer = setTimeout(() => {
-      loadFacets();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [loadFacets]);
+    const genomeId = selectedGenomes[0]?.isolate_name || null;
+    if (isGeneViewerPage && filtersAreInitial) {
+      if (genomeId !== lastGenomeRef.current) {
+        lastGenomeRef.current = genomeId;
+        hasLoadedInitialFacets.current = false;
+      }
+      if (selectedGenomes.length > 0 && !hasLoadedInitialFacets.current) {
+        hasLoadedInitialFacets.current = true;
+        setTimeout(() => loadFacets(), 100);
+      }
+    } else {
+      // For any user interaction, always load facets
+      setTimeout(() => loadFacets(), 100);
+    }
+  }, [loadFacets, selectedSpecies, searchQuery, selectedGenomes, filterStore.facetedFilters, filterStore.facetOperators]);
 
   return {
     facets,
