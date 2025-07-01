@@ -7,7 +7,8 @@ import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearch
 import { 
   useGeneViewerData, 
   useGeneViewerNavigation, 
-  useGeneViewerSearch 
+  useGeneViewerSearch,
+  useGeneViewerUrlSync
 } from '../../hooks';
 import { 
   useGeneViewerConfig, 
@@ -24,6 +25,9 @@ import { useFilterStore } from '../../stores/filterStore';
 const GeneViewerPage: React.FC = () => {
   // Get state from Zustand stores
   const filterStore = useFilterStore();
+  
+  // URL synchronization for gene viewer
+  useGeneViewerUrlSync();
   
   // Local state
   const [height, setHeight] = useState(450);
