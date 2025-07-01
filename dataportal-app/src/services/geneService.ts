@@ -244,6 +244,21 @@ export class GeneService {
         facetOperators?: Record<string, 'AND' | 'OR'>
     ): Promise<GeneFacetResponse> {
         try {
+            console.log('GeneService.fetchGeneFacets called with:', {
+                query,
+                speciesAcronym,
+                isolates,
+                essentiality,
+                cogId,
+                cogFuncats,
+                kegg,
+                goTerm,
+                pfam,
+                interpro,
+                hasAmrInfo,
+                facetOperators
+            });
+
             const params = new URLSearchParams();
             
             if (query) params.append('query', query);
@@ -267,7 +282,11 @@ export class GeneService {
             if (facetOperators?.kegg) params.append('kegg_operator', facetOperators.kegg);
             if (facetOperators?.go_term) params.append('go_term_operator', facetOperators.go_term);
 
+            console.log('Making API call to genes/faceted-search with params:', params.toString());
+
             const response = await ApiService.get<GeneFacetResponse>('genes/faceted-search', params);
+            
+            console.log('API response received:', response);
             return response;
         } catch (error) {
             console.error('Error fetching gene facets:', error);

@@ -49,9 +49,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            sortOrder,
                                                            handleRemoveGenome,
                                                            setLoading,
+                                                           searchQuery,
                                                        }) => {
     const [searchInput, setSearchInput] = useState<string>('');
-    const [query, setQuery] = useState<string>('');
+    const [query, setQuery] = useState<string>(searchQuery || '');
     const [suggestions, setSuggestions] = useState<GeneSuggestion[]>([]);
     const [geneName, setGeneName] = useState<string>('');
     const [results, setResults] = useState<GeneMeta[]>([]);
@@ -168,6 +169,14 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
     const [selectedGeneId, setSelectedGeneId] = useState<string | null>(null);
 
+    // Update internal query when searchQuery prop changes
+    useEffect(() => {
+        if (searchQuery !== query) {
+            setQuery(searchQuery || '');
+            setSearchInput(searchQuery || '');
+        }
+    }, [searchQuery, query]);
+
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
         async (
@@ -259,7 +268,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     );
 
     // For GeneViewerPage: load initial data when genome changes
-    const isGeneViewerPage = React.useMemo(() => (selectedSpecies?.length ?? 0) === 0 && query.length === 0, [selectedSpecies?.length, query.length]);
+    // GeneViewerPage is determined by having selected genomes but no species (since it's focused on a specific genome)
+    const isGeneViewerPage = React.useMemo(() => selectedGenomes.length > 0 && (selectedSpecies?.length ?? 0) === 0, [selectedSpecies?.length, selectedGenomes.length]);
     const lastGenomeRef = React.useRef<string | null>(null);
     const lastSpeciesRef = React.useRef<string[]>([]);
     const hasLoadedInitialData = React.useRef(false);
@@ -282,13 +292,17 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 hasLoadedInitialData.current = true;
                 fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
             }
-        } else if (!isGeneViewerPage && selectedSpecies && selectedSpecies.length > 0 && selectedGenomes.length === 0 && filtersAreInitial) {
-            const speciesKey = selectedSpecies.join(',');
+        } else if (!isGeneViewerPage && filtersAreInitial) {
+            // For HomePage: load initial data when species are selected OR when no filters are applied
+            const currentSpecies = selectedSpecies || [];
+            const speciesKey = currentSpecies.join(',');
             if (speciesKey !== lastSpeciesRef.current.join(',')) {
-                lastSpeciesRef.current = selectedSpecies;
+                lastSpeciesRef.current = currentSpecies;
                 hasLoadedInitialData.current = false;
             }
-            if (!hasLoadedInitialData.current) {
+            
+            // Load data if species are selected OR if no species/genomes are selected (default view)
+            if (!hasLoadedInitialData.current && (currentSpecies.length > 0 || (currentSpecies.length === 0 && selectedGenomes.length === 0))) {
                 hasLoadedInitialData.current = true;
                 fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
             }
@@ -300,7 +314,16 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         if (!filtersAreInitial || query.length > 0) {
             fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
         }
-    }, [facetedFilters, facetOperators, query, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators]);
+    }, [facetedFilters, facetOperators, query, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators, filtersAreInitial]);
+
+    // Fallback effect: ensure data is loaded when component mounts
+    useEffect(() => {
+        // If no initial data has been loaded yet and we have no results, load default data
+        if (!hasLoadedInitialData.current && results.length === 0) {
+            hasLoadedInitialData.current = true;
+            fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+        }
+    }, [results.length, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators]);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newInput = event.target.value;
@@ -384,6 +407,19 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 <div>
                     <p>&nbsp;</p>
                 </div>
+                {/* Show helpful message when no filters are applied
+                {!isGeneViewerPage && (selectedSpecies?.length ?? 0) === 0 && selectedGenomes.length === 0 && query.length === 0 && (
+                    <div className={styles.noFiltersMessage}>
+                        <p><strong>No filters applied</strong></p>
+                        <p>To see gene results, please either:</p>
+                        <ul>
+                            <li>Select a species from the dropdown above, or</li>
+                            <li>Select genomes from the Genomes tab, or</li>
+                            <li>Enter a search term in the search box</li>
+                        </ul>
+                    </div>
+                )} */}
+                
                 <div className="vf-grid__col--span-3" id="results-table"
                      style={{display: results.length > 0 ? 'block' : 'none'}}>
                     <GeneResultsTable

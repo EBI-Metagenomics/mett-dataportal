@@ -1,99 +1,54 @@
 import { useEffect } from 'react'
 import { useUrlState } from './useUrlState'
 import { useFilterStore } from '../stores/filterStore'
-import { GENE_TAB_URL_CONFIG } from '../utils/urlSync'
 
 export const useGeneViewerUrlSync = () => {
   const { searchParams, updateUrl } = useUrlState()
   const filterStore = useFilterStore()
   
-  // Sync URL to store on mount
+  // Clear tab-related parameters and reset filter store on mount since we're on gene viewer page
   useEffect(() => {
-    // Sync gene search query
-    const geneSearchQuery = searchParams.get(GENE_TAB_URL_CONFIG.geneSearchParam)
-    if (geneSearchQuery) {
-      filterStore.setGeneSearchQuery(geneSearchQuery)
-    }
-
-    // Sync gene sort field
-    const geneSortField = searchParams.get(GENE_TAB_URL_CONFIG.geneSortFieldParam)
-    if (geneSortField) {
-      filterStore.setGeneSortField(geneSortField)
-    }
-
-    // Sync gene sort order
-    const geneSortOrder = searchParams.get(GENE_TAB_URL_CONFIG.geneSortOrderParam) as 'asc' | 'desc'
-    if (geneSortOrder && (geneSortOrder === 'asc' || geneSortOrder === 'desc')) {
-      filterStore.setGeneSortOrder(geneSortOrder)
-    }
-
-    // Sync faceted filters
-    const facetedFiltersStr = searchParams.get(GENE_TAB_URL_CONFIG.facetedFiltersParam)
-    if (facetedFiltersStr) {
-      try {
-        const facetedFilters = JSON.parse(decodeURIComponent(facetedFiltersStr))
-        filterStore.setFacetedFilters(facetedFilters)
-      } catch (error) {
-        console.error('Error parsing faceted filters from URL:', error)
-      }
-    }
-
-    // Sync facet operators
-    const facetOperatorsStr = searchParams.get(GENE_TAB_URL_CONFIG.facetOperatorsParam)
-    if (facetOperatorsStr) {
-      try {
-        const facetOperators = JSON.parse(decodeURIComponent(facetOperatorsStr))
-        filterStore.setFacetOperators(facetOperators)
-      } catch (error) {
-        console.error('Error parsing facet operators from URL:', error)
-      }
-    }
-  }, []) // Only run on mount
-  
-  // Sync store to URL on changes
-  useEffect(() => {
+    // Reset filter store to clean state for gene viewer
+    filterStore.setGenomeSearchQuery('');
+    filterStore.setGenomeSortField('species');
+    filterStore.setGenomeSortOrder('asc');
+    filterStore.setGeneSearchQuery('');
+    filterStore.setGeneSortField('locus_tag');
+    filterStore.setGeneSortOrder('asc');
+    filterStore.setFacetedFilters({});
+    filterStore.setFacetOperators({});
+    
+    // Clear URL parameters that shouldn't be on gene viewer page
     const updates: Record<string, string | string[] | null> = {}
     
-    // Include gene search and sort parameters
-    if (filterStore.geneSearchQuery) {
-      updates[GENE_TAB_URL_CONFIG.geneSearchParam] = filterStore.geneSearchQuery
-    } else {
-      updates[GENE_TAB_URL_CONFIG.geneSearchParam] = null
+    // Clear tab-related parameters
+    updates.tab = null
+    updates.genomeSearch = null
+    updates.genomeSortField = null
+    updates.genomeSortOrder = null
+    
+    // Clear gene tab parameters that are not relevant for gene viewer
+    updates.geneSearch = null
+    updates.geneSortField = null
+    updates.geneSortOrder = null
+    updates.facetedFilters = null
+    updates.facetOperators = null
+    
+    // Clear species and type strains (not relevant for gene viewer)
+    updates.species = null
+    updates.typeStrains = null
+    updates.selectedGenomes = null
+    
+    // Keep only the locus_tag parameter which is relevant for gene viewer
+    const locusTag = searchParams.get('locus_tag')
+    if (locusTag) {
+      updates.locus_tag = locusTag
     }
     
-    if (filterStore.geneSortField !== GENE_TAB_URL_CONFIG.defaultSortField) {
-      updates[GENE_TAB_URL_CONFIG.geneSortFieldParam] = filterStore.geneSortField
-    } else {
-      updates[GENE_TAB_URL_CONFIG.geneSortFieldParam] = null
-    }
-    
-    if (filterStore.geneSortOrder !== GENE_TAB_URL_CONFIG.defaultSortOrder) {
-      updates[GENE_TAB_URL_CONFIG.geneSortOrderParam] = filterStore.geneSortOrder
-    } else {
-      updates[GENE_TAB_URL_CONFIG.geneSortOrderParam] = null
-    }
-    
-    // Include faceted filters (gene-specific)
-    if (Object.keys(filterStore.facetedFilters).length > 0) {
-      updates[GENE_TAB_URL_CONFIG.facetedFiltersParam] = encodeURIComponent(JSON.stringify(filterStore.facetedFilters))
-    } else {
-      updates[GENE_TAB_URL_CONFIG.facetedFiltersParam] = null
-    }
-    
-    if (Object.keys(filterStore.facetOperators).length > 0) {
-      updates[GENE_TAB_URL_CONFIG.facetOperatorsParam] = encodeURIComponent(JSON.stringify(filterStore.facetOperators))
-    } else {
-      updates[GENE_TAB_URL_CONFIG.facetOperatorsParam] = null
-    }
-    
-    // Update URL with the changes
+    // Update URL to clean up parameters
     updateUrl(updates)
-  }, [
-    filterStore.geneSearchQuery,
-    filterStore.geneSortField,
-    filterStore.geneSortOrder,
-    filterStore.facetedFilters,
-    filterStore.facetOperators,
-    updateUrl
-  ])
+  }, []) // Only run on mount
+  
+  // Note: We don't sync gene viewer state back to URL since this page
+  // is focused on displaying a specific gene/genome, not search functionality
 } 

@@ -1,4 +1,3 @@
-
 .vfGeneSection {
   float: left;
   width: 100%;
@@ -20,6 +19,38 @@
 .vfGeneSubHeading {
   width: 100%;
   float: right;
+}
+
+.noFiltersMessage {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  text-align: center;
+  
+  p {
+    margin: 10px 0;
+    color: #6c757d;
+    
+    &:first-child {
+      font-size: 18px;
+      color: #495057;
+      margin-bottom: 15px;
+    }
+  }
+  
+  ul {
+    text-align: left;
+    max-width: 400px;
+    margin: 15px auto;
+    padding-left: 20px;
+    
+    li {
+      margin: 8px 0;
+      color: #6c757d;
+    }
+  }
 }
 
 .vf-button {

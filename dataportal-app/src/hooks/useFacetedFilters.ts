@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useFilterStore, FacetedFilters, FacetOperators } from '../stores/filterStore';
 import { GeneService } from '../services/geneService';
 import { GeneFacetResponse } from '../interfaces/Gene';
@@ -28,6 +29,16 @@ export const useFacetedFilters = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Track if we've loaded initial facets to prevent duplicate calls
+  const hasLoadedInitialFacets = useRef(false);
+  const lastGenomeRef = useRef<string | null>(null);
+  const lastSpeciesRef = useRef<string[]>([]);
+  const lastSearchQueryRef = useRef<string>('');
+  const lastFiltersRef = useRef<string>('');
+  const lastOperatorsRef = useRef<string>('');
+  const isInitialMount = useRef(true);
+  const isLoadingFacets = useRef(false);
+
   // Convert faceted filters to API format
   const getApiFilters = useCallback(() => {
     const filters = filterStore.facetedFilters;
@@ -45,13 +56,36 @@ export const useFacetedFilters = ({
 
   // Load facets with current filters applied
   const loadFacets = useCallback(async () => {
+    // Prevent duplicate calls
+    if (isLoadingFacets.current) {
+      console.log('loadFacets already in progress, skipping...');
+      return;
+    }
+
     try {
+      console.log('loadFacets called with:', {
+        selectedSpecies,
+        selectedGenomes,
+        searchQuery,
+        filterStore: filterStore.facetedFilters,
+        operators: filterStore.facetOperators
+      });
+
+      isLoadingFacets.current = true;
       setLoading(true);
       setError(null);
 
       const speciesAcronym = selectedSpecies?.[0];
       const isolates = selectedGenomes.map(genome => genome.isolate_name).join(',');
       const apiFilters = getApiFilters();
+
+      console.log('Making API call with params:', {
+        searchQuery,
+        speciesAcronym,
+        isolates,
+        apiFilters,
+        operators: filterStore.facetOperators
+      });
 
       const response = await GeneService.fetchGeneFacets(
         searchQuery,
@@ -67,6 +101,8 @@ export const useFacetedFilters = ({
         apiFilters.has_amr_info,
         filterStore.facetOperators as Record<string, 'AND' | 'OR'>
       );
+
+      console.log('API response received:', response);
 
       // Process facets to mark selected items
       const updatedFacets: GeneFacetResponse = {
@@ -103,12 +139,14 @@ export const useFacetedFilters = ({
         updatedFacets[facetGroup] = Array.from(responseMap.values());
       }
 
+      console.log('Setting facets:', updatedFacets);
       setFacets(updatedFacets);
     } catch (err) {
       console.error('Error loading facets:', err);
       setError('Failed to load filter options');
     } finally {
       setLoading(false);
+      isLoadingFacets.current = false;
     }
   }, [selectedSpecies, selectedGenomes, filterStore.facetedFilters, filterStore.facetOperators, getApiFilters, searchQuery]);
 
@@ -147,48 +185,135 @@ export const useFacetedFilters = ({
   }, [loadFacets]);
 
   // Track if we've loaded initial facets for GeneViewerPage
-  const isGeneViewerPage = React.useMemo(() => selectedSpecies.length === 0 && searchQuery.length === 0, [selectedSpecies.length, searchQuery.length]);
-  const lastGenomeRef = React.useRef<string | null>(null);
-  const hasLoadedInitialFacets = React.useRef(false);
+  // GeneViewerPage is determined by URL path or having selected genomes but no species (since it's focused on a specific genome)
+  const location = useLocation();
+  const isGeneViewerPage = React.useMemo(() => {
+    // Check if we're on a gene viewer page by URL path
+    const isGeneViewerPath = location.pathname.startsWith('/genome/');
+    // Also check the traditional logic as fallback
+    const hasSelectedGenomes = selectedGenomes.length > 0 && selectedSpecies.length === 0;
+    return isGeneViewerPath || hasSelectedGenomes;
+  }, [location.pathname, selectedSpecies.length, selectedGenomes.length]);
 
   // Helper to check if filters are in their initial state (no user interaction)
   const filtersAreInitial = Object.keys(filterStore.facetedFilters).length === 0 && Object.keys(filterStore.facetOperators).length === 0;
 
+  // Create a single useEffect that handles all cases with proper change detection
   useEffect(() => {
-    // console.log('🔍 useFacetedFilters useEffect:', {
-    //   isGeneViewerPage,
-    //   selectedSpecies,
-    //   selectedGenomes: selectedGenomes.length,
-    //   searchQuery,
-    //   filtersAreInitial,
-    //   hasLoadedInitialFacets: hasLoadedInitialFacets.current
-    // });
+    // Create change detection keys
+    const currentGenomeKey = selectedGenomes[0]?.isolate_name || '';
+    const currentSpeciesKey = selectedSpecies.join(',');
+    const currentFiltersKey = JSON.stringify(filterStore.facetedFilters);
+    const currentOperatorsKey = JSON.stringify(filterStore.facetOperators);
 
-    // For GeneViewerPage: load initial facets when genome changes
-    if (isGeneViewerPage && filtersAreInitial) {
-      const genomeId = selectedGenomes[0]?.isolate_name || null;
-      if (genomeId !== lastGenomeRef.current) {
-        lastGenomeRef.current = genomeId;
-        hasLoadedInitialFacets.current = false;
-      }
-      if (selectedGenomes.length > 0 && !hasLoadedInitialFacets.current) {
+    // Check if anything has actually changed
+    const genomeChanged = currentGenomeKey !== lastGenomeRef.current;
+    const speciesChanged = currentSpeciesKey !== lastSpeciesRef.current.join(',');
+    const searchQueryChanged = searchQuery !== lastSearchQueryRef.current;
+    const filtersChanged = currentFiltersKey !== lastFiltersRef.current;
+    const operatorsChanged = currentOperatorsKey !== lastOperatorsRef.current;
+
+    // Reset loading flag if genome changed (to allow new API call with genome data)
+    if (genomeChanged && isLoadingFacets.current) {
+      console.log('Genome changed while loading, resetting loading flag');
+      isLoadingFacets.current = false;
+    }
+
+    // Debug logging
+    console.log('useFacetedFilters useEffect:', {
+      currentGenomeKey,
+      currentSpeciesKey,
+      searchQuery,
+      isGeneViewerPage,
+      filtersAreInitial,
+      genomeChanged,
+      speciesChanged,
+      searchQueryChanged,
+      filtersChanged,
+      operatorsChanged,
+      hasLoadedInitialFacets: hasLoadedInitialFacets.current,
+      isInitialMount: isInitialMount.current,
+      selectedGenomes: selectedGenomes,
+      selectedGenomesLength: selectedGenomes.length
+    });
+
+    // Update refs
+    lastGenomeRef.current = currentGenomeKey;
+    lastSpeciesRef.current = selectedSpecies;
+    lastSearchQueryRef.current = searchQuery;
+    lastFiltersRef.current = currentFiltersKey;
+    lastOperatorsRef.current = currentOperatorsKey;
+
+    // Determine if we should load facets
+    let shouldLoadFacets = false;
+
+    // Case 0: Initial mount - only load if we have the necessary data
+    if (isInitialMount.current) {
+      // For GeneViewerPage: only load if we have a genome
+      if (isGeneViewerPage && selectedGenomes.length > 0) {
+        shouldLoadFacets = true;
         hasLoadedInitialFacets.current = true;
-        // console.log('🚀 GeneViewerPage: Loading initial facets');
-        setTimeout(() => loadFacets(), 100);
+        console.log('Case 0: Initial mount with genome data');
       }
+      // For HomePage: only load if we have species or no filters
+      else if (!isGeneViewerPage && (selectedSpecies.length > 0 || (selectedSpecies.length === 0 && selectedGenomes.length === 0))) {
+        shouldLoadFacets = true;
+        hasLoadedInitialFacets.current = true;
+        console.log('Case 0: Initial mount with species data or default view');
+      }
+      // For GeneViewerPage: don't load facets if no genome data yet
+      else if (isGeneViewerPage && selectedGenomes.length === 0) {
+        console.log('Case 0: Initial mount on GeneViewerPage but no genome data yet, skipping...');
+        hasLoadedInitialFacets.current = false; // Don't mark as loaded so we can load when genome data arrives
+      }
+      // Don't load facets if we don't have the necessary data yet
+      else {
+        console.log('Case 0: Initial mount but no data yet, skipping...');
+      }
+      isInitialMount.current = false;
     }
-    // For HomePage: load initial facets when species are selected
-    else if (!isGeneViewerPage && selectedSpecies.length > 0 && filtersAreInitial && !hasLoadedInitialFacets.current) {
+    // Case 1: Initial load for GeneViewerPage (genome changed and no filters applied)
+    else if (isGeneViewerPage && filtersAreInitial && genomeChanged) {
+      shouldLoadFacets = true;
       hasLoadedInitialFacets.current = true;
-      // console.log('🚀 HomePage: Loading initial facets for species:', selectedSpecies);
-      setTimeout(() => loadFacets(), 100);
+      console.log('Case 1: GeneViewerPage initial load');
     }
-    // For any user interaction (search query, facet changes, etc.), always load facets
-    else if (!filtersAreInitial || searchQuery.length > 0) {
-      // console.log('🚀 User interaction: Loading facets');
-      setTimeout(() => loadFacets(), 100);
+    // Case 2: Initial load for HomePage (species changed and no filters applied)
+    else if (!isGeneViewerPage && filtersAreInitial && speciesChanged) {
+      shouldLoadFacets = true;
+      hasLoadedInitialFacets.current = true;
+      console.log('Case 2: HomePage initial load');
     }
-  }, [loadFacets, selectedSpecies, searchQuery, selectedGenomes, filterStore.facetedFilters, filterStore.facetOperators]);
+    // Case 3: User interaction (search query, facet changes, etc.)
+    else if (searchQueryChanged || filtersChanged || operatorsChanged) {
+      shouldLoadFacets = true;
+      console.log('Case 3: User interaction');
+    }
+    // Case 4: Special case for GeneViewerPage - when genome data becomes available after initial mount
+    else if (isGeneViewerPage && !hasLoadedInitialFacets.current && selectedGenomes.length > 0) {
+      shouldLoadFacets = true;
+      hasLoadedInitialFacets.current = true;
+      console.log('Case 4: GeneViewerPage genome data became available');
+    }
+
+    // Load facets if needed
+    if (shouldLoadFacets) {
+      console.log('Loading facets...');
+      // Call loadFacets directly instead of using setTimeout
+      loadFacets();
+    } else {
+      console.log('No facets loading needed');
+    }
+  }, [
+    selectedSpecies,
+    selectedGenomes,
+    searchQuery,
+    filterStore.facetedFilters,
+    filterStore.facetOperators,
+    isGeneViewerPage,
+    filtersAreInitial,
+    loadFacets
+  ]);
 
   return {
     facets,

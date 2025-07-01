@@ -69,6 +69,19 @@ const HomePage: React.FC = () => {
         }
     }, [activeTab, location.pathname, location.search]);
 
+    // Clean up gene viewer state when returning to home page
+    useEffect(() => {
+        // If we have locus_tag in URL, we're coming from gene viewer
+        // Clear any gene viewer specific state
+        if (location.search.includes('locus_tag')) {
+            filterStore.setGeneSearchQuery('');
+            filterStore.setGeneSortField('locus_tag');
+            filterStore.setGeneSortOrder('asc');
+            filterStore.setFacetedFilters({});
+            filterStore.setFacetOperators({});
+        }
+    }, [location.search]);
+
     // URL sync for tab-aware state management
     useTabAwareUrlSync(activeTab);
 
@@ -191,7 +204,7 @@ const HomePage: React.FC = () => {
                                     onSearchSubmit={() => {}} 
                                     selectedSpecies={filterStore.selectedSpecies}
                                     selectedGenomes={filterStore.selectedGenomes} 
-                                    results={[]} 
+                                    results={[]} // GeneSearchForm manages its own results
                                     onSortClick={(field, order) => {
                                         filterStore.setGeneSortField(field);
                                         filterStore.setGeneSortOrder(order);

@@ -114,8 +114,11 @@ const GeneViewerPage: React.FC = () => {
 
   // Memoize props to prevent unnecessary re-renders and API calls
   const selectedGenomes = React.useMemo(
-    () => geneViewerConfig.selectedGenomes,
-    [geneViewerConfig.selectedGenomes]
+    () => {
+      console.log('GeneViewerPage selectedGenomes:', geneViewerConfig.selectedGenomes, 'genomeMeta:', geneViewerData.genomeMeta);
+      return geneViewerConfig.selectedGenomes;
+    },
+    [geneViewerConfig.selectedGenomes, geneViewerData.genomeMeta]
   );
 
   const linkData = React.useMemo(() => ({
@@ -143,12 +146,12 @@ const GeneViewerPage: React.FC = () => {
       <div>
         {spinner}
         
-        {/* Error display */}
-        {errorMessage && (
+        {/* Error display - commented out to hide error messages */}
+        {/* {errorMessage && (
           <div className={styles.errorMessage}>
             <p>Error: {errorMessage}</p>
           </div>
-        )}
+        )} */}
 
         <div className={`vf-content ${styles.vfContent}`}>
           <div style={{height: '20px'}}></div>
