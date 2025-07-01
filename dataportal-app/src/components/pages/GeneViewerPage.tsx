@@ -19,13 +19,9 @@ import {
   GeneViewerContent 
 } from '../features/gene-viewer';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
-import { useGeneViewerUrlSync } from '../../hooks/useGeneViewerUrlSync';
 import { useFilterStore } from '../../stores/filterStore';
 
 const GeneViewerPage: React.FC = () => {
-  // Initialize URL synchronization for gene viewer
-  useGeneViewerUrlSync();
-  
   // Get state from Zustand stores
   const filterStore = useFilterStore();
   

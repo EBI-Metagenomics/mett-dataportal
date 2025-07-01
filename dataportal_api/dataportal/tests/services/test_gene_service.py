@@ -87,6 +87,32 @@ mock_gene2.to_dict.return_value = {
 mock_gene_hits = [mock_gene1, mock_gene2]
 
 
+@pytest.mark.asyncio
+async def test_faceted_search_and_across_groups(gene_service):
+    response = await gene_service.get_faceted_search(
+        species_acronym="BU_ATCC8492",
+        isolates=["BU_ATCC8492"],
+        essentiality="not_essential",
+        pfam="PF13715",
+        operators={"pfam": "OR"},
+    )
+
+    assert "total_hits" in response
+    assert response["total_hits"] > 0
+    assert "pfam" in response
+    pfam_facet = response["pfam"]
+    assert any(entry["selected"] for entry in pfam_facet)
+    assert all(isinstance(entry["count"], int) for entry in pfam_facet)
+
+    # Additional checks to ensure AND across groups is enforced
+    essentiality_facet = response["essentiality"]
+    amr_facet = response["has_amr_info"] if "has_amr_info" in response else []
+
+    assert all(entry["count"] <= response["total_hits"] for entry in essentiality_facet)
+    if amr_facet:
+        assert all(entry["count"] <= response["total_hits"] for entry in amr_facet)
+
+
 @patch("dataportal.services.gene_service.sync_to_async")
 @pytest.mark.asyncio
 async def test_get_gene_by_locus_tag(mock_sync_to_async):

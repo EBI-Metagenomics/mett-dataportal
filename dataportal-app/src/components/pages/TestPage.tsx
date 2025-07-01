@@ -1,16 +1,12 @@
 import React from 'react';
 import { useFilterStore } from '../../stores/filterStore';
 import { useUrlState } from '../../hooks/useUrlState';
-import { useFilterSync } from '../../hooks/useFilterSync';
 import { LoadingSpinner } from '../../components/shared';
 
 const TestPage: React.FC = () => {
   const filterStore = useFilterStore();
   const { updateUrl, getParam, getParams } = useUrlState();
   
-  // Initialize filter synchronization
-  useFilterSync();
-
   const handleSpeciesToggle = (species: string) => {
     const currentSpecies = filterStore.selectedSpecies;
     const newSpecies = currentSpecies.includes(species)

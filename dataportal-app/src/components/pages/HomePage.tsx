@@ -11,7 +11,6 @@ import { useFilterStore } from '../../stores/filterStore';
 import { useGenomeData, useGeneData } from '../../hooks';
 import { useTabAwareUrlSync } from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
-import { determineActiveTab, DEFAULT_TAB_SELECTION_CONFIG } from '../../utils/tabSelection';
 
 // Define the type for each tab
 interface Tab {
@@ -88,7 +87,7 @@ const HomePage: React.FC = () => {
     // Reset filters when switching tabs
     const handleTabClick = (tabId: string) => {
         if (tabId !== activeTab) {
-            // Reset all store state when switching tabs
+            // Reset all store state when switching tabs, but preserve selectedGenomes unless switching to proteinsearch
             filterStore.setGenomeSearchQuery('');
             filterStore.setGenomeSortField('species');
             filterStore.setGenomeSortOrder('asc');
@@ -97,10 +96,11 @@ const HomePage: React.FC = () => {
             filterStore.setGeneSortOrder('asc');
             filterStore.setFacetedFilters({});
             filterStore.setFacetOperators({});
-            filterStore.setSelectedGenomes([]);
             filterStore.setSelectedSpecies([]);
             filterStore.setSelectedTypeStrains([]);
-            
+            if (tabId === 'proteinsearch') {
+                filterStore.setSelectedGenomes([]);
+            }
             // Set the new active tab
             setActiveTab(tabId);
             hasUserSelectedTab.current = true;
@@ -115,7 +115,7 @@ const HomePage: React.FC = () => {
 
     return (
         <ErrorBoundary onError={handleError}>
-            <div>
+        <div>
                 {/* Loading spinner */}
                 {genomeData.loading && (
                     <div className={styles.spinnerOverlay}>
@@ -130,23 +130,23 @@ const HomePage: React.FC = () => {
                     </div>
                 )}
                 
-                <div>
-                    <HomePageHeadBand
+            <div>
+                <HomePageHeadBand
                         typeStrains={genomeData.typeStrains}
-                        linkTemplate="/genome/$strain_name"
+                    linkTemplate="/genome/$strain_name"
                         speciesList={genomeData.speciesList}
                         selectedSpecies={filterStore.selectedSpecies}
                         handleSpeciesSelect={genomeData.handleSpeciesSelect}
-                    />
-                </div>
+                />
+            </div>
 
-                <div className="layout-container">
-                    <div>
-                        <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick} />
+            <div className="layout-container">
+                <div>
+                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick} />
                         
                         {activeTab === 'genomes' && (
                             <ErrorBoundary>
-                                <GenomeSearchForm
+                        <GenomeSearchForm
                                     searchQuery={filterStore.genomeSearchQuery}
                                     onSearchQueryChange={e => filterStore.setGenomeSearchQuery(e.target.value)}
                                     onSearchSubmit={genomeData.handleGenomeSearch}
@@ -161,15 +161,15 @@ const HomePage: React.FC = () => {
                                     onToggleGenomeSelect={genomeData.handleToggleGenomeSelect}
                                     handleTypeStrainToggle={genomeData.handleTypeStrainToggle}
                                     handleRemoveGenome={genomeData.handleRemoveGenome}
-                                    linkData={genomeLinkData}
+                            linkData={genomeLinkData}
                                     setLoading={genomeData.setLoading}
-                                />
+                        />
                             </ErrorBoundary>
-                        )}
+                    )}
 
                         {activeTab === 'genes' && (
                             <ErrorBoundary>
-                                <GeneSearchForm
+                        <GeneSearchForm
                                     searchQuery={filterStore.geneSearchQuery}
                                     onSearchQueryChange={e => filterStore.setGeneSearchQuery(e.target.value)}
                                     onSearchSubmit={geneData.handleGeneSearch}
@@ -179,18 +179,18 @@ const HomePage: React.FC = () => {
                                     onSortClick={geneData.handleGeneSortClick}
                                     sortField={filterStore.geneSortField}
                                     sortOrder={filterStore.geneSortOrder}
-                                    linkData={geneLinkData}
+                            linkData={geneLinkData}
                                     handleRemoveGenome={geneData.handleRemoveGenome}
                                     setLoading={geneData.setLoading}
-                                />
+                        />
                             </ErrorBoundary>
-                        )}
+                    )}
                         
                         {activeTab === 'proteinsearch' && (
                             <ErrorBoundary>
-                                <PyhmmerSearchForm />
+                        <PyhmmerSearchForm />
                             </ErrorBoundary>
-                        )}
+                    )}
                     </div>
                 </div>
             </div>

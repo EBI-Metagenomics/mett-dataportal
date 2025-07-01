@@ -127,6 +127,30 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                 const total = filtered.length;
                 const showCount = visibleCount[facetGroup] || initialVisibleCount;
 
+                // Determine if this facet group should use OR logic (show all values)
+                const isOrMode =
+                    facetGroup === 'essentiality' ||
+                    facetGroup === 'has_amr_info' ||
+                    filterStore.facetOperators[facetGroup as keyof typeof filterStore.facetOperators] === 'OR';
+
+                // Deduplicate by value
+                const dedupedFiltered: FacetItem[] = [];
+                const seen = new Set();
+                for (const facet of filtered) {
+                    const key = String(facet.value);
+                    if (!seen.has(key)) {
+                        // OR mode: show all values (even if count 0 and unselected)
+                        // AND mode: only show if count > 0 or selected
+                        if (
+                            isOrMode ||
+                            facet.count > 0 ||
+                            facet.selected
+                        ) {
+                            dedupedFiltered.push(facet);
+                        }
+                        seen.add(key);
+                    }
+                }
 
                 return (
                     <div key={facetGroup} className={styles.facetGroup}>
@@ -279,7 +303,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                 )}
 
                                 <ul className={styles.facetList}>
-                                    {filtered.slice(0, showCount).map((facet: FacetItem) => (
+                                    {dedupedFiltered.slice(0, showCount).map((facet: FacetItem) => (
                                         <li key={facet.value}>
                                             <label className={facet.count === 0 ? styles.disabledFacet : ''}>
                                                 <input
