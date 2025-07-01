@@ -8,7 +8,7 @@ import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 
 // Import new hooks and stores
 import { useFilterStore } from '../../stores/filterStore';
-import { useGenomeData, useGeneData } from '../../hooks';
+import { useGenomeData } from '../../hooks';
 import { useTabAwareUrlSync } from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 
@@ -47,10 +47,16 @@ const HomePage: React.FC = () => {
     
     // Use custom hooks for data management
     const genomeData = useGenomeData();
-    const geneData = useGeneData();
+    // Note: GeneSearchForm manages its own state, so we don't need useGeneData here
     
     // Local state for UI
     const [activeTab, setActiveTab] = useState('genomes');
+
+    // console.log('🏠 HomePage render:', {
+    //     activeTab: activeTab,
+    //     selectedSpecies: filterStore.selectedSpecies,
+    //     selectedSpeciesLength: filterStore.selectedSpecies.length
+    // });
     const hasUserSelectedTab = useRef(false);
 
     // Only use URL to set the initial tab
@@ -81,13 +87,13 @@ const HomePage: React.FC = () => {
     const tabs: Tab[] = [
         { id: 'genomes', label: 'Genomes' },
         { id: 'genes', label: 'Genes' },
-        { id: 'proteinsearch', label: 'Protein Search' },
+        // { id: 'proteinsearch', label: 'Protein Search' },
     ];
 
     // Reset filters when switching tabs
     const handleTabClick = (tabId: string) => {
         if (tabId !== activeTab) {
-            // Reset all store state when switching tabs, but preserve selectedGenomes unless switching to proteinsearch
+            // Reset search queries and sorting, but preserve species selection for genes tab
             filterStore.setGenomeSearchQuery('');
             filterStore.setGenomeSortField('species');
             filterStore.setGenomeSortOrder('asc');
@@ -96,11 +102,21 @@ const HomePage: React.FC = () => {
             filterStore.setGeneSortOrder('asc');
             filterStore.setFacetedFilters({});
             filterStore.setFacetOperators({});
-            filterStore.setSelectedSpecies([]);
-            filterStore.setSelectedTypeStrains([]);
+            
+            // Only clear species selection when switching to proteinsearch
             if (tabId === 'proteinsearch') {
+                filterStore.setSelectedSpecies([]);
                 filterStore.setSelectedGenomes([]);
             }
+            // For genes tab, preserve species selection but clear type strains
+            else if (tabId === 'genes') {
+                filterStore.setSelectedTypeStrains([]);
+            }
+            // For genomes tab, preserve species selection
+            else {
+                filterStore.setSelectedTypeStrains([]);
+            }
+            
             // Set the new active tab
             setActiveTab(tabId);
             hasUserSelectedTab.current = true;
@@ -172,16 +188,19 @@ const HomePage: React.FC = () => {
                         <GeneSearchForm
                                     searchQuery={filterStore.geneSearchQuery}
                                     onSearchQueryChange={e => filterStore.setGeneSearchQuery(e.target.value)}
-                                    onSearchSubmit={geneData.handleGeneSearch}
+                                    onSearchSubmit={() => {}} 
                                     selectedSpecies={filterStore.selectedSpecies}
-                                    selectedGenomes={geneData.selectedGenomes}
-                                    results={geneData.geneResults}
-                                    onSortClick={geneData.handleGeneSortClick}
+                                    selectedGenomes={filterStore.selectedGenomes} 
+                                    results={[]} 
+                                    onSortClick={(field, order) => {
+                                        filterStore.setGeneSortField(field);
+                                        filterStore.setGeneSortOrder(order);
+                                    }}
                                     sortField={filterStore.geneSortField}
                                     sortOrder={filterStore.geneSortOrder}
                             linkData={geneLinkData}
-                                    handleRemoveGenome={geneData.handleRemoveGenome}
-                                    setLoading={geneData.setLoading}
+                                    handleRemoveGenome={() => {}} // GeneSearchForm manages its own genome removal
+                                    setLoading={() => {}} // GeneSearchForm manages its own loading state
                         />
                             </ErrorBoundary>
                     )}

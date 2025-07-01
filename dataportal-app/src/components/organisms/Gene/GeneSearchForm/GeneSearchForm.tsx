@@ -1,12 +1,12 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import GeneSearchInput from './GeneSearchInput';
 import styles from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm.module.scss";
 import GeneResultsTable from "@components/organisms/Gene/GeneResultsHandler/GeneResultsTable";
 import Pagination from "@components/molecules/Pagination";
 import {GeneService} from '../../../../services/geneService';
 import {createViewState} from '@jbrowse/react-app2';
-import {GeneFacetResponse, GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
-import {FacetItem, LinkData} from "../../../../interfaces/Auxiliary";
+import {GeneMeta, GeneSuggestion} from "../../../../interfaces/Gene";
+import {LinkData} from "../../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../../interfaces/Genome";
 import {
     API_GENE_SEARCH_ADVANCED,
@@ -17,9 +17,9 @@ import {
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 import SelectedGenomes from "@components/Filters/SelectedGenomes";
 import GeneFacetedFilter from "@components/Filters/GeneFacetedFilter";
-import { useFacetedFilters } from '../../../../hooks/useFacetedFilters';
-import { useFilterStore } from '../../../../stores/filterStore';
-import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../../../utils/filterUtils';
+import {useFacetedFilters} from '../../../../hooks/useFacetedFilters';
+import {useFilterStore} from '../../../../stores/filterStore';
+import {convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy} from '../../../../utils/filterUtils';
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -62,8 +62,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [pageSize, setPageSize] = useState<number>(DEFAULT_PER_PAGE_CNT);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    const filterStore = useFilterStore();
-    
+    const facetedFilters = useFilterStore(state => state.facetedFilters);
+    const facetOperators = useFilterStore(state => state.facetOperators);
+
     // Use the new faceted filters hook
     const {
         facets,
@@ -92,13 +93,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Convert faceted filters to legacy format for API calls
     const getLegacyFilters = useCallback(() => {
-        return convertFacetedFiltersToLegacy(filterStore.facetedFilters);
-    }, [filterStore.facetedFilters]);
+        return convertFacetedFiltersToLegacy(facetedFilters);
+    }, [facetedFilters]);
 
     // Convert facet operators to legacy format for API calls
     const getLegacyOperators = useCallback(() => {
-        return convertFacetOperatorsToLegacy(filterStore.facetOperators);
-    }, [filterStore.facetOperators]);
+        return convertFacetOperatorsToLegacy(facetOperators);
+    }, [facetOperators]);
 
     // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
@@ -257,14 +258,19 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         [query, selectedGeneId, selectedSpecies, selectedGenomes, pageSize, getLegacyFilters, getLegacyOperators]
     );
 
-    // For GeneViewerPage, we need to load initial data but prevent excessive API calls
-    const isGeneViewerPage = selectedSpecies?.length === 0 && query.length === 0;
+    // For GeneViewerPage: load initial data when genome changes
+    const isGeneViewerPage = React.useMemo(() => (selectedSpecies?.length ?? 0) === 0 && query.length === 0, [selectedSpecies?.length, query.length]);
     const lastGenomeRef = React.useRef<string | null>(null);
+    const lastSpeciesRef = React.useRef<string[]>([]);
     const hasLoadedInitialData = React.useRef(false);
-    
-    // Helper to check if filters are in their initial state (no user interaction)
-    const filtersAreInitial = Object.keys(filterStore.facetedFilters).length === 0 && Object.keys(filterStore.facetOperators).length === 0;
 
+    // Helper to check if filters are in their initial state (no user interaction)
+    const filtersAreInitial = useMemo(
+        () => Object.keys(facetedFilters).length === 0 && Object.keys(facetOperators).length === 0,
+        [facetedFilters, facetOperators]
+    );
+
+    // Initial load effect: only runs on context change and when filters are initial
     useEffect(() => {
         if (isGeneViewerPage && filtersAreInitial) {
             const genomeId = selectedGenomes[0]?.isolate_name || null;
@@ -276,12 +282,25 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 hasLoadedInitialData.current = true;
                 fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
             }
-        } else {
-            // For any user interaction, always fetch search results
+        } else if (!isGeneViewerPage && selectedSpecies && selectedSpecies.length > 0 && selectedGenomes.length === 0 && filtersAreInitial) {
+            const speciesKey = selectedSpecies.join(',');
+            if (speciesKey !== lastSpeciesRef.current.join(',')) {
+                lastSpeciesRef.current = selectedSpecies;
+                hasLoadedInitialData.current = false;
+            }
+            if (!hasLoadedInitialData.current) {
+                hasLoadedInitialData.current = true;
+                fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+            }
+        }
+    }, [selectedGenomes, selectedSpecies, isGeneViewerPage, filtersAreInitial, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators]);
+
+    // User interaction effect: runs only on user-driven changes
+    useEffect(() => {
+        if (!filtersAreInitial || query.length > 0) {
             fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
         }
-    }, [fetchSearchResults, sortField, sortOrder, selectedGenomes, isGeneViewerPage, filterStore.facetedFilters, filterStore.facetOperators]);
-
+    }, [facetedFilters, facetOperators, query, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators]);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newInput = event.target.value;
@@ -312,7 +331,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             setIsDownloading(true);
             // Show initial message for large downloads
             alert('Starting download... This may take a while for large datasets.');
-            
+
             await GeneService.downloadGenesTSV(
                 query,
                 sortField,

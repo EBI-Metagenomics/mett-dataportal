@@ -147,7 +147,7 @@ export const useFacetedFilters = ({
   }, [loadFacets]);
 
   // Track if we've loaded initial facets for GeneViewerPage
-  const isGeneViewerPage = selectedSpecies.length === 0 && searchQuery.length === 0;
+  const isGeneViewerPage = React.useMemo(() => selectedSpecies.length === 0 && searchQuery.length === 0, [selectedSpecies.length, searchQuery.length]);
   const lastGenomeRef = React.useRef<string | null>(null);
   const hasLoadedInitialFacets = React.useRef(false);
 
@@ -155,18 +155,37 @@ export const useFacetedFilters = ({
   const filtersAreInitial = Object.keys(filterStore.facetedFilters).length === 0 && Object.keys(filterStore.facetOperators).length === 0;
 
   useEffect(() => {
-    const genomeId = selectedGenomes[0]?.isolate_name || null;
+    // console.log('🔍 useFacetedFilters useEffect:', {
+    //   isGeneViewerPage,
+    //   selectedSpecies,
+    //   selectedGenomes: selectedGenomes.length,
+    //   searchQuery,
+    //   filtersAreInitial,
+    //   hasLoadedInitialFacets: hasLoadedInitialFacets.current
+    // });
+
+    // For GeneViewerPage: load initial facets when genome changes
     if (isGeneViewerPage && filtersAreInitial) {
+      const genomeId = selectedGenomes[0]?.isolate_name || null;
       if (genomeId !== lastGenomeRef.current) {
         lastGenomeRef.current = genomeId;
         hasLoadedInitialFacets.current = false;
       }
       if (selectedGenomes.length > 0 && !hasLoadedInitialFacets.current) {
         hasLoadedInitialFacets.current = true;
+        // console.log('🚀 GeneViewerPage: Loading initial facets');
         setTimeout(() => loadFacets(), 100);
       }
-    } else {
-      // For any user interaction, always load facets
+    }
+    // For HomePage: load initial facets when species are selected
+    else if (!isGeneViewerPage && selectedSpecies.length > 0 && filtersAreInitial && !hasLoadedInitialFacets.current) {
+      hasLoadedInitialFacets.current = true;
+      // console.log('🚀 HomePage: Loading initial facets for species:', selectedSpecies);
+      setTimeout(() => loadFacets(), 100);
+    }
+    // For any user interaction (search query, facet changes, etc.), always load facets
+    else if (!filtersAreInitial || searchQuery.length > 0) {
+      // console.log('🚀 User interaction: Loading facets');
       setTimeout(() => loadFacets(), 100);
     }
   }, [loadFacets, selectedSpecies, searchQuery, selectedGenomes, filterStore.facetedFilters, filterStore.facetOperators]);
