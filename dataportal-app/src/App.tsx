@@ -7,7 +7,7 @@ import GeneViewerPage from './components/pages/GeneViewerPage';
 import TestPage from './components/pages/TestPage';
 import ErrorBoundary from "@components/atoms/ErrorBoundary";
 import Footer from "@components/organisms/Footer/Footer";
-import { usePageCleanup } from './hooks/usePageCleanup';
+// import { usePageCleanup } from './hooks/usePageCleanup';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,7 +45,7 @@ const UrlCleanupHandler: React.FC = () => {
 
 // Component to handle page-specific cleanup
 const PageCleanupHandler: React.FC = () => {
-  usePageCleanup();
+  // usePageCleanup();
   return null;
 };
 
