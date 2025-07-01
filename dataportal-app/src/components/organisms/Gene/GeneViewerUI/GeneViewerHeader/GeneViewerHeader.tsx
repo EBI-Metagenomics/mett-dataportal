@@ -1,5 +1,5 @@
 import React from 'react';
-import { GenomeMeta } from '../../../../interfaces/Genome';
+import { GenomeMeta } from '../../../../../interfaces/Genome';
 import GeneViewerLegends from '@components/molecules/GeneViewerLegends';
 import styles from './GeneViewerHeader.module.scss';
 

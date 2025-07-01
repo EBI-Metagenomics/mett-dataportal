@@ -1,5 +1,5 @@
 import React from 'react';
-import { GenomeMeta } from '../../../../interfaces/Genome';
+import { GenomeMeta } from '../../../../../interfaces/Genome';
 import styles from './GeneViewerControls.module.scss';
 
 interface GeneViewerControlsProps {

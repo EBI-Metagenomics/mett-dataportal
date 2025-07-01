@@ -18,7 +18,7 @@ import {
   GeneViewerHeader, 
   GeneViewerControls, 
   GeneViewerContent 
-} from '../features/gene-viewer';
+} from '../organisms/Gene/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import { useFilterStore } from '../../stores/filterStore';
 
