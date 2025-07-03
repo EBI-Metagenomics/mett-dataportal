@@ -7,7 +7,7 @@ from elasticsearch_dsl import (
     analyzer,
     tokenizer,
     Nested,
-    normalizer,
+    normalizer, Float,
 )
 
 edge_ngram_tokenizer = tokenizer(
@@ -83,7 +83,10 @@ class StrainDocument(Document):
         return super().save(**kwargs)
 
 
-class GeneDocument(Document):
+class FeatureDocument(Document):
+    feature_type = Keyword()  # 'gene' or 'intergenomic_region'
+    feature_id = Keyword()    # locus_tag for genes, IGR_B1234_B1235 for IGRs
+
     gene_id = Integer()
     gene_name = Text(
         analyzer=autocomplete_analyzer,
@@ -105,6 +108,20 @@ class GeneDocument(Document):
         search_analyzer="standard",
         fields={"keyword": Keyword()},
     )
+    # for IGRs
+    locus_tag_start = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )
+    locus_tag_end = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )
+    strand = Keyword()
+    length = Integer()
+
     product = Text(
         analyzer=autocomplete_analyzer,
         search_analyzer="standard",
@@ -119,7 +136,7 @@ class GeneDocument(Document):
     start = Integer()
     end = Integer()
 
-    # cog = Keyword(multi=True, normalizer=lowercase_normalizer)
+
     cog_funcats = Keyword(multi=True)
     kegg = Keyword(multi=True, normalizer=lowercase_normalizer)
     pfam = Keyword(multi=True, normalizer=lowercase_normalizer)
@@ -135,7 +152,10 @@ class GeneDocument(Document):
     cog_id = Keyword()
 
     ec_number = Keyword()
+
     essentiality = Keyword(normalizer=lowercase_normalizer)
+    tas_hit = Float()  # Transposon Abundance Score (0-1) for essentiality QC
+
     inference = Text(fields={"keyword": Keyword()})
 
     ontology_terms = Nested(
@@ -168,10 +188,20 @@ class GeneDocument(Document):
         }
     )
 
+    # Fitness Data - Size: ~140 Conditions * 2 species
+    # (~3800 genes for P. vulgatus, 3300 genes for B. uniformis, without intergenic regions)
+    fitness_data = Nested(
+        properties={
+            "contrast": Keyword(),
+            "lfc": Float(),
+            "fdr": Float(),
+        }
+    )
+
     protein_sequence = Text(fields={"keyword": Keyword()})
 
     class Index:
-        name = "gene_index"
+        name = 'feature_index'
         settings = {
             "index": {"max_result_window": 500000},
             "analysis": {
@@ -183,6 +213,48 @@ class GeneDocument(Document):
         dynamic = "true"
 
     def save(self, **kwargs):
-        """set `_id` as `locus_tag`"""
-        self.meta.id = self.locus_tag
+        if self.feature_type == 'gene':
+            self.meta.id = self.locus_tag
+        elif self.feature_type == 'intergenomic_region':
+            self.meta.id = self.feature_id
+        return super().save(**kwargs)
+
+
+class PPIInteractionDocument(Document):
+    """
+    Stores pairwise Protein-Protein Interactions with multiple scores.
+
+    Undirected edges (A-B == B-A):
+    Must deduplicate: store only one direction (sorted(A,B)).
+
+    Will need efficient:
+        Lookup: “Does A interact with B?”
+        Filtering: ensemble_score > 0.8, known_interaction = 1.
+        Fetching partners: “Who are the top partners of A with score > X?”
+
+    """
+
+    interaction_id = Keyword()  # e.g., "P12345_P67890"
+    protein_a_uniprot_id = Keyword()
+    protein_b_uniprot_id = Keyword()
+
+    known_interaction = Boolean()
+
+    dl_score = Float()
+    comelt_score = Float()
+    abundance_score = Float()
+    ensemble_score = Float()
+    # additional scores as needed
+
+    class Index:
+        name = "ppi_interaction_index"
+        settings = {
+            "index": {"max_result_window": 500000}
+        }
+
+    def save(self, **kwargs):
+        # Use sorted UniProt IDs for A-B == B-A consistency
+        proteins = sorted([self.protein_a_uniprot_id, self.protein_b_uniprot_id])
+        self.interaction_id = f"{proteins[0]}_{proteins[1]}"
+        self.meta.id = self.interaction_id
         return super().save(**kwargs)
