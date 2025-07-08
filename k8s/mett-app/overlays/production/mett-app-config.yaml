@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mett-app-config-dev
-  namespace: mett-dataportal-hl-dev
+  name: mett-app-config
+  namespace: mett-dataportal-hl
 data:
   DJANGO_DEBUG: "False"
   TIME_ZONE: "Europe/London"
@@ -12,10 +12,10 @@ data:
   GFF_FTP_PATH: "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff"
   CELERY_BROKER_URL: "redis://mett-test-redis:6379/0"
   CELERY_RESULT_BACKEND: "redis://mett-test-redis:6379/1"
-  REACT_APP_API_BASE_URL: "http://www.gut-microbes.org/api"
-  REACT_APP_ENA_BASE_URL: "https://www.ebi.ac.uk/ena/browser/view/"
-  REACT_APP_ASSEMBLY_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/fasta_files"
-  REACT_APP_GFF_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/gff3_files"
-  REACT_APP_BACINTERACTOME_SHINY_APP_URL: "http://platform.mgnify.org/shiny-apps/app/bacinteractome"
+  VITE_API_BASE_URL: "http://www.gut-microbes.org/api"
+  VITE_ENA_BASE_URL: "https://www.ebi.ac.uk/ena/browser/view/"
+  VITE_ASSEMBLY_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/fasta_files"
+  VITE_GFF_INDEXES_PATH: "https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/dataportal/gff3_files"
+  VITE_BACINTERACTOME_SHINY_APP_URL: "http://platform.mgnify.org/shiny-apps/app/bacinteractome"
   PYHMMER_FAA_BASE_PATH: "/data/pyhmmer/output/"
   HTTPS: "false"

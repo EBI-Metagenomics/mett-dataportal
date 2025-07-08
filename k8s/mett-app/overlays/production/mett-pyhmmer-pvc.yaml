@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mett-pyhmmer-pvc
-  namespace: mett-dataportal-hl-dev
+  namespace: mett-dataportal-hl
 spec:
   accessModes:
     - ReadOnlyMany

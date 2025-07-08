@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import List
 from typing import Optional
@@ -5,7 +6,7 @@ from typing import Optional
 from asgiref.sync import sync_to_async
 from django.db.models import Q
 from django.forms.models import model_to_dict
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Search, connections
 
 from dataportal.models import StrainDocument
 from dataportal.schemas import (
@@ -22,6 +23,9 @@ from dataportal.utils.constants import (
     ES_FIELD_SPECIES_SCIENTIFIC_NAME,
     ES_FIELD_SPECIES_ACRONYM,
     ES_INDEX_STRAIN,
+    SCROLL_BATCH_SIZE,
+    SCROLL_MAX_RESULTS,
+    SCROLL_TIMEOUT,
 )
 from dataportal.utils.exceptions import ServiceError
 
@@ -49,6 +53,7 @@ class GenomeService:
         sortOrder: str = SORT_ASC,
         isolates: Optional[List[str]] = None,
         species_acronym: Optional[str] = None,
+        use_scroll: bool = False,
     ) -> GenomePaginationSchema:
         """Search genomes in Elasticsearch with optional isolate/species filters."""
         filter_criteria = {}
@@ -60,14 +65,25 @@ class GenomeService:
         if species_acronym:
             filter_criteria[ES_FIELD_SPECIES_ACRONYM] = species_acronym
 
-        return await self._search_paginated_strains(
-            filter_criteria=filter_criteria,
-            page=page,
-            per_page=per_page,
-            sortField=sortField,
-            sortOrder=sortOrder,
-            error_message="Error searching genomes by string",
-        )
+        if use_scroll:
+            # Use scroll API for large downloads
+            strains, total_results = await self._fetch_all_strains_with_scroll(
+                filter_criteria=filter_criteria,
+                sortField=sortField,
+                sortOrder=sortOrder,
+                schema=GenomeResponseSchema,
+            )
+            return await self._create_pagination_schema(strains, total_results, 1, total_results)
+        else:
+            # Use regular pagination for normal requests
+            return await self._search_paginated_strains(
+                filter_criteria=filter_criteria,
+                page=page,
+                per_page=per_page,
+                sortField=sortField,
+                sortOrder=sortOrder,
+                error_message="Error searching genomes by string",
+            )
 
     async def get_genomes_by_species(
         self,
@@ -342,3 +358,143 @@ class GenomeService:
         if field in [STRAIN_FIELD_ISOLATE_NAME, ES_FIELD_SPECIES_SCIENTIFIC_NAME]:
             return f"{field}.keyword"
         return field
+
+    def convert_to_tsv(self, genomes: List[GenomeResponseSchema]) -> str:
+        """Convert genome data to TSV format for download."""
+        if not genomes:
+            return ""
+        
+        # Define the columns to include in the TSV export
+        columns = [
+            'isolate_name', 'species_scientific_name', 'species_acronym', 
+            'assembly_name', 'assembly_accession', 'type_strain'
+        ]
+        
+        # Create header row
+        header = '\t'.join(columns)
+        
+        # Create data rows
+        rows = []
+        for genome in genomes:
+            row_data = []
+            for col in columns:
+                value = getattr(genome, col, '')
+                value = str(value) if value is not None else ''
+                
+                # Escape tabs and newlines in the value
+                value = value.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')
+                row_data.append(value)
+            
+            rows.append('\t'.join(row_data))
+        
+        return header + '\n' + '\n'.join(rows)
+
+    async def _fetch_all_strains_with_scroll(
+        self, filter_criteria, sortField, sortOrder, schema
+    ):
+        """Fetch all strains using Elasticsearch scroll API for large downloads."""
+        try:
+            es_client = connections.get_connection()
+            search_body = {
+                "query": {
+                    "bool": {
+                        "must": []
+                    }
+                },
+                "size": SCROLL_BATCH_SIZE
+            }
+
+            # Dynamically apply filters
+            for field, value in filter_criteria.items():
+                if isinstance(value, str):
+                    if field == STRAIN_FIELD_ISOLATE_NAME:
+                        search_body["query"]["bool"]["must"].append({
+                            "bool": {
+                                "should": [
+                                    {
+                                        "wildcard": {
+                                            f"{field}.keyword": f"*{value.lower()}*"
+                                        }
+                                    },
+                                    {"term": {f"{field}.keyword": value}},
+                                ],
+                                "minimum_should_match": 1,
+                            }
+                        })
+                    else:
+                        search_body["query"]["bool"]["must"].append({
+                            "wildcard": {field: f"*{value}*"}
+                        })
+                elif isinstance(value, list):
+                    search_body["query"]["bool"]["must"].append({
+                        "terms": {field: value}
+                    })
+                else:
+                    search_body["query"]["bool"]["must"].append({
+                        "term": {field: value}
+                    })
+
+            # Map "species" to its actual field
+            sortField = self._resolve_sort_field(sortField)
+            sort_order = "asc" if sortOrder == SORT_ASC else "desc"
+            search_body["sort"] = [{sortField: {"order": sort_order}}]
+
+            logger.info(f"Starting scroll search with query: {json.dumps(search_body, indent=2)}")
+
+            # Execute initial search
+            response = await sync_to_async(
+                lambda: es_client.search(
+                    index=ES_INDEX_STRAIN,
+                    body=search_body,
+                    scroll=SCROLL_TIMEOUT
+                )
+            )()
+
+            results = []
+            total_results = 0
+            max_results = SCROLL_MAX_RESULTS
+            batch_count = 0
+            scroll_id = response['_scroll_id']
+
+            # Process all batches
+            while len(response['hits']['hits']) > 0 and total_results < max_results:
+                batch_count += 1
+                for hit_data in response['hits']['hits']:
+                    # Create a mock hit object that has to_dict() method
+                    class MockHit:
+                        def __init__(self, source):
+                            self._source = source
+                        
+                        def to_dict(self):
+                            return self._source
+                    
+                    mock_hit = MockHit(hit_data['_source'])
+                    strain_obj = strain_from_hit(mock_hit)
+                    strain_dict = model_to_dict(strain_obj)
+                    results.append(schema.model_validate(strain_dict))
+                
+                total_results += len(response['hits']['hits'])
+                logger.info(f"Fetched {total_results} strains in {batch_count} batches...")
+
+                # Get next batch using scroll
+                try:
+                    response = await sync_to_async(
+                        lambda: es_client.scroll(
+                            scroll_id=scroll_id,
+                            scroll=SCROLL_TIMEOUT
+                        )
+                    )()
+                    scroll_id = response['_scroll_id']
+                except Exception as scroll_error:
+                    logger.error(f"Error in scroll batch {batch_count}: {scroll_error}")
+                    break
+
+            if total_results >= max_results:
+                logger.warning(f"Reached maximum result limit of {max_results}. Some results may be truncated.")
+
+            logger.info(f"Scroll search completed. Total strains fetched: {total_results}")
+            return results, total_results
+
+        except Exception as e:
+            logger.error(f"Error fetching strains with scroll API: {e}", exc_info=True)
+            raise ServiceError(f"Error fetching strains with scroll API: {str(e)}")

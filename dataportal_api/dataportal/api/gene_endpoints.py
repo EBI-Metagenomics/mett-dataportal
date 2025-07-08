@@ -119,6 +119,9 @@ async def search_genes_by_string(
 )
 async def get_faceted_search(
     request,
+    query: Optional[str] = Query(
+        None, description="Search query across gene fields (gene name, product, etc.)"
+    ),
     species_acronym: Optional[str] = Query(
         None, description="Species acronym to filter genes by (BU or PV)."
     ),
@@ -174,6 +177,7 @@ async def get_faceted_search(
         f"Isolates received: {isolate_names_list} (type: {type(isolate_names_list)})"
     )
     return await gene_service.get_faceted_search(
+        query,
         species_acronym,
         isolate_names_list,
         essentiality,
@@ -313,6 +317,7 @@ async def search_genes_by_multiple_genomes_and_species_and_string(
             per_page,
             sort_field,
             sort_order,
+            use_scroll=False,
         )
     except InvalidGenomeIdError:
         raise_http_error(400, f"Invalid genome ID provided: {isolates}")
@@ -349,3 +354,136 @@ async def get_gene_protein_seq(
         raise HttpError(
             500, f"Failed to fetch the protein sequence for locus_tag - {locus_tag}"
         )
+
+
+@gene_router.get(
+    "/download/tsv",
+    summary="Download all genes in TSV format",
+    description=(
+        "Downloads all genes matching the current filters in TSV (Tab-Separated Values) format. "
+        "This endpoint returns all records without pagination, suitable for bulk data export. "
+        "Supports the same filtering options as the search endpoints."
+    ),
+    include_in_schema=False,
+)
+async def download_genes_tsv(
+    request,
+    isolates: str = Query(
+        "",
+        description="Comma-separated list of isolate names to restrict the search scope.",
+    ),
+    species_acronym: Optional[str] = Query(
+        None, description="Optional species acronym to filter by."
+    ),
+    query: str = Query(
+        "",
+        description="Free-text search string to match against gene names or annotations.",
+    ),
+    filter: Optional[str] = Query(
+        None,
+        description="Additional gene filter, e.g., 'pfam:pf07715;interpro:ipr012910'.",
+    ),
+    filter_operators: Optional[str] = Query(
+        None,
+        description="Logical operator (AND/OR) per facet, e.g., 'pfam:AND;interpro:OR'",
+    ),
+    sort_field: Optional[str] = Query(None, description="Field to sort results by."),
+    sort_order: Optional[str] = Query(
+        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+    ),
+):
+    try:
+        logger.debug(
+            f"Download TSV request received with params: query={query}, filter={filter}, sortField={sort_field}, sortOrder={sort_order}"
+        )
+        
+        # Use streaming response for large datasets
+        from django.http import StreamingHttpResponse
+        
+        def generate_tsv():
+            # Define the columns to include in the TSV export
+            columns = [
+                'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag', 
+                'product', 'uniprot_id', 'essentiality', 'pfam', 'interpro', 
+                'kegg', 'cog_funcats', 'cog_id', 'amr'
+            ]
+            
+            # Yield header row
+            yield '\t'.join(columns) + '\n'
+            
+            # Stream genes directly from the service
+            import asyncio
+            
+            async def stream_genes():
+                async for gene in gene_service.stream_genes_with_scroll(
+                    isolates=isolates,
+                    species_acronym=species_acronym,
+                    query=query,
+                    filter=filter,
+                    filter_operators=filter_operators,
+                    sort_field=sort_field,
+                    sort_order=sort_order,
+                ):
+                    row_data = []
+                    for col in columns:
+                        value = getattr(gene, col, '')
+                        
+                        # Handle special cases
+                        if col == 'alias' and value:
+                            value = '; '.join(value) if isinstance(value, list) else str(value)
+                        elif col == 'pfam' and value:
+                            value = '; '.join(value) if isinstance(value, list) else str(value)
+                        elif col == 'interpro' and value:
+                            value = '; '.join(value) if isinstance(value, list) else str(value)
+                        elif col == 'kegg' and value:
+                            value = '; '.join(value) if isinstance(value, list) else str(value)
+                        elif col == 'amr' and value:
+                            # Format AMR data
+                            amr_parts = []
+                            for amr_item in value:
+                                # Handle both dictionary and Pydantic model cases
+                                if hasattr(amr_item, 'drug_class') and amr_item.drug_class:
+                                    drug_class = amr_item.drug_class
+                                    drug_subclass = getattr(amr_item, 'drug_subclass', '')
+                                    amr_parts.append(f"{drug_class}({drug_subclass})")
+                                elif isinstance(amr_item, dict) and amr_item.get('drug_class'):
+                                    drug_class = amr_item['drug_class']
+                                    drug_subclass = amr_item.get('drug_subclass', '')
+                                    amr_parts.append(f"{drug_class}({drug_subclass})")
+                            value = '; '.join(amr_parts) if amr_parts else ''
+                        else:
+                            value = str(value) if value is not None else ''
+                        
+                        # Escape tabs and newlines in the value
+                        value = value.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')
+                        row_data.append(value)
+                    
+                    yield '\t'.join(row_data) + '\n'
+            
+            # Run the async generator in a new event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                async_gen = stream_genes()
+                while True:
+                    try:
+                        result = loop.run_until_complete(async_gen.__anext__())
+                        yield result
+                    except StopAsyncIteration:
+                        break
+            finally:
+                loop.close()
+        
+        # Return streaming response
+        response = StreamingHttpResponse(
+            generate_tsv(),
+            content_type='text/tab-separated-values'
+        )
+        response['Content-Disposition'] = 'attachment; filename="genes_export.tsv"'
+        return response
+        
+    except InvalidGenomeIdError:
+        raise_http_error(400, f"Invalid genome ID provided: {isolates}")
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise_http_error(500, f"Failed to download genes: {str(e)}")

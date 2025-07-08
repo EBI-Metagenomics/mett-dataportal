@@ -1,7 +1,6 @@
 import {useEffect, useState} from 'react';
-import {createViewState} from '@jbrowse/react-app';
-import makeWorkerInstance from '@jbrowse/react-app/esm/makeWorkerInstance';
-import {createRoot, hydrateRoot} from 'react-dom/client';
+import {createViewState} from '@jbrowse/react-app2';
+import makeWorkerInstance from '@jbrowse/react-app2/esm/makeWorkerInstance';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
 import CustomEssentialityPlugin from "../../../../plugins/CustomEssentialityPlugin";
@@ -29,7 +28,8 @@ const useGeneViewerState = (
     assembly: any,
     tracks: Track[],
     defaultSession: any,
-    apiUrl: string
+    apiUrl: string,
+    initKey?: number
 ) => {
     const [viewState, setViewState] = useState<ReturnType<typeof createViewState> | null>(null);
     const [initializationError, setInitializationError] = useState<Error | null>(null);
@@ -37,8 +37,11 @@ const useGeneViewerState = (
     useEffect(() => {
         const initialize = async () => {
             try {
+                // Don't treat missing assembly as an error - it's just loading
                 if (!assembly) {
-                    throw new Error('Assembly configuration is missing.');
+                    setViewState(null);
+                    setInitializationError(null);
+                    return;
                 }
 
                 const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
@@ -59,17 +62,14 @@ const useGeneViewerState = (
                 const state = createViewState({
                     config,
                     plugins,
-                    hydrateFn: hydrateRoot,
-                    createRootFn: createRoot,
                     makeWorkerInstance,
                 });
 
                 // console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
                 // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
 
-                const registeredRenderers = state.pluginManager.getElementTypesInGroup('renderer').map((renderer) => renderer.name);
-
                 setViewState(state);
+                setInitializationError(null); // Clear any previous errors
 
                 const assemblyManager = state.assemblyManager;
                 const assemblyInstance = assemblyManager.get(assembly.name);
@@ -78,11 +78,12 @@ const useGeneViewerState = (
                 }
             } catch (error) {
                 setInitializationError(error instanceof Error ? error : new Error(String(error)));
+                setViewState(null);
             }
         };
 
         initialize();
-    }, [assembly, tracks, defaultSession]);
+    }, [assembly, tracks, defaultSession, initKey]);
 
     return {viewState, initializationError};
 };

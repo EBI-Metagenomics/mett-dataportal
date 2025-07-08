@@ -31,6 +31,9 @@ interface SearchGenomeFormProps {
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
+                                                               searchQuery,
+                                                               onSearchQueryChange,
+                                                               onSearchSubmit,
                                                                selectedSpecies,
                                                                selectedTypeStrains,
                                                                selectedGenomes,
@@ -45,7 +48,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                linkData,
                                                                setLoading,
                                                            }) => {
-    const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<AutocompleteResponse[]>([]);
     const [isolateName, setIsolateName] = useState<string>('');
     const [results, setResults] = useState<any[]>([]);
@@ -61,6 +63,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         headers: any;
         body?: any
     } | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, DEFAULT_PER_PAGE_CNT);
@@ -113,7 +116,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             setLoading(true); // Show spinner
             const startTime = Date.now();
 
-            const qry = isolateName.trim() || query.trim();
+            const qry = isolateName.trim() || searchQuery.trim();
             const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
             const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : [];
 
@@ -180,7 +183,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 setTimeout(() => setLoading(false), remainingTime > 0 ? remainingTime : 0);
             }
         },
-        [query, isolateName, selectedSpecies, selectedTypeStrains, pageSize]
+        [searchQuery, isolateName, selectedSpecies, selectedTypeStrains, pageSize]
     );
 
 
@@ -192,7 +195,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newQuery = event.target.value;
-        setQuery(newQuery);
+        onSearchQueryChange(event);
         setIsolateName('');
         debouncedFetchSuggestions(newQuery);
     };
@@ -201,7 +204,9 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         console.log('suggestion: ' + suggestion)
         console.log('isolateName: ' + suggestion.isolate_name)
         // console.log('suggestion.strain_id: ' + suggestion.id)
-        setQuery(suggestion.isolate_name);
+        onSearchQueryChange({
+            target: { value: suggestion.isolate_name }
+        } as React.ChangeEvent<HTMLInputElement>);
         setIsolateName(suggestion.isolate_name);
         setSuggestions([]);
         // fixed for query based on user selection
@@ -213,6 +218,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        onSearchSubmit('genome');
         fetchSearchResults(1, sortField, sortOrder);
     };
 
@@ -222,8 +228,31 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         fetchSearchResults(page, sortField, sortOrder);
     };
 
+    const handleDownloadTSV = async () => {
+        try {
+            setIsDownloading(true);
+            // Show initial message for large downloads
+            alert('Starting download... This may take a while for large datasets.');
+            
+            await GenomeService.downloadGenomesTSV(
+                searchQuery,
+                sortField,
+                sortOrder,
+                selectedSpecies,
+                selectedTypeStrains
+            );
+            // Show success message
+            alert('Download completed successfully!');
+        } catch (error) {
+            console.error('Error downloading TSV:', error);
+            alert('Failed to download TSV file. Please try again or contact support if the problem persists.');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
-        <section id="vf-tabs__section--2">
+        <section id="genomes">
             <div>
                 <p/>
             </div>
@@ -248,7 +277,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                             <p/>
                         </div>
                         <GenomeSearchInput
-                            query={query}
+                            query={searchQuery}
                             onInputChange={handleInputChange}
                             suggestions={suggestions}
                             onSuggestionClick={handleSuggestionClick}
@@ -268,6 +297,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                             onToggleGenomeSelect={onToggleGenomeSelect}
                             linkData={linkData}
                             setLoading={setLoading}
+                            onDownloadTSV={handleDownloadTSV}
+                            isLoading={isDownloading}
                         />
                         {/* Page size dropdown and pagination */}
                         <div className={styles.paginationContainer}>

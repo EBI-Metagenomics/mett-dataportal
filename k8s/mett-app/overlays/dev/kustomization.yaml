@@ -3,19 +3,17 @@ kind: Kustomization
 
 resources:
   - mett-app-config.yaml
-  - mett-celery-beat.yaml
-  - mett-celery-worker.yaml
-  - mett-dataportal-api-deployment.yaml
-  - mett-dataportal-app-deployment.yaml
-  - mett-dataportal-ingress.yaml
-  - mett-dataportal-namespace.yaml
   - mett-pyhmmer-pv.yaml
   - mett-pyhmmer-pvc.yaml
   - mett-redis.yaml
+  - mett-dataportal-api-deployment.yaml
+  - mett-dataportal-app-deployment.yaml
+#  - mett-celery-beat.yaml
+#  - mett-celery-worker.yaml
 
 
 images:
   - name: quay.io/microbiome-informatics/mett-dataportal-api
-    newTag: v0.0.146r
+    newTag: v0.0.150
   - name: quay.io/microbiome-informatics/mett-dataportal-react-app
-    newTag: v0.0.146r
+    newTag: v0.0.150

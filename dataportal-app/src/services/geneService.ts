@@ -1,7 +1,7 @@
 import {ApiService} from "./api";
 import {Gene, GeneFacetResponse, GeneMeta, GeneProteinSeq, GeneSuggestion, PaginatedResponse} from "../interfaces/Gene";
 import {cacheResponse} from "./cachingDecorator";
-import {DEFAULT_PER_PAGE_CNT} from "../utils/appConstants";
+import {DEFAULT_PER_PAGE_CNT, API_BASE_URL} from "../utils/appConstants";
 
 export class GeneService {
     /**
@@ -237,9 +237,10 @@ export class GeneService {
     }
 
     /**
-     * faceted search.
+     * Fetch gene facets for filtering.
      */
     static async fetchGeneFacets(
+        query?: string,
         speciesAcronym?: string,
         isolates?: string,
         essentiality?: string,
@@ -249,31 +250,90 @@ export class GeneService {
         goTerm?: string,
         pfam?: string,
         interpro?: string,
+        hasAmrInfo?: string,
         facetOperators?: Record<string, 'AND' | 'OR'>
     ): Promise<GeneFacetResponse> {
         try {
-            const params = new URLSearchParams({
-                ...(speciesAcronym && {species_acronym: speciesAcronym}),
-                ...(isolates && {isolates: isolates}),
-                ...(essentiality && {essentiality}),
-                ...(cogId && {cog_id: cogId}),
-                ...(cogFuncats && {cog_funcats: cogFuncats}),
-                ...(kegg && {kegg}),
-                ...(goTerm && {go_term: goTerm}),
-                ...(pfam && {pfam}),
-                ...(interpro && {interpro}),
-                ...(facetOperators?.pfam && {pfam_operator: facetOperators.pfam}),
-                ...(facetOperators?.interpro && {interpro_operator: facetOperators.interpro}),
-                ...(facetOperators?.cog_id && {cog_id_operator: facetOperators.cog_id}),
-                ...(facetOperators?.cog_funcats && {cog_funcats_operator: facetOperators.cog_funcats}),
-                ...(facetOperators?.kegg && {kegg_operator: facetOperators.kegg}),
-                ...(facetOperators?.go_term && {go_term_operator: facetOperators.go_term}),
+            console.log('GeneService.fetchGeneFacets called with:', {
+                query,
+                speciesAcronym,
+                isolates,
+                essentiality,
+                cogId,
+                cogFuncats,
+                kegg,
+                goTerm,
+                pfam,
+                interpro,
+                hasAmrInfo,
+                facetOperators
             });
 
-            const response = await ApiService.get<GeneFacetResponse>("genes/faceted-search", params);
+            const params = new URLSearchParams();
+            
+            if (query) params.append('query', query);
+            
+            if (speciesAcronym) params.append('species_acronym', speciesAcronym);
+            if (isolates) params.append('isolates', isolates);
+            if (essentiality) params.append('essentiality', essentiality);
+            if (cogId) params.append('cog_id', cogId);
+            if (cogFuncats) params.append('cog_funcats', cogFuncats);
+            if (kegg) params.append('kegg', kegg);
+            if (goTerm) params.append('go_term', goTerm);
+            if (pfam) params.append('pfam', pfam);
+            if (interpro) params.append('interpro', interpro);
+            if (hasAmrInfo) params.append('has_amr_info', hasAmrInfo);
+            
+            // Add facet operators as individual parameters (matching original approach)
+            if (facetOperators?.pfam) params.append('pfam_operator', facetOperators.pfam);
+            if (facetOperators?.interpro) params.append('interpro_operator', facetOperators.interpro);
+            if (facetOperators?.cog_id) params.append('cog_id_operator', facetOperators.cog_id);
+            if (facetOperators?.cog_funcats) params.append('cog_funcats_operator', facetOperators.cog_funcats);
+            if (facetOperators?.kegg) params.append('kegg_operator', facetOperators.kegg);
+            if (facetOperators?.go_term) params.append('go_term_operator', facetOperators.go_term);
+
+            console.log('Making API call to genes/faceted-search with params:', params.toString());
+
+            const response = await ApiService.get<GeneFacetResponse>('genes/faceted-search', params);
+            
+            console.log('API response received:', response);
             return response;
         } catch (error) {
-            console.error("Error fetching gene facets:", error);
+            console.error('Error fetching gene facets:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Download gene data in TSV format.
+     */
+    static async downloadGenesTSV(
+        query: string,
+        sortField: string,
+        sortOrder: string,
+        selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
+        selectedSpecies?: string[],
+        selectedFacets?: Record<string, string[]>,
+        facetOperators?: Record<string, 'AND' | 'OR'>
+    ): Promise<void> {
+        try {
+            const params = GeneService.buildParamsFetchGeneSearchResults(
+                query, 1, 1000000, sortField, sortOrder,
+                selectedGenomes, selectedSpecies, selectedFacets, facetOperators
+            );
+            
+            // Create download URL
+            const url = `${API_BASE_URL}/genes/download/tsv?${params.toString()}`;
+            
+            // Trigger download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'genes_export.tsv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading genes TSV:', error);
             throw error;
         }
     }

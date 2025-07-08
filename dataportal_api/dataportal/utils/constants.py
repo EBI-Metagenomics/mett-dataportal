@@ -9,6 +9,11 @@ DEFAULT_SORT = SORT_ASC
 DEFAULT_PER_PAGE_CNT = 20
 DEFAULT_FACET_LIMIT = 10000
 
+# Scroll API constants
+SCROLL_BATCH_SIZE = 10000  # Number of records per scroll batch
+SCROLL_MAX_RESULTS = 1000000  # Maximum results to prevent runaway queries
+SCROLL_TIMEOUT = "5m"  # Scroll timeout (5 minutes)
+
 # Indexes
 ES_INDEX_SPECIES = "species_index"
 ES_INDEX_STRAIN = "strain_index"
@@ -60,6 +65,7 @@ ES_FIELD_COG_ID = "cog_id"
 ES_FIELD_COG_FUNCATS = "cog_funcats"
 ES_FIELD_INTERPRO = "interpro"
 ES_FIELD_EGGNOG = "eggnog"
+ES_FIELD_GO_TERM = "go_term"
 ES_FIELD_AMR = "amr"
 ES_FIELD_AMR_INFO = "has_amr_info"
 

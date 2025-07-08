@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mett-celery-beat
-  namespace: mett-dataportal-hl-dev
+  namespace: mett-dataportal-hl
   labels:
     app: mett-celery-beat
 spec:
