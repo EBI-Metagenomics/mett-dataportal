@@ -255,7 +255,7 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
                 async for gene in gene_service.stream_genes_with_scroll(
                         isolates=query.isolates,
                         species_acronym=query.species_acronym,
-                        query=query,
+                        query=query.query,
                         filter=filter,
                         filter_operators=query.filter_operators,
                         sort_field=query.sort_field,
