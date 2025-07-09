@@ -2,7 +2,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 
 import pytest
 
-from dataportal.schemas import GenePaginationSchema, GeneResponseSchema
+from dataportal.schema.schemas import GenePaginationSchema, GeneResponseSchema
 from dataportal.services.gene_service import GeneService
 from dataportal.utils.exceptions import GeneNotFoundError
 

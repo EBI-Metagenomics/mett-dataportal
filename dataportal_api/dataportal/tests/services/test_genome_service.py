@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
 
-from dataportal.schemas import GenomePaginationSchema, GenomeResponseSchema
+from dataportal.schema.schemas import GenomePaginationSchema, GenomeResponseSchema
 from dataportal.services.genome_service import GenomeService
 from dataportal.services.essentiality_service import EssentialityService
 from dataportal.utils.constants import STRAIN_FIELD_ISOLATE_NAME

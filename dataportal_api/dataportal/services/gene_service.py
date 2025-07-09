@@ -6,7 +6,7 @@ from asgiref.sync import sync_to_async
 from django.forms.models import model_to_dict
 from elasticsearch_dsl import Search, connections
 
-from dataportal.schemas import (
+from dataportal.schema.gene_schemas import (
     GenePaginationSchema,
     GeneResponseSchema,
     GeneProteinSeqSchema,

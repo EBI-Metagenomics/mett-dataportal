@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
 
-from dataportal.schemas import SpeciesSchema
+from dataportal.schema.schemas import SpeciesSchema
 from dataportal.services.species_service import SpeciesService
 
 
