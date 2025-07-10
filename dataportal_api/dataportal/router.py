@@ -15,7 +15,7 @@ from dataportal.api.species_endpoints import species_router
 from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
 
-from dataportal.api.api_natural_query import router as natural_query_router
+from dataportal.api.api_natural_query import nl_query_router as natural_query_router
 from dataportal.schema.response_schemas import (
     ErrorCode, 
     create_error_response,
