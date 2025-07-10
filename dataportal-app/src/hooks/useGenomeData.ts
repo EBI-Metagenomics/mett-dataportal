@@ -71,7 +71,7 @@ export const useGenomeData = (): UseGenomeDataReturn => {
           filterStore.genomeSortField,
           filterStore.genomeSortOrder
         );
-        setGenomeResults(response.results);
+        setGenomeResults(response.data);
       } catch (err) {
         console.error('Error fetching genomes:', err);
         setError('Failed to load genome data');
@@ -111,7 +111,7 @@ export const useGenomeData = (): UseGenomeDataReturn => {
         filterStore.setSelectedTypeStrains(updatedSelectedTypeStrains);
 
         if (updatedSelectedTypeStrains.length > 0) {
-          const filteredResults = genomeResults.filter((result) =>
+          const filteredResults = (genomeResults || []).filter((result) =>
             updatedSelectedTypeStrains.includes(result.strain_id)
           );
           setGenomeResults(filteredResults);
@@ -149,7 +149,7 @@ export const useGenomeData = (): UseGenomeDataReturn => {
       filterStore.setSelectedTypeStrains(updatedSelectedTypeStrains);
 
       if (updatedSelectedTypeStrains.length > 0) {
-        const filteredResults = genomeResults.filter((result) =>
+        const filteredResults = (genomeResults || []).filter((result) =>
           updatedSelectedTypeStrains.includes(result.strain_id)
         );
         setGenomeResults(filteredResults);
@@ -178,7 +178,7 @@ export const useGenomeData = (): UseGenomeDataReturn => {
         field,
         order
       );
-      setGenomeResults(response.results);
+      setGenomeResults(response.data);
     } catch (err) {
       console.error('Error in genome search:', err);
       setError('Failed to search genomes');
