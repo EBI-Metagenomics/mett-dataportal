@@ -200,7 +200,7 @@ const HomePage: React.FC = () => {
                             <ErrorBoundary>
                         <GeneSearchForm
                                     searchQuery={filterStore.geneSearchQuery}
-                                    onSearchQueryChange={e => filterStore.setGeneSearchQuery(e.target.value)}
+                                    onSearchQueryChange={() => {}} // GeneSearchForm manages its own state
                                     onSearchSubmit={() => {}}
                                     selectedSpecies={filterStore.selectedSpecies}
                                     selectedGenomes={filterStore.selectedGenomes}

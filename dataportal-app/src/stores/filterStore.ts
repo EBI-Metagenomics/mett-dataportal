@@ -2,6 +2,22 @@ import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { BaseGenome } from '../interfaces/Genome'
 
+// Valid sort fields for genomes
+const VALID_GENOME_SORT_FIELDS = {
+    'species': 'species',
+    'isolate_name': 'isolate_name',
+    'genome': 'isolate_name', // Map 'genome' to 'isolate_name'
+    'strain': 'isolate_name', // Map 'strain' to 'isolate_name'
+    'name': 'isolate_name', // Map 'name' to 'isolate_name'
+};
+
+/**
+ * Map sort field to valid field
+ */
+const mapSortField = (field: string): string => {
+    return VALID_GENOME_SORT_FIELDS[field as keyof typeof VALID_GENOME_SORT_FIELDS] || 'isolate_name';
+};
+
 export interface FacetedFilters {
   essentiality?: string[];
   has_amr_info?: boolean[];
@@ -88,7 +104,13 @@ export const useFilterStore = create<FilterState>()(
         });
       },
       setGenomeSearchQuery: (query) => set({ genomeSearchQuery: query }),
-      setGenomeSortField: (field) => set({ genomeSortField: field }),
+      setGenomeSortField: (field) => {
+        const mappedField = mapSortField(field);
+        if (mappedField !== field) {
+          console.log(`FilterStore: Mapping sort field from '${field}' to '${mappedField}'`);
+        }
+        set({ genomeSortField: mappedField });
+      },
       setGenomeSortOrder: (order) => set({ genomeSortOrder: order }),
       setGeneSearchQuery: (query) => set({ geneSearchQuery: query }),
       setGeneSortField: (field) => set({ geneSortField: field }),

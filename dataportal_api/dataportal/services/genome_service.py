@@ -353,11 +353,17 @@ class GenomeService:
         )
 
     def _resolve_sort_field(self, field: str) -> str:
-        if field == STRAIN_FIELD_SPECIES:
-            return ES_FIELD_SPECIES_ACRONYM
-        if field in [STRAIN_FIELD_ISOLATE_NAME, ES_FIELD_SPECIES_SCIENTIFIC_NAME]:
-            return f"{field}.keyword"
-        return field
+        # Map invalid sort fields to valid ones
+        field_mapping = {
+            'species': ES_FIELD_SPECIES_ACRONYM,
+            'isolate_name': f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",
+            'genome': f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'genome' to 'isolate_name.keyword'
+            'strain': f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'strain' to 'isolate_name.keyword'
+            'name': f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",    # Map 'name' to 'isolate_name.keyword'
+        }
+        
+        # Return mapped field if it exists, otherwise return the original field
+        return field_mapping.get(field, field)
 
     def convert_to_tsv(self, genomes: List[GenomeResponseSchema]) -> str:
         """Convert genome data to TSV format for download."""

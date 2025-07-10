@@ -1,3 +1,5 @@
+import { PaginatedApiResponse, SuccessApiResponse } from "./ApiResponse";
+
 export interface Contig {
     seq_id: string;
     length: number;
@@ -22,6 +24,7 @@ export interface BaseGenome {
     type_strain: boolean;
 }
 
+// Legacy pagination interface (for backward compatibility)
 export interface GenomeResponse {
     results: GenomeMeta[];
     page_number: number;
@@ -40,4 +43,9 @@ export interface GenomeMinIntf {
     isolate_name: string;
     assembly_name: string;
 }
+
+// New standardized response types
+export type GenomeApiResponse = SuccessApiResponse<GenomeMeta>;
+export type GenomeListResponse = PaginatedApiResponse<GenomeMeta>;
+export type AutocompleteApiResponse = SuccessApiResponse<AutocompleteResponse[]>;
 

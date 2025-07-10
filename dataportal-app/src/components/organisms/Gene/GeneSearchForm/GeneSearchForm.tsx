@@ -53,6 +53,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                        }) => {
     const [searchInput, setSearchInput] = useState<string>('');
     const [query, setQuery] = useState<string>(searchQuery || '');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<GeneSuggestion[]>([]);
     const [geneName, setGeneName] = useState<string>('');
     const [results, setResults] = useState<GeneMeta[]>([]);
@@ -62,6 +63,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(DEFAULT_PER_PAGE_CNT);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isProcessingSuggestion, setIsProcessingSuggestion] = useState<boolean>(false);
+    const [currentLocusTag, setCurrentLocusTag] = useState<string>('');
 
     const facetedFilters = useFilterStore(state => state.facetedFilters);
     const facetOperators = useFilterStore(state => state.facetOperators);
@@ -77,7 +80,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     } = useFacetedFilters({
         selectedSpecies: selectedSpecies || [],
         selectedGenomes,
-        searchQuery: query,
+        searchQuery: isProcessingSuggestion ? currentLocusTag : debouncedSearchQuery, // Use locus tag when processing suggestion
     });
 
     const [apiRequestDetails, setApiRequestDetails] = useState<{
@@ -153,29 +156,24 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     );
 
 
-    // Debounce function to reduce the frequency of API calls
-    //todo handle this properly
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     const debounce = (func: Function, delay: number) => {
-        let timeoutId: NodeJS.Timeout;
-        return (...args: string[]) => {
+        let timeoutId: ReturnType<typeof setTimeout>;
+        return (...args: any[]) => {
             clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(this, args);
-            }, delay);
+            timeoutId = setTimeout(() => func.apply(null, args), delay);
         };
     };
 
-    const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
-    const [selectedGeneId, setSelectedGeneId] = useState<string | null>(null);
-
-    // Update internal query when searchQuery prop changes
+    // Update internal query when searchQuery prop changes - REMOVED THIS PROBLEMATIC useEffect
+    /*
     useEffect(() => {
         if (searchQuery !== query) {
             setQuery(searchQuery || '');
             setSearchInput(searchQuery || '');
+            setDebouncedSearchQuery(searchQuery || '');
         }
     }, [searchQuery, query]);
+    */
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
@@ -196,56 +194,45 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             try {
                 setLoading(true); // Start spinner
                 let response = null;
-                if (selectedGeneId) {
-                    // Fetch by gene ID
-                    const geneResponseObj = await GeneService.fetchGeneByLocusTag(selectedGeneId);
-                    response = {
-                        results: [geneResponseObj],
-                        page_number: 1,
-                        num_pages: 1,
-                        has_previous: false,
-                        has_next: false,
-                    };
-                } else {
-                    // Fetch results using the advanced search API
-                    const params = GeneService.buildParamsFetchGeneSearchResults(
-                        query,
-                        page,
-                        pageSize,
-                        sortField,
-                        sortOrder,
-                        genomeFilter,
-                        speciesFilter,
-                        selectedFacetFilters
-                    );
+                
+                // Always use the advanced search API - the query parameter will contain the locus tag when selected from autocomplete
+                const params = GeneService.buildParamsFetchGeneSearchResults(
+                    query,
+                    page,
+                    pageSize,
+                    sortField,
+                    sortOrder,
+                    genomeFilter,
+                    speciesFilter,
+                    selectedFacetFilters
+                );
 
-                    const apiDetails = {
-                        url: API_GENE_SEARCH_ADVANCED,
-                        method: "GET",
-                        headers: {"Content-Type": "application/json"},
-                        params: Object.fromEntries(params.entries()),
-                    };
+                const apiDetails = {
+                    url: API_GENE_SEARCH_ADVANCED,
+                    method: "GET",
+                    headers: {"Content-Type": "application/json"},
+                    params: Object.fromEntries(params.entries()),
+                };
 
-                    setApiRequestDetails(apiDetails);
+                setApiRequestDetails(apiDetails);
 
-                    response = await GeneService.fetchGeneSearchResultsAdvanced(
-                        query,
-                        page,
-                        pageSize,
-                        sortField,
-                        sortOrder,
-                        genomeFilter,
-                        speciesFilter,
-                        selectedFacetFilters,
-                        facetOperators
-                    );
-                }
-                if (response && response.results) {
-                    setResults(response.results);
-                    setCurrentPage(response.page_number);
-                    setTotalPages(response.num_pages);
-                    setHasPrevious(response.has_previous);
-                    setHasNext(response.has_next);
+                response = await GeneService.fetchGeneSearchResultsAdvanced(
+                    query,
+                    page,
+                    pageSize,
+                    sortField,
+                    sortOrder,
+                    genomeFilter,
+                    speciesFilter,
+                    selectedFacetFilters,
+                    facetOperators
+                );
+                if (response && response.data && response.pagination) {
+                    setResults(response.data);
+                    setCurrentPage(response.pagination.page_number);
+                    setTotalPages(response.pagination.num_pages);
+                    setHasPrevious(response.pagination.has_previous);
+                    setHasNext(response.pagination.has_next);
                 } else {
                     setResults([]);
                     setCurrentPage(1);
@@ -264,7 +251,99 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setLoading(false); // Stop spinner
             }
         },
-        [query, selectedGeneId, selectedSpecies, selectedGenomes, pageSize, getLegacyFilters, getLegacyOperators]
+        [query, selectedGenomes, selectedSpecies, pageSize, getLegacyFilters, getLegacyOperators]
+    );
+
+    // Debounced function for updating query and triggering search
+    const debouncedUpdateQuery = useCallback(
+        debounce((newQuery: string) => {
+            if (!isProcessingSuggestion) {
+                console.log('debouncedUpdateQuery called with:', newQuery);
+                setQuery(newQuery);
+                // Create a temporary function that uses the newQuery directly
+                const searchWithQuery = async () => {
+                    const genomeFilter = selectedGenomes?.length
+                        ? selectedGenomes.map((genome) => ({
+                            isolate_name: genome.isolate_name,
+                            type_strain: genome.type_strain
+                        }))
+                        : undefined;
+                    const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+                    try {
+                        setLoading(true);
+                        const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                            newQuery, // Use newQuery directly instead of query state
+                            1,
+                            pageSize,
+                            sortField,
+                            sortOrder,
+                            genomeFilter,
+                            speciesFilter,
+                            getLegacyFilters(),
+                            getLegacyOperators()
+                        );
+                        if (response && response.data && response.pagination) {
+                            setResults(response.data);
+                            setCurrentPage(response.pagination.page_number);
+                            setTotalPages(response.pagination.num_pages);
+                            setHasPrevious(response.pagination.has_previous);
+                            setHasNext(response.pagination.has_next);
+                        } else {
+                            setResults([]);
+                            setCurrentPage(1);
+                            setTotalPages(1);
+                            setHasPrevious(false);
+                            setHasNext(false);
+                        }
+                    } catch (error) {
+                        console.error("Error fetching data:", error);
+                        setResults([]);
+                        setCurrentPage(1);
+                        setTotalPages(1);
+                        setHasPrevious(false);
+                        setHasNext(false);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                searchWithQuery();
+            } else {
+                console.log('debouncedUpdateQuery skipped due to suggestion processing');
+            }
+        }, 500), // 500ms delay
+        [selectedGenomes, selectedSpecies, pageSize, sortField, sortOrder, getLegacyFilters, getLegacyOperators, isProcessingSuggestion]
+    );
+
+    // Debounced function for updating the search query used by faceted filters
+    const debouncedUpdateSearchQuery = useCallback(
+        debounce((newQuery: string) => {
+            if (!isProcessingSuggestion) {
+                console.log('debouncedUpdateSearchQuery called with:', newQuery);
+                setDebouncedSearchQuery(newQuery);
+            } else {
+                console.log('debouncedUpdateSearchQuery skipped due to suggestion processing');
+            }
+        }, 300), // 300ms delay for faceted filters
+        [isProcessingSuggestion]
+    );
+
+    const debouncedFetchSuggestions = useCallback(
+        debounce((input: string) => {
+            if (!isProcessingSuggestion && input.length >= 2) {
+                console.log('debouncedFetchSuggestions called with:', input);
+                GeneService.fetchGeneAutocompleteSuggestions(
+                    input,
+                    10,
+                    selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined,
+                    selectedGenomes.map(g => g.isolate_name).join(","),
+                    getLegacyFilters()
+                ).then(setSuggestions).catch(console.error);
+            } else {
+                console.log('debouncedFetchSuggestions skipped - input length or processing suggestion');
+                setSuggestions([]);
+            }
+        }, 300), // 300ms delay for suggestions
+        [selectedSpecies, selectedGenomes, getLegacyFilters, isProcessingSuggestion]
     );
 
     // For GeneViewerPage: load initial data when genome changes
@@ -309,12 +388,12 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         }
     }, [selectedGenomes, selectedSpecies, isGeneViewerPage, filtersAreInitial, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators]);
 
-    // User interaction effect: runs only on user-driven changes
+    // User interaction effect: runs only on user-driven changes (excluding query changes which are handled by debouncing)
     useEffect(() => {
-        if (!filtersAreInitial || query.length > 0) {
+        if (!filtersAreInitial) {
             fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
         }
-    }, [facetedFilters, facetOperators, query, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators, filtersAreInitial]);
+    }, [facetedFilters, facetOperators, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators, filtersAreInitial]);
 
     // Fallback effect: ensure data is loaded when component mounts
     useEffect(() => {
@@ -327,26 +406,153 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newInput = event.target.value;
+        console.log('handleInputChange called with:', newInput, 'isProcessingSuggestion:', isProcessingSuggestion);
+        
+        // Check if this looks like a display text from autocomplete (contains parentheses and dashes)
+        const looksLikeDisplayText = newInput.includes('(') && newInput.includes(')') && newInput.includes(' - ');
+        
+        // Only update the search input state, don't trigger any immediate effects
         setSearchInput(newInput);
-        setQuery(newInput);
+        
+        // Clear gene state immediately
         setGeneName('');
-        setSelectedGeneId(null);
-        debouncedFetchSuggestions(newInput);
+        
+        // Only call debounced functions if we're not processing a suggestion and it doesn't look like display text
+        if (!isProcessingSuggestion && !looksLikeDisplayText) {
+            console.log('Calling debounced functions for input:', newInput);
+            debouncedUpdateQuery(newInput);
+            debouncedUpdateSearchQuery(newInput);
+            debouncedFetchSuggestions(newInput);
+        } else {
+            console.log('Skipping debounced functions - processing suggestion or display text detected');
+        }
     };
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
-        setQuery(suggestion.gene_name || suggestion.locus_tag);
+        // Use locus_tag for the query to find the specific gene record
+        const selectedValue = suggestion.locus_tag;
+        console.log('handleSuggestionClick - selectedValue (locus tag):', selectedValue);
+        console.log('handleSuggestionClick - suggestion:', suggestion);
+        
+        setIsProcessingSuggestion(true);
+        setCurrentLocusTag(selectedValue);
+        setQuery(selectedValue);
+        // Update searchInput to show a user-friendly display value
+        const displayValue = suggestion.gene_name 
+            ? `${suggestion.gene_name} (${suggestion.locus_tag})`
+            : suggestion.locus_tag;
+        setSearchInput(displayValue);
         setGeneName(suggestion.gene_name);
-        setSelectedGeneId(suggestion.locus_tag);
+        // Remove setSelectedGeneId since we're not using the special case anymore
         setSuggestions([]);
-        fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+        
+        // Use the locus tag directly instead of relying on query state
+        const searchWithLocusTag = async () => {
+            const genomeFilter = selectedGenomes?.length
+                ? selectedGenomes.map((genome) => ({
+                    isolate_name: genome.isolate_name,
+                    type_strain: genome.type_strain
+                }))
+                : undefined;
+            const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+            try {
+                setLoading(true);
+                console.log('Making API call with locus tag:', selectedValue);
+                const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                    selectedValue, // Use selectedValue (locus tag) directly
+                    1,
+                    pageSize,
+                    sortField,
+                    sortOrder,
+                    genomeFilter,
+                    speciesFilter,
+                    getLegacyFilters(),
+                    getLegacyOperators()
+                );
+                if (response && response.data && response.pagination) {
+                    setResults(response.data);
+                    setCurrentPage(response.pagination.page_number);
+                    setTotalPages(response.pagination.num_pages);
+                    setHasPrevious(response.pagination.has_previous);
+                    setHasNext(response.pagination.has_next);
+                } else {
+                    setResults([]);
+                    setCurrentPage(1);
+                    setTotalPages(1);
+                    setHasPrevious(false);
+                    setHasNext(false);
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setResults([]);
+                setCurrentPage(1);
+                setTotalPages(1);
+                setHasPrevious(false);
+                setHasNext(false);
+            } finally {
+                setLoading(false);
+                setIsProcessingSuggestion(false);
+                setCurrentLocusTag('');
+            }
+        };
+        searchWithLocusTag();
     };
 
+    const handleSearch = () => {
+        const currentSearchInput = searchInput;
+        setQuery(currentSearchInput);
+        // Use the same approach as debouncedUpdateQuery to avoid timing issues
+        const searchWithQuery = async () => {
+            const genomeFilter = selectedGenomes?.length
+                ? selectedGenomes.map((genome) => ({
+                    isolate_name: genome.isolate_name,
+                    type_strain: genome.type_strain
+                }))
+                : undefined;
+            const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+            try {
+                setLoading(true);
+                const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                    currentSearchInput, // Use currentSearchInput directly
+                    1,
+                    pageSize,
+                    sortField,
+                    sortOrder,
+                    genomeFilter,
+                    speciesFilter,
+                    getLegacyFilters(),
+                    getLegacyOperators()
+                );
+                if (response && response.data && response.pagination) {
+                    setResults(response.data);
+                    setCurrentPage(response.pagination.page_number);
+                    setTotalPages(response.pagination.num_pages);
+                    setHasPrevious(response.pagination.has_previous);
+                    setHasNext(response.pagination.has_next);
+                } else {
+                    setResults([]);
+                    setCurrentPage(1);
+                    setTotalPages(1);
+                    setHasPrevious(false);
+                    setHasNext(false);
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setResults([]);
+                setCurrentPage(1);
+                setTotalPages(1);
+                setHasPrevious(false);
+                setHasNext(false);
+            } finally {
+                setLoading(false);
+            }
+        };
+        searchWithQuery();
+    };
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setQuery(searchInput);
-        fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+        handleSearch();
     };
 
     const handleDownloadTSV = async () => {
@@ -398,12 +604,14 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         <p/>
                     </div>
                     <GeneSearchInput
-                        query={query}
+                        query={searchInput}
                         onInputChange={handleInputChange}
                         suggestions={suggestions}
                         onSuggestionClick={handleSuggestionClick}
                         onSuggestionsClear={() => setSuggestions([])}
-                    /></form>
+                        onSearch={handleSearch}
+                    />
+                </form>
                 <div>
                     <p>&nbsp;</p>
                 </div>

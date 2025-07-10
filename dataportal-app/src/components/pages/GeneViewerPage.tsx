@@ -183,7 +183,7 @@ const GeneViewerPage: React.FC = () => {
             <section>
               <GeneSearchForm
                 searchQuery={filterStore.geneSearchQuery}
-                onSearchQueryChange={e => filterStore.setGeneSearchQuery(e.target.value)}
+                onSearchQueryChange={() => {}} // GeneSearchForm manages its own state
                 onSearchSubmit={geneViewerSearch.handleGeneSearch}
                 selectedSpecies={[]} // Empty for gene viewer
                 selectedGenomes={selectedGenomes}

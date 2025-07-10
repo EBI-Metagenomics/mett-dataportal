@@ -142,7 +142,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
                 const endpoint = (selectedSpecies && selectedSpecies.length === 1)
                 ? `/species/${selectedSpecies[0]}/genomes/search`
-                : `/genomes/`;
+                : `/genomes/search`;
 
                 apiDetails.url = endpoint;
                 apiDetails.params = Object.fromEntries(params.entries());
@@ -157,12 +157,17 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     typeStrainFilter
                 );
 
-                if (response && response.results) {
-                    setResults(response.results);
-                    setTotalPages(response.num_pages);
-                    setHasPrevious(response.has_previous ?? page > 1);
-                    setHasNext(response.has_next);
+                console.log('GenomeSearchForm response received:', response);
+                console.log('GenomeSearchForm response.data:', response?.data);
+                console.log('GenomeSearchForm response.pagination:', response?.pagination);
+                if (response && response.data && response.pagination) {
+                    console.log('GenomeSearchForm: Setting results with', response.data.length, 'items');
+                    setResults(response.data);
+                    setTotalPages(response.pagination.num_pages);
+                    setHasPrevious(response.pagination.has_previous ?? page > 1);
+                    setHasNext(response.pagination.has_next);
                 } else {
+                    console.log('GenomeSearchForm: No valid response, setting empty results');
                     setResults([]);
                     setTotalPages(1);
                     setHasPrevious(false);

@@ -23,7 +23,9 @@ from ..utils.constants import (
     SCROLL_MAX_RESULTS,
 )
 from ..utils.decorators import log_endpoint_access
-from ..utils.errors import raise_http_error
+from ..utils.errors import raise_http_error, raise_internal_server_error
+from ..utils.response_wrappers import wrap_paginated_response
+from ..schema.response_schemas import PaginatedResponseSchema, create_paginated_response
 from ..utils.exceptions import (
     ServiceError,
 )
@@ -73,7 +75,7 @@ async def get_type_strains(request):
 
 @genome_router.get(
     "/search",
-    response=GenomePaginationSchema,
+    response=PaginatedResponseSchema,
     summary="Search genomes by query",
     description=(
             "Searches genomes using a free-text query string. "
@@ -81,6 +83,7 @@ async def get_type_strains(request):
             "Supports optional sorting by 'isolate_name' or 'species'."
     ),
 )
+@wrap_paginated_response
 async def search_genomes_by_string(
         request,
         query: GenomeSearchQuerySchema = Query(...)
@@ -89,7 +92,7 @@ async def search_genomes_by_string(
     sortOrder = query.sortOrder or DEFAULT_SORT
 
     try:
-        return await genome_service.search_genomes_by_string(
+        result = await genome_service.search_genomes_by_string(
             query=query.query,
             page=query.page,
             per_page=query.per_page,
@@ -98,10 +101,10 @@ async def search_genomes_by_string(
             isolates=query.isolates,
             species_acronym=query.species_acronym,
         )
-    except ServiceError:
-        raise HttpError(
-            500, f"An error occurred while fetching genomes by query: {query}"
-        )
+        return result
+    except ServiceError as e:
+        logger.error(f"Service error in genome search: {e}")
+        raise_internal_server_error(f"Failed to search genomes: {str(e)}")
 
 
 @genome_router.get(
@@ -130,28 +133,32 @@ async def get_genomes_by_isolate_names(
 # API Endpoint to retrieve all genomes
 @genome_router.get(
     "/",
-    response=GenomePaginationSchema,
+    response=PaginatedResponseSchema,
     summary="Get all genomes",
     description="Retrieves a paginated list of all genomes available in the system. "
                 "Supports optional sorting by 'isolate_name' or 'species'. ",
 )
+@wrap_paginated_response
 async def get_all_genomes(
         request,
         query: GetAllGenomesQuerySchema = Query(...)
 ):
     try:
-        return await genome_service.get_genomes(query.page, query.per_page,
+        result = await genome_service.get_genomes(query.page, query.per_page,
                                                 query.sortField, query.sortOrder)
-    except ServiceError:
-        raise HttpError(500, "An error occurred while fetching genomes.")
-    except Exception:
-        raise_http_error(500, "An error occurred while fetching genomes.")
+        return result
+    except ServiceError as e:
+        logger.error(f"Service error in get all genomes: {e}")
+        raise_internal_server_error("Failed to fetch genomes")
+    except Exception as e:
+        logger.error(f"Unexpected error in get all genomes: {e}")
+        raise_internal_server_error("Failed to fetch genomes")
 
 
 # API Endpoint to retrieve genes filtered by a single genome ID
 @genome_router.get(
     "/{isolate_name}/genes",
-    response=GenePaginationSchema,
+    response=PaginatedResponseSchema,
     summary="Get genes by genome isolate",
     description=(
             "Retrieves a paginated list of genes associated with a specific genome isolate. "
@@ -159,6 +166,7 @@ async def get_all_genomes(
             "Useful for viewing all genes within a selected genome."
     ),
 )
+@wrap_paginated_response
 async def get_genes_by_genome(
         request,
         isolate_name: str = Path(
@@ -167,7 +175,7 @@ async def get_genes_by_genome(
         query: GenesByGenomeQuerySchema = Query(...)
 ):
     try:
-        return await gene_service.get_genes_by_genome(
+        result = await gene_service.get_genes_by_genome(
             isolate_name,
             query.filter,
             query.filter_operators,
@@ -176,11 +184,10 @@ async def get_genes_by_genome(
             query.sort_field,
             query.sort_order,
         )
+        return result
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(
-            500, f"Failed to fetch the genes information for genome_id - {query.isolate_name}"
-        )
+        raise_internal_server_error(f"Failed to fetch the genes information for genome_id - {isolate_name}")
 
 
 # API endpoint to retrieve essentiality data from cache for a specific strain ID.

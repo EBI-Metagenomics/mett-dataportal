@@ -11,6 +11,12 @@ from dataportal.schema.gene_schemas import (
     GeneResponseSchema, GeneAutocompleteQuerySchema, GeneSearchQuerySchema, GeneFacetedSearchQuerySchema,
     GeneAdvancedSearchQuerySchema, GeneDownloadTSVQuerySchema,
 )
+from dataportal.schema.response_schemas import (
+    SuccessResponseSchema,
+    PaginatedResponseSchema,
+    create_success_response,
+    create_paginated_response
+)
 from ..services.gene_service import GeneService
 from ..utils.constants import (
     DEFAULT_PER_PAGE_CNT,
@@ -20,12 +26,18 @@ from ..utils.constants import (
     ES_FIELD_LOCUS_TAG, ES_FIELD_PRODUCT, ES_FIELD_UNIPROT_ID, GENE_ESSENTIALITY, ES_FIELD_AMR, ES_FIELD_AMR_DRUG_CLASS,
     ES_FIELD_AMR_DRUG_SUBCLASS,
 )
-from ..utils.errors import raise_http_error
+from ..utils.errors import (
+    raise_http_error,
+    raise_not_found_error,
+    raise_internal_server_error,
+    raise_validation_error
+)
 from ..utils.exceptions import (
     GeneNotFoundError,
     ServiceError,
     InvalidGenomeIdError,
 )
+from ..utils.response_wrappers import wrap_success_response, wrap_paginated_response
 
 logger = logging.getLogger(__name__)
 
@@ -37,79 +49,97 @@ gene_router = Router(tags=[ROUTER_GENE])
 
 @gene_router.get(
     "/autocomplete",
-    response=List[GeneAutocompleteResponseSchema],
+    response=SuccessResponseSchema,
     summary="Autocomplete gene names",
     include_in_schema=False,
 )
+@wrap_success_response
 async def gene_autocomplete_suggestions(request, query: GeneAutocompleteQuerySchema = Query(...)):
-    isolate_list = (
-        [gid.strip() for gid in query.isolates.split(",") if gid.strip()]
-        if query.isolates
-        else None
-    )
-    return await gene_service.autocomplete_gene_suggestions(
-        query.query, query.filter, query.limit, query.species_acronym, isolate_list
-    )
+    try:
+        isolate_list = (
+            [gid.strip() for gid in query.isolates.split(",") if gid.strip()]
+            if query.isolates
+            else None
+        )
+        result = await gene_service.autocomplete_gene_suggestions(
+            query.query, query.filter, query.limit, query.species_acronym, isolate_list
+        )
+        return create_success_response(
+            data=result,
+            message=f"Found {len(result)} gene suggestions"
+        )
+    except ServiceError as e:
+        logger.error(f"Service error in autocomplete: {e}")
+        raise_internal_server_error(f"Failed to fetch gene suggestions: {str(e)}")
 
 
 # API Endpoint to search genes by query string
 @gene_router.get(
     "/search",
-    response=GenePaginationSchema,
+    response=PaginatedResponseSchema,
     summary="Search genes by query string",
 )
+@wrap_paginated_response
 async def search_genes_by_string(request, query: GeneSearchQuerySchema = Query(...)):
     try:
-        return await gene_service.search_genes(
+        result = await gene_service.search_genes(
             query.query, "", "", query.page, query.per_page, query.sort_field, query.sort_order
         )
+        return result
     except ServiceError as e:
-        logger.error(f"Service error: {e}")
-        raise HttpError(
-            500,
-            f"Failed to fetch the genes information for gene query - {query}",
-        )
+        logger.error(f"Service error in gene search: {e}")
+        raise_internal_server_error(f"Failed to search genes: {str(e)}")
 
 
 @gene_router.get(
     "/faceted-search",
+    response=SuccessResponseSchema,
     summary="Perform faceted search on genes",
     include_in_schema=False,
 )
+@wrap_success_response
 async def get_faceted_search(request, query: GeneFacetedSearchQuerySchema = Query(...)):
-    isolate_list = (
-        [id.strip() for id in query.isolates.split(",") if id.strip()]
-        if query.isolates
-        else []
-    )
-    return await gene_service.get_faceted_search(
-        query.query,
-        query.species_acronym,
-        isolate_list,
-        query.essentiality,
-        query.cog_id,
-        query.cog_funcats,
-        query.kegg,
-        query.go_term,
-        query.pfam,
-        query.interpro,
-        query.has_amr_info,
-        query.limit,
-        operators={
-            ES_FIELD_PFAM: query.pfam_operator,
-            ES_FIELD_INTERPRO: query.interpro_operator,
-            ES_FIELD_COG_ID: query.cog_id_operator,
-            ES_FIELD_COG_FUNCATS: query.cog_funcats_operator,
-            ES_FIELD_KEGG: query.kegg_operator,
-            ES_FIELD_GO_TERM: query.go_term_operator,
-        },
-    )
+    try:
+        isolate_list = (
+            [id.strip() for id in query.isolates.split(",") if id.strip()]
+            if query.isolates
+            else []
+        )
+        result = await gene_service.get_faceted_search(
+            query.query,
+            query.species_acronym,
+            isolate_list,
+            query.essentiality,
+            query.cog_id,
+            query.cog_funcats,
+            query.kegg,
+            query.go_term,
+            query.pfam,
+            query.interpro,
+            query.has_amr_info,
+            query.limit,
+            operators={
+                ES_FIELD_PFAM: query.pfam_operator,
+                ES_FIELD_INTERPRO: query.interpro_operator,
+                ES_FIELD_COG_ID: query.cog_id_operator,
+                ES_FIELD_COG_FUNCATS: query.cog_funcats_operator,
+                ES_FIELD_KEGG: query.kegg_operator,
+                ES_FIELD_GO_TERM: query.go_term_operator,
+            },
+        )
+        return create_success_response(
+            data=result,
+            message="Faceted search completed successfully"
+        )
+    except ServiceError as e:
+        logger.error(f"Service error in faceted search: {e}")
+        raise_internal_server_error(f"Failed to perform faceted search: {str(e)}")
 
 
 # API Endpoint to retrieve gene by locus tag
 @gene_router.get(
     "/{locus_tag}",
-    response=GeneResponseSchema,
+    response=SuccessResponseSchema,
     summary="Get gene by locus tag",
     description=(
             "Retrieves detailed information for a specific gene using its unique locus tag. "
@@ -117,6 +147,7 @@ async def get_faceted_search(request, query: GeneFacetedSearchQuerySchema = Quer
             "This endpoint is useful for direct lookups when the locus tag is already known."
     ),
 )
+@wrap_success_response
 async def get_gene_by_locus_tag(
         request,
         locus_tag: str = Path(
@@ -124,21 +155,26 @@ async def get_gene_by_locus_tag(
         ),
 ):
     try:
-        return await gene_service.get_gene_by_locus_tag(locus_tag)
+        result = await gene_service.get_gene_by_locus_tag(locus_tag)
+        return create_success_response(
+            data=result,
+            message=f"Gene {locus_tag} retrieved successfully"
+        )
     except GeneNotFoundError as e:
         logger.error(f"Gene not found: {e.locus_tag}")
-        raise HttpError(404, str(e))
+        raise_not_found_error(
+            f"Gene with locus tag '{locus_tag}' not found",
+            error_code="GENE_NOT_FOUND"
+        )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(
-            500, f"Failed to fetch the gene information for locus_tag - {locus_tag}"
-        )
+        raise_internal_server_error(f"Failed to fetch gene information for locus tag '{locus_tag}'")
 
 
 # API Endpoint to retrieve all genes
 @gene_router.get(
     "/",
-    response=GenePaginationSchema,
+    response=PaginatedResponseSchema,
     summary="Get all genes",
     description=(
             "Retrieves a paginated list of all genes across all available genomes. "
@@ -146,6 +182,7 @@ async def get_gene_by_locus_tag(
             "Useful for browsing the full gene catalog without applying filters."
     ),
 )
+@wrap_paginated_response
 async def get_all_genes(
         request,
         page: int = Query(1, description="Page number to retrieve."),
@@ -158,22 +195,24 @@ async def get_all_genes(
         ),
 ):
     try:
-        return await gene_service.get_all_genes(page, per_page, sort_field, sort_order)
+        result = await gene_service.get_all_genes(page, per_page, sort_field, sort_order)
+        return result
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, "Failed to fetch the genes information")
+        raise_internal_server_error("Failed to fetch genes information")
 
 
 # API Endpoint to search genes across multiple genome IDs using a gene string
 @gene_router.get(
     "/search/advanced",
-    response=GenePaginationSchema,
+    response=PaginatedResponseSchema,
     summary="Advanced gene search across genomes and species",
 )
+@wrap_paginated_response
 async def search_genes_by_multiple_genomes_and_species_and_string(request,
                                                                   query: GeneAdvancedSearchQuerySchema = Query(...)):
     try:
-        return await gene_service.get_genes_by_multiple_genomes_and_string(
+        result = await gene_service.get_genes_by_multiple_genomes_and_string(
             query.isolates,
             query.species_acronym,
             query.query,
@@ -185,16 +224,17 @@ async def search_genes_by_multiple_genomes_and_species_and_string(request,
             query.sort_order,
             use_scroll=False,
         )
+        return result
     except InvalidGenomeIdError:
-        raise_http_error(400, f"Invalid genome ID provided: {query.isolates}")
+        raise_validation_error(f"Invalid genome ID provided: {query.isolates}")
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise_http_error(500, f"Failed to fetch the genes information: {str(e)}")
+        raise_internal_server_error(f"Failed to fetch genes information: {str(e)}")
 
 
 @gene_router.get(
     "/protein/{locus_tag}",
-    response=GeneProteinSeqSchema,
+    response=SuccessResponseSchema,
     summary="Get protein sequence by locus tag",
     description=(
             "Retrieves the protein sequence for a specific gene using its unique locus tag. "
@@ -203,6 +243,7 @@ async def search_genes_by_multiple_genomes_and_species_and_string(request,
     ),
     include_in_schema=False,
 )
+@wrap_success_response
 async def get_gene_protein_seq(
         request,
         locus_tag: str = Path(
@@ -211,15 +252,20 @@ async def get_gene_protein_seq(
         ),
 ):
     try:
-        return await gene_service.get_gene_protein_seq(locus_tag)
+        result = await gene_service.get_gene_protein_seq(locus_tag)
+        return create_success_response(
+            data=result,
+            message=f"Protein sequence for gene {locus_tag} retrieved successfully"
+        )
     except GeneNotFoundError as e:
         logger.error(f"Gene not found: {e.locus_tag}")
-        raise HttpError(404, str(e))
+        raise_not_found_error(
+            f"Gene with locus tag '{locus_tag}' not found",
+            error_code="GENE_NOT_FOUND"
+        )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(
-            500, f"Failed to fetch the protein sequence for locus_tag - {locus_tag}"
-        )
+        raise_internal_server_error(f"Failed to fetch protein sequence for locus tag '{locus_tag}'")
 
 
 @gene_router.get(
@@ -320,7 +366,7 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
         return response
 
     except InvalidGenomeIdError:
-        raise_http_error(400, f"Invalid genome ID provided: {query.isolates}")
+        raise_validation_error(f"Invalid genome ID provided: {query.isolates}")
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise_http_error(500, f"Failed to download genes: {str(e)}")
+        raise_internal_server_error(f"Failed to download genes: {str(e)}")

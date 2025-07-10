@@ -23,7 +23,7 @@ class GenomeAutocompleteQuerySchema(BaseModel):
 
 class GenomeSearchQuerySchema(BaseModel):
     """Schema for searching genomes using a free-text query with pagination and sorting."""
-    query: str = Field(..., description="Search term to match against genome names or metadata.")
+    query: str = Field("", description="Search term to match against genome names or metadata.")
     page: int = Field(1, description="Page number to retrieve.")
     per_page: int = Field(DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page.")
     sortField: Optional[str] = Field(STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by.")

@@ -1,4 +1,20 @@
-import { useFilterStore, FilterState } from '../stores/filterStore';
+import { FilterState } from '../stores/filterStore';
+
+// Valid sort fields for genomes
+const VALID_GENOME_SORT_FIELDS = {
+    'species': 'species',
+    'isolate_name': 'isolate_name',
+    'genome': 'isolate_name', // Map 'genome' to 'isolate_name'
+    'strain': 'isolate_name', // Map 'strain' to 'isolate_name'
+    'name': 'isolate_name', // Map 'name' to 'isolate_name'
+};
+
+/**
+ * Map sort field to valid field
+ */
+const mapSortField = (field: string): string => {
+    return VALID_GENOME_SORT_FIELDS[field as keyof typeof VALID_GENOME_SORT_FIELDS] || 'isolate_name';
+};
 
 export interface UrlSyncConfig {
   // URL parameter names
@@ -105,7 +121,11 @@ export const syncUrlToStore = (
   // Sync genome sort field
   const sortField = searchParams.get(config.sortFieldParam);
   if (sortField) {
-    filterStore.setGenomeSortField(sortField);
+    const mappedSortField = mapSortField(sortField);
+    if (mappedSortField !== sortField) {
+      console.log(`URLSync: Mapping sort field from '${sortField}' to '${mappedSortField}'`);
+    }
+    filterStore.setGenomeSortField(mappedSortField);
   }
 
   // Sync genome sort order

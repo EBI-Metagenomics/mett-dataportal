@@ -224,6 +224,7 @@ export const useFacetedFilters = ({
       currentGenomeKey,
       currentSpeciesKey,
       searchQuery,
+      searchQueryLength: searchQuery.length,
       isGeneViewerPage,
       filtersAreInitial,
       genomeChanged,
@@ -284,8 +285,8 @@ export const useFacetedFilters = ({
       hasLoadedInitialFacets.current = true;
       console.log('Case 2: HomePage initial load');
     }
-    // Case 3: User interaction (search query, facet changes, etc.)
-    else if (searchQueryChanged || filtersChanged || operatorsChanged) {
+    // Case 3: User interaction (search query, facet changes, etc.) - for queries >= 2 characters OR when query becomes empty
+    else if ((searchQueryChanged && (searchQuery.length >= 2 || searchQuery.length === 0)) || filtersChanged || operatorsChanged) {
       shouldLoadFacets = true;
       console.log('Case 3: User interaction');
     }

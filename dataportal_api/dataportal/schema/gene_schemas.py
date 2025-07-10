@@ -34,7 +34,7 @@ class GeneAutocompleteQuerySchema(BaseModel):
 class GeneSearchQuerySchema(BaseModel):
     """Schema for basic gene search endpoint."""
     query: str = Field(
-        ...,
+        "",
         description="Free-text search term to match against gene names or locus tags."
     )
     page: int = Field(

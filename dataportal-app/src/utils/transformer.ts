@@ -1,4 +1,4 @@
-import {AutocompleteResponse, GenomeMeta, GenomeResponse} from "../interfaces/Genome";
+import {AutocompleteResponse, GenomeMeta} from "../interfaces/Genome";
 import {Species} from "../interfaces/Species";
 
 export function transformSpecies(rawSpecies: any): Species {
@@ -31,16 +31,7 @@ export function transformGenomeMeta(rawGenome: any): GenomeMeta {
     };
 }
 
-export function transformGenomeResponse(rawResponse: any): GenomeResponse {
-    return {
-        results: rawResponse.results.map(transformGenomeMeta),
-        page_number: rawResponse.page_number,
-        num_pages: rawResponse.num_pages,
-        has_previous: rawResponse.has_previous,
-        has_next: rawResponse.has_next,
-        total_results: rawResponse.total_results,
-    };
-}
+
 
 export function transformAutocompleteResponse(rawResponse: any[]): AutocompleteResponse[] {
     return rawResponse.map((item) => ({

@@ -82,11 +82,11 @@ const NaturalQuerySearchPage = () => {
                 facetOperators
             );
 
-            setResults(geneRes.results || []);
-            setCurrentPage((geneRes.page_number))
-            setTotalPages((geneRes.num_pages))
-            setHasNext((geneRes.has_next))
-            setHasPrevious((geneRes.has_previous))
+            setResults(geneRes.data || []);
+            setCurrentPage((geneRes.pagination.page_number))
+            setTotalPages((geneRes.pagination.num_pages))
+            setHasNext((geneRes.pagination.has_next))
+            setHasPrevious((geneRes.pagination.has_previous))
         } catch (err) {
             console.error(err);
             setError("Something went wrong.");
