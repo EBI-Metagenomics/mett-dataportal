@@ -105,12 +105,23 @@ class GenomeService:
     async def search_genomes_by_species_and_string(
         self,
         species_acronym: str,
-        query: str,
+        query: Optional[str],
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
         sortField: str = STRAIN_FIELD_ISOLATE_NAME,
         sortOrder: str = SORT_ASC,
     ) -> GenomePaginationSchema:
+        # If query is None or empty, just filter by species (equivalent to get_genomes_by_species)
+        if not query or query.strip() == "":
+            return await self.get_genomes_by_species(
+                species_acronym=species_acronym,
+                page=page,
+                per_page=per_page,
+                sortField=sortField,
+                sortOrder=sortOrder,
+            )
+        
+        # If query is provided, search by species and query string
         filter_criteria = {
             ES_FIELD_SPECIES_ACRONYM: species_acronym,
             STRAIN_FIELD_ISOLATE_NAME: query,
