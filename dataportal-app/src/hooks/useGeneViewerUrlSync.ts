@@ -1,54 +1,104 @@
-import { useEffect } from 'react'
-import { useUrlState } from './useUrlState'
-import { useFilterStore } from '../stores/filterStore'
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useFilterStore } from '../stores/filterStore';
 
 export const useGeneViewerUrlSync = () => {
-  const { searchParams, updateUrl } = useUrlState()
-  const filterStore = useFilterStore()
-  
-  // Clear tab-related parameters and reset filter store on mount since we're on gene viewer page
+  const location = useLocation();
+  const filterStore = useFilterStore();
+
+  // Sync URL to store on mount
   useEffect(() => {
-    // Reset filter store to clean state for gene viewer
-    filterStore.setGenomeSearchQuery('');
-    filterStore.setGenomeSortField('species');
-    filterStore.setGenomeSortOrder('asc');
-    filterStore.setGeneSearchQuery('');
-    filterStore.setGeneSortField('locus_tag');
-    filterStore.setGeneSortOrder('asc');
-    filterStore.setFacetedFilters({});
-    filterStore.setFacetOperators({});
+    const searchParams = new URLSearchParams(location.search);
     
-    // Clear URL parameters that shouldn't be on gene viewer page
-    const updates: Record<string, string | string[] | null> = {}
-    
-    // Clear tab-related parameters
-    updates.tab = null
-    updates.genomeSearch = null
-    updates.genomeSortField = null
-    updates.genomeSortOrder = null
-    
-    // Clear gene tab parameters that are not relevant for gene viewer
-    updates.geneSearch = null
-    updates.geneSortField = null
-    updates.geneSortOrder = null
-    updates.facetedFilters = null
-    updates.facetOperators = null
-    
-    // Clear species and type strains (not relevant for gene viewer)
-    updates.species = null
-    updates.typeStrains = null
-    updates.selectedGenomes = null
-    
-    // Keep only the locus_tag parameter which is relevant for gene viewer
-    const locusTag = searchParams.get('locus_tag')
-    if (locusTag) {
-      updates.locus_tag = locusTag
+    // Sync gene search query
+    const geneSearch = searchParams.get('geneSearch');
+    if (geneSearch) {
+      filterStore.setGeneSearchQuery(geneSearch);
     }
+
+    // Sync gene sort field
+    const geneSortField = searchParams.get('geneSortField');
+    if (geneSortField) {
+      filterStore.setGeneSortField(geneSortField);
+    }
+
+    // Sync gene sort order
+    const geneSortOrder = searchParams.get('geneSortOrder') as 'asc' | 'desc';
+    if (geneSortOrder && (geneSortOrder === 'asc' || geneSortOrder === 'desc')) {
+      filterStore.setGeneSortOrder(geneSortOrder);
+    }
+
+    // Sync faceted filters
+    const facetedFiltersStr = searchParams.get('facetedFilters');
+    if (facetedFiltersStr) {
+      try {
+        const facetedFilters = JSON.parse(decodeURIComponent(facetedFiltersStr));
+        filterStore.setFacetedFilters(facetedFilters);
+      } catch (error) {
+        console.error('Error parsing faceted filters from URL:', error);
+      }
+    }
+
+    // Sync facet operators
+    const facetOperatorsStr = searchParams.get('facetOperators');
+    if (facetOperatorsStr) {
+      try {
+        const facetOperators = JSON.parse(decodeURIComponent(facetOperatorsStr));
+        filterStore.setFacetOperators(facetOperators);
+      } catch (error) {
+        console.error('Error parsing facet operators from URL:', error);
+      }
+    }
+  }, []); // Only run on mount
+
+  // Sync store to URL on changes
+  useEffect(() => {
+    const newParams = new URLSearchParams(location.search);
     
-    // Update URL to clean up parameters
-    updateUrl(updates)
-  }, []) // Only run on mount
-  
-  // Note: We don't sync gene viewer state back to URL since this page
-  // is focused on displaying a specific gene/genome, not search functionality
-} 
+    // Update gene search query
+    if (filterStore.geneSearchQuery) {
+      newParams.set('geneSearch', filterStore.geneSearchQuery);
+    } else {
+      newParams.delete('geneSearch');
+    }
+
+    // Update gene sort field
+    if (filterStore.geneSortField && filterStore.geneSortField !== 'locus_tag') {
+      newParams.set('geneSortField', filterStore.geneSortField);
+    } else {
+      newParams.delete('geneSortField');
+    }
+
+    // Update gene sort order
+    if (filterStore.geneSortOrder && filterStore.geneSortOrder !== 'asc') {
+      newParams.set('geneSortOrder', filterStore.geneSortOrder);
+    } else {
+      newParams.delete('geneSortOrder');
+    }
+
+    // Update faceted filters
+    if (Object.keys(filterStore.facetedFilters).length > 0) {
+      newParams.set('facetedFilters', encodeURIComponent(JSON.stringify(filterStore.facetedFilters)));
+    } else {
+      newParams.delete('facetedFilters');
+    }
+
+    // Update facet operators
+    if (Object.keys(filterStore.facetOperators).length > 0) {
+      newParams.set('facetOperators', encodeURIComponent(JSON.stringify(filterStore.facetOperators)));
+    } else {
+      newParams.delete('facetOperators');
+    }
+
+    // Update the URL without triggering a page reload
+    const newUrl = `${location.pathname}?${newParams.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [
+    filterStore.geneSearchQuery,
+    filterStore.geneSortField,
+    filterStore.geneSortOrder,
+    filterStore.facetedFilters,
+    filterStore.facetOperators,
+    location.pathname
+  ]);
+}; 

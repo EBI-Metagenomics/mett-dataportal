@@ -60,48 +60,22 @@ export class GeneService extends BaseService {
             console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
                 query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators
             });
-            const params = this.buildParams({
+            
+            // Use the same parameter construction logic as buildParamsFetchGeneSearchResults
+            const params = this.buildParamsFetchGeneSearchResults(
                 query,
                 page,
-                per_page: perPage,
-                sort_field: sortField,
-                sort_order: sortOrder,
-                isolates: selectedGenomes?.map(g => g.isolate_name).join(","),
-                species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined
-            });
-
-            // Add filters and operators
-            if (selectedFacets) {
-                const filterParts: string[] = [];
-                for (const [key, rawValue] of Object.entries(selectedFacets)) {
-                    let values: string[] = [];
-                    if (Array.isArray(rawValue)) {
-                        values = rawValue.map(String);
-                    } else if (rawValue !== undefined && rawValue !== null) {
-                        values = [String(rawValue)];
-                    }
-                    if (values.length > 0) {
-                        filterParts.push(`${key}:${values.join(",")}`);
-                    }
-                }
-                if (filterParts.length > 0) {
-                    params.append("filter", filterParts.join(";"));
-                }
-            }
-
-            if (facetOperators) {
-                const filterOpParts: string[] = [];
-                for (const [key, value] of Object.entries(facetOperators)) {
-                    if (value) {
-                        filterOpParts.push(`${key}:${value}`);
-                    }
-                }
-                if (filterOpParts.length > 0) {
-                    params.append("filter_operators", filterOpParts.join(";"));
-                }
-            }
+                perPage,
+                sortField,
+                sortOrder,
+                selectedGenomes,
+                selectedSpecies,
+                selectedFacets,
+                facetOperators
+            );
 
             const response = await BaseService.getRawResponse<GeneMeta[]>("/genes/search/advanced", params);
+            console.log('GeneService.fetchGeneSearchResultsAdvanced - URL params:', params.toString());
             console.log('GeneService.fetchGeneSearchResultsAdvanced response:', response);
             return response as PaginatedApiResponse<GeneMeta>;
         } catch (error) {

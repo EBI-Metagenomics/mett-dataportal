@@ -7,9 +7,9 @@ import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearch
 import { 
   useGeneViewerData, 
   useGeneViewerNavigation, 
-  useGeneViewerSearch,
-  useGeneViewerUrlSync
+  useGeneViewerSearch
 } from '../../hooks';
+import { useGeneViewerUrlSync } from '../../hooks/useGeneViewerUrlSync';
 import { 
   useGeneViewerConfig, 
   refreshStructuralAnnotationTrack 

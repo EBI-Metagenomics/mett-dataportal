@@ -68,6 +68,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     const facetedFilters = useFilterStore(state => state.facetedFilters);
     const facetOperators = useFilterStore(state => state.facetOperators);
+    const setGeneSearchQuery = useFilterStore(state => state.setGeneSearchQuery);
+    const setGeneSortField = useFilterStore(state => state.setGeneSortField);
+    const setGeneSortOrder = useFilterStore(state => state.setGeneSortOrder);
 
     // Use the new faceted filters hook
     const {
@@ -82,6 +85,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         selectedGenomes,
         searchQuery: isProcessingSuggestion ? currentLocusTag : debouncedSearchQuery, // Use locus tag when processing suggestion
     });
+
+    console.log('GeneSearchForm - selectedSpecies:', selectedSpecies, 'selectedGenomes:', selectedGenomes);
 
     const [apiRequestDetails, setApiRequestDetails] = useState<{
         url: string;
@@ -191,6 +196,18 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 }))
                 : undefined;
             const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+            
+            console.log('fetchSearchResults called with:', {
+                query,
+                page,
+                sortField,
+                sortOrder,
+                genomeFilter,
+                speciesFilter,
+                selectedGenomes,
+                selectedSpecies
+            });
+            
             try {
                 setLoading(true); // Start spinner
                 let response = null;
@@ -214,7 +231,21 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     params: Object.fromEntries(params.entries()),
                 };
 
+                console.log('API details:', apiDetails);
+                console.log('API params:', Object.fromEntries(params.entries()));
                 setApiRequestDetails(apiDetails);
+
+                console.log('Calling GeneService.fetchGeneSearchResultsAdvanced with:', {
+                    query,
+                    page,
+                    pageSize,
+                    sortField,
+                    sortOrder,
+                    genomeFilter,
+                    speciesFilter,
+                    selectedFacetFilters,
+                    facetOperators
+                });
 
                 response = await GeneService.fetchGeneSearchResultsAdvanced(
                     query,
@@ -423,6 +454,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             debouncedUpdateQuery(newInput);
             debouncedUpdateSearchQuery(newInput);
             debouncedFetchSuggestions(newInput);
+            
+            // Update filter store for URL synchronization
+            setGeneSearchQuery(newInput);
         } else {
             console.log('Skipping debounced functions - processing suggestion or display text detected');
         }
@@ -445,6 +479,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         setGeneName(suggestion.gene_name);
         // Remove setSelectedGeneId since we're not using the special case anymore
         setSuggestions([]);
+        
+        // Update filter store for URL synchronization
+        setGeneSearchQuery(selectedValue);
         
         // Use the locus tag directly instead of relying on query state
         const searchWithLocusTag = async () => {
@@ -501,6 +538,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const handleSearch = () => {
         const currentSearchInput = searchInput;
         setQuery(currentSearchInput);
+        
+        // Update filter store for URL synchronization
+        setGeneSearchQuery(currentSearchInput);
         // Use the same approach as debouncedUpdateQuery to avoid timing issues
         const searchWithQuery = async () => {
             const genomeFilter = selectedGenomes?.length
