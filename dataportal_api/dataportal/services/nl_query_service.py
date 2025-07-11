@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from openai import OpenAI
 
 from dataportal.schema.nl_schemas import METT_GENE_QUERY_SCHEMA
-from dataportal.schema.gene_schemas import GeneQuery, GenePaginationSchema
+from dataportal.schema.gene_schemas import NaturalLanguageGeneQuery, GenePaginationSchema
 from dataportal.services.gene_service import GeneService
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -20,15 +20,28 @@ When referencing a species, always return the acronym in case full scientific na
 ⚠️ Output ONLY a valid JSON object. Do not include any explanation, prefix, or suffix.
 Do NOT say anything like "Sure!" or "Here is your output".
 
-Supported JSON fields: species, essentiality, amr, function, cog_category.
+The JSON object should contain the appropriate fields based on the user's query:
+- query: for free-text searches
+- species_acronym: for species filtering (BU, PV, etc.)
+- essentiality: for essentiality filtering (essential, non_essential)
+- has_amr_info: for AMR information filtering (true/false)
+- cog_funcats: for COG functional categories
+- cog_id: for specific COG IDs
+- kegg: for KEGG pathways
+- go_term: for GO terms
+- pfam: for Pfam domains
+- interpro: for InterPro domains
+- isolates: for specific isolate filtering
+- page, per_page: for pagination
+- sort_field, sort_order: for sorting
 
 Example:
 User: Show essential genes in PV not involved in AMR
 Output:
 {
-  "species": "PV",
+  "species_acronym": "PV",
   "essentiality": "essential",
-  "amr": false
+  "has_amr_info": false
 }
 """
 
@@ -53,16 +66,12 @@ class NaturalLanguageQueryService:
             if "error" in interpreted_query:
                 return interpreted_query
             
-            # Step 2: Map the interpreted query to appropriate API call
-            api_params = self._map_to_api_parameters(interpreted_query)
-            
-            # Step 3: Execute the API call
-            results = await self._execute_api_call(api_params)
+            # Step 2: Execute the API call directly using the interpreted query
+            results = await self._execute_api_call(interpreted_query)
             
             return {
                 "original_query": user_query,
                 "interpreted_query": interpreted_query,
-                "api_parameters": api_params,
                 "results": results,
                 "success": True
             }
@@ -96,134 +105,40 @@ class NaturalLanguageQueryService:
                 return {"error": "No tool call returned by GPT. Check prompt or query clarity."}
 
             arguments = tool_calls[0].function.arguments
-            parsed_query = GeneQuery.model_validate_json(arguments)
+            parsed_query = NaturalLanguageGeneQuery.model_validate_json(arguments)
             return parsed_query.model_dump(exclude_none=True)
 
         except Exception as e:
             return {"error": str(e)}
     
-    def _map_to_api_parameters(self, interpreted_query: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_api_call(self, interpreted_query: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Map interpreted query to appropriate API parameters.
-        
-        This method determines which API endpoint and parameters to use based on the interpreted query.
-        """
-        api_params = {
-            "method": "search_genes",
-            "parameters": {}
-        }
-        
-        # Extract parameters from interpreted query
-        species = interpreted_query.get("species")
-        essentiality = interpreted_query.get("essentiality")
-        amr = interpreted_query.get("amr")
-        function = interpreted_query.get("function")
-        cog_category = interpreted_query.get("cog_category")
-        
-        # Build filter string based on interpreted parameters
-        filters = []
-        
-        if essentiality:
-            filters.append(f"essentiality:{essentiality}")
-        
-        if amr is not None:
-            if amr:
-                filters.append("has_amr_info:true")
-            else:
-                filters.append("has_amr_info:false")
-        
-        if cog_category:
-            filters.append(f"cog_funcats:{cog_category}")
-        
-        # Determine the best API method based on the query complexity
-        if species and len(filters) > 0:
-            # Use faceted search for complex queries with species and filters
-            api_params["method"] = "get_faceted_search"
-            api_params["parameters"] = {
-                "query": function or "",
-                "species_acronym": species,
-                "isolates": "",
-                "essentiality": essentiality,
-                "cog_funcats": cog_category,
-                "has_amr_info": amr,
-                "limit": 50
-            }
-        elif species:
-            # Use advanced search for species-specific queries
-            api_params["method"] = "get_genes_by_multiple_genomes_and_string"
-            api_params["parameters"] = {
-                "isolates": "",
-                "species_acronym": species,
-                "query": function or "",
-                "filter": ";".join(filters) if filters else None,
-                "page": 1,
-                "per_page": 50
-            }
-        elif function:
-            # Use basic search for function-based queries
-            api_params["method"] = "search_genes"
-            api_params["parameters"] = {
-                "query": function,
-                "isolate_name": None,
-                "filter": ";".join(filters) if filters else None,
-                "page": 1,
-                "per_page": 50
-            }
-        else:
-            # Default to basic search
-            api_params["method"] = "search_genes"
-            api_params["parameters"] = {
-                "query": "",
-                "isolate_name": None,
-                "filter": ";".join(filters) if filters else None,
-                "page": 1,
-                "per_page": 50
-            }
-        
-        return api_params
-    
-    async def _execute_api_call(self, api_params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute the API call based on the mapped parameters.
+        Execute the API call based on the interpreted query parameters.
         
         Args:
-            api_params: Dictionary containing method name and parameters
+            interpreted_query: Dictionary containing the interpreted query parameters
             
         Returns:
             API response results
         """
-        method_name = api_params["method"]
-        parameters = api_params["parameters"]
-        
         try:
-            if method_name == "search_genes":
-                result = await self.gene_service.search_genes(
-                    query=parameters.get("query", ""),
-                    isolate_name=parameters.get("isolate_name"),
-                    filter=parameters.get("filter"),
-                    page=parameters.get("page", 1),
-                    per_page=parameters.get("per_page", 50)
-                )
-                return {
-                    "type": "paginated_results",
-                    "data": result.model_dump() if hasattr(result, 'model_dump') else result,
-                    "total_results": result.total_results if hasattr(result, 'total_results') else len(result.results) if hasattr(result, 'results') else 0
-                }
+            # Determine the best API method based on the query complexity
+            method_name = self._determine_api_method(interpreted_query)
             
-            elif method_name == "get_faceted_search":
+            if method_name == "get_faceted_search":
                 result = await self.gene_service.get_faceted_search(
-                    query=parameters.get("query", ""),
-                    species_acronym=parameters.get("species_acronym"),
-                    isolates=parameters.get("isolates", []),
-                    essentiality=parameters.get("essentiality"),
-                    cog_id=parameters.get("cog_id"),
-                    cog_funcats=parameters.get("cog_funcats"),
-                    kegg=parameters.get("kegg"),
-                    go_term=parameters.get("go_term"),
-                    pfam=parameters.get("pfam"),
-                    interpro=parameters.get("interpro"),
-                    has_amr_info=parameters.get("has_amr_info"),
-                    limit=parameters.get("limit", 50)
+                    query=interpreted_query.get("query"),
+                    species_acronym=interpreted_query.get("species_acronym"),
+                    isolates=interpreted_query.get("isolates", ""),
+                    essentiality=interpreted_query.get("essentiality"),
+                    cog_id=interpreted_query.get("cog_id"),
+                    cog_funcats=interpreted_query.get("cog_funcats"),
+                    kegg=interpreted_query.get("kegg"),
+                    go_term=interpreted_query.get("go_term"),
+                    pfam=interpreted_query.get("pfam"),
+                    interpro=interpreted_query.get("interpro"),
+                    has_amr_info=interpreted_query.get("has_amr_info"),
+                    limit=interpreted_query.get("limit", 50)
                 )
                 return {
                     "type": "faceted_results",
@@ -233,12 +148,12 @@ class NaturalLanguageQueryService:
             
             elif method_name == "get_genes_by_multiple_genomes_and_string":
                 result = await self.gene_service.get_genes_by_multiple_genomes_and_string(
-                    isolates=parameters.get("isolates", ""),
-                    species_acronym=parameters.get("species_acronym"),
-                    query=parameters.get("query", ""),
-                    filter=parameters.get("filter"),
-                    page=parameters.get("page", 1),
-                    per_page=parameters.get("per_page", 50)
+                    isolates=interpreted_query.get("isolates", ""),
+                    species_acronym=interpreted_query.get("species_acronym"),
+                    query=interpreted_query.get("query", ""),
+                    filter=interpreted_query.get("filter"),
+                    page=interpreted_query.get("page", 1),
+                    per_page=interpreted_query.get("per_page", 50)
                 )
                 return {
                     "type": "paginated_results",
@@ -246,10 +161,18 @@ class NaturalLanguageQueryService:
                     "total_results": result.total_results if hasattr(result, 'total_results') else len(result.results) if hasattr(result, 'results') else 0
                 }
             
-            else:
+            else:  # Default to search_genes
+                result = await self.gene_service.search_genes(
+                    query=interpreted_query.get("query", ""),
+                    isolate_name=interpreted_query.get("isolates"),
+                    filter=interpreted_query.get("filter"),
+                    page=interpreted_query.get("page", 1),
+                    per_page=interpreted_query.get("per_page", 50)
+                )
                 return {
-                    "error": f"Unknown API method: {method_name}",
-                    "type": "error"
+                    "type": "paginated_results",
+                    "data": result.model_dump() if hasattr(result, 'model_dump') else result,
+                    "total_results": result.total_results if hasattr(result, 'total_results') else len(result.results) if hasattr(result, 'results') else 0
                 }
                 
         except Exception as e:
@@ -257,6 +180,32 @@ class NaturalLanguageQueryService:
                 "error": f"API execution failed: {str(e)}",
                 "type": "error"
             }
+    
+    def _determine_api_method(self, interpreted_query: Dict[str, Any]) -> str:
+        """
+        Determine the best API method based on the interpreted query parameters.
+        
+        Args:
+            interpreted_query: Dictionary containing the interpreted query parameters
+            
+        Returns:
+            String indicating the API method to use
+        """
+        # Check if we have faceted search parameters
+        faceted_params = [
+            "essentiality", "cog_id", "cog_funcats", "kegg", "go_term", 
+            "pfam", "interpro", "has_amr_info"
+        ]
+        
+        has_faceted_params = any(interpreted_query.get(param) for param in faceted_params)
+        has_species = bool(interpreted_query.get("species_acronym"))
+        
+        if has_faceted_params and has_species:
+            return "get_faceted_search"
+        elif has_species:
+            return "get_genes_by_multiple_genomes_and_string"
+        else:
+            return "search_genes"
 
 # Backward compatibility function
 async def interpret_natural_language_query(user_query: str) -> dict[str, Any]:
