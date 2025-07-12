@@ -41,7 +41,11 @@ const NaturalQuerySearchPage: React.FC = () => {
       const api = ApiClient.getInstance();
       const endpoint = interpretationOnly ? '/query/interpret' : '/query/query';
       
-      const response = await api.post(endpoint, { query: query.trim() });
+      // Send query as URL parameter, not in request body
+      const encodedQuery = encodeURIComponent(query.trim());
+      const urlWithQuery = `${endpoint}?query=${encodedQuery}`;
+      
+      const response = await api.post(urlWithQuery);
       const data: ApiResponse = response.data;
       
       if (data.status === 'success') {

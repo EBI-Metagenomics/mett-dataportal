@@ -66,13 +66,16 @@ async def execute_natural_language_query(request, query: str):
         results_data = result.get("results", {})
         total_results = results_data.get("total_results", 0)
         
+        # Determine API method used
+        method_name = nl_query_service._determine_api_method(result.get("interpreted_query", {}))
+        
         return create_success_response(
             data={
                 "query_interpretation": {
                     "original_query": result.get("original_query"),
                     "interpreted_parameters": result.get("interpreted_query"),
-                    "api_method_used": result.get("api_parameters", {}).get("method"),
-                    "api_parameters": result.get("api_parameters", {}).get("parameters")
+                    "api_method_used": method_name,
+                    "api_parameters": result.get("interpreted_query")
                 },
                 "results": results_data.get("data", {}),
                 "summary": {
@@ -120,14 +123,15 @@ async def interpret_query_only(request, query: str):
             logger.error(f"Query interpretation failed: {interpreted_query['error']}")
             raise_internal_server_error(f"Query interpretation failed: {interpreted_query['error']}")
         
-        # Map to API parameters
-        api_params = nl_query_service._map_to_api_parameters(interpreted_query)
+        # Determine API method (no mapping needed since we use schema directly)
+        method_name = nl_query_service._determine_api_method(interpreted_query)
         
         return create_success_response(
             data={
                 "original_query": query.strip(),
                 "interpreted_parameters": interpreted_query,
-                "mapped_api_parameters": api_params
+                "api_method_used": method_name,
+                "api_parameters": interpreted_query
             },
             message="Query interpreted successfully"
         )

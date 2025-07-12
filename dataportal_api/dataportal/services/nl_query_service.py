@@ -6,6 +6,7 @@ from openai import OpenAI
 from dataportal.schema.nl_schemas import METT_GENE_QUERY_SCHEMA
 from dataportal.schema.gene_schemas import NaturalLanguageGeneQuery, GenePaginationSchema
 from dataportal.services.gene_service import GeneService
+from dataportal.schema.gene_schemas import GeneFacetedSearchQuerySchema, GeneAdvancedSearchQuerySchema, GeneSearchQuerySchema
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -14,15 +15,16 @@ You are an intelligent bioinformatics data portal assistant that converts natura
 
 Your job is to interpret user requests and convert them into valid JSON objects for querying gene data.
 
-When referencing a species, always return the acronym in case full scientific name is given
-(e.g. BU for "Bacteroides uniformis" or "B. uniformis", and PV for "Phocaeicola vulgatus" or "P. vulgatus").
+IMPORTANT: When referencing a species, you MUST use the species_acronym field with the correct acronym:
+- "Bacteroides uniformis" or "B. uniformis" → species_acronym: "BU"
+- "Phocaeicola vulgatus" or "P. vulgatus" → species_acronym: "PV"
 
 ⚠️ Output ONLY a valid JSON object. Do not include any explanation, prefix, or suffix.
 Do NOT say anything like "Sure!" or "Here is your output".
 
 The JSON object should contain the appropriate fields based on the user's query:
 - query: for free-text searches
-- species_acronym: for species filtering (BU, PV, etc.)
+- species_acronym: for species filtering (BU, PV, etc.) - ALWAYS use acronyms
 - essentiality: for essentiality filtering (essential, non_essential)
 - has_amr_info: for AMR information filtering (true/false)
 - cog_funcats: for COG functional categories
@@ -36,10 +38,10 @@ The JSON object should contain the appropriate fields based on the user's query:
 - sort_field, sort_order: for sorting
 
 Example:
-User: Show essential genes in PV not involved in AMR
+User: Show essential genes in Bacteroides uniformis not involved in AMR
 Output:
 {
-  "species_acronym": "PV",
+  "species_acronym": "BU",
   "essentiality": "essential",
   "has_amr_info": false
 }
@@ -126,7 +128,8 @@ class NaturalLanguageQueryService:
             method_name = self._determine_api_method(interpreted_query)
             
             if method_name == "get_faceted_search":
-                result = await self.gene_service.get_faceted_search(
+                # Create faceted search query schema
+                faceted_params = GeneFacetedSearchQuerySchema(
                     query=interpreted_query.get("query"),
                     species_acronym=interpreted_query.get("species_acronym"),
                     isolates=interpreted_query.get("isolates", ""),
@@ -140,6 +143,7 @@ class NaturalLanguageQueryService:
                     has_amr_info=interpreted_query.get("has_amr_info"),
                     limit=interpreted_query.get("limit", 50)
                 )
+                result = await self.gene_service.get_faceted_search(faceted_params)
                 return {
                     "type": "faceted_results",
                     "data": result,
@@ -147,14 +151,19 @@ class NaturalLanguageQueryService:
                 }
             
             elif method_name == "get_genes_by_multiple_genomes_and_string":
-                result = await self.gene_service.get_genes_by_multiple_genomes_and_string(
+                # Create advanced search query schema
+                advanced_params = GeneAdvancedSearchQuerySchema(
                     isolates=interpreted_query.get("isolates", ""),
                     species_acronym=interpreted_query.get("species_acronym"),
                     query=interpreted_query.get("query", ""),
                     filter=interpreted_query.get("filter"),
+                    filter_operators=interpreted_query.get("filter_operators"),
                     page=interpreted_query.get("page", 1),
-                    per_page=interpreted_query.get("per_page", 50)
+                    per_page=interpreted_query.get("per_page", 50),
+                    sort_field=interpreted_query.get("sort_field"),
+                    sort_order=interpreted_query.get("sort_order", "asc")
                 )
+                result = await self.gene_service.get_genes_by_multiple_genomes_and_string(advanced_params)
                 return {
                     "type": "paginated_results",
                     "data": result.model_dump() if hasattr(result, 'model_dump') else result,
@@ -162,13 +171,15 @@ class NaturalLanguageQueryService:
                 }
             
             else:  # Default to search_genes
-                result = await self.gene_service.search_genes(
+                # Create basic search query schema
+                search_params = GeneSearchQuerySchema(
                     query=interpreted_query.get("query", ""),
-                    isolate_name=interpreted_query.get("isolates"),
-                    filter=interpreted_query.get("filter"),
                     page=interpreted_query.get("page", 1),
-                    per_page=interpreted_query.get("per_page", 50)
+                    per_page=interpreted_query.get("per_page", 50),
+                    sort_field=interpreted_query.get("sort_field"),
+                    sort_order=interpreted_query.get("sort_order", "asc")
                 )
+                result = await self.gene_service.search_genes(search_params)
                 return {
                     "type": "paginated_results",
                     "data": result.model_dump() if hasattr(result, 'model_dump') else result,

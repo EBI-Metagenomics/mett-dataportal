@@ -56,14 +56,7 @@ gene_router = Router(tags=[ROUTER_GENE])
 @wrap_success_response
 async def gene_autocomplete_suggestions(request, query: GeneAutocompleteQuerySchema = Query(...)):
     try:
-        isolate_list = (
-            [gid.strip() for gid in query.isolates.split(",") if gid.strip()]
-            if query.isolates
-            else None
-        )
-        result = await gene_service.autocomplete_gene_suggestions(
-            query.query, query.filter, query.limit, query.species_acronym, isolate_list
-        )
+        result = await gene_service.autocomplete_gene_suggestions(query)
         return create_success_response(
             data=result,
             message=f"Found {len(result)} gene suggestions"
@@ -82,9 +75,7 @@ async def gene_autocomplete_suggestions(request, query: GeneAutocompleteQuerySch
 @wrap_paginated_response
 async def search_genes_by_string(request, query: GeneSearchQuerySchema = Query(...)):
     try:
-        result = await gene_service.search_genes(
-            query.query, "", "", query.page, query.per_page, query.sort_field, query.sort_order
-        )
+        result = await gene_service.search_genes(query)
         return result
     except ServiceError as e:
         logger.error(f"Service error in gene search: {e}")
@@ -100,33 +91,7 @@ async def search_genes_by_string(request, query: GeneSearchQuerySchema = Query(.
 @wrap_success_response
 async def get_faceted_search(request, query: GeneFacetedSearchQuerySchema = Query(...)):
     try:
-        isolate_list = (
-            [id.strip() for id in query.isolates.split(",") if id.strip()]
-            if query.isolates
-            else []
-        )
-        result = await gene_service.get_faceted_search(
-            query.query,
-            query.species_acronym,
-            isolate_list,
-            query.essentiality,
-            query.cog_id,
-            query.cog_funcats,
-            query.kegg,
-            query.go_term,
-            query.pfam,
-            query.interpro,
-            query.has_amr_info,
-            query.limit,
-            operators={
-                ES_FIELD_PFAM: query.pfam_operator,
-                ES_FIELD_INTERPRO: query.interpro_operator,
-                ES_FIELD_COG_ID: query.cog_id_operator,
-                ES_FIELD_COG_FUNCATS: query.cog_funcats_operator,
-                ES_FIELD_KEGG: query.kegg_operator,
-                ES_FIELD_GO_TERM: query.go_term_operator,
-            },
-        )
+        result = await gene_service.get_faceted_search(query)
         return create_success_response(
             data=result,
             message="Faceted search completed successfully"
@@ -212,18 +177,7 @@ async def get_all_genes(
 async def search_genes_by_multiple_genomes_and_species_and_string(request,
                                                                   query: GeneAdvancedSearchQuerySchema = Query(...)):
     try:
-        result = await gene_service.get_genes_by_multiple_genomes_and_string(
-            query.isolates,
-            query.species_acronym,
-            query.query,
-            query.filter,
-            query.filter_operators,
-            query.page,
-            query.per_page,
-            query.sort_field,
-            query.sort_order,
-            use_scroll=False,
-        )
+        result = await gene_service.get_genes_by_multiple_genomes_and_string(query)
         return result
     except InvalidGenomeIdError:
         raise_validation_error(f"Invalid genome ID provided: {query.isolates}")

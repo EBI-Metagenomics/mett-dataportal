@@ -52,7 +52,7 @@ async def autocomplete_suggestions(
         request,
         query: GenomeAutocompleteQuerySchema = Query(...)
 ):
-    return await genome_service.search_strains(query.query, query.limit, query.species_acronym)
+    return await genome_service.search_strains(query)
 
 
 # API Endpoint to search genomes by query string
@@ -88,19 +88,8 @@ async def search_genomes_by_string(
         request,
         query: GenomeSearchQuerySchema = Query(...)
 ):
-    sortField = query.sortField or STRAIN_FIELD_ISOLATE_NAME
-    sortOrder = query.sortOrder or DEFAULT_SORT
-
     try:
-        result = await genome_service.search_genomes_by_string(
-            query=query.query,
-            page=query.page,
-            per_page=query.per_page,
-            sortField=sortField,
-            sortOrder=sortOrder,
-            isolates=query.isolates,
-            species_acronym=query.species_acronym,
-        )
+        result = await genome_service.search_genomes_by_string(query)
         return result
     except ServiceError as e:
         logger.error(f"Service error in genome search: {e}")
@@ -122,10 +111,7 @@ async def get_genomes_by_isolate_names(
         query: GenomesByIsolateNamesQuerySchema = Query(...)
 ):
     try:
-        if not query.isolates:
-            raise_http_error(400, "Isolate names list is empty.")
-        isolate_names_list = [id.strip() for id in query.isolates.split(",")]
-        return await genome_service.get_genomes_by_isolate_names(isolate_names_list)
+        return await genome_service.get_genomes_by_isolate_names(query)
     except ServiceError as e:
         raise_http_error(500, f"An error occurred: {str(e)}")
 
@@ -144,8 +130,7 @@ async def get_all_genomes(
         query: GetAllGenomesQuerySchema = Query(...)
 ):
     try:
-        result = await genome_service.get_genomes(query.page, query.per_page,
-                                                query.sortField, query.sortOrder)
+        result = await genome_service.get_genomes(query)
         return result
     except ServiceError as e:
         logger.error(f"Service error in get all genomes: {e}")

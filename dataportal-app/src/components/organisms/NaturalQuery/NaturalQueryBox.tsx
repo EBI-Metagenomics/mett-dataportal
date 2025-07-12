@@ -13,9 +13,9 @@ const NaturalQueryBox = ({ onQueryResult }: NaturalQueryBoxProps) => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const response = await axios.post("/api/query/interpret", {
-        query: input,
-      });
+      // Send query as URL parameter, not in request body
+      const encodedQuery = encodeURIComponent(input);
+      const response = await axios.post(`/api/query/interpret?query=${encodedQuery}`);
       onQueryResult(response.data);  // This could trigger your gene search
     } catch (err) {
       console.error(err);

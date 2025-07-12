@@ -11,7 +11,10 @@ type QueryResponse = Record<string, any>;
 export class NaturalQueryService extends BaseService {
   static async query(request: ParamsType): Promise<QueryResponse> {
     try {
-      return await this.postWithRetry<QueryResponse>(API_BASE_SEARCH, request);
+      // Send query as URL parameter, not in request body
+      const encodedQuery = encodeURIComponent(request.query);
+      const urlWithQuery = `${API_BASE_SEARCH}?query=${encodedQuery}`;
+      return await this.postWithRetry<QueryResponse>(urlWithQuery, {});
     } catch (error) {
       console.error("Error processing natural query:", error);
       throw error;

@@ -6,6 +6,7 @@ from ninja.errors import HttpError
 
 from dataportal.schema.genome_schemas import (
     GenomePaginationSchema,
+    GenomeSearchQuerySchema,
 )
 from dataportal.schema.species_schemas import (
     SpeciesSchema, GenomesBySpeciesQuerySchema, SearchGenomesBySpeciesQuerySchema,
@@ -59,9 +60,16 @@ async def get_genomes_by_species(
         query: GenomesBySpeciesQuerySchema = Query(...)
 ):
     try:
-        result = await genome_service.get_genomes_by_species(
-            species_acronym, query.page, query.per_page, query.sortField, query.sortOrder
+        # Create a search query schema with species filter
+        search_params = GenomeSearchQuerySchema(
+            query="",  # No text search, just species filter
+            page=query.page,
+            per_page=query.per_page,
+            sortField=query.sortField,
+            sortOrder=query.sortOrder,
+            species_acronym=species_acronym
         )
+        result = await genome_service.search_genomes_by_string(search_params)
         return result
     except ServiceError as e:
         logger.error(f"Service error in get genomes by species: {e}")
@@ -82,9 +90,16 @@ async def search_genomes_by_species_and_string(
         query: SearchGenomesBySpeciesQuerySchema = Query(...)
 ):
     try:
-        result = await genome_service.search_genomes_by_species_and_string(
-            species_acronym, query.query, query.page, query.per_page, query.sortField, query.sortOrder
+        # Create a search query schema with species filter and text search
+        search_params = GenomeSearchQuerySchema(
+            query=query.query or "",
+            page=query.page,
+            per_page=query.per_page,
+            sortField=query.sortField,
+            sortOrder=query.sortOrder,
+            species_acronym=species_acronym
         )
+        result = await genome_service.search_genomes_by_string(search_params)
         return result
     except ServiceError as e:
         logger.error(f"Service error in search genomes by species: {e}")
