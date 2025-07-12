@@ -8,8 +8,6 @@ from dataportal.schema.gene_schemas import NaturalLanguageGeneQuery, GenePaginat
 from dataportal.services.gene_service import GeneService
 from dataportal.schema.gene_schemas import GeneFacetedSearchQuerySchema, GeneAdvancedSearchQuerySchema, GeneSearchQuerySchema
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 SYSTEM_PROMPT = """
 You are an intelligent bioinformatics data portal assistant that converts natural language queries into structured API requests.
 
@@ -51,6 +49,10 @@ class NaturalLanguageQueryService:
     def __init__(self):
         self.gene_service = GeneService()
     
+    def _get_openai_client(self):
+        """Get OpenAI client instance. This method can be overridden for testing."""
+        return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    
     async def interpret_and_execute_query(self, user_query: str) -> Dict[str, Any]:
         """
         Interpret natural language query and automatically execute the appropriate API request.
@@ -88,6 +90,7 @@ class NaturalLanguageQueryService:
     async def _interpret_query(self, user_query: str) -> Dict[str, Any]:
         """Interpret natural language query using OpenAI."""
         try:
+            client = self._get_openai_client()
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
