@@ -1,0 +1,66 @@
+.historyContainer {
+  width: 100%;
+  padding: 8px 0;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.historyTitle {
+  margin: 0 0 16px 0;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.emptyState {
+  color: #888;
+  font-size: 0.95rem;
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.historyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.historyItem {
+  background: transparent;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 400;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  
+  &:hover {
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+  }
+  
+  &.selected {
+    background: #e3f2fd;
+    border-color: #1976d2;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(25, 118, 210, 0.2);
+  }
+}
+
+.queryText {
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #333;
+  margin-bottom: 4px;
+  font-weight: inherit;
+}
+
+.dateText {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 400;
+} 
