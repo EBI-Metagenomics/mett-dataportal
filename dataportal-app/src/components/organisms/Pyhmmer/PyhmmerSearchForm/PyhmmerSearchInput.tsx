@@ -33,37 +33,42 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({ sequence, setSe
 
     return (
         <div className={styles.formSection}>
-            <label className={styles.label}>Sequence</label>
+            <label className={`vf-form__label ${styles.label}`}>Sequence</label>
             <div className={styles.sequenceInputBox}>
                 <textarea
-                    className="vf-form__textarea"
+                    className={`vf-form__textarea ${styles.textarea}`}
                     value={sequence}
                     onChange={e => setSequence(e.target.value)}
-                    // placeholder="Paste in your sequence, use the example, drag a file over or choose a file to upload"
                     placeholder="Paste in your sequence, use the example"
                     rows={10}
                 />
                 <div className={styles.sequenceInputHelp}>
                     Paste in your sequence, use the{' '}
-                    <a href="#" onClick={handleUseExample}>example</a>
-                    {/*, drag a file over or{' '}*/}
-                    {/*<a href="#" onClick={e => {*/}
-                    {/*    e.preventDefault();*/}
-                    {/*    fileInputRef.current?.click();*/}
-                    {/*}}>choose a file to upload</a>*/}
-                    {/*<input*/}
-                    {/*    type="file"*/}
-                    {/*    accept=".fa,.fasta,.txt,.faa,.csv"*/}
-                    {/*    style={{ display: 'none' }}*/}
-                    {/*    ref={fileInputRef}*/}
-                    {/*    onChange={handleFileChange}*/}
-                    {/*/>*/}
+                    <a href="#" onClick={handleUseExample} className={styles.exampleLink}>example</a>
                 </div>
             </div>
             <div className={styles.buttonRow}>
-                <button className="vf-button vf-button--primary vf-button--sm" onClick={handleSubmit}>Submit</button>
-                <button className="vf-button vf-button--sm" type="button" onClick={handleReset}>Reset</button>
-                <button className="vf-button vf-button--sm" type="button" onClick={handleReset}>Clean</button>
+                <button 
+                    className="vf-button vf-button--primary vf-button--sm" 
+                    onClick={handleSubmit}
+                    type="button"
+                >
+                    Submit
+                </button>
+                <button 
+                    className="vf-button vf-button--sm" 
+                    type="button" 
+                    onClick={handleReset}
+                >
+                    Reset
+                </button>
+                <button 
+                    className="vf-button vf-button--sm" 
+                    type="button" 
+                    onClick={handleReset}
+                >
+                    Clean
+                </button>
             </div>
         </div>
     );

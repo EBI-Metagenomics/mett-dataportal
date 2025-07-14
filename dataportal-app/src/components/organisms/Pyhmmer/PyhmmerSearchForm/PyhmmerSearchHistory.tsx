@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './PyhmmerSearchHistory.module.scss';
 
 export interface SearchHistoryItem {
     jobId: string;
@@ -14,26 +15,23 @@ interface PyhmmerSearchHistoryProps {
 
 const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({ history, onSelect, selectedJobId }) => {
     return (
-        <div style={{ width: '100%', padding: '8px 0' }}>
-            <h4 style={{ margin: '0 0 12px 0', fontWeight: 600 }}>Past Searches</h4>
-            {history.length === 0 && <div style={{ color: '#888', fontSize: '0.95em' }}>No past searches</div>}
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <div className={styles.historyContainer}>
+            <h4 className={styles.historyTitle}>Past Searches</h4>
+            {history.length === 0 && (
+                <div className={styles.emptyState}>
+                    No past searches
+                </div>
+            )}
+            <ul className={styles.historyList}>
                 {history.map(item => (
                     <li
                         key={item.jobId}
-                        style={{
-                            background: item.jobId === selectedJobId ? '#e3f2fd' : 'transparent',
-                            borderRadius: 4,
-                            marginBottom: 4,
-                            padding: '8px 10px',
-                            cursor: 'pointer',
-                            fontWeight: item.jobId === selectedJobId ? 600 : 400,
-                        }}
+                        className={`${styles.historyItem} ${item.jobId === selectedJobId ? styles.selected : ''}`}
                         onClick={() => onSelect(item.jobId)}
                         title={item.query}
                     >
-                        <div style={{ fontSize: '0.98em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.query}</div>
-                        <div style={{ fontSize: '0.85em', color: '#888' }}>{item.date}</div>
+                        <div className={styles.queryText}>{item.query}</div>
+                        <div className={styles.dateText}>{item.date}</div>
                     </li>
                 ))}
             </ul>

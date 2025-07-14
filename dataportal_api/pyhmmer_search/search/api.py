@@ -28,18 +28,30 @@ logger = logging.getLogger(__name__)
 @pyhmmer_router_search.post("", response=SearchResponseSchema)
 def search(request: HttpRequest, body: SearchRequestSchema):
     try:
+        logger.info(f"=== SEARCH REQUEST RECEIVED ===")
+        logger.info(f"Request body: {body.dict()}")
+        
         # Create the job
+        logger.info(f"Creating HmmerJob...")
         job = HmmerJob(**body.dict(), algo=HmmerJob.AlgoChoices.PHMMER)
+        logger.info(f"Job object created: {job}")
+        logger.info(f"Job ID before save: {job.id}")
+        
         job.clean()
+        logger.info(f"Job cleaned successfully")
+        
         job.save()
-        logger.info(f"Created job with ID: {job.id}")
+        logger.info(f"Job saved to database with ID: {job.id}")
 
         # Start the task
+        logger.info(f"Starting Celery task...")
         result = run_search.delay(job.id)
         task_id = result.id
-        logger.info(f"Started search task with ID: {task_id}")
+        logger.info(f"Celery task started with ID: {task_id}")
+        logger.info(f"Celery result state: {result.state}")
 
         # Create task result entry
+        logger.info(f"Creating TaskResult entry...")
         task_result = TaskResult.objects.create(
             task_id=task_id,
             status="PENDING",
@@ -49,15 +61,24 @@ def search(request: HttpRequest, body: SearchRequestSchema):
             date_done=None,
             date_created=timezone.now(),
         )
-        logger.info(f"Created task result for task ID: {task_id}")
+        logger.info(f"TaskResult created: {task_result}")
+        logger.info(f"TaskResult ID: {task_result.id}")
 
         # Link the task to the job
+        logger.info(f"Linking task to job...")
         job.task = task_result
         job.save(update_fields=["task"])
-        logger.info(f"Linked task {task_id} to job {job.id}")
+        logger.info(f"Task linked to job successfully")
+        logger.info(f"Job task after linking: {job.task}")
+        logger.info(f"Job task ID after linking: {job.task.task_id if job.task else 'None'}")
 
-        return {"id": job.id}
+        response = {"id": job.id}
+        logger.info(f"=== SEARCH REQUEST COMPLETED ===")
+        logger.info(f"Returning response: {response}")
+        return response
+        
     except Exception as e:
+        logger.error(f"=== SEARCH REQUEST FAILED ===")
         logger.error(f"Error in search: {str(e)}", exc_info=True)
         raise HttpError(500, f"Error creating search job: {str(e)}")
 

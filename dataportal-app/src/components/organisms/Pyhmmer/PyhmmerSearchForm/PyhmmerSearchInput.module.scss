@@ -4,88 +4,88 @@
 
 .label {
   display: block;
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+  font-size: 1rem;
 }
 
 .sequenceInputBox {
   border: 1px solid #bdbdbd;
   border-radius: 4px;
   background: #fafafa;
-  padding: 8px;
-  margin-bottom: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  
+  &:focus-within {
+    border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+  }
 }
 
-.textarea, .vf-form__textarea {
+.textarea {
   width: 100%;
-  min-height: 70px;
-  max-height: 140px;
+  min-height: 120px;
+  max-height: 200px;
   border: none;
   background: transparent;
-  font-family: monospace;
-  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
   resize: vertical;
   outline: none;
   border-radius: 4px;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  line-height: 1.4;
+  
+  &::placeholder {
+    color: #999;
+    font-style: italic;
+  }
 }
 
 .sequenceInputHelp {
-  font-size: 0.95em;
-  color: #757575;
-  margin-top: 4px;
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 8px;
+  font-family: 'Open Sans', sans-serif;
 
-  a {
+  .exampleLink {
     color: #1976d2;
     text-decoration: none;
+    font-weight: 500;
 
     &:hover {
       text-decoration: underline;
+      color: #1565c0;
     }
   }
 }
 
 .buttonRow {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 12px;
+  margin-top: 12px;
 
-  button {
-    min-width: 70px;
-    padding: 5px 14px;
+  .vf-button {
+    min-width: 80px;
+    padding: 8px 16px;
     border-radius: 4px;
     border: none;
     font-weight: 500;
-    font-size: 0.98em;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: background 0.2s;
-    box-shadow: none;
-  }
-}
-
-.vf-button {
-  margin-top: 0;
-  width: auto;
-  padding: 5px 14px;
-  font-size: 0.98em;
-}
-
-.resetBtn {
-  background: #757575;
-  color: #fff;
-
-  &:hover {
-    background: #5a5a5a;
-  }
-}
-
-.cleanBtn {
-  background: #bdbdbd;
-  color: #333;
-
-  &:hover {
-    background: #a0a0a0;
+    transition: all 0.2s ease;
+    font-family: 'Open Sans', sans-serif;
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
   }
 } 

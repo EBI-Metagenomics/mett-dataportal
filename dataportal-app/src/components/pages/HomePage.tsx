@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom'
+import React, {useEffect, useRef, useState} from 'react';
+import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '@components/organisms/Gene/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '@components/organisms/Genome/GenomeSearchForm/GenomeSearchForm';
 import PyhmmerSearchForm from '@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchForm';
@@ -7,9 +7,9 @@ import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 
 // Import new hooks and stores
-import { useFilterStore } from '../../stores/filterStore';
-import { useGenomeData } from '../../hooks';
-import { useTabAwareUrlSync } from '../../hooks/useTabAwareUrlSync';
+import {useFilterStore} from '../../stores/filterStore';
+import {useGenomeData} from '../../hooks';
+import {useTabAwareUrlSync} from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 
 // Define the type for each tab
@@ -25,7 +25,7 @@ interface TabNavigationProps {
     onTabClick: (tabId: string) => void;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ tabs, activeTab, onTabClick }) => (
+const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClick}) => (
     <div className={styles["tabs-container"]}>
         {tabs.map((tab) => (
             <button
@@ -98,9 +98,9 @@ const HomePage: React.FC = () => {
 
     // Tab labels
     const tabs: Tab[] = [
-        { id: 'genomes', label: 'Genomes' },
-        { id: 'genes', label: 'Genes' },
-        // { id: 'proteinsearch', label: 'Protein Search' },
+        {id: 'genomes', label: 'Genomes'},
+        {id: 'genes', label: 'Genes'},
+        {id: 'proteinsearch', label: 'Protein Search'},
     ];
 
     // Reset filters when switching tabs
@@ -144,7 +144,7 @@ const HomePage: React.FC = () => {
 
     return (
         <ErrorBoundary onError={handleError}>
-        <div>
+            <div>
                 {/* Loading spinner */}
                 {genomeData.loading && (
                     <div className={styles.spinnerOverlay}>
@@ -159,23 +159,23 @@ const HomePage: React.FC = () => {
                     </div>
                 )}
 
-            <div>
-                <HomePageHeadBand
+                <div>
+                    <HomePageHeadBand
                         typeStrains={genomeData.typeStrains}
-                    linkTemplate="/genome/$strain_name"
+                        linkTemplate="/genome/$strain_name"
                         speciesList={genomeData.speciesList}
                         selectedSpecies={filterStore.selectedSpecies}
                         handleSpeciesSelect={genomeData.handleSpeciesSelect}
-                />
-            </div>
+                    />
+                </div>
 
-            <div className="layout-container">
-                <div>
-                    <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick} />
+                <div className="layout-container">
+                    <div>
+                        <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick}/>
 
                         {activeTab === 'genomes' && (
                             <ErrorBoundary>
-                        <GenomeSearchForm
+                                <GenomeSearchForm
                                     searchQuery={filterStore.genomeSearchQuery}
                                     onSearchQueryChange={e => filterStore.setGenomeSearchQuery(e.target.value)}
                                     onSearchSubmit={genomeData.handleGenomeSearch}
@@ -190,18 +190,20 @@ const HomePage: React.FC = () => {
                                     onToggleGenomeSelect={genomeData.handleToggleGenomeSelect}
                                     handleTypeStrainToggle={genomeData.handleTypeStrainToggle}
                                     handleRemoveGenome={genomeData.handleRemoveGenome}
-                            linkData={genomeLinkData}
+                                    linkData={genomeLinkData}
                                     setLoading={genomeData.setLoading}
-                        />
+                                />
                             </ErrorBoundary>
-                    )}
+                        )}
 
                         {activeTab === 'genes' && (
                             <ErrorBoundary>
-                        <GeneSearchForm
+                                <GeneSearchForm
                                     searchQuery={filterStore.geneSearchQuery}
-                                    onSearchQueryChange={() => {}} // GeneSearchForm manages its own state
-                                    onSearchSubmit={() => {}}
+                                    onSearchQueryChange={() => {
+                                    }} // GeneSearchForm manages its own state
+                                    onSearchSubmit={() => {
+                                    }}
                                     selectedSpecies={filterStore.selectedSpecies}
                                     selectedGenomes={filterStore.selectedGenomes}
                                     results={[]} // GeneSearchForm manages its own results
@@ -211,18 +213,20 @@ const HomePage: React.FC = () => {
                                     }}
                                     sortField={filterStore.geneSortField}
                                     sortOrder={filterStore.geneSortOrder}
-                            linkData={geneLinkData}
-                                    handleRemoveGenome={() => {}} // GeneSearchForm manages its own genome removal
-                                    setLoading={() => {}} // GeneSearchForm manages its own loading state
-                        />
+                                    linkData={geneLinkData}
+                                    handleRemoveGenome={() => {
+                                    }} // GeneSearchForm manages its own genome removal
+                                    setLoading={() => {
+                                    }} // GeneSearchForm manages its own loading state
+                                />
                             </ErrorBoundary>
-                    )}
+                        )}
 
                         {activeTab === 'proteinsearch' && (
                             <ErrorBoundary>
-                        <PyhmmerSearchForm />
+                                <PyhmmerSearchForm/>
                             </ErrorBoundary>
-                    )}
+                        )}
                     </div>
                 </div>
             </div>

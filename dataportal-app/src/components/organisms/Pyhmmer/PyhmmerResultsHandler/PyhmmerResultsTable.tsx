@@ -10,11 +10,12 @@ const DEFAULT_PAGE_SIZE = 10;
 interface PyhmmerResultsTableProps {
     results: PyhmmerResult[];
     loading: boolean;
+    loadingMessage?: string;
     error?: string;
     jobId?: string;
 }
 
-const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loading, error, jobId}) => {
+const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loading, loadingMessage, error, jobId}) => {
     const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [pageSize] = useState<number>(DEFAULT_PAGE_SIZE);
@@ -49,7 +50,7 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
         if (!jobId) return;
         setDownloading(format);
         try {
-            const url = `/api/pyhmmer/results/${jobId}/download?format=${format}`;
+            const url = `/api/pyhmmer/result/${jobId}/download?format=${format}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error('Download failed');
             const blob = await response.blob();
@@ -66,7 +67,18 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
     };
 
     if (loading) {
-        return <div className={styles.spinner}>Loading...</div>;
+        return (
+            <div className={styles.spinner}>
+                <div className={styles.spinnerText}>
+                    {loadingMessage || 'Loading...'}
+                </div>
+                <div className={styles.spinnerAnimation}>
+                    <div className={styles.spinnerDot}></div>
+                    <div className={styles.spinnerDot}></div>
+                    <div className={styles.spinnerDot}></div>
+                </div>
+            </div>
+        );
     }
     if (error) {
         return <div className={styles.error}>{error}</div>;
@@ -78,10 +90,9 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
         <>
             {/* Download buttons */}
             {jobId && (
-                <div style={{display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8}}>
+                <div className={styles.downloadButtons}>
                     <button
                         className="vf-button vf-button--sm"
-                        style={{minWidth: 90, padding: '5px 14px', fontSize: '0.98em'}}
                         onClick={() => handleDownload('tab')}
                         disabled={!!downloading}
                     >
@@ -89,7 +100,6 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                     </button>
                     <button
                         className="vf-button vf-button--sm"
-                        style={{minWidth: 90, padding: '5px 14px', fontSize: '0.98em'}}
                         onClick={() => handleDownload('fasta')}
                         disabled={!!downloading}
                     >
@@ -97,7 +107,6 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                     </button>
                     <button
                         className="vf-button vf-button--sm"
-                        style={{minWidth: 110, padding: '5px 14px', fontSize: '0.98em'}}
                         onClick={() => handleDownload('aligned_fasta')}
                         disabled={!!downloading}
                     >
@@ -126,10 +135,7 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                                     e.preventDefault();
                                     handleTargetClick(result.target, idx);
                                 }}
-                                style={{
-                                    pointerEvents: loadingIdx === idx ? 'none' : 'auto',
-                                    opacity: loadingIdx === idx ? 0.5 : 1
-                                }}
+                                className={`${styles.targetLink} ${loadingIdx === idx ? styles.loading : ''}`}
                             >
                                 {loadingIdx === idx ? 'Loading...' : result.target}
                             </a>
@@ -145,7 +151,6 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
             </table>
             {/* Page size dropdown and pagination */}
             <div className={styles.paginationContainer}>
-
                 <div className={styles.paginationBar}>
                     {totalPages > 1 && (
                         <Pagination

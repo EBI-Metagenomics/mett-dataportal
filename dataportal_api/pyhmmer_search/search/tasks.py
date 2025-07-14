@@ -101,23 +101,38 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
 @shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
 def run_search(self, job_id: str):
     task_id = self.request.id
-    logger.info(f"Running HMMER search for job {job_id} with task ID {task_id}")
+    logger.info(f"=== STARTING HMMER SEARCH ===")
+    logger.info(f"Job ID: {job_id}")
+    logger.info(f"Task ID: {task_id}")
+    logger.info(f"Celery task ID: {self.request.id}")
+    
     try:
+        logger.info(f"Fetching job from database...")
         job = HmmerJob.objects.select_related("task").get(id=job_id)
-        logger.info(
-            f"Found job {job_id} with task {job.task.task_id if job.task else 'No task'}"
-        )
+        logger.info(f"Found job: {job}")
+        logger.info(f"Job task: {job.task}")
+        logger.info(f"Job task ID: {job.task.task_id if job.task else 'None'}")
+        logger.info(f"Job input length: {len(job.input) if job.input else 0}")
+        logger.info(f"Job database: {job.database}")
+        logger.info(f"Job threshold: {job.threshold}")
+        logger.info(f"Job threshold_value: {job.threshold_value}")
 
+        logger.info(f"Updating task state to STARTED...")
         self.update_state(state="STARTED")
         if job.task:
+            logger.info(f"Updating database task status to STARTED...")
             job.task.status = "STARTED"
             job.task.save()
+            logger.info(f"Database task status updated successfully")
 
+        logger.info(f"Getting database path for: {job.database}")
         db_path = settings.HMMER_DATABASES[job.database]
+        logger.info(f"Database path: {db_path}")
         if not db_path:
             raise ValueError(f"Invalid database ID '{job.database}'")
 
         # Prepare alphabet and background
+        logger.info(f"Setting up alphabet and background...")
         alphabet = Alphabet.amino()
         background = Background(alphabet)
         
@@ -126,33 +141,46 @@ def run_search(self, job_id: str):
             'E': job.E, 'domE': job.domE, 'incE': job.incE, 'incdomE': job.incdomE,
             'T': job.T, 'domT': job.domT, 'incT': job.incT, 'incdomT': job.incdomT,
         }
+        logger.info(f"Pipeline kwargs: {pipeline_kwargs}")
         # Filter out None values before passing to Pipeline
-        pipeline = Pipeline(alphabet, **{k: v for k, v in pipeline_kwargs.items() if v is not None})
-        
-        logger.info(f"Configured pipeline with parameters: {pipeline_kwargs}")
+        filtered_kwargs = {k: v for k, v in pipeline_kwargs.items() if v is not None}
+        logger.info(f"Filtered pipeline kwargs: {filtered_kwargs}")
+        pipeline = Pipeline(alphabet, **filtered_kwargs)
+        logger.info(f"Pipeline configured successfully")
 
         # Parse query
+        logger.info(f"Parsing query input...")
         lines = job.input.strip().splitlines()
+        logger.info(f"Input lines count: {len(lines)}")
         if not lines or not lines[0].startswith(">") or len(lines) < 2:
             raise ValueError("Invalid FASTA input format for query.")
 
         name = lines[0].lstrip(">").encode("utf-8")
         sequence = "".join(lines[1:])
+        logger.info(f"Query name: {name}")
+        logger.info(f"Query sequence length: {len(sequence)}")
+        logger.info(f"Query sequence preview: {sequence[:100]}...")
+        
         text_seq = TextSequence(name=name, sequence=sequence)
         digital_seq = text_seq.digitize(alphabet)
+        logger.info(f"Query digitized successfully")
 
         # Read target sequences
+        logger.info(f"Reading target sequences from: {db_path}")
         with SequenceFile(db_path, format="fasta") as target_file:
             digital_targets = [seq.digitize(alphabet) for seq in target_file]
         logger.info(f"Digitized {len(digital_targets)} target sequences from {db_path}")
 
         # Also build a mapping from name to TextSequence for alignment
+        logger.info(f"Building target sequence mapping...")
         target_sequences = {}
         with SequenceFile(db_path, format="fasta") as target_file:
             for seq in target_file:
                 target_sequences[seq.name.decode()] = seq
+        logger.info(f"Target sequence mapping built with {len(target_sequences)} entries")
 
         # Create a Builder and configure it with gap penalties and score matrix
+        logger.info(f"Configuring builder...")
         builder_kwargs = {}
         if job.popen is not None:
             builder_kwargs['popen'] = job.popen
@@ -162,25 +190,33 @@ def run_search(self, job_id: str):
             builder_kwargs['score_matrix'] = job.mx
             
         builder = Builder(alphabet, **builder_kwargs)
-        
-        logger.info(f"Configured builder with parameters: {builder_kwargs}")
+        logger.info(f"Builder configured with parameters: {builder_kwargs}")
 
         # Run search using the builder
+        logger.info(f"Starting HMMER search...")
         results = []
         block = DigitalSequenceBlock(alphabet)
         block.extend(digital_targets)
+        logger.info(f"Digital sequence block created with {len(digital_targets)} targets")
 
         hits = pipeline.search_seq(digital_seq, block, builder=builder)
+        logger.info(f"Search completed, processing hits...")
 
         try:
             hit_list = list(hits)
-            logger.debug(f"Top hits: {[hit.name.decode() for hit in hit_list[:5]]}")
+            logger.info(f"Total hits found: {len(hit_list)}")
+            logger.info(f"Top 5 hit names: {[hit.name.decode() for hit in hit_list[:5]]}")
         except Exception as e:
-            logger.debug(f"Could not log top hits due to error: {e}")
+            logger.error(f"Could not log top hits due to error: {e}")
 
-        for hit in hit_list:
+        logger.info(f"Processing individual hits...")
+        for i, hit in enumerate(hit_list):
+            logger.info(f"Processing hit {i+1}/{len(hit_list)}: {hit.name.decode()}")
+            logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
+            
             domains = []
             if hasattr(hit, "domains") and hit.domains:
+                logger.info(f"Hit has {len(hit.domains)} domains")
                 for domain in hit.domains:
                     # Extract alignment from pyhmmer.plan7.Alignment
                     alignment = getattr(domain, "alignment", None)
@@ -202,6 +238,7 @@ def run_search(self, job_id: str):
                     )
                     domains.append(domain_obj)
             else:
+                logger.info(f"Hit has no domains (phmmer case)")
                 # For hits without domains (phmmer case), create alignment with Biopython
                 target_seq = target_sequences.get(hit.name.decode())
                 pyhmmer_alignment = None
@@ -211,6 +248,7 @@ def run_search(self, job_id: str):
                     try:
                         query_seq_str = str(sequence)
                         target_seq_str = str(target_seq.sequence)
+                        logger.info(f"Creating Biopython alignment for {hit.name.decode()}")
                         alignments = pairwise2.align.globalxx(query_seq_str, target_seq_str)
                         if alignments:
                             aln = alignments[0]
@@ -265,31 +303,83 @@ def run_search(self, job_id: str):
                 num_significant=sum(1 for h in hit_list if h.evalue < 0.01),
                 domains=domains
             )
+            
+            logger.info(f"Checking if hit passes filter...")
+            logger.info(f"Job threshold: {job.threshold}, threshold_value: {job.threshold_value}")
+            logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
+            
             if (
                 job.threshold == HmmerJob.ThresholdChoices.EVALUE
                 and hit.evalue < job.threshold_value
             ):
+                logger.info(f"Hit passes EVALUE filter")
                 results.append(hit_obj)
             elif (
                 job.threshold == HmmerJob.ThresholdChoices.BITSCORE
                 and hit.score > job.threshold_value
             ):
+                logger.info(f"Hit passes BITSCORE filter")
                 results.append(hit_obj)
+            else:
+                logger.info(f"Hit does not pass filter")
 
-        logger.info(f"{len(results)} hits passed the filter for job {job_id}")
+        logger.info(f"=== SEARCH COMPLETED ===")
+        logger.info(f"Total hits processed: {len(hit_list)}")
+        logger.info(f"Hits passing filter: {len(results)}")
 
+        logger.info(f"Saving results to database...")
         if job.task:
+            logger.info(f"Updating task status to SUCCESS...")
             job.task.status = "SUCCESS"
-            job.task.result = json.dumps([h.model_dump() for h in results])
+            
+            logger.info(f"Converting results to JSON...")
+            result_dicts = [h.model_dump() for h in results]
+            logger.info(f"Result dicts created: {len(result_dicts)}")
+            logger.info(f"First result dict: {result_dicts[0] if result_dicts else 'None'}")
+            
+            result_json = json.dumps(result_dicts)
+            logger.info(f"Result JSON created, length: {len(result_json)}")
+            logger.info(f"Result JSON preview: {result_json[:500]}...")
+            
+            job.task.result = result_json
             job.task.date_done = timezone.now()
-            job.task.save()
+            
+            logger.info(f"Saving task to database...")
+            logger.info(f"Task ID before save: {job.task.task_id}")
+            logger.info(f"Task status before save: {job.task.status}")
+            logger.info(f"Task result length before save: {len(job.task.result) if job.task.result else 0}")
+            
+            try:
+                from django.db import transaction
+                with transaction.atomic():
+                    job.task.save()
+                    logger.info(f"Task saved successfully within transaction")
+                    
+                    # Verify the save worked by refetching
+                    job.task.refresh_from_db()
+                    logger.info(f"Task status after save: {job.task.status}")
+                    logger.info(f"Task result after save: {job.task.result is not None}")
+                    logger.info(f"Task result length after save: {len(job.task.result) if job.task.result else 0}")
+                    
+            except Exception as save_error:
+                logger.error(f"Error saving task to database: {save_error}")
+                logger.error(f"Save error details: {str(save_error)}", exc_info=True)
+                raise
+            
             logger.info(f"Updated database record for task {task_id} to SUCCESS")
+            logger.info(f"Saved result JSON length: {len(result_json)}")
+            logger.info(f"Saved result JSON preview: {result_json[:200]}...")
+        else:
+            logger.error(f"No task found for job {job_id}")
 
-        return [h.model_dump() for h in results]
+        logger.info(f"=== TASK COMPLETED SUCCESSFULLY ===")
+        return result_dicts
 
     except Exception as e:
+        logger.error(f"=== TASK FAILED ===")
         logger.error(f"Error in run_search for job {job_id}: {str(e)}", exc_info=True)
         if "job" in locals() and job.task:
+            logger.info(f"Updating task status to FAILURE...")
             job.task.status = "FAILURE"
             job.task.result = str(e)
             job.task.date_done = timezone.now()

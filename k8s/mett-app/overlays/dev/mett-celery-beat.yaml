@@ -38,7 +38,7 @@ spec:
             - configMapRef:
                 name: mett-postgres-config
             - configMapRef:
-                name: mett-app-config-test
+                name: mett-app-config-dev
             - configMapRef:
                 name: mett-elasticsearch-config-dev
           env:
@@ -50,12 +50,12 @@ spec:
             - name: ES_USER
               valueFrom:
                 secretKeyRef:
-                  name: mett-elasticsearch-credentials
+                  name: mett-elasticsearch-credentials-dev
                   key: ELASTIC_USERNAME
             - name: ES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mett-elasticsearch-credentials
+                  name: mett-elasticsearch-credentials-dev
                   key: ELASTIC_PASSWORD
       imagePullSecrets:
         - name: quay-pull-secret

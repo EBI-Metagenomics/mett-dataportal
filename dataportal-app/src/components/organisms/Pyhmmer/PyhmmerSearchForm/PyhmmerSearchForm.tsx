@@ -31,6 +31,7 @@ const PyhmmerSearchForm: React.FC = () => {
     // Results state
     const [results, setResults] = useState<PyhmmerResult[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState<string>('');
     const [error, setError] = useState<string | undefined>(undefined);
 
     const [databases, setDatabases] = useState<{ id: string; name: string }[]>([]);
@@ -45,16 +46,20 @@ const PyhmmerSearchForm: React.FC = () => {
             try {
                 const response = await PyhmmerService.getDatabases();
                 setDatabases(response);
-            } catch {
+            } catch (error) {
+                console.error('Failed to fetch databases:', error);
                 setDatabases([]);
+                setError('Unable to load databases. Please check if the backend server is running.');
             }
         };
         const fetchMXChoices = async () => {
             try {
                 const response = await PyhmmerService.getMXChoices();
                 setMXChoices(response);
-            } catch {
+            } catch (error) {
+                console.error('Failed to fetch MX choices:', error);
                 setMXChoices([]);
+                setError('Unable to load substitution matrices. Please check if the backend server is running.');
             }
         };
         fetchDatabases();
@@ -67,19 +72,55 @@ const PyhmmerSearchForm: React.FC = () => {
     }, []);
 
     // Helper to poll for job status
-    const pollJobStatus = async (jobId: string, maxAttempts = 20, delay = 1500) => {
+    const pollJobStatus = async (jobId: string, maxAttempts = 60, delay = 2000) => {
         let attempts = 0;
+        console.log(`=== STARTING POLLING FOR JOB ${jobId} ===`);
+        console.log(`Max attempts: ${maxAttempts}, Delay: ${delay}ms`);
+        
         while (attempts < maxAttempts) {
-            const job = await PyhmmerService.getJobDetails(jobId);
-            if (job.status === 'SUCCESS' && job.task && Array.isArray(job.task.result)) {
-                return job.task.result;
-            } else if (job.status === 'FAILURE') {
-                throw new Error('Job failed');
-            }
-            await new Promise(res => setTimeout(res, delay));
             attempts++;
+            console.log(`Polling attempt ${attempts}/${maxAttempts} for job ${jobId}`);
+            
+            try {
+                const job = await PyhmmerService.getJobDetails(jobId);
+                console.log(`Job details received:`, job);
+                console.log(`Job status: ${job.status}`);
+                console.log(`Job task status: ${job.task?.status}`);
+                console.log(`Job task result type: ${typeof job.task?.result}`);
+                console.log(`Job task result length: ${Array.isArray(job.task?.result) ? job.task.result.length : 'N/A'}`);
+                
+                if (job.status === 'SUCCESS' && job.task && Array.isArray(job.task.result)) {
+                    console.log(`Job ${jobId} completed successfully with ${job.task.result.length} results`);
+                    console.log(`First result:`, job.task.result[0]);
+                    console.log(`=== POLLING COMPLETED SUCCESSFULLY ===`);
+                    return job.task.result;
+                } else if (job.status === 'FAILURE') {
+                    console.error(`Job ${jobId} failed`);
+                    console.error(`Job task result:`, job.task?.result);
+                    throw new Error('Job failed');
+                } else if (job.status === 'STARTED' || job.status === 'PENDING') {
+                    console.log(`Job ${jobId} is still running (${job.status}), waiting...`);
+                    // Continue polling
+                } else {
+                    console.log(`Job ${jobId} has unexpected status: ${job.status}`);
+                    console.log(`Full job response:`, job);
+                }
+            } catch (error) {
+                console.error(`Error polling job ${jobId} (attempt ${attempts}):`, error);
+                if (attempts === maxAttempts) {
+                    throw error;
+                }
+            }
+            
+            if (attempts < maxAttempts) {
+                console.log(`Waiting ${delay}ms before next attempt...`);
+                await new Promise(res => setTimeout(res, delay));
+            }
         }
-        throw new Error('Timed out waiting for results');
+        
+        console.error(`=== POLLING TIMED OUT ===`);
+        console.error(`Job ${jobId} did not complete after ${maxAttempts} attempts (${maxAttempts * delay / 1000} seconds)`);
+        throw new Error(`Timed out waiting for results after ${maxAttempts} attempts (${maxAttempts * delay / 1000} seconds)`);
     };
 
     // Map backend result to PyhmmerResult[]
@@ -111,6 +152,7 @@ const PyhmmerSearchForm: React.FC = () => {
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         setLoading(true);
+        setLoadingMessage('Submitting search job...');
         setError(undefined);
         setResults([]);
         try {
@@ -135,12 +177,18 @@ const PyhmmerSearchForm: React.FC = () => {
                 popen: parseFloat(gapOpen),
                 pextend: parseFloat(gapExtend),
             };
+            
+            setLoadingMessage('Creating search job...');
             const {id} = await PyhmmerService.search(req);
+            console.log(`Search job created with ID: ${id}`);
+            
+            setLoadingMessage('Processing search results... This may take a few minutes.');
             const rawResults = await pollJobStatus(id);
             if (rawResults) {
                 setResults(mapResults(rawResults));
                 setSelectedJobId(id);
                 saveSearchToHistory(id, sequence.slice(0, 40) + (sequence.length > 40 ? '...' : ''));
+                setLoadingMessage('');
             }
         } catch (err) {
             if (err instanceof Error) {
@@ -148,6 +196,7 @@ const PyhmmerSearchForm: React.FC = () => {
             } else {
                 setError('An unknown error occurred while running the search.');
             }
+            setLoadingMessage('');
         } finally {
             setLoading(false);
         }
@@ -175,37 +224,65 @@ const PyhmmerSearchForm: React.FC = () => {
 
     return (
         <section className={styles.pyhmmerSection}>
+            {/* Show error message if backend is not available */}
+            {error && (
+                <div className={styles.errorMessage}>
+                    <h3>Backend Service Unavailable</h3>
+                    <p>{error}</p>
+                    <div className={styles.errorHelp}>
+                        <h4>To start the backend server:</h4>
+                        <ol>
+                            <li>Navigate to the <code>dataportal_api</code> directory</li>
+                            <li>Set up the environment: <code>source set-env-local.sh</code></li>
+                            <li>Install dependencies: <code>pip install -r requirements.txt</code></li>
+                            <li>Run migrations: <code>python manage.py migrate</code></li>
+                            <li>Start the server: <code>python manage.py runserver</code></li>
+                        </ol>
+                        <p><strong>Note:</strong> The backend requires external services (Elasticsearch, Redis, PostgreSQL) to be running.</p>
+                        <p>For detailed setup instructions, see <a href="/PYHMMER_SETUP.md" target="_blank" rel="noopener noreferrer">PyHMMER Setup Guide</a>.</p>
+                    </div>
+                </div>
+            )}
+            
             <div className={styles.formContainer}>
                 <div className={styles.leftPane}>
+                    <h2 className={`vf-section-header__subheading ${styles.vfPyhmmerSubHeading}`}>PyHMMER Search</h2>
+                    
                     {/* Sequence database */}
                     <div className={styles.formSection}>
-                        <label className={styles.label}>Sequence database</label>
-                        <select className={styles.select} value={database} onChange={e => setDatabase(e.target.value)}>
-                            {databases.map(db => (
-                                <option key={db.id} value={db.id}>{db.name}</option>
-                            ))}
+                        <label className={`vf-form__label ${styles.label}`}>Sequence database</label>
+                        <select className={`vf-form__select ${styles.select}`} value={database} onChange={e => setDatabase(e.target.value)}>
+                            {databases.length > 0 ? (
+                                databases.map(db => (
+                                    <option key={db.id} value={db.id}>{db.name}</option>
+                                ))
+                            ) : (
+                                <option value="">No databases available</option>
+                            )}
                         </select>
                     </div>
 
                     {/* Cut off */}
                     <div className={styles.formSection}>
-                        <label className={styles.label}>Cut off</label>
-                        <div className={styles.radioRow}>
-                            <label>
+                        <label className={`vf-form__label ${styles.label}`}>Cut off</label>
+                        <div className={`vf-form__radio-group ${styles.radioRow}`}>
+                            <label className="vf-form__radio">
                                 <input
                                     type="radio"
+                                    className="vf-form__radio__input"
                                     checked={evalueType === 'evalue'}
                                     onChange={() => setEvalueType('evalue')}
                                 />
-                                E-value
+                                <span className="vf-form__radio__label">E-value</span>
                             </label>
-                            <label>
+                            <label className="vf-form__radio">
                                 <input
                                     type="radio"
+                                    className="vf-form__radio__input"
                                     checked={evalueType === 'bitscore'}
                                     onChange={() => setEvalueType('bitscore')}
                                 />
-                                Bit Score
+                                <span className="vf-form__radio__label">Bit Score</span>
                             </label>
                         </div>
                         <div className={styles.cutoffGrid}>
@@ -216,28 +293,60 @@ const PyhmmerSearchForm: React.FC = () => {
                             {evalueType === 'evalue' ? (
                                 <>
                                     <div className={styles.cutoffLabel}>Significance E-values</div>
-                                    <input type="text" value={significanceEValueSeq}
-                                           onChange={e => setSignificanceEValueSeq(e.target.value)} className={styles.input}/>
-                                    <input type="text" value={significanceEValueHit}
-                                           onChange={e => setSignificanceEValueHit(e.target.value)} className={styles.input}/>
+                                    <input 
+                                        type="text" 
+                                        value={significanceEValueSeq}
+                                        onChange={e => setSignificanceEValueSeq(e.target.value)} 
+                                        className={`vf-form__input ${styles.input}`}
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={significanceEValueHit}
+                                        onChange={e => setSignificanceEValueHit(e.target.value)} 
+                                        className={`vf-form__input ${styles.input}`}
+                                    />
                                     <div className={styles.cutoffLabel}>Report E-values</div>
-                                    <input type="text" value={reportEValueSeq} onChange={e => setReportEValueSeq(e.target.value)}
-                                           className={styles.input}/>
-                                    <input type="text" value={reportEValueHit} onChange={e => setReportEValueHit(e.target.value)}
-                                           className={styles.input}/>
+                                    <input 
+                                        type="text" 
+                                        value={reportEValueSeq} 
+                                        onChange={e => setReportEValueSeq(e.target.value)}
+                                        className={`vf-form__input ${styles.input}`}
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={reportEValueHit} 
+                                        onChange={e => setReportEValueHit(e.target.value)}
+                                        className={`vf-form__input ${styles.input}`}
+                                    />
                                 </>
                             ) : (
                                 <>
                                     <div className={styles.cutoffLabel}>Significance Bit scores</div>
-                                    <input type="text" value={significanceBitScoreSeq}
-                                           onChange={e => setSignificanceBitScoreSeq(e.target.value)} className={styles.input}/>
-                                    <input type="text" value={significanceBitScoreHit}
-                                           onChange={e => setSignificanceBitScoreHit(e.target.value)} className={styles.input}/>
+                                    <input 
+                                        type="text" 
+                                        value={significanceBitScoreSeq}
+                                        onChange={e => setSignificanceBitScoreSeq(e.target.value)} 
+                                        className={`vf-form__input ${styles.input}`}
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={significanceBitScoreHit}
+                                        onChange={e => setSignificanceBitScoreHit(e.target.value)} 
+                                        className={`vf-form__input ${styles.input}`}
+                                    />
                                     <div className={styles.cutoffLabel}>Report Bit scores</div>
-                                    <input type="text" value={reportBitScoreSeq} onChange={e => setReportBitScoreSeq(e.target.value)}
-                                           className={styles.input}/>
-                                    <input type="text" value={reportBitScoreHit} onChange={e => setReportBitScoreHit(e.target.value)}
-                                           className={styles.input}/>
+                                    <input 
+                                        type="text" 
+                                        value={reportBitScoreSeq} 
+                                        onChange={e => setReportBitScoreSeq(e.target.value)}
+                                        className={`vf-form__input ${styles.input}`}
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={reportBitScoreHit} 
+                                        onChange={e => setReportBitScoreHit(e.target.value)}
+                                        className={`vf-form__input ${styles.input}`}
+                                    />
                                 </>
                             )}
                         </div>
@@ -245,24 +354,40 @@ const PyhmmerSearchForm: React.FC = () => {
 
                     {/* Gap penalties */}
                     <div className={styles.formSection}>
-                        <label className={styles.label}>Gap penalties</label>
+                        <label className={`vf-form__label ${styles.label}`}>Gap penalties</label>
                         <div className={styles.gapRow}>
                             <div>
-                                <div>Open</div>
-                                <input type="text" value={gapOpen} onChange={e => setGapOpen(e.target.value)}
-                                       className={styles.inputSmall}/>
+                                <div className={styles.gapLabel}>Open</div>
+                                <input 
+                                    type="text" 
+                                    value={gapOpen} 
+                                    onChange={e => setGapOpen(e.target.value)}
+                                    className={`vf-form__input ${styles.inputSmall}`}
+                                />
                             </div>
                             <div>
-                                <div>Extend</div>
-                                <input type="text" value={gapExtend} onChange={e => setGapExtend(e.target.value)}
-                                       className={styles.inputSmall}/>
+                                <div className={styles.gapLabel}>Extend</div>
+                                <input 
+                                    type="text" 
+                                    value={gapExtend} 
+                                    onChange={e => setGapExtend(e.target.value)}
+                                    className={`vf-form__input ${styles.inputSmall}`}
+                                />
                             </div>
                             <div>
-                                <div>Substitution scoring matrix</div>
-                                <select value={subMatrix} onChange={e => setSubMatrix(e.target.value)} className={styles.selectSmall}>
-                                    {mxChoices.map(choice => (
-                                        <option key={choice.value} value={choice.value}>{choice.label}</option>
-                                    ))}
+                                <div className={styles.gapLabel}>Substitution scoring matrix</div>
+                                <select 
+                                    value={subMatrix} 
+                                    onChange={e => setSubMatrix(e.target.value)} 
+                                    className={`vf-form__select ${styles.selectSmall}`}
+                                >
+                                    {mxChoices.length > 0 ? (
+                                        mxChoices.map(choice => (
+                                            <option key={choice.value} value={choice.value}>{choice.label}</option>
+                                        ))
+                                    ) : (
+                                        <option value="">No matrices available</option>
+                                    )}
                                 </select>
                             </div>
                         </div>
@@ -278,18 +403,19 @@ const PyhmmerSearchForm: React.FC = () => {
             </div>
 
             {/* Results two-column layout */}
-            <div className={styles.resultsContainer} style={{ display: 'flex', gap: 24 }}>
-                <div style={{ flex: 0.7, minWidth: 220, maxWidth: 320, borderRight: '1px solid #eee', paddingRight: 16 }}>
+            <div className={styles.resultsContainer}>
+                <div className={styles.historyPane}>
                     <PyhmmerSearchHistory
                         history={history}
                         onSelect={handleSelectHistory}
                         selectedJobId={selectedJobId}
                     />
                 </div>
-                <div style={{ flex: 2, paddingLeft: 16 }}>
+                <div className={styles.resultsPane}>
                     <PyhmmerResultsTable
                         results={results}
                         loading={loading}
+                        loadingMessage={loadingMessage}
                         error={error}
                         jobId={selectedJobId}
                     />
