@@ -12,6 +12,11 @@ from dataportal.models import StrainDocument
 from dataportal.schema.genome_schemas import (
     GenomePaginationSchema,
     GenomeResponseSchema,
+    GenomeSearchQuerySchema,
+    GetAllGenomesQuerySchema,
+    GenomesByIsolateNamesQuerySchema,
+    GenomeAutocompleteQuerySchema,
+    StrainSuggestionSchema,
 )
 from dataportal.unmanaged_models.strain_data import strain_from_hit
 from dataportal.utils.constants import (
@@ -46,31 +51,34 @@ class GenomeService:
 
     async def search_genomes_by_string(
         self,
-        query: str,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
-        isolates: Optional[List[str]] = None,
-        species_acronym: Optional[str] = None,
+        params: GenomeSearchQuerySchema,
         use_scroll: bool = False,
     ) -> GenomePaginationSchema:
-        """Search genomes in Elasticsearch with optional isolate/species filters."""
+        """
+        Search genomes in Elasticsearch with optional isolate/species filters.
+        
+        Args:
+            params: GenomeSearchQuerySchema containing search parameters
+            use_scroll: Whether to use scroll API for large downloads
+            
+        Returns:
+            GenomePaginationSchema with search results
+        """
         filter_criteria = {}
 
-        if query:
-            filter_criteria[STRAIN_FIELD_ISOLATE_NAME] = query
-        if isolates:
-            filter_criteria["isolate_name.keyword"] = isolates
-        if species_acronym:
-            filter_criteria[ES_FIELD_SPECIES_ACRONYM] = species_acronym
+        if params.query:
+            filter_criteria[STRAIN_FIELD_ISOLATE_NAME] = params.query
+        if params.isolates:
+            filter_criteria["isolate_name.keyword"] = params.isolates
+        if params.species_acronym:
+            filter_criteria[ES_FIELD_SPECIES_ACRONYM] = params.species_acronym
 
         if use_scroll:
             # Use scroll API for large downloads
             strains, total_results = await self._fetch_all_strains_with_scroll(
                 filter_criteria=filter_criteria,
-                sortField=sortField,
-                sortOrder=sortOrder,
+                sortField=params.sortField,
+                sortOrder=params.sortOrder,
                 schema=GenomeResponseSchema,
             )
             return await self._create_pagination_schema(strains, total_results, 1, total_results)
@@ -78,126 +86,70 @@ class GenomeService:
             # Use regular pagination for normal requests
             return await self._search_paginated_strains(
                 filter_criteria=filter_criteria,
-                page=page,
-                per_page=per_page,
-                sortField=sortField,
-                sortOrder=sortOrder,
+                page=params.page,
+                per_page=params.per_page,
+                sortField=params.sortField,
+                sortOrder=params.sortOrder,
                 error_message="Error searching genomes by string",
             )
 
-    async def get_genomes_by_species(
-        self,
-        species_acronym: str,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
-    ) -> GenomePaginationSchema:
-        return await self._search_paginated_strains(
-            filter_criteria={ES_FIELD_SPECIES_ACRONYM: species_acronym},
-            page=page,
-            per_page=per_page,
-            sortField=sortField,
-            sortOrder=sortOrder,
-            error_message="Error fetching genomes by species",
-        )
-
-    async def search_genomes_by_species_and_string(
-        self,
-        species_acronym: str,
-        query: Optional[str],
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
-    ) -> GenomePaginationSchema:
-        # If query is None or empty, just filter by species (equivalent to get_genomes_by_species)
-        if not query or query.strip() == "":
-            return await self.get_genomes_by_species(
-                species_acronym=species_acronym,
-                page=page,
-                per_page=per_page,
-                sortField=sortField,
-                sortOrder=sortOrder,
-            )
-        
-        # If query is provided, search by species and query string
-        filter_criteria = {
-            ES_FIELD_SPECIES_ACRONYM: species_acronym,
-            STRAIN_FIELD_ISOLATE_NAME: query,
-        }
-        return await self._search_paginated_strains(
-            filter_criteria=filter_criteria,
-            page=page,
-            per_page=per_page,
-            sortField=sortField,
-            sortOrder=sortOrder,
-            error_message="Error searching genomes by species and string",
-        )
-
     async def search_strains(
-        self, query: str, limit: int = None, species_acronym: Optional[str] = None
-    ):
+        self,
+        params: GenomeAutocompleteQuerySchema,
+    ) -> List[StrainSuggestionSchema]:
+        """
+        Search strains for autocomplete suggestions.
+        
+        Args:
+            params: GenomeAutocompleteQuerySchema containing search parameters
+            
+        Returns:
+            List of StrainSuggestionSchema objects
+        """
         try:
             search = Search(index=ES_INDEX_STRAIN)
-
             search = search.query(
-                "bool",
-                should=[
-                    {
-                        "wildcard": {
-                            f"{STRAIN_FIELD_ISOLATE_NAME}.keyword": f"*{query}*"
-                        }
-                    },
-                    {
-                        "wildcard": {
-                            f"{STRAIN_FIELD_ASSEMBLY_NAME}.keyword": f"*{query}*"
-                        }
-                    },
-                ],
-                minimum_should_match=1,
+                "wildcard", **{STRAIN_FIELD_ISOLATE_NAME: f"*{params.query.lower()}*"}
             )
 
-            if species_acronym:
-                search = search.filter(
-                    "term", **{ES_FIELD_SPECIES_ACRONYM: species_acronym}
-                )
+            if params.species_acronym:
+                search = search.filter("term", **{ES_FIELD_SPECIES_ACRONYM: params.species_acronym})
 
-            search = search[: (limit or self.limit)]
-
-            search = search.source(
-                ["id", STRAIN_FIELD_ISOLATE_NAME, STRAIN_FIELD_ASSEMBLY_NAME]
-            )
-
-            # logger.info(f"Final Elasticsearch Query: {json.dumps(search.to_dict(), indent=2)}")
+            search = search[:params.limit]
             response = await sync_to_async(search.execute)()
 
-            return [
-                {
-                    STRAIN_FIELD_ISOLATE_NAME: hit.isolate_name,
-                    STRAIN_FIELD_ASSEMBLY_NAME: hit.assembly_name,
-                }
-                for hit in response
-            ]
+            results = []
+            for hit in response:
+                strain_obj = strain_from_hit(hit)
+                strain_dict = model_to_dict(strain_obj)
+                results.append(StrainSuggestionSchema.model_validate(strain_dict))
+
+            return results
 
         except Exception as e:
-            logger.error(f"Error executing strain search query: {e}")
-            return []
+            logger.error(f"Error searching strains: {e}")
+            raise ServiceError(f"Error searching strains: {str(e)}")
 
     async def get_genomes(
         self,
-        page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
-        sortField: str = STRAIN_FIELD_ISOLATE_NAME,
-        sortOrder: str = SORT_ASC,
+        params: GetAllGenomesQuerySchema,
     ) -> GenomePaginationSchema:
+        """
+        Get all genomes with pagination and sorting.
+        
+        Args:
+            params: GetAllGenomesQuerySchema containing pagination and sorting parameters
+            
+        Returns:
+            GenomePaginationSchema with genome results
+        """
         return await self._search_paginated_strains(
             filter_criteria={},
-            page=page,
-            per_page=per_page,
-            sortField=sortField,
-            sortOrder=sortOrder,
-            error_message="Error fetching genomes",
+            page=params.page,
+            per_page=params.per_page,
+            sortField=params.sortField,
+            sortOrder=params.sortOrder,
+            error_message="Error fetching all genomes",
         )
 
     async def get_genome_by_strain_name(self, isolate_name: str):
@@ -207,22 +159,24 @@ class GenomeService:
         )
 
     async def get_genomes_by_isolate_names(
-        self, isolate_names: List[str]
+        self,
+        params: GenomesByIsolateNamesQuerySchema,
     ) -> List[GenomeResponseSchema]:
-        if not isolate_names:
-            return []
-        # logger.info(f"Getting genomes for isolate names: {isolate_names}")
-        filter_criteria = {"isolate_name.keyword": isolate_names}
-        try:
-            strains = await self._fetch_and_validate_strains(
-                filter_criteria=filter_criteria,
-                schema=GenomeResponseSchema,
-                error_message="Error fetching genomes by isolate names",
-            )
-            return strains
-        except Exception as e:
-            logger.error(f"Error in get_genomes_by_isolate_names: {e}", exc_info=True)
-            raise ServiceError(f"Could not fetch genomes by isolate names: {e}")
+        """
+        Get genomes by isolate names.
+        
+        Args:
+            params: GenomesByIsolateNamesQuerySchema containing isolate names
+            
+        Returns:
+            List of GenomeResponseSchema objects
+        """
+        isolate_names_list = [id.strip() for id in params.isolates.split(",")]
+        return await self._fetch_and_validate_strains(
+            filter_criteria={"isolate_name.keyword": isolate_names_list},
+            schema=GenomeResponseSchema,
+            error_message="Error fetching genomes by isolate names",
+        )
 
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         """Fetch and validate strains from Elasticsearch and compute additional fields."""

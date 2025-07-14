@@ -10,6 +10,10 @@ from dataportal.schema.gene_schemas import (
     GenePaginationSchema,
     GeneResponseSchema,
     GeneProteinSeqSchema,
+    GeneSearchQuerySchema,
+    GeneFacetedSearchQuerySchema,
+    GeneAdvancedSearchQuerySchema,
+    GeneAutocompleteQuerySchema,
 )
 from dataportal.services.gene_faceted_search import GeneFacetedSearch
 from dataportal.unmanaged_models.gene_data import gene_from_hit
@@ -56,14 +60,49 @@ class GeneService:
 
     async def autocomplete_gene_suggestions(
             self,
+            params: GeneAutocompleteQuerySchema,
+    ) -> List[Dict]:
+        """
+        Provides autocomplete suggestions for genes based on query & filters.
+        
+        Args:
+            params: GeneAutocompleteQuerySchema containing autocomplete parameters
+            
+        Returns:
+            List of gene suggestion dictionaries
+        """
+        try:
+            isolate_list = (
+                [gid.strip() for gid in params.isolates.split(",") if gid.strip()]
+                if params.isolates
+                else None
+            )
+            
+            result = await self._autocomplete_impl(
+                query=params.query,
+                filter=params.filter,
+                limit=params.limit,
+                species_acronym=params.species_acronym,
+                isolates=isolate_list,
+            )
+            
+            return result
+
+        except Exception as e:
+            logger.error(
+                f"Error fetching gene autocomplete suggestions: {e}", exc_info=True
+            )
+            return []
+
+    async def _autocomplete_impl(
+            self,
             query: str,
             filter: Optional[str] = None,
             limit: int = None,
             species_acronym: Optional[str] = None,
             isolates: Optional[List[str]] = None,
     ) -> List[Dict]:
-        """Provides autocomplete suggestions for genes based on query & filters."""
-
+        """Internal implementation of gene autocomplete."""
         try:
             s = Search(index=self.INDEX_NAME)
             s = s.query(
@@ -117,10 +156,8 @@ class GeneService:
             return results
 
         except Exception as e:
-            logger.error(
-                f"Error fetching gene autocomplete suggestions: {e}", exc_info=True
-            )
-            return []
+            logger.error(f"Error in autocomplete implementation: {e}")
+            raise ServiceError(e)
 
     async def get_gene_by_locus_tag(self, locus_tag: str) -> GeneResponseSchema:
         try:
@@ -169,27 +206,27 @@ class GeneService:
 
     async def search_genes(
             self,
-            query: str = None,
-            isolate_name: Optional[str] = None,
-            filter: Optional[str] = None,
-            page: int = 1,
-            per_page: int = DEFAULT_PER_PAGE_CNT,
-            sort_field: Optional[str] = None,
-            sort_order: Optional[str] = DEFAULT_SORT,
+            params: GeneSearchQuerySchema,
     ) -> GenePaginationSchema:
-
+        """
+        Search genes using the provided search parameters.
+        
+        Args:
+            params: GeneSearchQuerySchema containing search parameters
+            
+        Returns:
+            GenePaginationSchema with search results
+        """
         try:
             # Build query filters
-            es_query = self._build_es_query(query, isolate_name, filter)
-
-            # logger.info(f"Final Elasticsearch Query (Formatted): {json.dumps(es_query, indent=2)}")
+            es_query = self._build_es_query(params.query, None, None)
 
             # Call the common function
             genes, total_results = await self._fetch_paginated_genes(
-                es_query, page, per_page, sort_field, sort_order
+                es_query, params.page, params.per_page, params.sort_field, params.sort_order
             )
 
-            return self._create_pagination_schema(genes, page, per_page, total_results)
+            return self._create_pagination_schema(genes, params.page, params.per_page, total_results)
 
         except Exception as e:
             logger.error(f"Error searching genes: {e}")
@@ -235,22 +272,22 @@ class GeneService:
 
     async def get_genes_by_multiple_genomes_and_string(
             self,
-            isolates: str = None,
-            species_acronym: Optional[int] = None,
-            query: str = None,
-            filter: Optional[str] = None,
-            filter_operators: Optional[str] = None,
-            page: int = 1,
-            per_page: int = DEFAULT_PER_PAGE_CNT,
-            sort_field: Optional[str] = None,
-            sort_order: Optional[str] = SORT_ASC,
+            params: GeneAdvancedSearchQuerySchema,
             use_scroll: bool = False,
     ) -> GenePaginationSchema:
-        """Fetch genes by multiple genomes, species, and optional search query."""
-
+        """
+        Fetch genes by multiple genomes, species, and optional search query.
+        
+        Args:
+            params: GeneAdvancedSearchQuerySchema containing search parameters
+            use_scroll: Whether to use scroll API for large downloads
+            
+        Returns:
+            GenePaginationSchema with search results
+        """
         try:
             isolate_names_list = (
-                [id.strip() for id in isolates.split(",")] if isolates else []
+                [id.strip() for id in params.isolates.split(",")] if params.isolates else []
             )
             filter_criteria = {"bool": {"must": []}}
 
@@ -259,14 +296,14 @@ class GeneService:
                 filter_criteria["bool"]["must"].append(
                     {"terms": {ES_FIELD_ISOLATE_NAME: isolate_names_list}}
                 )
-            if species_acronym:
+            if params.species_acronym:
                 filter_criteria["bool"]["must"].append(
-                    {"term": {ES_FIELD_SPECIES_ACRONYM: species_acronym}}
+                    {"term": {ES_FIELD_SPECIES_ACRONYM: params.species_acronym}}
                 )
 
             # Apply additional filters
-            parsed_filters = self._parse_filters(filter)
-            parsed_filter_operators = self._parse_filter_operators(filter_operators)
+            parsed_filters = self._parse_filters(params.filter)
+            parsed_filter_operators = self._parse_filter_operators(params.filter_operators)
             type_strain_filters = await self._apply_filters_for_type_strain(
                 {}, parsed_filters, parsed_filter_operators
             )
@@ -277,7 +314,7 @@ class GeneService:
                 )
 
             es_query = self._build_es_query(
-                query=query,
+                query=params.query,
                 isolate_name=filter_criteria.get("isolate_name"),
                 filter_criteria=filter_criteria,
             )
@@ -286,24 +323,24 @@ class GeneService:
                 # Use scroll API for large downloads
                 genes, total_results = await self._fetch_all_genes_with_scroll(
                     query=es_query,
-                    sort_field=sort_field,
-                    sort_order=sort_order,
+                    sort_field=params.sort_field,
+                    sort_order=params.sort_order,
                 )
             else:
                 # Use regular pagination for normal requests
                 genes, total_results = await self._fetch_paginated_genes(
                     query=es_query,
-                    page=page,
-                    per_page=per_page,
-                    sort_field=sort_field,
-                    sort_order=sort_order,
+                    page=params.page,
+                    per_page=params.per_page,
+                    sort_field=params.sort_field,
+                    sort_order=params.sort_order,
                 )
 
-            return self._create_pagination_schema(genes, page, per_page, total_results)
+            return self._create_pagination_schema(genes, params.page, params.per_page, total_results)
 
         except ValueError:
             logger.error("Invalid genome ID provided")
-            raise InvalidGenomeIdError(isolates)
+            raise InvalidGenomeIdError(params.isolates)
         except Exception as e:
             logger.error(f"Error in get_genes_by_multiple_genomes_and_string: {e}")
             raise ServiceError(e)
@@ -608,6 +645,57 @@ class GeneService:
 
     async def get_faceted_search(
             self,
+            params: GeneFacetedSearchQuerySchema,
+    ):
+        """
+        Perform faceted search on genes using the provided parameters.
+        
+        Args:
+            params: GeneFacetedSearchQuerySchema containing faceted search parameters
+            
+        Returns:
+            Dictionary containing faceted search results
+        """
+        try:
+            isolate_list = (
+                [id.strip() for id in params.isolates.split(",") if id.strip()]
+                if params.isolates
+                else []
+            )
+            
+            operators = {
+                ES_FIELD_PFAM: params.pfam_operator,
+                ES_FIELD_INTERPRO: params.interpro_operator,
+                ES_FIELD_COG_ID: params.cog_id_operator,
+                ES_FIELD_COG_FUNCATS: params.cog_funcats_operator,
+                ES_FIELD_KEGG: params.kegg_operator,
+                ES_FIELD_GO_TERM: params.go_term_operator,
+            }
+            
+            result = await self._faceted_search_impl(
+                query=params.query,
+                species_acronym=params.species_acronym,
+                isolates=isolate_list,
+                essentiality=params.essentiality,
+                cog_id=params.cog_id,
+                cog_funcats=params.cog_funcats,
+                kegg=params.kegg,
+                go_term=params.go_term,
+                pfam=params.pfam,
+                interpro=params.interpro,
+                has_amr_info=params.has_amr_info,
+                limit=params.limit,
+                operators=operators,
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in faceted search: {e}")
+            raise ServiceError(e)
+
+    async def _faceted_search_impl(
+            self,
             query: Optional[str] = None,
             species_acronym: Optional[str] = None,
             isolates: Optional[List[str]] = None,
@@ -622,7 +710,7 @@ class GeneService:
             limit: Optional[int] = DEFAULT_FACET_LIMIT,
             operators: Optional[Dict[str, str]] = None,
     ):
-
+        """Internal implementation of faceted search."""
         try:
             gs = GeneFacetedSearch(
                 query=query or "",
@@ -678,7 +766,7 @@ class GeneService:
             }
 
             return facet_results
-
+            
         except Exception as e:
             logger.exception("Error fetching faceted search")
             raise ServiceError(e)

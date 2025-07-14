@@ -91,6 +91,12 @@ To manually run them:
 ```shell
 pip install -r requirements-dev.txt
 pytest
+
+# Run all service tests
+pytest dataportal/tests/services/ -v
+
+# Run with coverage
+pytest dataportal/tests/services/ --cov=dataportal.services --cov-report=html
 ```
 
 ### Kubernetes Node Affinity 
