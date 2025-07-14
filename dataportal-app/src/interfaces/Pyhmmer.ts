@@ -1,8 +1,10 @@
 export interface PyhmmerDatabase {
     id: string;
     name: string;
-    description?: string;
-    order?: number;
+    type: string;
+    version: string;
+    release_date?: string;
+    order: number;
 }
 
 export interface PyhmmerMXChoice {

@@ -29,8 +29,8 @@ export class PyhmmerService extends BaseService {
     @cacheResponse(60 * 60 * 1000, () => "getMXChoices")
     static async getMXChoices(): Promise<PyhmmerMXChoice[]> {
         try {
-            console.log('PyhmmerService.getMXChoices: Attempting to fetch MX choices from:', `${API_BASE_SEARCH}/mxchoices`);
-            const result = await this.getWithRetry<PyhmmerMXChoice[]>(`${API_BASE_SEARCH}/mxchoices`);
+            console.log('PyhmmerService.getMXChoices: Attempting to fetch MX choices from:', `${API_BASE_SEARCH}/mx-choices`);
+            const result = await this.getWithRetry<PyhmmerMXChoice[]>(`${API_BASE_SEARCH}/mx-choices`);
             console.log('PyhmmerService.getMXChoices: Successfully fetched MX choices:', result);
             return result;
         } catch (error) {

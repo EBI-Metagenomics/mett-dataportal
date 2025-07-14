@@ -89,6 +89,12 @@ export class ApiResponseHandler {
    * Handle API response and return data or throw error
    */
   static handleResponse<T>(response: ApiResponse<T>): T {
+    // Check if this is a legacy response (direct object without status/data wrapper)
+    if (this.isLegacyResponse(response)) {
+      // For legacy responses, return the response directly as the data
+      return response as T;
+    }
+    
     if (this.isErrorResponse(response)) {
       const errorMessage = this.getErrorMessage(response);
       const error = new Error(errorMessage);
@@ -120,7 +126,14 @@ export class ApiResponseHandler {
    */
   static isLegacyResponse(response: any): boolean {
     // Check if response doesn't have the new structure
-    return !response || typeof response !== 'object' || !('status' in response);
+    // A response is legacy if:
+    // 1. It doesn't have a 'status' field, OR
+    // 2. It has a 'status' field but it's not the standard API response format ('success'/'error')
+    //    - Backend might return 'SUCCESS', 'PENDING', etc. which are not standard API response statuses
+    return !response || 
+           typeof response !== 'object' || 
+           !('status' in response) ||
+           (response.status !== 'success' && response.status !== 'error');
   }
 
   /**

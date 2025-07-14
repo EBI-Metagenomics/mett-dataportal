@@ -327,16 +327,17 @@ def run_search(self, job_id: str):
         logger.info(f"Total hits processed: {len(hit_list)}")
         logger.info(f"Hits passing filter: {len(results)}")
 
+        # Convert results to dicts for return
+        result_dicts = [h.model_dump() for h in results]
+        logger.info(f"Result dicts created: {len(result_dicts)}")
+        logger.info(f"First result dict: {result_dicts[0] if result_dicts else 'None'}")
+
         logger.info(f"Saving results to database...")
         if job.task:
             logger.info(f"Updating task status to SUCCESS...")
             job.task.status = "SUCCESS"
             
             logger.info(f"Converting results to JSON...")
-            result_dicts = [h.model_dump() for h in results]
-            logger.info(f"Result dicts created: {len(result_dicts)}")
-            logger.info(f"First result dict: {result_dicts[0] if result_dicts else 'None'}")
-            
             result_json = json.dumps(result_dicts)
             logger.info(f"Result JSON created, length: {len(result_json)}")
             logger.info(f"Result JSON preview: {result_json[:500]}...")

@@ -1,32 +1,27 @@
 import logging
+import uuid
 from typing import List
 
+from django.conf import settings
 from django.utils import timezone
 from django_celery_results.models import TaskResult
 from ninja import Router
 from ninja.errors import HttpError
-
-logger = logging.getLogger(__name__)
-
-ROUTER_PYHMMER_SEARCH = "pyhmmer_search"
-pyhmmer_router_search = Router(tags=[ROUTER_PYHMMER_SEARCH])
-
-import logging
-from django.http import HttpRequest
+from asgiref.sync import sync_to_async
 
 from .models import HmmerJob, Database
-from .schemas import (
-    SearchRequestSchema,
-    SearchResponseSchema,
-    DatabaseResponseSchema,
-)
+from .schemas import SearchRequestSchema, SearchResponseSchema
 from .tasks import run_search
+from dataportal.utils.response_wrappers import wrap_success_response
+from dataportal.schema.response_schemas import create_success_response
 
 logger = logging.getLogger(__name__)
+
+pyhmmer_router_search = Router(tags=["PyHMMER Search"])
 
 
 @pyhmmer_router_search.post("", response=SearchResponseSchema)
-def search(request: HttpRequest, body: SearchRequestSchema):
+def search(request, body: SearchRequestSchema):
     try:
         logger.info(f"=== SEARCH REQUEST RECEIVED ===")
         logger.info(f"Request body: {body.dict()}")
@@ -45,15 +40,13 @@ def search(request: HttpRequest, body: SearchRequestSchema):
 
         # Start the task
         logger.info(f"Starting Celery task...")
-        result = run_search.delay(job.id)
-        task_id = result.id
-        logger.info(f"Celery task started with ID: {task_id}")
-        logger.info(f"Celery result state: {result.state}")
-
-        # Create task result entry
+        result = run_search.delay(str(job.id))
+        logger.info(f"Celery task started with ID: {result.id}")
+        
+        # Create TaskResult entry
         logger.info(f"Creating TaskResult entry...")
         task_result = TaskResult.objects.create(
-            task_id=task_id,
+            task_id=result.id,
             status="PENDING",
             result=None,
             traceback=None,
@@ -62,39 +55,125 @@ def search(request: HttpRequest, body: SearchRequestSchema):
             date_created=timezone.now(),
         )
         logger.info(f"TaskResult created: {task_result}")
-        logger.info(f"TaskResult ID: {task_result.id}")
-
+        
         # Link the task to the job
         logger.info(f"Linking task to job...")
         job.task = task_result
-        job.save(update_fields=["task"])
-        logger.info(f"Task linked to job successfully")
-        logger.info(f"Job task after linking: {job.task}")
-        logger.info(f"Job task ID after linking: {job.task.task_id if job.task else 'None'}")
-
-        response = {"id": job.id}
+        job.save()
+        logger.info(f"Task linked successfully")
+        
         logger.info(f"=== SEARCH REQUEST COMPLETED ===")
-        logger.info(f"Returning response: {response}")
-        return response
+        logger.info(f"Job ID: {job.id}")
+        logger.info(f"Task ID: {result.id}")
+        
+        return {"id": job.id}
         
     except Exception as e:
-        logger.error(f"=== SEARCH REQUEST FAILED ===")
-        logger.error(f"Error in search: {str(e)}", exc_info=True)
-        raise HttpError(500, f"Error creating search job: {str(e)}")
+        logger.error(f"Error in search: {e}")
+        raise HttpError(500, f"Internal server error: {str(e)}")
 
 
-@pyhmmer_router_search.get(
-    "/databases", response=List[DatabaseResponseSchema], tags=["search"]
-)
+@pyhmmer_router_search.get("/databases")
+@wrap_success_response
 def get_databases(request):
-    return Database.objects.all().order_by("order")
+    """Get available databases for PyHMMER search."""
+    try:
+        databases = Database.objects.all().order_by('order')
+        
+        # If no databases exist, return default ones
+        if not databases.exists():
+            default_databases = [
+                {
+                    "id": "bu_all",
+                    "name": "BU All Strains",
+                    "type": "seq",
+                    "version": "1.0",
+                    "release_date": "2024-01-01",
+                    "order": 1
+                },
+                {
+                    "id": "bu_type_strains",
+                    "name": "BU Type Strains",
+                    "type": "seq",
+                    "version": "1.0",
+                    "release_date": "2024-01-01",
+                    "order": 2
+                },
+                {
+                    "id": "pv_all",
+                    "name": "PV All Strains",
+                    "type": "seq",
+                    "version": "1.0",
+                    "release_date": "2024-01-01",
+                    "order": 3
+                },
+                {
+                    "id": "pv_type_strains",
+                    "name": "PV Type Strains",
+                    "type": "seq",
+                    "version": "1.0",
+                    "release_date": "2024-01-01",
+                    "order": 4
+                },
+                {
+                    "id": "bu_pv_all",
+                    "name": "BU+PV All Strains",
+                    "type": "seq",
+                    "version": "1.0",
+                    "release_date": "2024-01-01",
+                    "order": 5
+                },
+                {
+                    "id": "bu_pv_type_strains",
+                    "name": "BU+PV Type Strains",
+                    "type": "seq",
+                    "version": "1.0",
+                    "release_date": "2024-01-01",
+                    "order": 6
+                }
+            ]
+            return default_databases
+        
+        return [
+            {
+                "id": db.id, 
+                "name": db.name, 
+                "type": db.type,
+                "version": db.version,
+                "release_date": db.release_date.isoformat() if db.release_date else None,
+                "order": db.order
+            }
+            for db in databases
+        ]
+    except Exception as e:
+        logger.error(f"Error getting databases: {e}")
+        # Return default databases as fallback
+        return [
+            {
+                "id": "bu_all",
+                "name": "BU All Strains",
+                "type": "seq",
+                "version": "1.0",
+                "release_date": "2024-01-01",
+                "order": 1
+            }
+        ]
 
 
-@pyhmmer_router_search.get("/mxchoices", tags=["search"])
-def get_matrices(request):
-    from .models import HmmerJob
-
-    return [
-        {"value": choice[0], "label": choice[1]}
-        for choice in HmmerJob.MXChoices.choices
-    ]
+@pyhmmer_router_search.get("/mx-choices")
+@wrap_success_response
+def get_mx_choices(request):
+    """Get available substitution matrices for PyHMMER search."""
+    try:
+        choices = [
+            {"value": "BLOSUM62", "label": "BLOSUM62"},
+            {"value": "BLOSUM45", "label": "BLOSUM45"},
+            {"value": "BLOSUM90", "label": "BLOSUM90"},
+            {"value": "PAM30", "label": "PAM30"},
+            {"value": "PAM70", "label": "PAM70"},
+            {"value": "PAM250", "label": "PAM250"},
+        ]
+        return choices
+    except Exception as e:
+        logger.error(f"Error getting MX choices: {e}")
+        raise HttpError(500, f"Internal server error: {str(e)}")
