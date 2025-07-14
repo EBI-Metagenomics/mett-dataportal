@@ -124,6 +124,7 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                         </a>
                     ))}
                 </div>
+
             </div>
 
 

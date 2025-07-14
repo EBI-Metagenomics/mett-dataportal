@@ -1,21 +1,21 @@
 import logging
-from typing import List, Optional
+from typing import List
 
 from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
-from ..schemas import (
-    SpeciesSchema,
+from dataportal.schema.genome_schemas import (
     GenomePaginationSchema,
+    GenomeSearchQuerySchema,
+)
+from dataportal.schema.species_schemas import (
+    SpeciesSchema, GenomesBySpeciesQuerySchema, SearchGenomesBySpeciesQuerySchema,
 )
 from ..services.genome_service import GenomeService
 from ..services.species_service import SpeciesService
-from ..utils.constants import (
-    DEFAULT_PER_PAGE_CNT,
-    DEFAULT_SORT,
-    STRAIN_FIELD_ISOLATE_NAME,
-)
-from ..utils.errors import raise_http_error
+from ..utils.errors import raise_http_error, raise_internal_server_error
+from ..utils.response_wrappers import wrap_paginated_response
+from ..schema.response_schemas import PaginatedResponseSchema
 from ..utils.exceptions import (
     ServiceError,
 )
@@ -49,73 +49,58 @@ async def get_all_species(request):
 # API Endpoint to retrieve genomes filtered by species_acronym
 @species_router.get(
     "/{species_acronym}/genomes",
-    response=GenomePaginationSchema,
+    response=PaginatedResponseSchema,
     summary="Get genomes by species",
-    description=(
-        "Retrieves a paginated list of genomes that belong to the specified species. "
-        "Supports optional sorting by 'isolate_name' or 'species'. "
-        "Useful for browsing all genomes under a given species acronym."
-    ),
+    description="Retrieves genomes under a given species with pagination and sorting."
 )
+@wrap_paginated_response
 async def get_genomes_by_species(
-    request,
-    species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
-    page: int = Query(1, description="Page number to retrieve."),
-    per_page: int = Query(
-        DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."
-    ),
-    sortField: Optional[str] = Query(
-        STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."
-    ),
-    sortOrder: Optional[str] = Query(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
-    ),
+        request,
+        species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
+        query: GenomesBySpeciesQuerySchema = Query(...)
 ):
     try:
-        return await genome_service.get_genomes_by_species(
-            species_acronym, page, per_page, sortField, sortOrder
+        # Create a search query schema with species filter
+        search_params = GenomeSearchQuerySchema(
+            query="",  # No text search, just species filter
+            page=query.page,
+            per_page=query.per_page,
+            sortField=query.sortField,
+            sortOrder=query.sortOrder,
+            species_acronym=species_acronym
         )
-    except ServiceError:
-        raise HttpError(
-            500,
-            f"An error occurred while fetching genomes by species: {species_acronym}",
-        )
+        result = await genome_service.search_genomes_by_string(search_params)
+        return result
+    except ServiceError as e:
+        logger.error(f"Service error in get genomes by species: {e}")
+        raise_internal_server_error(f"Failed to fetch genomes by species: {species_acronym}")
 
 
 # API Endpoint to search genomes by species_acronym and query string
 @species_router.get(
     "/{species_acronym}/genomes/search",
-    response=GenomePaginationSchema,
+    response=PaginatedResponseSchema,
     summary="Search genomes by species and query string",
-    description=(
-        "Performs a search for genomes within a specific species using a free-text query. "
-        "Returns a paginated list of matching genome records. "
-        "Useful for narrowing down results within a species context, with optional sorting by 'isolate_name' or 'species'."
-    ),
+    description="Performs a search for genomes within a specific species with pagination and sorting."
 )
+@wrap_paginated_response
 async def search_genomes_by_species_and_string(
-    request,
-    species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
-    query: str = Query(
-        ..., description="Search term to match against genome names or metadata."
-    ),
-    page: int = Query(1, description="Page number to retrieve."),
-    per_page: int = Query(
-        DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."
-    ),
-    sortField: Optional[str] = Query(
-        STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."
-    ),
-    sortOrder: Optional[str] = Query(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
-    ),
+        request,
+        species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
+        query: SearchGenomesBySpeciesQuerySchema = Query(...)
 ):
     try:
-        return await genome_service.search_genomes_by_species_and_string(
-            species_acronym, query, page, per_page, sortField, sortOrder
+        # Create a search query schema with species filter and text search
+        search_params = GenomeSearchQuerySchema(
+            query=query.query or "",
+            page=query.page,
+            per_page=query.per_page,
+            sortField=query.sortField,
+            sortOrder=query.sortOrder,
+            species_acronym=species_acronym
         )
-    except ServiceError:
-        raise HttpError(
-            500,
-            f"An error occurred while fetching genomes by species: {species_acronym} and query: {query}",
-        )
+        result = await genome_service.search_genomes_by_string(search_params)
+        return result
+    except ServiceError as e:
+        logger.error(f"Service error in search genomes by species: {e}")
+        raise_internal_server_error(f"Failed to search genomes by species: {species_acronym}")

@@ -3,7 +3,7 @@ from typing import List
 from asgiref.sync import sync_to_async
 from elasticsearch_dsl import Search
 
-from dataportal.schemas import SpeciesSchema
+from dataportal.schema.species_schemas import SpeciesSchema
 from dataportal.utils.errors import raise_exception
 
 

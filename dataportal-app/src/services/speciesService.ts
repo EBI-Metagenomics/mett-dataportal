@@ -1,13 +1,13 @@
-import {ApiService} from "./api";
-import {PaginatedResponse, Species} from "../interfaces/Species";
+import { BaseService } from "./BaseService";
+import { PaginatedResponse, Species } from "../interfaces/Species";
 
-export class SpeciesService {
+export class SpeciesService extends BaseService {
     /**
      * Fetch all species data.
      */
     static async fetchSpeciesList(): Promise<Species[]> {
         try {
-            const response = await ApiService.get("species/");
+            const response = await this.getWithRetry<Species[]>("species/");
             if (Array.isArray(response)) {
                 return response.map((item: any) => ({
                     scientific_name: item.scientific_name || item.name,
@@ -30,20 +30,16 @@ export class SpeciesService {
      */
     static async fetchIsolateList(speciesId?: string): Promise<PaginatedResponse<Species>> {
         try {
-            const params = new URLSearchParams();
-            if (speciesId) {
-                params.append("species", speciesId);
-            }
-
-            const response = await ApiService.get("/api/isolates", params);
+            const params = this.buildParams({ species: speciesId });
+            const response = await this.getWithRetry<PaginatedResponse<Species>>("/api/isolates", params);
             if (response && response.data) {
                 return response;
             } else {
                 console.error("Invalid response format for isolate list:", response);
-                return {data: [], total: 0};
+                return { data: [], total: 0 };
             }
         } catch (error) {
-            console.error("Error fetching isolates:", {speciesId, error});
+            console.error("Error fetching isolates:", { speciesId, error });
             throw error;
         }
     }

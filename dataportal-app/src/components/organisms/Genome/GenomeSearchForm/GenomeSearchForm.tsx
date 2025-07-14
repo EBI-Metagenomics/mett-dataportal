@@ -31,6 +31,9 @@ interface SearchGenomeFormProps {
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
+                                                               searchQuery,
+                                                               onSearchQueryChange,
+                                                               onSearchSubmit,
                                                                selectedSpecies,
                                                                selectedTypeStrains,
                                                                selectedGenomes,
@@ -45,7 +48,6 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                linkData,
                                                                setLoading,
                                                            }) => {
-    const [query, setQuery] = useState<string>('');
     const [suggestions, setSuggestions] = useState<AutocompleteResponse[]>([]);
     const [isolateName, setIsolateName] = useState<string>('');
     const [results, setResults] = useState<any[]>([]);
@@ -114,7 +116,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             setLoading(true); // Show spinner
             const startTime = Date.now();
 
-            const qry = isolateName.trim() || query.trim();
+            const qry = isolateName.trim() || searchQuery.trim();
             const speciesFilter = selectedSpecies.length ? selectedSpecies : [];
             const typeStrainFilter = selectedTypeStrains.length ? selectedTypeStrains : [];
 
@@ -140,7 +142,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
                 const endpoint = (selectedSpecies && selectedSpecies.length === 1)
                 ? `/species/${selectedSpecies[0]}/genomes/search`
-                : `/genomes/`;
+                : `/genomes/search`;
 
                 apiDetails.url = endpoint;
                 apiDetails.params = Object.fromEntries(params.entries());
@@ -155,12 +157,17 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     typeStrainFilter
                 );
 
-                if (response && response.results) {
-                    setResults(response.results);
-                    setTotalPages(response.num_pages);
-                    setHasPrevious(response.has_previous ?? page > 1);
-                    setHasNext(response.has_next);
+                console.log('GenomeSearchForm response received:', response);
+                console.log('GenomeSearchForm response.data:', response?.data);
+                console.log('GenomeSearchForm response.pagination:', response?.pagination);
+                if (response && response.data && response.pagination) {
+                    console.log('GenomeSearchForm: Setting results with', response.data.length, 'items');
+                    setResults(response.data);
+                    setTotalPages(response.pagination.num_pages);
+                    setHasPrevious(response.pagination.has_previous ?? page > 1);
+                    setHasNext(response.pagination.has_next);
                 } else {
+                    console.log('GenomeSearchForm: No valid response, setting empty results');
                     setResults([]);
                     setTotalPages(1);
                     setHasPrevious(false);
@@ -181,7 +188,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 setTimeout(() => setLoading(false), remainingTime > 0 ? remainingTime : 0);
             }
         },
-        [query, isolateName, selectedSpecies, selectedTypeStrains, pageSize]
+        [searchQuery, isolateName, selectedSpecies, selectedTypeStrains, pageSize]
     );
 
 
@@ -193,7 +200,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newQuery = event.target.value;
-        setQuery(newQuery);
+        onSearchQueryChange(event);
         setIsolateName('');
         debouncedFetchSuggestions(newQuery);
     };
@@ -202,7 +209,9 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         console.log('suggestion: ' + suggestion)
         console.log('isolateName: ' + suggestion.isolate_name)
         // console.log('suggestion.strain_id: ' + suggestion.id)
-        setQuery(suggestion.isolate_name);
+        onSearchQueryChange({
+            target: { value: suggestion.isolate_name }
+        } as React.ChangeEvent<HTMLInputElement>);
         setIsolateName(suggestion.isolate_name);
         setSuggestions([]);
         // fixed for query based on user selection
@@ -214,6 +223,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        onSearchSubmit('genome');
         fetchSearchResults(1, sortField, sortOrder);
     };
 
@@ -230,7 +240,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             alert('Starting download... This may take a while for large datasets.');
             
             await GenomeService.downloadGenomesTSV(
-                query,
+                searchQuery,
                 sortField,
                 sortOrder,
                 selectedSpecies,
@@ -247,7 +257,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     };
 
     return (
-        <section id="vf-tabs__section--2">
+        <section id="genomes">
             <div>
                 <p/>
             </div>
@@ -272,7 +282,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                             <p/>
                         </div>
                         <GenomeSearchInput
-                            query={query}
+                            query={searchQuery}
                             onInputChange={handleInputChange}
                             suggestions={suggestions}
                             onSuggestionClick={handleSuggestionClick}

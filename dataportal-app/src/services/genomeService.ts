@@ -1,9 +1,26 @@
-import {ApiService} from "./api";
-import {AutocompleteResponse, GenomeMeta, GenomeResponse} from "../interfaces/Genome";
-import {transformAutocompleteResponse, transformGenomeMeta, transformGenomeResponse} from "../utils/transformer";
-import {DEFAULT_PER_PAGE_CNT, API_BASE_URL} from "../utils/appConstants";
+import { BaseService } from "./BaseService";
+import { AutocompleteResponse, GenomeMeta } from "../interfaces/Genome";
+import { PaginatedApiResponse } from "../interfaces/ApiResponse";
+import { transformAutocompleteResponse, transformGenomeMeta } from "../utils/transformer";
+import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../utils/appConstants";
 
-export class GenomeService {
+// Valid sort fields for genomes
+const VALID_GENOME_SORT_FIELDS = {
+    'species': 'species',
+    'isolate_name': 'isolate_name',
+    'genome': 'isolate_name', // Map 'genome' to 'isolate_name'
+    'strain': 'isolate_name', // Map 'strain' to 'isolate_name'
+    'name': 'isolate_name', // Map 'name' to 'isolate_name'
+};
+
+/**
+ * Map sort field to valid backend field
+ */
+const mapSortField = (field: string): string => {
+    return VALID_GENOME_SORT_FIELDS[field as keyof typeof VALID_GENOME_SORT_FIELDS] || 'isolate_name';
+};
+
+export class GenomeService extends BaseService {
     /**
      * Fetch genome autocomplete suggestions.
      */
@@ -12,16 +29,12 @@ export class GenomeService {
         selectedSpecies?: string
     ): Promise<AutocompleteResponse[]> {
         try {
-            const params = new URLSearchParams({
+            const params = this.buildParams({
                 query: inputQuery,
-                // ...(selectedSpecies && {species_acronym: selectedSpecies}),
-                ...(selectedSpecies && selectedSpecies.length === 1 && {species_acronym: selectedSpecies}),
+                species_acronym: selectedSpecies && selectedSpecies.length === 1 ? selectedSpecies : undefined
             });
 
-            const rawResponse = await ApiService.get("/genomes/autocomplete", params);
-            // console.log("response: ", rawResponse);
-
-            // Transform raw response to match AutocompleteResponse
+            const rawResponse = await this.getWithRetry<AutocompleteResponse[]>("/genomes/autocomplete", params);
             return transformAutocompleteResponse(rawResponse);
         } catch (error) {
             console.error("Error fetching genome suggestions:", error);
@@ -34,8 +47,8 @@ export class GenomeService {
      */
     static async fetchGenomeByIsolateNames(isolateNames: string[]): Promise<GenomeMeta[]> {
         try {
-            const params = new URLSearchParams({isolates: isolateNames.join(",")});
-            const rawResponse = await ApiService.get("/genomes/by-isolate-names", params);
+            const params = this.buildParams({ isolates: isolateNames.join(",") });
+            const rawResponse = await this.getWithRetry<GenomeMeta[]>("/genomes/by-isolate-names", params);
             return rawResponse.map(transformGenomeMeta);
         } catch (error) {
             console.error(`Error fetching genome by isolate names ${isolateNames}:`, error);
@@ -54,27 +67,32 @@ export class GenomeService {
         sortOrder: string,
         selectedSpecies?: string[],
         typeStrainFilter?: string[],
-    ): Promise<GenomeResponse> {
+    ): Promise<PaginatedApiResponse<GenomeMeta>> {
         try {
-            const params = new URLSearchParams({
-                query,
-                page: String(page),
-                per_page: String(pageSize),
-                sortField,
-                sortOrder,
-
+            console.log('GenomeService.fetchGenomeSearchResults called with:', {
+                query, page, pageSize, sortField, sortOrder, selectedSpecies, typeStrainFilter
             });
-
-            if (typeStrainFilter && typeStrainFilter.length) {
-                params.append('isolates', typeStrainFilter.join(','));
-            }
+            
+            // Map sort field to valid backend field
+            const mappedSortField = mapSortField(sortField);
+            console.log(`Mapping sort field from '${sortField}' to '${mappedSortField}'`);
+            
+            const params = this.buildParams({
+                query,
+                page,
+                per_page: pageSize,
+                sortField: mappedSortField,
+                sortOrder,
+                isolates: typeStrainFilter?.join(',')
+            });
 
             const endpoint = (selectedSpecies && selectedSpecies.length === 1)
                 ? `/species/${selectedSpecies[0]}/genomes/search`
                 : `/genomes/search`;
 
-            const rawResponse = await ApiService.get(endpoint, params);
-            return transformGenomeResponse(rawResponse);
+            const response = await BaseService.getRawResponse<GenomeMeta[]>(endpoint, params);
+            console.log('GenomeService.fetchGenomeSearchResults response:', response);
+            return response as PaginatedApiResponse<GenomeMeta>;
         } catch (error) {
             console.error("Error fetching genome search results:", error);
             throw error;
@@ -89,18 +107,23 @@ export class GenomeService {
         genome: string,
         sortField: string,
         sortOrder: string
-    ): Promise<GenomeResponse> {
+    ): Promise<PaginatedApiResponse<GenomeMeta>> {
         try {
             const baseUrl = species.length === 1 ? `species/${species[0]}/genomes/search` : `genomes/search`;
 
-            const params = new URLSearchParams({
+            // Map sort field to valid backend field
+            const mappedSortField = mapSortField(sortField);
+            console.log(`Mapping sort field from '${sortField}' to '${mappedSortField}'`);
+
+            const params = this.buildParams({
                 query: genome,
-                sortField,
+                sortField: mappedSortField,
                 sortOrder,
             });
 
-            const rawResponse = await ApiService.get(baseUrl, params);
-            return transformGenomeResponse(rawResponse);
+            const response = await BaseService.getRawResponse<GenomeMeta[]>(baseUrl, params);
+            console.log('GenomeService.fetchGenomesBySearch response:', response);
+            return response as PaginatedApiResponse<GenomeMeta>;
         } catch (error) {
             console.error("Error fetching genome search results:", {
                 species,
@@ -118,7 +141,7 @@ export class GenomeService {
      */
     static async fetchTypeStrains(): Promise<GenomeMeta[]> {
         try {
-            const rawResponse = await ApiService.get("/genomes/type-strains");
+            const rawResponse = await this.getWithRetry<GenomeMeta[]>("/genomes/type-strains");
             return rawResponse.map(transformGenomeMeta);
         } catch (error) {
             console.error("Error fetching type strains:", error);
@@ -137,30 +160,19 @@ export class GenomeService {
         selectedTypeStrains: string[]
     ): Promise<void> {
         try {
-            const params = new URLSearchParams({
+            // Map sort field to valid backend field
+            const mappedSortField = mapSortField(sortField);
+            
+            const params = this.buildParams({
                 query,
-                sortField,
+                sortField: mappedSortField,
                 sortOrder,
+                isolates: selectedTypeStrains?.join(','),
+                species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined
             });
 
-            if (selectedTypeStrains && selectedTypeStrains.length) {
-                params.append('isolates', selectedTypeStrains.join(','));
-            }
-
-            if (selectedSpecies && selectedSpecies.length === 1) {
-                params.append('species_acronym', selectedSpecies[0]);
-            }
-            
-            // Create download URL
-            const url = `${API_BASE_URL}/genomes/download/tsv?${params.toString()}`;
-            
-            // Trigger download
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'genomes_export.tsv';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const url = this.createDownloadUrl(`${API_BASE_URL}/genomes/download/tsv`, params);
+            this.triggerDownload(url, 'genomes_export.tsv');
         } catch (error) {
             console.error('Error downloading genomes TSV:', error);
             throw error;

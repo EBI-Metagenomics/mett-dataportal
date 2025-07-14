@@ -9,6 +9,7 @@ interface GeneSearchInputProps {
     suggestions: GeneSuggestion[];
     onSuggestionClick: (suggestion: GeneSuggestion) => void;
     onSuggestionsClear: () => void;
+    onSearch: () => void;
 }
 
 const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
@@ -17,6 +18,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                                                              suggestions,
                                                              onSuggestionClick,
                                                              onSuggestionsClear,
+                                                             onSearch,
                                                          }) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const [isSelecting, setIsSelecting] = useState(false);
@@ -33,6 +35,24 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [onSuggestionsClear]);
+
+    const handleInputChange = (event: any, newValue: string, reason: string) => {
+        console.log('GeneSearchInput handleInputChange:', { newValue, reason, isSelecting });
+        
+        // Don't call onInputChange when selecting a suggestion or when resetting
+        if (!isSelecting && reason !== 'reset') {
+            // Create a proper synthetic event for the parent component
+            const syntheticEvent = {
+                target: { value: newValue || '' }
+            } as React.ChangeEvent<HTMLInputElement>;
+            
+            onInputChange(syntheticEvent);
+        }
+        
+        if (reason === 'reset') {
+            setIsSelecting(false);
+        }
+    };
 
     return (
         <div ref={wrapperRef} className={`vf-form__item ${styles.vfFormItem}`}>
@@ -56,26 +76,12 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                     return `${strainName}${geneNamePart}${alias} (${product} - ${locusTag}${uniprot_id})`;
                 }}
                 inputValue={query || ''}
-                onInputChange={(event, newValue, reason) => {
-                    if (!isSelecting) {
-                        onInputChange({
-                            target: {value: newValue || ''},
-                        } as React.ChangeEvent<HTMLInputElement>);
-                    }
-                    if (reason === 'reset') {
-                        setIsSelecting(false);
-                    }
-                }}
+                onInputChange={handleInputChange}
                 onChange={(event, value) => {
                     if (value && typeof value !== 'string') {
+                        console.log('GeneSearchInput onChange - suggestion selected:', value);
                         setIsSelecting(true);
-                        const strainName = value.isolate_name || 'Unknown strain';
-                        const geneNamePart = value.gene_name || value.locus_tag || 'Unknown locus tag';
-                        const displayValue = `${geneNamePart} (${strainName})`;
-
-                        onInputChange({
-                            target: {value: displayValue},
-                        } as React.ChangeEvent<HTMLInputElement>);
+                        // Don't call onInputChange here - let onSuggestionClick handle it
                         onSuggestionClick(value);
                     }
                 }}
@@ -99,10 +105,11 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                     />
                 )}
             />
+            
             <button
-                type="submit"
+                type="button"
                 className="vf-button vf-button--primary vf-button--sm"
-                onClick={onSuggestionsClear}
+                onClick={onSearch}
             >
                 <span className="vf-button__text">Search</span>
             </button>

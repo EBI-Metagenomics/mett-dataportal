@@ -2,7 +2,15 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
 
-from dataportal.schemas import GenomePaginationSchema, GenomeResponseSchema
+from dataportal.schema.genome_schemas import (
+    GenomePaginationSchema, 
+    GenomeResponseSchema,
+    GenomeSearchQuerySchema,
+    GetAllGenomesQuerySchema,
+    GenomesByIsolateNamesQuerySchema,
+    GenomeAutocompleteQuerySchema,
+    StrainSuggestionSchema
+)
 from dataportal.services.genome_service import GenomeService
 from dataportal.services.essentiality_service import EssentialityService
 from dataportal.utils.constants import STRAIN_FIELD_ISOLATE_NAME
@@ -76,18 +84,29 @@ async def test_get_type_strains(mock_sync_to_async, mock_strain_hits):
 
 @patch("dataportal.services.genome_service.sync_to_async")
 @pytest.mark.asyncio
-async def test_get_genomes_by_species(mock_sync_to_async, mock_strain_hits):
+async def test_search_genomes_by_string(mock_sync_to_async, mock_strain_hits):
     mock_sync_to_async.return_value = AsyncMock(
-        return_value=MockESResponse([mock_strain_hits[0]])
+        return_value=MockESResponse(mock_strain_hits)
     )
 
     service = GenomeService()
-    result = await service.get_genomes_by_species(species_acronym="BU")
+    
+    # Create search query schema
+    params = GenomeSearchQuerySchema(
+        query="BU",
+        page=1,
+        per_page=10,
+        sortField="isolate_name",
+        sortOrder="asc"
+    )
+    
+    result = await service.search_genomes_by_string(params)
 
     assert isinstance(result, GenomePaginationSchema)
-    assert result.total_results == 1
+    assert result.total_results == 2
+    assert len(result.results) == 2
     assert result.results[0].isolate_name == "BU_ATCC8492"
-    assert result.results[0].species_acronym == "BU"
+    assert result.results[1].isolate_name == "PV_ATCC8482"
 
 
 @patch("dataportal.services.genome_service.sync_to_async")
@@ -121,10 +140,18 @@ async def test_search_strains(mock_sync_to_async, mock_strain_hits):
     )
 
     service = GenomeService()
-    result = await service.search_strains(query="BU")
+    
+    # Create autocomplete query schema
+    params = GenomeAutocompleteQuerySchema(
+        query="BU",
+        limit=10
+    )
+    
+    result = await service.search_strains(params)
 
     assert len(result) == 2
-    assert result[0][STRAIN_FIELD_ISOLATE_NAME] == "BU_ATCC8492"
+    assert isinstance(result[0], StrainSuggestionSchema)
+    assert result[0].isolate_name == "BU_ATCC8492"
 
 
 @patch("dataportal.services.genome_service.sync_to_async")
@@ -135,10 +162,18 @@ async def test_search_strains_with_species_filter(mock_sync_to_async, mock_strai
     )
 
     service = GenomeService()
-    result = await service.search_strains(query="90", species_acronym="BU")
+    
+    # Create autocomplete query schema with species filter
+    params = GenomeAutocompleteQuerySchema(
+        query="90",
+        species_acronym="BU",
+        limit=10
+    )
+    
+    result = await service.search_strains(params)
 
     assert len(result) == 1
-    assert result[0][STRAIN_FIELD_ISOLATE_NAME] == "BU_ATCC8492"
+    assert result[0].isolate_name == "BU_ATCC8492"
 
 
 @patch("dataportal.services.genome_service.sync_to_async")
@@ -149,7 +184,13 @@ async def test_get_genomes_by_isolate_names(mock_sync_to_async, mock_strain_hits
     )
 
     service = GenomeService()
-    result = await service.get_genomes_by_isolate_names(["BU_ATCC8492", "PV_ATCC8482"])
+    
+    # Create query schema
+    params = GenomesByIsolateNamesQuerySchema(
+        isolates="BU_ATCC8492,PV_ATCC8482"
+    )
+    
+    result = await service.get_genomes_by_isolate_names(params)
 
     assert len(result) == 2
     assert result[0].isolate_name == "BU_ATCC8492"
@@ -166,11 +207,98 @@ async def test_get_genomes_by_isolate_names_single(
     )
 
     service = GenomeService()
-    result = await service.get_genomes_by_isolate_names(["BU_ATCC8492"])
+    
+    # Create query schema for single isolate
+    params = GenomesByIsolateNamesQuerySchema(
+        isolates="BU_ATCC8492"
+    )
+    
+    result = await service.get_genomes_by_isolate_names(params)
 
     assert len(result) == 1
     assert result[0].isolate_name == "BU_ATCC8492"
     assert result[0].species_scientific_name == "Bacteroides uniformis"
+
+
+@patch("dataportal.services.genome_service.sync_to_async")
+@pytest.mark.asyncio
+async def test_get_genomes(mock_sync_to_async, mock_strain_hits):
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse(mock_strain_hits)
+    )
+
+    service = GenomeService()
+    
+    # Create query schema
+    params = GetAllGenomesQuerySchema(
+        page=1,
+        per_page=10,
+        sortField="isolate_name",
+        sortOrder="asc"
+    )
+    
+    result = await service.get_genomes(params)
+
+    assert isinstance(result, GenomePaginationSchema)
+    assert result.total_results == 2
+    assert len(result.results) == 2
+    assert result.results[0].isolate_name == "BU_ATCC8492"
+    assert result.results[1].isolate_name == "PV_ATCC8482"
+
+
+@patch("dataportal.services.genome_service.sync_to_async")
+@pytest.mark.asyncio
+async def test_search_genomes_by_string_with_species_filter(mock_sync_to_async, mock_strain_hits):
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse([mock_strain_hits[0]])
+    )
+
+    service = GenomeService()
+    
+    # Create search query schema with species filter
+    params = GenomeSearchQuerySchema(
+        query="",
+        page=1,
+        per_page=10,
+        sortField="isolate_name",
+        sortOrder="asc",
+        species_acronym="BU"
+    )
+    
+    result = await service.search_genomes_by_string(params)
+
+    assert isinstance(result, GenomePaginationSchema)
+    assert result.total_results == 1
+    assert len(result.results) == 1
+    assert result.results[0].isolate_name == "BU_ATCC8492"
+    assert result.results[0].species_acronym == "BU"
+
+
+@patch("dataportal.services.genome_service.sync_to_async")
+@pytest.mark.asyncio
+async def test_search_genomes_by_string_with_isolates_filter(mock_sync_to_async, mock_strain_hits):
+    mock_sync_to_async.return_value = AsyncMock(
+        return_value=MockESResponse([mock_strain_hits[0]])
+    )
+
+    service = GenomeService()
+    
+    # Create search query schema with isolates filter
+    params = GenomeSearchQuerySchema(
+        query="",
+        page=1,
+        per_page=10,
+        sortField="isolate_name",
+        sortOrder="asc",
+        isolates=["BU_ATCC8492"]
+    )
+    
+    result = await service.search_genomes_by_string(params)
+
+    assert isinstance(result, GenomePaginationSchema)
+    assert result.total_results == 1
+    assert len(result.results) == 1
+    assert result.results[0].isolate_name == "BU_ATCC8492"
 
 
 @patch(

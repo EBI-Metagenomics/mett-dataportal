@@ -65,8 +65,11 @@ ES_FIELD_COG_ID = "cog_id"
 ES_FIELD_COG_FUNCATS = "cog_funcats"
 ES_FIELD_INTERPRO = "interpro"
 ES_FIELD_EGGNOG = "eggnog"
+ES_FIELD_GO_TERM = "go_term"
 ES_FIELD_AMR = "amr"
 ES_FIELD_AMR_INFO = "has_amr_info"
+ES_FIELD_AMR_DRUG_CLASS = "drug_class"
+ES_FIELD_AMR_DRUG_SUBCLASS = "drug_subclass"
 
 # Search fields
 GENE_SEARCH_FIELDS = [

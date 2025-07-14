@@ -1,4 +1,5 @@
 import {FacetItem} from "./Auxiliary";
+import { PaginatedApiResponse, SuccessApiResponse } from "./ApiResponse";
 
 export interface GeneMeta {
     locus_tag?: string;
@@ -64,6 +65,7 @@ export interface GeneSuggestion {
     cog_id?: string | null;
 }
 
+// Legacy pagination interface (for backward compatibility)
 export interface PaginatedResponse<T> {
     results: T[];
     num_pages: number;
@@ -72,8 +74,17 @@ export interface PaginatedResponse<T> {
     has_next: boolean;
 }
 
+// New standardized response types
+export type GeneResponse = SuccessApiResponse<GeneMeta>;
+export type GeneListResponse = PaginatedApiResponse<GeneMeta>;
+export type GeneSuggestionResponse = SuccessApiResponse<GeneSuggestion[]>;
+export type GeneProteinSeqResponse = SuccessApiResponse<GeneProteinSeq>;
+
 export interface GeneFacetResponse {
     total_hits: number;
     operators: Record<string, 'AND' | 'OR'>;
     [facetGroup: string]: FacetItem[] | number | Record<string, 'AND' | 'OR'>;
 }
+
+// New standardized facet response
+export type GeneFacetApiResponse = SuccessApiResponse<GeneFacetResponse>;

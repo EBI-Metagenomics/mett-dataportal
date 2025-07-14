@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom'
 import GeneSearchForm from '@components/organisms/Gene/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '@components/organisms/Genome/GenomeSearchForm/GenomeSearchForm';
 import PyhmmerSearchForm from '@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchForm';
-import { GenomeService } from '../../services/genomeService';
-import { SpeciesService } from "../../services/speciesService";
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
-import { BaseGenome, GenomeMeta } from "../../interfaces/Genome";
-import { SPINNER_DELAY } from "../../utils/appConstants";
+
+// Import new hooks and stores
+import { useFilterStore } from '../../stores/filterStore';
+import { useGenomeData } from '../../hooks';
+import { useTabAwareUrlSync } from '../../hooks/useTabAwareUrlSync';
+import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 
 // Define the type for each tab
 interface Tab {
@@ -37,203 +39,53 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ tabs, activeTab, onTabCli
     </div>
 );
 
-
 const HomePage: React.FC = () => {
     const location = useLocation();
-    const [speciesList, setSpeciesList] = useState<{ acronym: string; scientific_name: string, common_name: string, taxonomy_id: number }[]>([]);
-    const [selectedGenomes, setSelectedGenomes] = useState<BaseGenome[]>([]);
-    const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
-    const [activeTab, setActiveTab] = useState('vf-tabs__section--1');
-    const [typeStrains, setTypeStrains] = useState<GenomeMeta[]>([]);
-    const [selectedTypeStrains, setSelectedTypeStrains] = useState<string[]>([]);
 
-    // State for Genome Search
-    const [genomeSearchQuery, setGenomeSearchQuery] = useState('');
-    const [genomeResults, setGenomeResults] = useState<any[]>([]);
+    // Get state from Zustand stores
+    const filterStore = useFilterStore();
 
-    // State for Gene Search
-    const [geneSearchQuery, setGeneSearchQuery] = useState('');
-    const [geneResults, setGeneResults] = useState<any[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    // Use custom hooks for data management
+    const genomeData = useGenomeData();
+    // Note: GeneSearchForm manages its own state, so we don't need useGeneData here
 
-    // sorting state
-    const [genomeSortField, setGenomeSortField] = useState<string>('species');
-    const [genomeSortOrder, setGenomeSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [geneSortField, setGeneSortField] = useState<string>('locus_tag');
-    const [geneSortOrder, setGeneSortOrder] = useState<'asc' | 'desc'>('asc');
+    // Local state for UI
+    const [activeTab, setActiveTab] = useState('genomes');
 
+    // console.log('🏠 HomePage render:', {
+    //     activeTab: activeTab,
+    //     selectedSpecies: filterStore.selectedSpecies,
+    //     selectedSpeciesLength: filterStore.selectedSpecies.length
+    // });
+    const hasUserSelectedTab = useRef(false);
 
-    const spinner = loading && (
-        <div className={styles.spinnerOverlay}>
-            <div className={styles.spinner}></div>
-        </div>
-    );
-
-
+    // Only use URL to set the initial tab
     useEffect(() => {
-        const fetchSpecies = async () => {
-            const species = await SpeciesService.fetchSpeciesList();
-            setSpeciesList(species || []);
-        };
+        const searchParams = new URLSearchParams(location.search);
+        const tabFromUrl = searchParams.get('tab');
 
-        const fetchTypeStrainsData = async () => {
-            const strains = await GenomeService.fetchTypeStrains();
-            setTypeStrains(strains || []);
-        };
+        if (tabFromUrl && ['genomes', 'genes', 'proteinsearch'].includes(tabFromUrl) && !hasUserSelectedTab.current) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [activeTab, location.pathname, location.search]);
 
-        fetchSpecies();
-        fetchTypeStrainsData();
-    }, []);
-
+    // Clean up gene viewer state when returning to home page
     useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const species_acronym = params.get('species_acronym');
-
-        if (species_acronym) {
-            if (!selectedSpecies.includes(species_acronym)) {
-                setSelectedSpecies([...selectedSpecies, species_acronym]);
-            }
+        // If we have locus_tag in URL, we're coming from gene viewer
+        // Clear any gene viewer specific state
+        if (location.search.includes('locus_tag')) {
+            filterStore.setGeneSearchQuery('');
+            filterStore.setGeneSortField('locus_tag');
+            filterStore.setGeneSortOrder('asc');
+            filterStore.setFacetedFilters({});
+            filterStore.setFacetOperators({});
         }
     }, [location.search]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, genomeSortField, genomeSortOrder);
-            // console.log('Fetched results:', response.results);
-            setGenomeResults(response.results);
-        };
-        fetchData();
-    }, [genomeSearchQuery, selectedSpecies]);
+    // URL sync for tab-aware state management
+    useTabAwareUrlSync(activeTab);
 
-    const handleSpeciesSelect = async (species_acronym: string) => {
-        setLoading(true); // Show spinner
-        const startTime = Date.now(); // Track start time
-
-        let updatedSelectedSpecies: string[];
-        if (selectedSpecies.includes(species_acronym)) {
-            updatedSelectedSpecies = selectedSpecies.filter((acronym) => acronym !== species_acronym);
-        } else {
-            updatedSelectedSpecies = [...selectedSpecies, species_acronym];
-        }
-
-        setSelectedSpecies(updatedSelectedSpecies);
-
-        if (updatedSelectedSpecies.length === 0) {
-            setSelectedTypeStrains([]);
-        } else {
-            const validTypeStrains = typeStrains.filter((strain) =>
-                updatedSelectedSpecies.includes(strain.species_acronym)
-            );
-
-            const updatedSelectedTypeStrains = selectedTypeStrains.filter((isolate_name) =>
-                validTypeStrains.some((strain) => strain.isolate_name === isolate_name)
-            );
-
-            setSelectedTypeStrains(updatedSelectedTypeStrains);
-
-            if (updatedSelectedTypeStrains.length > 0) {
-                const filteredResults = genomeResults.filter((result) =>
-                    updatedSelectedTypeStrains.includes(result.strain_id)
-                );
-                setGenomeResults(filteredResults);
-            } else {
-                await handleGenomeSearch();
-            }
-        }
-
-        const elapsedTime = Date.now() - startTime; // Calculate elapsed time
-        const remainingTime = SPINNER_DELAY - elapsedTime;
-
-        setTimeout(() => {
-            setLoading(false); // Hide spinner after delay
-        }, remainingTime > 0 ? remainingTime : 0);
-    };
-
-
-    const handleTypeStrainToggle = async (isolate_name: string) => {
-        setLoading(true); // Show spinner
-        const startTime = Date.now(); // Track start time
-
-        let updatedSelectedTypeStrains: string[];
-
-        if (selectedTypeStrains.includes(isolate_name)) {
-            updatedSelectedTypeStrains = selectedTypeStrains.filter((id) => id !== isolate_name);
-        } else {
-            updatedSelectedTypeStrains = [...selectedTypeStrains, isolate_name];
-        }
-
-        setSelectedTypeStrains(updatedSelectedTypeStrains);
-
-        if (updatedSelectedTypeStrains.length > 0) {
-            const filteredResults = genomeResults.filter((result) =>
-                updatedSelectedTypeStrains.includes(result.strain_id)
-            );
-            setGenomeResults(filteredResults);
-        } else {
-            await handleGenomeSearch();
-        }
-
-        const elapsedTime = Date.now() - startTime; // Calculate elapsed time
-        const remainingTime = SPINNER_DELAY - elapsedTime;
-
-        setTimeout(() => {
-            setLoading(false); // Hide spinner after delay
-        }, remainingTime > 0 ? remainingTime : 0);
-    };
-
-
-    const handleGenomeSearch = async (field = genomeSortField, order = genomeSortOrder) => {
-        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, genomeSearchQuery, field, order);
-        setGenomeResults(response.results);
-    };
-
-    //todo to be removed
-    const handleGeneSearch = async (field = geneSortField, order = geneSortOrder) => {
-        const response = await GenomeService.fetchGenomesBySearch(selectedSpecies, geneSearchQuery, field, order);
-        setGenomeResults(response.results);
-    };
-
-    const handleGenomeSelect = (genome: BaseGenome) => {
-        if (!selectedGenomes.some(g => g.isolate_name === genome.isolate_name)) {
-            setSelectedGenomes([...selectedGenomes, genome]);
-        }
-    };
-
-    const handleRemoveGenome = (isolate_name: string) => {
-        setSelectedGenomes(selectedGenomes.filter(g => g.isolate_name !== isolate_name));
-        setSelectedTypeStrains(selectedTypeStrains.filter(id => id !== isolate_name));
-    };
-
-    const handleToggleGenomeSelect = (genome: BaseGenome) => {
-        if (selectedGenomes.some(g => g.isolate_name === genome.isolate_name)) {
-            handleRemoveGenome(genome.isolate_name);
-        } else {
-            handleGenomeSelect(genome);
-        }
-    };
-
-    const handleTabClick = (tabId: string) => {
-        setActiveTab(tabId);
-    };
-
-    const handleGenomeSortClick = async (field: string) => {
-        const newSortOrder = genomeSortField === field && genomeSortOrder === 'asc' ? 'desc' : 'asc';
-        setGenomeSortField(field);
-        setGenomeSortOrder(newSortOrder);
-        // console.log('Sorting Genomes by:', {field, order: newSortOrder});
-        handleGenomeSearch(field, newSortOrder);
-    };
-
-
-    const handleGeneSortClick = async (field: string) => {
-        const newSortOrder = geneSortField === field && geneSortOrder === 'asc' ? 'desc' : 'asc';
-        setGeneSortField(field);
-        setGeneSortOrder(newSortOrder);
-        // console.log('Sorting Genes by:', {field, order: newSortOrder});
-        //handleGeneSearch(field, newSortOrder);
-    };
-
-
+    // Link data for components
     const geneLinkData = {
         template: '/genome/${strain_name}?locus_tag=${locus_tag}',
         alias: 'Browse'
@@ -244,74 +96,137 @@ const HomePage: React.FC = () => {
         alias: 'Browse'
     };
 
+    // Tab labels
     const tabs: Tab[] = [
-        { id: 'vf-tabs__section--1', label: 'Genome Search' },
-        { id: 'vf-tabs__section--2', label: 'Gene Search' },
-        { id: 'vf-tabs__section--3', label: 'Protein Search' }
+        { id: 'genomes', label: 'Genomes' },
+        { id: 'genes', label: 'Genes' },
+        // { id: 'proteinsearch', label: 'Protein Search' },
     ];
 
+    // Reset filters when switching tabs
+    const handleTabClick = (tabId: string) => {
+        if (tabId !== activeTab) {
+            // Reset search queries and sorting, but preserve species selection for genes tab
+            filterStore.setGenomeSearchQuery('');
+            filterStore.setGenomeSortField('species');
+            filterStore.setGenomeSortOrder('asc');
+            filterStore.setGeneSearchQuery('');
+            filterStore.setGeneSortField('locus_tag');
+            filterStore.setGeneSortOrder('asc');
+            filterStore.setFacetedFilters({});
+            filterStore.setFacetOperators({});
+
+            // Only clear species selection when switching to proteinsearch
+            if (tabId === 'proteinsearch') {
+                filterStore.setSelectedSpecies([]);
+                filterStore.setSelectedGenomes([]);
+            }
+            // For genes tab, preserve species selection but clear type strains
+            else if (tabId === 'genes') {
+                filterStore.setSelectedTypeStrains([]);
+            }
+            // For genomes tab, preserve species selection
+            else {
+                filterStore.setSelectedTypeStrains([]);
+            }
+
+            // Set the new active tab
+            setActiveTab(tabId);
+            hasUserSelectedTab.current = true;
+        }
+    };
+
+    // Error handling
+    const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
+        console.error('HomePage error:', error, errorInfo);
+        // Could send to error reporting service here
+    };
+
     return (
+        <ErrorBoundary onError={handleError}>
         <div>
-            {spinner} {/* Display spinner */}
+                {/* Loading spinner */}
+                {genomeData.loading && (
+                    <div className={styles.spinnerOverlay}>
+                        <div className={styles.spinner}></div>
+                    </div>
+                )}
+
+                {/* Error display */}
+                {genomeData.error && (
+                    <div className={styles.errorMessage}>
+                        <p>Error: {genomeData.error}</p>
+                    </div>
+                )}
+
             <div>
                 <HomePageHeadBand
-                    typeStrains={typeStrains}
+                        typeStrains={genomeData.typeStrains}
                     linkTemplate="/genome/$strain_name"
-                    speciesList={speciesList}
-                    selectedSpecies={selectedSpecies}
-                    handleSpeciesSelect={handleSpeciesSelect}
+                        speciesList={genomeData.speciesList}
+                        selectedSpecies={filterStore.selectedSpecies}
+                        handleSpeciesSelect={genomeData.handleSpeciesSelect}
                 />
             </div>
 
             <div className="layout-container">
-
                 <div>
                     <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick} />
-                    {activeTab === 'vf-tabs__section--1' && (
+
+                        {activeTab === 'genomes' && (
+                            <ErrorBoundary>
                         <GenomeSearchForm
-                            // key={`${genomeResults.length}-${sortField}-${sortOrder}`}
-                            searchQuery={genomeSearchQuery}
-                            onSearchQueryChange={e => setGenomeSearchQuery(e.target.value)}
-                            onSearchSubmit={handleGenomeSearch}
-                            // onGenomeSelect={handleGenomeSelect}
-                            selectedSpecies={selectedSpecies}
-                            selectedTypeStrains={selectedTypeStrains}
-                            typeStrains={typeStrains}
-                            onSortClick={handleGenomeSortClick}
-                            sortField={genomeSortField}
-                            sortOrder={genomeSortOrder}
-                            results={genomeResults}
-                            selectedGenomes={selectedGenomes}
-                            onToggleGenomeSelect={handleToggleGenomeSelect}
-                            handleTypeStrainToggle={handleTypeStrainToggle}
-                            handleRemoveGenome={handleRemoveGenome}
+                                    searchQuery={filterStore.genomeSearchQuery}
+                                    onSearchQueryChange={e => filterStore.setGenomeSearchQuery(e.target.value)}
+                                    onSearchSubmit={genomeData.handleGenomeSearch}
+                                    selectedSpecies={filterStore.selectedSpecies}
+                                    selectedTypeStrains={filterStore.selectedTypeStrains}
+                                    typeStrains={genomeData.typeStrains}
+                                    onSortClick={genomeData.handleGenomeSortClick}
+                                    sortField={filterStore.genomeSortField}
+                                    sortOrder={filterStore.genomeSortOrder}
+                                    results={genomeData.genomeResults}
+                                    selectedGenomes={genomeData.selectedGenomes}
+                                    onToggleGenomeSelect={genomeData.handleToggleGenomeSelect}
+                                    handleTypeStrainToggle={genomeData.handleTypeStrainToggle}
+                                    handleRemoveGenome={genomeData.handleRemoveGenome}
                             linkData={genomeLinkData}
-                            setLoading={setLoading}
+                                    setLoading={genomeData.setLoading}
                         />
+                            </ErrorBoundary>
                     )}
 
-                    {activeTab === 'vf-tabs__section--2' && (
+                        {activeTab === 'genes' && (
+                            <ErrorBoundary>
                         <GeneSearchForm
-                            searchQuery={geneSearchQuery}
-                            onSearchQueryChange={e => setGeneSearchQuery(e.target.value)}
-                            onSearchSubmit={handleGeneSearch}
-                            selectedSpecies={selectedSpecies}
-                            selectedGenomes={selectedGenomes}
-                            results={geneResults}
-                            onSortClick={handleGeneSortClick}
-                            sortField={geneSortField}
-                            sortOrder={geneSortOrder}
+                                    searchQuery={filterStore.geneSearchQuery}
+                                    onSearchQueryChange={() => {}} // GeneSearchForm manages its own state
+                                    onSearchSubmit={() => {}}
+                                    selectedSpecies={filterStore.selectedSpecies}
+                                    selectedGenomes={filterStore.selectedGenomes}
+                                    results={[]} // GeneSearchForm manages its own results
+                                    onSortClick={(field, order) => {
+                                        filterStore.setGeneSortField(field);
+                                        filterStore.setGeneSortOrder(order);
+                                    }}
+                                    sortField={filterStore.geneSortField}
+                                    sortOrder={filterStore.geneSortOrder}
                             linkData={geneLinkData}
-                            handleRemoveGenome={handleRemoveGenome}
-                            setLoading={setLoading}
+                                    handleRemoveGenome={() => {}} // GeneSearchForm manages its own genome removal
+                                    setLoading={() => {}} // GeneSearchForm manages its own loading state
                         />
+                            </ErrorBoundary>
                     )}
-                    {activeTab === 'vf-tabs__section--3' && (
+
+                        {activeTab === 'proteinsearch' && (
+                            <ErrorBoundary>
                         <PyhmmerSearchForm />
+                            </ErrorBoundary>
                     )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </ErrorBoundary>
     );
 };
 

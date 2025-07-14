@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
 
-from dataportal.schemas import SpeciesSchema
+from dataportal.schema.species_schemas import SpeciesSchema
 from dataportal.services.species_service import SpeciesService
 
 
@@ -76,3 +76,27 @@ async def test_get_species_by_acronym_not_found(mock_sync_to_async):
         await service.get_species_by_acronym("ABC")
 
     assert "Error retrieving species by acronym" in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+@patch("dataportal.services.species_service.sync_to_async")
+async def test_get_species_by_acronym_exception(mock_sync_to_async):
+    mock_sync_to_async.side_effect = Exception("Database connection failed")
+
+    service = SpeciesService()
+    with pytest.raises(Exception) as excinfo:
+        await service.get_species_by_acronym("BU")
+
+    assert "Error retrieving species by acronym" in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+@patch("dataportal.services.species_service.sync_to_async")
+async def test_get_all_species_exception(mock_sync_to_async):
+    mock_sync_to_async.side_effect = Exception("Database connection failed")
+
+    service = SpeciesService()
+    with pytest.raises(Exception) as excinfo:
+        await service.get_all_species()
+
+    assert "Error retrieving all species" in str(excinfo.value)

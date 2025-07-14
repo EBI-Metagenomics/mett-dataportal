@@ -1,0 +1,67 @@
+.breadcrumbsItem {
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.separator {
+  color: #666;
+  margin: 0 0.25rem;
+}
+
+.infoSection {
+  margin: 2rem 0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.leftPane {
+  .genome-meta-info {
+    h2 {
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    
+    p {
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+      
+      strong {
+        color: #555;
+      }
+      
+      a {
+        color: #007bff;
+        text-decoration: none;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+.rightPane {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.iconBlack {
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .infoGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .rightPane {
+    justify-content: flex-start;
+  }
+} 
