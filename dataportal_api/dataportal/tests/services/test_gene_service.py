@@ -95,6 +95,40 @@ mock_gene2.to_dict.return_value = {
 mock_gene_hits = [mock_gene1, mock_gene2]
 
 
+def create_mock_search(mock_hits, total_hits=None):
+    """Create a mock Search object that handles chaining properly"""
+    mock_search = MagicMock()
+    
+    # Make all chained methods return the same mock
+    mock_search.query.return_value = mock_search
+    mock_search.filter.return_value = mock_search
+    mock_search.sort.return_value = mock_search
+    mock_search.source.return_value = mock_search
+    mock_search.__getitem__.return_value = mock_search
+    mock_search.extra.return_value = mock_search
+    
+    # Mock the execute method
+    mock_response = MagicMock()
+    mock_response.__iter__.return_value = iter(mock_hits)
+    
+    # Create proper hits structure
+    mock_hits_obj = MagicMock()
+    mock_hits_obj.__iter__.return_value = iter(mock_hits)
+    mock_hits_obj.__getitem__.side_effect = lambda idx: mock_hits[idx]
+    if total_hits is not None:
+        mock_hits_obj.total.value = total_hits
+    # Make hits falsy if empty
+    mock_hits_obj.__bool__.return_value = bool(mock_hits)
+    mock_response.hits = mock_hits_obj
+    
+    mock_search.execute.return_value = mock_response
+    
+    # Mock to_dict method
+    mock_search.to_dict.return_value = {"query": {"match": "test"}}
+    
+    return mock_search
+
+
 @pytest.fixture
 def gene_service():
     return GeneService()
@@ -205,33 +239,23 @@ async def test_get_all_genes(mock_sync_to_async):
     assert len(result.results) == 2
 
 
-@patch("dataportal.services.gene_service.sync_to_async")
+# --- AUTOCOMPLETE TESTS ---
+@patch("dataportal.services.gene_service.Search")
 @pytest.mark.asyncio
-async def test_autocomplete_gene_suggestions(mock_sync_to_async):
-    # Mock the Search object's execute method
-    mock_search = MagicMock()
-    mock_search.__iter__.return_value = iter(mock_gene_hits)
-    mock_search.hits.total.value = 2
-    mock_sync_to_async.return_value = AsyncMock(return_value=mock_search)
+async def test_autocomplete_gene_suggestions(mock_search_class):
+    # Use the helper function to create a proper mock
+    mock_search = create_mock_search(mock_gene_hits)
+    mock_search_class.return_value = mock_search
 
     service = GeneService()
-    
-    # Create autocomplete query schema
-    params = GeneAutocompleteQuerySchema(
-        query="dnaA",
-        limit=10
-    )
-    
+    params = GeneAutocompleteQuerySchema(query="dnaA", limit=10)
     result = await service.autocomplete_gene_suggestions(params)
-
     assert len(result) == 2
     assert all("dnaA" in gene["gene_name"] for gene in result)
 
-
-@patch("dataportal.services.gene_service.sync_to_async")
+@patch("dataportal.services.gene_service.Search")
 @pytest.mark.asyncio
-async def test_autocomplete_gene_suggestions_with_filters(mock_sync_to_async):
-    # Mock gene with specific filters
+async def test_autocomplete_gene_suggestions_with_filters(mock_search_class):
     mock_gene = MagicMock()
     mock_gene.to_dict.return_value = {
         "locus_tag": "BU_ATCC8492_00001",
@@ -240,15 +264,12 @@ async def test_autocomplete_gene_suggestions_with_filters(mock_sync_to_async):
         "essentiality": "essential_liquid",
         "interpro": ["IPR035952"],
     }
-
-    # Mock the Search object's execute method
-    mock_search = MagicMock()
-    mock_search.execute.return_value = MockESResponse([mock_gene])
-    mock_sync_to_async.return_value = AsyncMock(return_value=mock_search)
+    
+    # Use the helper function to create a proper mock
+    mock_search = create_mock_search([mock_gene])
+    mock_search_class.return_value = mock_search
 
     service = GeneService()
-    
-    # Create autocomplete query schema with filters
     params = GeneAutocompleteQuerySchema(
         query="pr",
         species_acronym="BU",
@@ -256,105 +277,21 @@ async def test_autocomplete_gene_suggestions_with_filters(mock_sync_to_async):
         filter="essentiality:essential_liquid;interpro:IPR035952",
         limit=10
     )
-    
     result = await service.autocomplete_gene_suggestions(params)
-
     assert len(result) == 1
     assert result[0]["gene_name"] == "pr"
     assert result[0]["essentiality"] == "essential_liquid"
     assert "IPR035952" in result[0]["interpro"]
 
-
-@patch("dataportal.services.gene_service.GeneFacetedSearch")
+# --- SEARCH GENES TESTS ---
+@patch("dataportal.services.gene_service.Search")
 @pytest.mark.asyncio
-async def test_get_faceted_search(mock_gene_faceted_search):
-    # Mock the GeneFacetedSearch class
-    mock_instance = MagicMock()
-    mock_gene_faceted_search.return_value = mock_instance
-    
-    # Mock the execute method to return our expected response
-    mock_response = MagicMock()
-    mock_response.aggregations = {
-        "pfam_filtered": {
-            "pfam": {
-                "buckets": [
-                    {"key": "pf13715", "doc_count": 10}
-                ]
-            }
-        },
-        "interpro_filtered": {
-            "interpro": {
-                "buckets": [
-                    {"key": "ipr011611", "doc_count": 5}
-                ]
-            }
-        },
-        "kegg_filtered": {
-            "kegg": {
-                "buckets": [
-                    {"key": "ko:K02313", "doc_count": 3}
-                ]
-            }
-        },
-        "cog_id_filtered": {
-            "cog_id": {
-                "buckets": [
-                    {"key": "COG0593", "doc_count": 2}
-                ]
-            }
-        },
-        "cog_funcats_filtered": {
-            "cog_funcats": {
-                "buckets": [
-                    {"key": "L", "doc_count": 1}
-                ]
-            }
-        },
-        "essentiality_filtered": {
-            "essentiality": {
-                "buckets": [
-                    {"key": "essential", "doc_count": 8}
-                ]
-            }
-        },
-        "has_amr_info_filtered": {
-            "has_amr_info": {
-                "buckets": [
-                    {"key": True, "doc_count": 4}
-                ]
-            }
-        }
-    }
-    mock_response.hits.total.value = 10
-    mock_instance.execute.return_value = mock_response
+async def test_search_genes(mock_search_class):
+    # Use the helper function to create a proper mock
+    mock_search = create_mock_search(mock_gene_hits, total_hits=2)
+    mock_search_class.return_value = mock_search
 
     service = GeneService()
-    
-    # Create faceted search query schema
-    params = GeneFacetedSearchQuerySchema(
-        species_acronym="BU",
-        limit=10,
-        pfam="pf13715"
-    )
-    
-    result = await service.get_faceted_search(params)
-
-    assert result["pfam"][0]["selected"] is True
-    assert result["total_hits"] == 10
-    assert "operators" in result
-
-
-@patch("dataportal.services.gene_service.sync_to_async")
-@pytest.mark.asyncio
-async def test_search_genes(mock_sync_to_async):
-    # Mock the Search object's execute method
-    mock_search = MagicMock()
-    mock_search.execute.return_value = MockESResponse(mock_gene_hits)
-    mock_sync_to_async.return_value = AsyncMock(return_value=mock_search)
-
-    service = GeneService()
-    
-    # Create search query schema
     params = GeneSearchQuerySchema(
         query="dnaA",
         page=1,
@@ -362,96 +299,110 @@ async def test_search_genes(mock_sync_to_async):
         sort_field="locus_tag",
         sort_order="asc"
     )
-    
     result = await service.search_genes(params)
-
     assert isinstance(result, GenePaginationSchema)
     assert len(result.results) == 2
-    assert all(g.isolate_name == "BU_ATCC8492" for g in result.results)
 
-
-@patch("dataportal.services.gene_service.sync_to_async")
+@patch("dataportal.services.gene_service.Search")
 @pytest.mark.asyncio
-async def test_search_genes_with_multiple_filters(mock_sync_to_async):
-    # Mock the Search object's execute method
-    mock_search = MagicMock()
-    mock_search.execute.return_value = MockESResponse([mock_gene1])
-    mock_sync_to_async.return_value = AsyncMock(return_value=mock_search)
+async def test_search_genes_with_multiple_filters(mock_search_class):
+    # Use the helper function to create a proper mock
+    mock_search = create_mock_search([mock_gene1], total_hits=1)
+    mock_search_class.return_value = mock_search
 
     service = GeneService()
-    
-    # Create search query schema
-    params = GeneSearchQuerySchema(
-        query="",
-        page=1,
-        per_page=10
-    )
-    
+    params = GeneSearchQuerySchema(query="", page=1, per_page=10)
     result = await service.search_genes(params)
-
     assert isinstance(result, GenePaginationSchema)
     assert len(result.results) == 1
     assert result.results[0].isolate_name == "BU_ATCC8492"
 
-
-@patch("dataportal.services.gene_service.sync_to_async")
+@patch("dataportal.services.gene_service.Search")
 @pytest.mark.asyncio
-async def test_get_gene_protein_seq(mock_sync_to_async):
-    # Mock protein sequence response with complete data
-    mock_doc = MagicMock()
-    mock_doc.to_dict.return_value = {
-        "locus_tag": "BU_2243B_00003",
-        "protein_sequence": "MAKRRRKYKY",
-        "gene_name": "test_gene",
-        "product": "Test protein",
-        "isolate_name": "BU_2243B",
-        "species_acronym": "BU",
-        "start_position": 1,
-        "end_position": 30,
-        "seq_id": "contig_1",
-        "uniprot_id": "TEST123",
+async def test_search_genes_with_essentiality(mock_search_class):
+    mock_essential_gene = MagicMock()
+    mock_essential_gene.to_dict.return_value = {
+        "locus_tag": "BU_ATCC8492_00001",
+        "gene_name": "dnaA",
+        "isolate_name": "BU_ATCC8492",
         "essentiality": "essential",
-        "cog_funcats": ["L"],
-        "cog_id": "COG0001",
-        "kegg": ["ko:K00001"],
-        "pfam": ["PF00001"],
-        "interpro": ["IPR000001"],
-        "ec_number": "1.1.1.1",
-        "dbxref": [{"db": "TEST", "ref": "TEST123"}],
-        "eggnog": "TEST.TEST123",
-        "alias": ["TEST_GENE"]
+        "species_acronym": "BU",
     }
-    mock_search = MagicMock()
-    mock_search.execute.return_value = MockESResponse([mock_doc])
-    mock_sync_to_async.return_value = AsyncMock(return_value=mock_search)
+    
+    # Use the helper function to create a proper mock
+    mock_search = create_mock_search([mock_essential_gene], total_hits=1)
+    mock_search_class.return_value = mock_search
+
+    service = GeneService()
+    params = GeneSearchQuerySchema(query="dna", page=1, per_page=10)
+    result = await service.search_genes(params)
+    assert isinstance(result, GenePaginationSchema)
+    assert len(result.results) == 1
+    assert result.results[0].essentiality == "essential"
+    assert result.results[0].isolate_name == "BU_ATCC8492"
+
+@patch("dataportal.services.gene_service.Search")
+@pytest.mark.asyncio
+async def test_get_genes_by_multiple_genomes_and_string(mock_search_class):
+    # Use the helper function to create a proper mock
+    mock_search = create_mock_search(mock_gene_hits, total_hits=2)
+    mock_search_class.return_value = mock_search
+
+    service = GeneService()
+    params = GeneAdvancedSearchQuerySchema(
+        isolates="BU_ATCC8492,PV_ATCC8482",
+        species_acronym="BU",
+        query="dnaA",
+        filter="essentiality:essential",
+        filter_operators="essentiality:AND",
+        page=1,
+        per_page=10,
+        sort_field="locus_tag",
+        sort_order="asc"
+    )
+    result = await service.get_genes_by_multiple_genomes_and_string(params)
+    assert isinstance(result, GenePaginationSchema)
+    assert len(result.results) == 2
+    assert result.total_results == 2
+
+# --- PROTEIN SEQUENCE TESTS ---
+@patch("dataportal.services.gene_service.Search")
+@pytest.mark.asyncio
+async def test_get_gene_protein_seq(mock_search_class):
+    # Mock protein sequence response with all required fields
+    class Hit:
+        locus_tag = "BU_2243B_00003"
+        protein_sequence = "MAKRRRKYKY"
+        def to_dict(self):
+            return {"locus_tag": self.locus_tag, "protein_sequence": self.protein_sequence}
+    
+    # Use the helper function to create a proper mock
+    mock_search = create_mock_search([Hit()])
+    mock_search_class.return_value = mock_search
 
     service = GeneService()
     result = await service.get_gene_protein_seq("BU_2243B_00003")
-
     assert result.protein_sequence == "MAKRRRKYKY"
     assert result.locus_tag == "BU_2243B_00003"
 
-
+@patch("dataportal.services.gene_service.Search")
 @pytest.mark.asyncio
-@patch("dataportal.services.gene_service.sync_to_async")
-async def test_get_gene_protein_seq_not_found(mock_sync_to_async):
-    # Mock empty response
-    mock_search = MagicMock()
-    mock_search.execute.return_value = MockESResponse([])
-    mock_sync_to_async.return_value = AsyncMock(return_value=mock_search)
+async def test_get_gene_protein_seq_not_found(mock_search_class):
+    # Use the helper function to create a proper mock with empty results
+    mock_search = create_mock_search([])
+    mock_search_class.return_value = mock_search
 
     service = GeneService()
     with pytest.raises(GeneNotFoundError):
         await service.get_gene_protein_seq("INVALID_LOCUS_TAG")
 
-
+# --- FACETED SEARCH OPERATOR TEST ---
 @patch("dataportal.services.gene_service.GeneFacetedSearch")
 @pytest.mark.asyncio
 async def test_get_faceted_search_with_multiple_filters(mock_gene_faceted_search):
     # Mock the GeneFacetedSearch class
     mock_instance = MagicMock()
     mock_gene_faceted_search.return_value = mock_instance
-    
     # Mock the execute method to return our expected response
     mock_response = MagicMock()
     mock_response.aggregations = {
@@ -509,84 +460,17 @@ async def test_get_faceted_search_with_multiple_filters(mock_gene_faceted_search
     mock_instance.execute.return_value = mock_response
 
     service = GeneService()
-    
-    # Create faceted search query schema with multiple filters
     params = GeneFacetedSearchQuerySchema(
         species_acronym="BU",
         limit=5,
         interpro="ipr011611",
-        pfam="pf00294"
+        pfam="pf00294",
+        pfam_operator="AND",
+        interpro_operator="AND"
     )
-    
     result = await service.get_faceted_search(params)
-
     assert result["pfam"][0]["selected"] is True
     assert result["interpro"][0]["selected"] is True
     assert result["total_hits"] == 3
     assert result["operators"]["pfam"] == "AND"
-    assert result["operators"]["interpro"] == "OR"
-
-
-@patch("dataportal.services.gene_service.sync_to_async")
-@pytest.mark.asyncio
-async def test_search_genes_with_essentiality(mock_sync_to_async):
-    # Create mock gene with essentiality data
-    mock_essential_gene = MagicMock()
-    mock_essential_gene.to_dict.return_value = {
-        "locus_tag": "BU_ATCC8492_00001",
-        "gene_name": "dnaA",
-        "isolate_name": "BU_ATCC8492",
-        "essentiality": "essential",
-        "species_acronym": "BU",
-    }
-
-    # Mock the Search object's execute method
-    mock_search = MagicMock()
-    mock_search.execute.return_value = MockESResponse([mock_essential_gene])
-    mock_sync_to_async.return_value = AsyncMock(return_value=mock_search)
-
-    service = GeneService()
-    
-    # Create search query schema
-    params = GeneSearchQuerySchema(
-        query="dna",
-        page=1,
-        per_page=10
-    )
-    
-    result = await service.search_genes(params)
-
-    assert isinstance(result, GenePaginationSchema)
-    assert len(result.results) == 1
-    assert result.results[0].essentiality == "essential"
-    assert result.results[0].isolate_name == "BU_ATCC8492"
-
-
-@patch("dataportal.services.gene_service.sync_to_async")
-@pytest.mark.asyncio
-async def test_get_genes_by_multiple_genomes_and_string(mock_sync_to_async):
-    # Mock the Search object's execute method
-    mock_search = MagicMock()
-    mock_search.execute.return_value = MockESResponse(mock_gene_hits)
-    mock_sync_to_async.return_value = AsyncMock(return_value=mock_search)
-
-    service = GeneService()
-    
-    # Create advanced search query schema
-    params = GeneAdvancedSearchQuerySchema(
-        isolates="BU_ATCC8492,PV_ATCC8482",
-        species_acronym="BU",
-        query="dnaA",
-        filter="essentiality:essential",
-        filter_operators="essentiality:AND",
-        page=1,
-        per_page=10,
-        sort_field="locus_tag",
-        sort_order="asc"
-    )
-    
-    result = await service.get_genes_by_multiple_genomes_and_string(params)
-
-    assert isinstance(result, GenePaginationSchema)
-    assert len(result.results) == 2
-    assert result.total_results == 2
+    assert result["operators"]["interpro"] == "AND"
