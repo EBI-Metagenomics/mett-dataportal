@@ -146,12 +146,14 @@
 
 .select {
   width: 100%;
-  padding: 12px;
+  padding: 8px 12px;
+  height: 40px;
   border-radius: 4px;
   border: 1px solid #ccc;
   background-color: #fff;
   font-size: 1rem;
   font-family: inherit;
+  box-sizing: border-box;
   
   &:focus {
     outline: none;
@@ -206,12 +208,14 @@
 
 .input {
   width: 100%;
-  padding: 12px;
+  padding: 8px 12px;
+  height: 40px;
   border-radius: 4px;
   border: 1px solid #ccc;
   text-align: center;
   font-size: 1rem;
   font-family: inherit;
+  box-sizing: border-box;
   
   &:focus {
     outline: none;
@@ -236,11 +240,13 @@
 
 .inputSmall {
   width: 100%;
-  padding: 12px;
+  padding: 8px 12px;
+  height: 40px;
   border-radius: 4px;
   border: 1px solid #ccc;
   font-size: 1rem;
   font-family: inherit;
+  box-sizing: border-box;
   
   &:focus {
     outline: none;
@@ -251,12 +257,14 @@
 
 .selectSmall {
   width: 100%;
-  padding: 12px;
+  padding: 8px 12px;
+  height: 40px;
   border-radius: 4px;
   border: 1px solid #ccc;
   background-color: #fff;
   font-size: 1rem;
   font-family: inherit;
+  box-sizing: border-box;
   
   &:focus {
     outline: none;
