@@ -3,6 +3,7 @@ import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '@components/organisms/Gene/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '@components/organisms/Genome/GenomeSearchForm/GenomeSearchForm';
 import PyhmmerSearchForm from '@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchForm';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 
@@ -47,6 +48,8 @@ const HomePage: React.FC = () => {
 
     // Use custom hooks for data management
     const genomeData = useGenomeData();
+    const { isFeatureEnabled } = useFeatureFlags();
+    
     // Note: GeneSearchForm manages its own state, so we don't need useGeneData here
 
     // Local state for UI
@@ -65,7 +68,12 @@ const HomePage: React.FC = () => {
         const tabFromUrl = searchParams.get('tab');
 
         if (tabFromUrl && ['genomes', 'genes', 'proteinsearch'].includes(tabFromUrl) && !hasUserSelectedTab.current) {
-            setActiveTab(tabFromUrl);
+            // If proteinsearch tab is requested but not enabled, default to genomes
+            if (tabFromUrl === 'proteinsearch' && !isFeatureEnabled('pyhmmer_search')) {
+                setActiveTab('genomes');
+            } else {
+                setActiveTab(tabFromUrl);
+            }
         }
     }, [activeTab, location.pathname, location.search]);
 
@@ -100,7 +108,7 @@ const HomePage: React.FC = () => {
     const tabs: Tab[] = [
         {id: 'genomes', label: 'Genomes'},
         {id: 'genes', label: 'Genes'},
-        {id: 'proteinsearch', label: 'Protein Search'},
+        ...(isFeatureEnabled('pyhmmer_search') ? [{id: 'proteinsearch', label: 'Protein Search'}] : []),
     ];
 
     // Reset filters when switching tabs
@@ -222,7 +230,7 @@ const HomePage: React.FC = () => {
                             </ErrorBoundary>
                         )}
 
-                        {activeTab === 'proteinsearch' && (
+                        {activeTab === 'proteinsearch' && isFeatureEnabled('pyhmmer_search') && (
                             <ErrorBoundary>
                                 <PyhmmerSearchForm/>
                             </ErrorBoundary>

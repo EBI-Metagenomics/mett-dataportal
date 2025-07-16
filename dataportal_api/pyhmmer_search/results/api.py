@@ -160,6 +160,45 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         raise HttpError(500, f"Internal server error: {str(e)}")
 
 
+@pyhmmer_router_result.get("/{uuid:id}/domains", response=DomainDetailsResponseSchema)
+def get_domains_by_target(request, id: uuid.UUID, target: str):
+    """Get domains for a specific target in a search result."""
+    try:
+        job = get_object_or_404(HmmerJob, id=id)
+        
+        if not job.task or job.task.status != "SUCCESS":
+            raise HttpError(400, "Job not completed successfully")
+        
+        # Parse the result to get domain details
+        import json
+        if isinstance(job.task.result, str):
+            result_data = json.loads(job.task.result)
+        else:
+            result_data = job.task.result or []
+        
+        # Find the target in the results
+        target_data = None
+        for item in result_data:
+            if item.get('target') == target:
+                target_data = item
+                break
+        
+        if not target_data:
+            raise HttpError(404, f"Target '{target}' not found in results")
+        
+        domains = target_data.get('domains', [])
+        
+        return {
+            "status": "success",
+            "target": target_data.get('target', ''),
+            "domains": domains
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in get_domains_by_target: {e}")
+        raise HttpError(500, f"Internal server error: {str(e)}")
+
+
 @pyhmmer_router_result.get("/{uuid:id}/domains/{int:domain_index}", response=DomainDetailsResponseSchema)
 @wrap_success_response
 def get_domain_details(request, id: uuid.UUID, domain_index: int):

@@ -23,6 +23,10 @@ ES_PASSWORD = os.getenv("ES_PASSWORD")
 ES_TIMEOUT = int(os.getenv("ES_TIMEOUT", 30))
 ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 
+# Feature flags
+ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+
+
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
 
@@ -88,8 +92,11 @@ INSTALLED_APPS = [
     "ninja",
     "django_celery_results",
     "django_celery_beat",
-    "pyhmmer_search.search.apps.PyhmmerSearchConfig",
 ]
+
+# Conditionally include PyHMMER search app based on feature flag
+if ENABLE_PYHMMER_SEARCH:
+    INSTALLED_APPS.append("pyhmmer_search.search.apps.PyhmmerSearchConfig")
 
 if DEBUG:
     INSTALLED_APPS.append("debug_toolbar")

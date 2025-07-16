@@ -206,8 +206,13 @@ api.add_router(URL_PREFIX_SPECIES, species_router)
 api.add_router(URL_PREFIX_GENOMES, genome_router)
 api.add_router(URL_PREFIX_GENES, gene_router)
 api.add_router(URL_PREFIX_METADATA, metadata_router)
-api.add_router(URL_PREFIX_PYHMMER_SEARCH, pyhmmer_router_search)
-api.add_router(URL_PREFIX_PYHMMER_RESULT, pyhmmer_router_result)
+
+# Conditionally register PyHMMER routers based on feature flag
+from django.conf import settings
+if getattr(settings, 'ENABLE_PYHMMER_SEARCH', False):
+    api.add_router(URL_PREFIX_PYHMMER_SEARCH, pyhmmer_router_search)
+    api.add_router(URL_PREFIX_PYHMMER_RESULT, pyhmmer_router_result)
+
 api.add_router("/", health_router)
 # Register specific handlers
 api.add_exception_handler(HttpError, custom_error_handler)
