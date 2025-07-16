@@ -178,6 +178,36 @@ const PyhmmerSearchForm: React.FC = () => {
                 pextend: parseFloat(gapExtend),
             };
             
+            // Enhanced logging for form values
+            console.log('=== FORM VALUES BEING SENT ===');
+            console.log('Database:', database);
+            console.log('Threshold type:', evalueType);
+            console.log('Threshold value:', evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq));
+            console.log('Substitution matrix:', subMatrix);
+            console.log('Input sequence length:', sequence.length);
+            
+            // E-value parameters
+            console.log('=== E-VALUE FORM VALUES ===');
+            console.log('Significance E-value (Sequence):', significanceEValueSeq);
+            console.log('Significance E-value (Hit):', significanceEValueHit);
+            console.log('Report E-value (Sequence):', reportEValueSeq);
+            console.log('Report E-value (Hit):', reportEValueHit);
+            
+            // Bit score parameters
+            console.log('=== BIT SCORE FORM VALUES ===');
+            console.log('Significance Bit Score (Sequence):', significanceBitScoreSeq);
+            console.log('Significance Bit Score (Hit):', significanceBitScoreHit);
+            console.log('Report Bit Score (Sequence):', reportBitScoreSeq);
+            console.log('Report Bit Score (Hit):', reportBitScoreHit);
+            
+            // Gap penalties
+            console.log('=== GAP PENALTIES FORM VALUES ===');
+            console.log('Gap open penalty:', gapOpen);
+            console.log('Gap extend penalty:', gapExtend);
+            
+            console.log('=== FINAL REQUEST OBJECT ===');
+            console.log('Request object:', req);
+            
             setLoadingMessage('Creating search job...');
             const {id} = await PyhmmerService.search(req);
             console.log(`Search job created with ID: ${id}`);

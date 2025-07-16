@@ -117,6 +117,20 @@ def run_search(self, job_id: str):
         logger.info(f"Job threshold: {job.threshold}")
         logger.info(f"Job threshold_value: {job.threshold_value}")
 
+        # Enhanced logging for all job parameters
+        logger.info(f"=== JOB PARAMETERS IN TASK ===")
+        logger.info(f"Job mx (substitution matrix): {job.mx}")
+        logger.info(f"Job E (Report E-values - Sequence): {job.E}")
+        logger.info(f"Job domE (Report E-values - Hit): {job.domE}")
+        logger.info(f"Job incE (Significance E-values - Sequence): {job.incE}")
+        logger.info(f"Job incdomE (Significance E-values - Hit): {job.incdomE}")
+        logger.info(f"Job T (Report Bit scores - Sequence): {job.T}")
+        logger.info(f"Job domT (Report Bit scores - Hit): {job.domT}")
+        logger.info(f"Job incT (Significance Bit scores - Sequence): {job.incT}")
+        logger.info(f"Job incdomT (Significance Bit scores - Hit): {job.incdomT}")
+        logger.info(f"Job popen (Gap open penalty): {job.popen}")
+        logger.info(f"Job pextend (Gap extend penalty): {job.pextend}")
+
         logger.info(f"Updating task state to STARTED...")
         self.update_state(state="STARTED")
         if job.task:
@@ -145,6 +159,10 @@ def run_search(self, job_id: str):
         # Filter out None values before passing to Pipeline
         filtered_kwargs = {k: v for k, v in pipeline_kwargs.items() if v is not None}
         logger.info(f"Filtered pipeline kwargs: {filtered_kwargs}")
+        logger.info(f"=== PIPELINE CONFIGURATION DETAILS ===")
+        logger.info(f"Pipeline kwargs before filtering: {pipeline_kwargs}")
+        logger.info(f"Pipeline kwargs after filtering (None values removed): {filtered_kwargs}")
+        logger.info(f"Number of parameters passed to Pipeline: {len(filtered_kwargs)}")
         pipeline = Pipeline(alphabet, **filtered_kwargs)
         logger.info(f"Pipeline configured successfully")
 
@@ -188,6 +206,13 @@ def run_search(self, job_id: str):
             builder_kwargs['pextend'] = job.pextend
         if job.mx:
             builder_kwargs['score_matrix'] = job.mx
+            
+        logger.info(f"=== BUILDER CONFIGURATION DETAILS ===")
+        logger.info(f"Builder kwargs: {builder_kwargs}")
+        logger.info(f"Gap open penalty (popen): {job.popen} -> {'included' if job.popen is not None else 'excluded'}")
+        logger.info(f"Gap extend penalty (pextend): {job.pextend} -> {'included' if job.pextend is not None else 'excluded'}")
+        logger.info(f"Substitution matrix (mx): {job.mx} -> {'included' if job.mx else 'excluded'}")
+        logger.info(f"Number of parameters passed to Builder: {len(builder_kwargs)}")
             
         builder = Builder(alphabet, **builder_kwargs)
         logger.info(f"Builder configured with parameters: {builder_kwargs}")
@@ -308,20 +333,29 @@ def run_search(self, job_id: str):
             logger.info(f"Job threshold: {job.threshold}, threshold_value: {job.threshold_value}")
             logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
             
+            logger.info(f"=== FILTERING LOGIC DETAILS ===")
+            logger.info(f"Threshold type: {job.threshold}")
+            logger.info(f"Threshold value: {job.threshold_value}")
+            logger.info(f"Hit E-value: {hit.evalue}")
+            logger.info(f"Hit bit score: {hit.score}")
+            
             if (
                 job.threshold == HmmerJob.ThresholdChoices.EVALUE
                 and hit.evalue < job.threshold_value
             ):
-                logger.info(f"Hit passes EVALUE filter")
+                logger.info(f"Hit passes EVALUE filter: {hit.evalue} < {job.threshold_value}")
                 results.append(hit_obj)
             elif (
                 job.threshold == HmmerJob.ThresholdChoices.BITSCORE
                 and hit.score > job.threshold_value
             ):
-                logger.info(f"Hit passes BITSCORE filter")
+                logger.info(f"Hit passes BITSCORE filter: {hit.score} > {job.threshold_value}")
                 results.append(hit_obj)
             else:
-                logger.info(f"Hit does not pass filter")
+                if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
+                    logger.info(f"Hit does not pass EVALUE filter: {hit.evalue} >= {job.threshold_value}")
+                else:
+                    logger.info(f"Hit does not pass BITSCORE filter: {hit.score} <= {job.threshold_value}")
 
         logger.info(f"=== SEARCH COMPLETED ===")
         logger.info(f"Total hits processed: {len(hit_list)}")

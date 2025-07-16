@@ -44,6 +44,34 @@ export class PyhmmerService extends BaseService {
         try {
             console.log('PyhmmerService.search: Attempting to submit search request to:', API_BASE_SEARCH);
             console.log('PyhmmerService.search: Request payload:', request);
+            
+            // Enhanced logging for all parameters
+            console.log('=== FRONTEND SEARCH PARAMETERS ===');
+            console.log('Database:', request.database);
+            console.log('Threshold type:', request.threshold);
+            console.log('Threshold value:', request.threshold_value);
+            console.log('Substitution matrix (mx):', request.mx);
+            console.log('Input sequence length:', request.input?.length || 0);
+            
+            // E-value parameters
+            console.log('=== E-VALUE PARAMETERS ===');
+            console.log('E (Report E-values - Sequence):', request.E);
+            console.log('domE (Report E-values - Hit):', request.domE);
+            console.log('incE (Significance E-values - Sequence):', request.incE);
+            console.log('incdomE (Significance E-values - Hit):', request.incdomE);
+            
+            // Bit score parameters
+            console.log('=== BIT SCORE PARAMETERS ===');
+            console.log('T (Report Bit scores - Sequence):', request.T);
+            console.log('domT (Report Bit scores - Hit):', request.domT);
+            console.log('incT (Significance Bit scores - Sequence):', request.incT);
+            console.log('incdomT (Significance Bit scores - Hit):', request.incdomT);
+            
+            // Gap penalties
+            console.log('=== GAP PENALTIES ===');
+            console.log('popen (Gap open penalty):', request.popen);
+            console.log('pextend (Gap extend penalty):', request.pextend);
+            
             const result = await this.postWithRetry<PyhmmerSearchResponse>(`${API_BASE_SEARCH}`, request);
             console.log('PyhmmerService.search: Successfully submitted search, received response:', result);
             return result;

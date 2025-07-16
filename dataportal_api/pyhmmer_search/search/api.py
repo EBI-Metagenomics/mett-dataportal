@@ -26,11 +26,55 @@ def search(request, body: SearchRequestSchema):
         logger.info(f"=== SEARCH REQUEST RECEIVED ===")
         logger.info(f"Request body: {body.dict()}")
         
+        # Enhanced logging for all user-selected parameters
+        logger.info(f"=== USER SELECTED PARAMETERS ===")
+        logger.info(f"Database: {body.database}")
+        logger.info(f"Threshold type: {body.threshold}")
+        logger.info(f"Threshold value: {body.threshold_value}")
+        logger.info(f"Substitution matrix (mx): {body.mx}")
+        logger.info(f"Input sequence length: {len(body.input) if body.input else 0}")
+        
+        # E-value parameters
+        logger.info(f"=== E-VALUE PARAMETERS ===")
+        logger.info(f"E (Report E-values - Sequence): {body.E}")
+        logger.info(f"domE (Report E-values - Hit): {body.domE}")
+        logger.info(f"incE (Significance E-values - Sequence): {body.incE}")
+        logger.info(f"incdomE (Significance E-values - Hit): {body.incdomE}")
+        
+        # Bit score parameters
+        logger.info(f"=== BIT SCORE PARAMETERS ===")
+        logger.info(f"T (Report Bit scores - Sequence): {body.T}")
+        logger.info(f"domT (Report Bit scores - Hit): {body.domT}")
+        logger.info(f"incT (Significance Bit scores - Sequence): {body.incT}")
+        logger.info(f"incdomT (Significance Bit scores - Hit): {body.incdomT}")
+        
+        # Gap penalties
+        logger.info(f"=== GAP PENALTIES ===")
+        logger.info(f"popen (Gap open penalty): {body.popen}")
+        logger.info(f"pextend (Gap extend penalty): {body.pextend}")
+        
         # Create the job
         logger.info(f"Creating HmmerJob...")
         job = HmmerJob(**body.dict(), algo=HmmerJob.AlgoChoices.PHMMER)
         logger.info(f"Job object created: {job}")
         logger.info(f"Job ID before save: {job.id}")
+        
+        # Log the job parameters after creation
+        logger.info(f"=== JOB PARAMETERS VERIFICATION ===")
+        logger.info(f"Job database: {job.database}")
+        logger.info(f"Job threshold: {job.threshold}")
+        logger.info(f"Job threshold_value: {job.threshold_value}")
+        logger.info(f"Job mx: {job.mx}")
+        logger.info(f"Job E: {job.E}")
+        logger.info(f"Job domE: {job.domE}")
+        logger.info(f"Job incE: {job.incE}")
+        logger.info(f"Job incdomE: {job.incdomE}")
+        logger.info(f"Job T: {job.T}")
+        logger.info(f"Job domT: {job.domT}")
+        logger.info(f"Job incT: {job.incT}")
+        logger.info(f"Job incdomT: {job.incdomT}")
+        logger.info(f"Job popen: {job.popen}")
+        logger.info(f"Job pextend: {job.pextend}")
         
         job.clean()
         logger.info(f"Job cleaned successfully")
