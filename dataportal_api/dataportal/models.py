@@ -7,7 +7,7 @@ from elasticsearch_dsl import (
     analyzer,
     tokenizer,
     Nested,
-    normalizer,
+    normalizer, Float,
 )
 
 edge_ngram_tokenizer = tokenizer(
@@ -85,6 +85,7 @@ class StrainDocument(Document):
 
 class GeneDocument(Document):
     gene_id = Integer()
+    uniprot_id = Keyword()
     gene_name = Text(
         analyzer=autocomplete_analyzer,
         search_analyzer="standard",
@@ -119,7 +120,8 @@ class GeneDocument(Document):
     start = Integer()
     end = Integer()
 
-    # cog = Keyword(multi=True, normalizer=lowercase_normalizer)
+
+    cog_id = Keyword(multi=True)
     cog_funcats = Keyword(multi=True)
     kegg = Keyword(multi=True, normalizer=lowercase_normalizer)
     pfam = Keyword(multi=True, normalizer=lowercase_normalizer)
@@ -131,10 +133,10 @@ class GeneDocument(Document):
 
     dbxref = Nested(properties={"db": Keyword(), "ref": Keyword()})
 
-    uniprot_id = Keyword()
-    cog_id = Keyword()
+
 
     ec_number = Keyword()
+
     essentiality = Keyword(normalizer=lowercase_normalizer)
     inference = Text(fields={"keyword": Keyword()})
 
@@ -165,6 +167,16 @@ class GeneDocument(Document):
             "drug_subclass": Keyword(),
             "uf_keyword": Keyword(multi=True),
             "uf_ecnumber": Keyword(),
+        }
+    )
+
+    # Fitness Data - Size: ~140 Conditions * 2 species
+    # (~3800 genes for P. vulgatus, 3300 genes for B. uniformis, without intergenic regions)
+    fitness_data = Nested(
+        properties={
+            "contrast": Keyword(),
+            "lfc": Float(),
+            "fdr": Float(),
         }
     )
 

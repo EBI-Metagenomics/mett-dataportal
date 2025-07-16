@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mett-elasticsearch-prod-0
+  namespace: mett-dataportal-hl
+spec:
+  serviceName: mett-elasticsearch-service-prod
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mett-elasticsearch-prod
+  template:
+    metadata:
+      labels:
+        app: mett-elasticsearch-prod
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: mett-elasticsearch-prod
+              topologyKey: "kubernetes.io/hostname"
+      initContainers:
+        - name: init-fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data && chmod -R 777 /usr/share/elasticsearch/data"]
+          securityContext:
+            runAsUser: 0  # Run as root to ensure it can modify permissions
+          volumeMounts:
+            - name: mett-elasticsearch-data-prod-0
+              mountPath: /usr/share/elasticsearch/data
+      containers:
+        - name: elasticsearch-prod-0
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+          ports:
+            - containerPort: 9200
+          env:
+            - name: discovery.seed_hosts
+              value: "mett-elasticsearch-service-prod"
+            - name: cluster.initial_master_nodes
+              value: "mett-elasticsearch-prod-0-0"
+            - name: bootstrap.memory_lock
+              value: "false"
+            - name: xpack.security.enabled
+              value: "true"
+            - name: ELASTIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials-prod
+                  key: ELASTIC_USERNAME
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials-prod
+                  key: ELASTIC_PASSWORD
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            capabilities:
+              add:
+                - IPC_LOCK
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "3"
+            limits:
+              memory: "8Gi"
+              cpu: "4"
+          volumeMounts:
+            - name: mett-elasticsearch-data-prod-0
+              mountPath: /usr/share/elasticsearch/data
+      volumes:
+        - name: mett-elasticsearch-data-prod-0
+          persistentVolumeClaim:
+            claimName: mett-elasticsearch-data-prod-0
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mett-elasticsearch-prod-1
+  namespace: mett-dataportal-hl
+spec:
+  serviceName: mett-elasticsearch-service-prod
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mett-elasticsearch-prod
+  template:
+    metadata:
+      labels:
+        app: mett-elasticsearch-prod
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: mett-elasticsearch-prod
+              topologyKey: "kubernetes.io/hostname"
+      initContainers:
+        - name: init-fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data && chmod -R 777 /usr/share/elasticsearch/data"]
+          securityContext:
+            runAsUser: 0  # Run as root to ensure it can modify permissions
+          volumeMounts:
+            - name: mett-elasticsearch-data-prod-1
+              mountPath: /usr/share/elasticsearch/data
+      containers:
+        - name: elasticsearch-prod-1
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+          ports:
+            - containerPort: 9200
+          env:
+            - name: discovery.seed_hosts
+              value: "mett-elasticsearch-service-prod"
+            - name: cluster.initial_master_nodes
+              value: "mett-elasticsearch-prod-0-0"
+            - name: bootstrap.memory_lock
+              value: "false"
+            - name: xpack.security.enabled
+              value: "true"
+            - name: ELASTIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials-prod
+                  key: ELASTIC_USERNAME
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mett-elasticsearch-credentials-prod
+                  key: ELASTIC_PASSWORD
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            capabilities:
+              add:
+                - IPC_LOCK
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "3"
+            limits:
+              memory: "8Gi"
+              cpu: "4"
+          volumeMounts:
+            - name: mett-elasticsearch-data-prod-1
+              mountPath: /usr/share/elasticsearch/data
+      volumes:
+        - name: mett-elasticsearch-data-prod-1
+          persistentVolumeClaim:
+            claimName: mett-elasticsearch-data-prod-1 
