@@ -33,20 +33,26 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({ sequence, setSe
 
     return (
         <div className={styles.formSection}>
-            <label className={`vf-form__label ${styles.label}`}>Sequence</label>
-            <div className={styles.sequenceInputBox}>
+            <label className={styles.label}>Sequence</label>
+            
+            {/* Single clean textarea box */}
+            <div className={styles.sequenceContainer}>
                 <textarea
-                    className={`vf-form__textarea ${styles.textarea}`}
+                    className={styles.textarea}
                     value={sequence}
                     onChange={e => setSequence(e.target.value)}
                     placeholder="Paste in your sequence, use the example"
                     rows={10}
                 />
-                <div className={styles.sequenceInputHelp}>
+                
+                {/* Help text integrated at the bottom */}
+                <div className={styles.helpText}>
                     Paste in your sequence, use the{' '}
                     <a href="#" onClick={handleUseExample} className={styles.exampleLink}>example</a>
                 </div>
             </div>
+            
+            {/* Action buttons */}
             <div className={styles.buttonRow}>
                 <button 
                     className="vf-button vf-button--primary vf-button--sm" 

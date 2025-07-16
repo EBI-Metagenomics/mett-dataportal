@@ -75,7 +75,7 @@ const HomePage: React.FC = () => {
                 setActiveTab(tabFromUrl);
             }
         }
-    }, [activeTab, location.pathname, location.search]);
+    }, [location.pathname, location.search, isFeatureEnabled]);
 
     // Clean up gene viewer state when returning to home page
     useEffect(() => {

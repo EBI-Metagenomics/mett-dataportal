@@ -123,6 +123,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config
                   key: CELERY_RESULT_BACKEND
+            - name: ENABLE_PYHMMER_SEARCH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config
+                  key: ENABLE_PYHMMER_SEARCH
           resources:
             requests:
               memory: "4Gi"

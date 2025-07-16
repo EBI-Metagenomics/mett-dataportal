@@ -246,7 +246,6 @@ const PyhmmerSearchForm: React.FC = () => {
             
             <div className={styles.formContainer}>
                 <div className={styles.leftPane}>
-                    <h2 className={`vf-section-header__subheading ${styles.vfPyhmmerSubHeading}`}>PyHMMER Search</h2>
                     
                     {/* Sequence database */}
                     <div className={styles.formSection}>
@@ -265,24 +264,24 @@ const PyhmmerSearchForm: React.FC = () => {
                     {/* Cut off */}
                     <div className={styles.formSection}>
                         <label className={`vf-form__label ${styles.label}`}>Cut off</label>
-                        <div className={`vf-form__radio-group ${styles.radioRow}`}>
-                            <label className="vf-form__radio">
+                        <div className={styles.radioRow}>
+                            <label className={styles.radioLabel}>
                                 <input
                                     type="radio"
-                                    className="vf-form__radio__input"
+                                    className={styles.radioInput}
                                     checked={evalueType === 'evalue'}
                                     onChange={() => setEvalueType('evalue')}
                                 />
-                                <span className="vf-form__radio__label">E-value</span>
+                                <span className={styles.radioText}>E-value</span>
                             </label>
-                            <label className="vf-form__radio">
+                            <label className={styles.radioLabel}>
                                 <input
                                     type="radio"
-                                    className="vf-form__radio__input"
+                                    className={styles.radioInput}
                                     checked={evalueType === 'bitscore'}
                                     onChange={() => setEvalueType('bitscore')}
                                 />
-                                <span className="vf-form__radio__label">Bit Score</span>
+                                <span className={styles.radioText}>Bit Score</span>
                             </label>
                         </div>
                         <div className={styles.cutoffGrid}>
@@ -297,26 +296,26 @@ const PyhmmerSearchForm: React.FC = () => {
                                         type="text" 
                                         value={significanceEValueSeq}
                                         onChange={e => setSignificanceEValueSeq(e.target.value)} 
-                                        className={`vf-form__input ${styles.input}`}
+                                        className={styles.input}
                                     />
                                     <input 
                                         type="text" 
                                         value={significanceEValueHit}
                                         onChange={e => setSignificanceEValueHit(e.target.value)} 
-                                        className={`vf-form__input ${styles.input}`}
+                                        className={styles.input}
                                     />
                                     <div className={styles.cutoffLabel}>Report E-values</div>
                                     <input 
                                         type="text" 
                                         value={reportEValueSeq} 
                                         onChange={e => setReportEValueSeq(e.target.value)}
-                                        className={`vf-form__input ${styles.input}`}
+                                        className={styles.input}
                                     />
                                     <input 
                                         type="text" 
                                         value={reportEValueHit} 
                                         onChange={e => setReportEValueHit(e.target.value)}
-                                        className={`vf-form__input ${styles.input}`}
+                                        className={styles.input}
                                     />
                                 </>
                             ) : (
@@ -326,26 +325,26 @@ const PyhmmerSearchForm: React.FC = () => {
                                         type="text" 
                                         value={significanceBitScoreSeq}
                                         onChange={e => setSignificanceBitScoreSeq(e.target.value)} 
-                                        className={`vf-form__input ${styles.input}`}
+                                        className={styles.input}
                                     />
                                     <input 
                                         type="text" 
                                         value={significanceBitScoreHit}
                                         onChange={e => setSignificanceBitScoreHit(e.target.value)} 
-                                        className={`vf-form__input ${styles.input}`}
+                                        className={styles.input}
                                     />
                                     <div className={styles.cutoffLabel}>Report Bit scores</div>
                                     <input 
                                         type="text" 
                                         value={reportBitScoreSeq} 
                                         onChange={e => setReportBitScoreSeq(e.target.value)}
-                                        className={`vf-form__input ${styles.input}`}
+                                        className={styles.input}
                                     />
                                     <input 
                                         type="text" 
                                         value={reportBitScoreHit} 
                                         onChange={e => setReportBitScoreHit(e.target.value)}
-                                        className={`vf-form__input ${styles.input}`}
+                                        className={styles.input}
                                     />
                                 </>
                             )}
@@ -362,7 +361,7 @@ const PyhmmerSearchForm: React.FC = () => {
                                     type="text" 
                                     value={gapOpen} 
                                     onChange={e => setGapOpen(e.target.value)}
-                                    className={`vf-form__input ${styles.inputSmall}`}
+                                    className={styles.inputSmall}
                                 />
                             </div>
                             <div>
@@ -371,7 +370,7 @@ const PyhmmerSearchForm: React.FC = () => {
                                     type="text" 
                                     value={gapExtend} 
                                     onChange={e => setGapExtend(e.target.value)}
-                                    className={`vf-form__input ${styles.inputSmall}`}
+                                    className={styles.inputSmall}
                                 />
                             </div>
                             <div>
@@ -379,7 +378,7 @@ const PyhmmerSearchForm: React.FC = () => {
                                 <select 
                                     value={subMatrix} 
                                     onChange={e => setSubMatrix(e.target.value)} 
-                                    className={`vf-form__select ${styles.selectSmall}`}
+                                    className={styles.selectSmall}
                                 >
                                     {mxChoices.length > 0 ? (
                                         mxChoices.map(choice => (

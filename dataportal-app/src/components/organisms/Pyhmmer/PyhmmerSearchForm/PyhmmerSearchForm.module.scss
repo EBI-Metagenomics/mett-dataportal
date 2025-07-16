@@ -146,12 +146,12 @@
 
 .select {
   width: 100%;
-  padding: 8px 12px;
-  height: 40px;
+  padding: 6px 10px;
+  height: 32px;
   border-radius: 4px;
   border: 1px solid #ccc;
   background-color: #fff;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-family: inherit;
   box-sizing: border-box;
   
@@ -166,23 +166,39 @@
   display: flex;
   gap: 24px;
   margin-bottom: 16px;
-  
-  .vf-form__radio {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    
-    .vf-form__radio__input {
-      margin: 0;
-    }
-    
-    .vf-form__radio__label {
-      font-weight: 500;
-      color: #333;
-    }
-  }
+  flex-direction: row;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin: 0;
+  padding: 0;
+}
+
+.radioInput {
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: #1976d2;
+  cursor: pointer;
+  opacity: 1;
+  visibility: visible;
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.radioText {
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  margin-left: 4px;
+  position: relative;
+  z-index: 1;
 }
 
 .cutoffGrid {
@@ -208,19 +224,26 @@
 
 .input {
   width: 100%;
-  padding: 8px 12px;
-  height: 40px;
+  padding: 6px 10px;
+  height: 25px;
   border-radius: 4px;
   border: 1px solid #ccc;
+  background-color: #fff;
   text-align: center;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-family: inherit;
   box-sizing: border-box;
+  color: #888;
   
   &:focus {
     outline: none;
     border-color: #1976d2;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    color: #555;
+  }
+  
+  &::placeholder {
+    color: #bbb;
   }
 }
 
@@ -240,36 +263,45 @@
 
 .inputSmall {
   width: 100%;
-  padding: 8px 12px;
-  height: 40px;
+  padding: 6px 10px;
+  height: 25px;
   border-radius: 4px;
   border: 1px solid #ccc;
-  font-size: 1rem;
+  background-color: #fff;
+  font-size: 0.8rem;
   font-family: inherit;
   box-sizing: border-box;
+  color: #888;
   
   &:focus {
     outline: none;
     border-color: #1976d2;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    color: #555;
+  }
+  
+  &::placeholder {
+    color: #bbb;
   }
 }
 
 .selectSmall {
   width: 100%;
-  padding: 8px 12px;
-  height: 40px;
+  padding: 6px 10px;
+  height: 32px;
   border-radius: 4px;
   border: 1px solid #ccc;
   background-color: #fff;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-family: inherit;
   box-sizing: border-box;
+  color: #888;
   
   &:focus {
     outline: none;
     border-color: #1976d2;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    color: #555;
   }
 }
 
