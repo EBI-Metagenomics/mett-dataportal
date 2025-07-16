@@ -148,14 +148,6 @@ class GeneDocument(Document):
         }
     )
 
-    cross_references = Nested(
-        properties={
-            "db_name": Keyword(),
-            "db_accession": Keyword(),
-            "db_description": Text(),
-        }
-    )
-
     amr = Nested(
         properties={
             "gene_symbol": Keyword(),

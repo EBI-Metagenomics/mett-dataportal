@@ -46,7 +46,7 @@ class GeneData(models.Model):
         max_length=100, null=True, default=UNKNOWN_ESSENTIALITY
     )
     locals()[ES_FIELD_COG_FUNCATS] = models.JSONField(null=True, default=list)
-    locals()[ES_FIELD_COG_ID] = models.CharField(max_length=100, null=True)
+    locals()[ES_FIELD_COG_ID] = models.JSONField(null=True, default=list)
     locals()[ES_FIELD_KEGG] = models.JSONField(null=True, default=list)
     locals()[ES_FIELD_PFAM] = models.JSONField(null=True, default=list)
     locals()[ES_FIELD_INTERPRO] = models.JSONField(null=True, default=list)
@@ -77,7 +77,7 @@ def gene_from_hit(hit) -> GeneData:
         uniprot_id=source.get(ES_FIELD_UNIPROT_ID),
         essentiality=source.get(GENE_ESSENTIALITY, UNKNOWN_ESSENTIALITY),
         cog_funcats=source.get(ES_FIELD_COG_FUNCATS, []),
-        cog_id=source.get(ES_FIELD_COG_ID),
+        cog_id=source.get(ES_FIELD_COG_ID, []),
         kegg=source.get(ES_FIELD_KEGG, []),
         pfam=source.get(ES_FIELD_PFAM, []),
         interpro=source.get(ES_FIELD_INTERPRO, []),

@@ -274,6 +274,8 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
                             value = '; '.join(value) if isinstance(value, list) else str(value)
                         elif col == ES_FIELD_KEGG and value:
                             value = '; '.join(value) if isinstance(value, list) else str(value)
+                        elif col == ES_FIELD_COG_ID and value:
+                            value = '; '.join(value) if isinstance(value, list) else str(value)
                         elif col == ES_FIELD_AMR and value:
                             # Format AMR data
                             amr_parts = []
