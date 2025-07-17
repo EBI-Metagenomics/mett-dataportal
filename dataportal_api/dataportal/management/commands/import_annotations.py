@@ -21,9 +21,9 @@ connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 
 # Logging configuration
 logging.basicConfig(
-    level=logging.DEBUG,  # ✅ Set to DEBUG to capture all logs
+    level=logging.DEBUG,  
     format="%(asctime)s %(levelname)s:%(message)s",
-    handlers=[logging.StreamHandler()],  # ✅ Ensure logs appear in the console
+    handlers=[logging.StreamHandler()],  
 )
 
 SPECIES_ACRONYM_MAPPING = {"Bacteroides uniformis": "BU", "Phocaeicola vulgatus": "PV"}
@@ -58,6 +58,11 @@ class Command(BaseCommand):
             "--essentiality-csv",
             type=str,
             default="../data-generators/data/essentiality_table_all_libraries_240818_14102024.csv",
+        )
+        parser.add_argument(
+            "--fitness-csv",
+            type=str,
+            help="Path to fitness data CSV file (optional)",
         )
         parser.add_argument(
             "--expected-records",
@@ -105,6 +110,7 @@ class Command(BaseCommand):
         ftp_directory = options["ftp_directory"]
         mapping_task_file = options["mapping_task_file"]
         essentiality_csv = options["essentiality_csv"]
+        fitness_csv = options.get("fitness_csv")
         expected_records = options["expected_records"]
         target_isolate = options.get("isolate")
         target_assembly = options.get("assembly")
@@ -167,6 +173,11 @@ class Command(BaseCommand):
             self.import_essentiality_data(essentiality_csv)
 
             logging.info("Essentiality data imported successfully.")
+
+            # Import fitness data if provided
+            if fitness_csv:
+                self.import_fitness_data(fitness_csv)
+                logging.info("Fitness data imported successfully.")
 
             # Validate total number of records
             self.validate_gene_index(expected_records)
@@ -410,6 +421,9 @@ class Command(BaseCommand):
                     alias = attr_dict.get("Alias", "").split(",")
 
                     cog_funcats = attr_dict.get("cog", "").split(",")
+                    
+                    # Handle cog_id as a list since it's now multi=True
+                    cog_ids = [cog_id] if cog_id else []
 
                     amr_entries, has_amr_info = self.parse_amr_attributes(attr_dict)
 
@@ -435,12 +449,12 @@ class Command(BaseCommand):
                             start=int(start),
                             end=int(end),
                             cog_funcats=cog_funcats,
+                            cog_id=cog_ids,  # Now a list
                             kegg=kegg,
                             pfam=pfam,
                             interpro=interpro,
                             dbxref=dbxref,
                             uniprot_id=uniprot_id,
-                            cog_id=cog_id,
                             ec_number=ec_number,
                             product_source=product_source,
                             inference=inference,
@@ -451,6 +465,7 @@ class Command(BaseCommand):
                             uf_ontology_terms=uf_ontology_terms,
                             uf_prot_rec_fullname=uf_prot_rec_fullname,
                             protein_sequence=protein_sequence,
+                            fitness_data=[],  # TODO: Add fitness data import logic
                         )
                     )
 
@@ -561,3 +576,53 @@ class Command(BaseCommand):
             logging.info(
                 f"Gene index contains the expected number of records: {total_docs}"
             )
+
+    def import_fitness_data(self, fitness_csv_path):
+        """Import fitness data and update genes in Elasticsearch.
+        
+        Expected CSV format:
+        locus_tag,contrast,lfc,fdr
+        """
+        try:
+            if not os.path.exists(fitness_csv_path):
+                logging.error(f"Fitness CSV file not found: {fitness_csv_path}")
+                return
+
+            updates = []
+            for chunk in pd.read_csv(fitness_csv_path, chunksize=10000):
+                for row in chunk.itertuples():
+                    locus_tag = str(row.locus_tag).strip()
+                    contrast = str(row.contrast).strip()
+                    lfc = float(row.lfc) if pd.notna(row.lfc) else None
+                    fdr = float(row.fdr) if pd.notna(row.fdr) else None
+
+                    if lfc is not None or fdr is not None:
+                        fitness_entry = {
+                            "contrast": contrast,
+                            "lfc": lfc,
+                            "fdr": fdr,
+                        }
+                        
+                        updates.append(
+                            {
+                                "_op_type": "update",
+                                "_index": "gene_index",
+                                "_id": locus_tag,
+                                "script": {
+                                    "source": "if (ctx._source.fitness_data == null) { ctx._source.fitness_data = [] } ctx._source.fitness_data.add(params.fitness_entry)",
+                                    "params": {"fitness_entry": fitness_entry}
+                                }
+                            }
+                        )
+
+                        if len(updates) >= BATCH_SIZE:
+                            self._execute_bulk(updates)
+                            updates.clear()
+
+            if updates:
+                self._execute_bulk(updates)
+
+            logging.info("Fitness data successfully updated in Elasticsearch.")
+
+        except Exception as e:
+            logging.error(f"Error importing fitness data: {e}", exc_info=True)

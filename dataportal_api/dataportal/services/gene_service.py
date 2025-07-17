@@ -863,6 +863,8 @@ class GeneService:
                     value = '; '.join(value) if isinstance(value, list) else str(value)
                 elif col == 'kegg' and value:
                     value = '; '.join(value) if isinstance(value, list) else str(value)
+                elif col == 'cog_id' and value:
+                    value = '; '.join(value) if isinstance(value, list) else str(value)
                 elif col == 'amr' and value:
                     # Format AMR data
                     amr_parts = []

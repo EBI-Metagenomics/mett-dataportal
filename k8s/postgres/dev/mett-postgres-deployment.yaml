@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mett-postgres-prod
-  namespace: mett-dataportal-hl
+  name: mett-postgres-dev
+  namespace: mett-dataportal-hl-dev
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mett-postgres-prod
+      app: mett-postgres-dev
   template:
     metadata:
       labels:
-        app: mett-postgres-prod
+        app: mett-postgres-dev
     spec:
       initContainers:
       - name: init-fix-permissions
@@ -22,10 +22,10 @@ spec:
           runAsUser: 0
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
-          name: mett-postgres-pv-prod
+          name: mett-postgres-pv-dev
 
       containers:
-      - name: mett-postgres-prod
+      - name: mett-postgres-dev
         image: postgres:17
         imagePullPolicy: IfNotPresent
         ports:
@@ -34,41 +34,41 @@ spec:
         - name: POSTGRES_DB
           valueFrom:
             configMapKeyRef:
-              name: mett-postgres-config-prod
+              name: mett-postgres-config-dev
               key: DATAPORTAL_DB
         - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
-              name: mett-postgres-config-prod
+              name: mett-postgres-config-dev
               key: DATAPORTAL_DB_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mett-postgres-secret-prod
+              name: mett-postgres-secret-dev
               key: DATAPORTAL_DB_PASSWORD
         securityContext:
           runAsUser: 999
           runAsGroup: 999
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
-          name: mett-postgres-pv-prod
+          name: mett-postgres-pv-dev
       volumes:
-      - name: mett-postgres-pv-prod
+      - name: mett-postgres-pv-dev
         persistentVolumeClaim:
-          claimName: mett-postgres-pvc-prod
+          claimName: mett-postgres-pvc-dev
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mett-postgres-prod-service
-  namespace: mett-dataportal-hl
+  name: mett-postgres-dev-service
+  namespace: mett-dataportal-hl-dev
   labels:
-    app: mett-postgres-prod-service
+    app: mett-postgres-dev-service
 spec:
   ports:
     - port: 5432
       targetPort: 5432
-      nodePort: 31508
+      nodePort: 31608
   selector:
-    app: mett-postgres-prod
+    app: mett-postgres-dev
   type: NodePort

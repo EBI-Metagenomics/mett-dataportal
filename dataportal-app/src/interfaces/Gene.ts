@@ -15,7 +15,7 @@ export interface GeneMeta {
     uniprot_id?: string | null;
     essentiality?: string;
     cog_funcats?: string[] | null;
-    cog_id?: string | null;
+    cog_id?: string[] | null;
     kegg?: string[] | null;
     pfam?: string[] | null;
     interpro?: string[] | null;
@@ -62,7 +62,7 @@ export interface GeneSuggestion {
     kegg?: string[] | null;
     pfam?: string[] | null;
     interpro?: string[] | null;
-    cog_id?: string | null;
+    cog_id?: string[] | null;
 }
 
 // Legacy pagination interface (for backward compatibility)

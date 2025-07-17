@@ -122,7 +122,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         label: 'COG Id',
         sortable: false,
         defaultVisible: false,
-        render: gene => gene.cog_id || '---',
+        render: gene => gene.cog_id?.join(', ') || '---',
     },
     {
         key: 'amr',

@@ -214,7 +214,7 @@ class GeneAutocompleteResponseSchema(BaseModel):
     kegg: Optional[List[str]] = None
     uniprot_id: Optional[str] = None
     pfam: Optional[List[str]] = None
-    cog_id: Optional[str] = None
+    cog_id: Optional[List[str]] = None
     interpro: Optional[List[str]] = None
     essentiality: Optional[str] = "Unknown"
     model_config = ConfigDict(from_attributes=True)
@@ -320,7 +320,7 @@ class GeneResponseSchema(BaseModel):
     uniprot_id: Optional[str] = None
     essentiality: Optional[str] = "Unknown"
     cog_funcats: Optional[List[str]] = None
-    cog_id: Optional[str] = None
+    cog_id: Optional[List[str]] = None
     kegg: Optional[List[str]] = None
     pfam: Optional[List[str]] = None
     interpro: Optional[List[str]] = None

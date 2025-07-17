@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: elasticsearch-prod
+  name: mett-elasticsearch-prod
   namespace: mett-dataportal-hl
 spec:
-  serviceName: elasticsearch-service-prod
-  replicas: 3
+  serviceName: mett-elasticsearch-service-prod
+  replicas: 2
   selector:
     matchLabels:
-      app: elasticsearch-prod
+      app: mett-elasticsearch-prod
   template:
     metadata:
       labels:
-        app: elasticsearch-prod
+        app: mett-elasticsearch-prod
     spec:
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  app: elasticsearch-prod
+                  app: mett-elasticsearch-prod
               topologyKey: "kubernetes.io/hostname"
       initContainers:
         - name: init-fix-permissions
@@ -28,35 +28,32 @@ spec:
           securityContext:
             runAsUser: 0  # Run as root to ensure it can modify permissions
           volumeMounts:
-            - name: elasticsearch-data-prod
+            - name: mett-elasticsearch-data
               mountPath: /usr/share/elasticsearch/data
       containers:
-        - name: elasticsearch-prod
+        - name: elasticsearch
           image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
           ports:
             - containerPort: 9200
           env:
             - name: discovery.seed_hosts
-              value: "elasticsearch-service-prod"
+              value: "mett-elasticsearch-prod-0.mett-elasticsearch-service-prod,mett-elasticsearch-prod-1.mett-elasticsearch-service-prod"
             - name: cluster.initial_master_nodes
-              value: "elasticsearch-prod-0,elasticsearch-prod-1,elasticsearch-prod-2"
+              value: "mett-elasticsearch-prod-0,mett-elasticsearch-prod-1"
             - name: bootstrap.memory_lock
-              value: "true"
+              value: "false"
             - name: xpack.security.enabled
-              value: "true"
-            - name: ELASTIC_USERNAME
+              value: "false"
+            - name: node.name
               valueFrom:
-                secretKeyRef:
-                  name: mett-elasticsearch-credentials-prod
-                  key: ELASTIC_USERNAME
-            - name: ELASTIC_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mett-elasticsearch-credentials-prod
-                  key: ELASTIC_PASSWORD
+                fieldRef:
+                  fieldPath: metadata.name
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
+            capabilities:
+              add:
+                - IPC_LOCK
           resources:
             requests:
               memory: "4Gi"
@@ -65,32 +62,14 @@ spec:
               memory: "8Gi"
               cpu: "4"
           volumeMounts:
-            - name: elasticsearch-data-prod
+            - name: mett-elasticsearch-data
               mountPath: /usr/share/elasticsearch/data
   volumeClaimTemplates:
     - metadata:
-        name: elasticsearch-data-prod
+        name: mett-elasticsearch-data
       spec:
-        accessModes:
-          - ReadWriteOnce
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "standard-nfs-production"
         resources:
           requests:
-            storage: 30Gi
-        storageClassName: local-storage
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: elasticsearch-service-prod
-  namespace: mett-dataportal-hl
-spec:
-  type: NodePort
-  selector:
-    app: elasticsearch-prod
-  ports:
-    - name: http
-      port: 9200
-      targetPort: 9200
-      nodePort: 32557
+            storage: 100Gi 

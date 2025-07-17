@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mett-elasticsearch-dev
+  namespace: mett-dataportal-hl-dev
+spec:
+  serviceName: mett-elasticsearch-service-dev
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mett-elasticsearch-dev
+  template:
+    metadata:
+      labels:
+        app: mett-elasticsearch-dev
+    spec:
+      initContainers:
+        - name: init-fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data && chmod -R 777 /usr/share/elasticsearch/data"]
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: mett-elasticsearch-data
+              mountPath: /usr/share/elasticsearch/data
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+          ports:
+            - containerPort: 9200
+          env:
+            - name: discovery.seed_hosts
+              value: "mett-elasticsearch-dev-0.mett-elasticsearch-service-dev"
+            - name: cluster.initial_master_nodes
+              value: "mett-elasticsearch-dev-0"
+            - name: bootstrap.memory_lock
+              value: "false"
+            - name: xpack.security.enabled
+              value: "false"
+            - name: node.name
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            capabilities:
+              add:
+                - IPC_LOCK
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "3"
+            limits:
+              memory: "8Gi"
+              cpu: "4"
+          volumeMounts:
+            - name: mett-elasticsearch-data
+              mountPath: /usr/share/elasticsearch/data
+  volumeClaimTemplates:
+    - metadata:
+        name: mett-elasticsearch-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "standard-nfs-production"
+        resources:
+          requests:
+            storage: 30Gi

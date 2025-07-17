@@ -14,7 +14,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-api-svc
+              name: mett-dataportal-api-prod-svc
               port:
                 number: 8000
 
@@ -22,7 +22,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-api-svc
+              name: mett-dataportal-api-prod-svc
               port:
                 number: 8000
 
@@ -31,7 +31,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-api-svc
+              name: mett-dataportal-api-prod-svc
               port:
                 number: 8000
 
@@ -40,7 +40,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-react-app-svc
+              name: mett-dataportal-app-prod-svc
               port:
                 number: 80
 
@@ -48,7 +48,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-api-svc-dev
+              name: mett-dataportal-api-dev-svc
               port:
                 number: 8000
 
@@ -56,7 +56,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-api-svc-dev
+              name: mett-dataportal-api-dev-svc
               port:
                 number: 8000
 
@@ -64,7 +64,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-react-app-svc-dev
+              name: mett-dataportal-app-dev-svc
               port:
                 number: 80
 
@@ -72,7 +72,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-react-app-svc-dev
+              name: mett-dataportal-app-dev-svc
               port:
                 number: 80
 
@@ -81,6 +81,6 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: mett-dataportal-react-app-svc
+              name: mett-dataportal-app-prod-svc
               port:
                 number: 80

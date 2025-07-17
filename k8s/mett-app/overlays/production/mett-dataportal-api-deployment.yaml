@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mett-dataportal-api
+  name: mett-dataportal-api-prod
   namespace: mett-dataportal-hl
   labels:
-    app: mett-dataportal-api
+    app: mett-dataportal-api-prod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mett-dataportal-api
+      app: mett-dataportal-api-prod
   template:
     metadata:
       labels:
-        app: mett-dataportal-api
+        app: mett-dataportal-api-prod
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
@@ -25,7 +25,7 @@ spec:
       containers:
         - image: quay.io/microbiome-informatics/mett-dataportal-api
           imagePullPolicy: Always
-          name: mett-dataportal-api
+          name: mett-dataportal-api-prod
           command: ["python"]
           args: ["manage.py", "runserver", "0.0.0.0:8000"]
           env:
@@ -33,95 +33,95 @@ spec:
             - name: DATAPORTAL_DB_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-prod
                   key: DATAPORTAL_DB_HOST
             - name: DATAPORTAL_DB_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-prod
                   key: DATAPORTAL_DB_PORT
             - name: DATAPORTAL_DB
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-prod
                   key: DATAPORTAL_DB
             - name: DATAPORTAL_DB_USER
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-prod
                   key: DATAPORTAL_DB_USER
             - name: DATAPORTAL_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mett-postgres-secret
+                  name: mett-postgres-secret-prod
                   key: DATAPORTAL_DB_PASSWORD
             # Elasticsearch configuration
             - name: ES_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config
+                  name: mett-elasticsearch-config-prod
                   key: ES_HOST
             - name: ES_TIMEOUT
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config
+                  name: mett-elasticsearch-config-prod
                   key: ES_TIMEOUT
             - name: ES_MAX_RETRIES
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config
+                  name: mett-elasticsearch-config-prod
                   key: ES_MAX_RETRIES
             - name: ES_USER
               valueFrom:
                 secretKeyRef:
-                  name: mett-elasticsearch-credentials
+                  name: mett-elasticsearch-credentials-prod
                   key: ELASTIC_USERNAME
             - name: ES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mett-elasticsearch-credentials
+                  name: mett-elasticsearch-credentials-prod
                   key: ELASTIC_PASSWORD
 
             # Application-specific environment variables
             - name: DJANGO_DEBUG
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: DJANGO_DEBUG
             - name: TIME_ZONE
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: TIME_ZONE
             - name: ALLOWED_HOSTS
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: ALLOWED_HOSTS
             - name: DATA_PORTAL_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: DATA_PORTAL_URL
             - name: ASSEMBLY_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: ASSEMBLY_FTP_PATH
             - name: GFF_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: GFF_FTP_PATH
             - name: CELERY_BROKER_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: CELERY_BROKER_URL
             - name: CELERY_RESULT_BACKEND
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: CELERY_RESULT_BACKEND
             - name: ENABLE_PYHMMER_SEARCH
               valueFrom:
@@ -158,14 +158,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mett-dataportal-api-svc
+  name: mett-dataportal-api-prod-svc
   namespace: mett-dataportal-hl
   labels:
-    app: mett-dataportal-api
+    app: mett-dataportal-api-prod
 spec:
   type: NodePort
   selector:
-    app: mett-dataportal-api
+    app: mett-dataportal-api-prod
   ports:
     - port: 8000
       targetPort: 8000

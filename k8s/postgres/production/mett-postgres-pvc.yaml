@@ -1,7 +1,22 @@
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mett-postgres-pv-prod
+  namespace: mett-dataportal-hl
+spec:
+  storageClassName: standard-nfs-production
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/Users/vikasg/Documents/ws/k8s-ws/postgres/data"
+---
+
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mett-postgres-volume-claim
+  name: mett-postgres-pvc-prod
   namespace: mett-dataportal-hl
 spec:
   storageClassName: standard-nfs-production
