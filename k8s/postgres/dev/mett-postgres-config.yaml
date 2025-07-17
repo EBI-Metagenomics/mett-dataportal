@@ -1,13 +1,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mett-postgres-config-prod
-  namespace: mett-dataportal-hl
+  name: mett-postgres-config-dev
+  namespace: mett-dataportal-hl-dev
 data:
-  DATAPORTAL_DB_HOST: "mett-postgres-prod-service.mett-dataportal-hl.svc.cluster.local"
+  DATAPORTAL_DB_HOST: "mett-postgres-dev-service.mett-dataportal-hl-dev.svc.cluster.local"
   DATAPORTAL_DB_PORT: "5432"
   DATAPORTAL_DB: "mett-dataportal-db"
   DATAPORTAL_DB_USER: "mett-dataportal-usr"
   PYHMMER_DB: "mett-pyhmmer-db"
   PYHMMER_DB_USER: "mett-pyhmmer-usr"
-

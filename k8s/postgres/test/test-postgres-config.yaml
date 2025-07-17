@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgres-config-dev
-  namespace: mett-dataportal-hl-dev
-data:
-  PYHMMER_DB: "mett-pyhmmer-db"
-  PYHMMER_DB_USER: "mett-pyhmmer-usr"

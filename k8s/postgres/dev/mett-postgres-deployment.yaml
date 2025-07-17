@@ -13,6 +13,17 @@ spec:
       labels:
         app: mett-postgres-dev
     spec:
+      initContainers:
+      - name: init-fix-permissions
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c", "chown -R 999:999 /var/lib/postgresql/data && chmod -R 700 /var/lib/postgresql/data"]
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: mett-postgres-pv-dev
+
       containers:
       - name: mett-postgres-dev
         image: postgres:17
@@ -23,36 +34,41 @@ spec:
         - name: POSTGRES_DB
           valueFrom:
             configMapKeyRef:
-              name: mett-postgres-config
+              name: mett-postgres-config-dev
               key: POSTGRES_DB
         - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
-              name: mett-postgres-config
+              name: mett-postgres-config-dev
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mett-postgres-secret
+              name: mett-postgres-secret-dev
               key: POSTGRES_PASSWORD
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 999
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: postgres-storage-dev
       volumes:
       - name: postgres-storage-dev
         persistentVolumeClaim:
-          claimName: mett-postgres-volume-claim
+          claimName: mett-postgres-pvc-dev
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mett-postgres-service-dev
+  name: mett-postgres-dev-service
   namespace: mett-dataportal-hl-dev
   labels:
-    app: mett-postgres-service-dev
+    app: mett-postgres-dev-service
 spec:
   ports:
     - port: 5432
+      targetPort: 5432
+      nodePort: 31608
   selector:
     app: mett-postgres-dev
-  type: ClusterIP
+  type: NodePort
