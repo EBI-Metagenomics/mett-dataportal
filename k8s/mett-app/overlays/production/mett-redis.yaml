@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mett-redis
+  name: mett-redis-prod
   namespace: mett-dataportal-hl
   labels:
-    app: mett-redis
+    app: mett-redis-prod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mett-redis
+      app: mett-redis-prod
   template:
     metadata:
       labels:
-        app: mett-redis
+        app: mett-redis-prod
     spec:
       containers:
         - name: redis
@@ -43,14 +43,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mett-redis
+  name: mett-redis-prod
   namespace: mett-dataportal-hl
   labels:
-    app: mett-redis
+    app: mett-redis-prod
 spec:
   type: NodePort
   selector:
-    app: mett-redis
+    app: mett-redis-prod
   ports:
     - port: 6379
       targetPort: 6379

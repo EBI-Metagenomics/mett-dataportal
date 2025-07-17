@@ -75,73 +75,73 @@ spec:
             - name: PYHMMER_FAA_BASE_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-test
+                  name: mett-app-config-prod
                   key: PYHMMER_FAA_BASE_PATH
             - name: CELERY_BROKER_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-prod
                   key: CELERY_BROKER_URL
             - name: CELERY_RESULT_BACKEND
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-prod
                   key: CELERY_RESULT_BACKEND
             # App-specific config and secrets
             - name: DJANGO_DEBUG
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-prod
                   key: DJANGO_DEBUG
             - name: TIME_ZONE
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-prod
                   key: TIME_ZONE
             - name: ALLOWED_HOSTS
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-prod
                   key: ALLOWED_HOSTS
             - name: DATA_PORTAL_URL
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-prod
                   key: DATA_PORTAL_URL
             - name: ASSEMBLY_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-prod
                   key: ASSEMBLY_FTP_PATH
             - name: GFF_FTP_PATH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config-dev
+                  name: mett-app-config-prod
                   key: GFF_FTP_PATH
             - name: ES_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config-dev
+                  name: mett-elasticsearch-config-prod
                   key: ES_HOST
             - name: ES_TIMEOUT
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config-dev
+                  name: mett-elasticsearch-config-prod
                   key: ES_TIMEOUT
             - name: ES_MAX_RETRIES
               valueFrom:
                 configMapKeyRef:
-                  name: mett-elasticsearch-config-dev
+                  name: mett-elasticsearch-config-prod
                   key: ES_MAX_RETRIES
             - name: ES_USER
               valueFrom:
                 secretKeyRef:
-                  name: mett-elasticsearch-credentials
+                  name: mett-elasticsearch-credentials-prod
                   key: ELASTIC_USERNAME
             - name: ES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mett-elasticsearch-credentials
+                  name: mett-elasticsearch-credentials-prod
                   key: ELASTIC_PASSWORD
       imagePullSecrets:
         - name: quay-pull-secret
