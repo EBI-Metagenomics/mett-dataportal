@@ -35,25 +35,25 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: mett-postgres-config-dev
-              key: POSTGRES_DB
+              key: DATAPORTAL_DB
         - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
               name: mett-postgres-config-dev
-              key: POSTGRES_USER
+              key: DATAPORTAL_DB_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mett-postgres-secret-dev
-              key: POSTGRES_PASSWORD
+              key: DATAPORTAL_DB_PASSWORD
         securityContext:
           runAsUser: 999
           runAsGroup: 999
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
-          name: postgres-storage-dev
+          name: mett-postgres-pv-dev
       volumes:
-      - name: postgres-storage-dev
+      - name: mett-postgres-pv-dev
         persistentVolumeClaim:
           claimName: mett-postgres-pvc-dev
 ---
