@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mett-test-pyhmmer-pvc
+  name: mett-pyhmmer-pvc-dev
   namespace: mett-dataportal-hl-dev
 spec:
   accessModes:
@@ -9,5 +9,5 @@ spec:
   resources:
     requests:
       storage: 20Gi
-  volumeName: mett-test-pyhmmer-pv
+  volumeName: mett-pyhmmer-pv-dev
   storageClassName: ""

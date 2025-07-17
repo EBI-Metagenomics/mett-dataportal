@@ -36,7 +36,7 @@ spec:
           ]
           envFrom:
             - configMapRef:
-                name: mett-postgres-config
+                name: mett-postgres-config-prod
             - configMapRef:
                 name: mett-app-config-prod
             - configMapRef:
