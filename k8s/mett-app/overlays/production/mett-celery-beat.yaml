@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mett-celery-beat
+  name: mett-celery-beat-prod
   namespace: mett-dataportal-hl
   labels:
-    app: mett-celery-beat
+    app: mett-celery-beat-prod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mett-celery-beat
+      app: mett-celery-beat-prod
   template:
     metadata:
       labels:
-        app: mett-celery-beat
+        app: mett-celery-beat-prod
     spec:
       securityContext:
         runAsUser: 7123
@@ -45,7 +45,7 @@ spec:
             - name: DATAPORTAL_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mett-postgres-secret
+                  name: mett-postgres-secret-prod
                   key: DATAPORTAL_DB_PASSWORD
             - name: ES_USER
               valueFrom:

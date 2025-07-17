@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mett-dataportal-react-app-dev
+  name: mett-dataportal-app-dev
   namespace: mett-dataportal-hl
   labels:
-    app: mett-dataportal-react-app-dev
+    app: mett-dataportal-app-dev
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mett-dataportal-react-app-dev
+      app: mett-dataportal-app-dev
   template:
     metadata:
       labels:
-        app: mett-dataportal-react-app-dev
+        app: mett-dataportal-app-dev
     spec:
       containers:
         - image: quay.io/microbiome-informatics/mett-dataportal-react-app:v0.0.145
           imagePullPolicy: Always
-          name: mett-dataportal-react-app-dev
+          name: mett-dataportal-app-dev
           env:
             - name: VITE_API_BASE_URL
               valueFrom:
@@ -62,16 +62,16 @@ spec:
 ---
 
 apiVersion: v1
-kind: Service
+kind: Service§
 metadata:
-  name: mett-dataportal-react-app-svc-dev
+  name: mett-dataportal-app-dev-svc
   namespace: mett-dataportal-hl
   labels:
-    app: mett-dataportal-react-app-dev
+    app: mett-dataportal-app-dev
 spec:
   type: NodePort
   selector:
-    app: mett-dataportal-react-app-dev
+    app: mett-dataportal-app-dev
   ports:
     - port: 80
       targetPort: 80

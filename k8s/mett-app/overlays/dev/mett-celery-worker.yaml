@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mett-test-celery-worker
+  name: mett-celery-worker-dev
   namespace: mett-dataportal-hl-dev
   labels:
-    app: mett-test-celery-worker
+    app: mett-celery-worker-dev
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mett-test-celery-worker
+      app: mett-celery-worker-dev
   template:
     metadata:
       labels:
-        app: mett-test-celery-worker
+        app: mett-celery-worker-dev
     spec:
       securityContext:
         runAsUser: 7123
@@ -21,9 +21,9 @@ spec:
       volumes:
         - name: pyhmmer-data
           persistentVolumeClaim:
-            claimName: mett-test-pyhmmer-pvc
+            claimName: mett-pyhmmer-pvc-dev
       containers:
-        - name: test-celery-worker
+        - name: mett-celery-worker-dev
           image: quay.io/microbiome-informatics/mett-dataportal-api
           volumeMounts:
             - name: pyhmmer-data
@@ -48,27 +48,27 @@ spec:
             - name: DATAPORTAL_DB_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-dev
                   key: DATAPORTAL_DB_HOST
             - name: DATAPORTAL_DB_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-dev
                   key: DATAPORTAL_DB_PORT
             - name: DATAPORTAL_DB
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-dev
                   key: DATAPORTAL_DB
             - name: DATAPORTAL_DB_USER
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-dev
                   key: DATAPORTAL_DB_USER
             - name: DATAPORTAL_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mett-postgres-secret
+                  name: mett-postgres-secret-dev
                   key: DATAPORTAL_DB_PASSWORD
             - name: PYTHONPATH
               value: "/app"

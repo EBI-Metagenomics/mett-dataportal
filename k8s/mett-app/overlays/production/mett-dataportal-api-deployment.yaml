@@ -33,27 +33,27 @@ spec:
             - name: DATAPORTAL_DB_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-prod
                   key: DATAPORTAL_DB_HOST
             - name: DATAPORTAL_DB_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-prod
                   key: DATAPORTAL_DB_PORT
             - name: DATAPORTAL_DB
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-prod
                   key: DATAPORTAL_DB
             - name: DATAPORTAL_DB_USER
               valueFrom:
                 configMapKeyRef:
-                  name: mett-postgres-config
+                  name: mett-postgres-config-prod
                   key: DATAPORTAL_DB_USER
             - name: DATAPORTAL_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mett-postgres-secret
+                  name: mett-postgres-secret-prod
                   key: DATAPORTAL_DB_PASSWORD
             # Elasticsearch configuration
             - name: ES_HOST
