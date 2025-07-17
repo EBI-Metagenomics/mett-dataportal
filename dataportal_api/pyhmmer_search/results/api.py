@@ -188,8 +188,8 @@ def get_domains_by_target(request, id: uuid.UUID, target: str):
         
         domains = target_data.get('domains', [])
         
+        # Return the data directly - the frontend will treat this as a legacy response
         return {
-            "status": "success",
             "target": target_data.get('target', ''),
             "domains": domains
         }

@@ -3,7 +3,8 @@ import {
     PyhmmerSearchRequest,
     PyhmmerSearchResponse,
     PyhmmerJobDetailsResponse,
-    PyhmmerMXChoice
+    PyhmmerMXChoice,
+    PyhmmerDomain
 } from '../interfaces/Pyhmmer';
 import { BaseService } from './BaseService';
 import { cacheResponse } from './cachingDecorator';
@@ -94,6 +95,31 @@ export class PyhmmerService extends BaseService {
         } catch (error) {
             console.error("Error fetching Pyhmmer job details:", error);
             throw new Error(`Failed to fetch job details: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    static async getDomainsByTarget(jobId: string, target: string): Promise<PyhmmerDomain[]> {
+        try {
+            console.log(`PyhmmerService.getDomainsByTarget: Fetching domains for job ${jobId}, target ${target}`);
+            // Add cache-busting parameter to ensure fresh data
+            const timestamp = Date.now();
+            const result = await this.getWithRetry<any>(`${API_BASE_RESULT}/${jobId}/domains?target=${encodeURIComponent(target)}&_t=${timestamp}`);
+            console.log(`PyhmmerService.getDomainsByTarget: Received response:`, result);
+            
+            // Debug: Log the specific domain data
+            if (result && Array.isArray(result.domains)) {
+                console.log('PyhmmerService.getDomainsByTarget: Domain identity:', result.domains[0]?.alignment_display?.identity);
+                console.log('PyhmmerService.getDomainsByTarget: Domain similarity:', result.domains[0]?.alignment_display?.similarity);
+                return result.domains;
+            } else if (Array.isArray(result)) {
+                console.log('PyhmmerService.getDomainsByTarget: Direct array result, domain identity:', result[0]?.alignment_display?.identity);
+                return result;
+            } else {
+                throw new Error('Invalid domain response format');
+            }
+        } catch (error) {
+            console.error("Error fetching Pyhmmer domains:", error);
+            throw new Error(`Failed to fetch domains: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 }

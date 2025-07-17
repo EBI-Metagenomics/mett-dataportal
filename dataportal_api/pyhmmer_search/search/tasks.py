@@ -71,15 +71,18 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
         if alignment is None:
             return None
             
-        # Calculate identity
-        matches = sum(1 for a, b in zip(alignment.hmm_sequence, alignment.target_sequence) 
-                     if a == b and a != '-')
-        min_len = min(len(alignment.hmm_sequence), len(alignment.target_sequence))
-        identity_pct = matches / min_len if min_len > 0 else 0
+        # Calculate identity by comparing the actual sequences
+        # PyHMMER provides the sequences in different cases, so we need to compare them case-insensitively
+        hmm_seq = alignment.hmm_sequence.lower()
+        target_seq = alignment.target_sequence.lower()
         
-        # Create match line
-        mline = ''.join('|' if a == b and a != '-' else ' ' 
-                       for a, b in zip(alignment.hmm_sequence, alignment.target_sequence))
+        # Count matches (identical characters, ignoring gaps)
+        matches = sum(1 for a, b in zip(hmm_seq, target_seq) if a == b and a != '-')
+        total_positions = len(hmm_seq)
+        identity_pct = matches / total_positions if total_positions > 0 else 0
+        
+        # Create match line showing matches with '|' and mismatches with spaces
+        mline = ''.join('|' if a == b and a != '-' else ' ' for a, b in zip(hmm_seq, target_seq))
         
         return LegacyAlignmentDisplay(
             hmmfrom=alignment.hmm_from,
@@ -91,7 +94,7 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
             mline=mline,
             ppline=getattr(alignment, 'posterior_probabilities', None),
             identity=(identity_pct, matches),
-            similarity=(identity_pct, matches),
+            similarity=(identity_pct, matches),  # For now, similarity = identity
         )
     except Exception as e:
         logger.warning(f"Failed to create legacy alignment display: {e}")
@@ -106,16 +109,84 @@ def run_search(self, job_id: str):
     logger.info(f"Task ID: {task_id}")
     logger.info(f"Celery task ID: {self.request.id}")
     
+    # Validate job_id format
+    try:
+        import uuid
+        job_uuid = uuid.UUID(job_id)
+        logger.info(f"Job ID validated as UUID: {job_uuid}")
+    except ValueError as e:
+        logger.error(f"Invalid job ID format: {job_id}")
+        logger.error(f"UUID validation error: {e}")
+        raise ValueError(f"Invalid job ID format: {job_id}")
+    
     try:
         logger.info(f"Fetching job from database...")
-        job = HmmerJob.objects.select_related("task").get(id=job_id)
-        logger.info(f"Found job: {job}")
-        logger.info(f"Job task: {job.task}")
-        logger.info(f"Job task ID: {job.task.task_id if job.task else 'None'}")
-        logger.info(f"Job input length: {len(job.input) if job.input else 0}")
-        logger.info(f"Job database: {job.database}")
-        logger.info(f"Job threshold: {job.threshold}")
-        logger.info(f"Job threshold_value: {job.threshold_value}")
+        logger.info(f"Looking for job with ID: {job_id}")
+        logger.info(f"Job ID type: {type(job_id)}")
+        
+        # Check database connection and configuration
+        from django.db import connection
+        logger.info(f"Database connection: {connection.settings_dict.get('NAME', 'unknown')}")
+        logger.info(f"Database engine: {connection.settings_dict.get('ENGINE', 'unknown')}")
+        logger.info(f"Database host: {connection.settings_dict.get('HOST', 'unknown')}")
+        logger.info(f"Database port: {connection.settings_dict.get('PORT', 'unknown')}")
+        
+        # Check model configuration
+        logger.info(f"HmmerJob model app_label: {HmmerJob._meta.app_label}")
+        logger.info(f"HmmerJob model db_table: {HmmerJob._meta.db_table}")
+        logger.info(f"HmmerJob model pk field: {HmmerJob._meta.pk.name}")
+        
+        # Check if we can access the database at all
+        try:
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                logger.info("Database connection test successful")
+        except Exception as e:
+            logger.error(f"Database connection test failed: {e}")
+            raise
+        
+        # Try to find the job with more detailed error handling
+        try:
+            # First, check if we can query the database at all
+            total_jobs = HmmerJob.objects.count()
+            logger.info(f"Total jobs in database: {total_jobs}")
+            
+            # Try to get the job with retry logic for potential race conditions
+            max_retries = 5
+            retry_delay = 0.5  # seconds
+            
+            for attempt in range(max_retries):
+                try:
+                    job = HmmerJob.objects.select_related("task").get(id=job_id)
+                    logger.info(f"Found job on attempt {attempt + 1}: {job}")
+                    break
+                except HmmerJob.DoesNotExist:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Job not found on attempt {attempt + 1}, retrying in {retry_delay} seconds...")
+                        import time
+                        time.sleep(retry_delay)
+                        retry_delay *= 1.5  # Gradual backoff
+                    else:
+                        logger.error(f"Job with ID {job_id} does not exist in database after {max_retries} attempts")
+                        logger.error(f"Available jobs in database:")
+                        try:
+                            all_jobs = HmmerJob.objects.all()[:10]  # Get first 10 jobs for debugging
+                            for j in all_jobs:
+                                logger.error(f"  - Job ID: {j.id}, Created: {j.pk}")
+                        except Exception as e:
+                            logger.error(f"Could not list jobs: {e}")
+                        raise
+            
+            logger.info(f"Job task: {job.task}")
+            logger.info(f"Job task ID: {job.task.task_id if job.task else 'None'}")
+            logger.info(f"Job input length: {len(job.input) if job.input else 0}")
+            logger.info(f"Job database: {job.database}")
+            logger.info(f"Job threshold: {job.threshold}")
+            logger.info(f"Job threshold_value: {job.threshold_value}")
+        except Exception as e:
+            logger.error(f"Unexpected error fetching job {job_id}: {e}")
+            raise
 
         # Enhanced logging for all job parameters
         logger.info(f"=== JOB PARAMETERS IN TASK ===")
@@ -197,21 +268,25 @@ def run_search(self, job_id: str):
                 target_sequences[seq.name.decode()] = seq
         logger.info(f"Target sequence mapping built with {len(target_sequences)} entries")
 
-        # Create a Builder and configure it with gap penalties and score matrix
+        # Create a Builder and configure it with gap penalties only
+        # Note: PyHMMER Builder doesn't support custom scoring matrices in the same way as HMMER
         logger.info(f"Configuring builder...")
         builder_kwargs = {}
         if job.popen is not None:
             builder_kwargs['popen'] = job.popen
         if job.pextend is not None:
             builder_kwargs['pextend'] = job.pextend
+        
+        # Log matrix request but don't use it - PyHMMER uses internal scoring
         if job.mx:
-            builder_kwargs['score_matrix'] = job.mx
+            logger.info(f"Scoring matrix requested: {job.mx}, but PyHMMER uses internal scoring system")
+            logger.info(f"Using PyHMMER's default scoring matrix")
             
         logger.info(f"=== BUILDER CONFIGURATION DETAILS ===")
         logger.info(f"Builder kwargs: {builder_kwargs}")
         logger.info(f"Gap open penalty (popen): {job.popen} -> {'included' if job.popen is not None else 'excluded'}")
         logger.info(f"Gap extend penalty (pextend): {job.pextend} -> {'included' if job.pextend is not None else 'excluded'}")
-        logger.info(f"Substitution matrix (mx): {job.mx} -> {'included' if job.mx else 'excluded'}")
+        logger.info(f"Substitution matrix (mx): {job.mx} -> ignored (PyHMMER internal)")
         logger.info(f"Number of parameters passed to Builder: {len(builder_kwargs)}")
             
         builder = Builder(alphabet, **builder_kwargs)
@@ -498,9 +573,12 @@ def parse_biopython_alignment(query: str, target: str) -> Optional[LegacyAlignme
         hmmto = last_non_gap(aligned_query) + 1
         sqfrom = first_non_gap(aligned_target) + 1
         sqto = last_non_gap(aligned_target) + 1
+        
+        # Calculate identity based on the aligned sequences
         matches = sum(1 for a, b in zip(aligned_query, aligned_target) if a == b and a != '-')
-        min_len = min(len(query), len(target))
-        identity_pct = matches / min_len if min_len else 0
+        # Count non-gap positions in aligned sequences
+        non_gap_positions = sum(1 for a, b in zip(aligned_query, aligned_target) if a != '-' and b != '-')
+        identity_pct = matches / non_gap_positions if non_gap_positions > 0 else 0
         
         return LegacyAlignmentDisplay(
             hmmfrom=hmmfrom,

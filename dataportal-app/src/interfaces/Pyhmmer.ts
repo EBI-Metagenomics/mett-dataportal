@@ -12,6 +12,48 @@ export interface PyhmmerMXChoice {
     label: string;
 }
 
+// Alignment interfaces for domain details
+export interface PyhmmerAlignment {
+    hmm_name: string;
+    hmm_accession?: string;
+    hmm_from: number;
+    hmm_to: number;
+    hmm_length?: number;
+    hmm_sequence: string;
+    target_name: string;
+    target_from: number;
+    target_to: number;
+    target_length?: number;
+    target_sequence: string;
+    identity_sequence: string;
+    posterior_probabilities?: string;
+}
+
+export interface LegacyAlignmentDisplay {
+    hmmfrom: number;
+    hmmto: number;
+    sqfrom: number;
+    sqto: number;
+    model: string;
+    aseq: string;
+    mline: string;
+    ppline?: string;
+    identity: [number, number]; // [percentage, count]
+    similarity: [number, number]; // [percentage, count]
+}
+
+export interface PyhmmerDomain {
+    env_from?: number;
+    env_to?: number;
+    bitscore: number;
+    ievalue: number;
+    cevalue?: number;
+    bias?: number;
+    strand?: string;
+    alignment?: PyhmmerAlignment;
+    alignment_display?: LegacyAlignmentDisplay;
+}
+
 export interface PyhmmerResult {
     query: string;
     target: string;
@@ -21,6 +63,7 @@ export interface PyhmmerResult {
     num_significant: number;
     bias?: number;
     description?: string;
+    domains?: PyhmmerDomain[];
 
     [key: string]: unknown;
 }

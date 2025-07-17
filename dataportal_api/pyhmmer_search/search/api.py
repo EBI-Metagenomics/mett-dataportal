@@ -79,12 +79,32 @@ def search(request, body: SearchRequestSchema):
         job.clean()
         logger.info(f"Job cleaned successfully")
         
+        # Save job first and ensure it's committed
         job.save()
         logger.info(f"Job saved to database with ID: {job.id}")
+        
+        # Verify job exists in database before starting task
+        try:
+            # Refresh from database to ensure we have the latest state
+            job.refresh_from_db()
+            logger.info(f"Job verified in database with ID: {job.id}")
+            
+            # Add a small delay to ensure the job is fully committed
+            import time
+            time.sleep(0.1)
+            logger.info(f"Job {job.id} should be committed to database")
+        except Exception as e:
+            logger.error(f"Failed to verify job in database: {e}")
+            raise HttpError(500, f"Failed to create job: {str(e)}")
 
         # Start the task
         logger.info(f"Starting Celery task...")
-        result = run_search.delay(str(job.id))
+        job_id_str = str(job.id)
+        logger.info(f"Passing job ID to task: {job_id_str}")
+        logger.info(f"Job ID type: {type(job_id_str)}")
+        logger.info(f"Job ID length: {len(job_id_str)}")
+        
+        result = run_search.delay(job_id_str)
         logger.info(f"Celery task started with ID: {result.id}")
         
         # Create TaskResult entry

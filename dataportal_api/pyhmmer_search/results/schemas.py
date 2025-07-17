@@ -111,7 +111,6 @@ class ResultQuerySchema(Schema):
 
 
 class DomainDetailsResponseSchema(Schema):
-    status: str = Field(..., description="Status of the request")
     target: str = Field(..., description="Target sequence name")
     domains: Optional[List[DomainSchema]] = Field(None, description="List of domains with alignment data")
 

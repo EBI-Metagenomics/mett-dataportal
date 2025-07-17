@@ -26,7 +26,8 @@ const PyhmmerSearchForm: React.FC = () => {
     // Gap penalties
     const [gapOpen, setGapOpen] = useState('0.02');
     const [gapExtend, setGapExtend] = useState('0.4');
-    const [subMatrix, setSubMatrix] = useState('BLOSUM62');
+    // Temporarily disabled - PyHMMER only supports default scoring matrix
+    // const [subMatrix, setSubMatrix] = useState('BLOSUM62');
 
     // Results state
     const [results, setResults] = useState<PyhmmerResult[]>([]);
@@ -52,6 +53,8 @@ const PyhmmerSearchForm: React.FC = () => {
                 setError('Unable to load databases. Please check if the backend server is running.');
             }
         };
+        // Temporarily disabled - PyHMMER only supports default scoring matrix
+        /*
         const fetchMXChoices = async () => {
             try {
                 const response = await PyhmmerService.getMXChoices();
@@ -62,8 +65,9 @@ const PyhmmerSearchForm: React.FC = () => {
                 setError('Unable to load substitution matrices. Please check if the backend server is running.');
             }
         };
+        */
         fetchDatabases();
-        fetchMXChoices();
+        // fetchMXChoices();
         // Load history from localStorage
         const stored = localStorage.getItem(HISTORY_KEY);
         if (stored) {
@@ -134,6 +138,7 @@ const PyhmmerSearchForm: React.FC = () => {
             num_significant: (hit.num_significant ?? 0) as number,
             bias: (hit.bias ?? 0) as number,
             description: (hit.description ?? hit.desc ?? '-') as string,
+            domains: (hit.domains || []) as any[], // Include domains from backend
         }));
     };
 
@@ -162,7 +167,8 @@ const PyhmmerSearchForm: React.FC = () => {
                 threshold: evalueType,
                 threshold_value: evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq),
                 input: sequence,
-                mx: subMatrix,
+                // Temporarily disabled - PyHMMER only supports default scoring matrix
+                // mx: subMatrix,
                 // E-value parameters
                 E: evalueType === 'evalue' ? parseFloat(reportEValueSeq) : null,
                 domE: evalueType === 'evalue' ? parseFloat(reportEValueHit) : null,
@@ -183,7 +189,8 @@ const PyhmmerSearchForm: React.FC = () => {
             console.log('Database:', database);
             console.log('Threshold type:', evalueType);
             console.log('Threshold value:', evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq));
-            console.log('Substitution matrix:', subMatrix);
+            // Temporarily disabled - PyHMMER only supports default scoring matrix
+            // console.log('Substitution matrix:', subMatrix);
             console.log('Input sequence length:', sequence.length);
             
             // E-value parameters
@@ -403,6 +410,7 @@ const PyhmmerSearchForm: React.FC = () => {
                                     className={styles.inputSmall}
                                 />
                             </div>
+                            {/* Temporarily disabled - PyHMMER only supports default scoring matrix
                             <div>
                                 <div className={styles.gapLabel}>Substitution scoring matrix</div>
                                 <select 
@@ -419,6 +427,7 @@ const PyhmmerSearchForm: React.FC = () => {
                                     )}
                                 </select>
                             </div>
+                            */}
                         </div>
                     </div>
                 </div>

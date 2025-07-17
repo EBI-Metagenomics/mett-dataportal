@@ -4,6 +4,7 @@ import {GeneService} from '../../../../services/geneService';
 import {PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import Pagination from '@components/molecules/Pagination';
 import {saveAs} from 'file-saver';
+import AlignmentView from '@components/atoms/AlignmentView/AlignmentView';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -20,6 +21,7 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [pageSize] = useState<number>(DEFAULT_PAGE_SIZE);
     const [downloading, setDownloading] = useState<string | null>(null);
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
     const totalPages = Math.ceil((results?.length || 0) / pageSize);
     const hasPrevious = currentPage > 1;
@@ -42,8 +44,20 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
         }
     };
 
+    const handleRowExpand = (rowIndex: number) => {
+        const newExpandedRows = new Set(expandedRows);
+        if (newExpandedRows.has(rowIndex)) {
+            newExpandedRows.delete(rowIndex);
+        } else {
+            newExpandedRows.add(rowIndex);
+        }
+        setExpandedRows(newExpandedRows);
+    };
+
     const handlePageClick = (page: number) => {
         setCurrentPage(page);
+        // Clear expanded rows when changing pages
+        setExpandedRows(new Set());
     };
 
     const handleDownload = async (format: 'tab' | 'fasta' | 'aligned_fasta') => {
@@ -117,6 +131,7 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
             <table className={styles.resultsTable}>
                 <thead>
                 <tr>
+                    <th></th>
                     <th>Target</th>
                     <th>E-value</th>
                     <th>Score</th>
@@ -126,27 +141,52 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                 </tr>
                 </thead>
                 <tbody>
-                {paginatedResults.map((result, idx) => (
-                    <tr key={idx}>
-                        <td>
-                            <a
-                                href="#"
-                                onClick={e => {
-                                    e.preventDefault();
-                                    handleTargetClick(result.target, idx);
-                                }}
-                                className={`${styles.targetLink} ${loadingIdx === idx ? styles.loading : ''}`}
-                            >
-                                {loadingIdx === idx ? 'Loading...' : result.target}
-                            </a>
-                        </td>
-                        <td>{result.evalue}</td>
-                        <td>{result.score}</td>
-                        <td>{result.num_hits}</td>
-                        <td>{result.num_significant}</td>
-                        <td>{result.description ?? '-'}</td>
-                    </tr>
-                ))}
+                {paginatedResults.map((result, idx) => {
+                    const isExpanded = expandedRows.has(idx);
+                    const hasDomains = result.domains && result.domains.length > 0;
+                    
+                    return (
+                        <React.Fragment key={idx}>
+                            <tr className={`${styles.resultRow} ${isExpanded ? styles.expanded : ''}`}>
+                                <td className={styles.expandCell}>
+                                    {hasDomains && (
+                                        <button
+                                            className={`${styles.expandButton} ${isExpanded ? styles.expanded : ''}`}
+                                            onClick={() => handleRowExpand(idx)}
+                                            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                                        >
+                                            {isExpanded ? '▼' : '▶'}
+                                        </button>
+                                    )}
+                                </td>
+                                <td>
+                                    <a
+                                        href="#"
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            handleTargetClick(result.target, idx);
+                                        }}
+                                        className={`${styles.targetLink} ${loadingIdx === idx ? styles.loading : ''}`}
+                                    >
+                                        {loadingIdx === idx ? 'Loading...' : result.target}
+                                    </a>
+                                </td>
+                                <td>{result.evalue}</td>
+                                <td>{result.score}</td>
+                                <td>{result.num_hits}</td>
+                                <td>{result.num_significant}</td>
+                                <td>{result.description ?? '-'}</td>
+                            </tr>
+                            {isExpanded && hasDomains && jobId && (
+                                <tr className={styles.expandedRow}>
+                                    <td colSpan={7} className={styles.expandedCell}>
+                                        <AlignmentView jobId={jobId} target={result.target} />
+                                    </td>
+                                </tr>
+                            )}
+                        </React.Fragment>
+                    );
+                })}
                 </tbody>
             </table>
             {/* Page size dropdown and pagination */}
