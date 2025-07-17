@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mett-dataportal-app-dev
-  namespace: mett-dataportal-hl
+  namespace: mett-dataportal-hl-dev
   labels:
     app: mett-dataportal-app-dev
 spec:
@@ -62,10 +62,10 @@ spec:
 ---
 
 apiVersion: v1
-kind: Service§
+kind: Service
 metadata:
   name: mett-dataportal-app-dev-svc
-  namespace: mett-dataportal-hl
+  namespace: mett-dataportal-hl-dev
   labels:
     app: mett-dataportal-app-dev
 spec:
