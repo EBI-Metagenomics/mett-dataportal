@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/appConstants';
 import {
     PyhmmerDatabase,
     PyhmmerSearchRequest,
@@ -120,6 +121,31 @@ export class PyhmmerService extends BaseService {
         } catch (error) {
             console.error("Error fetching Pyhmmer domains:", error);
             throw new Error(`Failed to fetch domains: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    static async downloadResults(jobId: string, format: 'tab' | 'fasta' | 'aligned_fasta'): Promise<Blob> {
+        try {
+            console.log(`PyhmmerService.downloadResults: Downloading results for job ${jobId} in format ${format}`);
+            
+            const url = `${API_BASE_URL}${API_BASE_RESULT}/${jobId}/download?format=${format}`;
+            console.log(`PyhmmerService.downloadResults: Download URL: ${url}`);
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`PyhmmerService.downloadResults: Download failed with status ${response.status}: ${errorText}`);
+                throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+            }
+            
+            const blob = await response.blob();
+            console.log(`PyhmmerService.downloadResults: Successfully downloaded ${blob.size} bytes`);
+            
+            return blob;
+        } catch (error) {
+            console.error("Error downloading Pyhmmer results:", error);
+            throw new Error(`Failed to download results: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 }

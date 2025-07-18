@@ -1,9 +1,15 @@
 import logging
 import uuid
+import gzip
+import io
+import os
+import re
 from typing import List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from django.shortcuts import get_object_or_404
 from django.conf import settings
+from django.http import HttpResponse
 from ninja import Router, Query
 from ninja.errors import HttpError
 from celery.result import AsyncResult
@@ -23,6 +29,346 @@ from dataportal.schema.response_schemas import create_success_response
 logger = logging.getLogger(__name__)
 
 pyhmmer_router_result = Router(tags=["PyHMMER Results"])
+
+
+@pyhmmer_router_result.get("/{uuid:id}/download")
+def download_results(request, id: uuid.UUID, format: str):
+    """Download search results in various formats (tab, fasta, aligned_fasta)"""
+    try:
+        logger.info(f"=== DOWNLOAD REQUEST ===")
+        logger.info(f"Job ID: {id}")
+        logger.info(f"Format: {format}")
+        
+        # Validate format
+        if format not in ['tab', 'fasta', 'aligned_fasta']:
+            raise HttpError(400, f"Invalid format: {format}. Supported formats: tab, fasta, aligned_fasta")
+        
+        # Get job and results
+        job = get_object_or_404(HmmerJob, id=id)
+        
+        if not job.task or job.task.status != "SUCCESS":
+            raise HttpError(400, "Job not completed successfully")
+        
+        # Parse the result
+        import json
+        if isinstance(job.task.result, str):
+            result_data = json.loads(job.task.result)
+        else:
+            result_data = job.task.result or []
+        
+        if not result_data:
+            raise HttpError(404, "No results found for this job")
+        
+        # Get database path
+        db_path = settings.HMMER_DATABASES.get(job.database)
+        if not db_path:
+            raise HttpError(500, f"Database {job.database} not configured")
+        
+        # Generate content based on format
+        if format == 'tab':
+            content = generate_tsv_content(result_data)
+            filename = f"pyhmmer_hits_{id}.tsv"
+            content_type = "text/tab-separated-values"
+        elif format == 'fasta':
+            content = generate_enhanced_fasta_content(result_data, db_path, job.input)
+            filename = f"pyhmmer_hits_{id}.fasta.gz"
+            content_type = "application/gzip"
+        elif format == 'aligned_fasta':
+            content = generate_enhanced_aligned_fasta_content(result_data, db_path, job.input)
+            filename = f"pyhmmer_hits_{id}.aligned.fasta.gz"
+            content_type = "application/gzip"
+        
+        # Create response
+        response = HttpResponse(content, content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        logger.info(f"Download generated successfully: {filename}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error in download_results: {e}")
+        raise HttpError(500, f"Internal server error: {str(e)}")
+
+
+def generate_tsv_content(results):
+    """Generate TSV content from search results"""
+    import csv
+    
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter='\t')
+    
+    # Write header
+    writer.writerow([
+        'Target', 'Description', 'E-value', 'Score', 'Bias',
+        'Query_Start', 'Query_End', 'Target_Start', 'Target_End',
+        'Query_Length', 'Target_Length', 'Identity_Pct', 'Identity_Count',
+        'Similarity_Pct', 'Similarity_Count'
+    ])
+    
+    # Write data rows
+    for hit in results:
+        target = hit.get('target', '')
+        description = hit.get('description', '')
+        evalue = hit.get('evalue', '')
+        score = hit.get('score', '')
+        
+        # Get domain information if available
+        domains = hit.get('domains', [])
+        if domains:
+            domain = domains[0]  # Use first domain
+            bias = domain.get('bias', '')
+            env_from = domain.get('env_from', '')
+            env_to = domain.get('env_to', '')
+            
+            # Get alignment information
+            alignment = domain.get('alignment', {})
+            if alignment:
+                query_start = alignment.get('hmm_from', '')
+                query_end = alignment.get('hmm_to', '')
+                target_start = alignment.get('target_from', '')
+                target_end = alignment.get('target_to', '')
+                query_length = alignment.get('hmm_length', '')
+                target_length = alignment.get('target_length', '')
+            else:
+                query_start = query_end = target_start = target_end = query_length = target_length = ''
+            
+            # Get identity/similarity from alignment_display
+            alignment_display = domain.get('alignment_display', {})
+            if alignment_display:
+                identity = alignment_display.get('identity', [0, 0])
+                similarity = alignment_display.get('similarity', [0, 0])
+                identity_pct = f"{identity[0]*100:.1f}" if len(identity) > 0 else "0.0"
+                identity_count = str(identity[1]) if len(identity) > 1 else "0"
+                similarity_pct = f"{similarity[0]*100:.1f}" if len(similarity) > 0 else "0.0"
+                similarity_count = str(similarity[1]) if len(similarity) > 1 else "0"
+            else:
+                identity_pct = identity_count = similarity_pct = similarity_count = "0"
+        else:
+            bias = env_from = env_to = query_start = query_end = target_start = target_end = query_length = target_length = "0"
+            identity_pct = identity_count = similarity_pct = similarity_count = "0"
+        
+        writer.writerow([
+            target, description, evalue, score, bias,
+            query_start, query_end, target_start, target_end,
+            query_length, target_length, identity_pct, identity_count,
+            similarity_pct, similarity_count
+        ])
+    
+    return output.getvalue()
+
+
+def fetch_sequence_from_database(target_name: str, db_path: str) -> str:
+    """Fetch a sequence from the database file using PyHMMER"""
+    try:
+        from pyhmmer.easel import SequenceFile, SSIReader
+        
+        # Check if SSI index exists
+        ssi_path = f"{db_path}.ssi"
+        if os.path.exists(ssi_path):
+            # Use SSI for fast lookup
+            with SSIReader(ssi_path) as ssi_reader:
+                try:
+                    entry = ssi_reader.find_name(target_name.encode())
+                    with open(db_path, 'rt') as fh:
+                        fh.seek(entry.data_offset)
+                        return fh.read(entry.record_length)
+                except (KeyError, ValueError):
+                    logger.warning(f"Target {target_name} not found in SSI index")
+        
+        # Fallback: scan through the file
+        with SequenceFile(db_path, format="fasta") as seqfile:
+            for seq in seqfile:
+                if seq.name.decode() == target_name:
+                    return f">{seq.name.decode()}\n{seq.sequence}\n"
+        
+        logger.warning(f"Target {target_name} not found in database")
+        return ""
+        
+    except Exception as e:
+        logger.error(f"Error fetching sequence for {target_name}: {e}")
+        return ""
+
+
+def fetch_sequences_parallel(target_names: List[str], db_path: str, max_workers: int = 4) -> dict:
+    """Fetch multiple sequences in parallel"""
+    sequences = {}
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_name = {
+            executor.submit(fetch_sequence_from_database, name, db_path): name 
+            for name in target_names
+        }
+        
+        for future in as_completed(future_to_name):
+            name = future_to_name[future]
+            try:
+                sequence = future.result()
+                if sequence:
+                    sequences[name] = sequence
+            except Exception as e:
+                logger.error(f"Error fetching sequence for {name}: {e}")
+    
+    return sequences
+
+
+def generate_enhanced_fasta_content(results, db_path: str, query_input: str):
+    """Generate enhanced FASTA content with actual sequences from database"""
+    output = io.StringIO()
+    
+    # Extract target names
+    target_names = [hit.get('target', '') for hit in results if hit.get('target')]
+    
+    # Fetch sequences from database
+    logger.info(f"Fetching {len(target_names)} sequences from database: {db_path}")
+    sequences = fetch_sequences_parallel(target_names, db_path)
+    
+    for hit in results:
+        target = hit.get('target', '')
+        description = hit.get('description', '')
+        
+        if target in sequences:
+            # Use the actual sequence from database
+            output.write(sequences[target])
+        else:
+            # Fallback to existing logic
+            sequence = None
+            
+            # Try to get from hit sequence field
+            if hit.get('sequence'):
+                sequence = hit.get('sequence')
+            else:
+                # Try to get from domain alignment data
+                domains = hit.get('domains', [])
+                if domains:
+                    domain = domains[0]
+                    alignment = domain.get('alignment', {})
+                    if alignment and alignment.get('target_sequence'):
+                        sequence = alignment.get('target_sequence').replace('-', '')
+                    else:
+                        alignment_display = domain.get('alignment_display', {})
+                        if alignment_display and alignment_display.get('aseq'):
+                            sequence = alignment_display.get('aseq').replace('-', '')
+            
+            # Write FASTA entry
+            output.write(f">{target} {description}\n")
+            if sequence:
+                for i in range(0, len(sequence), 60):
+                    output.write(sequence[i:i+60] + "\n")
+            else:
+                output.write("N/A\n")
+    
+    # Compress the content
+    content = output.getvalue()
+    compressed = io.BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='wb') as gz:
+        gz.write(content.encode('utf-8'))
+    
+    return compressed.getvalue()
+
+
+def generate_enhanced_aligned_fasta_content(results, db_path: str, query_input: str):
+    """Generate enhanced aligned FASTA content with actual sequences and alignments"""
+    output = io.StringIO()
+    
+    # Parse query sequence
+    query_match = re.match(r"^>(.*$)\n([\s\S]+)", query_input, re.MULTILINE)
+    if query_match:
+        query_header, query_sequence = query_match.groups()
+        query_sequence = query_sequence.replace('\n', '').replace('\r', '')
+    else:
+        query_header = "query"
+        query_sequence = ""
+    
+    # Extract target names
+    target_names = [hit.get('target', '') for hit in results if hit.get('target')]
+    
+    # Fetch sequences from database
+    logger.info(f"Fetching {len(target_names)} sequences from database: {db_path}")
+    sequences = fetch_sequences_parallel(target_names, db_path)
+    
+    for hit in results:
+        target = hit.get('target', '')
+        description = hit.get('description', '')
+        
+        # Get alignment information
+        domains = hit.get('domains', [])
+        if domains:
+            domain = domains[0]
+            alignment = domain.get('alignment', {})
+            alignment_display = domain.get('alignment_display', {})
+            
+            if alignment:
+                # Use PyHMMER alignment data
+                query_seq = alignment.get('hmm_sequence', '')
+                target_seq = alignment.get('target_sequence', '')
+                identity_seq = alignment.get('identity_sequence', '')
+                
+                output.write(f">{target}_query {description}\n")
+                if query_seq:
+                    for i in range(0, len(query_seq), 60):
+                        output.write(query_seq[i:i+60] + "\n")
+                else:
+                    output.write("N/A\n")
+                
+                output.write(f">{target}_target {description}\n")
+                if target_seq:
+                    for i in range(0, len(target_seq), 60):
+                        output.write(target_seq[i:i+60] + "\n")
+                else:
+                    output.write("N/A\n")
+                
+                if identity_seq:
+                    output.write(f">{target}_identity {description}\n")
+                    for i in range(0, len(identity_seq), 60):
+                        output.write(identity_seq[i:i+60] + "\n")
+            elif alignment_display:
+                # Use legacy alignment display data
+                query_seq = alignment_display.get('model', '')
+                target_seq = alignment_display.get('aseq', '')
+                match_line = alignment_display.get('mline', '')
+                
+                output.write(f">{target}_query {description}\n")
+                if query_seq:
+                    for i in range(0, len(query_seq), 60):
+                        output.write(query_seq[i:i+60] + "\n")
+                else:
+                    output.write("N/A\n")
+                
+                output.write(f">{target}_target {description}\n")
+                if target_seq:
+                    for i in range(0, len(target_seq), 60):
+                        output.write(target_seq[i:i+60] + "\n")
+                else:
+                    output.write("N/A\n")
+                
+                if match_line:
+                    output.write(f">{target}_match {description}\n")
+                    for i in range(0, len(match_line), 60):
+                        output.write(match_line[i:i+60] + "\n")
+            else:
+                # No alignment data - try to get full sequence from database
+                if target in sequences:
+                    output.write(f">{target}_full {description}\n")
+                    output.write(sequences[target])
+                else:
+                    output.write(f">{target} {description} (no alignment data)\n")
+                    output.write("N/A\n")
+        else:
+            # No domains - try to get full sequence from database
+            if target in sequences:
+                output.write(f">{target}_full {description}\n")
+                output.write(sequences[target])
+            else:
+                output.write(f">{target} {description} (no domain data)\n")
+                output.write("N/A\n")
+    
+    # Compress the content
+    content = output.getvalue()
+    compressed = io.BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode='wb') as gz:
+        gz.write(content.encode('utf-8'))
+    
+    return compressed.getvalue()
 
 
 @pyhmmer_router_result.get("/{uuid:id}", response=JobDetailsResponseSchema)

@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import styles from './PyhmmerResultsTable.module.scss';
 import {GeneService} from '../../../../services/geneService';
+import {PyhmmerService} from '../../../../services/pyhmmerService';
 import {PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import Pagination from '@components/molecules/Pagination';
 import {saveAs} from 'file-saver';
@@ -64,16 +65,16 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
         if (!jobId) return;
         setDownloading(format);
         try {
-            const url = `/api/pyhmmer/result/${jobId}/download?format=${format}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Download failed');
-            const blob = await response.blob();
+            const blob = await PyhmmerService.downloadResults(jobId, format);
+            
             let filename = '';
             if (format === 'tab') filename = `pyhmmer_hits_${jobId}.tsv`;
             if (format === 'fasta') filename = `pyhmmer_hits_${jobId}.fasta.gz`;
             if (format === 'aligned_fasta') filename = `pyhmmer_hits_${jobId}.aligned.fasta.gz`;
+            
             saveAs(blob, filename);
-        } catch {
+        } catch (error) {
+            console.error('Download failed:', error);
             alert('Failed to download file.');
         } finally {
             setDownloading(null);
