@@ -235,6 +235,14 @@ def run_search(self, job_id: str):
         logger.info(f"Pipeline kwargs after filtering (None values removed): {filtered_kwargs}")
         logger.info(f"Number of parameters passed to Pipeline: {len(filtered_kwargs)}")
         pipeline = Pipeline(alphabet, **filtered_kwargs)
+        
+        # Configure bias composition filter
+        if hasattr(job, 'bias_filter') and job.bias_filter == 'off':
+            logger.info("Disabling bias composition filter")
+            pipeline.bias_filter = False
+        else:
+            logger.info("Using default bias composition filter (enabled)")
+        
         logger.info(f"Pipeline configured successfully")
 
         # Parse query

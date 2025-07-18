@@ -26,6 +26,10 @@ const PyhmmerSearchForm: React.FC = () => {
     // Gap penalties
     const [gapOpen, setGapOpen] = useState('0.02');
     const [gapExtend, setGapExtend] = useState('0.4');
+    
+    // Bias composition filter
+    const [turnOffBiasFilter, setTurnOffBiasFilter] = useState(false);
+    
     // Temporarily disabled - PyHMMER only supports default scoring matrix
     // const [subMatrix, setSubMatrix] = useState('BLOSUM62');
 
@@ -182,6 +186,8 @@ const PyhmmerSearchForm: React.FC = () => {
                 // Gap penalties
                 popen: parseFloat(gapOpen),
                 pextend: parseFloat(gapExtend),
+                // Bias composition filter
+                bias_filter: turnOffBiasFilter ? 'off' : 'on',
             };
             
             // Enhanced logging for form values
@@ -211,6 +217,10 @@ const PyhmmerSearchForm: React.FC = () => {
             console.log('=== GAP PENALTIES FORM VALUES ===');
             console.log('Gap open penalty:', gapOpen);
             console.log('Gap extend penalty:', gapExtend);
+            
+            // Bias composition filter
+            console.log('=== BIAS COMPOSITION FILTER FORM VALUES ===');
+            console.log('Turn off bias filter:', turnOffBiasFilter);
             
             console.log('=== FINAL REQUEST OBJECT ===');
             console.log('Request object:', req);
@@ -281,6 +291,8 @@ const PyhmmerSearchForm: React.FC = () => {
                         </select>
                     </div>
 
+                    <div className={styles.sectionDivider}></div>
+
                     {/* Cut off */}
                     <div className={styles.formSection}>
                         <label className={`vf-form__label ${styles.label}`}>Cut off</label>
@@ -313,26 +325,30 @@ const PyhmmerSearchForm: React.FC = () => {
                                 <>
                                     <div className={styles.cutoffLabel}>Significance E-values</div>
                                     <input 
-                                        type="text" 
+                                        type="number" 
+                                        step="any"
                                         value={significanceEValueSeq}
                                         onChange={e => setSignificanceEValueSeq(e.target.value)} 
                                         className={styles.input}
                                     />
                                     <input 
-                                        type="text" 
+                                        type="number" 
+                                        step="any"
                                         value={significanceEValueHit}
                                         onChange={e => setSignificanceEValueHit(e.target.value)} 
                                         className={styles.input}
                                     />
                                     <div className={styles.cutoffLabel}>Report E-values</div>
                                     <input 
-                                        type="text" 
+                                        type="number" 
+                                        step="any"
                                         value={reportEValueSeq} 
                                         onChange={e => setReportEValueSeq(e.target.value)}
                                         className={styles.input}
                                     />
                                     <input 
-                                        type="text" 
+                                        type="number" 
+                                        step="any"
                                         value={reportEValueHit} 
                                         onChange={e => setReportEValueHit(e.target.value)}
                                         className={styles.input}
@@ -342,26 +358,30 @@ const PyhmmerSearchForm: React.FC = () => {
                                 <>
                                     <div className={styles.cutoffLabel}>Significance Bit scores</div>
                                     <input 
-                                        type="text" 
+                                        type="number" 
+                                        step="any"
                                         value={significanceBitScoreSeq}
                                         onChange={e => setSignificanceBitScoreSeq(e.target.value)} 
                                         className={styles.input}
                                     />
                                     <input 
-                                        type="text" 
+                                        type="number" 
+                                        step="any"
                                         value={significanceBitScoreHit}
                                         onChange={e => setSignificanceBitScoreHit(e.target.value)} 
                                         className={styles.input}
                                     />
                                     <div className={styles.cutoffLabel}>Report Bit scores</div>
                                     <input 
-                                        type="text" 
+                                        type="number" 
+                                        step="any"
                                         value={reportBitScoreSeq} 
                                         onChange={e => setReportBitScoreSeq(e.target.value)}
                                         className={styles.input}
                                     />
                                     <input 
-                                        type="text" 
+                                        type="number" 
+                                        step="any"
                                         value={reportBitScoreHit} 
                                         onChange={e => setReportBitScoreHit(e.target.value)}
                                         className={styles.input}
@@ -371,6 +391,8 @@ const PyhmmerSearchForm: React.FC = () => {
                         </div>
                     </div>
 
+                    <div className={styles.sectionDivider}></div>
+
                     {/* Gap penalties */}
                     <div className={styles.formSection}>
                         <label className={`vf-form__label ${styles.label}`}>Gap penalties</label>
@@ -378,7 +400,8 @@ const PyhmmerSearchForm: React.FC = () => {
                             <div>
                                 <div className={styles.gapLabel}>Open</div>
                                 <input 
-                                    type="text" 
+                                    type="number" 
+                                    step="any"
                                     value={gapOpen} 
                                     onChange={e => setGapOpen(e.target.value)}
                                     className={styles.inputSmall}
@@ -387,30 +410,31 @@ const PyhmmerSearchForm: React.FC = () => {
                             <div>
                                 <div className={styles.gapLabel}>Extend</div>
                                 <input 
-                                    type="text" 
+                                    type="number" 
+                                    step="any"
                                     value={gapExtend} 
                                     onChange={e => setGapExtend(e.target.value)}
                                     className={styles.inputSmall}
                                 />
                             </div>
-                            {/* Temporarily disabled - PyHMMER only supports default scoring matrix
-                            <div>
-                                <div className={styles.gapLabel}>Substitution scoring matrix</div>
-                                <select 
-                                    value={subMatrix} 
-                                    onChange={e => setSubMatrix(e.target.value)} 
-                                    className={styles.selectSmall}
-                                >
-                                    {mxChoices.length > 0 ? (
-                                        mxChoices.map(choice => (
-                                            <option key={choice.value} value={choice.value}>{choice.label}</option>
-                                        ))
-                                    ) : (
-                                        <option value="">No matrices available</option>
-                                    )}
-                                </select>
-                            </div>
-                            */}
+                        </div>
+                    </div>
+
+                    <div className={styles.sectionDivider}></div>
+
+                    {/* Bias composition filter */}
+                    <div className={styles.formSection}>
+                        <label className={`vf-form__label ${styles.label}`}>Filter</label>
+                        <div className={styles.checkboxRow}>
+                            <label className={styles.checkboxLabel}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.checkboxInput}
+                                    checked={turnOffBiasFilter}
+                                    onChange={e => setTurnOffBiasFilter(e.target.checked)}
+                                />
+                                <span className={styles.checkboxText}>Turn off bias composition filter</span>
+                            </label>
                         </div>
                     </div>
                 </div>

@@ -149,7 +149,7 @@ def get_databases(request):
             default_databases = [
                 {
                     "id": "bu_all",
-                    "name": "BU All Strains",
+                    "name": "Bacteroides uniformis All Strains",
                     "type": "seq",
                     "version": "1.0",
                     "release_date": "2024-01-01",
@@ -157,7 +157,7 @@ def get_databases(request):
                 },
                 {
                     "id": "bu_type_strains",
-                    "name": "BU Type Strains",
+                    "name": "Bacteroides uniformis Type Strains",
                     "type": "seq",
                     "version": "1.0",
                     "release_date": "2024-01-01",
@@ -165,7 +165,7 @@ def get_databases(request):
                 },
                 {
                     "id": "pv_all",
-                    "name": "PV All Strains",
+                    "name": "Phocaeicola vulgatus All Strains",
                     "type": "seq",
                     "version": "1.0",
                     "release_date": "2024-01-01",
@@ -173,7 +173,7 @@ def get_databases(request):
                 },
                 {
                     "id": "pv_type_strains",
-                    "name": "PV Type Strains",
+                    "name": "Phocaeicola vulgatus Type Strains",
                     "type": "seq",
                     "version": "1.0",
                     "release_date": "2024-01-01",
@@ -181,7 +181,7 @@ def get_databases(request):
                 },
                 {
                     "id": "bu_pv_all",
-                    "name": "BU+PV All Strains",
+                    "name": "Bacteroides uniformis + Phocaeicola vulgatus All Strains",
                     "type": "seq",
                     "version": "1.0",
                     "release_date": "2024-01-01",
@@ -189,7 +189,7 @@ def get_databases(request):
                 },
                 {
                     "id": "bu_pv_type_strains",
-                    "name": "BU+PV Type Strains",
+                    "name": "Bacteroides uniformis + Phocaeicola vulgatus Type Strains",
                     "type": "seq",
                     "version": "1.0",
                     "release_date": "2024-01-01",
@@ -215,7 +215,7 @@ def get_databases(request):
         return [
             {
                 "id": "bu_all",
-                "name": "BU All Strains",
+                "name": "Burkholderia ubonensis All Strains",
                 "type": "seq",
                 "version": "1.0",
                 "release_date": "2024-01-01",

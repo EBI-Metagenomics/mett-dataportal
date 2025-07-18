@@ -5,7 +5,7 @@ import datetime
 def populate_initial_databases(apps, schema_editor):
     Database = apps.get_model("pyhmmer_search", "Database")
 
-    # Hardcoded from HmmerJob.DbChoices
+    # Hardcoded from HmmerJob.DbChoices - using shorter names to fit 32 char limit
     entries = [
         ("bu_type_strains", "BU Type Strains"),
         ("bu_all", "BU All Strains"),
@@ -28,6 +28,20 @@ def populate_initial_databases(apps, schema_editor):
         )
 
 
+def reverse_populate_initial_databases(apps, schema_editor):
+    Database = apps.get_model("pyhmmer_search", "Database")
+    # Delete the databases that were created
+    db_ids = [
+        "bu_type_strains",
+        "bu_all", 
+        "pv_type_strains",
+        "pv_all",
+        "bu_pv_type_strains",
+        "bu_pv_all",
+    ]
+    Database.objects.filter(id__in=db_ids).delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -35,5 +49,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(populate_initial_databases),
+        migrations.RunPython(populate_initial_databases, reverse_populate_initial_databases),
     ]

@@ -21,12 +21,12 @@ class HmmerJob(models.Model):
         BITSCORE = "bitscore", "Bit score"
 
     class DbChoices(models.TextChoices):
-        BU_TYPE_STRAINS = "bu_type_strains", "BU Type Strains"
-        BU_ALL = "bu_all", "BU All Strains"
-        PV_TYPE_STRAINS = "pv_type_strains", "PV Type Strains"
-        PV_ALL = "pv_all", "PV All Strains"
-        BU_PV_TYPE_STRAINS = "bu_pv_type_strains", "BU+PV Type Strains"
-        BU_PV_ALL = "bu_pv_all", "BU+PV All Strains"
+        BU_TYPE_STRAINS = "bu_type_strains", "Bacteroides uniformis Type Strains"
+        BU_ALL = "bu_all", "Bacteroides uniformis All Strains"
+        PV_TYPE_STRAINS = "pv_type_strains", "Phocaeicola vulgatus Type Strains"
+        PV_ALL = "pv_all", "Phocaeicola vulgatus All Strains"
+        BU_PV_TYPE_STRAINS = "bu_pv_type_strains", "Bacteroides uniformis + Phocaeicola vulgatus Type Strains"
+        BU_PV_ALL = "bu_pv_all", "Bacteroides uniformis + Phocaeicola vulgatus All Strains"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     algo = models.CharField(
@@ -54,6 +54,13 @@ class HmmerJob(models.Model):
     pextend = models.FloatField(default=0.4, null=True, blank=True)
 
     threshold_value = models.FloatField(default=1.0)
+    
+    bias_filter = models.CharField(
+        max_length=8,
+        choices=[('on', 'On'), ('off', 'Off')],
+        default='on',
+        help_text="Bias composition filter setting"
+    )
 
     task = models.OneToOneField(
         TaskResult, related_name="+", null=True, blank=True, on_delete=models.CASCADE
@@ -82,7 +89,7 @@ class Database(models.Model):
     type = models.CharField(
         max_length=16, choices=TypeChoices.choices, default=TypeChoices.SEQ
     )
-    name = models.CharField(max_length=32)
+    name = models.CharField(max_length=128)
     version = models.CharField(max_length=32)
     release_date = models.DateField(default=datetime.date.today)
     order = models.IntegerField(default=-1)

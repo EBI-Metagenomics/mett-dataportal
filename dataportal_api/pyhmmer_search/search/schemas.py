@@ -103,8 +103,11 @@ class SearchRequestSchema(ModelSchema):
     incdomT: Optional[float] = Field(None, description="Significance Bit scores - Hit")
     
     # Gap penalties
-    popen: Optional[float] = Field(None, description="Gap penalties - Open")
-    pextend: Optional[float] = Field(None, description="Gap penalties - Extend")
+    popen: float = Field(default=0.02, ge=0.0, description="Gap open penalty")
+    pextend: float = Field(default=0.4, ge=0.0, description="Gap extend penalty")
+    
+    # Bias composition filter
+    bias_filter: str = Field(default="on", description="Bias composition filter setting")
 
     @field_validator("input", mode="after", check_fields=False)
     @classmethod
