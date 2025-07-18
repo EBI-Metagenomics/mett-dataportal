@@ -9,6 +9,7 @@ import {
 } from '../interfaces/Pyhmmer';
 import { BaseService } from './BaseService';
 import { cacheResponse } from './cachingDecorator';
+import { ApiService } from './api';
 
 const API_BASE_SEARCH = '/pyhmmer/search';
 const API_BASE_RESULT = '/pyhmmer/result';
@@ -74,11 +75,47 @@ export class PyhmmerService extends BaseService {
             console.log('popen (Gap open penalty):', request.popen);
             console.log('pextend (Gap extend penalty):', request.pextend);
             
-            const result = await this.postWithRetry<PyhmmerSearchResponse>(`${API_BASE_SEARCH}`, request);
+            // Call API directly to handle validation errors properly
+            const result = await ApiService.post<PyhmmerSearchResponse>(`${API_BASE_SEARCH}`, request);
             console.log('PyhmmerService.search: Successfully submitted search, received response:', result);
             return result;
         } catch (error) {
             console.error("Error performing Pyhmmer search:", error);
+            
+            // Enhanced error handling for validation errors
+            if (error && typeof error === 'object' && 'response' in error) {
+                const axiosError = error as any;
+                if (axiosError.response?.status === 422) {
+                    // This is a validation error - try to extract the actual message
+                    const responseData = axiosError.response.data;
+                    console.log('PyhmmerService.search: Validation error response:', responseData);
+                    
+                    if (responseData && typeof responseData === 'object') {
+                        // Try to extract validation message from different possible formats
+                        let validationMessage = '';
+                        
+                        if (responseData.detail && Array.isArray(responseData.detail)) {
+                            // Pydantic validation error format
+                            const messages = responseData.detail.map((err: any) => err.msg || err.message || err).filter(Boolean);
+                            validationMessage = messages.join('; ');
+                        } else if (responseData.message) {
+                            validationMessage = responseData.message;
+                        } else if (responseData.detail) {
+                            validationMessage = responseData.detail;
+                        } else if (responseData.error) {
+                            validationMessage = responseData.error;
+                        } else if (Array.isArray(responseData)) {
+                            // Handle array of validation errors
+                            validationMessage = responseData.map((err: any) => err.message || err.msg || err).join('; ');
+                        }
+                        
+                        if (validationMessage) {
+                            throw new Error(validationMessage);
+                        }
+                    }
+                }
+            }
+            
             throw new Error(`Failed to submit Pyhmmer search: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }

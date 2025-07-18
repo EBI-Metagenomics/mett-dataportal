@@ -228,6 +228,9 @@ const PyhmmerSearchForm: React.FC = () => {
                 setLoadingMessage('');
             }
         } catch (err) {
+            console.error('Search error:', err);
+            
+            // Handle different types of errors
             if (err instanceof Error) {
                 setError(err.message || 'Error running search');
             } else {
@@ -261,26 +264,6 @@ const PyhmmerSearchForm: React.FC = () => {
 
     return (
         <section className={styles.pyhmmerSection}>
-            {/* Show error message if backend is not available */}
-            {error && (
-                <div className={styles.errorMessage}>
-                    <h3>Backend Service Unavailable</h3>
-                    <p>{error}</p>
-                    <div className={styles.errorHelp}>
-                        <h4>To start the backend server:</h4>
-                        <ol>
-                            <li>Navigate to the <code>dataportal_api</code> directory</li>
-                            <li>Set up the environment: <code>source set-env-local.sh</code></li>
-                            <li>Install dependencies: <code>pip install -r requirements.txt</code></li>
-                            <li>Run migrations: <code>python manage.py migrate</code></li>
-                            <li>Start the server: <code>python manage.py runserver</code></li>
-                        </ol>
-                        <p><strong>Note:</strong> The backend requires external services (Elasticsearch, Redis, PostgreSQL) to be running.</p>
-                        <p>For detailed setup instructions, see <a href="/PYHMMER_SETUP.md" target="_blank" rel="noopener noreferrer">PyHMMER Setup Guide</a>.</p>
-                    </div>
-                </div>
-            )}
-            
             <div className={styles.formContainer}>
                 <div className={styles.leftPane}>
                     

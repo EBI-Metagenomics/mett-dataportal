@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 from typing import Literal, Optional, List, Tuple
 
 from django_celery_results.models import TaskResult
@@ -11,6 +12,8 @@ from pydantic_core import PydanticCustomError
 from pyhmmer.easel import SequenceFile
 
 from .models import HmmerJob, Database
+
+logger = logging.getLogger(__name__)
 
 
 # Enhanced Alignment Models based on pyhmmer.plan7.Alignment
@@ -106,12 +109,127 @@ class SearchRequestSchema(ModelSchema):
     @field_validator("input", mode="after", check_fields=False)
     @classmethod
     def check_input(cls, value: str, info: ValidationInfo):
+        """Validate input sequence format and content"""
+        if not value or not value.strip():
+            raise PydanticCustomError("invalid_input", "Input sequence cannot be empty")
+        
+        lines = value.strip().splitlines()
+        if not lines:
+            raise PydanticCustomError("invalid_input", "Input sequence cannot be empty")
+        
+        # Check if first line starts with '>' (FASTA header)
+        if not lines[0].startswith('>'):
+            raise PydanticCustomError(
+                "invalid_input", 
+                "Input must be in FASTA format. First line must start with '>' followed by a sequence identifier. "
+                "Example: >my_protein\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV"
+            )
+        
+        # Check if we have sequence data after header
+        if len(lines) < 2:
+            raise PydanticCustomError(
+                "invalid_input", 
+                "Input must contain sequence data after the header line"
+            )
+        
+        # Extract and validate sequence
+        sequence_lines = lines[1:]
+        sequence = ''.join(sequence_lines).strip()
+        
+        if not sequence:
+            raise PydanticCustomError(
+                "invalid_input", 
+                "Sequence data cannot be empty"
+            )
+        
+        # Check sequence length
+        if len(sequence) < 10:
+            raise PydanticCustomError(
+                "invalid_input", 
+                "Sequence must be at least 10 characters long"
+            )
+        
+        # Detect sequence type and validate characters
+        sequence_upper = sequence.upper()
+
+        # Define valid characters for different sequence types
+        protein_chars = set('ACDEFGHIKLMNPQRSTVWY*')
+        dna_chars = set('ACGTN')
+        rna_chars = set('ACGUN')
+
+        # Remove whitespace and gap characters for strict DNA/RNA check
+        seq_strict = ''.join(c for c in sequence_upper if c not in {' ', '\n', '\r', '\t', '-'})
+
+        # Strict DNA/RNA detection: if all characters are DNA or all are RNA, reject
+        if seq_strict and all(c in dna_chars for c in seq_strict):
+            raise PydanticCustomError(
+                "invalid_input",
+                "DNA sequence detected. Please provide a protein sequence in FASTA format. If you have a DNA sequence, translate it to protein first."
+            )
+        if seq_strict and all(c in rna_chars for c in seq_strict):
+            raise PydanticCustomError(
+                "invalid_input",
+                "RNA sequence detected. Please provide a protein sequence in FASTA format. If you have an RNA sequence, translate it to protein first."
+            )
+
+        # Count character types
+        protein_count = sum(1 for c in sequence_upper if c in protein_chars)
+        dna_count = sum(1 for c in sequence_upper if c in dna_chars)
+        rna_count = sum(1 for c in sequence_upper if c in rna_chars)
+        total_chars = len(sequence_upper)
+
+        # Calculate percentages
+        protein_pct = protein_count / total_chars if total_chars > 0 else 0
+        dna_pct = dna_count / total_chars if total_chars > 0 else 0
+        rna_pct = rna_count / total_chars if total_chars > 0 else 0
+
+        # Check for invalid characters
+        invalid_chars = set(sequence_upper) - protein_chars - dna_chars - rna_chars - {' ', '\n', '\r', '\t'}
+        if invalid_chars:
+            raise PydanticCustomError(
+                "invalid_input",
+                f"Sequence contains invalid characters: {', '.join(sorted(invalid_chars))}. "
+                f"Valid characters are: A-Z (amino acids), A/C/G/T/N (DNA), A/C/G/U/N (RNA)"
+            )
+
+        # Determine sequence type and provide appropriate warnings
+        if protein_pct >= 0.8:
+            # Protein sequence - this is what we expect for PyHMMER
+            if protein_pct < 1.0:
+                # Some non-protein characters detected
+                logger.warning(f"Protein sequence contains some non-standard amino acids. Protein percentage: {protein_pct:.1%}")
+        elif dna_pct >= 0.8:
+            # DNA sequence detected (fallback)
+            raise PydanticCustomError(
+                "invalid_input",
+                "DNA sequence detected. Please provide a protein sequence in FASTA format. If you have a DNA sequence, translate it to protein first."
+            )
+        elif rna_pct >= 0.8:
+            # RNA sequence detected (fallback)
+            raise PydanticCustomError(
+                "invalid_input",
+                "RNA sequence detected. Please provide a protein sequence in FASTA format. If you have an RNA sequence, translate it to protein first."
+            )
+        else:
+            # Mixed or unclear sequence type
+            raise PydanticCustomError(
+                "invalid_input",
+                "Sequence type unclear. PyHMMER requires protein sequences. "
+                f"Detected: {protein_pct:.1%} protein, {dna_pct:.1%} DNA, {rna_pct:.1%} RNA. "
+                "Please provide a clear protein sequence."
+            )
+        
+        # Try to validate with PyHMMER's SequenceFile
         try:
             with SequenceFile(io.BytesIO(value.encode())) as fh:
                 fh.guess_alphabet()
-            return value
-        except Exception:
-            raise PydanticCustomError("invalid_input", "Sequence is not valid")
+        except Exception as e:
+            raise PydanticCustomError(
+                "invalid_input", 
+                f"PyHMMER validation failed: {str(e)}"
+            )
+        
+        return value
 
     class Meta:
         model = HmmerJob
