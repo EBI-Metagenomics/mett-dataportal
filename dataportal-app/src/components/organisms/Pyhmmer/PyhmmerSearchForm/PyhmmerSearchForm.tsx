@@ -277,22 +277,6 @@ const PyhmmerSearchForm: React.FC = () => {
             <div className={styles.formContainer}>
                 <div className={styles.leftPane}>
                     
-                    {/* Sequence database */}
-                    <div className={styles.formSection}>
-                        <label className={`vf-form__label ${styles.label}`}>Sequence database</label>
-                        <select className={`vf-form__select ${styles.select}`} value={database} onChange={e => setDatabase(e.target.value)}>
-                            {databases.length > 0 ? (
-                                databases.map(db => (
-                                    <option key={db.id} value={db.id}>{db.name}</option>
-                                ))
-                            ) : (
-                                <option value="">No databases available</option>
-                            )}
-                        </select>
-                    </div>
-
-                    <div className={styles.sectionDivider}></div>
-
                     {/* Cut off */}
                     <div className={styles.formSection}>
                         <label className={`vf-form__label ${styles.label}`}>Cut off</label>
@@ -439,6 +423,22 @@ const PyhmmerSearchForm: React.FC = () => {
                     </div>
                 </div>
                 <div className={styles.rightPane}>
+                    {/* Sequence database */}
+                    <div className={styles.formSection}>
+                        <label className={`vf-form__label ${styles.label}`}>Sequence database</label>
+                        <select className={`vf-form__select ${styles.select}`} value={database} onChange={e => setDatabase(e.target.value)}>
+                            {databases.length > 0 ? (
+                                databases.map(db => (
+                                    <option key={db.id} value={db.id}>{db.name}</option>
+                                ))
+                            ) : (
+                                <option value="">No databases available</option>
+                            )}
+                        </select>
+                    </div>
+
+                    {/* <div className={`${styles.sectionDivider} ${styles.tight}`}></div> */}
+
                     <PyhmmerSearchInput
                         sequence={sequence}
                         setSequence={setSequence}
@@ -446,6 +446,9 @@ const PyhmmerSearchForm: React.FC = () => {
                     />
                 </div>
             </div>
+
+            {/* Section divider between form and results */}
+            <div className={styles.sectionDivider}></div>
 
             {/* Results two-column layout */}
             <div className={styles.resultsContainer}>
