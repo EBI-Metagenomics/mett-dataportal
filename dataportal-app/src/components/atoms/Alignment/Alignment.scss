@@ -69,8 +69,10 @@
                     font-family: 'Courier New', monospace;
                     font-size: 12px;
                     line-height: 1.2;
-                    white-space: pre;
-                    overflow-x: auto;
+                    white-space: pre-wrap;
+                    word-break: break-all;
+                    overflow-wrap: break-word;
+                    max-width: 100%;
                 }
             }
             
@@ -119,8 +121,10 @@
                 font-family: 'Courier New', monospace;
                 font-size: 12px;
                 line-height: 1.2;
-                white-space: pre;
-                overflow-x: auto;
+                white-space: pre-wrap;
+                word-break: break-all;
+                overflow-wrap: break-word;
+                max-width: 100%;
                 color: #007bff;
             }
         }

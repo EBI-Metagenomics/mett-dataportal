@@ -451,6 +451,16 @@ def run_search(self, job_id: str):
             logger.info(f"Result JSON created, length: {len(result_json)}")
             logger.info(f"Result JSON preview: {result_json[:500]}...")
             
+            # Check if result is too large (PostgreSQL text field limit is ~1GB, but let's be conservative)
+            MAX_RESULT_SIZE = 50 * 1024 * 1024  # 50MB limit
+            if len(result_json) > MAX_RESULT_SIZE:
+                logger.error(f"Result JSON too large: {len(result_json)} bytes (limit: {MAX_RESULT_SIZE})")
+                logger.error("This may cause database storage issues. Consider truncating results.")
+                # Truncate the result to prevent database issues
+                truncated_results = result_dicts[:10]  # Keep only first 10 results
+                result_json = json.dumps(truncated_results)
+                logger.warning(f"Truncated to {len(truncated_results)} results, new size: {len(result_json)} bytes")
+            
             job.task.result = result_json
             job.task.date_done = timezone.now()
             

@@ -510,17 +510,66 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
 def get_domains_by_target(request, id: uuid.UUID, target: str):
     """Get domains for a specific target in a search result."""
     try:
+        logger.info(f"=== GET DOMAINS BY TARGET ===")
+        logger.info(f"Job ID: {id}")
+        logger.info(f"Target: {target}")
+        
         job = get_object_or_404(HmmerJob, id=id)
         
-        if not job.task or job.task.status != "SUCCESS":
+        if not job.task:
+            logger.error("Job has no task associated")
             raise HttpError(400, "Job not completed successfully")
         
+        if job.task.status != "SUCCESS":
+            logger.error(f"Job status is not SUCCESS: {job.task.status}")
+            raise HttpError(400, f"Job not completed successfully, status: {job.task.status}")
+        
         # Parse the result to get domain details
-        import json
-        if isinstance(job.task.result, str):
-            result_data = json.loads(job.task.result)
-        else:
-            result_data = job.task.result or []
+        result_data = None
+        try:
+            if isinstance(job.task.result, str):
+                logger.info("Task result is string, attempting JSON decode...")
+                import json
+                result_data = json.loads(job.task.result)
+                logger.info(f"Successfully parsed JSON result, type: {type(result_data)}")
+            else:
+                logger.info("Task result is not string, using as is")
+                result_data = job.task.result or []
+                logger.info(f"Using result as is, type: {type(result_data)}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse task result as JSON: {e}")
+            logger.error(f"Task result type: {type(job.task.result)}")
+            logger.error(f"Task result length: {len(job.task.result) if isinstance(job.task.result, str) else 'N/A'}")
+            
+            # Try to recover from truncated JSON
+            if isinstance(job.task.result, str) and len(job.task.result) > 1000:
+                logger.warning("Attempting to recover from potentially truncated JSON...")
+                try:
+                    # Try to find the last complete object
+                    last_brace = job.task.result.rfind(']')
+                    if last_brace > 0:
+                        truncated_json = job.task.result[:last_brace+1]
+                        result_data = json.loads(truncated_json)
+                        logger.warning(f"Recovered from truncated JSON, got {len(result_data) if isinstance(result_data, list) else 0} results")
+                    else:
+                        raise ValueError("No valid JSON structure found")
+                except Exception as recovery_error:
+                    logger.error(f"Failed to recover from truncated JSON: {recovery_error}")
+                    raise HttpError(500, f"Job result is corrupted and cannot be recovered. Please try the search again.")
+            
+            if result_data is None:
+                raise HttpError(500, f"Failed to parse job result: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error parsing task result: {e}")
+            raise HttpError(500, f"Error parsing job result: {str(e)}")
+        
+        if not result_data:
+            logger.warning("No result data found")
+            raise HttpError(404, "No results found for this job")
+        
+        if not isinstance(result_data, list):
+            logger.error(f"Result data is not a list: {type(result_data)}")
+            raise HttpError(500, "Invalid result format")
         
         # Find the target in the results
         target_data = None
@@ -530,9 +579,12 @@ def get_domains_by_target(request, id: uuid.UUID, target: str):
                 break
         
         if not target_data:
+            logger.warning(f"Target '{target}' not found in results")
+            logger.info(f"Available targets: {[item.get('target') for item in result_data[:5]]}")
             raise HttpError(404, f"Target '{target}' not found in results")
         
         domains = target_data.get('domains', [])
+        logger.info(f"Found {len(domains)} domains for target {target}")
         
         # Return the data directly - the frontend will treat this as a legacy response
         return {
@@ -540,8 +592,14 @@ def get_domains_by_target(request, id: uuid.UUID, target: str):
             "domains": domains
         }
         
+    except HttpError:
+        # Re-raise HttpError as is
+        raise
     except Exception as e:
-        logger.error(f"Error in get_domains_by_target: {e}")
+        logger.error(f"Unexpected error in get_domains_by_target: {e}")
+        logger.error(f"Error type: {type(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HttpError(500, f"Internal server error: {str(e)}")
 
 
