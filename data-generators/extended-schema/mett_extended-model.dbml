@@ -1,23 +1,11 @@
-Project mett_extended_14jul2025 {
+Project mett_extended_21jul2025 {
   database_type: "PostgreSQL"
-}
-
-// Genomic region: unified span-based and gene-level mapping
-Table genomic_region {
-  id serial [pk]
-  uniprot_id text [unique]
-  start integer
-  end integer
-  locus_tag_start text
-  locus_tag_end text
-  length integer
-  strain_id integer [ref: > strain.id]
 }
 
 // Core species & strain info
 Table species {
   id serial [pk]
-  scientific_name text
+  scientific_name text [not null]
   common_name text
   acronym text [unique]
   taxonomy_id integer
@@ -25,92 +13,103 @@ Table species {
 
 Table strain {
   id serial [pk]
-  species_id integer [ref: > species.id]
-  strain_id integer
-  solate_name text [unique]
+  species_id integer [ref: > species.id, not null]
+  strain_id text [unique, not null]
+  isolate_name text [unique, not null]
   assembly_name text
   assembly_accession text
   fasta_file text
   gff_file text
-  type_strain boolean
+  type_strain boolean [default: false]
 }
 
 Table strain_contigs {
   id serial [pk]
-  strain_id integer [ref: > strain.id]
-  seq_id text
-  length integer
+  strain_id integer [ref: > strain.id, not null]
+  seq_id text [not null]
+  length integer [not null]
+}
+
+// Genomic region: unified span-based and gene-level mapping
+Table genomic_region {
+  id serial [pk]
+  uniprot_id text [unique, not null]
+  strain_id integer [ref: > strain.id, not null]
+  start_pos integer [not null]
+  end_pos integer [not null]
+  locus_tag_start text
+  locus_tag_end text
+  
+  indexes {
+    (strain_id, start_pos, end_pos)
+  }
 }
 
 // Gene annotation
 Table gene {
   id serial [pk]
-  locus_tag text [unique]
-  gene_id integer
+  locus_tag text [unique, not null]
+  gene_id text
   gene_name text
   alias text
   product text
   product_source text
-  species_scientific_name text
-  start_pos integer
-  end_pos integer
-  uf_ontology_terms text[]
-  uf_prot_rec_fullname text
-  ec_number text
-  inference text
-  protein_sequence text
+  start_pos integer [not null]
+  end_pos integer [not null]
   gene_biotype text
-  strain_id integer [ref: > strain.id]
+  strain_id integer [ref: > strain.id, not null]
+  genomic_region_id integer [ref: > genomic_region.id]
+  protein_id integer [ref: > protein.id]
+  
+  indexes {
+    (strain_id, start_pos, end_pos)
+    (genomic_region_id)
+    (protein_id)
+  }
 }
 
+// Protein information
+Table protein {
+  id serial [pk]
+  uniprot_id text [ref: > genomic_region.uniprot_id, unique, not null]
+  protein_sequence text
+  protein_full_name text
+}
+
+// Gene database cross-references
 Table gene_dbxref {
   id serial [pk]
-  gene_id integer [ref: > gene.id]
-  uniprot_id text
+  gene_id integer [ref: > gene.id, not null]
+  uniprot_id text [ref: > genomic_region.uniprot_id, not null]
+  ec_number text[]
   cog text[]
   cog_funcats text[]
   kegg text[]
   pfam text[]
   eggnog text[]
   interpro text[]
+  
+  indexes {
+    (gene_id, uniprot_id) [unique]
+  }
 }
 
+// Gene ontology terms
 Table gene_ontology_terms {
   id serial [pk]
-  gene_id integer [ref: > gene.id]
-  ontology_type text
-  ontology_id text
+  gene_id integer [ref: > gene.id, not null]
+  ontology_type text [not null] // GO, KEGG, etc.
+  ontology_id text [not null]
   ontology_description text
+  
+  indexes {
+    (gene_id, ontology_type, ontology_id) [unique]
+  }
 }
 
-// Functional genomics and growth
-Table gene_essentiality {
-  id serial [pk]
-  gene_id integer [ref: > gene.id]
-  genomic_region_id integer [ref: > genomic_region.id]
-  tas_hit double
-  essentiality_call boolean
-}
 
-Table gene_fitness_data {
-  id serial [pk]
-  gene_id integer [ref: > gene.id]
-  genomic_region_id integer [ref: > genomic_region.id]
-  contrast text
-  lfc double
-  fdr double
-}
 
-Table gene_fitness_correlation {
-  id serial [pk]
-  gene1_id integer [ref: > gene.id]
-  gene2_id integer [ref: > gene.id]
-  genomic_region_id_1 integer [ref: > genomic_region.id]
-  genomic_region_id_2 integer [ref: > genomic_region.id]
-  correlation_value double [not null]
-}
-
-// Media and phenotype
+// Media and experimental conditions
 Table media {
   id serial [pk]
   name text [unique, not null]
@@ -119,19 +118,91 @@ Table media {
   notes text
 }
 
-Table mutant_growth_rate {
+Table experimental_condition {
   id serial [pk]
-  gene_id integer [ref: > gene.id]
-  genomic_region_id integer [ref: > genomic_region.id]
+  name text [not null]
+  description text
   media_id integer [ref: > media.id]
-  replicate smallint
-  tas_hit double
-  doubling_rate_h double
+  temperature double
+  ph double
+  oxygen_level text
+  other_conditions text
 }
 
-// Drug interactions
+// Functional genomics and growth
+Table gene_essentiality {
+  id serial [pk]
+  gene_id integer [ref: > gene.id, not null]
+  genomic_region_id integer [ref: > genomic_region.id, not null]
+  experimental_condition_id integer [ref: > experimental_condition.id]
+  tas_hit double
+  essentiality_call boolean [not null]
+  confidence_score double
+  
+  indexes {
+    (gene_id, genomic_region_id) [unique]
+  }
+}
+
+Table gene_fitness_data {
+  id serial [pk]
+  gene_id integer [ref: > gene.id, not null]
+  genomic_region_id integer [ref: > genomic_region.id, not null]
+  experimental_condition_id integer [ref: > experimental_condition.id]
+  contrast text [not null]
+  lfc double [not null]
+  fdr double [not null]
+  replicate_id text
+  
+  indexes {
+    (gene_id, genomic_region_id, experimental_condition_id, contrast)
+  }
+}
+
+Table gene_fitness_correlation {
+  id serial [pk]
+  gene1_id integer [ref: > gene.id, not null]
+  gene2_id integer [ref: > gene.id, not null]
+  genomic_region_id_1 integer [ref: > genomic_region.id, not null]
+  genomic_region_id_2 integer [ref: > genomic_region.id, not null]
+  experimental_condition_id integer [ref: > experimental_condition.id]
+  correlation_value double [not null]
+  p_value double
+  
+  indexes {
+    (gene1_id, gene2_id, genomic_region_id_1, genomic_region_id_2) [unique]
+  }
+}
+
+Table mutant_growth_rate {
+  id serial [pk]
+  gene_id integer [ref: > gene.id, not null]
+  genomic_region_id integer [ref: > genomic_region.id, not null]
+  media_id integer [ref: > media.id, not null]
+  experimental_condition_id integer [ref: > experimental_condition.id]
+  replicate smallint [not null]
+  tas_hit double
+  doubling_rate_h double [not null]
+  
+  indexes {
+    (gene_id, genomic_region_id, media_id, replicate) [unique]
+  }
+}
+
+// Drug and compound information
+Table compound {
+  id serial [pk]
+  pubchem_id text [unique]
+  name text [not null]
+  molecular_formula text
+  molecular_weight double
+  smiles text
+  inchi text
+}
+
 Table drug {
   id serial [pk]
+  compound_id integer [ref: > compound.id]
   name text [unique, not null]
   drug_class text
   drug_subclass text
@@ -140,45 +211,55 @@ Table drug {
 
 Table drug_bacteria_interaction {
   id serial [pk]
-  strain_id integer [ref: > strain.id]
-  drug_id integer [ref: > drug.id]
-  pubchem_id text
+  strain_id integer [ref: > strain.id, not null]
+  drug_id integer [ref: > drug.id, not null]
+  compound_id integer [ref: > compound.id]
   mic_um double
   drug_metabolism_percent double
   drug_metabolism_fdr double
+  experimental_condition_id integer [ref: > experimental_condition.id]
+  
+  indexes {
+    (strain_id, drug_id) [unique]
+  }
 }
 
+// Antimicrobial resistance
 Table gene_amr {
   id serial [pk]
-  gene_id integer [ref: > gene.id]
-  genomic_region_id integer [ref: > genomic_region.id]
-  gene_symbol text
-  sequence_name text
+  gene_id integer [ref: > gene.id, not null]
+  genomic_region_id integer [ref: > genomic_region.id, not null]
   scope text
   element_type text
   element_subtype text
   drug_id integer [ref: > drug.id]
   uf_keyword text[]
   uf_ecnumber text
+  
+  indexes {
+    (gene_id, genomic_region_id, drug_id) [unique]
+  }
 }
 
+// Protein interactions
 Table protein_compound_interaction {
   id serial [pk]
-  uniprot_id text
-  pubchem_id text
+  uniprot_id text [ref: > genomic_region.uniprot_id, not null]
+  compound_id integer [ref: > compound.id, not null]
   ttp_score double
   fdr double
-  hit_calling boolean
+  hit_calling boolean [not null]
+  experimental_condition_id integer [ref: > experimental_condition.id]
+  
+  indexes {
+    (uniprot_id, compound_id) [unique]
+  }
 }
-
-Ref: protein_compound_interaction.uniprot_id > gene_dbxref.uniprot_id
-Ref: protein_compound_interaction.uniprot_id > genomic_region.uniprot_id
 
 Table ppi_interaction {
   id serial [pk]
-  uniprot_id_a text
-  uniprot_id_b text
-  known_interaction boolean
+  uniprot_id_a text [ref: > genomic_region.uniprot_id, not null]
+  uniprot_id_b text [ref: > genomic_region.uniprot_id, not null]
   dl_score float
   comelt_score float
   abundance_score float
@@ -186,10 +267,14 @@ Table ppi_interaction {
   alphafold_score float
   drugs_score float
   ensemble_score float
+  experimental_condition_id integer [ref: > experimental_condition.id]
+  
+  indexes {
+    (uniprot_id_a, uniprot_id_b) [unique]
+  }
 }
 
-Ref: ppi_interaction.uniprot_id_a > gene_dbxref.uniprot_id
-Ref: ppi_interaction.uniprot_id_b > gene_dbxref.uniprot_id
-
-Ref: ppi_interaction.uniprot_id_a > genomic_region.uniprot_id
-Ref: ppi_interaction.uniprot_id_b > genomic_region.uniprot_id
+// Additional constraints and checks
+Ref: gene.start_pos < gene.end_pos
+Ref: genomic_region.start_pos < genomic_region.end_pos
+Ref: gene.strain_id = genomic_region.strain_id
