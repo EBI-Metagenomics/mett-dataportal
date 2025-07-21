@@ -126,7 +126,7 @@ spec:
             - name: ENABLE_PYHMMER_SEARCH
               valueFrom:
                 configMapKeyRef:
-                  name: mett-app-config
+                  name: mett-app-config-prod
                   key: ENABLE_PYHMMER_SEARCH
           resources:
             requests:
