@@ -61,13 +61,13 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({ sequence, setSe
                 >
                     Submit
                 </button>
-                <button 
+                {/* <button 
                     className="vf-button vf-button--sm" 
                     type="button" 
                     onClick={handleReset}
                 >
                     Reset
-                </button>
+                </button> */}
                 <button 
                     className="vf-button vf-button--sm" 
                     type="button" 

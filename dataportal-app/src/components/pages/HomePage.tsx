@@ -108,7 +108,7 @@ const HomePage: React.FC = () => {
     const tabs: Tab[] = [
         {id: 'genomes', label: 'Genomes'},
         {id: 'genes', label: 'Genes'},
-        ...(isFeatureEnabled('pyhmmer_search') ? [{id: 'proteinsearch', label: 'Protein Search'}] : []),
+        ...(isFeatureEnabled('pyhmmer_search') ? [{id: 'proteinsearch', label: 'Search by Protein'}] : []),
     ];
 
     // Reset filters when switching tabs

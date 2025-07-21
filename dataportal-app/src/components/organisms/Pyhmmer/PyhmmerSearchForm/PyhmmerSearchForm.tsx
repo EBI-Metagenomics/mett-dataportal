@@ -5,6 +5,8 @@ import {PyhmmerMXChoice, PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import PyhmmerResultsTable from "@components/organisms/Pyhmmer/PyhmmerResultsHandler/PyhmmerResultsTable";
 import PyhmmerSearchInput from "@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchInput";
 import PyhmmerSearchHistory, { SearchHistoryItem } from "@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchHistory";
+import * as Popover from '@radix-ui/react-popover';
+import { PYHMMER_CUTOFF_HELP, PYHMMER_GAP_PENALTIES_HELP, PYHMMER_FILTER_HELP } from '../../../../utils/constants';
 
 const HISTORY_KEY = 'pyhmmer_search_history';
 
@@ -279,7 +281,35 @@ const PyhmmerSearchForm: React.FC = () => {
                     
                     {/* Cut off */}
                     <div className={styles.formSection}>
-                        <label className={`vf-form__label ${styles.label}`}>Cut off</label>
+                        <div className={styles.flexRow}>
+                            <label className={`vf-form__label ${styles.label}`}>Cut off
+                                <Popover.Root>
+                                    <Popover.Trigger asChild>
+                                        <button
+                                            className={styles.infoIcon}
+                                            onClick={e => e.stopPropagation()}
+                                            aria-label="Cut off info"
+                                            type="button"
+                                        >
+                                            ℹ️
+                                        </button>
+                                    </Popover.Trigger>
+                                    <Popover.Portal>
+                                        <Popover.Content
+                                            className={styles.popoverContent}
+                                            side="top"
+                                            align="end"
+                                            sideOffset={5}
+                                        >
+                                            <div className={styles.popoverInner}>
+                                                <strong>Cut off parameters:</strong><br/>
+                                                <p style={{whiteSpace: 'pre-line'}}>{PYHMMER_CUTOFF_HELP}</p>
+                                            </div>
+                                        </Popover.Content>
+                                    </Popover.Portal>
+                                </Popover.Root>
+                            </label>
+                        </div>
                         <div className={styles.radioRow}>
                             <label className={styles.radioLabel}>
                                 <input
@@ -379,7 +409,35 @@ const PyhmmerSearchForm: React.FC = () => {
 
                     {/* Gap penalties */}
                     <div className={styles.formSection}>
-                        <label className={`vf-form__label ${styles.label}`}>Gap penalties</label>
+                        <div className={styles.flexRow}>
+                            <label className={`vf-form__label ${styles.label}`}>Gap penalties
+                                <Popover.Root>
+                                    <Popover.Trigger asChild>
+                                        <button
+                                            className={styles.infoIcon}
+                                            onClick={e => e.stopPropagation()}
+                                            aria-label="Gap penalties info"
+                                            type="button"
+                                        >
+                                            ℹ️
+                                        </button>
+                                    </Popover.Trigger>
+                                    <Popover.Portal>
+                                        <Popover.Content
+                                            className={styles.popoverContent}
+                                            side="top"
+                                            align="end"
+                                            sideOffset={5}
+                                        >
+                                            <div className={styles.popoverInner}>
+                                                <strong>Gap penalties:</strong><br/>
+                                                <p style={{whiteSpace: 'pre-line'}}>{PYHMMER_GAP_PENALTIES_HELP}</p>
+                                            </div>
+                                        </Popover.Content>
+                                    </Popover.Portal>
+                                </Popover.Root>
+                            </label>
+                        </div>
                         <div className={styles.gapRow}>
                             <div>
                                 <div className={styles.gapLabel}>Open</div>
@@ -408,7 +466,35 @@ const PyhmmerSearchForm: React.FC = () => {
 
                     {/* Bias composition filter */}
                     <div className={styles.formSection}>
-                        <label className={`vf-form__label ${styles.label}`}>Filter</label>
+                        <div className={styles.flexRow}>
+                            <label className={`vf-form__label ${styles.label}`}>Filter
+                                <Popover.Root>
+                                    <Popover.Trigger asChild>
+                                        <button
+                                            className={styles.infoIcon}
+                                            onClick={e => e.stopPropagation()}
+                                            aria-label="Filter info"
+                                            type="button"
+                                        >
+                                            ℹ️
+                                        </button>
+                                    </Popover.Trigger>
+                                    <Popover.Portal>
+                                        <Popover.Content
+                                            className={styles.popoverContent}
+                                            side="top"
+                                            align="end"
+                                            sideOffset={5}
+                                        >
+                                            <div className={styles.popoverInner}>
+                                                <strong>Bias composition filter:</strong><br/>
+                                                <p style={{whiteSpace: 'pre-line'}}>{PYHMMER_FILTER_HELP}</p>
+                                            </div>
+                                        </Popover.Content>
+                                    </Popover.Portal>
+                                </Popover.Root>
+                            </label>
+                        </div>
                         <div className={styles.checkboxRow}>
                             <label className={styles.checkboxLabel}>
                                 <input
