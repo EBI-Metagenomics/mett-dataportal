@@ -74,17 +74,29 @@ class IntraStrainDuplicateFinder:
         records = self.parse_fasta(fasta_text)
         self.log(f"🔬 {strain_id}: Parsed {len(records)} proteins")
         seq_to_genes = defaultdict(set)
+        all_gene_ids = set()
+
         for gene_id, seq in records:
             seq_to_genes[seq].add(gene_id)
+            all_gene_ids.add(gene_id)
+
         duplicates = {seq: genes for seq, genes in seq_to_genes.items() if len(genes) > 1}
+        total_genes = len(all_gene_ids)
+        total_proteins = len(records)
+        total_dup_gene_ids = sum(len(genes) for genes in duplicates.values())
+
         if duplicates:
-            self.log(f"⚠️  {strain_id}: Found {len(duplicates)} duplicated sequences")
+            self.log(
+                f"⚠️  {strain_id}: Found {len(duplicates)} duplicated sequences involving {total_dup_gene_ids} gene IDs")
         else:
             self.log(f"✅ {strain_id}: No duplicates found")
+
         return {
             "strain_id": strain_id,
+            "total_proteins": total_proteins,
+            "total_genes": total_genes,
             "num_duplicates": len(duplicates),
-            "total_duplicated_gene_ids": sum(len(genes) for genes in duplicates.values()),
+            "total_duplicated_gene_ids": total_dup_gene_ids,
             "duplicated_sequences": duplicates,
         }
 
@@ -128,15 +140,26 @@ def write_csv_outputs(results, out_dir="output"):
             writer.writerow([r["strain_id"], r["num_duplicates"], r["total_duplicated_gene_ids"]])
 
     # --- Write details ---
-    with open(details_path, "w", newline="") as f:
+    with open(summary_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Strain ID", "Protein Sequence Hash", "Gene IDs", "Sequence Preview"])
+        writer.writerow([
+            "Strain ID",
+            "Total Proteins",
+            "Total Unique Genes",
+            "Duplicated Sequences",
+            "Duplicated Gene IDs",
+            "Duplication % (by gene)"
+        ])
         for r in results:
-            for sequence, gene_ids in r["duplicated_sequences"].items():
-                seq_hash = hashlib.sha256(sequence.encode()).hexdigest()[:12]
-                gene_list = ", ".join(sorted(gene_ids))
-                preview = sequence[:30] + "..." if len(sequence) > 30 else sequence
-                writer.writerow([r["strain_id"], seq_hash, gene_list, preview])
+            perc = (r["total_duplicated_gene_ids"] / r["total_genes"] * 100) if r["total_genes"] else 0
+            writer.writerow([
+                r["strain_id"],
+                r["total_proteins"],
+                r["total_genes"],
+                r["num_duplicates"],
+                r["total_duplicated_gene_ids"],
+                f"{perc:.2f}"
+            ])
 
     print(f"\n📁 CSV files saved to '{out_dir}':")
     print(f"  • Summary: {summary_path}")
