@@ -130,7 +130,7 @@ Table experimental_condition {
 }
 
 // Functional genomics and growth
-Table gene_essentiality {
+Table SP1_gene_essentiality {
   id serial [pk]
   gene_id integer [ref: > gene.id, not null]
   genomic_region_id integer [ref: > genomic_region.id, not null]
@@ -144,7 +144,7 @@ Table gene_essentiality {
   }
 }
 
-Table gene_fitness_data {
+Table SP1_gene_fitness_data {
   id serial [pk]
   gene_id integer [ref: > gene.id, not null]
   genomic_region_id integer [ref: > genomic_region.id, not null]
@@ -159,7 +159,7 @@ Table gene_fitness_data {
   }
 }
 
-Table gene_fitness_correlation {
+Table SP1_gene_fitness_correlation {
   id serial [pk]
   gene1_id integer [ref: > gene.id, not null]
   gene2_id integer [ref: > gene.id, not null]
@@ -174,7 +174,7 @@ Table gene_fitness_correlation {
   }
 }
 
-Table mutant_growth_rate {
+Table SP3_mutant_growth_rate {
   id serial [pk]
   gene_id integer [ref: > gene.id, not null]
   genomic_region_id integer [ref: > genomic_region.id, not null]
@@ -209,7 +209,7 @@ Table drug {
   notes text
 }
 
-Table drug_bacteria_interaction {
+Table SP5_drug_bacteria_interaction {
   id serial [pk]
   strain_id integer [ref: > strain.id, not null]
   drug_id integer [ref: > drug.id, not null]
@@ -242,7 +242,7 @@ Table gene_amr {
 }
 
 // Protein interactions
-Table protein_compound_interaction {
+Table SP2_protein_compound_interaction {
   id serial [pk]
   uniprot_id text [ref: > genomic_region.uniprot_id, not null]
   compound_id integer [ref: > compound.id, not null]
@@ -256,7 +256,7 @@ Table protein_compound_interaction {
   }
 }
 
-Table ppi_interaction {
+Table SP2_ppi_interaction {
   id serial [pk]
   uniprot_id_a text [ref: > genomic_region.uniprot_id, not null]
   uniprot_id_b text [ref: > genomic_region.uniprot_id, not null]
@@ -277,4 +277,4 @@ Table ppi_interaction {
 // Additional constraints and checks
 Ref: gene.start_pos < gene.end_pos
 Ref: genomic_region.start_pos < genomic_region.end_pos
-Ref: gene.strain_id = genomic_region.strain_id
+
