@@ -16,6 +16,6 @@ resources:
 
 images:
   - name: quay.io/microbiome-informatics/mett-dataportal-api
-    newTag: v0.0.156
+    newTag: v0.0.157
   - name: quay.io/microbiome-informatics/mett-dataportal-react-app
-    newTag: v0.0.156
+    newTag: v0.0.157
