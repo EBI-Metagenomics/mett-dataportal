@@ -132,6 +132,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-prod
                   key: ENABLE_PYHMMER_SEARCH
+            - name: PYHMMER_FAA_BASE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: PYHMMER_FAA_BASE_PATH
           resources:
             requests:
               memory: "4Gi"

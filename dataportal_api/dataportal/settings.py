@@ -252,7 +252,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/")
+PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/output/")
 HMMER_DATABASES = {
     "bu_type_strains": PYHMMER_FAA_BASE_PATH + "bu_typestrains_deduplicated.faa",
     "bu_all": PYHMMER_FAA_BASE_PATH + "bu_all_strains_deduplicated.faa",
