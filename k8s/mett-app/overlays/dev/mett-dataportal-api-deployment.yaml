@@ -18,6 +18,10 @@ spec:
       securityContext:
         runAsUser: 7123
         runAsGroup: 1347
+      volumes:
+        - name: pyhmmer-data
+          persistentVolumeClaim:
+            claimName: mett-pyhmmer-pvc-dev
       containers:
         - name: mett-dataportal-api-dev
           image: quay.io/microbiome-informatics/mett-dataportal-api
@@ -130,6 +134,9 @@ spec:
             limits:
               memory: "8Gi"
               cpu: "4"
+          volumeMounts:
+            - name: pyhmmer-data
+              mountPath: /data/pyhmmer
           ports:
             - containerPort: 8000
           livenessProbe:
