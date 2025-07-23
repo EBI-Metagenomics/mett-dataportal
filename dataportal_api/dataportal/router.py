@@ -16,6 +16,7 @@ from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
 from django.conf import settings
 
+from dataportal.api.api_natural_query import nl_query_router as natural_query_router
 from dataportal.schema.response_schemas import (
     ErrorCode,
     create_error_response,
@@ -214,3 +215,5 @@ api.add_router("/", health_router)
 # Register specific handlers
 api.add_exception_handler(HttpError, custom_error_handler)
 api.add_exception_handler(Exception, custom_error_handler)
+
+api.add_router("/query", natural_query_router)

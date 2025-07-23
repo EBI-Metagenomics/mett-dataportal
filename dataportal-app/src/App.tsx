@@ -7,6 +7,7 @@ import GeneViewerPage from './components/pages/GeneViewerPage';
 import FeedbackPage from './components/pages/FeedbackPage';
 import ErrorBoundary from "@components/atoms/ErrorBoundary";
 import Footer from "@components/organisms/Footer/Footer";
+import NaturalQuerySearchPage from "@components/pages/NaturalQuerySearchPage";
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -69,6 +70,7 @@ const App: React.FC = () => {
                                     <GeneViewerPage/>
                                 </ErrorBoundary>
                             }/>
+                            <Route path="/natural-query" element={<NaturalQuerySearchPage />} />
                         </Routes>
                     </main>
                     <Footer/>
