@@ -75,6 +75,7 @@ const FeedbackPage: React.FC = () => {
                 </nav>
 
                 <div className="vf-section-header">
+                    <p/>
                     <h1 className="vf-section-header__heading">Feedback</h1>
                     <p className="vf-section-header__subheading">
                         We value your feedback on the METT Data Portal. Please share your thoughts, suggestions, or

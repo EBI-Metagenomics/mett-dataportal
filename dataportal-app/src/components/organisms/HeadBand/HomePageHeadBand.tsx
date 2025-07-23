@@ -62,7 +62,7 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                                         color: '#005ea5',
                                         textDecoration: 'none',
                                         transition: 'color 0.2s ease',
-                                        gap: '0.4rem',
+                                        gap: '0.5rem',
                                         lineHeight: '1',
                                         overflow: 'visible',
                                         fontSize: '0.9rem',
@@ -74,20 +74,20 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                                         aria-hidden="true"
                                         className="vf-icon vf-icon-arrow--inline-end"
                                         style={{
-                                            verticalAlign: 'baseline',
                                             display: 'inline-block',
-                                            overflow: 'visible',
-                                            marginTop: '0.1em',
+                                            width: '1.2em',
+                                            height: '1.2em',
+                                            flexShrink: '0',
                                         }}
-                                        width="1em"
-                                        height="1em"
                                         xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
                                     >
+                                        <circle cx="12" cy="12" r="11" fill="currentColor"/>
                                         <path
-                                            d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12S18.627 0 12 0C5.376.008.008 5.376 0 12zm13.707-5.209l4.5 4.5a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414z"
-                                            fill="currentColor"
+                                            d="M8.5 7.5l7 4.5-7 4.5v-9z"
+                                            fill="white"
                                             fillRule="nonzero"
-                                        ></path>
+                                        />
                                     </svg>
                                 </Link>
                             </div>
