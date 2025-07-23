@@ -233,6 +233,10 @@ Table SP5_operon_prediction {
   operon_id text [not null]
   prediction_confidence double
   prediction_method text
+  is_partial boolean [default: false]
+  is_intergenomic boolean [default: false]
+  genomic_region_a_id integer [ref: > genomic_region.id]
+  genomic_region_b_id integer [ref: > genomic_region.id]
   experimental_condition_id integer [ref: > experimental_condition.id]
   
   indexes {
@@ -240,6 +244,8 @@ Table SP5_operon_prediction {
     (operon_id)
     (gene_a_id)
     (gene_b_id)
+    (is_partial)
+    (is_intergenomic)
   }
 }
 
