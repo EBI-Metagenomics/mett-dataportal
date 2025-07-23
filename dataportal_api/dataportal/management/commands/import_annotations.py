@@ -11,13 +11,8 @@ from elasticsearch_dsl import connections
 from elasticsearch.helpers import bulk, BulkIndexError
 from dataportal.models import GeneDocument, StrainDocument
 
-# Load environment variables for Elasticsearch
-ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
-ES_USER = os.getenv("ES_USER")
-ES_PASSWORD = os.getenv("ES_PASSWORD")
-
-# Establish Elasticsearch connection
-connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
+# Note: Elasticsearch connection is already established in settings.py via elasticsearch_client.py
+# This command uses the existing connection
 
 # Logging configuration
 logging.basicConfig(
