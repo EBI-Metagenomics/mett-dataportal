@@ -99,7 +99,7 @@ const PyhmmerSearchForm: React.FC = () => {
                 console.log(`Job status: ${job.status}`);
                 console.log(`Job task status: ${job.task?.status}`);
                 console.log(`Job task result type: ${typeof job.task?.result}`);
-                console.log(`Job task result length: ${Array.isArray(job.task?.result) ? job.task.result.length : 'N/A'}`);
+                console.log(`Job task result length: ${Array.isArray(job.task?.result) ? job.task?.result.length : 'N/A'}`);
 
                 if (job.status === 'SUCCESS' && job.task && Array.isArray(job.task.result)) {
                     console.log(`Job ${jobId} completed successfully with ${job.task.result.length} results`);

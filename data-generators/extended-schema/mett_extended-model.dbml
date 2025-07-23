@@ -224,6 +224,25 @@ Table SP5_drug_bacteria_interaction {
   }
 }
 
+// Operon predictions from SP5
+Table SP5_operon_prediction {
+  id serial [pk]
+  strain_id integer [ref: > strain.id, not null]
+  gene_a_id integer [ref: > gene.id, not null]
+  gene_b_id integer [ref: > gene.id, not null]
+  operon_id text [not null]
+  prediction_confidence double
+  prediction_method text
+  experimental_condition_id integer [ref: > experimental_condition.id]
+  
+  indexes {
+    (strain_id, gene_a_id, gene_b_id) [unique]
+    (operon_id)
+    (gene_a_id)
+    (gene_b_id)
+  }
+}
+
 // Antimicrobial resistance
 Table gene_amr {
   id serial [pk]
