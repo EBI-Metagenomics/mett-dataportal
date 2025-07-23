@@ -1,8 +1,10 @@
 import React from 'react';
+import {Link} from 'react-router-dom';
 import styles from './HomePageHeadBand.module.scss';
 import {GenomeMeta} from "../../../interfaces/Genome";
 import SpeciesFilter from "@components/Filters/SpeciesFilter";
 import {EBI_FTP_SERVER} from "../../../utils/appConstants";
+import {useFeatureFlags} from '../../../hooks/useFeatureFlags';
 
 
 interface HomePageHeadBandProps {
@@ -10,7 +12,7 @@ interface HomePageHeadBandProps {
     linkTemplate: string;
     speciesList: { acronym: string; scientific_name: string, common_name: string, taxonomy_id: number }[];
     selectedSpecies: string[];
-    handleSpeciesSelect: (species_acronym: string) => Promise<void>,
+    handleSpeciesSelect: (species_acronym: string) => Promise<void>;
 
 }
 
@@ -22,6 +24,7 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                                                                handleSpeciesSelect
                                                            }) => {
     const generateLink = (strainName: string) => linkTemplate.replace('$strain_name', strainName);
+    const {isFeatureEnabled} = useFeatureFlags();
 
     // console.log(typeStrains)
 
@@ -30,6 +33,66 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
             <div className="vf-section-header vf-grid__col--span-3">
                 <div className="vf-grid__col--span-2">
                     <div className={`vf-content ${styles.vfContent}`} style={{textAlign: 'justify'}}>
+
+                        {/* Yellow Band - Feedback Link Section */}
+                        {isFeatureEnabled('feedback') && (
+                            <div
+                                style={{
+                                    backgroundColor: '#fff3cd',
+                                    border: '1px solid #ffeaa7',
+                                    borderRadius: '4px',
+                                    padding: '0.75rem 1rem',
+                                    margin: '1rem 0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    fontSize: '1rem',
+                                    gap: '1rem',
+                                }}
+                            >
+                                <span style={{color: '#333', fontWeight: '500'}}>
+                                    We value your feedback! Help us improve by sharing your thoughts.
+                                </span>
+                                <Link
+                                    to="/feedback"
+                                    className="vf-link"
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        color: '#005ea5',
+                                        textDecoration: 'none',
+                                        transition: 'color 0.2s ease',
+                                        gap: '0.4rem',
+                                        lineHeight: '1',
+                                        overflow: 'visible',
+                                        fontSize: '0.9rem',
+                                        fontWeight: '500',
+                                    }}
+                                >
+                                    Feedback
+                                    <svg
+                                        aria-hidden="true"
+                                        className="vf-icon vf-icon-arrow--inline-end"
+                                        style={{
+                                            verticalAlign: 'baseline',
+                                            display: 'inline-block',
+                                            overflow: 'visible',
+                                            marginTop: '0.1em',
+                                        }}
+                                        width="1em"
+                                        height="1em"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12S18.627 0 12 0C5.376.008.008 5.376 0 12zm13.707-5.209l4.5 4.5a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414z"
+                                            fill="currentColor"
+                                            fillRule="nonzero"
+                                        ></path>
+                                    </svg>
+                                </Link>
+                            </div>
+                        )}
+
                         <p>
                             The transversal theme aims at mechanistically understanding the complex role that
                             human-associated
@@ -52,6 +115,8 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                             predictions, etc) as well as functional annotations (including biosynthetic gene clusters,
                             carbohydrate active enzymes, etc).
                         </p>
+
+
                     </div>
                 </div>
                 <div>&nbsp;</div>
@@ -160,4 +225,4 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
     );
 };
 
-export default HomePageHeadBand;
+export default HomePageHeadBand; 

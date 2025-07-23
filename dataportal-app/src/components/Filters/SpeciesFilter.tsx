@@ -1,5 +1,4 @@
 import React from 'react';
-import styles from '@components/pages/HomePage.module.scss';
 
 interface Species {
     acronym: string;

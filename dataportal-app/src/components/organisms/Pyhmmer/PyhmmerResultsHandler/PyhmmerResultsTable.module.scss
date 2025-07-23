@@ -4,7 +4,7 @@
   margin: 16px 0;
   background: #fff;
   border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   font-family: 'Open Sans', sans-serif;
 }
 
@@ -35,7 +35,7 @@
 // Expandable row styles
 .resultRow {
   transition: background-color 0.2s ease;
-  
+
   &.expanded {
     background-color: #f8f9fa;
     border-left: 4px solid #1976d2;
@@ -62,17 +62,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   &:hover {
     background-color: #e3f2fd;
     color: #1976d2;
   }
-  
+
   &.expanded {
     color: #1976d2;
     transform: rotate(0deg);
   }
-  
+
   &:not(.expanded) {
     transform: rotate(0deg);
   }
@@ -80,7 +80,7 @@
 
 .expandedRow {
   background-color: #f8f9fa;
-  
+
   .expandedCell {
     padding: 0 !important;
     border-bottom: 1px solid #e0e0e0;
@@ -114,11 +114,11 @@
   border-radius: 50%;
   background-color: #1976d2;
   animation: spinnerBounce 1.4s ease-in-out infinite both;
-  
+
   &:nth-child(1) {
     animation-delay: -0.32s;
   }
-  
+
   &:nth-child(2) {
     animation-delay: -0.16s;
   }
@@ -160,7 +160,7 @@
   justify-content: flex-end;
   gap: 12px;
   margin-bottom: 16px;
-  
+
   .vf-button {
     min-width: 100px;
     padding: 8px 16px;
@@ -169,12 +169,12 @@
     border-radius: 4px;
     transition: all 0.2s ease;
     font-family: 'Open Sans', sans-serif;
-    
+
     &:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
@@ -187,12 +187,12 @@
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
-  
+
   &:hover {
     color: #1565c0;
     text-decoration: underline;
   }
-  
+
   &.loading {
     pointer-events: none;
     opacity: 0.5;

@@ -9,12 +9,12 @@ interface PaginationProps {
 }
 
 const Pagination: React.FC<PaginationProps> = ({
-    currentPage,
-    totalPages,
-    hasPrevious,
-    hasNext,
-    onPageClick
-}) => {
+                                                   currentPage,
+                                                   totalPages,
+                                                   hasPrevious,
+                                                   hasNext,
+                                                   onPageClick
+                                               }) => {
     const handlePageClick = (page: number) => {
         if (page < 1 || page > totalPages) return;
         onPageClick(page);

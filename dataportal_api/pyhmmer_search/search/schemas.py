@@ -19,25 +19,39 @@ logger = logging.getLogger(__name__)
 # Enhanced Alignment Models based on pyhmmer.plan7.Alignment
 class PyhmmerAlignmentSchema(Schema):
     """Schema for pyhmmer.plan7.Alignment data"""
+
     hmm_name: str = Field(..., description="Name of the query HMM")
     hmm_accession: Optional[str] = Field(None, description="Accession of the query HMM")
     hmm_from: int = Field(..., description="Start coordinate in the query HMM")
     hmm_to: int = Field(..., description="End coordinate in the query HMM")
-    hmm_length: Optional[int] = Field(None, description="Length of the query HMM in the alignment")
-    hmm_sequence: str = Field(..., description="Sequence of the query HMM in the alignment")
+    hmm_length: Optional[int] = Field(
+        None, description="Length of the query HMM in the alignment"
+    )
+    hmm_sequence: str = Field(
+        ..., description="Sequence of the query HMM in the alignment"
+    )
 
     target_name: str = Field(..., description="Name of the target sequence")
     target_from: int = Field(..., description="Start coordinate in the target sequence")
     target_to: int = Field(..., description="End coordinate in the target sequence")
-    target_length: Optional[int] = Field(None, description="Length of the target sequence in the alignment")
-    target_sequence: str = Field(..., description="Sequence of the target sequence in the alignment")
+    target_length: Optional[int] = Field(
+        None, description="Length of the target sequence in the alignment"
+    )
+    target_sequence: str = Field(
+        ..., description="Sequence of the target sequence in the alignment"
+    )
 
-    identity_sequence: str = Field(..., description="Identity sequence between query and target")
-    posterior_probabilities: Optional[str] = Field(None, description="Posterior probability annotation")
+    identity_sequence: str = Field(
+        ..., description="Identity sequence between query and target"
+    )
+    posterior_probabilities: Optional[str] = Field(
+        None, description="Posterior probability annotation"
+    )
 
 
 class LegacyAlignmentDisplay(Schema):
     """Legacy alignment display for backward compatibility"""
+
     hmmfrom: int
     hmmto: int
     sqfrom: int
@@ -52,27 +66,41 @@ class LegacyAlignmentDisplay(Schema):
 
 class DomainSchema(Schema):
     """Enhanced domain schema with both new and legacy alignment support"""
-    env_from: Optional[int] = Field(None, description="Start coordinate of domain envelope")
+
+    env_from: Optional[int] = Field(
+        None, description="Start coordinate of domain envelope"
+    )
     env_to: Optional[int] = Field(None, description="End coordinate of domain envelope")
     bitscore: float = Field(..., description="Bit score of the domain")
     ievalue: float = Field(..., description="Independent E-value of the domain")
-    cevalue: Optional[float] = Field(None, description="Conditional E-value of the domain")
+    cevalue: Optional[float] = Field(
+        None, description="Conditional E-value of the domain"
+    )
     bias: Optional[float] = Field(None, description="Bias score contribution")
-    strand: Optional[str] = Field(None, description="Strand where domain is located (+/-)")
+    strand: Optional[str] = Field(
+        None, description="Strand where domain is located (+/-)"
+    )
 
     # Alignment data
-    alignment: Optional[PyhmmerAlignmentSchema] = Field(None, description="PyHMMER alignment data")
-    alignment_display: Optional[LegacyAlignmentDisplay] = Field(None, description="Legacy alignment display")
+    alignment: Optional[PyhmmerAlignmentSchema] = Field(
+        None, description="PyHMMER alignment data"
+    )
+    alignment_display: Optional[LegacyAlignmentDisplay] = Field(
+        None, description="Legacy alignment display"
+    )
 
 
 class HitSchema(Schema):
     """Enhanced hit schema with better field descriptions"""
+
     target: str = Field(..., description="Target sequence name")
     description: str = Field(..., description="Target sequence description")
     evalue: str = Field(..., description="E-value formatted as string")
     score: str = Field(..., description="Bit score formatted as string")
     num_hits: Optional[int] = Field(None, description="Total number of hits")
-    num_significant: Optional[int] = Field(None, description="Number of significant hits")
+    num_significant: Optional[int] = Field(
+        None, description="Number of significant hits"
+    )
     domains: List[DomainSchema] = Field(..., description="List of domains for this hit")
 
 
@@ -89,25 +117,29 @@ class SearchRequestSchema(ModelSchema):
     mx: Optional[
         Literal["BLOSUM62", "BLOSUM45", "BLOSUM90", "PAM30", "PAM70", "PAM250"]
     ] = "BLOSUM62"
-    
+
     # E-value parameters
     E: Optional[float] = Field(None, description="Report E-values - Sequence")
     domE: Optional[float] = Field(None, description="Report E-values - Hit")
     incE: Optional[float] = Field(None, description="Significance E-values - Sequence")
     incdomE: Optional[float] = Field(None, description="Significance E-values - Hit")
-    
+
     # Bit score parameters
     T: Optional[float] = Field(None, description="Report Bit scores - Sequence")
     domT: Optional[float] = Field(None, description="Report Bit scores - Hit")
-    incT: Optional[float] = Field(None, description="Significance Bit scores - Sequence")
+    incT: Optional[float] = Field(
+        None, description="Significance Bit scores - Sequence"
+    )
     incdomT: Optional[float] = Field(None, description="Significance Bit scores - Hit")
-    
+
     # Gap penalties
     popen: float = Field(default=0.02, ge=0.0, description="Gap open penalty")
     pextend: float = Field(default=0.4, ge=0.0, description="Gap extend penalty")
-    
+
     # Bias composition filter
-    bias_filter: str = Field(default="on", description="Bias composition filter setting")
+    bias_filter: str = Field(
+        default="on", description="Bias composition filter setting"
+    )
 
     @field_validator("input", mode="after", check_fields=False)
     @classmethod
@@ -115,64 +147,62 @@ class SearchRequestSchema(ModelSchema):
         """Validate input sequence format and content"""
         if not value or not value.strip():
             raise PydanticCustomError("invalid_input", "Input sequence cannot be empty")
-        
+
         lines = value.strip().splitlines()
         if not lines:
             raise PydanticCustomError("invalid_input", "Input sequence cannot be empty")
-        
+
         # Check if first line starts with '>' (FASTA header)
-        if not lines[0].startswith('>'):
+        if not lines[0].startswith(">"):
             raise PydanticCustomError(
-                "invalid_input", 
+                "invalid_input",
                 "Input must be in FASTA format. First line must start with '>' followed by a sequence identifier. "
-                "Example: >my_protein\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV"
+                "Example: >my_protein\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV",
             )
-        
+
         # Check if we have sequence data after header
         if len(lines) < 2:
             raise PydanticCustomError(
-                "invalid_input", 
-                "Input must contain sequence data after the header line"
+                "invalid_input",
+                "Input must contain sequence data after the header line",
             )
-        
+
         # Extract and validate sequence
         sequence_lines = lines[1:]
-        sequence = ''.join(sequence_lines).strip()
-        
+        sequence = "".join(sequence_lines).strip()
+
         if not sequence:
-            raise PydanticCustomError(
-                "invalid_input", 
-                "Sequence data cannot be empty"
-            )
-        
+            raise PydanticCustomError("invalid_input", "Sequence data cannot be empty")
+
         # Check sequence length
         if len(sequence) < 10:
             raise PydanticCustomError(
-                "invalid_input", 
-                "Sequence must be at least 10 characters long"
+                "invalid_input", "Sequence must be at least 10 characters long"
             )
-        
+
         # Detect sequence type and validate characters
         sequence_upper = sequence.upper()
 
         # Define valid characters for different sequence types
-        protein_chars = set('ACDEFGHIKLMNPQRSTVWY*')
-        dna_chars = set('ACGTN')
-        rna_chars = set('ACGUN')
+        protein_chars = set("ACDEFGHIKLMNPQRSTVWY*")
+        dna_chars = set("ACGTN")
+        rna_chars = set("ACGUN")
 
         # Remove whitespace and gap characters for strict DNA/RNA check
-        seq_strict = ''.join(c for c in sequence_upper if c not in {' ', '\n', '\r', '\t', '-'})
+        seq_strict = "".join(
+            c for c in sequence_upper if c not in {" ", "\n", "\r", "\t", "-"}
+        )
 
         # Strict DNA/RNA detection: if all characters are DNA or all are RNA, reject
         if seq_strict and all(c in dna_chars for c in seq_strict):
             raise PydanticCustomError(
                 "invalid_input",
-                "DNA sequence detected. Please provide a protein sequence in FASTA format. If you have a DNA sequence, translate it to protein first."
+                "DNA sequence detected. Please provide a protein sequence in FASTA format. If you have a DNA sequence, translate it to protein first.",
             )
         if seq_strict and all(c in rna_chars for c in seq_strict):
             raise PydanticCustomError(
                 "invalid_input",
-                "RNA sequence detected. Please provide a protein sequence in FASTA format. If you have an RNA sequence, translate it to protein first."
+                "RNA sequence detected. Please provide a protein sequence in FASTA format. If you have an RNA sequence, translate it to protein first.",
             )
 
         # Count character types
@@ -187,12 +217,18 @@ class SearchRequestSchema(ModelSchema):
         rna_pct = rna_count / total_chars if total_chars > 0 else 0
 
         # Check for invalid characters
-        invalid_chars = set(sequence_upper) - protein_chars - dna_chars - rna_chars - {' ', '\n', '\r', '\t'}
+        invalid_chars = (
+            set(sequence_upper)
+            - protein_chars
+            - dna_chars
+            - rna_chars
+            - {" ", "\n", "\r", "\t"}
+        )
         if invalid_chars:
             raise PydanticCustomError(
                 "invalid_input",
                 f"Sequence contains invalid characters: {', '.join(sorted(invalid_chars))}. "
-                f"Valid characters are: A-Z (amino acids), A/C/G/T/N (DNA), A/C/G/U/N (RNA)"
+                f"Valid characters are: A-Z (amino acids), A/C/G/T/N (DNA), A/C/G/U/N (RNA)",
             )
 
         # Determine sequence type and provide appropriate warnings
@@ -200,18 +236,20 @@ class SearchRequestSchema(ModelSchema):
             # Protein sequence - this is what we expect for PyHMMER
             if protein_pct < 1.0:
                 # Some non-protein characters detected
-                logger.warning(f"Protein sequence contains some non-standard amino acids. Protein percentage: {protein_pct:.1%}")
+                logger.warning(
+                    f"Protein sequence contains some non-standard amino acids. Protein percentage: {protein_pct:.1%}"
+                )
         elif dna_pct >= 0.8:
             # DNA sequence detected (fallback)
             raise PydanticCustomError(
                 "invalid_input",
-                "DNA sequence detected. Please provide a protein sequence in FASTA format. If you have a DNA sequence, translate it to protein first."
+                "DNA sequence detected. Please provide a protein sequence in FASTA format. If you have a DNA sequence, translate it to protein first.",
             )
         elif rna_pct >= 0.8:
             # RNA sequence detected (fallback)
             raise PydanticCustomError(
                 "invalid_input",
-                "RNA sequence detected. Please provide a protein sequence in FASTA format. If you have an RNA sequence, translate it to protein first."
+                "RNA sequence detected. Please provide a protein sequence in FASTA format. If you have an RNA sequence, translate it to protein first.",
             )
         else:
             # Mixed or unclear sequence type
@@ -219,19 +257,18 @@ class SearchRequestSchema(ModelSchema):
                 "invalid_input",
                 "Sequence type unclear. PyHMMER requires protein sequences. "
                 f"Detected: {protein_pct:.1%} protein, {dna_pct:.1%} DNA, {rna_pct:.1%} RNA. "
-                "Please provide a clear protein sequence."
+                "Please provide a clear protein sequence.",
             )
-        
+
         # Try to validate with PyHMMER's SequenceFile
         try:
             with SequenceFile(io.BytesIO(value.encode())) as fh:
                 fh.guess_alphabet()
         except Exception as e:
             raise PydanticCustomError(
-                "invalid_input", 
-                f"PyHMMER validation failed: {str(e)}"
+                "invalid_input", f"PyHMMER validation failed: {str(e)}"
             )
-        
+
         return value
 
     class Meta:
@@ -347,13 +384,20 @@ class ResultQuerySchema(Schema):
 class DomainDetailsResponseSchema(Schema):
     status: str = Field(..., description="Status of the request")
     target: str = Field(..., description="Target sequence name")
-    domains: Optional[List[DomainSchema]] = Field(None, description="List of domains with alignment data")
+    domains: Optional[List[DomainSchema]] = Field(
+        None, description="List of domains with alignment data"
+    )
 
 
 class AlignmentDetailsResponseSchema(Schema):
     """Response schema for detailed alignment information"""
+
     status: str = Field(..., description="Status of the request")
     target: str = Field(..., description="Target sequence name")
     domain_index: Optional[int] = Field(None, description="Index of the domain")
-    alignment: Optional[PyhmmerAlignmentSchema] = Field(None, description="PyHMMER alignment data")
-    legacy_alignment: Optional[LegacyAlignmentDisplay] = Field(None, description="Legacy alignment display")
+    alignment: Optional[PyhmmerAlignmentSchema] = Field(
+        None, description="PyHMMER alignment data"
+    )
+    legacy_alignment: Optional[LegacyAlignmentDisplay] = Field(
+        None, description="Legacy alignment display"
+    )

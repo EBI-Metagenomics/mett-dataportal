@@ -196,7 +196,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 }))
                 : undefined;
             const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
-            
+
             console.log('fetchSearchResults called with:', {
                 query,
                 page,
@@ -207,11 +207,11 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 selectedGenomes,
                 selectedSpecies
             });
-            
+
             try {
                 setLoading(true); // Start spinner
                 let response = null;
-                
+
                 // Always use the advanced search API - the query parameter will contain the locus tag when selected from autocomplete
                 const params = GeneService.buildParamsFetchGeneSearchResults(
                     query,
@@ -410,7 +410,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 lastSpeciesRef.current = currentSpecies;
                 hasLoadedInitialData.current = false;
             }
-            
+
             // Load data if species are selected OR if no species/genomes are selected (default view)
             if (!hasLoadedInitialData.current && (currentSpecies.length > 0 || (currentSpecies.length === 0 && selectedGenomes.length === 0))) {
                 hasLoadedInitialData.current = true;
@@ -438,23 +438,23 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newInput = event.target.value;
         console.log('handleInputChange called with:', newInput, 'isProcessingSuggestion:', isProcessingSuggestion);
-        
+
         // Check if this looks like a display text from autocomplete (contains parentheses and dashes)
         const looksLikeDisplayText = newInput.includes('(') && newInput.includes(')') && newInput.includes(' - ');
-        
+
         // Only update the search input state, don't trigger any immediate effects
         setSearchInput(newInput);
-        
+
         // Clear gene state immediately
         setGeneName('');
-        
+
         // Only call debounced functions if we're not processing a suggestion and it doesn't look like display text
         if (!isProcessingSuggestion && !looksLikeDisplayText) {
             console.log('Calling debounced functions for input:', newInput);
             debouncedUpdateQuery(newInput);
             debouncedUpdateSearchQuery(newInput);
             debouncedFetchSuggestions(newInput);
-            
+
             // Update filter store for URL synchronization
             setGeneSearchQuery(newInput);
         } else {
@@ -467,22 +467,22 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         const selectedValue = suggestion.locus_tag;
         console.log('handleSuggestionClick - selectedValue (locus tag):', selectedValue);
         console.log('handleSuggestionClick - suggestion:', suggestion);
-        
+
         setIsProcessingSuggestion(true);
         setCurrentLocusTag(selectedValue);
         setQuery(selectedValue);
         // Update searchInput to show a user-friendly display value
-        const displayValue = suggestion.gene_name 
+        const displayValue = suggestion.gene_name
             ? `${suggestion.gene_name} (${suggestion.locus_tag})`
             : suggestion.locus_tag;
         setSearchInput(displayValue);
         setGeneName(suggestion.gene_name);
         // Remove setSelectedGeneId since we're not using the special case anymore
         setSuggestions([]);
-        
+
         // Update filter store for URL synchronization
         setGeneSearchQuery(selectedValue);
-        
+
         // Use the locus tag directly instead of relying on query state
         const searchWithLocusTag = async () => {
             const genomeFilter = selectedGenomes?.length
@@ -538,7 +538,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const handleSearch = () => {
         const currentSearchInput = searchInput;
         setQuery(currentSearchInput);
-        
+
         // Update filter store for URL synchronization
         setGeneSearchQuery(currentSearchInput);
         // Use the same approach as debouncedUpdateQuery to avoid timing issues
@@ -667,7 +667,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         </ul>
                     </div>
                 )} */}
-                
+
                 <div className="vf-grid__col--span-3" id="results-table"
                      style={{display: results.length > 0 ? 'block' : 'none'}}>
                     <GeneResultsTable

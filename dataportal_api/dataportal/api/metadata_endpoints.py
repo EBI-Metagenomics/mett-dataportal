@@ -18,6 +18,7 @@ metadata_router = Router(tags=[ROUTER_METADATA])
     summary="List all COG categories",
     description="Returns a list of all standardized COG category codes with their functional descriptions.",
     response=List[Dict[str, str]],
+    include_in_schema=False,
 )
 def get_all_categories(request):
     return cog_cat_service.as_list()

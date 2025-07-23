@@ -1,5 +1,5 @@
 import {FacetItem} from "./Auxiliary";
-import { PaginatedApiResponse, SuccessApiResponse } from "./ApiResponse";
+import {PaginatedApiResponse, SuccessApiResponse} from "./ApiResponse";
 
 export interface GeneMeta {
     locus_tag?: string;
@@ -83,6 +83,7 @@ export type GeneProteinSeqResponse = SuccessApiResponse<GeneProteinSeq>;
 export interface GeneFacetResponse {
     total_hits: number;
     operators: Record<string, 'AND' | 'OR'>;
+
     [facetGroup: string]: FacetItem[] | number | Record<string, 'AND' | 'OR'>;
 }
 

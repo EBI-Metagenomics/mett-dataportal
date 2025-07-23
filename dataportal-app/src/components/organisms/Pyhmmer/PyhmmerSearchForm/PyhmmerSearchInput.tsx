@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, {useRef} from 'react';
 import styles from './PyhmmerSearchInput.module.scss';
-import { EXAMPLE_SEQUENCE } from '../../../../utils/appConstants';
+import {EXAMPLE_SEQUENCE} from '../../../../utils/appConstants';
 
 interface PyhmmerSearchInputProps {
     sequence: string;
@@ -8,7 +8,7 @@ interface PyhmmerSearchInputProps {
     handleSubmit: (e?: React.FormEvent) => void;
 }
 
-const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({ sequence, setSequence, handleSubmit }) => {
+const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({sequence, setSequence, handleSubmit}) => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleUseExample = (e: React.MouseEvent) => {
@@ -34,8 +34,7 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({ sequence, setSe
     return (
         <div className={styles.formSection}>
             <label className={styles.label}>Sequence</label>
-            
-            {/* Single clean textarea box */}
+
             <div className={styles.sequenceContainer}>
                 <textarea
                     className={styles.textarea}
@@ -44,18 +43,17 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({ sequence, setSe
                     placeholder="Paste in your sequence, use the example"
                     rows={10}
                 />
-                
+
                 {/* Help text integrated at the bottom */}
                 <div className={styles.helpText}>
                     Paste in your sequence, use the{' '}
                     <a href="#" onClick={handleUseExample} className={styles.exampleLink}>example</a>
                 </div>
             </div>
-            
-            {/* Action buttons */}
+
             <div className={styles.buttonRow}>
-                <button 
-                    className="vf-button vf-button--primary vf-button--sm" 
+                <button
+                    className="vf-button vf-button--primary vf-button--sm"
                     onClick={handleSubmit}
                     type="button"
                 >
@@ -68,9 +66,9 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({ sequence, setSe
                 >
                     Reset
                 </button> */}
-                <button 
-                    className="vf-button vf-button--sm" 
-                    type="button" 
+                <button
+                    className="vf-button vf-button--sm"
+                    type="button"
                     onClick={handleReset}
                 >
                     Clean

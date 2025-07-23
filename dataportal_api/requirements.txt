@@ -6,7 +6,8 @@ django-compressor==4.5.1
 django-ninja==1.4.1
 django-admin-inline-paginator==0.4.0
 django-unfold==0.33.0
-pydantic-settings==2.6.1
+pydantic-settings==2.10.0
+pydantic[email]==2.10.0
 django-sass-processor==1.4.1
 django-cors-headers==4.4.0
 psycopg[binary,pool]==3.2.9

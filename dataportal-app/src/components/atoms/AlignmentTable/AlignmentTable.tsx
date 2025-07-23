@@ -1,11 +1,6 @@
-import React, { useMemo } from 'react';
-import {
-    useTable,
-    useExpanded,
-    Column,
-    Row,
-} from "react-table";
-import { PyhmmerDomain } from '../../../interfaces/Pyhmmer';
+import React, {useMemo} from 'react';
+import {Column, Row, useExpanded, useTable,} from "react-table";
+import {PyhmmerDomain} from '../../../interfaces/Pyhmmer';
 import Alignment from '../Alignment/Alignment';
 import './AlignmentTable.scss';
 
@@ -13,7 +8,7 @@ interface AlignmentTableProps {
     domain: PyhmmerDomain;
 }
 
-export const AlignmentTable: React.FC<AlignmentTableProps> = ({ domain }) => {
+export const AlignmentTable: React.FC<AlignmentTableProps> = ({domain}) => {
     const columns = useMemo<Column<PyhmmerDomain>[]>(() => [
         {
             Header: 'Query',
@@ -124,57 +119,57 @@ export const AlignmentTable: React.FC<AlignmentTableProps> = ({ domain }) => {
     return (
         <table {...getTableProps()} className="vf-table vf-table--bordered alignment-table">
             <thead className="vf-table__header">
-                {headerGroups.map((headerGroup, groupIndex) => {
-                    const headerProps = headerGroup.getHeaderGroupProps();
-                    return (
-                        <tr {...headerProps} key={`header-group-${groupIndex}`} className="vf-table__row">
-                            {headerGroup.headers.map((column, columnIndex) => {
-                                const columnProps = column.getHeaderProps();
+            {headerGroups.map((headerGroup, groupIndex) => {
+                const headerProps = headerGroup.getHeaderGroupProps();
+                return (
+                    <tr {...headerProps} key={`header-group-${groupIndex}`} className="vf-table__row">
+                        {headerGroup.headers.map((column, columnIndex) => {
+                            const columnProps = column.getHeaderProps();
+                            return (
+                                <th
+                                    {...columnProps}
+                                    key={`header-${groupIndex}-${columnIndex}`}
+                                    className="vf-table__heading"
+                                    colSpan={column.columns?.length || 1}
+                                >
+                                    {column.render('Header')}
+                                </th>
+                            );
+                        })}
+                    </tr>
+                );
+            })}
+            </thead>
+            <tbody {...getTableBodyProps()} className="vf-table__body">
+            {rows.map((row: Row<PyhmmerDomain>, rowIndex) => {
+                prepareRow(row);
+                const rowProps = row.getRowProps();
+                return (
+                    <React.Fragment key={`row-${rowIndex}`}>
+                        <tr {...rowProps} className="vf-table__row">
+                            {row.cells.map((cell, cellIndex) => {
+                                const cellProps = cell.getCellProps();
                                 return (
-                                    <th 
-                                        {...columnProps} 
-                                        key={`header-${groupIndex}-${columnIndex}`}
-                                        className="vf-table__heading" 
-                                        colSpan={column.columns?.length || 1}
-                                    >
-                                        {column.render('Header')}
-                                    </th>
+                                    <td {...cellProps} key={`cell-${rowIndex}-${cellIndex}`} className="vf-table__cell">
+                                        {cell.render('Cell')}
+                                    </td>
                                 );
                             })}
                         </tr>
-                    );
-                })}
-            </thead>
-            <tbody {...getTableBodyProps()} className="vf-table__body">
-                {rows.map((row: Row<PyhmmerDomain>, rowIndex) => {
-                    prepareRow(row);
-                    const rowProps = row.getRowProps();
-                    return (
-                        <React.Fragment key={`row-${rowIndex}`}>
-                            <tr {...rowProps} className="vf-table__row">
-                                {row.cells.map((cell, cellIndex) => {
-                                    const cellProps = cell.getCellProps();
-                                    return (
-                                        <td {...cellProps} key={`cell-${rowIndex}-${cellIndex}`} className="vf-table__cell">
-                                            {cell.render('Cell')}
-                                        </td>
-                                    );
-                                })}
+                        {domain.alignment_display && (
+                            <tr key={`alignment-${rowIndex}`}>
+                                <td className="vf-table__cell" colSpan={999}>
+                                    <Alignment
+                                        alignment={domain.alignment_display}
+                                        algorithm="phmmer"
+                                        included={true}
+                                    />
+                                </td>
                             </tr>
-                            {domain.alignment_display && (
-                                <tr key={`alignment-${rowIndex}`}>
-                                    <td className="vf-table__cell" colSpan={999}>
-                                        <Alignment 
-                                            alignment={domain.alignment_display} 
-                                            algorithm="phmmer" 
-                                            included={true}
-                                        />
-                                    </td>
-                                </tr>
-                            )}
-                        </React.Fragment>
-                    );
-                })}
+                        )}
+                    </React.Fragment>
+                );
+            })}
             </tbody>
         </table>
     );

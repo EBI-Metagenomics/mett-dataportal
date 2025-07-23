@@ -11,14 +11,15 @@ app_health_service = AppHealthService()
 health_router = Router()
 
 
-@health_router.get("/health")
+@health_router.get("/health", include_in_schema=False)
 def health(request):
     return app_health_service.healthz()
 
 
-@health_router.get("/features")
+@health_router.get("/features", include_in_schema=False)
 def get_features(request):
     """Get available features based on environment configuration."""
     return {
-        "pyhmmer_search": getattr(settings, 'ENABLE_PYHMMER_SEARCH', False)
+        "pyhmmer_search": getattr(settings, "ENABLE_PYHMMER_SEARCH", False),
+        "feedback": getattr(settings, "ENABLE_FEEDBACK", False),
     }

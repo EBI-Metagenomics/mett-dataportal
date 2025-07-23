@@ -1,12 +1,14 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './PyhmmerSearchForm.module.scss';
 import {PyhmmerService} from '../../../../services/pyhmmerService';
 import {PyhmmerMXChoice, PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import PyhmmerResultsTable from "@components/organisms/Pyhmmer/PyhmmerResultsHandler/PyhmmerResultsTable";
 import PyhmmerSearchInput from "@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchInput";
-import PyhmmerSearchHistory, { SearchHistoryItem } from "@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchHistory";
+import PyhmmerSearchHistory, {
+    SearchHistoryItem
+} from "@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchHistory";
 import * as Popover from '@radix-ui/react-popover';
-import { PYHMMER_CUTOFF_HELP, PYHMMER_GAP_PENALTIES_HELP, PYHMMER_FILTER_HELP } from '../../../../utils/constants';
+import {PYHMMER_CUTOFF_HELP, PYHMMER_FILTER_HELP, PYHMMER_GAP_PENALTIES_HELP} from '../../../../utils/constants';
 
 const HISTORY_KEY = 'pyhmmer_search_history';
 
@@ -14,7 +16,7 @@ const PyhmmerSearchForm: React.FC = () => {
     const [evalueType, setEvalueType] = useState<'evalue' | 'bitscore'>('evalue');
     const [sequence, setSequence] = useState('');
     const [database, setDatabase] = useState('bu_all');
-    
+
     // Cutoff parameters
     const [significanceEValueSeq, setSignificanceEValueSeq] = useState('0.01');
     const [significanceEValueHit, setSignificanceEValueHit] = useState('0.03');
@@ -24,14 +26,14 @@ const PyhmmerSearchForm: React.FC = () => {
     const [significanceBitScoreHit, setSignificanceBitScoreHit] = useState('22');
     const [reportBitScoreSeq, setReportBitScoreSeq] = useState('7');
     const [reportBitScoreHit, setReportBitScoreHit] = useState('5');
-    
+
     // Gap penalties
     const [gapOpen, setGapOpen] = useState('0.02');
     const [gapExtend, setGapExtend] = useState('0.4');
-    
+
     // Bias composition filter
     const [turnOffBiasFilter, setTurnOffBiasFilter] = useState(false);
-    
+
     // Temporarily disabled - PyHMMER only supports default scoring matrix
     // const [subMatrix, setSubMatrix] = useState('BLOSUM62');
 
@@ -86,11 +88,11 @@ const PyhmmerSearchForm: React.FC = () => {
         let attempts = 0;
         console.log(`=== STARTING POLLING FOR JOB ${jobId} ===`);
         console.log(`Max attempts: ${maxAttempts}, Delay: ${delay}ms`);
-        
+
         while (attempts < maxAttempts) {
             attempts++;
             console.log(`Polling attempt ${attempts}/${maxAttempts} for job ${jobId}`);
-            
+
             try {
                 const job = await PyhmmerService.getJobDetails(jobId);
                 console.log(`Job details received:`, job);
@@ -98,7 +100,7 @@ const PyhmmerSearchForm: React.FC = () => {
                 console.log(`Job task status: ${job.task?.status}`);
                 console.log(`Job task result type: ${typeof job.task?.result}`);
                 console.log(`Job task result length: ${Array.isArray(job.task?.result) ? job.task.result.length : 'N/A'}`);
-                
+
                 if (job.status === 'SUCCESS' && job.task && Array.isArray(job.task.result)) {
                     console.log(`Job ${jobId} completed successfully with ${job.task.result.length} results`);
                     console.log(`First result:`, job.task.result[0]);
@@ -121,13 +123,13 @@ const PyhmmerSearchForm: React.FC = () => {
                     throw error;
                 }
             }
-            
+
             if (attempts < maxAttempts) {
                 console.log(`Waiting ${delay}ms before next attempt...`);
                 await new Promise(res => setTimeout(res, delay));
             }
         }
-        
+
         console.error(`=== POLLING TIMED OUT ===`);
         console.error(`Job ${jobId} did not complete after ${maxAttempts} attempts (${maxAttempts * delay / 1000} seconds)`);
         throw new Error(`Timed out waiting for results after ${maxAttempts} attempts (${maxAttempts * delay / 1000} seconds)`);
@@ -151,7 +153,7 @@ const PyhmmerSearchForm: React.FC = () => {
     // Save search to localStorage
     const saveSearchToHistory = (jobId: string, query: string) => {
         const date = new Date().toLocaleString();
-        const newItem: SearchHistoryItem = { jobId, query, date };
+        const newItem: SearchHistoryItem = {jobId, query, date};
         let updated = [newItem, ...history.filter(h => h.jobId !== jobId)];
         // Limit to 20 most recent
         if (updated.length > 20) updated = updated.slice(0, 20);
@@ -191,7 +193,7 @@ const PyhmmerSearchForm: React.FC = () => {
                 // Bias composition filter
                 bias_filter: turnOffBiasFilter ? 'off' : 'on',
             };
-            
+
             // Enhanced logging for form values
             console.log('=== FORM VALUES BEING SENT ===');
             console.log('Database:', database);
@@ -200,37 +202,37 @@ const PyhmmerSearchForm: React.FC = () => {
             // Temporarily disabled - PyHMMER only supports default scoring matrix
             // console.log('Substitution matrix:', subMatrix);
             console.log('Input sequence length:', sequence.length);
-            
+
             // E-value parameters
             console.log('=== E-VALUE FORM VALUES ===');
             console.log('Significance E-value (Sequence):', significanceEValueSeq);
             console.log('Significance E-value (Hit):', significanceEValueHit);
             console.log('Report E-value (Sequence):', reportEValueSeq);
             console.log('Report E-value (Hit):', reportEValueHit);
-            
+
             // Bit score parameters
             console.log('=== BIT SCORE FORM VALUES ===');
             console.log('Significance Bit Score (Sequence):', significanceBitScoreSeq);
             console.log('Significance Bit Score (Hit):', significanceBitScoreHit);
             console.log('Report Bit Score (Sequence):', reportBitScoreSeq);
             console.log('Report Bit Score (Hit):', reportBitScoreHit);
-            
+
             // Gap penalties
             console.log('=== GAP PENALTIES FORM VALUES ===');
             console.log('Gap open penalty:', gapOpen);
             console.log('Gap extend penalty:', gapExtend);
-            
+
             // Bias composition filter
             console.log('=== BIAS COMPOSITION FILTER FORM VALUES ===');
             console.log('Turn off bias filter:', turnOffBiasFilter);
-            
+
             console.log('=== FINAL REQUEST OBJECT ===');
             console.log('Request object:', req);
-            
+
             setLoadingMessage('Creating search job...');
             const {id} = await PyhmmerService.search(req);
             console.log(`Search job created with ID: ${id}`);
-            
+
             setLoadingMessage('Processing search results... This may take a few minutes.');
             const rawResults = await pollJobStatus(id);
             if (rawResults) {
@@ -241,7 +243,7 @@ const PyhmmerSearchForm: React.FC = () => {
             }
         } catch (err) {
             console.error('Search error:', err);
-            
+
             // Handle different types of errors
             if (err instanceof Error) {
                 setError(err.message || 'Error running search');
@@ -278,7 +280,7 @@ const PyhmmerSearchForm: React.FC = () => {
         <section className={styles.pyhmmerSection}>
             <div className={styles.formContainer}>
                 <div className={styles.leftPane}>
-                    
+
                     {/* Cut off */}
                     <div className={styles.formSection}>
                         <div className={styles.flexRow}>
@@ -338,32 +340,32 @@ const PyhmmerSearchForm: React.FC = () => {
                             {evalueType === 'evalue' ? (
                                 <>
                                     <div className={styles.cutoffLabel}>Significance E-values</div>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         step="any"
                                         value={significanceEValueSeq}
-                                        onChange={e => setSignificanceEValueSeq(e.target.value)} 
+                                        onChange={e => setSignificanceEValueSeq(e.target.value)}
                                         className={styles.input}
                                     />
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         step="any"
                                         value={significanceEValueHit}
-                                        onChange={e => setSignificanceEValueHit(e.target.value)} 
+                                        onChange={e => setSignificanceEValueHit(e.target.value)}
                                         className={styles.input}
                                     />
                                     <div className={styles.cutoffLabel}>Report E-values</div>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         step="any"
-                                        value={reportEValueSeq} 
+                                        value={reportEValueSeq}
                                         onChange={e => setReportEValueSeq(e.target.value)}
                                         className={styles.input}
                                     />
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         step="any"
-                                        value={reportEValueHit} 
+                                        value={reportEValueHit}
                                         onChange={e => setReportEValueHit(e.target.value)}
                                         className={styles.input}
                                     />
@@ -371,32 +373,32 @@ const PyhmmerSearchForm: React.FC = () => {
                             ) : (
                                 <>
                                     <div className={styles.cutoffLabel}>Significance Bit scores</div>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         step="any"
                                         value={significanceBitScoreSeq}
-                                        onChange={e => setSignificanceBitScoreSeq(e.target.value)} 
+                                        onChange={e => setSignificanceBitScoreSeq(e.target.value)}
                                         className={styles.input}
                                     />
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         step="any"
                                         value={significanceBitScoreHit}
-                                        onChange={e => setSignificanceBitScoreHit(e.target.value)} 
+                                        onChange={e => setSignificanceBitScoreHit(e.target.value)}
                                         className={styles.input}
                                     />
                                     <div className={styles.cutoffLabel}>Report Bit scores</div>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         step="any"
-                                        value={reportBitScoreSeq} 
+                                        value={reportBitScoreSeq}
                                         onChange={e => setReportBitScoreSeq(e.target.value)}
                                         className={styles.input}
                                     />
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         step="any"
-                                        value={reportBitScoreHit} 
+                                        value={reportBitScoreHit}
                                         onChange={e => setReportBitScoreHit(e.target.value)}
                                         className={styles.input}
                                     />
@@ -441,20 +443,20 @@ const PyhmmerSearchForm: React.FC = () => {
                         <div className={styles.gapRow}>
                             <div>
                                 <div className={styles.gapLabel}>Open</div>
-                                <input 
-                                    type="number" 
+                                <input
+                                    type="number"
                                     step="any"
-                                    value={gapOpen} 
+                                    value={gapOpen}
                                     onChange={e => setGapOpen(e.target.value)}
                                     className={styles.inputSmall}
                                 />
                             </div>
                             <div>
                                 <div className={styles.gapLabel}>Extend</div>
-                                <input 
-                                    type="number" 
+                                <input
+                                    type="number"
                                     step="any"
-                                    value={gapExtend} 
+                                    value={gapExtend}
                                     onChange={e => setGapExtend(e.target.value)}
                                     className={styles.inputSmall}
                                 />
@@ -512,7 +514,8 @@ const PyhmmerSearchForm: React.FC = () => {
                     {/* Sequence database */}
                     <div className={styles.formSection}>
                         <label className={`vf-form__label ${styles.label}`}>Sequence database</label>
-                        <select className={`vf-form__select ${styles.select}`} value={database} onChange={e => setDatabase(e.target.value)}>
+                        <select className={`vf-form__select ${styles.select}`} value={database}
+                                onChange={e => setDatabase(e.target.value)}>
                             {databases.length > 0 ? (
                                 databases.map(db => (
                                     <option key={db.id} value={db.id}>{db.name}</option>

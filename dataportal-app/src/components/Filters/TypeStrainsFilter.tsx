@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from '@components/pages/HomePage.module.scss';
-import { GenomeMeta } from '../../interfaces/Genome';
+import {GenomeMeta} from '../../interfaces/Genome';
 
 interface TypeStrainsFilterProps {
     typeStrains: GenomeMeta[];
@@ -9,7 +9,12 @@ interface TypeStrainsFilterProps {
     onTypeStrainToggle: (isolate_name: string) => void;
 }
 
-const TypeStrainsFilter: React.FC<TypeStrainsFilterProps> = ({ typeStrains, selectedTypeStrains, selectedSpecies, onTypeStrainToggle }) => (
+const TypeStrainsFilter: React.FC<TypeStrainsFilterProps> = ({
+                                                                 typeStrains,
+                                                                 selectedTypeStrains,
+                                                                 selectedSpecies,
+                                                                 onTypeStrainToggle
+                                                             }) => (
     <div className={styles.typeStrains}>
         {/*<h3>Type Strains</h3>*/}
         <h3 className={`vf-section-header__subheading ${styles.vfGeneSubHeading}`}>Type Strains</h3>

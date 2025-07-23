@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { PyhmmerDomain } from '../../../interfaces/Pyhmmer';
-import { PyhmmerService } from '../../../services/pyhmmerService';
+import React, {useEffect, useState} from 'react';
+import {PyhmmerDomain} from '../../../interfaces/Pyhmmer';
+import {PyhmmerService} from '../../../services/pyhmmerService';
 import AlignmentTable from '../AlignmentTable/AlignmentTable';
 import LoadingSpinner from '../../shared/LoadingSpinner/LoadingSpinner';
 import './AlignmentView.scss';
@@ -10,7 +10,7 @@ interface AlignmentViewProps {
     target: string;
 }
 
-export const AlignmentView: React.FC<AlignmentViewProps> = ({ jobId, target }) => {
+export const AlignmentView: React.FC<AlignmentViewProps> = ({jobId, target}) => {
     const [domains, setDomains] = useState<PyhmmerDomain[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export const AlignmentView: React.FC<AlignmentViewProps> = ({ jobId, target }) =
     if (loading) {
         return (
             <div className="alignment-view-loading">
-                <LoadingSpinner size="medium" message="Loading domain details..." />
+                <LoadingSpinner size="medium" message="Loading domain details..."/>
             </div>
         );
     }
@@ -76,7 +76,7 @@ export const AlignmentView: React.FC<AlignmentViewProps> = ({ jobId, target }) =
                             <span className="domain-number">Domain {index + 1}</span>
                             <span className="domain-score">Bit Score: {domain.bitscore.toFixed(1)}</span>
                         </div>
-                        <AlignmentTable domain={domain} />
+                        <AlignmentTable domain={domain}/>
                     </div>
                 ))}
             </div>

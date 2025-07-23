@@ -7,7 +7,8 @@ from elasticsearch_dsl import (
     analyzer,
     tokenizer,
     Nested,
-    normalizer, Float,
+    normalizer,
+    Float,
 )
 
 edge_ngram_tokenizer = tokenizer(
@@ -120,7 +121,6 @@ class GeneDocument(Document):
     start = Integer()
     end = Integer()
 
-
     cog_id = Keyword(multi=True)
     cog_funcats = Keyword(multi=True)
     kegg = Keyword(multi=True, normalizer=lowercase_normalizer)
@@ -132,8 +132,6 @@ class GeneDocument(Document):
     uf_prot_rec_fullname = Text(fields={"keyword": Keyword()})
 
     dbxref = Nested(properties={"db": Keyword(), "ref": Keyword()})
-
-
 
     ec_number = Keyword()
 

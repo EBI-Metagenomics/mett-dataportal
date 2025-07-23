@@ -1,5 +1,5 @@
 import React from 'react';
-import { LegacyAlignmentDisplay } from '../../../interfaces/Pyhmmer';
+import {LegacyAlignmentDisplay} from '../../../interfaces/Pyhmmer';
 import './Alignment.scss';
 
 interface AlignmentProps {
@@ -8,7 +8,7 @@ interface AlignmentProps {
     included?: boolean;
 }
 
-const Alignment: React.FC<AlignmentProps> = ({ alignment, algorithm, included = true }) => {
+const Alignment: React.FC<AlignmentProps> = ({alignment, algorithm, included = true}) => {
     if (!alignment) {
         return <div className="alignment-error">No alignment data available</div>;
     }
@@ -16,7 +16,7 @@ const Alignment: React.FC<AlignmentProps> = ({ alignment, algorithm, included = 
     const formatSequence = (sequence: string, start: number, end: number) => {
         const lines = [];
         const lineLength = 60;
-        
+
         for (let i = 0; i < sequence.length; i += lineLength) {
             const line = sequence.slice(i, i + lineLength);
             const position = start + i;
@@ -26,7 +26,7 @@ const Alignment: React.FC<AlignmentProps> = ({ alignment, algorithm, included = 
                 endPosition: Math.min(position + lineLength - 1, end)
             });
         }
-        
+
         return lines;
     };
 
@@ -47,7 +47,7 @@ const Alignment: React.FC<AlignmentProps> = ({ alignment, algorithm, included = 
                     </span>
                 </div>
             </div>
-            
+
             <div className="alignment-sequences">
                 {queryLines.map((line, index) => (
                     <div key={`query-${index}`} className="sequence-line">
@@ -60,7 +60,7 @@ const Alignment: React.FC<AlignmentProps> = ({ alignment, algorithm, included = 
                         </div>
                     </div>
                 ))}
-                
+
                 {matchLines.map((line, index) => (
                     <div key={`match-${index}`} className="sequence-line match-line">
                         <div className="sequence-info">
@@ -72,7 +72,7 @@ const Alignment: React.FC<AlignmentProps> = ({ alignment, algorithm, included = 
                         </div>
                     </div>
                 ))}
-                
+
                 {targetLines.map((line, index) => (
                     <div key={`target-${index}`} className="sequence-line">
                         <div className="sequence-info">
@@ -85,7 +85,7 @@ const Alignment: React.FC<AlignmentProps> = ({ alignment, algorithm, included = 
                     </div>
                 ))}
             </div>
-            
+
             {alignment.ppline && (
                 <div className="posterior-probabilities">
                     <div className="sequence-info">

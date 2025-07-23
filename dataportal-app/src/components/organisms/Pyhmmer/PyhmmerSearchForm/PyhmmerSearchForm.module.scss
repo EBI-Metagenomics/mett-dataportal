@@ -15,12 +15,12 @@
   align-items: center;
   gap: 8px;
   font-size: 0.95rem;
-  
+
   .errorIcon {
     font-size: 1.1rem;
     flex-shrink: 0;
   }
-  
+
   .errorText {
     flex: 1;
     line-height: 1.4;
@@ -39,7 +39,7 @@
   background: #fff;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .rightPane {
@@ -48,7 +48,7 @@
   background: #fff;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .resultsContainer {
@@ -56,7 +56,7 @@
   background: #fff;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   display: flex;
   gap: 24px;
 }
@@ -92,7 +92,7 @@
   margin: 24px 0;
   width: 100%;
   border-radius: 0;
-  
+
   &.tight {
     margin: 16px 0;
   }
@@ -190,14 +190,14 @@
   font-family: inherit;
   box-sizing: border-box;
   color: #888;
-  
+
   &:focus {
     outline: none;
     border-color: #1976d2;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
     color: #555;
   }
-  
+
   &::placeholder {
     color: #bbb;
   }
@@ -228,14 +228,14 @@
   font-family: inherit;
   box-sizing: border-box;
   color: #888;
-  
+
   &:focus {
     outline: none;
     border-color: #1976d2;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
     color: #555;
   }
-  
+
   &::placeholder {
     color: #bbb;
   }
@@ -252,7 +252,7 @@
   font-family: inherit;
   box-sizing: border-box;
   color: #888;
-  
+
   &:focus {
     outline: none;
     border-color: #1976d2;
@@ -265,6 +265,7 @@
   display: flex;
   gap: 12px;
   margin-top: 8px;
+
   button {
     min-width: 80px;
     padding: 7px 18px;
@@ -276,6 +277,7 @@
     transition: background 0.2s;
   }
 }
+
 //.submitBtn {
 //  background: #1976d2;
 //  color: #fff;
@@ -330,13 +332,13 @@
   align-items: center;
   gap: 16px;
   margin-bottom: 12px;
-  
+
   .label {
     display: inline-flex;
     align-items: center;
     margin-bottom: 0;
   }
-  
+
   .checkboxLabel {
     margin-left: 40px;
   }

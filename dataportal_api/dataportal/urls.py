@@ -18,17 +18,23 @@ if settings.DEBUG:
         path("__debug__/", include("debug_toolbar.urls")),
     ]
 
+
 def custom_404(request, exception):
     # Only return JSON for API routes
     if request.path.startswith("/api/"):
-        return JsonResponse({
-            "status": "error",
-            "message": "Not found",
-            "error_code": "NOT_FOUND",
-            "request_id": None
-        }, status=404)
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": "Not found",
+                "error_code": "NOT_FOUND",
+                "request_id": None,
+            },
+            status=404,
+        )
     # Otherwise, fall back to default HTML
     from django.views.defaults import page_not_found
+
     return page_not_found(request, exception)
+
 
 handler404 = custom_404

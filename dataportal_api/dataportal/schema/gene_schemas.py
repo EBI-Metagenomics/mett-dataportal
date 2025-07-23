@@ -4,202 +4,165 @@ from pydantic import BaseModel, ConfigDict
 from pydantic import Field
 
 from dataportal.schema.base_schemas import BasePaginationSchema
-from dataportal.utils.constants import DEFAULT_PER_PAGE_CNT, DEFAULT_SORT, DEFAULT_FACET_LIMIT
+from dataportal.utils.constants import (
+    DEFAULT_PER_PAGE_CNT,
+    DEFAULT_SORT,
+    DEFAULT_FACET_LIMIT,
+)
 
 
 class GeneAutocompleteQuerySchema(BaseModel):
     """Schema for gene autocomplete endpoint query parameters."""
+
     query: str = Field(
         ...,
-        description="Free-text input to search gene names, locus tags, or annotations."
+        description="Free-text input to search gene names, locus tags, or annotations.",
     )
     filter: Optional[str] = Field(
         None,
-        description="Optional semicolon-separated gene filters, e.g., 'essentiality:essential_liquid;interpro:IPR035952'."
+        description="Optional semicolon-separated gene filters, e.g., 'essentiality:essential_liquid;interpro:IPR035952'.",
     )
     limit: int = Field(
         DEFAULT_PER_PAGE_CNT,
-        description="Maximum number of gene suggestions to return."
+        description="Maximum number of gene suggestions to return.",
     )
     species_acronym: Optional[str] = Field(
-        None,
-        description="Optional species acronym filter (e.g., 'BU', 'PV')."
+        None, description="Optional species acronym filter (e.g., 'BU', 'PV')."
     )
     isolates: Optional[str] = Field(
         None,
-        description="Comma-separated list of isolate names to restrict the search scope."
+        description="Comma-separated list of isolate names to restrict the search scope.",
     )
 
 
 class GeneSearchQuerySchema(BaseModel):
     """Schema for basic gene search endpoint."""
+
     query: str = Field(
         "",
-        description="Free-text search term to match against gene names or locus tags."
+        description="Free-text search term to match against gene names or locus tags.",
     )
-    page: int = Field(
-        1,
-        description="Page number for pagination (1-based)."
-    )
+    page: int = Field(1, description="Page number for pagination (1-based).")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT,
-        description="Number of genes to return per page."
+        DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
     )
     sort_field: Optional[str] = Field(
         None,
-        description="Field to sort results by (e.g., 'gene_name', 'isolate_name')."
+        description="Field to sort results by (e.g., 'gene_name', 'isolate_name').",
     )
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT,
-        description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
 
 
 class GeneFacetedSearchQuerySchema(BaseModel):
     """Schema for faceted gene search filtering by functional/metadata facets."""
+
     query: Optional[str] = Field(
         None,
-        description="Free-text search across gene fields such as gene name and product."
+        description="Free-text search across gene fields such as gene name and product.",
     )
     species_acronym: Optional[str] = Field(
-        None,
-        description="Species acronym filter (e.g., 'BU', 'PV')."
+        None, description="Species acronym filter (e.g., 'BU', 'PV')."
     )
     essentiality: Optional[str] = Field(
-        None,
-        description="Filter by essentiality status, e.g., 'essential'."
+        None, description="Filter by essentiality status, e.g., 'essential'."
     )
     isolates: Optional[str] = Field(
-        "",
-        description="Comma-separated list of isolate names to filter."
+        "", description="Comma-separated list of isolate names to filter."
     )
     cog_id: Optional[str] = Field(
-        None,
-        description="Comma-separated list of COG IDs to filter."
+        None, description="Comma-separated list of COG IDs to filter."
     )
     cog_funcats: Optional[str] = Field(
-        None,
-        description="Comma-separated list of COG functional categories to filter."
+        None, description="Comma-separated list of COG functional categories to filter."
     )
-    kegg: Optional[str] = Field(
-        None,
-        description="KEGG pathway or gene ID to filter."
-    )
-    go_term: Optional[str] = Field(
-        None,
-        description="GO term ID or label to filter."
-    )
-    pfam: Optional[str] = Field(
-        None,
-        description="Pfam domain ID to filter."
-    )
-    interpro: Optional[str] = Field(
-        None,
-        description="InterPro ID to filter."
-    )
+    kegg: Optional[str] = Field(None, description="KEGG pathway or gene ID to filter.")
+    go_term: Optional[str] = Field(None, description="GO term ID or label to filter.")
+    pfam: Optional[str] = Field(None, description="Pfam domain ID to filter.")
+    interpro: Optional[str] = Field(None, description="InterPro ID to filter.")
     has_amr_info: Optional[bool] = Field(
-        None,
-        description="Filter genes that have associated AMR information."
+        None, description="Filter genes that have associated AMR information."
     )
     pfam_operator: Optional[str] = Field(
-        "OR",
-        description="Logical operator ('AND'/'OR') for Pfam filtering."
+        "OR", description="Logical operator ('AND'/'OR') for Pfam filtering."
     )
     interpro_operator: Optional[str] = Field(
-        "OR",
-        description="Logical operator ('AND'/'OR') for InterPro filtering."
+        "OR", description="Logical operator ('AND'/'OR') for InterPro filtering."
     )
     cog_id_operator: Optional[str] = Field(
-        "OR",
-        description="Logical operator ('AND'/'OR') for COG ID filtering."
+        "OR", description="Logical operator ('AND'/'OR') for COG ID filtering."
     )
     cog_funcats_operator: Optional[str] = Field(
         "OR",
-        description="Logical operator ('AND'/'OR') for COG functional categories filtering."
+        description="Logical operator ('AND'/'OR') for COG functional categories filtering.",
     )
     kegg_operator: Optional[str] = Field(
-        "OR",
-        description="Logical operator ('AND'/'OR') for KEGG filtering."
+        "OR", description="Logical operator ('AND'/'OR') for KEGG filtering."
     )
     go_term_operator: Optional[str] = Field(
-        "OR",
-        description="Logical operator ('AND'/'OR') for GO term filtering."
+        "OR", description="Logical operator ('AND'/'OR') for GO term filtering."
     )
     limit: int = Field(
-        DEFAULT_FACET_LIMIT,
-        description="Maximum number of genes to return."
+        DEFAULT_FACET_LIMIT, description="Maximum number of genes to return."
     )
 
 
 class GeneAdvancedSearchQuerySchema(BaseModel):
     """Schema for advanced gene search across multiple genomes/species with filters."""
+
     isolates: str = Field(
-        "",
-        description="Comma-separated list of isolate names to filter."
+        "", description="Comma-separated list of isolate names to filter."
     )
     species_acronym: Optional[str] = Field(
-        None,
-        description="Species acronym to filter (e.g., 'BU', 'PV')."
+        None, description="Species acronym to filter (e.g., 'BU', 'PV')."
     )
     query: str = Field(
         "",
-        description="Free-text search string for gene names, locus tags, or annotations."
+        description="Free-text search string for gene names, locus tags, or annotations.",
     )
     filter: Optional[str] = Field(
         None,
-        description="Additional gene filter, e.g., 'pfam:PF07715;interpro:IPR012910'."
+        description="Additional gene filter, e.g., 'pfam:PF07715;interpro:IPR012910'.",
     )
     filter_operators: Optional[str] = Field(
-        None,
-        description="Logical operators for filters, e.g., 'pfam:AND;interpro:OR'."
+        None, description="Logical operators for filters, e.g., 'pfam:AND;interpro:OR'."
     )
-    page: int = Field(
-        1,
-        description="Page number for pagination (1-based)."
-    )
+    page: int = Field(1, description="Page number for pagination (1-based).")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT,
-        description="Number of genes to return per page."
+        DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
     )
     sort_field: Optional[str] = Field(
-        None,
-        description="Field to sort results by, e.g., 'gene_name', 'isolate_name'."
+        None, description="Field to sort results by, e.g., 'gene_name', 'isolate_name'."
     )
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT,
-        description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
 
 
 class GeneDownloadTSVQuerySchema(BaseModel):
     """Schema for downloading genes as TSV with filtering and sorting."""
+
     isolates: str = Field(
-        "",
-        description="Comma-separated list of isolate names to filter."
+        "", description="Comma-separated list of isolate names to filter."
     )
     species_acronym: Optional[str] = Field(
-        None,
-        description="Species acronym filter (e.g., 'BU', 'PV')."
+        None, description="Species acronym filter (e.g., 'BU', 'PV')."
     )
     query: str = Field(
         "",
-        description="Free-text search string for gene names, locus tags, or annotations."
+        description="Free-text search string for gene names, locus tags, or annotations.",
     )
     filter: Optional[str] = Field(
         None,
-        description="Additional gene filter, e.g., 'pfam:PF07715;interpro:IPR012910'."
+        description="Additional gene filter, e.g., 'pfam:PF07715;interpro:IPR012910'.",
     )
     filter_operators: Optional[str] = Field(
-        None,
-        description="Logical operators for filters, e.g., 'pfam:AND;interpro:OR'."
+        None, description="Logical operators for filters, e.g., 'pfam:AND;interpro:OR'."
     )
-    sort_field: Optional[str] = Field(
-        None,
-        description="Field to sort results by."
-    )
+    sort_field: Optional[str] = Field(None, description="Field to sort results by.")
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT,
-        description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
 
 
@@ -256,43 +219,67 @@ class GeneQuery(BaseModel):
 
 class NaturalLanguageGeneQuery(BaseModel):
     """Comprehensive schema for natural language queries that maps directly to API parameters."""
-    
+
     # Basic search parameters
-    query: str | None = Field(None, description="Free-text search term for gene names, locus tags, or annotations")
-    species_acronym: str | None = Field(None, description="Species acronym filter (e.g., 'BU', 'PV')")
-    isolates: str | None = Field(None, description="Comma-separated list of isolate names")
-    
+    query: str | None = Field(
+        None,
+        description="Free-text search term for gene names, locus tags, or annotations",
+    )
+    species_acronym: str | None = Field(
+        None, description="Species acronym filter (e.g., 'BU', 'PV')"
+    )
+    isolates: str | None = Field(
+        None, description="Comma-separated list of isolate names"
+    )
+
     # Essentiality and AMR filters
-    essentiality: str | None = Field(None, description="Filter by essentiality status (e.g., 'essential', 'non_essential')")
-    has_amr_info: bool | None = Field(None, description="Filter genes that have associated AMR information")
-    
+    essentiality: str | None = Field(
+        None,
+        description="Filter by essentiality status (e.g., 'essential', 'non_essential')",
+    )
+    has_amr_info: bool | None = Field(
+        None, description="Filter genes that have associated AMR information"
+    )
+
     # Functional annotation filters
-    cog_id: str | None = Field(None, description="Comma-separated list of COG IDs to filter")
-    cog_funcats: str | None = Field(None, description="Comma-separated list of COG functional categories")
+    cog_id: str | None = Field(
+        None, description="Comma-separated list of COG IDs to filter"
+    )
+    cog_funcats: str | None = Field(
+        None, description="Comma-separated list of COG functional categories"
+    )
     kegg: str | None = Field(None, description="KEGG pathway or gene ID to filter")
     go_term: str | None = Field(None, description="GO term ID or label to filter")
     pfam: str | None = Field(None, description="Pfam domain ID to filter")
     interpro: str | None = Field(None, description="InterPro ID to filter")
-    
+
     # Additional filters
     filter: str | None = Field(None, description="Additional gene filter string")
-    filter_operators: str | None = Field(None, description="Logical operators for filters")
-    
+    filter_operators: str | None = Field(
+        None, description="Logical operators for filters"
+    )
+
     # Pagination and sorting
     page: int = Field(1, description="Page number for pagination (1-based)")
     per_page: int = Field(50, description="Number of genes to return per page")
     sort_field: str | None = Field(None, description="Field to sort results by")
     sort_order: str = Field("asc", description="Sort order: 'asc' or 'desc'")
-    
+
     # Limit for faceted search
-    limit: int = Field(50, description="Maximum number of genes to return for faceted search")
-    
+    limit: int = Field(
+        50, description="Maximum number of genes to return for faceted search"
+    )
+
     # Backward compatibility fields (for simple queries)
-    species: str | None = Field(None, description="Species filter (maps to species_acronym)")
+    species: str | None = Field(
+        None, description="Species filter (maps to species_acronym)"
+    )
     amr: bool | None = Field(None, description="AMR filter (maps to has_amr_info)")
     function: str | None = Field(None, description="Function search (maps to query)")
-    cog_category: str | None = Field(None, description="COG category (maps to cog_funcats)")
-    
+    cog_category: str | None = Field(
+        None, description="COG category (maps to cog_funcats)"
+    )
+
     def model_post_init(self, __context) -> None:
         """Post-initialization to map backward compatibility fields."""
         # Map backward compatibility fields

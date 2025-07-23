@@ -26,7 +26,8 @@ const Header: React.FC = () => {
                             width: '100%',
                         }}
                     >
-                        <h2 className="vf-hero__heading" style={{ maxWidth: "50ch" }}>Microbial Ecosystems Transversal Themes</h2>
+                        <h2 className="vf-hero__heading" style={{maxWidth: "50ch"}}>Microbial Ecosystems Transversal
+                            Themes</h2>
                         <p className="vf-hero__subheading">
                             Transversal Themes Data Portal - a part of the EMBL Programme "Molecules to
                             Ecosystems”.

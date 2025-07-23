@@ -9,14 +9,18 @@ class NotFoundError(Exception):
 
 
 class ValidationError(Exception):
-    def __init__(self, message: str, error_code: ErrorCode = ErrorCode.VALIDATION_ERROR):
+    def __init__(
+        self, message: str, error_code: ErrorCode = ErrorCode.VALIDATION_ERROR
+    ):
         self.log_message = f"ValidationError occurred: {message}"
         self.error_code = error_code
         super().__init__(message)
 
 
 class ServiceError(Exception):
-    def __init__(self, message: str, error_code: ErrorCode = ErrorCode.INTERNAL_SERVER_ERROR):
+    def __init__(
+        self, message: str, error_code: ErrorCode = ErrorCode.INTERNAL_SERVER_ERROR
+    ):
         self.log_message = f"ServiceError occurred: {message}"
         self.error_code = error_code
         super().__init__(message)

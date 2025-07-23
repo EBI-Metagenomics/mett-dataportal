@@ -13,7 +13,7 @@ interface PyhmmerSearchHistoryProps {
     selectedJobId?: string;
 }
 
-const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({ history, onSelect, selectedJobId }) => {
+const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onSelect, selectedJobId}) => {
     return (
         <div className={styles.historyContainer}>
             <h4 className={styles.historyTitle}>Past Searches</h4>

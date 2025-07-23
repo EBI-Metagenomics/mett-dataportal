@@ -6,8 +6,6 @@ import {GeneMeta} from '../../../../interfaces/Gene';
 import {TABLE_MAX_COLUMNS, ZOOM_LEVELS} from '../../../../utils/appConstants';
 import {GENE_TABLE_COLUMNS} from "@components/organisms/Gene/GeneResultsHandler/GeneTableColumns";
 import * as Dialog from '@radix-ui/react-dialog';
-import {getFeatureByCoords} from "../../../../utils/jbrowseUtils";
-import { BaseTrackModel } from '@jbrowse/core/pluggableElementTypes/models';
 
 
 type ViewModel = ReturnType<typeof createViewState>;
@@ -120,7 +118,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
     return (
         <section>
             <div className={styles.toolbar}>
-            {onDownloadTSV && (
+                {onDownloadTSV && (
                     <button
                         type="button"
                         title="Download TSV"
@@ -175,7 +173,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                     </Dialog.Portal>
                 </Dialog.Root>
 
-                
+
             </div>
 
             <table className="vf-table vf-table--sortable">

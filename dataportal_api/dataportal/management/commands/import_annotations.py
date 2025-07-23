@@ -21,9 +21,9 @@ connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 
 # Logging configuration
 logging.basicConfig(
-    level=logging.DEBUG,  
+    level=logging.DEBUG,
     format="%(asctime)s %(levelname)s:%(message)s",
-    handlers=[logging.StreamHandler()],  
+    handlers=[logging.StreamHandler()],
 )
 
 SPECIES_ACRONYM_MAPPING = {"Bacteroides uniformis": "BU", "Phocaeicola vulgatus": "PV"}
@@ -264,7 +264,7 @@ class Command(BaseCommand):
         for attempt in range(max_retries):
             try:
                 logging.info(f"Processing isolate: {isolate} (Attempt {attempt + 1})")
-                assembly_name = isolate_to_assembly_map.get(isolate)
+                # assembly_name = isolate_to_assembly_map.get(isolate)
                 species_scientific_name = self.get_species_name(isolate)
 
                 ftp = self.reconnect_ftp(ftp_server)
@@ -421,7 +421,7 @@ class Command(BaseCommand):
                     alias = attr_dict.get("Alias", "").split(",")
 
                     cog_funcats = attr_dict.get("cog", "").split(",")
-                    
+
                     # Handle cog_id as a list since it's now multi=True
                     cog_ids = [cog_id] if cog_id else []
 
@@ -579,7 +579,7 @@ class Command(BaseCommand):
 
     def import_fitness_data(self, fitness_csv_path):
         """Import fitness data and update genes in Elasticsearch.
-        
+
         Expected CSV format:
         locus_tag,contrast,lfc,fdr
         """
@@ -602,7 +602,7 @@ class Command(BaseCommand):
                             "lfc": lfc,
                             "fdr": fdr,
                         }
-                        
+
                         updates.append(
                             {
                                 "_op_type": "update",
@@ -610,8 +610,8 @@ class Command(BaseCommand):
                                 "_id": locus_tag,
                                 "script": {
                                     "source": "if (ctx._source.fitness_data == null) { ctx._source.fitness_data = [] } ctx._source.fitness_data.add(params.fitness_entry)",
-                                    "params": {"fitness_entry": fitness_entry}
-                                }
+                                    "params": {"fitness_entry": fitness_entry},
+                                },
                             }
                         )
 

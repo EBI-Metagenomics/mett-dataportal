@@ -1,4 +1,4 @@
-import { PaginatedApiResponse, SuccessApiResponse } from "./ApiResponse";
+import {PaginatedApiResponse, SuccessApiResponse} from "./ApiResponse";
 
 export interface Contig {
     seq_id: string;

@@ -25,8 +25,14 @@ class HmmerJob(models.Model):
         BU_ALL = "bu_all", "Bacteroides uniformis All Strains"
         PV_TYPE_STRAINS = "pv_type_strains", "Phocaeicola vulgatus Type Strains"
         PV_ALL = "pv_all", "Phocaeicola vulgatus All Strains"
-        BU_PV_TYPE_STRAINS = "bu_pv_type_strains", "Bacteroides uniformis + Phocaeicola vulgatus Type Strains"
-        BU_PV_ALL = "bu_pv_all", "Bacteroides uniformis + Phocaeicola vulgatus All Strains"
+        BU_PV_TYPE_STRAINS = (
+            "bu_pv_type_strains",
+            "Bacteroides uniformis + Phocaeicola vulgatus Type Strains",
+        )
+        BU_PV_ALL = (
+            "bu_pv_all",
+            "Bacteroides uniformis + Phocaeicola vulgatus All Strains",
+        )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     algo = models.CharField(
@@ -54,12 +60,12 @@ class HmmerJob(models.Model):
     pextend = models.FloatField(default=0.4, null=True, blank=True)
 
     threshold_value = models.FloatField(default=1.0)
-    
+
     bias_filter = models.CharField(
         max_length=8,
-        choices=[('on', 'On'), ('off', 'Off')],
-        default='on',
-        help_text="Bias composition filter setting"
+        choices=[("on", "On"), ("off", "Off")],
+        default="on",
+        help_text="Bias composition filter setting",
     )
 
     task = models.OneToOneField(

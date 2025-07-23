@@ -35,12 +35,12 @@
   font-weight: 400;
   transition: all 0.2s ease;
   border: 1px solid transparent;
-  
+
   &:hover {
     background: #f5f5f5;
     border-color: #e0e0e0;
   }
-  
+
   &.selected {
     background: #e3f2fd;
     border-color: #1976d2;

@@ -32,9 +32,23 @@ class GeneFacetedSearch(FacetedSearch):
         ES_FIELD_COG_FUNCATS,
     ]
 
-    def __init__(self, query="", filters=None, species_acronym=None, essentiality=None,
-                 isolates=None, cog_id=None, cog_funcats=None, kegg=None, go_term=None,
-                 pfam=None, interpro=None, has_amr_info=None, limit=DEFAULT_FACET_LIMIT, operators=None):
+    def __init__(
+        self,
+        query="",
+        filters=None,
+        species_acronym=None,
+        essentiality=None,
+        isolates=None,
+        cog_id=None,
+        cog_funcats=None,
+        kegg=None,
+        go_term=None,
+        pfam=None,
+        interpro=None,
+        has_amr_info=None,
+        limit=DEFAULT_FACET_LIMIT,
+        operators=None,
+    ):
         self.species_acronym = species_acronym
         self.essentiality = essentiality
         self.isolates = isolates
@@ -76,8 +90,14 @@ class GeneFacetedSearch(FacetedSearch):
             must_clauses.append(Q("term", essentiality=self.essentiality))
 
         # Facet filters: split AND (query) vs OR (post_filter)
-        facet_fields = [ES_FIELD_PFAM, ES_FIELD_INTERPRO, ES_FIELD_COG_ID, ES_FIELD_COG_FUNCATS, ES_FIELD_KEGG,
-                        ES_FIELD_GO_TERM]
+        facet_fields = [
+            ES_FIELD_PFAM,
+            ES_FIELD_INTERPRO,
+            ES_FIELD_COG_ID,
+            ES_FIELD_COG_FUNCATS,
+            ES_FIELD_KEGG,
+            ES_FIELD_GO_TERM,
+        ]
         active_filters = {}
         for field in facet_fields:
             values = getattr(self, field)
@@ -98,8 +118,8 @@ class GeneFacetedSearch(FacetedSearch):
 
         # Aggregations: use context + other facets excluding current facet if AND
         for facet_field, facet_def in self.facets.items():
-            field_name = facet_def._params['field']
-            terms_agg = A('terms', field=field_name, size=facet_def._params['size'])
+            field_name = facet_def._params["field"]
+            terms_agg = A("terms", field=field_name, size=facet_def._params["size"])
 
             agg_must_clauses = must_clauses.copy()
             for other_field, (values, operator) in active_filters.items():
@@ -114,7 +134,9 @@ class GeneFacetedSearch(FacetedSearch):
                     else:
                         agg_must_clauses.append(Q("terms", **{other_field: values}))
 
-            filtered_agg = A('filter', bool={'must': [q.to_dict() for q in agg_must_clauses]})
+            filtered_agg = A(
+                "filter", bool={"must": [q.to_dict() for q in agg_must_clauses]}
+            )
             filtered_agg.bucket(facet_field, terms_agg)
             s.aggs.bucket(f"{facet_field}_filtered", filtered_agg)
 

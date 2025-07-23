@@ -19,4 +19,5 @@ data:
   VITE_BACINTERACTOME_SHINY_APP_URL: "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:30080/shiny-apps/app/bacinteractome"
   PYHMMER_FAA_BASE_PATH: "/data/pyhmmer/output/"
   ENABLE_PYHMMER_SEARCH: "true"
+  ENABLE_FEEDBACK: "true"
   HTTPS: "false"

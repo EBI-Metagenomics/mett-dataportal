@@ -24,7 +24,10 @@ ES_TIMEOUT = int(os.getenv("ES_TIMEOUT", 30))
 ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 
 # Feature flags
-ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+ENABLE_PYHMMER_SEARCH = (
+    os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+)
+ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")

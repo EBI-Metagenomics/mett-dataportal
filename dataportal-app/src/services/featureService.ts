@@ -2,6 +2,7 @@ import { ApiService } from './api';
 
 export interface FeatureFlags {
   pyhmmer_search: boolean;
+  feedback: boolean;
 }
 
 export class FeatureService {
@@ -33,7 +34,8 @@ export class FeatureService {
       console.error('Failed to fetch feature flags:', error);
       // Return default values if feature flags can't be fetched
       this.features = {
-        pyhmmer_search: false
+        pyhmmer_search: false,
+        feedback: false
       };
       return this.features;
     } finally {

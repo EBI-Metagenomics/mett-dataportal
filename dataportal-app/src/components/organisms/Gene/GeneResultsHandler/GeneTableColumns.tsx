@@ -135,7 +135,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
                     <div key={idx}>
                         {amr.drug_class ? `${amr.drug_class}` : ''} {amr.drug_subclass ? `(${amr.drug_subclass})` : ''}
                     </div>
-                  )
+                )
                 : '---',
     },
 ];

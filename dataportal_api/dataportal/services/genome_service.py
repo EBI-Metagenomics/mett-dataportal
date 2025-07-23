@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import List
-from typing import Optional
 
 from asgiref.sync import sync_to_async
 from django.db.models import Q
@@ -21,11 +20,8 @@ from dataportal.schema.genome_schemas import (
 from dataportal.unmanaged_models.strain_data import strain_from_hit
 from dataportal.utils.constants import (
     STRAIN_FIELD_ISOLATE_NAME,
-    STRAIN_FIELD_ASSEMBLY_NAME,
     STRAIN_FIELD_SPECIES,
     SORT_ASC,
-    DEFAULT_PER_PAGE_CNT,
-    ES_FIELD_SPECIES_SCIENTIFIC_NAME,
     ES_FIELD_SPECIES_ACRONYM,
     ES_INDEX_STRAIN,
     SCROLL_BATCH_SIZE,
@@ -56,11 +52,11 @@ class GenomeService:
     ) -> GenomePaginationSchema:
         """
         Search genomes in Elasticsearch with optional isolate/species filters.
-        
+
         Args:
             params: GenomeSearchQuerySchema containing search parameters
             use_scroll: Whether to use scroll API for large downloads
-            
+
         Returns:
             GenomePaginationSchema with search results
         """
@@ -81,7 +77,9 @@ class GenomeService:
                 sortOrder=params.sortOrder,
                 schema=GenomeResponseSchema,
             )
-            return await self._create_pagination_schema(strains, total_results, 1, total_results)
+            return await self._create_pagination_schema(
+                strains, total_results, 1, total_results
+            )
         else:
             # Use regular pagination for normal requests
             return await self._search_paginated_strains(
@@ -99,10 +97,10 @@ class GenomeService:
     ) -> List[StrainSuggestionSchema]:
         """
         Search strains for autocomplete suggestions.
-        
+
         Args:
             params: GenomeAutocompleteQuerySchema containing search parameters
-            
+
         Returns:
             List of StrainSuggestionSchema objects
         """
@@ -113,9 +111,11 @@ class GenomeService:
             )
 
             if params.species_acronym:
-                search = search.filter("term", **{ES_FIELD_SPECIES_ACRONYM: params.species_acronym})
+                search = search.filter(
+                    "term", **{ES_FIELD_SPECIES_ACRONYM: params.species_acronym}
+                )
 
-            search = search[:params.limit]
+            search = search[: params.limit]
             response = await sync_to_async(search.execute)()
 
             results = []
@@ -136,10 +136,10 @@ class GenomeService:
     ) -> GenomePaginationSchema:
         """
         Get all genomes with pagination and sorting.
-        
+
         Args:
             params: GetAllGenomesQuerySchema containing pagination and sorting parameters
-            
+
         Returns:
             GenomePaginationSchema with genome results
         """
@@ -164,10 +164,10 @@ class GenomeService:
     ) -> List[GenomeResponseSchema]:
         """
         Get genomes by isolate names.
-        
+
         Args:
             params: GenomesByIsolateNamesQuerySchema containing isolate names
-            
+
         Returns:
             List of GenomeResponseSchema objects
         """
@@ -320,13 +320,13 @@ class GenomeService:
     def _resolve_sort_field(self, field: str) -> str:
         # Map invalid sort fields to valid ones
         field_mapping = {
-            'species': ES_FIELD_SPECIES_ACRONYM,
-            'isolate_name': f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",
-            'genome': f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'genome' to 'isolate_name.keyword'
-            'strain': f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'strain' to 'isolate_name.keyword'
-            'name': f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",    # Map 'name' to 'isolate_name.keyword'
+            "species": ES_FIELD_SPECIES_ACRONYM,
+            "isolate_name": f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",
+            "genome": f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'genome' to 'isolate_name.keyword'
+            "strain": f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'strain' to 'isolate_name.keyword'
+            "name": f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'name' to 'isolate_name.keyword'
         }
-        
+
         # Return mapped field if it exists, otherwise return the original field
         return field_mapping.get(field, field)
 
@@ -334,31 +334,35 @@ class GenomeService:
         """Convert genome data to TSV format for download."""
         if not genomes:
             return ""
-        
+
         # Define the columns to include in the TSV export
         columns = [
-            'isolate_name', 'species_scientific_name', 'species_acronym', 
-            'assembly_name', 'assembly_accession', 'type_strain'
+            "isolate_name",
+            "species_scientific_name",
+            "species_acronym",
+            "assembly_name",
+            "assembly_accession",
+            "type_strain",
         ]
-        
+
         # Create header row
-        header = '\t'.join(columns)
-        
+        header = "\t".join(columns)
+
         # Create data rows
         rows = []
         for genome in genomes:
             row_data = []
             for col in columns:
-                value = getattr(genome, col, '')
-                value = str(value) if value is not None else ''
-                
+                value = getattr(genome, col, "")
+                value = str(value) if value is not None else ""
+
                 # Escape tabs and newlines in the value
-                value = value.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')
+                value = value.replace("\t", " ").replace("\n", " ").replace("\r", " ")
                 row_data.append(value)
-            
-            rows.append('\t'.join(row_data))
-        
-        return header + '\n' + '\n'.join(rows)
+
+            rows.append("\t".join(row_data))
+
+        return header + "\n" + "\n".join(rows)
 
     async def _fetch_all_strains_with_scroll(
         self, filter_criteria, sortField, sortOrder, schema
@@ -366,58 +370,53 @@ class GenomeService:
         """Fetch all strains using Elasticsearch scroll API for large downloads."""
         try:
             es_client = connections.get_connection()
-            search_body = {
-                "query": {
-                    "bool": {
-                        "must": []
-                    }
-                },
-                "size": SCROLL_BATCH_SIZE
-            }
+            search_body = {"query": {"bool": {"must": []}}, "size": SCROLL_BATCH_SIZE}
 
             # Dynamically apply filters
             for field, value in filter_criteria.items():
                 if isinstance(value, str):
                     if field == STRAIN_FIELD_ISOLATE_NAME:
-                        search_body["query"]["bool"]["must"].append({
-                            "bool": {
-                                "should": [
-                                    {
-                                        "wildcard": {
-                                            f"{field}.keyword": f"*{value.lower()}*"
-                                        }
-                                    },
-                                    {"term": {f"{field}.keyword": value}},
-                                ],
-                                "minimum_should_match": 1,
+                        search_body["query"]["bool"]["must"].append(
+                            {
+                                "bool": {
+                                    "should": [
+                                        {
+                                            "wildcard": {
+                                                f"{field}.keyword": f"*{value.lower()}*"
+                                            }
+                                        },
+                                        {"term": {f"{field}.keyword": value}},
+                                    ],
+                                    "minimum_should_match": 1,
+                                }
                             }
-                        })
+                        )
                     else:
-                        search_body["query"]["bool"]["must"].append({
-                            "wildcard": {field: f"*{value}*"}
-                        })
+                        search_body["query"]["bool"]["must"].append(
+                            {"wildcard": {field: f"*{value}*"}}
+                        )
                 elif isinstance(value, list):
-                    search_body["query"]["bool"]["must"].append({
-                        "terms": {field: value}
-                    })
+                    search_body["query"]["bool"]["must"].append(
+                        {"terms": {field: value}}
+                    )
                 else:
-                    search_body["query"]["bool"]["must"].append({
-                        "term": {field: value}
-                    })
+                    search_body["query"]["bool"]["must"].append(
+                        {"term": {field: value}}
+                    )
 
             # Map "species" to its actual field
             sortField = self._resolve_sort_field(sortField)
             sort_order = "asc" if sortOrder == SORT_ASC else "desc"
             search_body["sort"] = [{sortField: {"order": sort_order}}]
 
-            logger.info(f"Starting scroll search with query: {json.dumps(search_body, indent=2)}")
+            logger.info(
+                f"Starting scroll search with query: {json.dumps(search_body, indent=2)}"
+            )
 
             # Execute initial search
             response = await sync_to_async(
                 lambda: es_client.search(
-                    index=ES_INDEX_STRAIN,
-                    body=search_body,
-                    scroll=SCROLL_TIMEOUT
+                    index=ES_INDEX_STRAIN, body=search_body, scroll=SCROLL_TIMEOUT
                 )
             )()
 
@@ -425,45 +424,50 @@ class GenomeService:
             total_results = 0
             max_results = SCROLL_MAX_RESULTS
             batch_count = 0
-            scroll_id = response['_scroll_id']
+            scroll_id = response["_scroll_id"]
 
             # Process all batches
-            while len(response['hits']['hits']) > 0 and total_results < max_results:
+            while len(response["hits"]["hits"]) > 0 and total_results < max_results:
                 batch_count += 1
-                for hit_data in response['hits']['hits']:
+                for hit_data in response["hits"]["hits"]:
                     # Create a mock hit object that has to_dict() method
                     class MockHit:
                         def __init__(self, source):
                             self._source = source
-                        
+
                         def to_dict(self):
                             return self._source
-                    
-                    mock_hit = MockHit(hit_data['_source'])
+
+                    mock_hit = MockHit(hit_data["_source"])
                     strain_obj = strain_from_hit(mock_hit)
                     strain_dict = model_to_dict(strain_obj)
                     results.append(schema.model_validate(strain_dict))
-                
-                total_results += len(response['hits']['hits'])
-                logger.info(f"Fetched {total_results} strains in {batch_count} batches...")
+
+                total_results += len(response["hits"]["hits"])
+                logger.info(
+                    f"Fetched {total_results} strains in {batch_count} batches..."
+                )
 
                 # Get next batch using scroll
                 try:
                     response = await sync_to_async(
                         lambda: es_client.scroll(
-                            scroll_id=scroll_id,
-                            scroll=SCROLL_TIMEOUT
+                            scroll_id=scroll_id, scroll=SCROLL_TIMEOUT
                         )
                     )()
-                    scroll_id = response['_scroll_id']
+                    scroll_id = response["_scroll_id"]
                 except Exception as scroll_error:
                     logger.error(f"Error in scroll batch {batch_count}: {scroll_error}")
                     break
 
             if total_results >= max_results:
-                logger.warning(f"Reached maximum result limit of {max_results}. Some results may be truncated.")
+                logger.warning(
+                    f"Reached maximum result limit of {max_results}. Some results may be truncated."
+                )
 
-            logger.info(f"Scroll search completed. Total strains fetched: {total_results}")
+            logger.info(
+                f"Scroll search completed. Total strains fetched: {total_results}"
+            )
             return results, total_results
 
         except Exception as e:

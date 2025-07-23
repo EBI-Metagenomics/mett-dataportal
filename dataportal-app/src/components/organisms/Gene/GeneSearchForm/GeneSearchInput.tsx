@@ -37,18 +37,18 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
     }, [onSuggestionsClear]);
 
     const handleInputChange = (event: any, newValue: string, reason: string) => {
-        console.log('GeneSearchInput handleInputChange:', { newValue, reason, isSelecting });
-        
+        console.log('GeneSearchInput handleInputChange:', {newValue, reason, isSelecting});
+
         // Don't call onInputChange when selecting a suggestion or when resetting
         if (!isSelecting && reason !== 'reset') {
             // Create a proper synthetic event for the parent component
             const syntheticEvent = {
-                target: { value: newValue || '' }
+                target: {value: newValue || ''}
             } as React.ChangeEvent<HTMLInputElement>;
-            
+
             onInputChange(syntheticEvent);
         }
-        
+
         if (reason === 'reset') {
             setIsSelecting(false);
         }
@@ -105,7 +105,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                     />
                 )}
             />
-            
+
             <button
                 type="button"
                 className="vf-button vf-button--primary vf-button--sm"

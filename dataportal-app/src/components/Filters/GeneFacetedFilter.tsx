@@ -4,14 +4,15 @@ import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
 import {
     AMR_DETERMINATION_TXT,
-    ESSENTIALITY_DETERMINATION_TXT, EXT_LINK_AMR_DETERMINATION,
+    ESSENTIALITY_DETERMINATION_TXT,
+    EXT_LINK_AMR_DETERMINATION,
     EXT_LINK_ESSENTIALITY_JOURNAL,
     FACET_ORDER,
     LOGICAL_OPERATOR_FACETS
 } from "../../utils/appConstants";
 import * as Popover from '@radix-ui/react-popover';
 import {MetadataService} from "../../services/metadataService";
-import { useFilterStore } from '../../stores/filterStore';
+import {useFilterStore} from '../../stores/filterStore';
 
 interface GeneFacetedFilterProps {
     facets: GeneFacetResponse;

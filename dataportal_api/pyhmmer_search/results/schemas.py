@@ -8,7 +8,11 @@ from pydantic import UUID4, field_validator
 from pydantic import model_validator
 
 from ..search.models import HmmerJob, Database
-from ..search.schemas import PyhmmerAlignmentSchema, LegacyAlignmentDisplay, DomainSchema
+from ..search.schemas import (
+    PyhmmerAlignmentSchema,
+    LegacyAlignmentDisplay,
+    DomainSchema,
+)
 
 
 class TaskResultSchema(ModelSchema):
@@ -112,13 +116,20 @@ class ResultQuerySchema(Schema):
 
 class DomainDetailsResponseSchema(Schema):
     target: str = Field(..., description="Target sequence name")
-    domains: Optional[List[DomainSchema]] = Field(None, description="List of domains with alignment data")
+    domains: Optional[List[DomainSchema]] = Field(
+        None, description="List of domains with alignment data"
+    )
 
 
 class AlignmentDetailsResponseSchema(Schema):
     """Response schema for detailed alignment information"""
+
     status: str = Field(..., description="Status of the request")
     target: str = Field(..., description="Target sequence name")
     domain_index: Optional[int] = Field(None, description="Index of the domain")
-    alignment: Optional[PyhmmerAlignmentSchema] = Field(None, description="PyHMMER alignment data")
-    legacy_alignment: Optional[LegacyAlignmentDisplay] = Field(None, description="Legacy alignment display")
+    alignment: Optional[PyhmmerAlignmentSchema] = Field(
+        None, description="PyHMMER alignment data"
+    )
+    legacy_alignment: Optional[LegacyAlignmentDisplay] = Field(
+        None, description="Legacy alignment display"
+    )

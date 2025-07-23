@@ -141,8 +141,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 }
 
                 const endpoint = (selectedSpecies && selectedSpecies.length === 1)
-                ? `/species/${selectedSpecies[0]}/genomes/search`
-                : `/genomes/search`;
+                    ? `/species/${selectedSpecies[0]}/genomes/search`
+                    : `/genomes/search`;
 
                 apiDetails.url = endpoint;
                 apiDetails.params = Object.fromEntries(params.entries());
@@ -210,7 +210,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         console.log('isolateName: ' + suggestion.isolate_name)
         // console.log('suggestion.strain_id: ' + suggestion.id)
         onSearchQueryChange({
-            target: { value: suggestion.isolate_name }
+            target: {value: suggestion.isolate_name}
         } as React.ChangeEvent<HTMLInputElement>);
         setIsolateName(suggestion.isolate_name);
         setSuggestions([]);
@@ -238,7 +238,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             setIsDownloading(true);
             // Show initial message for large downloads
             alert('Starting download... This may take a while for large datasets.');
-            
+
             await GenomeService.downloadGenomesTSV(
                 searchQuery,
                 sortField,

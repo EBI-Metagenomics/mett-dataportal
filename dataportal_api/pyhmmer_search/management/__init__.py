@@ -1,1 +1,1 @@
-# Management package for PyHMMER search 
+# Management package for PyHMMER search

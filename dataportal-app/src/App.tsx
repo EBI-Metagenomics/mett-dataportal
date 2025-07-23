@@ -1,52 +1,48 @@
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import {BrowserRouter as Router, Route, Routes, useLocation} from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import Header from '@components/organisms/Header/Header';
 import HomePage from './components/pages/HomePage';
 import GeneViewerPage from './components/pages/GeneViewerPage';
-import TestPage from './components/pages/TestPage';
+import FeedbackPage from './components/pages/FeedbackPage';
 import ErrorBoundary from "@components/atoms/ErrorBoundary";
 import Footer from "@components/organisms/Footer/Footer";
-// import { usePageCleanup } from './hooks/usePageCleanup';
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: 1,
-      refetchOnWindowFocus: false,
+    defaultOptions: {
+        queries: {
+            staleTime: 5 * 60 * 1000, // 5 minutes
+            gcTime: 10 * 60 * 1000, // 10 minutes
+            retry: 1,
+            refetchOnWindowFocus: false,
+        },
     },
-  },
 });
 
-// Component to handle URL cleanup based on route
 const UrlCleanupHandler: React.FC = () => {
-  const location = useLocation();
+    const location = useLocation();
 
-  useEffect(() => {
-    if (location.pathname.startsWith('/genome/')) {
-      const searchParams = new URLSearchParams(location.search);
-      const locusTag = searchParams.get('locus_tag');
+    useEffect(() => {
+        if (location.pathname.startsWith('/genome/')) {
+            const searchParams = new URLSearchParams(location.search);
+            const locusTag = searchParams.get('locus_tag');
 
-      // If we have a locus_tag, clean up other parameters
-      if (locusTag) {
-        const newParams = new URLSearchParams();
-        newParams.set('locus_tag', locusTag);
+            if (locusTag) {
+                const newParams = new URLSearchParams();
+                newParams.set('locus_tag', locusTag);
 
-        const newUrl = `${location.pathname}?${newParams.toString()}`;
-        window.history.replaceState({}, '', newUrl);
-      }
-    }
-  }, [location.pathname, location.search]);
+                const newUrl = `${location.pathname}?${newParams.toString()}`;
+                window.history.replaceState({}, '', newUrl);
+            }
+        }
+    }, [location.pathname, location.search]);
 
-  return null;
+    return null;
 };
 
-// Component to handle page-specific cleanup
 const PageCleanupHandler: React.FC = () => {
-  // usePageCleanup();
-  return null;
+    // usePageCleanup();
+    return null;
 };
 
 const App: React.FC = () => {
@@ -54,8 +50,8 @@ const App: React.FC = () => {
         <QueryClientProvider client={queryClient}>
             <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
                 <Router basename={import.meta.env.VITE_BASENAME || '/'}>
-                    <UrlCleanupHandler />
-                    <PageCleanupHandler />
+                    <UrlCleanupHandler/>
+                    <PageCleanupHandler/>
                     <Header/>
                     <main
                         className="vf-body | vf-stack vf-stack--200"
@@ -67,7 +63,7 @@ const App: React.FC = () => {
                         <Routes>
                             <Route path="/" element={<HomePage/>}/>
                             <Route path="/home" element={<HomePage/>}/>
-                            <Route path="/test" element={<TestPage/>}/>
+                            <Route path="/feedback" element={<FeedbackPage/>}/>
                             <Route path="/genome/:strainName" element={
                                 <ErrorBoundary>
                                     <GeneViewerPage/>

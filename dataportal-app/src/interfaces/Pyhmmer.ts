@@ -12,7 +12,6 @@ export interface PyhmmerMXChoice {
     label: string;
 }
 
-// Alignment interfaces for domain details
 export interface PyhmmerAlignment {
     hmm_name: string;
     hmm_accession?: string;
@@ -38,8 +37,8 @@ export interface LegacyAlignmentDisplay {
     aseq: string;
     mline: string;
     ppline?: string;
-    identity: [number, number]; // [percentage, count]
-    similarity: [number, number]; // [percentage, count]
+    identity: [number, number];
+    similarity: [number, number];
 }
 
 export interface PyhmmerDomain {
@@ -75,19 +74,19 @@ export interface PyhmmerSearchRequest {
     threshold_value: number;
     input: string;
     mx?: string;
-    
+
     // E-value parameters
     E?: number | null;
     domE?: number | null;
     incE?: number | null;
     incdomE?: number | null;
-    
+
     // Bit score parameters
     T?: number | null;
     domT?: number | null;
     incT?: number | null;
     incdomT?: number | null;
-    
+
     // Gap penalties
     popen?: number;
     pextend?: number;

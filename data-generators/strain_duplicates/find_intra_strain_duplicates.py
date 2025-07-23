@@ -1,5 +1,4 @@
 import csv
-import hashlib
 import re
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -80,14 +79,17 @@ class IntraStrainDuplicateFinder:
             seq_to_genes[seq].add(gene_id)
             all_gene_ids.add(gene_id)
 
-        duplicates = {seq: genes for seq, genes in seq_to_genes.items() if len(genes) > 1}
+        duplicates = {
+            seq: genes for seq, genes in seq_to_genes.items() if len(genes) > 1
+        }
         total_genes = len(all_gene_ids)
         total_proteins = len(records)
         total_dup_gene_ids = sum(len(genes) for genes in duplicates.values())
 
         if duplicates:
             self.log(
-                f"⚠️  {strain_id}: Found {len(duplicates)} duplicated sequences involving {total_dup_gene_ids} gene IDs")
+                f"⚠️  {strain_id}: Found {len(duplicates)} duplicated sequences involving {total_dup_gene_ids} gene IDs"
+            )
         else:
             self.log(f"✅ {strain_id}: No duplicates found")
 
@@ -127,6 +129,7 @@ class IntraStrainDuplicateFinder:
 
 def write_csv_outputs(results, out_dir="output"):
     import os
+
     os.makedirs(out_dir, exist_ok=True)
 
     summary_path = os.path.join(out_dir, "intra_strain_duplicates_summary.csv")
@@ -135,31 +138,43 @@ def write_csv_outputs(results, out_dir="output"):
     # --- Write summary ---
     with open(summary_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Strain ID", "Num Duplicated Sequences", "Total Duplicated Gene IDs"])
+        writer.writerow(
+            ["Strain ID", "Num Duplicated Sequences", "Total Duplicated Gene IDs"]
+        )
         for r in results:
-            writer.writerow([r["strain_id"], r["num_duplicates"], r["total_duplicated_gene_ids"]])
+            writer.writerow(
+                [r["strain_id"], r["num_duplicates"], r["total_duplicated_gene_ids"]]
+            )
 
     # --- Write details ---
     with open(summary_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "Strain ID",
-            "Total Proteins",
-            "Total Unique Genes",
-            "Duplicated Sequences",
-            "Duplicated Gene IDs",
-            "Duplication % (by gene)"
-        ])
+        writer.writerow(
+            [
+                "Strain ID",
+                "Total Proteins",
+                "Total Unique Genes",
+                "Duplicated Sequences",
+                "Duplicated Gene IDs",
+                "Duplication % (by gene)",
+            ]
+        )
         for r in results:
-            perc = (r["total_duplicated_gene_ids"] / r["total_genes"] * 100) if r["total_genes"] else 0
-            writer.writerow([
-                r["strain_id"],
-                r["total_proteins"],
-                r["total_genes"],
-                r["num_duplicates"],
-                r["total_duplicated_gene_ids"],
-                f"{perc:.2f}"
-            ])
+            perc = (
+                (r["total_duplicated_gene_ids"] / r["total_genes"] * 100)
+                if r["total_genes"]
+                else 0
+            )
+            writer.writerow(
+                [
+                    r["strain_id"],
+                    r["total_proteins"],
+                    r["total_genes"],
+                    r["num_duplicates"],
+                    r["total_duplicated_gene_ids"],
+                    f"{perc:.2f}",
+                ]
+            )
 
     print(f"\n📁 CSV files saved to '{out_dir}':")
     print(f"  • Summary: {summary_path}")

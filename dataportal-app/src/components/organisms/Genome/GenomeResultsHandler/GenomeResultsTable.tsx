@@ -47,7 +47,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
     return (
         <div>
             {onDownloadTSV && (
-                <div style={{ marginBottom: '1rem', textAlign: 'right' }}>
+                <div style={{marginBottom: '1rem', textAlign: 'right'}}>
                     <button
                         type="button"
                         title="Download TSV"
@@ -60,7 +60,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     </button>
                 </div>
             )}
-            
+
             <table className="vf-table vf-table--sortable">
                 <thead className="vf-table__header">
                 <tr className="vf-table__row">
@@ -95,7 +95,8 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                 <tbody className="vf-table__body">
                 {results.map((result, index) => (
                     <tr key={index} className="vf-table__row">
-                        <td className={`vf-table__cell ${styles.vfTableCell}`}><i>{result.species_scientific_name || 'Unknown Species'}</i>
+                        <td className={`vf-table__cell ${styles.vfTableCell}`}>
+                            <i>{result.species_scientific_name || 'Unknown Species'}</i>
                         </td>
                         <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.isolate_name || 'Unknown Isolate'}</td>
                         <td className={`vf-table__cell ${styles.vfTableCell}`}>
@@ -113,11 +114,11 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                             <a href={generateLink(linkData.template, result)} target="_blank" rel="noreferrer">
                                 {linkData.alias}
                                 <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
-                                style={{paddingLeft: '5px'}}></span>
+                                      style={{paddingLeft: '5px'}}></span>
                             </a>
                         </td>
                         <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                        <button
+                            <button
                                 className={styles.toggleButton}
                                 onClick={() => onToggleGenomeSelect({
                                     isolate_name: result.isolate_name,

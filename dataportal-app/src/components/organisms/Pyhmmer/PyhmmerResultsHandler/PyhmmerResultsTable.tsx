@@ -66,12 +66,12 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
         setDownloading(format);
         try {
             const blob = await PyhmmerService.downloadResults(jobId, format);
-            
+
             let filename = '';
             if (format === 'tab') filename = `pyhmmer_hits_${jobId}.tsv`;
             if (format === 'fasta') filename = `pyhmmer_hits_${jobId}.fasta.gz`;
             if (format === 'aligned_fasta') filename = `pyhmmer_hits_${jobId}.aligned.fasta.gz`;
-            
+
             saveAs(blob, filename);
         } catch (error) {
             console.error('Download failed:', error);
@@ -145,7 +145,7 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                 {paginatedResults.map((result, idx) => {
                     const isExpanded = expandedRows.has(idx);
                     const hasDomains = result.domains && result.domains.length > 0;
-                    
+
                     return (
                         <React.Fragment key={idx}>
                             <tr className={`${styles.resultRow} ${isExpanded ? styles.expanded : ''}`}>
@@ -181,7 +181,7 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                             {isExpanded && hasDomains && jobId && (
                                 <tr className={styles.expandedRow}>
                                     <td colSpan={7} className={styles.expandedCell}>
-                                        <AlignmentView jobId={jobId} target={result.target} />
+                                        <AlignmentView jobId={jobId} target={result.target}/>
                                     </td>
                                 </tr>
                             )}

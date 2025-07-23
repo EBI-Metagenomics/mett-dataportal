@@ -127,6 +127,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-dev
                   key: ENABLE_PYHMMER_SEARCH
+            - name: ENABLE_FEEDBACK
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: ENABLE_FEEDBACK
             - name: PYHMMER_FAA_BASE_PATH
               valueFrom:
                 configMapKeyRef:

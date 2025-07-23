@@ -5,15 +5,19 @@ from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
 from dataportal.schema.gene_schemas import (
-    GenePaginationSchema,
     EssentialityByContigSchema,
 )
 from dataportal.schema.genome_schemas import (
     StrainSuggestionSchema,
-    GenomePaginationSchema,
-    GenomeResponseSchema, GenomeAutocompleteQuerySchema, GenomeSearchQuerySchema, GenomesByIsolateNamesQuerySchema,
-    GetAllGenomesQuerySchema, GenesByGenomeQuerySchema, GenomeDownloadTSVQuerySchema,
+    GenomeResponseSchema,
+    GenomeAutocompleteQuerySchema,
+    GenomeSearchQuerySchema,
+    GenomesByIsolateNamesQuerySchema,
+    GetAllGenomesQuerySchema,
+    GenesByGenomeQuerySchema,
+    GenomeDownloadTSVQuerySchema,
 )
+from ..schema.response_schemas import PaginatedResponseSchema
 from ..services.essentiality_service import EssentialityService
 from ..services.gene_service import GeneService
 from ..services.genome_service import GenomeService
@@ -24,11 +28,10 @@ from ..utils.constants import (
 )
 from ..utils.decorators import log_endpoint_access
 from ..utils.errors import raise_http_error, raise_internal_server_error
-from ..utils.response_wrappers import wrap_paginated_response
-from ..schema.response_schemas import PaginatedResponseSchema, create_paginated_response
 from ..utils.exceptions import (
     ServiceError,
 )
+from ..utils.response_wrappers import wrap_paginated_response
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +52,7 @@ genome_router = Router(tags=[ROUTER_GENOME])
 )
 @log_endpoint_access("genome_autocomplete_suggestions")
 async def autocomplete_suggestions(
-        request,
-        query: GenomeAutocompleteQuerySchema = Query(...)
+    request, query: GenomeAutocompleteQuerySchema = Query(...)
 ):
     return await genome_service.search_strains(query)
 
@@ -61,9 +63,9 @@ async def autocomplete_suggestions(
     response=List[GenomeResponseSchema],
     summary="Get all type strains",
     description=(
-            "Returns a list of genomes that are designated as type strains. "
-            "Type strains represent reference genomes for a given species and are essential "
-            "for comparative analysis and classification."
+        "Returns a list of genomes that are designated as type strains. "
+        "Type strains represent reference genomes for a given species and are essential "
+        "for comparative analysis and classification."
     ),
 )
 async def get_type_strains(request):
@@ -78,15 +80,14 @@ async def get_type_strains(request):
     response=PaginatedResponseSchema,
     summary="Search genomes by query",
     description=(
-            "Searches genomes using a free-text query string. "
-            "Returns a paginated list of matching genome records. "
-            "Supports optional sorting by 'isolate_name' or 'species'."
+        "Searches genomes using a free-text query string. "
+        "Returns a paginated list of matching genome records. "
+        "Supports optional sorting by 'isolate_name' or 'species'."
     ),
 )
 @wrap_paginated_response
 async def search_genomes_by_string(
-        request,
-        query: GenomeSearchQuerySchema = Query(...)
+    request, query: GenomeSearchQuerySchema = Query(...)
 ):
     try:
         result = await genome_service.search_genomes_by_string(query)
@@ -101,14 +102,13 @@ async def search_genomes_by_string(
     response=List[GenomeResponseSchema],
     summary="Get genomes by isolate names",
     description=(
-            "Retrieves genome records for one or more isolate names. "
-            "Accepts a comma-separated list of isolate names as input. "
-            "Useful for batch lookups when isolate identifiers are known."
+        "Retrieves genome records for one or more isolate names. "
+        "Accepts a comma-separated list of isolate names as input. "
+        "Useful for batch lookups when isolate identifiers are known."
     ),
 )
 async def get_genomes_by_isolate_names(
-        request,
-        query: GenomesByIsolateNamesQuerySchema = Query(...)
+    request, query: GenomesByIsolateNamesQuerySchema = Query(...)
 ):
     try:
         return await genome_service.get_genomes_by_isolate_names(query)
@@ -122,13 +122,10 @@ async def get_genomes_by_isolate_names(
     response=PaginatedResponseSchema,
     summary="Get all genomes",
     description="Retrieves a paginated list of all genomes available in the system. "
-                "Supports optional sorting by 'isolate_name' or 'species'. ",
+    "Supports optional sorting by 'isolate_name' or 'species'. ",
 )
 @wrap_paginated_response
-async def get_all_genomes(
-        request,
-        query: GetAllGenomesQuerySchema = Query(...)
-):
+async def get_all_genomes(request, query: GetAllGenomesQuerySchema = Query(...)):
     try:
         result = await genome_service.get_genomes(query)
         return result
@@ -146,18 +143,18 @@ async def get_all_genomes(
     response=PaginatedResponseSchema,
     summary="Get genes by genome isolate",
     description=(
-            "Retrieves a paginated list of genes associated with a specific genome isolate. "
-            "Supports optional sorting by 'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
-            "Useful for viewing all genes within a selected genome."
+        "Retrieves a paginated list of genes associated with a specific genome isolate. "
+        "Supports optional sorting by 'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
+        "Useful for viewing all genes within a selected genome."
     ),
 )
 @wrap_paginated_response
 async def get_genes_by_genome(
-        request,
-        isolate_name: str = Path(
-            ..., description="Unique isolate name identifying the genome."
-        ),
-        query: GenesByGenomeQuerySchema = Query(...)
+    request,
+    isolate_name: str = Path(
+        ..., description="Unique isolate name identifying the genome."
+    ),
+    query: GenesByGenomeQuerySchema = Query(...),
 ):
     try:
         result = await gene_service.get_genes_by_genome(
@@ -172,7 +169,9 @@ async def get_genes_by_genome(
         return result
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise_internal_server_error(f"Failed to fetch the genes information for genome_id - {isolate_name}")
+        raise_internal_server_error(
+            f"Failed to fetch the genes information for genome_id - {isolate_name}"
+        )
 
 
 # API endpoint to retrieve essentiality data from cache for a specific strain ID.
@@ -181,18 +180,18 @@ async def get_genes_by_genome(
     response=Dict[str, EssentialityByContigSchema],
     summary="Get essentiality data by genome and contig",
     description=(
-            "Retrieves cached essentiality data for a given genome isolate and reference name (e.g. contig_1). "
-            "Returns gene essentiality information grouped by contig. "
-            "This data is typically precomputed and used to visualize gene essentiality in genome browsers or analysis tools."
+        "Retrieves cached essentiality data for a given genome isolate and reference name (e.g. contig_1). "
+        "Returns gene essentiality information grouped by contig. "
+        "This data is typically precomputed and used to visualize gene essentiality in genome browsers or analysis tools."
     ),
 )
 async def get_essentiality_data_by_contig(
-        request,
-        isolate_name: str = Path(..., description="Isolate name identifying the genome."),
-        ref_name: str = Path(
-            ...,
-            description="Reference sequence (e.g. contig_1) name to retrieve essentiality data for.",
-        ),
+    request,
+    isolate_name: str = Path(..., description="Isolate name identifying the genome."),
+    ref_name: str = Path(
+        ...,
+        description="Reference sequence (e.g. contig_1) name to retrieve essentiality data for.",
+    ),
 ):
     try:
         essentiality_data = (
@@ -219,15 +218,14 @@ async def get_essentiality_data_by_contig(
     "/download/tsv",
     summary="Download all genomes in TSV format",
     description=(
-            "Downloads all genomes matching the current filters in TSV (Tab-Separated Values) format. "
-            "This endpoint returns all records without pagination, suitable for bulk data export. "
-            "Supports the same filtering options as the search endpoints."
+        "Downloads all genomes matching the current filters in TSV (Tab-Separated Values) format. "
+        "This endpoint returns all records without pagination, suitable for bulk data export. "
+        "Supports the same filtering options as the search endpoints."
     ),
     include_in_schema=False,
 )
 async def download_genomes_tsv(
-        request,
-        query: GenomeDownloadTSVQuerySchema = Query(...)
+    request, query: GenomeDownloadTSVQuerySchema = Query(...)
 ):
     try:
         logger.debug(
@@ -252,32 +250,39 @@ async def download_genomes_tsv(
         def generate_tsv():
             # Define the columns to include in the TSV export
             columns = [
-                'isolate_name', 'species_scientific_name', 'species_acronym',
-                'assembly_name', 'assembly_accession', 'type_strain'
+                "isolate_name",
+                "species_scientific_name",
+                "species_acronym",
+                "assembly_name",
+                "assembly_accession",
+                "type_strain",
             ]
 
             # Yield header row
-            yield '\t'.join(columns) + '\n'
+            yield "\t".join(columns) + "\n"
 
             # Yield data rows one by one
             for genome in data_response.results:
                 row_data = []
                 for col in columns:
-                    value = getattr(genome, col, '')
-                    value = str(value) if value is not None else ''
+                    value = getattr(genome, col, "")
+                    value = str(value) if value is not None else ""
 
                     # Escape tabs and newlines in the value
-                    value = value.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')
+                    value = (
+                        value.replace("\t", " ").replace("\n", " ").replace("\r", " ")
+                    )
                     row_data.append(value)
 
-                yield '\t'.join(row_data) + '\n'
+                yield "\t".join(row_data) + "\n"
 
         # Return streaming response
         http_response = StreamingHttpResponse(
-            generate_tsv(),
-            content_type='text/tab-separated-values'
+            generate_tsv(), content_type="text/tab-separated-values"
         )
-        http_response['Content-Disposition'] = 'attachment; filename="genomes_export.tsv"'
+        http_response["Content-Disposition"] = (
+            'attachment; filename="genomes_export.tsv"'
+        )
         return http_response
 
     except ServiceError as e:
