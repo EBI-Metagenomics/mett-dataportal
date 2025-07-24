@@ -203,6 +203,16 @@ STATIC_URL = "/api-static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# WhiteNoise configuration for better static file serving
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_MAX_AGE = 31536000  # 1 year
+
+# Additional static file directories for Django Ninja (if needed)
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, "static"),
+# ]
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 if DEBUG:
