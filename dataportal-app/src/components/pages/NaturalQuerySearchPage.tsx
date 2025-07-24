@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ApiClient } from '../../services/apiInstance';
+import GeneResultsTable from '@components/organisms/Gene/GeneResultsHandler/GeneResultsTable';
+import Pagination from '@components/molecules/Pagination';
+import { GeneMeta } from '../../interfaces/Gene';
+import { LinkData } from '../../interfaces/Auxiliary';
 
 interface QueryResult {
   query_interpretation: {
@@ -28,6 +32,14 @@ const NaturalQuerySearchPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [interpretationOnly, setInterpretationOnly] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasPrevious, setHasPrevious] = useState(false);
+  const [hasNext, setHasNext] = useState(false);
+  const [sortField, setSortField] = useState<string>('locus_tag');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +62,15 @@ const NaturalQuerySearchPage: React.FC = () => {
       
       if (data.status === 'success') {
         setResults(data.data);
+        
+        // Extract pagination info if available
+        if (data.data?.results) {
+          const paginationInfo = getPaginationInfo();
+          setTotalPages(paginationInfo.totalPages);
+          setHasPrevious(paginationInfo.hasPrevious);
+          setHasNext(paginationInfo.hasNext);
+          setCurrentPage(paginationInfo.currentPage);
+        }
       } else {
         setError(data.message || 'Query failed');
       }
@@ -59,6 +80,51 @@ const NaturalQuerySearchPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle sorting
+  const handleSortClick = useCallback((field: string, order: 'asc' | 'desc') => {
+    setSortField(field);
+    setSortOrder(order);
+    // Note: For now, we'll just update the sort state
+    // In a full implementation, you might want to re-execute the query with new sort parameters
+  }, []);
+
+  // Extract gene results and pagination info
+  const getGeneResults = (): GeneMeta[] => {
+    console.log('getGeneResults - results:', results);
+    console.log('getGeneResults - results?.results:', results?.results);
+    console.log('getGeneResults - results?.results?.results:', results?.results?.results);
+    
+    // The correct path based on actual response structure
+    if (!results?.results?.results) {
+      console.log('No gene results found in expected path');
+      return [];
+    }
+    return results.results.results;
+  };
+
+  const getPaginationInfo = () => {
+    console.log('getPaginationInfo - results?.results:', results?.results);
+    
+    if (!results?.results) {
+      return {
+        totalPages: 1,
+        hasPrevious: false,
+        hasNext: false,
+        currentPage: 1
+      };
+    }
+    
+    const data = results.results;
+    console.log('getPaginationInfo - data:', data);
+    
+    return {
+      totalPages: data.num_pages || 1,
+      hasPrevious: data.has_previous || false,
+      hasNext: data.has_next || false,
+      currentPage: data.page_number || 1
+    };
   };
 
   const renderResults = () => {
@@ -89,27 +155,52 @@ const NaturalQuerySearchPage: React.FC = () => {
         </div>
 
         {/* Gene Results */}
-        {results.results && results.results.results && (
-          <div className="gene-results">
-            <h4>Gene Results ({results.results.results.length} shown)</h4>
-            <div className="gene-list">
-              {results.results.results.slice(0, 10).map((gene: any, index: number) => (
-                <div key={index} className="gene-item">
-                  <h5>{gene.locus_tag || gene.gene_name || `Gene ${index + 1}`}</h5>
-                  <div className="gene-details">
-                    <p><strong>Product:</strong> {gene.product || 'N/A'}</p>
-                    <p><strong>Species:</strong> {gene.species_acronym || 'N/A'}</p>
-                    <p><strong>Isolate:</strong> {gene.isolate_name || 'N/A'}</p>
-                    <p><strong>Essentiality:</strong> {gene.essentiality || 'N/A'}</p>
-                    {gene.cog_funcats && gene.cog_funcats.length > 0 && (
-                      <p><strong>COG Categories:</strong> {gene.cog_funcats.join(', ')}</p>
-                    )}
-                  </div>
+        {(() => {
+          const geneResults = getGeneResults();
+          console.log('renderResults - geneResults:', geneResults);
+          console.log('renderResults - geneResults.length:', geneResults.length);
+          
+          if (geneResults.length > 0) {
+            return (
+              <div className="gene-results">
+                <h4>Gene Results ({geneResults.length} genes found)</h4>
+                
+                {/* Gene Results Table */}
+                <div className="results-table-container">
+                  <GeneResultsTable
+                    results={geneResults}
+                    onSortClick={handleSortClick}
+                    linkData={{
+                      template: '/genome/${isolate_name}?locus_tag=${locus_tag}',
+                      alias: 'Browse'
+                    }}
+                    setLoading={setLoading}
+                    isTypeStrainAvailable={true}
+                  />
+                  
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="pagination-container">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        hasPrevious={hasPrevious}
+                        hasNext={hasNext}
+                        onPageClick={(page) => {
+                          setCurrentPage(page);
+                          // TODO: Re-execute the query with new page and sort parameters
+                          // This would require updating the backend to support pagination in NL queries
+                          console.log(`Navigate to page ${page}`);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            );
+          }
+          return null;
+        })()}
       </div>
     );
   };
@@ -344,26 +435,14 @@ const NaturalQuerySearchPage: React.FC = () => {
           margin-top: 2rem;
         }
 
-        .gene-list {
-          display: grid;
-          gap: 1rem;
+        .results-table-container {
+          margin-top: 1rem;
         }
 
-        .gene-item {
-          padding: 1rem;
-          border: 1px solid #dee2e6;
-          border-radius: 8px;
-          background-color: white;
-        }
-
-        .gene-item h5 {
-          margin: 0 0 0.5rem 0;
-          color: #007bff;
-        }
-
-        .gene-details p {
-          margin: 0.25rem 0;
-          font-size: 0.9rem;
+        .pagination-container {
+          margin-top: 1rem;
+          display: flex;
+          justify-content: center;
         }
       `}</style>
     </div>

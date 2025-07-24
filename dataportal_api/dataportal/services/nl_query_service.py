@@ -6,7 +6,7 @@ from openai import OpenAI
 from dataportal.schema.nl_schemas import METT_GENE_QUERY_SCHEMA
 from dataportal.schema.gene_schemas import NaturalLanguageGeneQuery, GenePaginationSchema
 from dataportal.services.gene_service import GeneService
-from dataportal.schema.gene_schemas import GeneFacetedSearchQuerySchema, GeneAdvancedSearchQuerySchema, GeneSearchQuerySchema
+from dataportal.schema.gene_schemas import GeneAdvancedSearchQuerySchema, GeneSearchQuerySchema
 
 SYSTEM_PROMPT = """
 You are an intelligent bioinformatics data portal assistant that converts natural language queries into structured API requests.
@@ -130,36 +130,24 @@ class NaturalLanguageQueryService:
             # Determine the best API method based on the query complexity
             method_name = self._determine_api_method(interpreted_query)
             
-            if method_name == "get_faceted_search":
-                # Create faceted search query schema
-                faceted_params = GeneFacetedSearchQuerySchema(
-                    query=interpreted_query.get("query"),
-                    species_acronym=interpreted_query.get("species_acronym"),
-                    isolates=interpreted_query.get("isolates", ""),
-                    essentiality=interpreted_query.get("essentiality"),
-                    cog_id=interpreted_query.get("cog_id"),
-                    cog_funcats=interpreted_query.get("cog_funcats"),
-                    kegg=interpreted_query.get("kegg"),
-                    go_term=interpreted_query.get("go_term"),
-                    pfam=interpreted_query.get("pfam"),
-                    interpro=interpreted_query.get("interpro"),
-                    has_amr_info=interpreted_query.get("has_amr_info"),
-                    limit=interpreted_query.get("limit", 50)
-                )
-                result = await self.gene_service.get_faceted_search(faceted_params)
-                return {
-                    "type": "faceted_results",
-                    "data": result,
-                    "total_results": len(result.get("genes", [])) if isinstance(result, dict) else len(result) if isinstance(result, list) else 0
-                }
-            
-            elif method_name == "get_genes_by_multiple_genomes_and_string":
+            if method_name == "get_genes_by_multiple_genomes_and_string":
                 # Create advanced search query schema
+                # Build filter string from individual parameters
+                filter_parts = []
+                if interpreted_query.get("filter"):
+                    filter_parts.append(interpreted_query.get("filter"))
+                if interpreted_query.get("essentiality"):
+                    filter_parts.append(f"essentiality:{interpreted_query.get('essentiality')}")
+                if interpreted_query.get("has_amr_info") is not None:
+                    filter_parts.append(f"has_amr_info:{str(interpreted_query.get('has_amr_info')).lower()}")
+                
+                filter_string = ";".join(filter_parts) if filter_parts else None
+                
                 advanced_params = GeneAdvancedSearchQuerySchema(
                     isolates=interpreted_query.get("isolates", ""),
                     species_acronym=interpreted_query.get("species_acronym"),
                     query=interpreted_query.get("query", ""),
-                    filter=interpreted_query.get("filter"),
+                    filter=filter_string,
                     filter_operators=interpreted_query.get("filter_operators"),
                     page=interpreted_query.get("page", 1),
                     per_page=interpreted_query.get("per_page", 50),
@@ -205,18 +193,9 @@ class NaturalLanguageQueryService:
         Returns:
             String indicating the API method to use
         """
-        # Check if we have faceted search parameters
-        faceted_params = [
-            "essentiality", "cog_id", "cog_funcats", "kegg", "go_term", 
-            "pfam", "interpro", "has_amr_info"
-        ]
-        
-        has_faceted_params = any(interpreted_query.get(param) for param in faceted_params)
         has_species = bool(interpreted_query.get("species_acronym"))
         
-        if has_faceted_params and has_species:
-            return "get_faceted_search"
-        elif has_species:
+        if has_species:
             return "get_genes_by_multiple_genomes_and_string"
         else:
             return "search_genes"
