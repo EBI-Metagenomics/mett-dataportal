@@ -5,8 +5,8 @@ resources:
   - mett-dataportal-namespace.yaml
   - mett-dataportal-ingress.yaml
   - mett-app-config.yaml
-#  - mett-pyhmmer-pv.yaml
-#  - mett-pyhmmer-pvc.yaml
+  - mett-pyhmmer-pv.yaml
+  - mett-pyhmmer-pvc.yaml
 #  - mett-redis.yaml
   - mett-dataportal-api-deployment.yaml
   - mett-dataportal-app-deployment.yaml
