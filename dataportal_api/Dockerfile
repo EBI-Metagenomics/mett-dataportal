@@ -5,17 +5,21 @@ ENV UV_LINK_MODE=copy
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
+COPY  dataportal_api/pyproject.toml  dataportal_api/uv.lock ./
 
 # Install prod dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install -r uv.lock --no-dev
 
 # copy app
-COPY . .
+COPY dataportal_api/dataportal /app/dataportal
+COPY dataportal_api/pyhmmer_search /app/pyhmmer_search
+COPY dataportal_api/manage.py /app/
 
 # Optional: collect static files
-RUN python manage.py collectstatic --noinput
+RUN mkdir -p /app/staticfiles
+RUN python manage.py collectstatic --noinput --verbosity=2
+RUN ls -la /app/staticfiles/ninja/ || echo "Static files not found"
 
 # Final runtime image
 FROM python:3.13-bookworm
