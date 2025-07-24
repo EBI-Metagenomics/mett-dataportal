@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS builder
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS builder
 
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
@@ -28,7 +28,7 @@ RUN uv run python manage.py collectstatic --noinput --verbosity=2
 RUN ls -la /app/staticfiles/ninja/ || echo "Static files not found"
 
 # Final runtime image
-FROM python:3.13-bookworm
+FROM python:3.13-slim
 
 WORKDIR /app
 
