@@ -9,12 +9,13 @@ def init_es_connection(host, user, password, timeout, max_retries):
     connections.create_connection(
         hosts=[host],
         basic_auth=(user, password),
-        timeout=timeout,
         max_retries=max_retries,
         retry_on_timeout=True,
-        # Keep-alive tuning
-        sniff_on_connection_fail=True,
         sniff_on_start=False,
-        sniffer_timeout=60.0,
+        sniff_on_connection_fail=False,
         http_compress=True,
+        request_timeout=timeout,
+        connections_per_node=10,
+        retry_on_status=[429, 500, 502, 503, 504],
     )
+

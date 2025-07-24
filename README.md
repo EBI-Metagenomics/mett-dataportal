@@ -21,18 +21,24 @@ etc.) .
   compatibility issues.
 - You can download the latest version [here](https://www.python.org/downloads/).
 
-### In Development - Intermediate Stage
+### Development Environment
 
-#### Development Environment
-
-Dependencies installation -
+#### Dependencies installation -
 
 ```shell
-pip install -r requirements-dev.txt
-pre-commit install
+$ uv pip compile pyproject.toml --group dev --generate-hashes > uv.lock
+$ uv pip install -r uv.lock
+$ uv pip install -r uv.lock  --no-dev (for production)
+$ pre-commit install
 ```
 
-#### Steps to bring up the local environment
+#### Local Docker container 
+```shell
+$ docker build -t mett-dataportal:dev-test -f dataportal_api/Dockerfile .
+$ docker run --rm -it -p 8000:8000 mett-dataportal:dev
+```
+
+### Steps to bring up the local environment
 
 - [X] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
 - [X] Use import scripts to import the data from FTP server.
@@ -42,16 +48,13 @@ pre-commit install
 - [X] Run djando sever ```python manage.py runserver```
 - [X] Run react **./dataportal-app** app using ```npm start```
 
-#### Configuration
+### Configuration
 
 We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config files.
 
 - `config/local.env` as a convenience for env vars.
 
-#### Import Species, Strains and Annotations
-
-Scripts -
-
+### Import Species, Strains and Annotations
 
 #### Elasticsearch Database setup
 ```shell
@@ -89,8 +92,8 @@ To manually run them:
 #### Testing
 
 ```shell
-pip install -r requirements-dev.txt
-pytest
+$ uv lock
+$ pytest
 
 # Run all service tests
 pytest dataportal/tests/services/ -v

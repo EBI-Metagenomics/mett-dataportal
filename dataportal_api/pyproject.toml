@@ -1,0 +1,57 @@
+[project]
+name = "mett-dataportal"
+version = "0.1.0"
+description = "METT Data Portal API and backend services"
+authors = [{ name = "Vikas Gupta", email = "vikasg@ebi.ac.uk" }]
+readme = "README.md"
+requires-python = ">=3.13"
+
+dependencies = [
+    "django==5.2.1",
+    "python-decouple==3.8",
+    "requests==2.32.3",
+    "django-filter==24.2",
+    "django-compressor==4.5.1",
+    "django-ninja==1.4.1",
+    "django-admin-inline-paginator==0.4.0",
+    "django-unfold==0.33.0",
+    "pydantic-settings==2.10.0",
+    "pydantic[email]==2.10.0",
+    "django-sass-processor==1.4.1",
+    "django-cors-headers==4.4.0",
+    "psycopg[binary,pool]==3.2.9",
+    "libsass==0.23.0",
+    "whitenoise==6.7.0",
+    "gunicorn==23.0.0",
+    "cachetools==5.5.0",
+    "elasticsearch-dsl==8.17.1",
+    "django-prometheus==2.3.1",
+    "pyhmmer==0.11.1",
+    "celery[redis]>=5.5.2",
+    "django-celery-results==2.6.0",
+    "django-celery-beat==2.8.1",
+    "biopython==1.85"
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit==4.2.0",
+    "django-debug-toolbar==4.4.6",
+    "pandas==2.2.3",
+    "black==24.10.0",
+    "ruff==0.7.1",
+    "pytest-mock==3.14.0",
+    "pytest==8.3.5",
+    "pytest-django==4.11.1",
+    "factory-boy==3.3.3",
+    "pytest-asyncio==0.26.0",
+    "pytest-cov==4.0.0",
+    "pytest-html==3.2.0",
+    "pytest-env==1.1.5"
+]
+
+[tool.black]
+line-length = 100
+
+[tool.pytest.ini_options]
+addopts = "--reuse-db --ds=dataportal.settings.test"

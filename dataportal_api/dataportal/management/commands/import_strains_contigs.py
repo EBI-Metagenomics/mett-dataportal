@@ -8,13 +8,8 @@ from django.core.management.base import BaseCommand
 from elasticsearch_dsl import connections
 from dataportal.models import StrainDocument
 
-# Load environment variables for Elasticsearch
-ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
-ES_USER = os.getenv("ES_USER")
-ES_PASSWORD = os.getenv("ES_PASSWORD")
-
-# Establish Elasticsearch connection
-connections.create_connection(hosts=[ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
+# Note: Elasticsearch connection is already established in settings.py via elasticsearch_client.py
+# This command uses the existing connection
 
 SPECIES_ACRONYM_MAPPING = {"Bacteroides uniformis": "BU", "Phocaeicola vulgatus": "PV"}
 
