@@ -5,16 +5,18 @@ ENV UV_LINK_MODE=copy
 
 WORKDIR /app
 
-COPY  dataportal_api/pyproject.toml  dataportal_api/uv.lock ./
-
-# Install prod dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install -r uv.lock --no-dev
+    --mount=type=bind,source=dataportal_api/uv.lock,target=uv.lock \
+    --mount=type=bind,source=dataportal_api/pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
 
-# copy app
+# copy app selectively
 COPY dataportal_api/dataportal /app/dataportal
 COPY dataportal_api/pyhmmer_search /app/pyhmmer_search
 COPY dataportal_api/manage.py /app/
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
 # Optional: collect static files
 RUN mkdir -p /app/staticfiles
@@ -28,8 +30,9 @@ WORKDIR /app
 
 COPY --from=builder /app /app
 
-# Set environment path (only if using .venv)
-ENV PATH="/app/.venv/bin:$PATH"
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
