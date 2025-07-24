@@ -8,8 +8,9 @@
 # generated files
 staticfiles
 static/scss/*.css
-__pycache__
-**/*.pyc
+__pycache__/
+.venv/
+*.pyc
 
 # Testing
 .coverage
@@ -55,3 +56,4 @@ Thumbs.db
 .idea/
 ena-browser.iml
 node_modules/
+

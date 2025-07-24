@@ -1,25 +1,32 @@
-FROM python:3.13-slim
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS builder
+
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 
 WORKDIR /app
 
-COPY dataportal_api/requirements.txt /app/
-RUN pip install -r requirements.txt
+COPY pyproject.toml uv.lock ./
 
-COPY dataportal_api/dataportal /app/dataportal
-COPY dataportal_api/pyhmmer_search /app/pyhmmer_search
-COPY dataportal_api/manage.py /app/
+# Install prod dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install -r uv.lock --no-dev
 
-# Create static directory and collect static files
-RUN mkdir -p /app/staticfiles
-RUN python manage.py collectstatic --noinput --verbosity=2
-RUN ls -la /app/staticfiles/ninja/ || echo "Static files not found"
+# copy app
+COPY . .
 
-# Optional: precompile Celery app to speed up container start
-# RUN python -m compileall /app
+# Optional: collect static files
+RUN python manage.py collectstatic --noinput
 
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
+# Final runtime image
+FROM python:3.13-bookworm
+
+WORKDIR /app
+
+COPY --from=builder /app /app
+
+# Set environment path (only if using .venv)
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120", "dataportal.wsgi:application"]
+CMD ["gunicorn", "--bind", ":8000", "--workers=4", "--access-logfile=-", "--log-file=-", "dataportal.wsgi"]

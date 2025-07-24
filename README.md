@@ -28,8 +28,10 @@ etc.) .
 Dependencies installation -
 
 ```shell
-pip install -r requirements-dev.txt
-pre-commit install
+$ uv pip compile pyproject.toml --group dev --generate-hashes > uv.lock
+$ uv pip install -r uv.lock
+$ uv pip install -r uv.lock  --no-dev (for production)
+$ pre-commit install
 ```
 
 #### Steps to bring up the local environment
@@ -89,8 +91,8 @@ To manually run them:
 #### Testing
 
 ```shell
-pip install -r requirements-dev.txt
-pytest
+$ uv pip compile pyproject.toml --group dev --generate-hashes > uv.lock
+$ pytest
 
 # Run all service tests
 pytest dataportal/tests/services/ -v
