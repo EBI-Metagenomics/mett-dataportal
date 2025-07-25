@@ -1,36 +1,73 @@
-from typing import List
+from typing import List, Optional
 
 from asgiref.sync import sync_to_async
 from elasticsearch_dsl import Search
 
 from dataportal.schema.species_schemas import SpeciesSchema
+from dataportal.services.base_service import BaseService
+from dataportal.utils.constants import ES_INDEX_SPECIES
 from dataportal.utils.errors import raise_exception
 
 
-class SpeciesService:
-    INDEX_NAME = "species_index"
+class SpeciesService(BaseService[SpeciesSchema, dict]):
+    """Service for managing species data operations."""
 
-    async def get_all_species(self) -> List[SpeciesSchema]:
-        """Retrieve all species from Elasticsearch."""
+    def __init__(self):
+        super().__init__(ES_INDEX_SPECIES)
+
+    async def get_by_id(self, id: str) -> Optional[SpeciesSchema]:
+        """Retrieve a single species by ID (acronym)."""
         try:
-            search = Search(index=self.INDEX_NAME).query("match_all")
-            response = await sync_to_async(search.execute)()
-
-            return [SpeciesSchema.model_validate(hit.to_dict()) for hit in response]
-        except Exception as e:
-            raise_exception(f"Error retrieving all species: {str(e)}")
-
-    async def get_species_by_acronym(self, acronym: str) -> SpeciesSchema:
-        """Retrieve a single species by acronym from Elasticsearch."""
-        try:
-            search = Search(index=self.INDEX_NAME).query("term", acronym=acronym)
-            response = await sync_to_async(search.execute)()
+            search = self._create_search().query("term", acronym=id)
+            response = await self._execute_search(search)
 
             if not response:
-                raise_exception(
-                    f"Species with acronym {acronym} not found.", status_code=404
-                )
+                return None
 
             return SpeciesSchema.model_validate(response[0].to_dict())
         except Exception as e:
-            raise_exception(f"Error retrieving species by acronym: {str(e)}")
+            self._handle_elasticsearch_error(e, f"get_by_id for species {id}")
+
+    async def get_all(self, **kwargs) -> List[SpeciesSchema]:
+        """Retrieve all species from Elasticsearch."""
+        try:
+            search = self._create_search().query("match_all")
+            response = await self._execute_search(search)
+
+            return [self._convert_hit_to_entity(hit) for hit in response]
+        except Exception as e:
+            self._handle_elasticsearch_error(e, "get_all species")
+
+    async def search(self, query: dict) -> List[SpeciesSchema]:
+        """Search species based on query parameters."""
+        try:
+            search = self._create_search()
+            
+            # Apply search filters if provided
+            if query.get('acronym'):
+                search = search.query("term", acronym=query['acronym'])
+            elif query.get('scientific_name'):
+                search = search.query("match", scientific_name=query['scientific_name'])
+            else:
+                search = search.query("match_all")
+            
+            response = await self._execute_search(search)
+            return [self._convert_hit_to_entity(hit) for hit in response]
+        except Exception as e:
+            self._handle_elasticsearch_error(e, "search species")
+
+    async def get_species_by_acronym(self, acronym: str) -> SpeciesSchema:
+        """Retrieve a single species by acronym from Elasticsearch."""
+        species = await self.get_by_id(acronym)
+        if not species:
+            raise_exception(f"Species with acronym {acronym} not found.")
+        return species
+
+    def _convert_hit_to_entity(self, hit) -> SpeciesSchema:
+        """Convert Elasticsearch hit to SpeciesSchema."""
+        return SpeciesSchema.model_validate(hit.to_dict())
+
+    # Legacy method for backward compatibility
+    async def get_all_species(self) -> List[SpeciesSchema]:
+        """Legacy method - use get_all() instead."""
+        return await self.get_all()

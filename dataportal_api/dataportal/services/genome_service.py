@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List
+from typing import List, Optional, Dict, Any
 
 from asgiref.sync import sync_to_async
 from django.db.models import Q
@@ -17,6 +17,8 @@ from dataportal.schema.genome_schemas import (
     GenomeAutocompleteQuerySchema,
     StrainSuggestionSchema,
 )
+from dataportal.services.base_service import BaseService
+from dataportal.utils.decorators import log_execution_time, cache_result
 from dataportal.unmanaged_models.strain_data import strain_from_hit
 from dataportal.utils.constants import (
     STRAIN_FIELD_ISOLATE_NAME,
@@ -33,11 +35,86 @@ from dataportal.utils.exceptions import ServiceError
 logger = logging.getLogger(__name__)
 
 
-class GenomeService:
+class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
+    """Service for managing genome data operations in the read-only data portal."""
 
     def __init__(self, limit: int = 10):
+        super().__init__(ES_INDEX_STRAIN)
         self.limit = limit
 
+    @log_execution_time
+    async def get_by_id(self, id: str) -> Optional[GenomeResponseSchema]:
+        """Retrieve a single genome by ID."""
+        try:
+            search = self._create_search().query("term", _id=id)
+            response = await self._execute_search(search)
+
+            if not response:
+                return None
+
+            return self._convert_hit_to_entity(response[0])
+        except Exception as e:
+            self._handle_elasticsearch_error(e, f"get_by_id for genome {id}")
+
+    @log_execution_time
+    async def get_all(self, **kwargs) -> List[GenomeResponseSchema]:
+        """Retrieve all genomes with optional filtering."""
+        try:
+            search = self._create_search().query("match_all")
+            
+            # Apply filters if provided
+            if kwargs.get('species'):
+                search = search.filter("term", species_acronym=kwargs['species'])
+            
+            if kwargs.get('isolate_name'):
+                search = search.filter("term", isolate_name=kwargs['isolate_name'])
+            
+            response = await self._execute_search(search)
+            return [self._convert_hit_to_entity(hit) for hit in response]
+        except Exception as e:
+            self._handle_elasticsearch_error(e, "get_all genomes")
+
+    @log_execution_time
+    async def search(self, query: Dict[str, Any]) -> List[GenomeResponseSchema]:
+        """Search genomes based on query parameters."""
+        try:
+            search = self._create_search()
+            
+            # Build search query based on provided parameters
+            if query.get('q'):  # General search
+                search = search.query("multi_match", query=query['q'], 
+                                    fields=['isolate_name', 'species_acronym', 'description'])
+            elif query.get('species'):
+                search = search.query("term", species_acronym=query['species'])
+            elif query.get('isolate_name'):
+                search = search.query("term", isolate_name=query['isolate_name'])
+            else:
+                search = search.query("match_all")
+            
+            # Apply sorting
+            if query.get('sort_by'):
+                sort_field = query['sort_by']
+                sort_order = query.get('sort_order', 'asc')
+                search = search.sort({sort_field: sort_order})
+            
+            # Apply pagination
+            page = query.get('page', 1)
+            page_size = query.get('page_size', 10)
+            start = (page - 1) * page_size
+            search = search[start:start + page_size]
+            
+            response = await self._execute_search(search)
+            return [self._convert_hit_to_entity(hit) for hit in response]
+        except Exception as e:
+            self._handle_elasticsearch_error(e, "search genomes")
+
+    def _convert_hit_to_entity(self, hit) -> GenomeResponseSchema:
+        """Convert Elasticsearch hit to GenomeResponseSchema."""
+        # Convert the hit to a dictionary and validate with the schema
+        hit_dict = hit.to_dict()
+        return GenomeResponseSchema.model_validate(hit_dict)
+
+    # Original methods with minimal changes - keeping existing query logic
     async def get_type_strains(self) -> List[GenomeResponseSchema]:
         return await self._fetch_and_validate_strains(
             filter_criteria={"type_strain": True},

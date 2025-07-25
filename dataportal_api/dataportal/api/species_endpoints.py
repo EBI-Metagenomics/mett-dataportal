@@ -13,8 +13,8 @@ from dataportal.schema.species_schemas import (
     SearchGenomesBySpeciesQuerySchema,
 )
 from ..schema.response_schemas import PaginatedResponseSchema
-from ..services.genome_service import GenomeService
-from ..services.species_service import SpeciesService
+from ..services.service_factory import ServiceFactory
+from ..services.service_factory import ServiceFactory
 from ..utils.errors import raise_http_error, raise_internal_server_error
 from ..utils.exceptions import (
     ServiceError,
@@ -23,8 +23,8 @@ from ..utils.response_wrappers import wrap_paginated_response
 
 logger = logging.getLogger(__name__)
 
-species_service = SpeciesService()
-genome_service = GenomeService()
+species_service = ServiceFactory.get_species_service()
+genome_service = ServiceFactory.get_genome_service()
 
 ROUTER_SPECIES = "Species"
 species_router = Router(tags=[ROUTER_SPECIES])
