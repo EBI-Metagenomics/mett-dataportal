@@ -9,7 +9,9 @@ interface AlignmentTableProps {
 }
 
 export const AlignmentTable: React.FC<AlignmentTableProps> = ({domain}) => {
-    const columns = useMemo<Column<PyhmmerDomain>[]>(() => [
+
+    const columns = useMemo<Column<PyhmmerDomain>[]>(() => {
+        const cols = [
         {
             Header: 'Query',
             columns: [
@@ -89,16 +91,28 @@ export const AlignmentTable: React.FC<AlignmentTableProps> = ({domain}) => {
                 {
                     Header: 'Independent',
                     id: 'ievalue',
-                    accessor: (row: PyhmmerDomain) => row.ievalue.toPrecision(2),
+                    accessor: (row: PyhmmerDomain) => {
+                        if (!row.ievalue) return '-';
+                        // Format E-value in scientific notation for better readability
+                        return row.ievalue < 0.01 ? row.ievalue.toExponential(2) : row.ievalue.toPrecision(2);
+                    },
                 },
                 {
                     Header: 'Conditional',
                     id: 'cevalue',
-                    accessor: (row: PyhmmerDomain) => row.cevalue ? row.cevalue.toPrecision(2) : '-',
+                    accessor: (row: PyhmmerDomain) => {
+                        if (!row.cevalue) return '-';
+                        // Format E-value in scientific notation for better readability
+                        return row.cevalue < 0.01 ? row.cevalue.toExponential(2) : row.cevalue.toPrecision(2);
+                    },
                 },
             ],
         },
-    ], []);
+    ];
+    
+    console.log('Table columns:', cols);
+    return cols;
+    }, []);
 
     const data = useMemo(() => [domain], [domain]);
 
@@ -117,12 +131,13 @@ export const AlignmentTable: React.FC<AlignmentTableProps> = ({domain}) => {
     );
 
     return (
-        <table {...getTableProps()} className="vf-table vf-table--bordered alignment-table">
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table {...getTableProps()} className="vf-table vf-table--bordered alignment-table">
             <thead className="vf-table__header">
             {headerGroups.map((headerGroup, groupIndex) => {
-                const headerProps = headerGroup.getHeaderGroupProps();
+                const { key, ...headerProps } = headerGroup.getHeaderGroupProps();
                 return (
-                    <tr {...headerProps} key={`header-group-${groupIndex}`} className="vf-table__row">
+                    <tr {...headerProps} key={key} className="vf-table__row">
                         {headerGroup.headers.map((column, columnIndex) => {
                             const columnProps = column.getHeaderProps();
                             return (
@@ -131,6 +146,7 @@ export const AlignmentTable: React.FC<AlignmentTableProps> = ({domain}) => {
                                     key={`header-${groupIndex}-${columnIndex}`}
                                     className="vf-table__heading"
                                     colSpan={column.columns?.length || 1}
+                                    data-column-id={column.id}
                                 >
                                     {column.render('Header')}
                                 </th>
@@ -143,14 +159,19 @@ export const AlignmentTable: React.FC<AlignmentTableProps> = ({domain}) => {
             <tbody {...getTableBodyProps()} className="vf-table__body">
             {rows.map((row: Row<PyhmmerDomain>, rowIndex) => {
                 prepareRow(row);
-                const rowProps = row.getRowProps();
+                const { key, ...rowProps } = row.getRowProps();
                 return (
-                    <React.Fragment key={`row-${rowIndex}`}>
+                    <React.Fragment key={key}>
                         <tr {...rowProps} className="vf-table__row">
                             {row.cells.map((cell, cellIndex) => {
                                 const cellProps = cell.getCellProps();
                                 return (
-                                    <td {...cellProps} key={`cell-${rowIndex}-${cellIndex}`} className="vf-table__cell">
+                                    <td 
+                                        {...cellProps} 
+                                        key={`cell-${rowIndex}-${cellIndex}`} 
+                                        className="vf-table__cell"
+                                        data-column-id={cell.column.id}
+                                    >
                                         {cell.render('Cell')}
                                     </td>
                                 );
@@ -172,6 +193,7 @@ export const AlignmentTable: React.FC<AlignmentTableProps> = ({domain}) => {
             })}
             </tbody>
         </table>
+        </div>
     );
 };
 

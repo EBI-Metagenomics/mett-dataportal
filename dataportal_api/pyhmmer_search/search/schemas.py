@@ -180,20 +180,17 @@ class SearchRequestSchema(ModelSchema):
                 "invalid_input", "Sequence must be at least 10 characters long"
             )
 
-        # Detect sequence type and validate characters
         sequence_upper = sequence.upper()
 
-        # Define valid characters for different sequence types
         protein_chars = set("ACDEFGHIKLMNPQRSTVWY*")
         dna_chars = set("ACGTN")
         rna_chars = set("ACGUN")
 
-        # Remove whitespace and gap characters for strict DNA/RNA check
         seq_strict = "".join(
             c for c in sequence_upper if c not in {" ", "\n", "\r", "\t", "-"}
         )
 
-        # Strict DNA/RNA detection: if all characters are DNA or all are RNA, reject
+        # if all characters are DNA or all are RNA, reject
         if seq_strict and all(c in dna_chars for c in seq_strict):
             raise PydanticCustomError(
                 "invalid_input",
@@ -231,22 +228,17 @@ class SearchRequestSchema(ModelSchema):
                 f"Valid characters are: A-Z (amino acids), A/C/G/T/N (DNA), A/C/G/U/N (RNA)",
             )
 
-        # Determine sequence type and provide appropriate warnings
         if protein_pct >= 0.8:
-            # Protein sequence - this is what we expect for PyHMMER
             if protein_pct < 1.0:
-                # Some non-protein characters detected
                 logger.warning(
                     f"Protein sequence contains some non-standard amino acids. Protein percentage: {protein_pct:.1%}"
                 )
         elif dna_pct >= 0.8:
-            # DNA sequence detected (fallback)
             raise PydanticCustomError(
                 "invalid_input",
                 "DNA sequence detected. Please provide a protein sequence in FASTA format. If you have a DNA sequence, translate it to protein first.",
             )
         elif rna_pct >= 0.8:
-            # RNA sequence detected (fallback)
             raise PydanticCustomError(
                 "invalid_input",
                 "RNA sequence detected. Please provide a protein sequence in FASTA format. If you have an RNA sequence, translate it to protein first.",
@@ -390,8 +382,6 @@ class DomainDetailsResponseSchema(Schema):
 
 
 class AlignmentDetailsResponseSchema(Schema):
-    """Response schema for detailed alignment information"""
-
     status: str = Field(..., description="Status of the request")
     target: str = Field(..., description="Target sequence name")
     domain_index: Optional[int] = Field(None, description="Index of the domain")

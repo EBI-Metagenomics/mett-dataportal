@@ -2,6 +2,8 @@
   width: 100%;
   margin: 16px 0;
   border-collapse: collapse;
+  table-layout: auto;
+  min-width: 1200px; // Ensure table has enough width for all columns
 
   .vf-table__header {
     background-color: #f8f9fa;
@@ -52,6 +54,26 @@
       padding: 0;
       border: none;
     }
+  }
+
+  // E-value column styling - subtle and professional
+  .vf-table__cell[data-column-id="ievalue"],
+  .vf-table__cell[data-column-id="cevalue"] {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #495057;
+    background-color: #f8f9fa;
+    font-weight: 500;
+    min-width: 120px; // Ensure minimum width
+  }
+
+  // E-value header styling - subtle and professional
+  .vf-table__heading[data-column-id="ievalue"],
+  .vf-table__heading[data-column-id="cevalue"] {
+    background-color: #e9ecef;
+    font-weight: 600;
+    color: #343a40;
+    min-width: 120px; // Ensure minimum width
   }
 }
 

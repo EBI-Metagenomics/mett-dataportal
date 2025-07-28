@@ -2,15 +2,15 @@
   font-family: 'Courier New', monospace;
   font-size: 12px;
   line-height: 1.4;
-  background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 4px;
   padding: 16px;
   margin: 8px 0;
+  background-color: white;
 
   &.excluded {
     opacity: 0.6;
-    background-color: #f1f3f4;
+    background-color: white;
   }
 
   .alignment-header {
@@ -72,7 +72,7 @@
           white-space: pre-wrap;
           word-break: break-all;
           overflow-wrap: break-word;
-          max-width: 100%;
+          color: #333;
         }
       }
 
@@ -82,53 +82,28 @@
         }
 
         .match-text {
-          color: #28a745;
+          color: #28a745; // Green color for matches
           font-weight: bold;
+          font-size: 12px; // Standard size
+        }
+      }
+
+      &.position-marker-line {
+        .sequence-info {
+          min-width: 120px;
+        }
+
+        .position-marker {
+          color: #495057; // Darker grey color for position markers
+          font-size: 12px; // Same font size as sequence
+          font-weight: normal;
+          letter-spacing: 0; // Ensure consistent character spacing
         }
       }
     }
   }
 
-  .posterior-probabilities {
-    display: flex;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #dee2e6;
 
-    .sequence-info {
-      display: flex;
-      flex-direction: column;
-      min-width: 120px;
-      margin-right: 12px;
-
-      .sequence-name {
-        font-weight: bold;
-        color: #495057;
-        font-size: 11px;
-      }
-
-      .sequence-position {
-        color: #6c757d;
-        font-size: 10px;
-      }
-    }
-
-    .sequence-data {
-      flex: 1;
-
-      .pp-text {
-        margin: 0;
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
-        line-height: 1.2;
-        white-space: pre-wrap;
-        word-break: break-all;
-        overflow-wrap: break-word;
-        max-width: 100%;
-        color: #007bff;
-      }
-    }
-  }
 
   .alignment-error {
     color: #dc3545;

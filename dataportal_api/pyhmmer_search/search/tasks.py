@@ -1,5 +1,7 @@
 import json
 import logging
+import re
+import uuid
 from typing import Optional
 
 from Bio import pairwise2
@@ -9,7 +11,6 @@ from django_celery_results.models import TaskResult
 from pyhmmer.easel import DigitalSequenceBlock
 from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
 from pyhmmer.plan7 import Pipeline, Background, Builder
-import re
 
 from dataportal import settings
 from .models import HmmerJob
@@ -19,13 +20,13 @@ from .schemas import (
     DomainSchema,
     HitSchema,
 )
+from .utils import calculate_identity_and_similarity_from_sequences, create_match_line, calculate_identity_and_similarity_from_match_line
 
 logger = logging.getLogger(__name__)
 
 
 def _log_query_sequences(raw_bytes):
     try:
-        # For pyhmmer 0.11+, TextSequence.sequence is str
         lines = raw_bytes.decode().strip().splitlines()
         name = lines[0].lstrip(">").encode()
         sequence = "".join(lines[1:])
@@ -38,7 +39,6 @@ def _log_query_sequences(raw_bytes):
 
 
 def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
-    """Extract alignment data from pyhmmer.plan7.Alignment object"""
     try:
         if alignment is None:
             return None
@@ -52,7 +52,7 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
             hmm_accession=(
                 alignment.hmm_accession.decode()
                 if alignment.hmm_accession
-                and hasattr(alignment.hmm_accession, "decode")
+                   and hasattr(alignment.hmm_accession, "decode")
                 else str(alignment.hmm_accession) if alignment.hmm_accession else None
             ),
             hmm_from=alignment.hmm_from,
@@ -77,24 +77,23 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
 
 
 def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDisplay]:
-    """Create legacy alignment display from pyhmmer alignment for backward compatibility"""
     try:
         if alignment is None:
             return None
 
-        # Calculate identity by comparing the actual sequences
-        # PyHMMER provides the sequences in different cases, so we need to compare them case-insensitively
-        hmm_seq = alignment.hmm_sequence.lower()
-        target_seq = alignment.target_sequence.lower()
-
-        # Count matches (identical characters, ignoring gaps)
-        matches = sum(1 for a, b in zip(hmm_seq, target_seq) if a == b and a != "-")
-        total_positions = len(hmm_seq)
-        identity_pct = matches / total_positions if total_positions > 0 else 0
-
-        # Create match line showing matches with '|' and mismatches with spaces
-        mline = "".join(
-            "|" if a == b and a != "-" else " " for a, b in zip(hmm_seq, target_seq)
+        # Create our own match line from the sequences
+        mline = create_match_line(alignment.hmm_sequence, alignment.target_sequence)
+        logger.info(f"Created match line: '{mline}' (length: {len(mline)})")
+        logger.info(f"HMM sequence: '{alignment.hmm_sequence}' (length: {len(alignment.hmm_sequence)})")
+        logger.info(f"Target sequence: '{alignment.target_sequence}' (length: {len(alignment.target_sequence)})")
+        
+        # Calculate identity and similarity using our match line
+        (identity_pct, number_of_identical), (similarity_pct, number_of_identical_and_similar) = (
+            calculate_identity_and_similarity_from_match_line(
+                alignment.hmm_sequence, 
+                mline, 
+                alignment.target_sequence
+            )
         )
 
         return LegacyAlignmentDisplay(
@@ -106,8 +105,8 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
             aseq=alignment.target_sequence,
             mline=mline,
             ppline=getattr(alignment, "posterior_probabilities", None),
-            identity=(identity_pct, matches),
-            similarity=(identity_pct, matches),  # For now, similarity = identity
+            identity=(identity_pct, number_of_identical),
+            similarity=(similarity_pct, number_of_identical_and_similar),
         )
     except Exception as e:
         logger.warning(f"Failed to create legacy alignment display: {e}")
@@ -122,9 +121,7 @@ def run_search(self, job_id: str):
     logger.info(f"Task ID: {task_id}")
     logger.info(f"Celery task ID: {self.request.id}")
 
-    # Validate job_id format
     try:
-        import uuid
 
         job_uuid = uuid.UUID(job_id)
         logger.info(f"Job ID validated as UUID: {job_uuid}")
@@ -197,8 +194,8 @@ def run_search(self, job_id: str):
                         logger.error("Available jobs in database:")
                         try:
                             all_jobs = HmmerJob.objects.all()[
-                                :10
-                            ]  # Get first 10 jobs for debugging
+                                       :10
+                                       ]
                             for j in all_jobs:
                                 logger.error(f"  - Job ID: {j.id}, Created: {j.pk}")
                         except Exception as e:
@@ -366,7 +363,7 @@ def run_search(self, job_id: str):
 
         logger.info("Processing individual hits...")
         for i, hit in enumerate(hit_list):
-            logger.info(f"Processing hit {i+1}/{len(hit_list)}: {hit.name.decode()}")
+            logger.info(f"Processing hit {i + 1}/{len(hit_list)}: {hit.name.decode()}")
             logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
 
             domains = []
@@ -412,6 +409,9 @@ def run_search(self, job_id: str):
                         if alignments:
                             aln = alignments[0]
                             aligned_query, aligned_target, score, begin, end = aln
+                            
+                            identity_sequence = create_match_line(aligned_query, aligned_target)
+                            
                             pyhmmer_alignment = PyhmmerAlignmentSchema(
                                 hmm_name=name.decode(),
                                 hmm_accession=None,
@@ -424,10 +424,7 @@ def run_search(self, job_id: str):
                                 target_to=len(target_seq_str),
                                 target_length=len(target_seq_str),
                                 target_sequence=aligned_target,
-                                identity_sequence="".join(
-                                    "|" if a == b else " "
-                                    for a, b in zip(aligned_query, aligned_target)
-                                ),
+                                identity_sequence=identity_sequence,
                                 posterior_probabilities=None,
                             )
                         legacy_alignment = parse_biopython_alignment(
@@ -454,9 +451,9 @@ def run_search(self, job_id: str):
 
             first_domain_seq = None
             if (
-                domains
-                and domains[0].alignment
-                and domains[0].alignment.target_sequence
+                    domains
+                    and domains[0].alignment
+                    and domains[0].alignment.target_sequence
             ):
                 first_domain_seq = domains[0].alignment.target_sequence.replace("-", "")
 
@@ -487,16 +484,16 @@ def run_search(self, job_id: str):
             logger.info(f"Hit bit score: {hit.score}")
 
             if (
-                job.threshold == HmmerJob.ThresholdChoices.EVALUE
-                and hit.evalue < job.threshold_value
+                    job.threshold == HmmerJob.ThresholdChoices.EVALUE
+                    and hit.evalue < job.threshold_value
             ):
                 logger.info(
                     f"Hit passes EVALUE filter: {hit.evalue} < {job.threshold_value}"
                 )
                 results.append(hit_obj)
             elif (
-                job.threshold == HmmerJob.ThresholdChoices.BITSCORE
-                and hit.score > job.threshold_value
+                    job.threshold == HmmerJob.ThresholdChoices.BITSCORE
+                    and hit.score > job.threshold_value
             ):
                 logger.info(
                     f"Hit passes BITSCORE filter: {hit.score} > {job.threshold_value}"
@@ -651,7 +648,7 @@ def test_task(self):
 
 
 def parse_biopython_alignment(
-    query: str, target: str
+        query: str, target: str
 ) -> Optional[LegacyAlignmentDisplay]:
     """Create legacy alignment display using Biopython for phmmer cases"""
     try:
@@ -660,10 +657,7 @@ def parse_biopython_alignment(
             return None
         aln = alignments[0]
         aligned_query, aligned_target, score, begin, end = aln
-        mline = "".join(
-            "|" if a == b and a != "-" else " "
-            for a, b in zip(aligned_query, aligned_target)
-        )
+        mline = create_match_line(aligned_query, aligned_target)
 
         def first_non_gap(seq):
             for i, c in enumerate(seq):
@@ -682,15 +676,9 @@ def parse_biopython_alignment(
         sqfrom = first_non_gap(aligned_target) + 1
         sqto = last_non_gap(aligned_target) + 1
 
-        # Calculate identity based on the aligned sequences
-        matches = sum(
-            1 for a, b in zip(aligned_query, aligned_target) if a == b and a != "-"
+        (identity_pct, number_of_identical), (similarity_pct, number_of_identical_and_similar) = (
+            calculate_identity_and_similarity_from_sequences(aligned_query, aligned_target)
         )
-        # Count non-gap positions in aligned sequences
-        non_gap_positions = sum(
-            1 for a, b in zip(aligned_query, aligned_target) if a != "-" and b != "-"
-        )
-        identity_pct = matches / non_gap_positions if non_gap_positions > 0 else 0
 
         return LegacyAlignmentDisplay(
             hmmfrom=hmmfrom,
@@ -701,8 +689,8 @@ def parse_biopython_alignment(
             aseq=aligned_target,
             mline=mline,
             ppline=None,
-            identity=(identity_pct, matches),
-            similarity=(identity_pct, matches),
+            identity=(identity_pct, number_of_identical),
+            similarity=(similarity_pct, number_of_identical_and_similar),
         )
     except Exception as e:
         logger.warning(f"Biopython alignment parsing failed: {e}")
