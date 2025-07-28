@@ -28,7 +28,7 @@ export interface PyhmmerAlignment {
     posterior_probabilities?: string;
 }
 
-export interface LegacyAlignmentDisplay {
+export interface AlignmentDisplay {
     hmmfrom: number;
     hmmto: number;
     sqfrom: number;
@@ -50,7 +50,7 @@ export interface PyhmmerDomain {
     bias?: number;
     strand?: string;
     alignment?: PyhmmerAlignment;
-    alignment_display?: LegacyAlignmentDisplay;
+    alignment_display?: AlignmentDisplay;
 }
 
 export interface PyhmmerResult {

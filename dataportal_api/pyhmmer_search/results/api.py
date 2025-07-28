@@ -84,7 +84,6 @@ def download_results(request, id: uuid.UUID, format: str):
             if isinstance(content, str):
                 content = content.encode("utf-8")
 
-            # Test decompression to verify the content is valid
             try:
                 test_decompressed = gzip.decompress(content)
                 logger.info(
@@ -161,10 +160,9 @@ def generate_tsv_content(results):
         evalue = hit.get("evalue", "")
         score = hit.get("score", "")
 
-        # Get domain information if available
         domains = hit.get("domains", [])
         if domains:
-            domain = domains[0]  # Use first domain
+            domain = domains[0]
             bias = domain.get("bias", "")
             env_from = domain.get("env_from", "")
             env_to = domain.get("env_to", "")
@@ -232,10 +230,8 @@ def fetch_sequence_from_database(target_name: str, db_path: str) -> str:
     try:
         from pyhmmer.easel import SequenceFile, SSIReader
 
-        # Check if SSI index exists
         ssi_path = f"{db_path}.ssi"
         if os.path.exists(ssi_path):
-            # Use SSI for fast lookup
             with SSIReader(ssi_path) as ssi_reader:
                 try:
                     entry = ssi_reader.find_name(target_name.encode())
@@ -317,7 +313,7 @@ def fetch_sequence_chunk(db_path: str, target_names: List[str]) -> dict:
 
 
 def fetch_sequences_parallel(
-    target_names: List[str], db_path: str, max_workers: int = 4, chunk_size: int = 1000
+        target_names: List[str], db_path: str, max_workers: int = 4, chunk_size: int = 1000
 ) -> dict:
     """Fetch multiple sequences in parallel using chunked approach"""
     if not target_names:
@@ -325,7 +321,7 @@ def fetch_sequences_parallel(
 
     # Split targets into chunks
     chunks = [
-        target_names[i : i + chunk_size]
+        target_names[i: i + chunk_size]
         for i in range(0, len(target_names), chunk_size)
     ]
     logger.info(
@@ -359,7 +355,6 @@ def generate_enhanced_fasta_content(results, db_path: str, query_input: str):
     """Generate enhanced FASTA content with actual sequences from database"""
     output = io.StringIO()
 
-    # Extract target names
     target_names = [hit.get("target", "") for hit in results if hit.get("target")]
     logger.info(f"Generating FASTA for {len(target_names)} targets")
 
@@ -397,18 +392,16 @@ def generate_enhanced_fasta_content(results, db_path: str, query_input: str):
             output.write(f">{target} {description}\n")
             if sequence:
                 for i in range(0, len(sequence), 60):
-                    output.write(sequence[i : i + 60] + "\n")
+                    output.write(sequence[i: i + 60] + "\n")
                 logger.debug(f"Used fallback sequence for {target}")
             else:
                 output.write("N/A\n")
                 logger.warning(f"No sequence found for {target}")
 
-    # Get the content and log its size
     content = output.getvalue()
     logger.info(f"Generated FASTA content size: {len(content)} characters")
     logger.debug(f"FASTA content preview: {content[:500]}...")
 
-    # Validate FASTA format
     if not validate_fasta_content(content):
         logger.error("Generated FASTA content is not properly formatted!")
         # Try to fix common issues
@@ -416,21 +409,14 @@ def generate_enhanced_fasta_content(results, db_path: str, query_input: str):
         if not validate_fasta_content(content):
             logger.error("Failed to fix FASTA content format")
 
-    # Compress the content using modern gzip approach
     try:
-        # Log the content before compression
-        logger.info(f"Content to compress: {len(content)} characters")
-        logger.debug(f"Content preview: {content[:200]}...")
 
-        # Encode to bytes
         content_bytes = content.encode("utf-8")
         logger.info(f"Encoded content size: {len(content_bytes)} bytes")
 
-        # Compress
         compressed_content = gzip.compress(content_bytes)
         logger.info(f"Compressed FASTA size: {len(compressed_content)} bytes")
 
-        # Test decompression to verify it works
         try:
             decompressed = gzip.decompress(compressed_content).decode("utf-8")
             if decompressed == content:
@@ -445,7 +431,6 @@ def generate_enhanced_fasta_content(results, db_path: str, query_input: str):
         return compressed_content
     except Exception as e:
         logger.error(f"Error compressing FASTA content: {e}")
-        # Fallback: return uncompressed content
         logger.warning("Returning uncompressed content due to compression error")
         return content.encode("utf-8")
 
@@ -456,18 +441,16 @@ def validate_fasta_content(content: str) -> bool:
     if not lines:
         return False
 
-    # Check if it starts with a header
     if not lines[0].startswith(">"):
         logger.error("FASTA content doesn't start with '>'")
         return False
 
-    # Check for alternating headers and sequences
     for i, line in enumerate(lines):
-        if i % 2 == 0:  # Even lines should be headers
+        if i % 2 == 0:
             if not line.startswith(">"):
                 logger.error(f"Line {i + 1} should be a header but isn't: {line[:50]}")
                 return False
-        else:  # Odd lines should be sequences
+        else:
             if line.startswith(">"):
                 logger.error(
                     f"Line {i + 1} should be a sequence but is a header: {line[:50]}"
@@ -520,7 +503,6 @@ def fix_fasta_content(content: str) -> str:
 
 def generate_enhanced_aligned_fasta_content(results, db_path: str, query_input: str):
     """Generate enhanced aligned FASTA content using PyHMMER's hmmalign for proper MSA"""
-    # First try the PyHMMER MSA approach
     logger.info("Trying PyHMMER MSA generation first...")
     try:
         return generate_pyhmmer_msa_content(results, db_path, query_input)
@@ -587,7 +569,7 @@ def generate_enhanced_aligned_fasta_content(results, db_path: str, query_input: 
                     logger.debug(f"Domain for {target}: {env_from}-{env_to}")
 
                     # Extract domain sequence
-                    domain_sequence = full_sequence[env_from - 1 : env_to]
+                    domain_sequence = full_sequence[env_from - 1: env_to]
 
                     if domain_sequence:
                         alignment_sequences.append(
@@ -736,12 +718,12 @@ def generate_pyhmmer_msa_content(results, db_path: str, query_input: str):
                         logger.debug(
                             f"Using alignment coordinates for {target}: {target_from}-{target_to}"
                         )
-                        domain_sequence = full_sequence[target_from - 1 : target_to]
+                        domain_sequence = full_sequence[target_from - 1: target_to]
                     else:
                         logger.debug(
                             f"Using envelope coordinates for {target}: {env_from}-{env_to}"
                         )
-                        domain_sequence = full_sequence[env_from - 1 : env_to]
+                        domain_sequence = full_sequence[env_from - 1: env_to]
 
                     # Try to extract a larger region to see differences
                     # Add 50 amino acids on each side if possible
@@ -751,7 +733,7 @@ def generate_pyhmmer_msa_content(results, db_path: str, query_input: str):
                     extended_to = min(
                         len(full_sequence), (target_to if alignment else env_to) + 50
                     )
-                    extended_sequence = full_sequence[extended_from - 1 : extended_to]
+                    extended_sequence = full_sequence[extended_from - 1: extended_to]
 
                     logger.debug(
                         f"Extended region for {target}: {extended_from}-{extended_to} (length: {len(extended_sequence)})"
@@ -872,7 +854,7 @@ def generate_pyhmmer_msa_content(results, db_path: str, query_input: str):
         import tempfile
 
         with tempfile.NamedTemporaryFile(
-            mode="wb", suffix=".afa", delete=False
+                mode="wb", suffix=".afa", delete=False
         ) as temp_file:
             msa.write(temp_file, "afa")
             temp_file.flush()
@@ -932,7 +914,7 @@ def convert_stockholm_to_fasta(stockholm_content: str) -> str:
         fasta_lines.append(f">{seq_name}")
         # Write sequence in 60-character lines
         for i in range(0, len(sequence), 60):
-            fasta_lines.append(sequence[i : i + 60])
+            fasta_lines.append(sequence[i: i + 60])
 
     return "\n".join(fasta_lines) + "\n"
 
@@ -992,7 +974,7 @@ def generate_simple_msa_content(results, db_path: str, query_input: str):
             # Write the aligned sequence with gaps
             aligned_seq = seq_info["target_seq"]
             for i in range(0, len(aligned_seq), 60):
-                output.write(aligned_seq[i : i + 60] + "\n")
+                output.write(aligned_seq[i: i + 60] + "\n")
 
         content = output.getvalue()
         logger.info(f"Generated simple MSA with {len(aligned_sequences)} sequences")
@@ -1050,23 +1032,23 @@ def generate_fallback_aligned_fasta_content(results, db_path: str, query_input: 
                 output.write(f">{target}_query {description}\n")
                 if query_seq:
                     for i in range(0, len(query_seq), 60):
-                        output.write(query_seq[i : i + 60] + "\n")
+                        output.write(query_seq[i: i + 60] + "\n")
                 else:
                     output.write("N/A\n")
 
                 output.write(f">{target}_target {description}\n")
                 if target_seq:
                     for i in range(0, len(target_seq), 60):
-                        output.write(target_seq[i : i + 60] + "\n")
+                        output.write(target_seq[i: i + 60] + "\n")
                 else:
                     output.write("N/A\n")
 
                 if identity_seq:
                     output.write(f">{target}_identity {description}\n")
                     for i in range(0, len(identity_seq), 60):
-                        output.write(identity_seq[i : i + 60] + "\n")
+                        output.write(identity_seq[i: i + 60] + "\n")
             elif alignment_display:
-                # Use legacy alignment display data
+                # Use simple alignment display data
                 query_seq = alignment_display.get("model", "")
                 target_seq = alignment_display.get("aseq", "")
                 match_line = alignment_display.get("mline", "")
@@ -1074,21 +1056,21 @@ def generate_fallback_aligned_fasta_content(results, db_path: str, query_input: 
                 output.write(f">{target}_query {description}\n")
                 if query_seq:
                     for i in range(0, len(query_seq), 60):
-                        output.write(query_seq[i : i + 60] + "\n")
+                        output.write(query_seq[i: i + 60] + "\n")
                 else:
                     output.write("N/A\n")
 
                 output.write(f">{target}_target {description}\n")
                 if target_seq:
                     for i in range(0, len(target_seq), 60):
-                        output.write(target_seq[i : i + 60] + "\n")
+                        output.write(target_seq[i: i + 60] + "\n")
                 else:
                     output.write("N/A\n")
 
                 if match_line:
                     output.write(f">{target}_match {description}\n")
                     for i in range(0, len(match_line), 60):
-                        output.write(match_line[i : i + 60] + "\n")
+                        output.write(match_line[i: i + 60] + "\n")
             else:
                 # No alignment data - try to get full sequence from database
                 if target in sequences and sequences[target]:
@@ -1367,7 +1349,6 @@ def get_domains_by_target(request, id: uuid.UUID, target: str):
         domains = target_data.get("domains", [])
         logger.info(f"Found {len(domains)} domains for target {target}")
 
-        # Return the data directly - the frontend will treat this as a legacy response
         return {"target": target_data.get("target", ""), "domains": domains}
 
     except HttpError:
@@ -1456,7 +1437,7 @@ def get_alignment_details(request, id: uuid.UUID, domain_index: int):
             "target": target_data.get("target", ""),
             "domain_index": domain_index,
             "alignment": domain.get("alignment"),
-            "legacy_alignment": domain.get("alignment_display"),
+            "simple_alignment": domain.get("alignment_display"),
         }
 
     except Exception as e:

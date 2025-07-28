@@ -7,12 +7,15 @@ from ninja import Schema, Field
 from pydantic import UUID4, field_validator
 from pydantic import model_validator
 
+from ..constants import MX_CHOICES_LITERAL, DEFAULT_MX
 from ..search.models import HmmerJob, Database
 from ..search.schemas import (
     PyhmmerAlignmentSchema,
-    LegacyAlignmentDisplay,
+    AlignmentDisplay,
     DomainSchema,
 )
+
+MXChoicesType = Literal[MX_CHOICES_LITERAL]
 
 
 class TaskResultSchema(ModelSchema):
@@ -101,9 +104,7 @@ class CutOffSchema(Schema):
 class GapPenaltiesSchema(Schema):
     popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
     pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
-    mx: Optional[
-        Literal["BLOSUM62", "BLOSUM45", "BLOSUM90", "PAM30", "PAM70", "PAM250"]
-    ] = "BLOSUM62"
+    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
 
 
 class ResultQuerySchema(Schema):
@@ -130,6 +131,6 @@ class AlignmentDetailsResponseSchema(Schema):
     alignment: Optional[PyhmmerAlignmentSchema] = Field(
         None, description="PyHMMER alignment data"
     )
-    legacy_alignment: Optional[LegacyAlignmentDisplay] = Field(
-        None, description="Legacy alignment display"
+    simple_alignment: Optional[AlignmentDisplay] = Field(
+        None, description="Simple alignment display for UI"
     )

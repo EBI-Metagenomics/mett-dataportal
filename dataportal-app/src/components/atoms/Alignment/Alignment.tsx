@@ -1,9 +1,9 @@
 import React from 'react';
-import {LegacyAlignmentDisplay} from '../../../interfaces/Pyhmmer';
+import {AlignmentDisplay} from '../../../interfaces/Pyhmmer';
 import './Alignment.scss';
 
 interface AlignmentProps {
-    alignment: LegacyAlignmentDisplay;
+    alignment: AlignmentDisplay;
     algorithm: string;
     included?: boolean;
 }

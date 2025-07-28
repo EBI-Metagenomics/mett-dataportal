@@ -64,10 +64,7 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
         return species
 
     def _convert_hit_to_entity(self, hit) -> SpeciesSchema:
-        """Convert Elasticsearch hit to SpeciesSchema."""
         return SpeciesSchema.model_validate(hit.to_dict())
 
-    # Legacy method for backward compatibility
     async def get_all_species(self) -> List[SpeciesSchema]:
-        """Legacy method - use get_all() instead."""
         return await self.get_all()

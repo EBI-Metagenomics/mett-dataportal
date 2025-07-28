@@ -1,17 +1,15 @@
 import datetime
 import uuid
+
 from django.db import models
 from django_celery_results.models import TaskResult
 
+from ..constants import DEFAULT_MX, MX_CHOICES_TUPLES
+
 
 class HmmerJob(models.Model):
-    class MXChoices(models.TextChoices):
-        BLOSUM62 = "BLOSUM62"
-        BLOSUM45 = "BLOSUM45"
-        BLOSUM90 = "BLOSUM90"
-        PAM30 = "PAM30"
-        PAM70 = "PAM70"
-        PAM250 = "PAM250"
+    # Use constants for MX choices
+    MXChoices = models.TextChoices('MXChoices', MX_CHOICES_TUPLES)
 
     class AlgoChoices(models.TextChoices):
         PHMMER = "phmmer"
@@ -77,7 +75,7 @@ class HmmerJob(models.Model):
         null=True,
         blank=True,
         choices=MXChoices.choices,
-        default=MXChoices.BLOSUM62,
+        default=DEFAULT_MX,
     )
 
     def __str__(self):

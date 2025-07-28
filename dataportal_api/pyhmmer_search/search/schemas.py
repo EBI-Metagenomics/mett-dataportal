@@ -12,11 +12,13 @@ from pydantic_core import PydanticCustomError
 from pyhmmer.easel import SequenceFile
 
 from .models import HmmerJob, Database
+from ..constants import MX_CHOICES_LITERAL, DEFAULT_MX
+
+MXChoicesType = Literal[MX_CHOICES_LITERAL]
 
 logger = logging.getLogger(__name__)
 
 
-# Enhanced Alignment Models based on pyhmmer.plan7.Alignment
 class PyhmmerAlignmentSchema(Schema):
     """Schema for pyhmmer.plan7.Alignment data"""
 
@@ -49,8 +51,8 @@ class PyhmmerAlignmentSchema(Schema):
     )
 
 
-class LegacyAlignmentDisplay(Schema):
-    """Legacy alignment display for backward compatibility"""
+class AlignmentDisplay(Schema):
+    """Simple alignment display format for UI rendering"""
 
     hmmfrom: int
     hmmto: int
@@ -65,7 +67,7 @@ class LegacyAlignmentDisplay(Schema):
 
 
 class DomainSchema(Schema):
-    """Enhanced domain schema with both new and legacy alignment support"""
+    """Enhanced domain schema with alignment support"""
 
     env_from: Optional[int] = Field(
         None, description="Start coordinate of domain envelope"
@@ -85,8 +87,8 @@ class DomainSchema(Schema):
     alignment: Optional[PyhmmerAlignmentSchema] = Field(
         None, description="PyHMMER alignment data"
     )
-    alignment_display: Optional[LegacyAlignmentDisplay] = Field(
-        None, description="Legacy alignment display"
+    alignment_display: Optional[AlignmentDisplay] = Field(
+        None, description="Simple alignment display for UI"
     )
 
 
@@ -114,9 +116,7 @@ class SearchRequestSchema(ModelSchema):
     threshold: Literal["evalue", "bitscore"]
     threshold_value: float
     input: str
-    mx: Optional[
-        Literal["BLOSUM62", "BLOSUM45", "BLOSUM90", "PAM30", "PAM70", "PAM250"]
-    ] = "BLOSUM62"
+    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
 
     # E-value parameters
     E: Optional[float] = Field(None, description="Report E-values - Sequence")
@@ -215,11 +215,11 @@ class SearchRequestSchema(ModelSchema):
 
         # Check for invalid characters
         invalid_chars = (
-            set(sequence_upper)
-            - protein_chars
-            - dna_chars
-            - rna_chars
-            - {" ", "\n", "\r", "\t"}
+                set(sequence_upper)
+                - protein_chars
+                - dna_chars
+                - rna_chars
+                - {" ", "\n", "\r", "\t"}
         )
         if invalid_chars:
             raise PydanticCustomError(
@@ -360,9 +360,7 @@ class CutOffSchema(Schema):
 class GapPenaltiesSchema(Schema):
     popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
     pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
-    mx: Optional[
-        Literal["BLOSUM62", "BLOSUM45", "BLOSUM90", "PAM30", "PAM70", "PAM250"]
-    ] = "BLOSUM62"
+    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
 
 
 class ResultQuerySchema(Schema):
@@ -388,6 +386,6 @@ class AlignmentDetailsResponseSchema(Schema):
     alignment: Optional[PyhmmerAlignmentSchema] = Field(
         None, description="PyHMMER alignment data"
     )
-    legacy_alignment: Optional[LegacyAlignmentDisplay] = Field(
-        None, description="Legacy alignment display"
+    simple_alignment: Optional[AlignmentDisplay] = Field(
+        None, description="Simple alignment display for UI"
     )

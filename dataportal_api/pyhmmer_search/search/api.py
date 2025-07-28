@@ -5,10 +5,11 @@ from django_celery_results.models import TaskResult
 from ninja import Router
 from ninja.errors import HttpError
 
-from .models import HmmerJob, Database
+from dataportal.utils.response_wrappers import wrap_success_response
+from .models import Database
+from .models import HmmerJob
 from .schemas import SearchRequestSchema, SearchResponseSchema
 from .tasks import run_search
-from dataportal.utils.response_wrappers import wrap_success_response
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,6 @@ def search(request, body: SearchRequestSchema):
         job = HmmerJob(**body.dict(), algo=HmmerJob.AlgoChoices.PHMMER)
         logger.info(f"Job object created: {job}")
         logger.info(f"Job ID before save: {job.id}")
-
 
         job.clean()
         logger.info("Job cleaned successfully")
@@ -120,12 +120,8 @@ def get_databases(request):
 def get_mx_choices(request):
     try:
         choices = [
-            {"value": "BLOSUM62", "label": "BLOSUM62"},
-            {"value": "BLOSUM45", "label": "BLOSUM45"},
-            {"value": "BLOSUM90", "label": "BLOSUM90"},
-            {"value": "PAM30", "label": "PAM30"},
-            {"value": "PAM70", "label": "PAM70"},
-            {"value": "PAM250", "label": "PAM250"},
+            {"value": choice[0], "label": choice[1]}
+            for choice in HmmerJob.MXChoices.choices
         ]
         return choices
     except Exception as e:

@@ -20,7 +20,7 @@ from dataportal import settings
 from .models import HmmerJob
 from .schemas import (
     PyhmmerAlignmentSchema,
-    LegacyAlignmentDisplay,
+    AlignmentDisplay,
     DomainSchema,
     HitSchema,
 )
@@ -82,7 +82,7 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
         return None
 
 
-def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDisplay]:
+def create_simple_alignment_display(alignment) -> Optional[AlignmentDisplay]:
     try:
         if alignment is None:
             return None
@@ -102,7 +102,7 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
             )
         )
 
-        return LegacyAlignmentDisplay(
+        return AlignmentDisplay(
             hmmfrom=alignment.hmm_from,
             hmmto=alignment.hmm_to,
             sqfrom=alignment.target_from,
@@ -115,7 +115,7 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
             similarity=(similarity_pct, number_of_identical_and_similar),
         )
     except Exception as e:
-        logger.warning(f"Failed to create legacy alignment display: {e}")
+        logger.warning(f"Failed to create simple alignment display: {e}")
         return None
 
 
@@ -373,9 +373,9 @@ def run_search(self, job_id: str):
                     # Extract alignment from pyhmmer.plan7.Alignment
                     alignment = getattr(domain, "alignment", None)
 
-                    # Extract both new and legacy alignment formats
+                    # Extract both detailed and simple alignment formats
                     pyhmmer_alignment = extract_pyhmmer_alignment(alignment)
-                    legacy_alignment = create_legacy_alignment_display(alignment)
+                    simple_alignment = create_simple_alignment_display(alignment)
 
                     domain_obj = DomainSchema(
                         env_from=domain.env_from,
@@ -386,7 +386,7 @@ def run_search(self, job_id: str):
                         bias=getattr(domain, "bias", None),
                         strand=getattr(domain, "strand", None),
                         alignment=pyhmmer_alignment,
-                        alignment_display=legacy_alignment,
+                        alignment_display=simple_alignment,
                     )
                     domains.append(domain_obj)
             else:
@@ -394,7 +394,7 @@ def run_search(self, job_id: str):
                 # For hits without domains (phmmer case), create alignment with Biopython
                 target_seq = target_sequences.get(hit.name.decode())
                 pyhmmer_alignment = None
-                legacy_alignment = None
+                simple_alignment = None
 
                 if target_seq is not None:
                     try:
@@ -427,7 +427,7 @@ def run_search(self, job_id: str):
                                 identity_sequence=identity_sequence,
                                 posterior_probabilities=None,
                             )
-                        legacy_alignment = parse_biopython_alignment(
+                        simple_alignment = parse_biopython_alignment(
                             query_seq_str, target_seq_str
                         )
 
@@ -445,7 +445,7 @@ def run_search(self, job_id: str):
                     bias=getattr(hit, "bias", None),
                     strand=None,
                     alignment=pyhmmer_alignment,
-                    alignment_display=legacy_alignment,
+                    alignment_display=simple_alignment,
                 )
                 domains.append(domain_obj)
 
@@ -646,8 +646,8 @@ def test_task(self):
 
 def parse_biopython_alignment(
         query: str, target: str
-) -> Optional[LegacyAlignmentDisplay]:
-    """Create legacy alignment display using Biopython for phmmer cases"""
+) -> Optional[AlignmentDisplay]:
+    """Create simple alignment display using Biopython for phmmer cases"""
     try:
         alignments = pairwise2.align.globalxx(query, target)
         if not alignments:
@@ -677,7 +677,7 @@ def parse_biopython_alignment(
             AlignmentCalculator.calculate_identity_and_similarity_from_sequences(aligned_query, aligned_target)
         )
 
-        return LegacyAlignmentDisplay(
+        return AlignmentDisplay(
             hmmfrom=hmmfrom,
             hmmto=hmmto,
             sqfrom=sqfrom,

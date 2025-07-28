@@ -154,7 +154,6 @@ def _map_status_code_to_error_code(status_code: int) -> ErrorCode:
 
 
 def raise_exception(message: str):
-    """Legacy function for backward compatibility."""
     frame = inspect.currentframe().f_back
     function_name = frame.f_code.co_name if frame else "Unknown"
 

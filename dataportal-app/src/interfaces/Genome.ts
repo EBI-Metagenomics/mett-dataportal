@@ -24,7 +24,6 @@ export interface BaseGenome {
     type_strain: boolean;
 }
 
-// Legacy pagination interface (for backward compatibility)
 export interface GenomeResponse {
     results: GenomeMeta[];
     page_number: number;
