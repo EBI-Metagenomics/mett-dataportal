@@ -34,9 +34,6 @@ const PyhmmerSearchForm: React.FC = () => {
     // Bias composition filter
     const [turnOffBiasFilter, setTurnOffBiasFilter] = useState(false);
 
-    // Temporarily disabled - PyHMMER only supports default scoring matrix
-    // const [subMatrix, setSubMatrix] = useState('BLOSUM62');
-
     // Results state
     const [results, setResults] = useState<PyhmmerResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -61,22 +58,9 @@ const PyhmmerSearchForm: React.FC = () => {
                 setError('Unable to load databases. Please check if the backend server is running.');
             }
         };
-        // Temporarily disabled - PyHMMER only supports default scoring matrix
-        /*
-        const fetchMXChoices = async () => {
-            try {
-                const response = await PyhmmerService.getMXChoices();
-                setMXChoices(response);
-            } catch (error) {
-                console.error('Failed to fetch MX choices:', error);
-                setMXChoices([]);
-                setError('Unable to load substitution matrices. Please check if the backend server is running.');
-            }
-        };
-        */
+
         fetchDatabases();
-        // fetchMXChoices();
-        // Load history from localStorage
+
         const stored = localStorage.getItem(HISTORY_KEY);
         if (stored) {
             setHistory(JSON.parse(stored));

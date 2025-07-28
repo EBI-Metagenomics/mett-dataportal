@@ -1,11 +1,15 @@
 import json
 import logging
 import re
+import time
 import uuid
+from datetime import timedelta
 from typing import Optional
 
 from Bio import pairwise2
 from celery import shared_task
+from django.db import connection
+from django.db import transaction
 from django.utils import timezone
 from django_celery_results.models import TaskResult
 from pyhmmer.easel import DigitalSequenceBlock
@@ -20,9 +24,11 @@ from .schemas import (
     DomainSchema,
     HitSchema,
 )
-from .utils import calculate_identity_and_similarity_from_sequences, create_match_line, calculate_identity_and_similarity_from_match_line
+from .utils import AlignmentCalculator
 
 logger = logging.getLogger(__name__)
+
+MAX_RESULT_SIZE = 50 * 1024 * 1024  # 50MB limit
 
 
 def _log_query_sequences(raw_bytes):
@@ -82,16 +88,16 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
             return None
 
         # Create our own match line from the sequences
-        mline = create_match_line(alignment.hmm_sequence, alignment.target_sequence)
+        mline = AlignmentCalculator.create_match_line(alignment.hmm_sequence, alignment.target_sequence)
         logger.info(f"Created match line: '{mline}' (length: {len(mline)})")
         logger.info(f"HMM sequence: '{alignment.hmm_sequence}' (length: {len(alignment.hmm_sequence)})")
         logger.info(f"Target sequence: '{alignment.target_sequence}' (length: {len(alignment.target_sequence)})")
-        
+
         # Calculate identity and similarity using our match line
         (identity_pct, number_of_identical), (similarity_pct, number_of_identical_and_similar) = (
-            calculate_identity_and_similarity_from_match_line(
-                alignment.hmm_sequence, 
-                mline, 
+            AlignmentCalculator.calculate_identity_and_similarity_from_match_line(
+                alignment.hmm_sequence,
+                mline,
                 alignment.target_sequence
             )
         )
@@ -135,9 +141,6 @@ def run_search(self, job_id: str):
         logger.info(f"Looking for job with ID: {job_id}")
         logger.info(f"Job ID type: {type(job_id)}")
 
-        # Check database connection and configuration
-        from django.db import connection
-
         logger.info(
             f"Database connection: {connection.settings_dict.get('NAME', 'unknown')}"
         )
@@ -152,9 +155,7 @@ def run_search(self, job_id: str):
         logger.info(f"HmmerJob model db_table: {HmmerJob._meta.db_table}")
         logger.info(f"HmmerJob model pk field: {HmmerJob._meta.pk.name}")
 
-        # Check if we can access the database at all
         try:
-            from django.db import connection
 
             with connection.cursor() as cursor:
                 cursor.execute("SELECT 1")
@@ -183,7 +184,6 @@ def run_search(self, job_id: str):
                         logger.warning(
                             f"Job not found on attempt {attempt + 1}, retrying in {retry_delay} seconds..."
                         )
-                        import time
 
                         time.sleep(retry_delay)
                         retry_delay *= 1.5  # Gradual backoff
@@ -409,9 +409,9 @@ def run_search(self, job_id: str):
                         if alignments:
                             aln = alignments[0]
                             aligned_query, aligned_target, score, begin, end = aln
-                            
-                            identity_sequence = create_match_line(aligned_query, aligned_target)
-                            
+
+                            identity_sequence = AlignmentCalculator.create_match_line(aligned_query, aligned_target)
+
                             pyhmmer_alignment = PyhmmerAlignmentSchema(
                                 hmm_name=name.decode(),
                                 hmm_accession=None,
@@ -528,8 +528,6 @@ def run_search(self, job_id: str):
             logger.info(f"Result JSON created, length: {len(result_json)}")
             logger.info(f"Result JSON preview: {result_json[:500]}...")
 
-            # Check if result is too large (PostgreSQL text field limit is ~1GB, but let's be conservative)
-            MAX_RESULT_SIZE = 50 * 1024 * 1024  # 50MB limit
             if len(result_json) > MAX_RESULT_SIZE:
                 logger.error(
                     f"Result JSON too large: {len(result_json)} bytes (limit: {MAX_RESULT_SIZE})"
@@ -555,7 +553,6 @@ def run_search(self, job_id: str):
             )
 
             try:
-                from django.db import transaction
 
                 with transaction.atomic():
                     job.task.save()
@@ -657,7 +654,7 @@ def parse_biopython_alignment(
             return None
         aln = alignments[0]
         aligned_query, aligned_target, score, begin, end = aln
-        mline = create_match_line(aligned_query, aligned_target)
+        mline = AlignmentCalculator.create_match_line(aligned_query, aligned_target)
 
         def first_non_gap(seq):
             for i, c in enumerate(seq):
@@ -677,7 +674,7 @@ def parse_biopython_alignment(
         sqto = last_non_gap(aligned_target) + 1
 
         (identity_pct, number_of_identical), (similarity_pct, number_of_identical_and_similar) = (
-            calculate_identity_and_similarity_from_sequences(aligned_query, aligned_target)
+            AlignmentCalculator.calculate_identity_and_similarity_from_sequences(aligned_query, aligned_target)
         )
 
         return LegacyAlignmentDisplay(
@@ -699,10 +696,6 @@ def parse_biopython_alignment(
 
 @shared_task
 def cleanup_old_tasks():
-    from django_celery_results.models import TaskResult
-    from django.utils import timezone
-    from datetime import timedelta
-
     cutoff = timezone.now() - timedelta(days=30)
     deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
     return f"Deleted {deleted} old task results"
