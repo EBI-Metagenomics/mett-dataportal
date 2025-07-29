@@ -222,7 +222,7 @@ const PyhmmerSearchForm: React.FC = () => {
             if (rawResults) {
                 setResults(mapResults(rawResults));
                 setSelectedJobId(id);
-                saveSearchToHistory(id, sequence.slice(0, 40) + (sequence.length > 40 ? '...' : ''));
+                saveSearchToHistory(id, sequence);
                 setLoadingMessage('');
             }
         } catch (err) {
