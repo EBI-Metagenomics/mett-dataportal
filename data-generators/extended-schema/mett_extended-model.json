@@ -1857,54 +1857,6 @@
           "comment": ""
         },
         {
-          "id": "691k7RqUb5kv012giBrT-",
-          "name": "is_partial",
-          "type": "BOOLEAN",
-          "default": "false",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "gr7lPzLSIXcDt3mDiIojX",
-          "name": "is_intergenomic",
-          "type": "BOOLEAN",
-          "default": "false",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "xvqABm9TtxMVYNLEAfATV",
-          "name": "genomic_region_a_id",
-          "type": "INTEGER",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "bfRK9w7Ngq7AN5DNsMmbC",
-          "name": "genomic_region_b_id",
-          "type": "INTEGER",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
           "id": "WzJxPB0VsJs_6UsLiNxou",
           "name": "experimental_condition_id",
           "type": "INTEGER",
@@ -1969,7 +1921,7 @@
           "unique": false
         }
       ],
-      "x": 804.5728055519442,
+      "x": 804.9746897004801,
       "y": 1012.0909165568326
     },
     {
@@ -2737,28 +2689,6 @@
       "cardinality": "one_to_many"
     },
     {
-      "name": "fk_genomic_region_id_SP5_operon_prediction",
-      "startTableId": "w0YWCBBpnDsW9wdmGgCba",
-      "endTableId": "svYGPC8lBRrDR34MNdVwP",
-      "endFieldId": "xvqABm9TtxMVYNLEAfATV",
-      "startFieldId": "RAHDFnOk3mTg9-JlCElpR",
-      "id": 34,
-      "updateConstraint": "No action",
-      "deleteConstraint": "No action",
-      "cardinality": "one_to_many"
-    },
-    {
-      "name": "fk_genomic_region_id_SP5_operon_prediction",
-      "startTableId": "w0YWCBBpnDsW9wdmGgCba",
-      "endTableId": "svYGPC8lBRrDR34MNdVwP",
-      "endFieldId": "bfRK9w7Ngq7AN5DNsMmbC",
-      "startFieldId": "RAHDFnOk3mTg9-JlCElpR",
-      "id": 35,
-      "updateConstraint": "No action",
-      "deleteConstraint": "No action",
-      "cardinality": "one_to_many"
-    },
-    {
       "name": "fk_experimental_condition_id_SP5_operon_prediction",
       "startTableId": "dCUxEU-W7q2JX6XAP6VjI",
       "endTableId": "svYGPC8lBRrDR34MNdVwP",
@@ -2896,5 +2826,5 @@
   "database": "postgresql",
   "types": [],
   "enums": [],
-  "title": "METT-Extended-DataModel-14Jul2025"
+  "title": "METT-Extended-DataModel-29Jul2025"
 }
