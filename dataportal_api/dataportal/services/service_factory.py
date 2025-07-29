@@ -3,7 +3,6 @@ from dataportal.services.base_service import BaseService
 from dataportal.services.species_service import SpeciesService
 from dataportal.services.essentiality_service import EssentialityService
 from dataportal.services.app_health_service import AppHealthService
-from dataportal.services.feedback_service import FeedbackService
 from dataportal.services.genome_service import GenomeService
 from dataportal.services.gene_service import GeneService
 
@@ -36,13 +35,6 @@ class ServiceFactory:
         if "app_health" not in cls._instances:
             cls._instances["app_health"] = AppHealthService()
         return cls._instances["app_health"]
-
-    @classmethod
-    def get_feedback_service(cls) -> FeedbackService:
-        """Get or create FeedbackService instance."""
-        if "feedback" not in cls._instances:
-            cls._instances["feedback"] = FeedbackService()
-        return cls._instances["feedback"]
 
     @classmethod
     def get_genome_service(cls) -> GenomeService:

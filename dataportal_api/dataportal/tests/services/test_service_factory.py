@@ -4,7 +4,6 @@ from dataportal.services.genome_service import GenomeService
 from dataportal.services.gene_service import GeneService
 from dataportal.services.essentiality_service import EssentialityService
 from dataportal.services.app_health_service import AppHealthService
-from dataportal.services.feedback_service import FeedbackService
 
 
 class TestServiceFactory:
@@ -50,13 +49,6 @@ class TestServiceFactory:
         assert service1 is service2
         assert isinstance(service1, AppHealthService)
 
-    def test_get_feedback_service_singleton(self):
-        """Test that get_feedback_service returns the same instance."""
-        service1 = ServiceFactory.get_feedback_service()
-        service2 = ServiceFactory.get_feedback_service()
-
-        assert service1 is service2
-        assert isinstance(service1, FeedbackService)
 
     def test_different_services_are_different_instances(self):
         """Test that different services are different instances."""
