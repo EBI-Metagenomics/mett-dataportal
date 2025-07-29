@@ -29,8 +29,6 @@ def search(request, body: SearchRequestSchema):
         logger.info(f"Job ID before save: {job.id}")
 
         job.clean()
-        logger.info("Job cleaned successfully")
-
         job.save()
         logger.info(f"Job saved to database with ID: {job.id}")
 

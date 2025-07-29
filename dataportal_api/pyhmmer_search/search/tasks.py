@@ -58,7 +58,7 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
             hmm_accession=(
                 alignment.hmm_accession.decode()
                 if alignment.hmm_accession
-                and hasattr(alignment.hmm_accession, "decode")
+                   and hasattr(alignment.hmm_accession, "decode")
                 else str(alignment.hmm_accession) if alignment.hmm_accession else None
             ),
             hmm_from=alignment.hmm_from,
@@ -146,36 +146,14 @@ def run_search(self, job_id: str):
         logger.info(f"Looking for job with ID: {job_id}")
         logger.info(f"Job ID type: {type(job_id)}")
 
-        logger.info(
-            f"Database connection: {connection.settings_dict.get('NAME', 'unknown')}"
-        )
-        logger.info(
-            f"Database engine: {connection.settings_dict.get('ENGINE', 'unknown')}"
-        )
-        logger.info(f"Database host: {connection.settings_dict.get('HOST', 'unknown')}")
-        logger.info(f"Database port: {connection.settings_dict.get('PORT', 'unknown')}")
-
-        # Check model configuration
         logger.info(f"HmmerJob model app_label: {HmmerJob._meta.app_label}")
         logger.info(f"HmmerJob model db_table: {HmmerJob._meta.db_table}")
         logger.info(f"HmmerJob model pk field: {HmmerJob._meta.pk.name}")
 
         try:
-
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
-                logger.info("Database connection test successful")
-        except Exception as e:
-            logger.error(f"Database connection test failed: {e}")
-            raise
-
-        # Try to find the job with more detailed error handling
-        try:
-            # First, check if we can query the database at all
             total_jobs = HmmerJob.objects.count()
             logger.info(f"Total jobs in database: {total_jobs}")
 
-            # Try to get the job with retry logic for potential race conditions
             max_retries = 5
             retry_delay = 0.5  # seconds
 
@@ -207,27 +185,9 @@ def run_search(self, job_id: str):
 
             logger.info(f"Job task: {job.task}")
             logger.info(f"Job task ID: {job.task.task_id if job.task else 'None'}")
-            logger.info(f"Job input length: {len(job.input) if job.input else 0}")
-            logger.info(f"Job database: {job.database}")
-            logger.info(f"Job threshold: {job.threshold}")
-            logger.info(f"Job threshold_value: {job.threshold_value}")
         except Exception as e:
             logger.error(f"Unexpected error fetching job {job_id}: {e}")
             raise
-
-        # Enhanced logging for all job parameters
-        logger.info("=== JOB PARAMETERS IN TASK ===")
-        logger.info(f"Job mx (substitution matrix): {job.mx}")
-        logger.info(f"Job E (Report E-values - Sequence): {job.E}")
-        logger.info(f"Job domE (Report E-values - Hit): {job.domE}")
-        logger.info(f"Job incE (Significance E-values - Sequence): {job.incE}")
-        logger.info(f"Job incdomE (Significance E-values - Hit): {job.incdomE}")
-        logger.info(f"Job T (Report Bit scores - Sequence): {job.T}")
-        logger.info(f"Job domT (Report Bit scores - Hit): {job.domT}")
-        logger.info(f"Job incT (Significance Bit scores - Sequence): {job.incT}")
-        logger.info(f"Job incdomT (Significance Bit scores - Hit): {job.incdomT}")
-        logger.info(f"Job popen (Gap open penalty): {job.popen}")
-        logger.info(f"Job pextend (Gap extend penalty): {job.pextend}")
 
         logger.info("Updating task state to STARTED...")
         self.update_state(state="STARTED")
@@ -243,8 +203,6 @@ def run_search(self, job_id: str):
         if not db_path:
             raise ValueError(f"Invalid database ID '{job.database}'")
 
-        # Prepare alphabet and background
-        logger.info("Setting up alphabet and background...")
         alphabet = Alphabet.amino()
         background = Background(alphabet)
 
@@ -260,18 +218,14 @@ def run_search(self, job_id: str):
             "incdomT": job.incdomT,
         }
         logger.info(f"Pipeline kwargs: {pipeline_kwargs}")
-        # Filter out None values before passing to Pipeline
         filtered_kwargs = {k: v for k, v in pipeline_kwargs.items() if v is not None}
         logger.info(f"Filtered pipeline kwargs: {filtered_kwargs}")
         logger.info("=== PIPELINE CONFIGURATION DETAILS ===")
-        logger.info(f"Pipeline kwargs before filtering: {pipeline_kwargs}")
         logger.info(
             f"Pipeline kwargs after filtering (None values removed): {filtered_kwargs}"
         )
-        logger.info(f"Number of parameters passed to Pipeline: {len(filtered_kwargs)}")
         pipeline = Pipeline(alphabet, **filtered_kwargs)
 
-        # Configure bias composition filter
         if hasattr(job, "bias_filter") and job.bias_filter == "off":
             logger.info("Disabling bias composition filter")
             pipeline.bias_filter = False
@@ -290,8 +244,7 @@ def run_search(self, job_id: str):
         name = lines[0].lstrip(">").encode("utf-8")
         sequence = "".join(lines[1:])
         logger.info(f"Query name: {name}")
-        logger.info(f"Query sequence length: {len(sequence)}")
-        logger.info(f"Query sequence preview: {sequence[:100]}...")
+
 
         text_seq = TextSequence(name=name, sequence=sequence)
         digital_seq = text_seq.digitize(alphabet)
@@ -313,8 +266,6 @@ def run_search(self, job_id: str):
             f"Target sequence mapping built with {len(target_sequences)} entries"
         )
 
-        # Create a Builder and configure it with gap penalties only
-        # Note: PyHMMER Builder doesn't support custom scoring matrices in the same way as HMMER
         logger.info("Configuring builder...")
         builder_kwargs = {}
         if job.popen is not None:
@@ -322,7 +273,7 @@ def run_search(self, job_id: str):
         if job.pextend is not None:
             builder_kwargs["pextend"] = job.pextend
 
-        # Log matrix request but don't use it - PyHMMER uses internal scoring
+        # TODO - Log matrix request but still resolve - PyHMMER uses internal scoring
         if job.mx:
             logger.info(
                 f"Scoring matrix requested: {job.mx}, but PyHMMER uses internal scoring system"
@@ -456,9 +407,9 @@ def run_search(self, job_id: str):
 
             first_domain_seq = None
             if (
-                domains
-                and domains[0].alignment
-                and domains[0].alignment.target_sequence
+                    domains
+                    and domains[0].alignment
+                    and domains[0].alignment.target_sequence
             ):
                 first_domain_seq = domains[0].alignment.target_sequence.replace("-", "")
 
@@ -482,23 +433,17 @@ def run_search(self, job_id: str):
             )
             logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
 
-            logger.info("=== FILTERING LOGIC DETAILS ===")
-            logger.info(f"Threshold type: {job.threshold}")
-            logger.info(f"Threshold value: {job.threshold_value}")
-            logger.info(f"Hit E-value: {hit.evalue}")
-            logger.info(f"Hit bit score: {hit.score}")
-
             if (
-                job.threshold == HmmerJob.ThresholdChoices.EVALUE
-                and hit.evalue < job.threshold_value
+                    job.threshold == HmmerJob.ThresholdChoices.EVALUE
+                    and hit.evalue < job.threshold_value
             ):
                 logger.info(
                     f"Hit passes EVALUE filter: {hit.evalue} < {job.threshold_value}"
                 )
                 results.append(hit_obj)
             elif (
-                job.threshold == HmmerJob.ThresholdChoices.BITSCORE
-                and hit.score > job.threshold_value
+                    job.threshold == HmmerJob.ThresholdChoices.BITSCORE
+                    and hit.score > job.threshold_value
             ):
                 logger.info(
                     f"Hit passes BITSCORE filter: {hit.score} > {job.threshold_value}"
@@ -530,18 +475,10 @@ def run_search(self, job_id: str):
 
             logger.info("Converting results to JSON...")
             result_json = json.dumps(result_dicts)
-            logger.info(f"Result JSON created, length: {len(result_json)}")
-            logger.info(f"Result JSON preview: {result_json[:500]}...")
 
             if len(result_json) > MAX_RESULT_SIZE:
-                logger.error(
-                    f"Result JSON too large: {len(result_json)} bytes (limit: {MAX_RESULT_SIZE})"
-                )
-                logger.error(
-                    "This may cause database storage issues. Consider truncating results."
-                )
                 # Truncate the result to prevent database issues
-                truncated_results = result_dicts[:10]  # Keep only first 10 results
+                truncated_results = result_dicts[:10]
                 result_json = json.dumps(truncated_results)
                 logger.warning(
                     f"Truncated to {len(truncated_results)} results, new size: {len(result_json)} bytes"
@@ -598,55 +535,6 @@ def run_search(self, job_id: str):
             job.task.save()
             logger.info(f"Updated database record for task {task_id} to FAILURE")
         raise
-
-
-@shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
-def test_task(self):
-    task_id = self.request.id
-    logger.info(f">>> Starting test task with ID: {task_id}")
-
-    try:
-        # Update task state using Celery's state management
-        self.update_state(state="STARTED")
-        logger.info(f"Updated task {task_id} state to STARTED")
-
-        # Update database record
-        task_result = TaskResult.objects.get(task_id=task_id)
-        task_result.status = "STARTED"
-        task_result.save()
-        logger.info(f"Updated database record for task {task_id} to STARTED")
-
-        # Simulate some work
-        logger.info(">>> Hello from test_task")
-
-        # Check if any jobs are linked to this task
-        linked_jobs = HmmerJob.objects.filter(task__task_id=task_id)
-        logger.info(f"Found {linked_jobs.count()} jobs linked to task {task_id}")
-        for job in linked_jobs:
-            logger.info(
-                f"Linked job: {job.id}, Status: {job.task.status if job.task else 'No task'}"
-            )
-
-        # Update database record with success
-        task_result.status = "SUCCESS"
-        task_result.result = "OK"
-        task_result.date_done = timezone.now()
-        task_result.save()
-        logger.info(f"Updated database record for task {task_id} to SUCCESS")
-
-    except Exception as e:
-        logger.error(f"Error in test_task: {str(e)}", exc_info=True)
-        # Update database record with failure
-        if "task_result" in locals():
-            task_result.status = "FAILURE"
-            task_result.result = str(e)
-            task_result.date_done = timezone.now()
-            task_result.save()
-            logger.info(f"Updated database record for task {task_id} to FAILURE")
-        raise
-
-    logger.info(f">>> Completed test task {task_id}")
-    return "OK"
 
 
 def parse_biopython_alignment(query: str, target: str) -> Optional[AlignmentDisplay]:

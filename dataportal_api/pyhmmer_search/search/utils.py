@@ -44,7 +44,7 @@ class AlignmentCalculator:
             if len(mline) != len(aseq):
                 return None
 
-            # Load BLOSUM62 substitution matrix for amino acid similarity
+            # TODO - make it dynamic - Load BLOSUM62 substitution matrix for amino acid similarity
             try:
                 matrix = substitution_matrices.load("BLOSUM62")
             except Exception as e:
