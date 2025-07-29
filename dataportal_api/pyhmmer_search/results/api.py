@@ -120,15 +120,10 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
     try:
         logger.info("=== GET_RESULT CALLED ===")
         logger.info(f"Job ID: {id}")
-        logger.info(f"Query params: {query}")
 
         logger.info("Fetching job from database...")
         job = get_object_or_404(HmmerJob, id=id)
         logger.info(f"Found job: {job}")
-        logger.info(f"Job ID: {job.id}")
-        logger.info(f"Job database: {job.database}")
-        logger.info(f"Job threshold: {job.threshold}")
-        logger.info(f"Job threshold_value: {job.threshold_value}")
 
         task_status = "PENDING"
         task_result_data = []
@@ -136,24 +131,16 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         if job.task:
             logger.info(f"Job has task: {job.task}")
             logger.info(f"Task ID: {job.task.task_id}")
-            logger.info(f"Task status in DB: {job.task.status}")
-            logger.info(f"Task date_created: {job.task.date_created}")
-            logger.info(f"Task date_done: {job.task.date_done}")
 
             async_result = AsyncResult(job.task.task_id)
             task_status = async_result.status
             logger.info(f"AsyncResult status: {task_status}")
             logger.info(f"AsyncResult state: {async_result.state}")
-            logger.info(f"AsyncResult info: {async_result.info}")
-            logger.info(f"AsyncResult task_id: {async_result.task_id}")
-            logger.info(f"Database task_id: {job.task.task_id}")
-            logger.info(f"Task IDs match: {async_result.task_id == job.task.task_id}")
 
             # Get raw result from database
             raw_result = job.task.result
             logger.info(f"Raw result from database: {raw_result}")
-            logger.info(f"Raw result type: {type(raw_result)}")
-            logger.info(f"Raw result is None: {raw_result is None}")
+
 
             try:
                 if raw_result is None:
@@ -237,20 +224,9 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         logger.info(f"Pagination: page={page}, page_size={page_size}")
         logger.info(f"Pagination indices: start_idx={start_idx}, end_idx={end_idx}")
 
-        # Apply filters
+
         filtered_results = []
         for hit in task_result_data:
-            # Apply taxonomy filter
-            if query.taxonomy_ids:
-                # TODO: Implement taxonomy filtering
-                pass
-
-            # Apply architecture filter
-            if query.architecture:
-                # TODO: Implement architecture filtering
-                pass
-
-            # Apply domain filter
             if query.with_domains:
                 if not hit.get("domains"):
                     continue
@@ -259,7 +235,6 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
 
         logger.info(f"Filtered results count: {len(filtered_results)}")
 
-        # Apply pagination to filtered results
         paginated_results = filtered_results[start_idx:end_idx]
         logger.info(f"Paginated results count: {len(paginated_results)}")
 
