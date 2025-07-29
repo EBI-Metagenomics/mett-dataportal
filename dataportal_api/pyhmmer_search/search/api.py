@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from django.utils import timezone
 from django_celery_results.models import TaskResult
@@ -113,15 +114,80 @@ def get_databases(request):
         ]
 
 
-@pyhmmer_router_search.get("/mx-choices", include_in_schema=False)
-@wrap_success_response
-def get_mx_choices(request):
+# @pyhmmer_router_search.get("/mx-choices", include_in_schema=False)
+# @wrap_success_response
+# def get_mx_choices(request):
+#     try:
+#         choices = [
+#             {"value": choice[0], "label": choice[1]}
+#             for choice in HmmerJob.MXChoices.choices
+#         ]
+#         return choices
+#     except Exception as e:
+#         logger.error(f"Error getting MX choices: {e}")
+#         raise HttpError(500, f"Internal server error: {str(e)}")
+
+
+@pyhmmer_router_search.get("/tasks-status", include_in_schema=False)
+def get_tasks_status(request, threshold_days: int = 30):
+    """Get current status of PyHMMER task results in the database."""
     try:
-        choices = [
-            {"value": choice[0], "label": choice[1]}
-            for choice in HmmerJob.MXChoices.choices
-        ]
-        return choices
+        # Validate threshold_days parameter
+        if threshold_days < 1 or threshold_days > 365:
+            return {
+                "status": "error",
+                "message": "threshold_days must be between 1 and 365"
+            }, 400
+        
+        cutoff = timezone.now() - timedelta(days=threshold_days)
+        
+        total_tasks = TaskResult.objects.count()
+        old_tasks = TaskResult.objects.filter(date_done__lt=cutoff).count()
+        recent_tasks = total_tasks - old_tasks
+        
+        return {
+            "status": "success",
+            "total_tasks": total_tasks,
+            "old_tasks_eligible_for_cleanup": old_tasks,
+            "recent_tasks": recent_tasks,
+            "cutoff_date": cutoff.isoformat(),
+            "cleanup_threshold_days": threshold_days
+        }
     except Exception as e:
-        logger.error(f"Error getting MX choices: {e}")
-        raise HttpError(500, f"Internal server error: {str(e)}")
+        logger.error(f"Error getting PyHMMER tasks status: {e}")
+        return {
+            "status": "error",
+            "message": f"Failed to get tasks status: {str(e)}"
+        }, 500
+
+
+@pyhmmer_router_search.post("/cleanup-tasks", include_in_schema=False)
+def cleanup_tasks_manual(request, threshold_days: int = 30):
+    """Manually trigger cleanup of old PyHMMER task results."""
+    try:
+        # Validate threshold_days parameter
+        if threshold_days < 1 or threshold_days > 365:
+            return {
+                "status": "error",
+                "message": "threshold_days must be between 1 and 365"
+            }, 400
+        
+        # Use the same logic as the scheduled task
+        cutoff = timezone.now() - timedelta(days=threshold_days)
+        deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
+        
+        logger.info(f"Manual PyHMMER cleanup triggered: Deleted {deleted} old task results (threshold: {threshold_days} days)")
+        
+        return {
+            "status": "success",
+            "message": f"Successfully deleted {deleted} old PyHMMER task results (older than {threshold_days} days)",
+            "deleted_count": deleted,
+            "cutoff_date": cutoff.isoformat(),
+            "cleanup_threshold_days": threshold_days
+        }
+    except Exception as e:
+        logger.error(f"Error during manual PyHMMER cleanup: {e}")
+        return {
+            "status": "error",
+            "message": f"Failed to cleanup old PyHMMER tasks: {str(e)}"
+        }, 500

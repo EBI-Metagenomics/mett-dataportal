@@ -328,7 +328,8 @@ def get_domains_by_target(request, id: uuid.UUID, target: str):
 
 
 @pyhmmer_router_result.get(
-    "/{uuid:id}/domains/{int:domain_index}", response=DomainDetailsResponseSchema
+    "/{uuid:id}/domains/{int:domain_index}", response=DomainDetailsResponseSchema, 
+    include_in_schema=False
 )
 @wrap_success_response
 def get_domain_details(request, id: uuid.UUID, domain_index: int):
@@ -361,7 +362,8 @@ def get_domain_details(request, id: uuid.UUID, domain_index: int):
 
 
 @pyhmmer_router_result.get(
-    "/{uuid:id}/alignment/{int:domain_index}", response=AlignmentDetailsResponseSchema
+    "/{uuid:id}/alignment/{int:domain_index}", response=AlignmentDetailsResponseSchema, 
+    include_in_schema=False
 )
 @wrap_success_response
 def get_alignment_details(request, id: uuid.UUID, domain_index: int):
