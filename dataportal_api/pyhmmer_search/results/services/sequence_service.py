@@ -5,9 +5,9 @@ Sequence service for PyHMMER sequence database operations.
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Optional
+from typing import List, Dict
 
-from pyhmmer.easel import SequenceFile, SSIReader
+from pyhmmer.easel import SequenceFile
 
 logger = logging.getLogger(__name__)
 
@@ -64,28 +64,30 @@ class SequenceService:
                             break
         except Exception as e:
             logger.error(f"Error fetching sequence chunk: {e}")
-        
+
         return sequences
 
     @staticmethod
     def fetch_sequences_parallel(
-        target_names: List[str], 
-        db_path: str, 
-        max_workers: int = 4, 
-        chunk_size: int = 1000
+        target_names: List[str],
+        db_path: str,
+        max_workers: int = 4,
+        chunk_size: int = 1000,
     ) -> Dict[str, str]:
         """Fetch sequences in parallel using multiple workers."""
         all_sequences = {}
-        
+
         # Split targets into chunks
         chunks = [
-            target_names[i: i + chunk_size]
+            target_names[i : i + chunk_size]
             for i in range(0, len(target_names), chunk_size)
         ]
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_chunk = {
-                executor.submit(SequenceService.fetch_sequence_chunk, db_path, chunk): chunk
+                executor.submit(
+                    SequenceService.fetch_sequence_chunk, db_path, chunk
+                ): chunk
                 for chunk in chunks
             }
 
@@ -96,4 +98,4 @@ class SequenceService:
                 except Exception as e:
                     logger.error(f"Error in sequence chunk: {e}")
 
-        return all_sequences 
+        return all_sequences

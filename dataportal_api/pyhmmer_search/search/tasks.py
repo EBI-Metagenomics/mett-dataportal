@@ -58,7 +58,7 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
             hmm_accession=(
                 alignment.hmm_accession.decode()
                 if alignment.hmm_accession
-                   and hasattr(alignment.hmm_accession, "decode")
+                and hasattr(alignment.hmm_accession, "decode")
                 else str(alignment.hmm_accession) if alignment.hmm_accession else None
             ),
             hmm_from=alignment.hmm_from,
@@ -88,18 +88,23 @@ def create_simple_alignment_display(alignment) -> Optional[AlignmentDisplay]:
             return None
 
         # Create our own match line from the sequences
-        mline = AlignmentCalculator.create_match_line(alignment.hmm_sequence, alignment.target_sequence)
+        mline = AlignmentCalculator.create_match_line(
+            alignment.hmm_sequence, alignment.target_sequence
+        )
         logger.info(f"Created match line: '{mline}' (length: {len(mline)})")
-        logger.info(f"HMM sequence: '{alignment.hmm_sequence}' (length: {len(alignment.hmm_sequence)})")
-        logger.info(f"Target sequence: '{alignment.target_sequence}' (length: {len(alignment.target_sequence)})")
+        logger.info(
+            f"HMM sequence: '{alignment.hmm_sequence}' (length: {len(alignment.hmm_sequence)})"
+        )
+        logger.info(
+            f"Target sequence: '{alignment.target_sequence}' (length: {len(alignment.target_sequence)})"
+        )
 
         # Calculate identity and similarity using our match line
-        (identity_pct, number_of_identical), (similarity_pct, number_of_identical_and_similar) = (
-            AlignmentCalculator.calculate_identity_and_similarity_from_match_line(
-                alignment.hmm_sequence,
-                mline,
-                alignment.target_sequence
-            )
+        (identity_pct, number_of_identical), (
+            similarity_pct,
+            number_of_identical_and_similar,
+        ) = AlignmentCalculator.calculate_identity_and_similarity_from_match_line(
+            alignment.hmm_sequence, mline, alignment.target_sequence
         )
 
         return AlignmentDisplay(
@@ -193,9 +198,7 @@ def run_search(self, job_id: str):
                         )
                         logger.error("Available jobs in database:")
                         try:
-                            all_jobs = HmmerJob.objects.all()[
-                                       :10
-                                       ]
+                            all_jobs = HmmerJob.objects.all()[:10]
                             for j in all_jobs:
                                 logger.error(f"  - Job ID: {j.id}, Created: {j.pk}")
                         except Exception as e:
@@ -410,7 +413,9 @@ def run_search(self, job_id: str):
                             aln = alignments[0]
                             aligned_query, aligned_target, score, begin, end = aln
 
-                            identity_sequence = AlignmentCalculator.create_match_line(aligned_query, aligned_target)
+                            identity_sequence = AlignmentCalculator.create_match_line(
+                                aligned_query, aligned_target
+                            )
 
                             pyhmmer_alignment = PyhmmerAlignmentSchema(
                                 hmm_name=name.decode(),
@@ -451,9 +456,9 @@ def run_search(self, job_id: str):
 
             first_domain_seq = None
             if (
-                    domains
-                    and domains[0].alignment
-                    and domains[0].alignment.target_sequence
+                domains
+                and domains[0].alignment
+                and domains[0].alignment.target_sequence
             ):
                 first_domain_seq = domains[0].alignment.target_sequence.replace("-", "")
 
@@ -484,16 +489,16 @@ def run_search(self, job_id: str):
             logger.info(f"Hit bit score: {hit.score}")
 
             if (
-                    job.threshold == HmmerJob.ThresholdChoices.EVALUE
-                    and hit.evalue < job.threshold_value
+                job.threshold == HmmerJob.ThresholdChoices.EVALUE
+                and hit.evalue < job.threshold_value
             ):
                 logger.info(
                     f"Hit passes EVALUE filter: {hit.evalue} < {job.threshold_value}"
                 )
                 results.append(hit_obj)
             elif (
-                    job.threshold == HmmerJob.ThresholdChoices.BITSCORE
-                    and hit.score > job.threshold_value
+                job.threshold == HmmerJob.ThresholdChoices.BITSCORE
+                and hit.score > job.threshold_value
             ):
                 logger.info(
                     f"Hit passes BITSCORE filter: {hit.score} > {job.threshold_value}"
@@ -644,9 +649,7 @@ def test_task(self):
     return "OK"
 
 
-def parse_biopython_alignment(
-        query: str, target: str
-) -> Optional[AlignmentDisplay]:
+def parse_biopython_alignment(query: str, target: str) -> Optional[AlignmentDisplay]:
     """Create simple alignment display using Biopython for phmmer cases"""
     try:
         alignments = pairwise2.align.globalxx(query, target)
@@ -673,8 +676,11 @@ def parse_biopython_alignment(
         sqfrom = first_non_gap(aligned_target) + 1
         sqto = last_non_gap(aligned_target) + 1
 
-        (identity_pct, number_of_identical), (similarity_pct, number_of_identical_and_similar) = (
-            AlignmentCalculator.calculate_identity_and_similarity_from_sequences(aligned_query, aligned_target)
+        (identity_pct, number_of_identical), (
+            similarity_pct,
+            number_of_identical_and_similar,
+        ) = AlignmentCalculator.calculate_identity_and_similarity_from_sequences(
+            aligned_query, aligned_target
         )
 
         return AlignmentDisplay(

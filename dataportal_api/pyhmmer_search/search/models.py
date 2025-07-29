@@ -9,7 +9,7 @@ from ..constants import DEFAULT_MX, MX_CHOICES_TUPLES
 
 class HmmerJob(models.Model):
     # Use constants for MX choices
-    MXChoices = models.TextChoices('MXChoices', MX_CHOICES_TUPLES)
+    MXChoices = models.TextChoices("MXChoices", MX_CHOICES_TUPLES)
 
     class AlgoChoices(models.TextChoices):
         PHMMER = "phmmer"

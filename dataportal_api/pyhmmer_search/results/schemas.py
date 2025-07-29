@@ -104,7 +104,9 @@ class CutOffSchema(Schema):
 class GapPenaltiesSchema(Schema):
     popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
     pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
-    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
+    mx: Optional[MXChoicesType] = Field(
+        default=DEFAULT_MX, description="Substitution matrix"
+    )
 
 
 class ResultQuerySchema(Schema):

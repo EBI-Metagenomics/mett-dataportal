@@ -2,7 +2,6 @@ import logging
 from typing import List, Dict, Optional
 
 from cachetools import LRUCache
-from elasticsearch_dsl import Search
 
 from dataportal.services.base_service import CachedService
 from dataportal.utils.constants import (
@@ -33,7 +32,7 @@ class EssentialityService(CachedService[Dict, str]):
         cached_data = self._get_from_cache(cache_key)
         if cached_data:
             return cached_data
-        
+
         # Load data if not in cache
         data = await self.load_essentiality_data_by_strain()
         strain_data = data.get(id, {})
@@ -51,8 +50,6 @@ class EssentialityService(CachedService[Dict, str]):
         if query in data:
             return [data[query]]
         return []
-
-
 
     async def load_essentiality_data_by_strain(
         self,

@@ -116,7 +116,9 @@ class SearchRequestSchema(ModelSchema):
     threshold: Literal["evalue", "bitscore"]
     threshold_value: float
     input: str
-    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
+    mx: Optional[MXChoicesType] = Field(
+        default=DEFAULT_MX, description="Substitution matrix"
+    )
 
     # E-value parameters
     E: Optional[float] = Field(None, description="Report E-values - Sequence")
@@ -215,11 +217,11 @@ class SearchRequestSchema(ModelSchema):
 
         # Check for invalid characters
         invalid_chars = (
-                set(sequence_upper)
-                - protein_chars
-                - dna_chars
-                - rna_chars
-                - {" ", "\n", "\r", "\t"}
+            set(sequence_upper)
+            - protein_chars
+            - dna_chars
+            - rna_chars
+            - {" ", "\n", "\r", "\t"}
         )
         if invalid_chars:
             raise PydanticCustomError(
@@ -360,7 +362,9 @@ class CutOffSchema(Schema):
 class GapPenaltiesSchema(Schema):
     popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
     pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
-    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
+    mx: Optional[MXChoicesType] = Field(
+        default=DEFAULT_MX, description="Substitution matrix"
+    )
 
 
 class ResultQuerySchema(Schema):

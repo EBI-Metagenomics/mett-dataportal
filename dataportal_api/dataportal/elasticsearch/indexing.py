@@ -1,6 +1,4 @@
-from elasticsearch_dsl import connections
 from dataportal.models import SpeciesDocument, StrainDocument, GeneDocument
-import os
 
 # Note: Elasticsearch connection is already established in settings.py via elasticsearch_client.py
 # This module uses the existing connection

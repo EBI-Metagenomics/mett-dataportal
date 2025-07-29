@@ -17,9 +17,7 @@ class FastaService:
 
     @staticmethod
     def generate_enhanced_fasta_content(
-        results: List[Dict[str, Any]], 
-        db_path: str, 
-        query_input: str
+        results: List[Dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         """Generate enhanced FASTA content from search results."""
         output = io.StringIO()
@@ -33,7 +31,7 @@ class FastaService:
         for hit in results:
             target = hit.get("target", "")
             description = hit.get("description", "")
-            
+
             if not target:
                 continue
 
@@ -42,7 +40,7 @@ class FastaService:
 
             if sequence:
                 for i in range(0, len(sequence), 60):
-                    output.write(sequence[i: i + 60] + "\n")
+                    output.write(sequence[i : i + 60] + "\n")
                 logger.debug(f"Used fallback sequence for {target}")
             else:
                 output.write("N/A\n")
@@ -67,10 +65,14 @@ class FastaService:
 
             try:
                 decompressed = gzip.decompress(compressed_content).decode("utf-8")
-                logger.info(f"Decompression test passed: {len(decompressed)} characters")
+                logger.info(
+                    f"Decompression test passed: {len(decompressed)} characters"
+                )
             except Exception as decompress_error:
                 logger.error(f"Decompression test failed: {decompress_error}")
-                logger.warning("Returning uncompressed content due to compression error")
+                logger.warning(
+                    "Returning uncompressed content due to compression error"
+                )
                 return content_bytes
 
             return compressed_content
@@ -99,7 +101,9 @@ class FastaService:
         for i, line in enumerate(lines):
             if i % 2 == 0:
                 if not line.startswith(">"):
-                    logger.error(f"Line {i + 1} should be a header but isn't: {line[:50]}")
+                    logger.error(
+                        f"Line {i + 1} should be a header but isn't: {line[:50]}"
+                    )
                     return False
             else:
                 if line.startswith(">"):
@@ -134,9 +138,9 @@ class FastaService:
     def format_sequence_to_fasta(sequence: str, header: str) -> str:
         """Format a sequence into FASTA format."""
         fasta_lines = [header]
-        
+
         # Write sequence in 60-character lines
         for i in range(0, len(sequence), 60):
-            fasta_lines.append(sequence[i: i + 60])
+            fasta_lines.append(sequence[i : i + 60])
 
-        return "\n".join(fasta_lines) + "\n" 
+        return "\n".join(fasta_lines) + "\n"

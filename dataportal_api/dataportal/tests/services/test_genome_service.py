@@ -43,7 +43,7 @@ def mock_strain_hits():
         "type_strain": True,
         "contigs": [
             {"seq_id": "contig_1", "length": 1000000},
-            {"seq_id": "contig_2", "length": 500000}
+            {"seq_id": "contig_2", "length": 500000},
         ],
     }
     hit1.isolate_name = "BU_ATCC8492"
@@ -63,7 +63,7 @@ def mock_strain_hits():
         "type_strain": True,
         "contigs": [
             {"seq_id": "contig_1", "length": 1200000},
-            {"seq_id": "contig_2", "length": 600000}
+            {"seq_id": "contig_2", "length": 600000},
         ],
     }
     hit2.isolate_name = "PV_ATCC8482"
@@ -334,9 +334,9 @@ async def test_get_essentiality_data(mock_load_cache):
 async def test_get_by_id_success(mock_sync_to_async, mock_strain_hits):
     """Test the ABC get_by_id method."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[mock_strain_hits[0]]):
+    with patch.object(service, "_execute_search", return_value=[mock_strain_hits[0]]):
         result = await service.get_by_id("BU_ATCC8492")
 
         assert result is not None
@@ -350,9 +350,9 @@ async def test_get_by_id_success(mock_sync_to_async, mock_strain_hits):
 async def test_get_by_id_not_found(mock_sync_to_async):
     """Test the ABC get_by_id method when genome not found."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to return empty results
-    with patch.object(service, '_execute_search', return_value=[]):
+    with patch.object(service, "_execute_search", return_value=[]):
         result = await service.get_by_id("INVALID")
 
         assert result is None
@@ -363,9 +363,11 @@ async def test_get_by_id_not_found(mock_sync_to_async):
 async def test_get_by_id_exception(mock_sync_to_async):
     """Test the ABC get_by_id method when exception occurs."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to raise an exception
-    with patch.object(service, '_execute_search', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service, "_execute_search", side_effect=Exception("Database connection failed")
+    ):
         with pytest.raises(ServiceError):
             await service.get_by_id("BU_ATCC8492")
 
@@ -375,9 +377,9 @@ async def test_get_by_id_exception(mock_sync_to_async):
 async def test_get_all_abc_method(mock_sync_to_async, mock_strain_hits):
     """Test the ABC get_all method."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=mock_strain_hits):
+    with patch.object(service, "_execute_search", return_value=mock_strain_hits):
         result = await service.get_all()
 
         assert len(result) == 2
@@ -391,9 +393,9 @@ async def test_get_all_abc_method(mock_sync_to_async, mock_strain_hits):
 async def test_get_all_abc_method_with_filters(mock_sync_to_async, mock_strain_hits):
     """Test the ABC get_all method with filters."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[mock_strain_hits[0]]):
+    with patch.object(service, "_execute_search", return_value=[mock_strain_hits[0]]):
         result = await service.get_all(species="BU")
 
         assert len(result) == 1
@@ -406,9 +408,11 @@ async def test_get_all_abc_method_with_filters(mock_sync_to_async, mock_strain_h
 async def test_get_all_abc_method_exception(mock_sync_to_async):
     """Test the ABC get_all method when exception occurs."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to raise an exception
-    with patch.object(service, '_execute_search', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service, "_execute_search", side_effect=Exception("Database connection failed")
+    ):
         with pytest.raises(ServiceError):
             await service.get_all()
 
@@ -418,9 +422,9 @@ async def test_get_all_abc_method_exception(mock_sync_to_async):
 async def test_search_abc_method(mock_sync_to_async, mock_strain_hits):
     """Test the ABC search method."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[mock_strain_hits[0]]):
+    with patch.object(service, "_execute_search", return_value=[mock_strain_hits[0]]):
         result = await service.search({"query": "BU"})
 
         assert len(result) == 1
@@ -433,16 +437,18 @@ async def test_search_abc_method(mock_sync_to_async, mock_strain_hits):
 async def test_search_abc_method_with_sorting(mock_sync_to_async, mock_strain_hits):
     """Test the ABC search method with sorting."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=mock_strain_hits):
-        result = await service.search({
-            "query": "test",
-            "sort_by": "isolate_name",
-            "sort_order": "asc",
-            "page": 1,
-            "page_size": 10
-        })
+    with patch.object(service, "_execute_search", return_value=mock_strain_hits):
+        result = await service.search(
+            {
+                "query": "test",
+                "sort_by": "isolate_name",
+                "sort_order": "asc",
+                "page": 1,
+                "page_size": 10,
+            }
+        )
 
         assert len(result) == 2
         assert isinstance(result[0], GenomeResponseSchema)
@@ -453,9 +459,11 @@ async def test_search_abc_method_with_sorting(mock_sync_to_async, mock_strain_hi
 async def test_search_abc_method_exception(mock_sync_to_async):
     """Test the ABC search method when exception occurs."""
     service = GenomeService()
-    
+
     # Mock the _execute_search method to raise an exception
-    with patch.object(service, '_execute_search', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service, "_execute_search", side_effect=Exception("Database connection failed")
+    ):
         with pytest.raises(ServiceError):
             await service.search({"query": "test"})
 
@@ -464,9 +472,9 @@ async def test_search_abc_method_exception(mock_sync_to_async):
 async def test_convert_hit_to_entity(mock_strain_hits):
     """Test the _convert_hit_to_entity method."""
     service = GenomeService()
-    
+
     result = service._convert_hit_to_entity(mock_strain_hits[0])
-    
+
     assert isinstance(result, GenomeResponseSchema)
     assert result.isolate_name == "BU_ATCC8492"
     assert result.species_scientific_name == "Bacteroides uniformis"
@@ -476,11 +484,11 @@ async def test_convert_hit_to_entity(mock_strain_hits):
 async def test_create_search():
     """Test the _create_search method from base class."""
     service = GenomeService()
-    
+
     search = service._create_search()
-    
+
     # Verify it's a Search object with correct index
-    assert hasattr(search, 'index')
+    assert hasattr(search, "index")
     # The actual index name should match what's defined in the service
     assert service.index_name == "strain_index"
 
@@ -489,7 +497,7 @@ async def test_create_search():
 async def test_handle_elasticsearch_error():
     """Test the _handle_elasticsearch_error method from base class."""
     service = GenomeService()
-    
+
     with pytest.raises(ServiceError):
         service._handle_elasticsearch_error(Exception("Test error"), "test operation")
 
@@ -498,12 +506,12 @@ async def test_handle_elasticsearch_error():
 async def test_validate_required_fields():
     """Test the _validate_required_fields method from base class."""
     service = GenomeService()
-    
+
     # Test with valid data
     valid_data = {"field1": "value1", "field2": "value2"}
     required_fields = ["field1", "field2"]
     service._validate_required_fields(valid_data, required_fields)  # Should not raise
-    
+
     # Test with missing field
     invalid_data = {"field1": "value1"}
     with pytest.raises(ServiceError):
@@ -514,14 +522,14 @@ async def test_validate_required_fields():
 async def test_resolve_sort_field():
     """Test the _resolve_sort_field method."""
     service = GenomeService()
-    
+
     # Test field mapping
     assert service._resolve_sort_field("species") == "species_acronym"
     assert service._resolve_sort_field("isolate_name") == "isolate_name.keyword"
     assert service._resolve_sort_field("genome") == "isolate_name.keyword"
     assert service._resolve_sort_field("strain") == "isolate_name.keyword"
     assert service._resolve_sort_field("name") == "isolate_name.keyword"
-    
+
     # Test unknown field (should return as-is)
     assert service._resolve_sort_field("unknown_field") == "unknown_field"
 
@@ -530,15 +538,15 @@ async def test_resolve_sort_field():
 async def test_convert_to_tsv(mock_strain_hits):
     """Test the convert_to_tsv method."""
     service = GenomeService()
-    
+
     # Convert mock hits to GenomeResponseSchema objects
     genomes = [
         service._convert_hit_to_entity(mock_strain_hits[0]),
-        service._convert_hit_to_entity(mock_strain_hits[1])
+        service._convert_hit_to_entity(mock_strain_hits[1]),
     ]
-    
+
     tsv_result = service.convert_to_tsv(genomes)
-    
+
     assert isinstance(tsv_result, str)
     assert "isolate_name" in tsv_result
     assert "BU_ATCC8492" in tsv_result

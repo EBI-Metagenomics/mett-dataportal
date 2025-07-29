@@ -5,7 +5,6 @@ import pytest
 from dataportal.schema.gene_schemas import (
     GenePaginationSchema,
     GeneResponseSchema,
-    GeneProteinSeqSchema,
     GeneSearchQuerySchema,
     GeneFacetedSearchQuerySchema,
     GeneAdvancedSearchQuerySchema,
@@ -477,9 +476,13 @@ async def test_get_by_id_not_found(mock_sync_to_async):
 async def test_get_by_id_exception(mock_sync_to_async):
     """Test the ABC get_by_id method when exception occurs."""
     service = GeneService()
-    
+
     # Mock the get_gene_by_locus_tag method to raise an exception
-    with patch.object(service, 'get_gene_by_locus_tag', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service,
+        "get_gene_by_locus_tag",
+        side_effect=Exception("Database connection failed"),
+    ):
         with pytest.raises(ServiceError):
             await service.get_by_id("BU_ATCC8492_00001")
 
@@ -565,13 +568,15 @@ async def test_search_abc_method_with_pagination(mock_sync_to_async):
     )
 
     service = GeneService()
-    result = await service.search({
-        "query": "dnaA",
-        "page": 1,
-        "per_page": 10,
-        "sort_field": "locus_tag",
-        "sort_order": "asc"
-    })
+    result = await service.search(
+        {
+            "query": "dnaA",
+            "page": 1,
+            "per_page": 10,
+            "sort_field": "locus_tag",
+            "sort_order": "asc",
+        }
+    )
 
     assert len(result) == 2
     assert isinstance(result[0], GeneResponseSchema)
@@ -592,9 +597,9 @@ async def test_search_abc_method_exception(mock_sync_to_async):
 async def test_convert_hit_to_entity():
     """Test the _convert_hit_to_entity method."""
     service = GeneService()
-    
+
     result = service._convert_hit_to_entity(mock_gene1)
-    
+
     assert isinstance(result, GeneResponseSchema)
     assert result.gene_name == "dnaA"
     assert result.locus_tag == "BU_ATCC8492_00001"
@@ -604,11 +609,11 @@ async def test_convert_hit_to_entity():
 async def test_create_search():
     """Test the _create_search method from base class."""
     service = GeneService()
-    
+
     search = service._create_search()
-    
+
     # Verify it's a Search object with correct index
-    assert hasattr(search, 'index')
+    assert hasattr(search, "index")
     # The actual index name should match what's defined in the service
     assert service.index_name == "gene_index"
 
@@ -617,7 +622,7 @@ async def test_create_search():
 async def test_handle_elasticsearch_error():
     """Test the _handle_elasticsearch_error method from base class."""
     service = GeneService()
-    
+
     with pytest.raises(ServiceError):
         service._handle_elasticsearch_error(Exception("Test error"), "test operation")
 
@@ -626,12 +631,12 @@ async def test_handle_elasticsearch_error():
 async def test_validate_required_fields():
     """Test the _validate_required_fields method from base class."""
     service = GeneService()
-    
+
     # Test with valid data
     valid_data = {"field1": "value1", "field2": "value2"}
     required_fields = ["field1", "field2"]
     service._validate_required_fields(valid_data, required_fields)  # Should not raise
-    
+
     # Test with missing field
     invalid_data = {"field1": "value1"}
     with pytest.raises(ServiceError):
@@ -642,18 +647,18 @@ async def test_validate_required_fields():
 async def test_parse_filters():
     """Test the _parse_filters method."""
     service = GeneService()
-    
+
     # Test valid filter string
     filter_str = "essentiality:essential,not_essential;pfam:PF00308,PF08299"
     result = service._parse_filters(filter_str)
-    
+
     assert result["essentiality"] == ["essential", "not_essential"]
     assert result["pfam"] == ["PF00308", "PF08299"]
-    
+
     # Test empty filter string
     assert service._parse_filters("") == {}
     assert service._parse_filters(None) == {}
-    
+
     # Test invalid filter string
     with pytest.raises(ServiceError):
         service._parse_filters("invalid_filter_format")
@@ -663,18 +668,18 @@ async def test_parse_filters():
 async def test_parse_filter_operators():
     """Test the _parse_filter_operators method."""
     service = GeneService()
-    
+
     # Test valid operators string
     operators_str = "essentiality:AND;pfam:OR"
     result = service._parse_filter_operators(operators_str)
-    
+
     assert result["essentiality"] == "AND"
     assert result["pfam"] == "OR"
-    
+
     # Test empty operators string
     assert service._parse_filter_operators("") == {}
     assert service._parse_filter_operators(None) == {}
-    
+
     # Test invalid operators string
     with pytest.raises(ServiceError):
         service._parse_filter_operators("invalid_operators_format")
@@ -684,15 +689,15 @@ async def test_parse_filter_operators():
 async def test_convert_to_tsv():
     """Test the convert_to_tsv method."""
     service = GeneService()
-    
+
     # Convert mock genes to GeneResponseSchema objects
     genes = [
         service._convert_hit_to_entity(mock_gene1),
-        service._convert_hit_to_entity(mock_gene2)
+        service._convert_hit_to_entity(mock_gene2),
     ]
-    
+
     tsv_result = service.convert_to_tsv(genes)
-    
+
     assert isinstance(tsv_result, str)
     assert "isolate_name" in tsv_result
     assert "gene_name" in tsv_result

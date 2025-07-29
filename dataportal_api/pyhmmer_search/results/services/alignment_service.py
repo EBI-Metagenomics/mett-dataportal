@@ -12,36 +12,40 @@ class AlignmentService:
 
     @staticmethod
     def generate_enhanced_aligned_fasta_content(
-            results: List[Dict[str, Any]],
-            db_path: str,
-            query_input: str
+        results: List[Dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         """Generate enhanced aligned FASTA content using PyHMMER's hmmalign for proper MSA."""
         logger.info("Trying PyHMMER MSA generation first...")
         try:
-            return AlignmentService.generate_pyhmmer_msa_content(results, db_path, query_input)
+            return AlignmentService.generate_pyhmmer_msa_content(
+                results, db_path, query_input
+            )
         except Exception as e:
             logger.warning(f"PyHMMER MSA generation failed: {e}")
             logger.info("Falling back to simple MSA generation...")
             try:
-                return AlignmentService.generate_simple_msa_content(results, db_path, query_input)
+                return AlignmentService.generate_simple_msa_content(
+                    results, db_path, query_input
+                )
             except Exception as e2:
                 logger.warning(f"Simple MSA generation failed: {e2}")
                 logger.info("Falling back to fallback aligned FASTA generation...")
-                return AlignmentService.generate_fallback_aligned_fasta_content(results, db_path, query_input)
+                return AlignmentService.generate_fallback_aligned_fasta_content(
+                    results, db_path, query_input
+                )
 
     @staticmethod
     def generate_pyhmmer_msa_content(
-            results: List[Dict[str, Any]],
-            db_path: str,
-            query_input: str
+        results: List[Dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         """Generate MSA content using PyHMMER's hmmalign - directly from other project."""
         try:
-            import os
             import re
-            import concurrent.futures
-            from pyhmmer.easel import SSIReader, TextSequence, DigitalSequenceBlock, Alphabet
+            from pyhmmer.easel import (
+                TextSequence,
+                DigitalSequenceBlock,
+                Alphabet,
+            )
             from pyhmmer.plan7 import Background, Builder
             from pyhmmer.hmmer import hmmalign
 
@@ -59,27 +63,33 @@ class AlignmentService:
 
             # Build HMM from query sequence exactly like the other project
             # Clean the query sequence of any invalid characters
-            input_sequence = ''.join(char for char in input_sequence if char in 'ACDEFGHIKLMNPQRSTVWY*')
+            input_sequence = "".join(
+                char for char in input_sequence if char in "ACDEFGHIKLMNPQRSTVWY*"
+            )
 
             sequence = TextSequence(name=header.encode(), sequence=input_sequence)
             hmm, _, _ = builder.build(sequence.digitize(alphabet), background)
 
             # Get target names and create a mapping
-            target_names = [hit.get("target", "") for hit in results if hit.get("target")]
+            target_names = [
+                hit.get("target", "") for hit in results if hit.get("target")
+            ]
 
             # Fetch sequences using the existing service that was working
             from .sequence_service import SequenceService
-            all_sequences = SequenceService.fetch_sequences_parallel(target_names, db_path)
+
+            all_sequences = SequenceService.fetch_sequences_parallel(
+                target_names, db_path
+            )
 
             # Create digital sequence block exactly like the other project
             digital_sequences = []
 
             # Add query sequence first
             digital_sequences.append(
-                TextSequence(
-                    name=b"query",
-                    sequence=input_sequence
-                ).digitize(Alphabet.amino())
+                TextSequence(name=b"query", sequence=input_sequence).digitize(
+                    Alphabet.amino()
+                )
             )
 
             for hit in results:
@@ -94,7 +104,7 @@ class AlignmentService:
                         env_from = domain.get("env_from", 1)
                         env_to = domain.get("env_to", len(sequence_str))
                         # Extract domain sequence exactly like the other project
-                        domain_sequence = sequence_str[env_from - 1: env_to]
+                        domain_sequence = sequence_str[env_from - 1 : env_to]
                     else:
                         domain_sequence = sequence_str
 
@@ -106,13 +116,16 @@ class AlignmentService:
                         seq_name = target.encode()
 
                     # Clean the sequence of any invalid characters
-                    domain_sequence = ''.join(char for char in domain_sequence if char in 'ACDEFGHIKLMNPQRSTVWY*')
+                    domain_sequence = "".join(
+                        char
+                        for char in domain_sequence
+                        if char in "ACDEFGHIKLMNPQRSTVWY*"
+                    )
 
                     digital_sequences.append(
-                        TextSequence(
-                            name=seq_name,
-                            sequence=domain_sequence
-                        ).digitize(Alphabet.amino())
+                        TextSequence(name=seq_name, sequence=domain_sequence).digitize(
+                            Alphabet.amino()
+                        )
                     )
 
             if not digital_sequences:
@@ -148,10 +161,11 @@ class AlignmentService:
 
                 # Write the aligned sequence with gaps
                 for j in range(0, len(aligned_sequence), 60):
-                    output.write(aligned_sequence[j: j + 60].encode() + b"\n")
+                    output.write(aligned_sequence[j : j + 60].encode() + b"\n")
 
             content_bytes = output.getvalue()
             import gzip
+
             return gzip.compress(content_bytes)
 
         except Exception as e:
@@ -189,9 +203,7 @@ class AlignmentService:
 
     @staticmethod
     def generate_simple_msa_content(
-            results: List[Dict[str, Any]],
-            db_path: str,
-            query_input: str
+        results: List[Dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         """Generate simple MSA content using alignment data."""
         output = io.StringIO()
@@ -206,10 +218,14 @@ class AlignmentService:
         # Write query sequence
         if query_seq:
             # Extract just the sequence name from the header, not the full header
-            query_name = query_lines[0].lstrip(">").split()[0] if query_lines[0].startswith(">") else "query"
+            query_name = (
+                query_lines[0].lstrip(">").split()[0]
+                if query_lines[0].startswith(">")
+                else "query"
+            )
             output.write(f">query {query_name}\n")
             for i in range(0, len(query_seq), 60):
-                output.write(query_seq[i: i + 60] + "\n")
+                output.write(query_seq[i : i + 60] + "\n")
 
         # Process each hit
         for hit in results:
@@ -231,32 +247,33 @@ class AlignmentService:
                     if target_seq:
                         output.write(f">{target} {description}\n")
                         for i in range(0, len(target_seq), 60):
-                            output.write(target_seq[i: i + 60] + "\n")
+                            output.write(target_seq[i : i + 60] + "\n")
                 elif alignment_display:
                     # Use simple alignment display data - this should show the aligned sequence with gaps
                     target_seq = alignment_display.get("aseq", "")
                     if target_seq:
                         output.write(f">{target} {description}\n")
                         for i in range(0, len(target_seq), 60):
-                            output.write(target_seq[i: i + 60] + "\n")
+                            output.write(target_seq[i : i + 60] + "\n")
                     else:
                         # Fallback to database sequence if no alignment data
-                        sequence = SequenceService.fetch_sequence_from_database(target, db_path)
+                        sequence = SequenceService.fetch_sequence_from_database(
+                            target, db_path
+                        )
                         if sequence:
                             output.write(f">{target} {description}\n")
                             for i in range(0, len(sequence), 60):
-                                output.write(sequence[i: i + 60] + "\n")
+                                output.write(sequence[i : i + 60] + "\n")
 
         content = output.getvalue()
         content_bytes = content.encode("utf-8")
         import gzip
+
         return gzip.compress(content_bytes)
 
     @staticmethod
     def generate_fallback_aligned_fasta_content(
-            results: List[Dict[str, Any]],
-            db_path: str,
-            query_input: str
+        results: List[Dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         """Generate fallback aligned FASTA content using simple alignment display data."""
         output = io.StringIO()
@@ -271,10 +288,14 @@ class AlignmentService:
         # Write query sequence
         if query_seq:
             # Extract just the sequence name from the header, not the full header
-            query_name = query_lines[0].lstrip(">").split()[0] if query_lines[0].startswith(">") else "query"
+            query_name = (
+                query_lines[0].lstrip(">").split()[0]
+                if query_lines[0].startswith(">")
+                else "query"
+            )
             output.write(f">query {query_name}\n")
             for i in range(0, len(query_seq), 60):
-                output.write(query_seq[i: i + 60] + "\n")
+                output.write(query_seq[i : i + 60] + "\n")
 
         # Process each hit
         for hit in results:
@@ -299,16 +320,16 @@ class AlignmentService:
                     if query_seq and target_seq:
                         output.write(f">{target}_query {description}\n")
                         for i in range(0, len(query_seq), 60):
-                            output.write(query_seq[i: i + 60] + "\n")
+                            output.write(query_seq[i : i + 60] + "\n")
 
                         output.write(f">{target}_target {description}\n")
                         for i in range(0, len(target_seq), 60):
-                            output.write(target_seq[i: i + 60] + "\n")
+                            output.write(target_seq[i : i + 60] + "\n")
 
                         if identity_seq:
                             output.write(f">{target}_identity {description}\n")
                             for i in range(0, len(identity_seq), 60):
-                                output.write(identity_seq[i: i + 60] + "\n")
+                                output.write(identity_seq[i : i + 60] + "\n")
                 elif alignment_display:
                     # Use simple alignment display data
                     query_seq = alignment_display.get("model", "")
@@ -316,12 +337,13 @@ class AlignmentService:
                     match_line = alignment_display.get("mline", "")
 
                     logger.debug(
-                        f"Alignment display for {target}: model={query_seq[:20]}..., aseq={target_seq[:20]}...")
+                        f"Alignment display for {target}: model={query_seq[:20]}..., aseq={target_seq[:20]}..."
+                    )
 
                     if query_seq:
                         output.write(f">{target}_query {description}\n")
                         for i in range(0, len(query_seq), 60):
-                            output.write(query_seq[i: i + 60] + "\n")
+                            output.write(query_seq[i : i + 60] + "\n")
                     else:
                         output.write(f">{target}_query {description}\n")
                         output.write("N/A\n")
@@ -329,7 +351,7 @@ class AlignmentService:
                     if target_seq:
                         output.write(f">{target}_target {description}\n")
                         for i in range(0, len(target_seq), 60):
-                            output.write(target_seq[i: i + 60] + "\n")
+                            output.write(target_seq[i : i + 60] + "\n")
                     else:
                         output.write(f">{target}_target {description}\n")
                         output.write("N/A\n")
@@ -337,7 +359,7 @@ class AlignmentService:
                     if match_line:
                         output.write(f">{target}_match {description}\n")
                         for i in range(0, len(match_line), 60):
-                            output.write(match_line[i: i + 60] + "\n")
+                            output.write(match_line[i : i + 60] + "\n")
             else:
                 # No domains - try to get full sequence from database
                 sequence = SequenceService.fetch_sequence_from_database(target, db_path)
@@ -351,4 +373,5 @@ class AlignmentService:
         content = output.getvalue()
         content_bytes = content.encode("utf-8")
         import gzip
+
         return gzip.compress(content_bytes)

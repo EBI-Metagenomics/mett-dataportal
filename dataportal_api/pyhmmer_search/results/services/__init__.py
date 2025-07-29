@@ -8,8 +8,8 @@ from .fasta_service import FastaService
 from .alignment_service import AlignmentService
 
 __all__ = [
-    'DownloadService',
-    'SequenceService', 
-    'FastaService',
-    'AlignmentService',
-] 
+    "DownloadService",
+    "SequenceService",
+    "FastaService",
+    "AlignmentService",
+]

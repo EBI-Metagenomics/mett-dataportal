@@ -18,4 +18,3 @@ def init_es_connection(host, user, password, timeout, max_retries):
         connections_per_node=10,
         retry_on_status=[429, 500, 502, 503, 504],
     )
-

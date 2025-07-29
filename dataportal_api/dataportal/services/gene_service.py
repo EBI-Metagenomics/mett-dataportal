@@ -75,18 +75,18 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def get_all(self, **kwargs) -> List[GeneResponseSchema]:
         """Retrieve all genes with optional filtering."""
         try:
-            page = kwargs.get('page', 1)
-            per_page = kwargs.get('per_page', DEFAULT_PER_PAGE_CNT)
-            sort_field = kwargs.get('sort_field')
-            sort_order = kwargs.get('sort_order', DEFAULT_SORT)
-            
+            page = kwargs.get("page", 1)
+            per_page = kwargs.get("per_page", DEFAULT_PER_PAGE_CNT)
+            sort_field = kwargs.get("sort_field")
+            sort_order = kwargs.get("sort_order", DEFAULT_SORT)
+
             pagination_result = await self.get_all_genes(
                 page=page,
                 per_page=per_page,
                 sort_field=sort_field,
-                sort_order=sort_order
+                sort_order=sort_order,
             )
-            
+
             return pagination_result.results
         except Exception as e:
             self._handle_elasticsearch_error(e, "get_all genes")
@@ -96,13 +96,13 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         try:
             # Convert dict to GeneSearchQuerySchema
             search_params = GeneSearchQuerySchema(
-                query=query.get('query', ''),
-                page=query.get('page', 1),
-                per_page=query.get('per_page', DEFAULT_PER_PAGE_CNT),
-                sort_field=query.get('sort_field'),
-                sort_order=query.get('sort_order', DEFAULT_SORT)
+                query=query.get("query", ""),
+                page=query.get("page", 1),
+                per_page=query.get("per_page", DEFAULT_PER_PAGE_CNT),
+                sort_field=query.get("sort_field"),
+                sort_order=query.get("sort_order", DEFAULT_SORT),
             )
-            
+
             pagination_result = await self.search_genes(search_params)
             return pagination_result.results
         except Exception as e:

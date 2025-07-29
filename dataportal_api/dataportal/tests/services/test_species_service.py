@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -12,9 +12,9 @@ from dataportal.utils.exceptions import ServiceError
 async def test_get_all_species_empty(mock_sync_to_async):
     # Mock the actual service method instead of sync_to_async
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return empty results
-    with patch.object(service, '_execute_search', return_value=[]):
+    with patch.object(service, "_execute_search", return_value=[]):
         result = await service.get_all_species()
         assert result == []
 
@@ -39,9 +39,9 @@ async def test_get_all_species(mock_sync_to_async):
     }
 
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[doc1, doc2]):
+    with patch.object(service, "_execute_search", return_value=[doc1, doc2]):
         result = await service.get_all_species()
 
         assert len(result) == 2
@@ -62,9 +62,9 @@ async def test_get_species_by_acronym(mock_sync_to_async):
     }
 
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[doc]):
+    with patch.object(service, "_execute_search", return_value=[doc]):
         result = await service.get_species_by_acronym("BU")
 
         assert result.scientific_name == "Bacteroides uniformis"
@@ -75,9 +75,9 @@ async def test_get_species_by_acronym(mock_sync_to_async):
 @patch("dataportal.services.species_service.sync_to_async")
 async def test_get_species_by_acronym_not_found(mock_sync_to_async):
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return empty results
-    with patch.object(service, '_execute_search', return_value=[]):
+    with patch.object(service, "_execute_search", return_value=[]):
         with pytest.raises(Exception) as excinfo:
             await service.get_species_by_acronym("ABC")
 
@@ -88,9 +88,11 @@ async def test_get_species_by_acronym_not_found(mock_sync_to_async):
 @patch("dataportal.services.species_service.sync_to_async")
 async def test_get_species_by_acronym_exception(mock_sync_to_async):
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to raise an exception
-    with patch.object(service, '_execute_search', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service, "_execute_search", side_effect=Exception("Database connection failed")
+    ):
         with pytest.raises(ServiceError):
             await service.get_species_by_acronym("BU")
 
@@ -99,9 +101,11 @@ async def test_get_species_by_acronym_exception(mock_sync_to_async):
 @patch("dataportal.services.species_service.sync_to_async")
 async def test_get_all_species_exception(mock_sync_to_async):
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to raise an exception
-    with patch.object(service, '_execute_search', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service, "_execute_search", side_effect=Exception("Database connection failed")
+    ):
         with pytest.raises(ServiceError):
             await service.get_all_species()
 
@@ -120,9 +124,9 @@ async def test_get_by_id_success(mock_sync_to_async):
     }
 
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[doc]):
+    with patch.object(service, "_execute_search", return_value=[doc]):
         result = await service.get_by_id("BU")
 
         assert result is not None
@@ -136,9 +140,9 @@ async def test_get_by_id_success(mock_sync_to_async):
 async def test_get_by_id_not_found(mock_sync_to_async):
     """Test the ABC get_by_id method when species not found."""
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return empty results
-    with patch.object(service, '_execute_search', return_value=[]):
+    with patch.object(service, "_execute_search", return_value=[]):
         result = await service.get_by_id("INVALID")
 
         assert result is None
@@ -149,9 +153,11 @@ async def test_get_by_id_not_found(mock_sync_to_async):
 async def test_get_by_id_exception(mock_sync_to_async):
     """Test the ABC get_by_id method when exception occurs."""
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to raise an exception
-    with patch.object(service, '_execute_search', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service, "_execute_search", side_effect=Exception("Database connection failed")
+    ):
         with pytest.raises(ServiceError):
             await service.get_by_id("BU")
 
@@ -177,9 +183,9 @@ async def test_get_all_abc_method(mock_sync_to_async):
     }
 
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[doc1, doc2]):
+    with patch.object(service, "_execute_search", return_value=[doc1, doc2]):
         result = await service.get_all()
 
         assert len(result) == 2
@@ -201,9 +207,9 @@ async def test_get_all_abc_method_with_filters(mock_sync_to_async):
     }
 
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[doc]):
+    with patch.object(service, "_execute_search", return_value=[doc]):
         result = await service.get_all(acronym="BU")
 
         assert len(result) == 1
@@ -216,9 +222,11 @@ async def test_get_all_abc_method_with_filters(mock_sync_to_async):
 async def test_get_all_abc_method_exception(mock_sync_to_async):
     """Test the ABC get_all method when exception occurs."""
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to raise an exception
-    with patch.object(service, '_execute_search', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service, "_execute_search", side_effect=Exception("Database connection failed")
+    ):
         with pytest.raises(ServiceError):
             await service.get_all()
 
@@ -236,9 +244,9 @@ async def test_search_abc_method(mock_sync_to_async):
     }
 
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to return our test data
-    with patch.object(service, '_execute_search', return_value=[doc]):
+    with patch.object(service, "_execute_search", return_value=[doc]):
         result = await service.search({"query": "Bacteroides"})
 
         assert len(result) == 1
@@ -251,9 +259,11 @@ async def test_search_abc_method(mock_sync_to_async):
 async def test_search_abc_method_exception(mock_sync_to_async):
     """Test the ABC search method when exception occurs."""
     service = SpeciesService()
-    
+
     # Mock the _execute_search method to raise an exception
-    with patch.object(service, '_execute_search', side_effect=Exception("Database connection failed")):
+    with patch.object(
+        service, "_execute_search", side_effect=Exception("Database connection failed")
+    ):
         with pytest.raises(ServiceError):
             await service.search({"query": "test"})
 
@@ -262,7 +272,7 @@ async def test_search_abc_method_exception(mock_sync_to_async):
 async def test_convert_hit_to_entity():
     """Test the _convert_hit_to_entity method."""
     service = SpeciesService()
-    
+
     # Create a mock hit
     mock_hit = MagicMock()
     mock_hit.to_dict.return_value = {
@@ -271,9 +281,9 @@ async def test_convert_hit_to_entity():
         "taxonomy_id": 123,
         "acronym": "BU",
     }
-    
+
     result = service._convert_hit_to_entity(mock_hit)
-    
+
     assert isinstance(result, SpeciesSchema)
     assert result.scientific_name == "Bacteroides uniformis"
     assert result.acronym == "BU"
@@ -283,11 +293,11 @@ async def test_convert_hit_to_entity():
 async def test_create_search():
     """Test the _create_search method from base class."""
     service = SpeciesService()
-    
+
     search = service._create_search()
-    
+
     # Verify it's a Search object with correct index
-    assert hasattr(search, 'index')
+    assert hasattr(search, "index")
     # The actual index name should match what's defined in the service
     assert service.index_name == "species_index"
 
@@ -296,7 +306,7 @@ async def test_create_search():
 async def test_handle_elasticsearch_error():
     """Test the _handle_elasticsearch_error method from base class."""
     service = SpeciesService()
-    
+
     with pytest.raises(ServiceError):
         service._handle_elasticsearch_error(Exception("Test error"), "test operation")
 
@@ -305,12 +315,12 @@ async def test_handle_elasticsearch_error():
 async def test_validate_required_fields():
     """Test the _validate_required_fields method from base class."""
     service = SpeciesService()
-    
+
     # Test with valid data
     valid_data = {"field1": "value1", "field2": "value2"}
     required_fields = ["field1", "field2"]
     service._validate_required_fields(valid_data, required_fields)  # Should not raise
-    
+
     # Test with missing field
     invalid_data = {"field1": "value1"}
     with pytest.raises(ServiceError):

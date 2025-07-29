@@ -1,6 +1,5 @@
 import pytest
 from django.test import Client
-from unittest.mock import MagicMock, patch
 
 
 @pytest.fixture
@@ -15,11 +14,11 @@ def api_client():
 #     mock_settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 #     mock_settings.MIDDLEWARE = []
 #     mock_settings.ROOT_URLCONF = "dataportal.urls"
-    
+
 #     # Mock the service factory and service
 #     mock_service = MagicMock()
 #     mock_get_species_service.return_value = mock_service
-    
+
 #     mock_doc1 = MagicMock()
 #     mock_doc1.to_dict.return_value = {
 #         "scientific_name": "Bacteroides uniformis",
@@ -54,7 +53,7 @@ def api_client():
 #     mock_settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 #     mock_settings.MIDDLEWARE = []
 #     mock_settings.ROOT_URLCONF = "dataportal.urls"
-    
+
 #     # Mock the service factory and service
 #     mock_service = MagicMock()
 #     mock_get_species_service.return_value = mock_service
@@ -77,11 +76,11 @@ def api_client():
 #     mock_settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 #     mock_settings.MIDDLEWARE = []
 #     mock_settings.ROOT_URLCONF = "dataportal.urls"
-    
+
 #     # Mock the service factory and service
 #     mock_service = MagicMock()
 #     mock_get_genome_service.return_value = mock_service
-    
+
 #     mock_genome1 = MagicMock()
 #     mock_genome1.model_dump.return_value = {
 #         "isolate_name": "BU_ATCC8492",
@@ -129,11 +128,11 @@ def api_client():
 #     mock_settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 #     mock_settings.MIDDLEWARE = []
 #     mock_settings.ROOT_URLCONF = "dataportal.urls"
-    
+
 #     # Mock the service factory and service
 #     mock_service = MagicMock()
 #     mock_get_gene_service.return_value = mock_service
-    
+
 #     mock_gene1 = MagicMock()
 #     mock_gene1.model_dump.return_value = {
 #         "locus_tag": "BU_ATCC8492_00001",
@@ -179,11 +178,11 @@ def api_client():
 #     mock_settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 #     mock_settings.MIDDLEWARE = []
 #     mock_settings.ROOT_URLCONF = "dataportal.urls"
-    
+
 #     # Mock the service factory and service
 #     mock_service = MagicMock()
 #     mock_get_species_service.return_value = mock_service
-    
+
 #     mock_species = MagicMock()
 #     mock_species.model_dump.return_value = {
 #         "scientific_name": "Bacteroides uniformis",
@@ -209,11 +208,11 @@ def api_client():
 #     mock_settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 #     mock_settings.MIDDLEWARE = []
 #     mock_settings.ROOT_URLCONF = "dataportal.urls"
-    
+
 #     # Mock the service factory and service
 #     mock_service = MagicMock()
 #     mock_get_genome_service.return_value = mock_service
-    
+
 #     mock_genome = MagicMock()
 #     mock_genome.model_dump.return_value = {
 #         "isolate_name": "BU_ATCC8492",
@@ -240,11 +239,11 @@ def api_client():
 #     mock_settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 #     mock_settings.MIDDLEWARE = []
 #     mock_settings.ROOT_URLCONF = "dataportal.urls"
-    
+
 #     # Mock the service factory and service
 #     mock_service = MagicMock()
 #     mock_get_gene_service.return_value = mock_service
-    
+
 #     mock_gene = MagicMock()
 #     mock_gene.model_dump.return_value = {
 #         "locus_tag": "BU_ATCC8492_00001",

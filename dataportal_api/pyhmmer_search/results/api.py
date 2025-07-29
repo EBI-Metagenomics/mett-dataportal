@@ -62,7 +62,9 @@ def download_results(request, id: uuid.UUID, format: str):
             filename = f"pyhmmer_hits_{id}.tsv"
             content_type = "text/tab-separated-values"
         elif format == "fasta":
-            content = FastaService.generate_enhanced_fasta_content(result_data, db_path, job.input)
+            content = FastaService.generate_enhanced_fasta_content(
+                result_data, db_path, job.input
+            )
             filename = f"pyhmmer_hits_{id}.fasta.gz"
             content_type = "application/gzip"
             logger.info(f"Generated FASTA content type: {type(content)}")
@@ -93,7 +95,9 @@ def download_results(request, id: uuid.UUID, format: str):
                     "Returning uncompressed content due to compression failure"
                 )
                 content = (
-                    FastaService.generate_enhanced_fasta_content(result_data, db_path, job.input)
+                    FastaService.generate_enhanced_fasta_content(
+                        result_data, db_path, job.input
+                    )
                     if format == "fasta"
                     else AlignmentService.generate_enhanced_aligned_fasta_content(
                         result_data, db_path, job.input

@@ -14,7 +14,6 @@ from dataportal.schema.species_schemas import (
 )
 from ..schema.response_schemas import PaginatedResponseSchema
 from ..services.service_factory import ServiceFactory
-from ..services.service_factory import ServiceFactory
 from ..utils.errors import raise_http_error, raise_internal_server_error
 from ..utils.exceptions import (
     ServiceError,

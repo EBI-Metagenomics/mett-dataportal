@@ -33,7 +33,7 @@ def reverse_populate_initial_databases(apps, schema_editor):
     # Delete the databases that were created
     db_ids = [
         "bu_type_strains",
-        "bu_all", 
+        "bu_all",
         "pv_type_strains",
         "pv_all",
         "bu_pv_type_strains",
@@ -49,5 +49,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(populate_initial_databases, reverse_populate_initial_databases),
+        migrations.RunPython(
+            populate_initial_databases, reverse_populate_initial_databases
+        ),
     ]

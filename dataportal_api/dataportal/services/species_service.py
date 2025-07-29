@@ -1,7 +1,5 @@
 from typing import List, Optional
 
-from asgiref.sync import sync_to_async
-from elasticsearch_dsl import Search
 
 from dataportal.schema.species_schemas import SpeciesSchema
 from dataportal.services.base_service import BaseService
@@ -42,15 +40,15 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
         """Search species based on query parameters."""
         try:
             search = self._create_search()
-            
+
             # Apply search filters if provided
-            if query.get('acronym'):
-                search = search.query("term", acronym=query['acronym'])
-            elif query.get('scientific_name'):
-                search = search.query("match", scientific_name=query['scientific_name'])
+            if query.get("acronym"):
+                search = search.query("term", acronym=query["acronym"])
+            elif query.get("scientific_name"):
+                search = search.query("match", scientific_name=query["scientific_name"])
             else:
                 search = search.query("match_all")
-            
+
             response = await self._execute_search(search)
             return [self._convert_hit_to_entity(hit) for hit in response]
         except Exception as e:
