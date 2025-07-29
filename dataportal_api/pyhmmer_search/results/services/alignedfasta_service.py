@@ -19,7 +19,7 @@ class DownloadAlignedFastaService:
 
     @staticmethod
     def generate_enhanced_aligned_fasta_content(
-            results: List[Dict[str, Any]], db_path: str, query_input: str
+        results: List[Dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         logger.info("Generating aligned FASTA content using PyHMMER...")
         return DownloadAlignedFastaService.generate_pyhmmer_msa_content(
@@ -28,12 +28,15 @@ class DownloadAlignedFastaService:
 
     @staticmethod
     def generate_pyhmmer_msa_content(
-            results: List[Dict[str, Any]], db_path: str, query_input: str
+        results: List[Dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         from .sequence_service import SequenceService
+
         target_names = [hit["target"] for hit in results if "target" in hit]
         all_sequences = SequenceService.fetch_sequences_parallel(target_names, db_path)
-        return DownloadAlignedFastaService.build_aligned_fasta_msa(query_input, results, all_sequences)
+        return DownloadAlignedFastaService.build_aligned_fasta_msa(
+            query_input, results, all_sequences
+        )
 
     @staticmethod
     def clean_sequence(seq: str) -> str:
@@ -42,9 +45,7 @@ class DownloadAlignedFastaService:
 
     @staticmethod
     def build_aligned_fasta_msa(
-            query_input: str,
-            hits: List[Dict],
-            all_sequences: Dict[str, str]
+        query_input: str, hits: List[Dict], all_sequences: Dict[str, str]
     ) -> bytes:
         match = re.match(r"^>(.*$)\n([\s\S]+)", query_input, re.MULTILINE)
         if not match:
@@ -54,7 +55,9 @@ class DownloadAlignedFastaService:
         # Clean query input
         input_sequence = DownloadAlignedFastaService.clean_sequence(input_sequence)
         if not input_sequence:
-            raise ValueError("Query sequence is empty after removing invalid characters.")
+            raise ValueError(
+                "Query sequence is empty after removing invalid characters."
+            )
 
         alphabet = Alphabet.amino()
         builder = Builder(alphabet)
@@ -74,19 +77,25 @@ class DownloadAlignedFastaService:
             for domain in hit.get("domains", []):
                 env_from = domain.get("env_from", 1)
                 env_to = domain.get("env_to", len(full_seq))
-                raw_subseq = full_seq[env_from - 1: env_to]
+                raw_subseq = full_seq[env_from - 1 : env_to]
                 cleaned_subseq = DownloadAlignedFastaService.clean_sequence(raw_subseq)
 
                 if not cleaned_subseq:
-                    logger.warning(f"Skipping sequence for target '{target}' due to invalid characters.")
+                    logger.warning(
+                        f"Skipping sequence for target '{target}' due to invalid characters."
+                    )
                     continue
 
                 name = f"{target}/{env_from}-{env_to}".encode()
                 try:
-                    digitized = TextSequence(name=name, sequence=cleaned_subseq).digitize(alphabet)
+                    digitized = TextSequence(
+                        name=name, sequence=cleaned_subseq
+                    ).digitize(alphabet)
                     digital_seqs.append(digitized)
                 except Exception as e:
-                    logger.warning(f"Failed to digitize sequence '{name.decode()}': {e}")
+                    logger.warning(
+                        f"Failed to digitize sequence '{name.decode()}': {e}"
+                    )
 
         if not digital_seqs:
             raise ValueError("No valid sequences available for alignment.")
@@ -100,6 +109,6 @@ class DownloadAlignedFastaService:
             name = msa.sequences[i].name.decode()
             buf.write(f">{name}\n".encode())
             for j in range(0, len(aligned_seq), 60):
-                buf.write(aligned_seq[j:j + 60].encode() + b"\n")
+                buf.write(aligned_seq[j : j + 60].encode() + b"\n")
 
         return gzip.compress(buf.getvalue())

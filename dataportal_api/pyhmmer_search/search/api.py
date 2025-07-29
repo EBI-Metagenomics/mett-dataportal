@@ -136,28 +136,28 @@ def get_tasks_status(request, threshold_days: int = 30):
         if threshold_days < 1 or threshold_days > 365:
             return {
                 "status": "error",
-                "message": "threshold_days must be between 1 and 365"
+                "message": "threshold_days must be between 1 and 365",
             }, 400
-        
+
         cutoff = timezone.now() - timedelta(days=threshold_days)
-        
+
         total_tasks = TaskResult.objects.count()
         old_tasks = TaskResult.objects.filter(date_done__lt=cutoff).count()
         recent_tasks = total_tasks - old_tasks
-        
+
         return {
             "status": "success",
             "total_tasks": total_tasks,
             "old_tasks_eligible_for_cleanup": old_tasks,
             "recent_tasks": recent_tasks,
             "cutoff_date": cutoff.isoformat(),
-            "cleanup_threshold_days": threshold_days
+            "cleanup_threshold_days": threshold_days,
         }
     except Exception as e:
         logger.error(f"Error getting PyHMMER tasks status: {e}")
         return {
             "status": "error",
-            "message": f"Failed to get tasks status: {str(e)}"
+            "message": f"Failed to get tasks status: {str(e)}",
         }, 500
 
 
@@ -169,25 +169,27 @@ def cleanup_tasks_manual(request, threshold_days: int = 30):
         if threshold_days < 1 or threshold_days > 365:
             return {
                 "status": "error",
-                "message": "threshold_days must be between 1 and 365"
+                "message": "threshold_days must be between 1 and 365",
             }, 400
-        
+
         # Use the same logic as the scheduled task
         cutoff = timezone.now() - timedelta(days=threshold_days)
         deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
-        
-        logger.info(f"Manual PyHMMER cleanup triggered: Deleted {deleted} old task results (threshold: {threshold_days} days)")
-        
+
+        logger.info(
+            f"Manual PyHMMER cleanup triggered: Deleted {deleted} old task results (threshold: {threshold_days} days)"
+        )
+
         return {
             "status": "success",
             "message": f"Successfully deleted {deleted} old PyHMMER task results (older than {threshold_days} days)",
             "deleted_count": deleted,
             "cutoff_date": cutoff.isoformat(),
-            "cleanup_threshold_days": threshold_days
+            "cleanup_threshold_days": threshold_days,
         }
     except Exception as e:
         logger.error(f"Error during manual PyHMMER cleanup: {e}")
         return {
             "status": "error",
-            "message": f"Failed to cleanup old PyHMMER tasks: {str(e)}"
+            "message": f"Failed to cleanup old PyHMMER tasks: {str(e)}",
         }, 500

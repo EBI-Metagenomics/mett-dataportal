@@ -8,7 +8,6 @@ from typing import Optional
 
 from Bio import pairwise2
 from celery import shared_task
-from django.db import connection
 from django.db import transaction
 from django.utils import timezone
 from django_celery_results.models import TaskResult
@@ -58,7 +57,7 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
             hmm_accession=(
                 alignment.hmm_accession.decode()
                 if alignment.hmm_accession
-                   and hasattr(alignment.hmm_accession, "decode")
+                and hasattr(alignment.hmm_accession, "decode")
                 else str(alignment.hmm_accession) if alignment.hmm_accession else None
             ),
             hmm_from=alignment.hmm_from,
@@ -245,7 +244,6 @@ def run_search(self, job_id: str):
         sequence = "".join(lines[1:])
         logger.info(f"Query name: {name}")
 
-
         text_seq = TextSequence(name=name, sequence=sequence)
         digital_seq = text_seq.digitize(alphabet)
         logger.info("Query digitized successfully")
@@ -407,9 +405,9 @@ def run_search(self, job_id: str):
 
             first_domain_seq = None
             if (
-                    domains
-                    and domains[0].alignment
-                    and domains[0].alignment.target_sequence
+                domains
+                and domains[0].alignment
+                and domains[0].alignment.target_sequence
             ):
                 first_domain_seq = domains[0].alignment.target_sequence.replace("-", "")
 
@@ -434,16 +432,16 @@ def run_search(self, job_id: str):
             logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
 
             if (
-                    job.threshold == HmmerJob.ThresholdChoices.EVALUE
-                    and hit.evalue < job.threshold_value
+                job.threshold == HmmerJob.ThresholdChoices.EVALUE
+                and hit.evalue < job.threshold_value
             ):
                 logger.info(
                     f"Hit passes EVALUE filter: {hit.evalue} < {job.threshold_value}"
                 )
                 results.append(hit_obj)
             elif (
-                    job.threshold == HmmerJob.ThresholdChoices.BITSCORE
-                    and hit.score > job.threshold_value
+                job.threshold == HmmerJob.ThresholdChoices.BITSCORE
+                and hit.score > job.threshold_value
             ):
                 logger.info(
                     f"Hit passes BITSCORE filter: {hit.score} > {job.threshold_value}"

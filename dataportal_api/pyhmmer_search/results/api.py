@@ -17,7 +17,11 @@ from .schemas import (
     DomainDetailsResponseSchema,
     AlignmentDetailsResponseSchema,
 )
-from .services import DownloadTSVService, DownloadFastaService, DownloadAlignedFastaService
+from .services import (
+    DownloadTSVService,
+    DownloadFastaService,
+    DownloadAlignedFastaService,
+)
 from ..search.models import HmmerJob, Database
 
 logger = logging.getLogger(__name__)
@@ -70,8 +74,10 @@ def download_results(request, id: uuid.UUID, format: str):
             logger.info(f"Generated FASTA content type: {type(content)}")
             logger.info(f"Generated FASTA content length: {len(content)}")
         elif format == "aligned_fasta":
-            content = DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
-                result_data, db_path, job.input
+            content = (
+                DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
+                    result_data, db_path, job.input
+                )
             )
             filename = f"pyhmmer_hits_{id}.aligned.fasta.gz"
             content_type = "application/gzip"
@@ -140,7 +146,6 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
             # Get raw result from database
             raw_result = job.task.result
             logger.info(f"Raw result from database: {raw_result}")
-
 
             try:
                 if raw_result is None:
@@ -223,7 +228,6 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
 
         logger.info(f"Pagination: page={page}, page_size={page_size}")
         logger.info(f"Pagination indices: start_idx={start_idx}, end_idx={end_idx}")
-
 
         filtered_results = []
         for hit in task_result_data:
@@ -328,8 +332,9 @@ def get_domains_by_target(request, id: uuid.UUID, target: str):
 
 
 @pyhmmer_router_result.get(
-    "/{uuid:id}/domains/{int:domain_index}", response=DomainDetailsResponseSchema, 
-    include_in_schema=False
+    "/{uuid:id}/domains/{int:domain_index}",
+    response=DomainDetailsResponseSchema,
+    include_in_schema=False,
 )
 @wrap_success_response
 def get_domain_details(request, id: uuid.UUID, domain_index: int):
@@ -362,8 +367,9 @@ def get_domain_details(request, id: uuid.UUID, domain_index: int):
 
 
 @pyhmmer_router_result.get(
-    "/{uuid:id}/alignment/{int:domain_index}", response=AlignmentDetailsResponseSchema, 
-    include_in_schema=False
+    "/{uuid:id}/alignment/{int:domain_index}",
+    response=AlignmentDetailsResponseSchema,
+    include_in_schema=False,
 )
 @wrap_success_response
 def get_alignment_details(request, id: uuid.UUID, domain_index: int):

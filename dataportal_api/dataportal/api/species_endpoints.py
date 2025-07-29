@@ -9,8 +9,6 @@ from dataportal.schema.genome_schemas import (
 )
 from dataportal.schema.species_schemas import (
     SpeciesSchema,
-    GenomesBySpeciesQuerySchema,
-    SearchGenomesBySpeciesQuerySchema,
 )
 from ..schema.response_schemas import PaginatedResponseSchema
 from ..services.service_factory import ServiceFactory
@@ -57,19 +55,13 @@ async def get_all_species(request):
 async def get_genomes_by_species(
     request,
     species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
-    query: GenomesBySpeciesQuerySchema = Query(...),
+    query: GenomeSearchQuerySchema = Query(...),
 ):
     try:
-        # Create a search query schema with species filter
-        search_params = GenomeSearchQuerySchema(
-            query="",  # No text search, just species filter
-            page=query.page,
-            per_page=query.per_page,
-            sortField=query.sortField,
-            sortOrder=query.sortOrder,
-            species_acronym=species_acronym,
-        )
-        result = await genome_service.search_genomes_by_string(search_params)
+        query.species_acronym = species_acronym
+        # Clear any existing query to get all genomes for the species
+        query.query = ""
+        result = await genome_service.search_genomes_by_string(query)
         return result
     except ServiceError as e:
         logger.error(f"Service error in get genomes by species: {e}")
@@ -89,19 +81,11 @@ async def get_genomes_by_species(
 async def search_genomes_by_species_and_string(
     request,
     species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
-    query: SearchGenomesBySpeciesQuerySchema = Query(...),
+    query: GenomeSearchQuerySchema = Query(...),
 ):
     try:
-        # Create a search query schema with species filter and text search
-        search_params = GenomeSearchQuerySchema(
-            query=query.query or "",
-            page=query.page,
-            per_page=query.per_page,
-            sortField=query.sortField,
-            sortOrder=query.sortOrder,
-            species_acronym=species_acronym,
-        )
-        result = await genome_service.search_genomes_by_string(search_params)
+        query.species_acronym = species_acronym
+        result = await genome_service.search_genomes_by_string(query)
         return result
     except ServiceError as e:
         logger.error(f"Service error in search genomes by species: {e}")
