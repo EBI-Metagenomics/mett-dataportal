@@ -119,15 +119,6 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         self,
         params: GeneAutocompleteQuerySchema,
     ) -> List[Dict]:
-        """
-        Provides autocomplete suggestions for genes based on query & filters.
-
-        Args:
-            params: GeneAutocompleteQuerySchema containing autocomplete parameters
-
-        Returns:
-            List of gene suggestion dictionaries
-        """
         try:
             isolate_list = (
                 [gid.strip() for gid in params.isolates.split(",") if gid.strip()]
@@ -265,15 +256,6 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         self,
         params: GeneSearchQuerySchema,
     ) -> GenePaginationSchema:
-        """
-        Search genes using the provided search parameters.
-
-        Args:
-            params: GeneSearchQuerySchema containing search parameters
-
-        Returns:
-            GenePaginationSchema with search results
-        """
         try:
             # Build query filters
             es_query = self._build_es_query(params.query, None, None)
@@ -338,16 +320,6 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         params: GeneAdvancedSearchQuerySchema,
         use_scroll: bool = False,
     ) -> GenePaginationSchema:
-        """
-        Fetch genes by multiple genomes, species, and optional search query.
-
-        Args:
-            params: GeneAdvancedSearchQuerySchema containing search parameters
-            use_scroll: Whether to use scroll API for large downloads
-
-        Returns:
-            GenePaginationSchema with search results
-        """
         try:
             isolate_names_list = (
                 [id.strip() for id in params.isolates.split(",")]
@@ -721,15 +693,6 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         self,
         params: GeneFacetedSearchQuerySchema,
     ):
-        """
-        Perform faceted search on genes using the provided parameters.
-
-        Args:
-            params: GeneFacetedSearchQuerySchema containing faceted search parameters
-
-        Returns:
-            Dictionary containing faceted search results
-        """
         try:
             isolate_list = (
                 [id.strip() for id in params.isolates.split(",") if id.strip()]

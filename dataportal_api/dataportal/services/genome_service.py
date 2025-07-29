@@ -113,7 +113,6 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
 
     def _convert_hit_to_entity(self, hit) -> GenomeResponseSchema:
         """Convert Elasticsearch hit to GenomeResponseSchema."""
-        # Convert the hit to a dictionary and validate with the schema
         hit_dict = hit.to_dict()
         return GenomeResponseSchema.model_validate(hit_dict)
 
@@ -130,16 +129,6 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         params: GenomeSearchQuerySchema,
         use_scroll: bool = False,
     ) -> GenomePaginationSchema:
-        """
-        Search genomes in Elasticsearch with optional isolate/species filters.
-
-        Args:
-            params: GenomeSearchQuerySchema containing search parameters
-            use_scroll: Whether to use scroll API for large downloads
-
-        Returns:
-            GenomePaginationSchema with search results
-        """
         filter_criteria = {}
 
         if params.query:
@@ -175,15 +164,6 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         self,
         params: GenomeAutocompleteQuerySchema,
     ) -> List[StrainSuggestionSchema]:
-        """
-        Search strains for autocomplete suggestions.
-
-        Args:
-            params: GenomeAutocompleteQuerySchema containing search parameters
-
-        Returns:
-            List of StrainSuggestionSchema objects
-        """
         try:
             search = Search(index=ES_INDEX_STRAIN)
             search = search.query(
@@ -214,15 +194,6 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         self,
         params: GetAllGenomesQuerySchema,
     ) -> GenomePaginationSchema:
-        """
-        Get all genomes with pagination and sorting.
-
-        Args:
-            params: GetAllGenomesQuerySchema containing pagination and sorting parameters
-
-        Returns:
-            GenomePaginationSchema with genome results
-        """
         return await self._search_paginated_strains(
             filter_criteria={},
             page=params.page,
@@ -242,15 +213,6 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         self,
         params: GenomesByIsolateNamesQuerySchema,
     ) -> List[GenomeResponseSchema]:
-        """
-        Get genomes by isolate names.
-
-        Args:
-            params: GenomesByIsolateNamesQuerySchema containing isolate names
-
-        Returns:
-            List of GenomeResponseSchema objects
-        """
         isolate_names_list = [id.strip() for id in params.isolates.split(",")]
         return await self._fetch_and_validate_strains(
             filter_criteria={"isolate_name.keyword": isolate_names_list},

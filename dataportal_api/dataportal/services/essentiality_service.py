@@ -23,7 +23,6 @@ class EssentialityService(CachedService[Dict, str]):
     def __init__(self, limit: int = 10, cache_size: int = 10000):
         super().__init__(ES_INDEX_GENE, cache_size)
         self.limit = limit
-        # Keep the original LRU cache for backward compatibility
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
     async def get_by_id(self, id: str) -> Optional[Dict]:

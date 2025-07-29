@@ -13,10 +13,6 @@ U = TypeVar("U")
 
 
 class BaseService(ABC, Generic[T, U]):
-    """
-    Abstract base class for all read-only services in the application.
-    Provides common functionality and enforces consistent interface for data presentation.
-    """
 
     def __init__(self, index_name: str):
         self.index_name = index_name
@@ -90,9 +86,6 @@ class BaseService(ABC, Generic[T, U]):
 
 
 class CachedService(BaseService[T, U]):
-    """
-    Abstract base class for services that support caching.
-    """
 
     def __init__(self, index_name: str, cache_size: int = 10000):
         super().__init__(index_name)
