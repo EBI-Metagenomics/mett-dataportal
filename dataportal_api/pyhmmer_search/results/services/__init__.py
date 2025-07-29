@@ -1,15 +1,11 @@
-"""
-Services package for PyHMMER results processing.
-"""
-
-from .download_service import DownloadService
+from .alignedfasta_service import DownloadAlignedFastaService
+from .fasta_service import DownloadFastaService
 from .sequence_service import SequenceService
-from .fasta_service import FastaService
-from .alignment_service import AlignmentService
+from .tsv_service import DownloadTSVService
 
 __all__ = [
-    "DownloadService",
+    "DownloadTSVService",
     "SequenceService",
-    "FastaService",
-    "AlignmentService",
+    "DownloadFastaService",
+    "DownloadAlignedFastaService",
 ]

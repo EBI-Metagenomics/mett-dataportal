@@ -17,7 +17,7 @@ from .schemas import (
     DomainDetailsResponseSchema,
     AlignmentDetailsResponseSchema,
 )
-from .services import DownloadService, FastaService, AlignmentService
+from .services import DownloadTSVService, DownloadFastaService, DownloadAlignedFastaService
 from ..search.models import HmmerJob, Database
 
 logger = logging.getLogger(__name__)
@@ -58,11 +58,11 @@ def download_results(request, id: uuid.UUID, format: str):
             raise HttpError(500, f"Database {job.database} not configured")
 
         if format == "tab":
-            content = DownloadService.generate_tsv_content(result_data)
+            content = DownloadTSVService.generate_tsv_content(result_data)
             filename = f"pyhmmer_hits_{id}.tsv"
             content_type = "text/tab-separated-values"
         elif format == "fasta":
-            content = FastaService.generate_enhanced_fasta_content(
+            content = DownloadFastaService.generate_enhanced_fasta_content(
                 result_data, db_path, job.input
             )
             filename = f"pyhmmer_hits_{id}.fasta.gz"
@@ -70,7 +70,7 @@ def download_results(request, id: uuid.UUID, format: str):
             logger.info(f"Generated FASTA content type: {type(content)}")
             logger.info(f"Generated FASTA content length: {len(content)}")
         elif format == "aligned_fasta":
-            content = AlignmentService.generate_enhanced_aligned_fasta_content(
+            content = DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
                 result_data, db_path, job.input
             )
             filename = f"pyhmmer_hits_{id}.aligned.fasta.gz"
@@ -95,11 +95,11 @@ def download_results(request, id: uuid.UUID, format: str):
                     "Returning uncompressed content due to compression failure"
                 )
                 content = (
-                    FastaService.generate_enhanced_fasta_content(
+                    DownloadFastaService.generate_enhanced_fasta_content(
                         result_data, db_path, job.input
                     )
                     if format == "fasta"
-                    else AlignmentService.generate_enhanced_aligned_fasta_content(
+                    else DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
                         result_data, db_path, job.input
                     )
                 )

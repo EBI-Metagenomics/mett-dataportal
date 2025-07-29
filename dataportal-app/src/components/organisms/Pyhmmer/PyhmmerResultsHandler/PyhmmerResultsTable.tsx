@@ -107,21 +107,21 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
             {jobId && (
                 <div className={styles.downloadButtons}>
                     <button
-                        className="vf-button vf-button--sm"
+                        className="vf-button vf-button--primary vf-button--sm"
                         onClick={() => handleDownload('tab')}
                         disabled={!!downloading}
                     >
                         {downloading === 'tab' ? 'Downloading...' : 'Tab Delimited'}
                     </button>
                     <button
-                        className="vf-button vf-button--sm"
+                        className="vf-button vf-button--primary vf-button--sm"
                         onClick={() => handleDownload('fasta')}
                         disabled={!!downloading}
                     >
                         {downloading === 'fasta' ? 'Downloading...' : 'FASTA'}
                     </button>
                     <button
-                        className="vf-button vf-button--sm"
+                        className="vf-button vf-button--primary vf-button--sm"
                         onClick={() => handleDownload('aligned_fasta')}
                         disabled={!!downloading}
                     >

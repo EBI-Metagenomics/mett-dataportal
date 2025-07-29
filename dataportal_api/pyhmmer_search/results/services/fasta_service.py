@@ -12,7 +12,7 @@ from .sequence_service import SequenceService
 logger = logging.getLogger(__name__)
 
 
-class FastaService:
+class DownloadFastaService:
     """Service for FASTA generation and validation."""
 
     @staticmethod
@@ -50,10 +50,10 @@ class FastaService:
         logger.info(f"Generated FASTA content size: {len(content)} characters")
         logger.debug(f"FASTA content preview: {content[:500]}...")
 
-        if not FastaService.validate_fasta_content(content):
+        if not DownloadFastaService.validate_fasta_content(content):
             logger.error("Generated FASTA content is not properly formatted!")
-            content = FastaService.fix_fasta_content(content)
-            if not FastaService.validate_fasta_content(content):
+            content = DownloadFastaService.fix_fasta_content(content)
+            if not DownloadFastaService.validate_fasta_content(content):
                 logger.error("Failed to fix FASTA content format")
 
         try:

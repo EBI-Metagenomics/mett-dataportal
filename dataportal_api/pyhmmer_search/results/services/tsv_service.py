@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 logger = logging.getLogger(__name__)
 
 
-class DownloadService:
+class DownloadTSVService:
     """Service for generating downloadable content from PyHMMER results."""
 
     @staticmethod

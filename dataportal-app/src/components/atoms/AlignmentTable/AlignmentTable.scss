@@ -55,18 +55,6 @@
       border: none;
     }
   }
-
-
-  .vf-table__cell[data-column-id="ievalue"],
-  .vf-table__cell[data-column-id="cevalue"] {
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    color: #495057;
-    background-color: #f8f9fa;
-    font-weight: 500;
-    min-width: 120px; 
-  }
-
  
   .vf-table__heading[data-column-id="ievalue"],
   .vf-table__heading[data-column-id="cevalue"] {
@@ -79,7 +67,7 @@
 
 @media (max-width: 768px) {
   .alignment-table {
-    font-size: 10px;
+    font-size: 12px;
 
     .vf-table__header {
       .vf-table__row {
@@ -94,9 +82,9 @@
       .vf-table__row {
         .vf-table__cell {
           padding: 6px 4px;
-          font-size: 10px;
+          font-size: 12px;
         }
       }
     }
   }
-} 
+}
