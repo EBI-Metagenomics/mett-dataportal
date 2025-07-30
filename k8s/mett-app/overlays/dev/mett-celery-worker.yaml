@@ -143,6 +143,11 @@ spec:
                 secretKeyRef:
                   name: mett-elasticsearch-credentials-dev
                   key: ELASTIC_PASSWORD
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mett-django-secret-dev
+                  key: DJANGO_SECRET_KEY
       imagePullSecrets:
         - name: quay-pull-secret
 #      affinity:

@@ -142,6 +142,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-prod
                   key: PYHMMER_FAA_BASE_PATH
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mett-django-secret-prod
+                  key: DJANGO_SECRET_KEY
           resources:
             requests:
               memory: "4Gi"

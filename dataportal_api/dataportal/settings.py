@@ -72,12 +72,34 @@ if DEBUG:
 
 CORS_ALLOW_PRIVATE_NETWORK = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 # CSRF Settings
 CSRF_TRUSTED_ORIGINS = [
     f"https://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
     f"http://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
+    "https://www.gut-microbes.org",
     "http://www.gut-microbes.org",
+    "https://api.gut-microbes.org",
     "http://api.gut-microbes.org",
 ]
 

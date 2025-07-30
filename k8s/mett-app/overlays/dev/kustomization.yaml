@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - mett-app-config.yaml
+  - mett-django-secret.yaml
   - mett-pyhmmer-pv.yaml
   - mett-pyhmmer-pvc.yaml
   - mett-redis.yaml
@@ -14,6 +15,6 @@ resources:
 
 images:
   - name: quay.io/microbiome-informatics/mett-dataportal-api
-    newTag: v0.0.163d
+    newTag: v0.0.163e
   - name: quay.io/microbiome-informatics/mett-dataportal-react-app
-    newTag: v0.0.163d
+    newTag: v0.0.163e
