@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# SECURITY
 DEBUG = (
     os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
-)  # Default to True for development
+)
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
@@ -97,9 +97,7 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     f"https://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
     f"http://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
-    "https://www.gut-microbes.org",
     "http://www.gut-microbes.org",
-    "https://api.gut-microbes.org",
     "http://api.gut-microbes.org",
 ]
 
@@ -344,13 +342,9 @@ if DEBUG:
     ]
 logger.info("ALLOWED_HOSTS: %s", ALLOWED_HOSTS)
 logger.info("CORS_ALLOWED_ORIGINS: %s", CORS_ALLOWED_ORIGINS)
+logger.info("CORS_ALLOW_METHODS: %s", CORS_ALLOW_METHODS)
+logger.info("CORS_ALLOW_HEADERS: %s", CORS_ALLOW_HEADERS)
 
-# if not DEBUG:
-#     SECURE_SSL_REDIRECT = True
-#     CSRF_COOKIE_SECURE = True
-#     SESSION_COOKIE_SECURE = True
-# else:
-#     SECURE_SSL_REDIRECT = False
 
 CORS_ALLOW_PRIVATE_NETWORK = True
 
