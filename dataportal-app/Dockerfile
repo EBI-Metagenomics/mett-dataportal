@@ -9,7 +9,7 @@ ENV NODE_OPTIONS="--max-old-space-size=8192"
 
 COPY dataportal-app/package.json /app/
 COPY dataportal-app/package-lock.json /app/
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 COPY dataportal-app /app
 RUN PUBLIC_URL=$PUBLIC_URL \
