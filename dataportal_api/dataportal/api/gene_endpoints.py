@@ -1,52 +1,52 @@
 import logging
-from typing import Optional
 
-from ninja import Router, Query, Path
+from ninja import Path, Query, Router
 
 from dataportal.schema.gene_schemas import (
-    GeneAutocompleteQuerySchema,
-    GeneSearchQuerySchema,
-    GeneFacetedSearchQuerySchema,
     GeneAdvancedSearchQuerySchema,
+    GeneAutocompleteQuerySchema,
     GeneDownloadTSVQuerySchema,
+    GeneFacetedSearchQuerySchema,
+    GeneSearchQuerySchema,
 )
 from dataportal.schema.response_schemas import (
-    SuccessResponseSchema,
     PaginatedResponseSchema,
+    SuccessResponseSchema,
     create_success_response,
 )
+
 from ..services.service_factory import ServiceFactory
 from ..utils.constants import (
     DEFAULT_PER_PAGE_CNT,
     DEFAULT_SORT,
-    ES_FIELD_PFAM,
-    ES_FIELD_INTERPRO,
-    ES_FIELD_COG_ID,
-    ES_FIELD_COG_FUNCATS,
-    ES_FIELD_KEGG,
-    ES_FIELD_ISOLATE_NAME,
-    ES_FIELD_GENE_NAME,
     ES_FIELD_ALIAS,
-    STRAIN_FIELD_CONTIG_SEQ_ID,
-    ES_FIELD_LOCUS_TAG,
-    ES_FIELD_PRODUCT,
-    ES_FIELD_UNIPROT_ID,
-    GENE_ESSENTIALITY,
     ES_FIELD_AMR,
     ES_FIELD_AMR_DRUG_CLASS,
     ES_FIELD_AMR_DRUG_SUBCLASS,
+    ES_FIELD_COG_FUNCATS,
+    ES_FIELD_COG_ID,
+    ES_FIELD_GENE_NAME,
+    ES_FIELD_INTERPRO,
+    ES_FIELD_ISOLATE_NAME,
+    ES_FIELD_KEGG,
+    ES_FIELD_LOCUS_TAG,
+    ES_FIELD_PFAM,
+    ES_FIELD_PRODUCT,
+    ES_FIELD_UNIPROT_ID,
+    GENE_ESSENTIALITY,
+    STRAIN_FIELD_CONTIG_SEQ_ID,
 )
 from ..utils.errors import (
-    raise_not_found_error,
     raise_internal_server_error,
+    raise_not_found_error,
     raise_validation_error,
 )
 from ..utils.exceptions import (
     GeneNotFoundError,
-    ServiceError,
     InvalidGenomeIdError,
+    ServiceError,
 )
-from ..utils.response_wrappers import wrap_success_response, wrap_paginated_response
+from ..utils.response_wrappers import wrap_paginated_response, wrap_success_response
 
 logger = logging.getLogger(__name__)
 
@@ -163,8 +163,8 @@ async def get_all_genes(
     per_page: int = Query(
         DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
     ),
-    sort_field: Optional[str] = Query(None, description="Field to sort results by."),
-    sort_order: Optional[str] = Query(
+    sort_field: str | None = Query(None, description="Field to sort results by."),
+    sort_order: str | None = Query(
         DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     ),
 ):

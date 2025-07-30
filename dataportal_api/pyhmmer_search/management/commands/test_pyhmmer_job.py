@@ -1,9 +1,11 @@
+import logging
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django_celery_results.models import TaskResult
+
 from pyhmmer_search.search.models import HmmerJob
 from pyhmmer_search.search.tasks import run_search
-import logging
 
 logger = logging.getLogger(__name__)
 

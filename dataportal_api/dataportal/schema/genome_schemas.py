@@ -1,8 +1,4 @@
-from pydantic import ConfigDict
-
-from typing import Optional, List
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from dataportal.schema.base_schemas import BasePaginationSchema
 from dataportal.utils.constants import (
@@ -21,7 +17,7 @@ class GenomeAutocompleteQuerySchema(BaseModel):
     limit: int = Field(
         DEFAULT_PER_PAGE_CNT, description="Maximum number of suggestions to return."
     )
-    species_acronym: Optional[str] = Field(
+    species_acronym: str | None = Field(
         None, description="Optional species acronym (BU or PV) to filter suggestions."
     )
 
@@ -36,16 +32,16 @@ class GenomeSearchQuerySchema(BaseModel):
     per_page: int = Field(
         DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."
     )
-    sortField: Optional[str] = Field(
+    sortField: str | None = Field(
         STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."
     )
-    sortOrder: Optional[str] = Field(
+    sortOrder: str | None = Field(
         DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
-    isolates: Optional[List[str]] = Field(
+    isolates: list[str] | None = Field(
         None, description="Optional list of isolate names to filter."
     )
-    species_acronym: Optional[str] = Field(
+    species_acronym: str | None = Field(
         None, description="Optional species acronym filter (BU, PV)."
     )
 
@@ -64,10 +60,10 @@ class GetAllGenomesQuerySchema(BaseModel):
 
     page: int = Field(1, description="Page number to retrieve.")
     per_page: int = Field(DEFAULT_PER_PAGE_CNT, description="Number of items per page.")
-    sortField: Optional[str] = Field(
+    sortField: str | None = Field(
         STRAIN_FIELD_ISOLATE_NAME, description="Field to sort by."
     )
-    sortOrder: Optional[str] = Field(
+    sortOrder: str | None = Field(
         DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
 
@@ -75,11 +71,11 @@ class GetAllGenomesQuerySchema(BaseModel):
 class GenesByGenomeQuerySchema(BaseModel):
     """Schema for retrieving genes from a specific genome with filters, pagination, and sorting."""
 
-    filter: Optional[str] = Field(
+    filter: str | None = Field(
         None,
         description="Additional gene filter, e.g., 'pfam:pf07715;interpro:ipr012910'.",
     )
-    filter_operators: Optional[str] = Field(
+    filter_operators: str | None = Field(
         None,
         description="Logical operators (AND/OR) per facet, e.g., 'pfam:AND;interpro:OR'.",
     )
@@ -87,8 +83,8 @@ class GenesByGenomeQuerySchema(BaseModel):
     per_page: int = Field(
         DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
     )
-    sort_field: Optional[str] = Field(None, description="Field to sort results by.")
-    sort_order: Optional[str] = Field(
+    sort_field: str | None = Field(None, description="Field to sort results by.")
+    sort_order: str | None = Field(
         DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
 
@@ -99,16 +95,16 @@ class GenomeDownloadTSVQuerySchema(BaseModel):
     query: str = Field(
         "", description="Search term to match against genome names or metadata."
     )
-    sortField: Optional[str] = Field(
+    sortField: str | None = Field(
         STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."
     )
-    sortOrder: Optional[str] = Field(
+    sortOrder: str | None = Field(
         DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
-    isolates: Optional[List[str]] = Field(
+    isolates: list[str] | None = Field(
         None, description="List of isolate names to filter."
     )
-    species_acronym: Optional[str] = Field(
+    species_acronym: str | None = Field(
         None, description="Optional species acronym filter."
     )
 
@@ -129,29 +125,29 @@ class StrainMinSchema(BaseModel):
 
 class ContigSchema(BaseModel):
     seq_id: str
-    length: Optional[int] = None
+    length: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class GenomeResponseSchema(BaseModel):
-    species_scientific_name: Optional[str] = None
-    species_acronym: Optional[str] = None
+    species_scientific_name: str | None = None
+    species_acronym: str | None = None
     isolate_name: str
-    assembly_name: Optional[str]
-    assembly_accession: Optional[str]
+    assembly_name: str | None
+    assembly_accession: str | None
     fasta_file: str
     gff_file: str
     fasta_url: str
     gff_url: str
     type_strain: bool
-    contigs: List[ContigSchema]
+    contigs: list[ContigSchema]
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class GenomePaginationSchema(BasePaginationSchema):
-    results: List[GenomeResponseSchema]
+    results: list[GenomeResponseSchema]
 
 
 __all__ = [

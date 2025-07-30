@@ -3,9 +3,8 @@ import io
 import logging
 import re
 from typing import Any
-from typing import Dict, List
 
-from pyhmmer.easel import TextSequence, DigitalSequenceBlock, Alphabet
+from pyhmmer.easel import Alphabet, DigitalSequenceBlock, TextSequence
 from pyhmmer.hmmer import hmmalign
 from pyhmmer.plan7 import Background, Builder
 
@@ -19,7 +18,7 @@ class DownloadAlignedFastaService:
 
     @staticmethod
     def generate_enhanced_aligned_fasta_content(
-        results: List[Dict[str, Any]], db_path: str, query_input: str
+        results: list[dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         logger.info("Generating aligned FASTA content using PyHMMER...")
         return DownloadAlignedFastaService.generate_pyhmmer_msa_content(
@@ -28,7 +27,7 @@ class DownloadAlignedFastaService:
 
     @staticmethod
     def generate_pyhmmer_msa_content(
-        results: List[Dict[str, Any]], db_path: str, query_input: str
+        results: list[dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         from .sequence_service import SequenceService
 
@@ -45,7 +44,7 @@ class DownloadAlignedFastaService:
 
     @staticmethod
     def build_aligned_fasta_msa(
-        query_input: str, hits: List[Dict], all_sequences: Dict[str, str]
+        query_input: str, hits: list[dict], all_sequences: dict[str, str]
     ) -> bytes:
         match = re.match(r"^>(.*$)\n([\s\S]+)", query_input, re.MULTILINE)
         if not match:

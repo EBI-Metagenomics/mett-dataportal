@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
-from pydantic import ConfigDict
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ResponseStatus(str, Enum):
@@ -50,7 +50,7 @@ class BaseResponseSchema(BaseModel):
     status: ResponseStatus = Field(
         ..., description="Response status (success, error, warning)"
     )
-    message: Optional[str] = Field(None, description="Human-readable message")
+    message: str | None = Field(None, description="Human-readable message")
     timestamp: str = Field(..., description="ISO 8601 timestamp of the response")
 
     model_config = ConfigDict(from_attributes=True)
@@ -63,14 +63,14 @@ class SuccessResponseSchema(BaseResponseSchema):
         ResponseStatus.SUCCESS, description="Response status"
     )
     data: Any = Field(..., description="Response data")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    metadata: dict[str, Any] | None = Field(None, description="Additional metadata")
 
 
 class ErrorDetailSchema(BaseModel):
     """Schema for detailed error information."""
 
-    field: Optional[str] = Field(None, description="Field that caused the error")
-    value: Optional[Any] = Field(None, description="Value that caused the error")
+    field: str | None = Field(None, description="Field that caused the error")
+    value: Any | None = Field(None, description="Value that caused the error")
     message: str = Field(..., description="Specific error message for this field")
 
     model_config = ConfigDict(from_attributes=True)
@@ -82,10 +82,10 @@ class ErrorResponseSchema(BaseResponseSchema):
     status: ResponseStatus = Field(ResponseStatus.ERROR, description="Response status")
     error_code: ErrorCode = Field(..., description="Machine-readable error code")
     message: str = Field(..., description="Human-readable error message")
-    details: Optional[List[ErrorDetailSchema]] = Field(
+    details: list[ErrorDetailSchema] | None = Field(
         None, description="Detailed error information"
     )
-    request_id: Optional[str] = Field(
+    request_id: str | None = Field(
         None, description="Unique request identifier for tracking"
     )
 
@@ -111,9 +111,9 @@ class PaginatedResponseSchema(BaseResponseSchema):
     status: ResponseStatus = Field(
         ResponseStatus.SUCCESS, description="Response status"
     )
-    data: List[Any] = Field(..., description="List of response items")
+    data: list[Any] = Field(..., description="List of response items")
     pagination: PaginationMetadataSchema = Field(..., description="Pagination metadata")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    metadata: dict[str, Any] | None = Field(None, description="Additional metadata")
 
 
 class HealthResponseSchema(BaseResponseSchema):
@@ -122,15 +122,13 @@ class HealthResponseSchema(BaseResponseSchema):
     status: ResponseStatus = Field(..., description="Response status")
     service: str = Field(..., description="Service name")
     version: str = Field(..., description="Service version")
-    uptime: Optional[float] = Field(None, description="Service uptime in seconds")
-    dependencies: Optional[Dict[str, str]] = Field(
-        None, description="Dependency status"
-    )
+    uptime: float | None = Field(None, description="Service uptime in seconds")
+    dependencies: dict[str, str] | None = Field(None, description="Dependency status")
 
 
 # Response wrapper functions for consistent formatting
 def create_success_response(
-    data: Any, message: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None
+    data: Any, message: str | None = None, metadata: dict[str, Any] | None = None
 ) -> SuccessResponseSchema:
     """Create a standardized success response."""
     from datetime import datetime
@@ -147,8 +145,8 @@ def create_success_response(
 def create_error_response(
     error_code: ErrorCode,
     message: str,
-    details: Optional[List[ErrorDetailSchema]] = None,
-    request_id: Optional[str] = None,
+    details: list[ErrorDetailSchema] | None = None,
+    request_id: str | None = None,
 ) -> ErrorResponseSchema:
     """Create a standardized error response."""
     from datetime import datetime
@@ -164,9 +162,9 @@ def create_error_response(
 
 
 def create_paginated_response(
-    data: List[Any],
+    data: list[Any],
     pagination: PaginationMetadataSchema,
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
 ) -> PaginatedResponseSchema:
     """Create a standardized paginated response."""
     from datetime import datetime

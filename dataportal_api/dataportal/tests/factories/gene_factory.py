@@ -1,4 +1,5 @@
 import factory
+
 from dataportal.models import GeneDocument
 
 

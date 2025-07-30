@@ -5,7 +5,6 @@ Sequence service for PyHMMER sequence database operations.
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict
 
 from pyhmmer.easel import SequenceFile
 
@@ -50,7 +49,7 @@ class SequenceService:
             return ""
 
     @staticmethod
-    def fetch_sequence_chunk(db_path: str, target_names: List[str]) -> Dict[str, str]:
+    def fetch_sequence_chunk(db_path: str, target_names: list[str]) -> dict[str, str]:
         """Fetch multiple sequences from the database in a chunk."""
         sequences = {}
         try:
@@ -69,11 +68,11 @@ class SequenceService:
 
     @staticmethod
     def fetch_sequences_parallel(
-        target_names: List[str],
+        target_names: list[str],
         db_path: str,
         max_workers: int = 4,
         chunk_size: int = 1000,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Fetch sequences in parallel using multiple workers."""
         all_sequences = {}
 

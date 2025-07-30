@@ -1,6 +1,8 @@
+import json
 import logging
 import uuid
-import json
+
+from django.conf import settings
 from django.http import JsonResponse
 from ninja import NinjaAPI
 from ninja.errors import HttpError
@@ -10,28 +12,25 @@ from dataportal.api.genome_endpoints import genome_router
 from dataportal.api.health_endpoints import health_router
 from dataportal.api.metadata_endpoints import metadata_router
 from dataportal.api.species_endpoints import species_router
-
-from pyhmmer_search.results.api import pyhmmer_router_result
-from pyhmmer_search.search.api import pyhmmer_router_search
-from django.conf import settings
-
 from dataportal.schema.response_schemas import (
     ErrorCode,
     create_error_response,
 )
 from dataportal.utils.exceptions import (
-    ServiceError,
-    ValidationError,
+    AuthenticationError,
+    AuthorizationError,
+    DatabaseError,
+    ElasticsearchError,
     GeneNotFoundError,
     GenomeNotFoundError,
     InvalidGenomeIdError,
-    SpeciesNotFoundError,
-    ElasticsearchError,
-    DatabaseError,
     RateLimitError,
-    AuthenticationError,
-    AuthorizationError,
+    ServiceError,
+    SpeciesNotFoundError,
+    ValidationError,
 )
+from pyhmmer_search.results.api import pyhmmer_router_result
+from pyhmmer_search.search.api import pyhmmer_router_search
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +173,7 @@ def _map_exception_to_error_code(exc: Exception) -> ErrorCode:
         return exc.error_code
 
     # Default mapping based on exception type
-    if isinstance(exc, (GeneNotFoundError, GenomeNotFoundError, SpeciesNotFoundError)):
+    if isinstance(exc, GeneNotFoundError | GenomeNotFoundError | SpeciesNotFoundError):
         return ErrorCode.GENE_NOT_FOUND
     elif isinstance(exc, InvalidGenomeIdError):
         return ErrorCode.INVALID_GENOME_ID

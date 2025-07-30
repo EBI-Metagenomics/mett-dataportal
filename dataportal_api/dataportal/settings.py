@@ -7,14 +7,25 @@ from celery.schedules import crontab
 
 from .elasticsearch_client import init_es_connection
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "replace-with-the-secret-key")
-DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
+# SECURITY WARNING: keep the secret key used in production secret!
+DEBUG = (
+    os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
+)  # Default to True for development
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "django-insecure-dev-key-change-in-production"
+        logger.warning("Using insecure secret key for development")
+    else:
+        raise ValueError(
+            "DJANGO_SECRET_KEY environment variable is required in production"
+        )
 
 # Environment variables for Elasticsearch
 ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
@@ -29,9 +40,87 @@ ENABLE_PYHMMER_SEARCH = (
 )
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 
+# Security Settings
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
+
+# Security Headers
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# HTTPS Settings (uncomment in production)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# CORS Settings
+CORS_ALLOWED_ORIGINS = [f"http://{h}" for h in ALLOWED_HOSTS] + [
+    f"https://{h}" for h in ALLOWED_HOSTS
+]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS += [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+CORS_ALLOW_PRIVATE_NETWORK = True
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
+    f"http://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
+    "http://www.gut-microbes.org",
+    "http://api.gut-microbes.org",
+]
+
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
+
+# Redis Cache Configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.getenv("REDIS_CACHE_URL", "redis://redis:6379/2"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 50,
+                "retry_on_timeout": True,
+            },
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        },
+        "KEY_PREFIX": "mett_dataportal",
+        "TIMEOUT": 300,  # 5 minutes default
+    },
+    "session": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.getenv("REDIS_SESSION_URL", "redis://redis:6379/3"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+        "KEY_PREFIX": "session",
+    },
+}
+
+# Session Configuration
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "session"
+SESSION_COOKIE_AGE = 3600  # 1 hour
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Cache Configuration for API responses
+API_CACHE_TIMEOUT = int(os.getenv("API_CACHE_TIMEOUT", 300))  # 5 minutes
+GENE_CACHE_TIMEOUT = int(os.getenv("GENE_CACHE_TIMEOUT", 600))  # 10 minutes
+GENOME_CACHE_TIMEOUT = int(os.getenv("GENOME_CACHE_TIMEOUT", 1800))  # 30 minutes
 
 CELERY_TASK_QUEUES = {
     "pyhmmer_queue": {
@@ -74,13 +163,6 @@ LOGGING = {
     },
 }
 
-CSRF_TRUSTED_ORIGINS = [
-    f"https://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
-    f"http://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
-    "http://www.gut-microbes.org",
-    "http://api.gut-microbes.org",
-]
-
 # Application definition
 INSTALLED_APPS = [
     "django_prometheus",
@@ -116,6 +198,12 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
+    # Custom middleware
+    "dataportal.middleware.RequestIDMiddleware",
+    "dataportal.middleware.PerformanceMonitoringMiddleware",
+    "dataportal.middleware.SecurityHeadersMiddleware",
+    "dataportal.middleware.ErrorHandlingMiddleware",
+    "dataportal.middleware.LoggingMiddleware",
 ]
 
 MIDDLEWARE += ["dataportal.middleware.RemoveCOOPHeaderMiddleware"]

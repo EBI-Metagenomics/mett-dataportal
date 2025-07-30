@@ -7,8 +7,8 @@ from ninja import Router
 from ninja.errors import HttpError
 
 from dataportal.utils.response_wrappers import wrap_success_response
-from .models import Database
-from .models import HmmerJob
+
+from .models import Database, HmmerJob
 from .schemas import SearchRequestSchema, SearchResponseSchema
 from .tasks import run_search
 

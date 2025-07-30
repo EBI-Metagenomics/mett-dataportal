@@ -1,5 +1,6 @@
-from django.db import migrations
 import datetime
+
+from django.db import migrations
 
 
 def populate_initial_databases(apps, schema_editor):

@@ -7,22 +7,23 @@ from celery.result import AsyncResult
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from ninja import Router, Query
+from ninja import Query, Router
 from ninja.errors import HttpError
 
 from dataportal.utils.response_wrappers import wrap_success_response
+
+from ..search.models import Database, HmmerJob
 from .schemas import (
+    AlignmentDetailsResponseSchema,
+    DomainDetailsResponseSchema,
     JobDetailsResponseSchema,
     ResultQuerySchema,
-    DomainDetailsResponseSchema,
-    AlignmentDetailsResponseSchema,
 )
 from .services import (
-    DownloadTSVService,
-    DownloadFastaService,
     DownloadAlignedFastaService,
+    DownloadFastaService,
+    DownloadTSVService,
 )
-from ..search.models import HmmerJob, Database
 
 logger = logging.getLogger(__name__)
 

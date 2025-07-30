@@ -5,7 +5,7 @@ FASTA service for PyHMMER FASTA generation and validation.
 import gzip
 import io
 import logging
-from typing import List, Dict, Any
+from typing import Any
 
 from .sequence_service import SequenceService
 
@@ -17,7 +17,7 @@ class DownloadFastaService:
 
     @staticmethod
     def generate_enhanced_fasta_content(
-        results: List[Dict[str, Any]], db_path: str, query_input: str
+        results: list[dict[str, Any]], db_path: str, query_input: str
     ) -> bytes:
         """Generate enhanced FASTA content from search results."""
         output = io.StringIO()

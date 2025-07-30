@@ -1,14 +1,14 @@
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from dataportal.schema.gene_schemas import (
+    GeneAdvancedSearchQuerySchema,
+    GeneAutocompleteQuerySchema,
+    GeneFacetedSearchQuerySchema,
     GenePaginationSchema,
     GeneResponseSchema,
     GeneSearchQuerySchema,
-    GeneFacetedSearchQuerySchema,
-    GeneAdvancedSearchQuerySchema,
-    GeneAutocompleteQuerySchema,
 )
 from dataportal.services.gene_service import GeneService
 from dataportal.utils.exceptions import GeneNotFoundError, ServiceError

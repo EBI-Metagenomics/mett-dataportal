@@ -1,4 +1,5 @@
-from typing import Dict, List, Any
+from typing import Any
+
 from dataportal.validation.base_validator import ValidationService
 
 
@@ -16,7 +17,7 @@ class SpeciesValidationService(ValidationService):
         }
         self.field_lengths = {"acronym": 50, "scientific_name": 200, "common_name": 100}
 
-    async def validate_entity(self, data: Dict[str, Any]) -> Dict[str, List[str]]:
+    async def validate_entity(self, data: dict[str, Any]) -> dict[str, list[str]]:
         """Validate species entity data."""
         errors = {}
 
@@ -37,7 +38,7 @@ class SpeciesValidationService(ValidationService):
 
         return errors
 
-    async def validate_query(self, query: Dict[str, Any]) -> Dict[str, List[str]]:
+    async def validate_query(self, query: dict[str, Any]) -> dict[str, list[str]]:
         """Validate species query parameters."""
         errors = {}
 
@@ -50,7 +51,7 @@ class SpeciesValidationService(ValidationService):
 
         return errors
 
-    async def is_valid(self, data: Dict[str, Any]) -> bool:
+    async def is_valid(self, data: dict[str, Any]) -> bool:
         """Check if species data is valid."""
         validation_errors = await self.validate_entity(data)
         return len(validation_errors) == 0

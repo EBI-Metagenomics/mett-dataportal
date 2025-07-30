@@ -1,4 +1,4 @@
-from dataportal.models import SpeciesDocument, StrainDocument, GeneDocument
+from dataportal.models import GeneDocument, SpeciesDocument, StrainDocument
 
 # Note: Elasticsearch connection is already established in settings.py via elasticsearch_client.py
 # This module uses the existing connection

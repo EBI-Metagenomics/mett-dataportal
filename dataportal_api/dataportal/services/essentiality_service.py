@@ -1,23 +1,22 @@
 import logging
-from typing import List, Dict, Optional
 
 from cachetools import LRUCache
 
 from dataportal.services.base_service import CachedService
 from dataportal.utils.constants import (
-    GENE_ESSENTIALITY,
-    GENE_FIELD_START,
-    GENE_FIELD_END,
-    ES_FIELD_LOCUS_TAG,
-    FIELD_SEQ_ID,
     ES_FIELD_ISOLATE_NAME,
+    ES_FIELD_LOCUS_TAG,
     ES_INDEX_GENE,
+    FIELD_SEQ_ID,
+    GENE_ESSENTIALITY,
+    GENE_FIELD_END,
+    GENE_FIELD_START,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class EssentialityService(CachedService[Dict, str]):
+class EssentialityService(CachedService[dict, str]):
     """Service for managing essentiality data with caching support."""
 
     def __init__(self, limit: int = 10, cache_size: int = 10000):
@@ -25,7 +24,7 @@ class EssentialityService(CachedService[Dict, str]):
         self.limit = limit
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
-    async def get_by_id(self, id: str) -> Optional[Dict]:
+    async def get_by_id(self, id: str) -> dict | None:
         """Retrieve essentiality data by strain ID."""
         cache_key = self._get_cache_key("strain", id)
         cached_data = self._get_from_cache(cache_key)
@@ -38,12 +37,12 @@ class EssentialityService(CachedService[Dict, str]):
         self._set_cache(cache_key, strain_data)
         return strain_data
 
-    async def get_all(self, **kwargs) -> List[Dict]:
+    async def get_all(self, **kwargs) -> list[dict]:
         """Retrieve all essentiality data."""
         data = await self.load_essentiality_data_by_strain()
         return list(data.values())
 
-    async def search(self, query: str) -> List[Dict]:
+    async def search(self, query: str) -> list[dict]:
         """Search essentiality data by strain name."""
         data = await self.load_essentiality_data_by_strain()
         if query in data:
@@ -52,7 +51,7 @@ class EssentialityService(CachedService[Dict, str]):
 
     async def load_essentiality_data_by_strain(
         self,
-    ) -> Dict[str, Dict[str, Dict[str, List[Dict[str, str]]]]]:
+    ) -> dict[str, dict[str, dict[str, list[dict[str, str]]]]]:
         """Load essentiality data into cache from Elasticsearch."""
         if self.essentiality_cache:
             return self.essentiality_cache
@@ -109,7 +108,7 @@ class EssentialityService(CachedService[Dict, str]):
 
     async def get_essentiality_data_by_strain_and_ref(
         self, isolate_name: str, ref_name: str
-    ) -> Dict[str, Dict]:
+    ) -> dict[str, dict]:
         """Retrieve essentiality data for a given isolate and reference name."""
 
         if not self.essentiality_cache:

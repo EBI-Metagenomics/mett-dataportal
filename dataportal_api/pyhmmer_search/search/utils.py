@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, Optional
+
 from Bio.Align import substitution_matrices
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ class AlignmentCalculator:
     @classmethod
     def calculate_identity(
         cls, model: str, mline: str, aseq: str
-    ) -> Optional[Tuple[float, int]]:
+    ) -> tuple[float, int] | None:
         try:
             if len(mline) != len(aseq):
                 return None
@@ -39,7 +39,7 @@ class AlignmentCalculator:
     @classmethod
     def calculate_similarity(
         cls, model: str, mline: str, aseq: str
-    ) -> Optional[Tuple[float, int]]:
+    ) -> tuple[float, int] | None:
         try:
             if len(mline) != len(aseq):
                 return None
@@ -55,7 +55,7 @@ class AlignmentCalculator:
             number_of_identical_and_similar = 0
             total_aligned = 0
 
-            for i, (a, b) in enumerate(zip(model, aseq)):
+            for a, b in enumerate(zip(model, aseq, strict=False)):
                 if a == "-" or b == "-":
                     continue
 
@@ -99,7 +99,7 @@ class AlignmentCalculator:
         try:
             mline = ""
 
-            for a, b in zip(hmm_sequence, target_sequence):
+            for a, b in zip(hmm_sequence, target_sequence, strict=False):
                 if a == "-" or b == "-":
                     mline += " "
                 elif a.upper() == b.upper():  # Case-insensitive comparison
@@ -115,7 +115,7 @@ class AlignmentCalculator:
     @classmethod
     def calculate_identity_and_similarity_from_sequences(
         cls, hmm_sequence: str, target_sequence: str
-    ) -> Tuple[Tuple[float, int], Tuple[float, int]]:
+    ) -> tuple[tuple[float, int], tuple[float, int]]:
         try:
             mline = cls.create_match_line(hmm_sequence, target_sequence)
 
@@ -142,7 +142,7 @@ class AlignmentCalculator:
     @classmethod
     def calculate_identity_and_similarity_from_match_line(
         cls, hmm_sequence: str, mline: str, target_sequence: str
-    ) -> Tuple[Tuple[float, int], Tuple[float, int]]:
+    ) -> tuple[tuple[float, int], tuple[float, int]]:
         try:
             identity_result = cls.calculate_identity(
                 hmm_sequence, mline, target_sequence

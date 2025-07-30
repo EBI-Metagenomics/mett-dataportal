@@ -2,9 +2,11 @@ import ftplib
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import pandas as pd
 from Bio import SeqIO
 from django.core.management.base import BaseCommand
+
 from dataportal.models import StrainDocument
 
 # Note: Elasticsearch connection is already established in settings.py via elasticsearch_client.py
@@ -42,7 +44,9 @@ class Command(BaseCommand):
 
         # Load the CSV mapping file
         prefix_df = pd.read_csv(csv_path, sep="\t")
-        prefix_mapping = dict(zip(prefix_df["assembly"], prefix_df["prefix"]))
+        prefix_mapping = dict(
+            zip(prefix_df["assembly"], prefix_df["prefix"], strict=False)
+        )
 
         # Initialize assembly accession counter
         self.assembly_accession_counter = 1
@@ -116,7 +120,7 @@ class Command(BaseCommand):
 
             # Extract contigs
             contigs = []
-            with open(local_file_path, "r") as fasta_local_file:
+            with open(local_file_path) as fasta_local_file:
                 for record in SeqIO.parse(fasta_local_file, "fasta"):
                     contigs.append({"seq_id": record.id, "length": len(record.seq)})
 

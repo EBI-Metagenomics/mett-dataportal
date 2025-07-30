@@ -1,14 +1,16 @@
-import os
-import tempfile
 import csv
 import ftplib
-import time
 import logging
+import os
+import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
+
 import pandas as pd
 from django.core.management.base import BaseCommand
+from elasticsearch.helpers import BulkIndexError, bulk
 from elasticsearch_dsl import connections
-from elasticsearch.helpers import bulk, BulkIndexError
+
 from dataportal.models import GeneDocument, StrainDocument
 
 # Note: Elasticsearch connection is already established in settings.py via elasticsearch_client.py
@@ -192,7 +194,7 @@ class Command(BaseCommand):
     def load_isolate_mapping(self, mapping_task_file):
         """Load isolate-to-assembly mapping from TSV file."""
         mapping = {}
-        with open(mapping_task_file, mode="r") as file:
+        with open(mapping_task_file) as file:
             reader = csv.DictReader(file, delimiter="\t")
             for row in reader:
                 assembly_name = row["assembly"].replace(".fa", "")
@@ -367,7 +369,7 @@ class Command(BaseCommand):
 
             genes_to_index = []
 
-            with open(local_gff_path, "r") as gff:
+            with open(local_gff_path) as gff:
                 for line in gff:
                     if line.startswith("#"):
                         continue

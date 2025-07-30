@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from asgiref.sync import sync_to_async
 from django.db.models import Q
@@ -9,33 +9,33 @@ from elasticsearch_dsl import Search, connections
 
 from dataportal.models import StrainDocument
 from dataportal.schema.genome_schemas import (
+    GenomeAutocompleteQuerySchema,
     GenomePaginationSchema,
     GenomeResponseSchema,
+    GenomesByIsolateNamesQuerySchema,
     GenomeSearchQuerySchema,
     GetAllGenomesQuerySchema,
-    GenomesByIsolateNamesQuerySchema,
-    GenomeAutocompleteQuerySchema,
     StrainSuggestionSchema,
 )
 from dataportal.services.base_service import BaseService
-from dataportal.utils.decorators import log_execution_time
 from dataportal.unmanaged_models.strain_data import strain_from_hit
 from dataportal.utils.constants import (
-    STRAIN_FIELD_ISOLATE_NAME,
-    STRAIN_FIELD_SPECIES,
-    SORT_ASC,
     ES_FIELD_SPECIES_ACRONYM,
     ES_INDEX_STRAIN,
     SCROLL_BATCH_SIZE,
     SCROLL_MAX_RESULTS,
     SCROLL_TIMEOUT,
+    SORT_ASC,
+    STRAIN_FIELD_ISOLATE_NAME,
+    STRAIN_FIELD_SPECIES,
 )
+from dataportal.utils.decorators import log_execution_time
 from dataportal.utils.exceptions import ServiceError
 
 logger = logging.getLogger(__name__)
 
 
-class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
+class GenomeService(BaseService[GenomeResponseSchema, dict[str, Any]]):
     """Service for managing genome data operations in the read-only data portal."""
 
     def __init__(self, limit: int = 10):
@@ -43,7 +43,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         self.limit = limit
 
     @log_execution_time
-    async def get_by_id(self, id: str) -> Optional[GenomeResponseSchema]:
+    async def get_by_id(self, id: str) -> GenomeResponseSchema | None:
         """Retrieve a single genome by ID."""
         try:
             search = self._create_search().query("term", _id=id)
@@ -57,7 +57,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             self._handle_elasticsearch_error(e, f"get_by_id for genome {id}")
 
     @log_execution_time
-    async def get_all(self, **kwargs) -> List[GenomeResponseSchema]:
+    async def get_all(self, **kwargs) -> list[GenomeResponseSchema]:
         """Retrieve all genomes with optional filtering."""
         try:
             search = self._create_search().query("match_all")
@@ -75,7 +75,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             self._handle_elasticsearch_error(e, "get_all genomes")
 
     @log_execution_time
-    async def search(self, query: Dict[str, Any]) -> List[GenomeResponseSchema]:
+    async def search(self, query: dict[str, Any]) -> list[GenomeResponseSchema]:
         """Search genomes based on query parameters."""
         try:
             search = self._create_search()
@@ -117,7 +117,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         return GenomeResponseSchema.model_validate(hit_dict)
 
     # Original methods with minimal changes - keeping existing query logic
-    async def get_type_strains(self) -> List[GenomeResponseSchema]:
+    async def get_type_strains(self) -> list[GenomeResponseSchema]:
         return await self._fetch_and_validate_strains(
             filter_criteria={"type_strain": True},
             schema=GenomeResponseSchema,
@@ -163,7 +163,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     async def search_strains(
         self,
         params: GenomeAutocompleteQuerySchema,
-    ) -> List[StrainSuggestionSchema]:
+    ) -> list[StrainSuggestionSchema]:
         try:
             search = Search(index=ES_INDEX_STRAIN)
             search = search.query(
@@ -212,7 +212,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     async def get_genomes_by_isolate_names(
         self,
         params: GenomesByIsolateNamesQuerySchema,
-    ) -> List[GenomeResponseSchema]:
+    ) -> list[GenomeResponseSchema]:
         isolate_names_list = [id.strip() for id in params.isolates.split(",")]
         return await self._fetch_and_validate_strains(
             filter_criteria={"isolate_name.keyword": isolate_names_list},
@@ -372,7 +372,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         # Return mapped field if it exists, otherwise return the original field
         return field_mapping.get(field, field)
 
-    def convert_to_tsv(self, genomes: List[GenomeResponseSchema]) -> str:
+    def convert_to_tsv(self, genomes: list[GenomeResponseSchema]) -> str:
         """Convert genome data to TSV format for download."""
         if not genomes:
             return ""
@@ -493,7 +493,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                 # Get next batch using scroll
                 try:
                     response = await sync_to_async(
-                        lambda: es_client.scroll(
+                        lambda scroll_id=scroll_id: es_client.scroll(
                             scroll_id=scroll_id, scroll=SCROLL_TIMEOUT
                         )
                     )()

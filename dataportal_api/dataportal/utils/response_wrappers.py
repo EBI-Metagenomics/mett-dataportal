@@ -1,16 +1,16 @@
 import asyncio
-from typing import Any, Dict, List, Optional
-from functools import wraps
 import uuid
+from functools import wraps
+from typing import Any
 
+from dataportal.schema.base_schemas import BasePaginationSchema
 from dataportal.schema.response_schemas import (
-    SuccessResponseSchema,
     PaginatedResponseSchema,
     PaginationMetadataSchema,
-    create_success_response,
+    SuccessResponseSchema,
     create_paginated_response,
+    create_success_response,
 )
-from dataportal.schema.base_schemas import BasePaginationSchema
 
 
 def wrap_success_response(func):
@@ -21,7 +21,7 @@ def wrap_success_response(func):
         result = await func(*args, **kwargs)
 
         # If result is already a response schema, return as is
-        if isinstance(result, (SuccessResponseSchema, PaginatedResponseSchema)):
+        if isinstance(result, SuccessResponseSchema | PaginatedResponseSchema):
             return result
 
         # If result is a pagination schema, convert to paginated response
@@ -46,7 +46,7 @@ def wrap_success_response(func):
         result = func(*args, **kwargs)
 
         # If result is already a response schema, return as is
-        if isinstance(result, (SuccessResponseSchema, PaginatedResponseSchema)):
+        if isinstance(result, SuccessResponseSchema | PaginatedResponseSchema):
             return result
 
         # If result is a pagination schema, convert to paginated response
@@ -157,8 +157,8 @@ def wrap_paginated_response(func):
 
 def create_api_response(
     data: Any,
-    message: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    message: str | None = None,
+    metadata: dict[str, Any] | None = None,
     is_paginated: bool = False,
 ) -> SuccessResponseSchema | PaginatedResponseSchema:
     """Create a standardized API response."""
@@ -180,8 +180,8 @@ def create_api_response(
 
 
 def add_request_id_to_metadata(
-    metadata: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    metadata: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Add request ID to metadata for tracking."""
     if metadata is None:
         metadata = {}
@@ -191,23 +191,23 @@ def add_request_id_to_metadata(
 
 
 def create_list_response(
-    items: List[Any],
-    message: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    items: list[Any],
+    message: str | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> SuccessResponseSchema:
     """Create a standardized response for list data."""
     return create_success_response(data=items, message=message, metadata=metadata)
 
 
 def create_single_item_response(
-    item: Any, message: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None
+    item: Any, message: str | None = None, metadata: dict[str, Any] | None = None
 ) -> SuccessResponseSchema:
     """Create a standardized response for single item data."""
     return create_success_response(data=item, message=message, metadata=metadata)
 
 
 def create_empty_response(
-    message: str = "No data found", metadata: Optional[Dict[str, Any]] = None
+    message: str = "No data found", metadata: dict[str, Any] | None = None
 ) -> SuccessResponseSchema:
     """Create a standardized response for empty results."""
     return create_success_response(data=[], message=message, metadata=metadata)

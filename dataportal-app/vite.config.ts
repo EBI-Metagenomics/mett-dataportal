@@ -32,7 +32,7 @@ const jbrowseWorkerPlugin = () => {
             return null;
           }
         `;
-      }
+      q
     },
   };
 };

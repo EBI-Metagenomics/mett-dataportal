@@ -1,5 +1,6 @@
-from django.conf import settings
 from urllib.parse import unquote
+
+from django.conf import settings
 
 
 def convert_to_camel_case(text: str) -> str:

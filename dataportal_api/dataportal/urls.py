@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path, include
+from django.urls import include, path
 
 from dataportal.router import api
 

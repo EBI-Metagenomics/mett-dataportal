@@ -1,7 +1,6 @@
 import logging
-from typing import List
 
-from ninja import Router, Query, Path
+from ninja import Path, Query, Router
 from ninja.errors import HttpError
 
 from dataportal.schema.genome_schemas import (
@@ -10,6 +9,7 @@ from dataportal.schema.genome_schemas import (
 from dataportal.schema.species_schemas import (
     SpeciesSchema,
 )
+
 from ..schema.response_schemas import PaginatedResponseSchema
 from ..services.service_factory import ServiceFactory
 from ..utils.errors import raise_http_error, raise_internal_server_error
@@ -30,7 +30,7 @@ species_router = Router(tags=[ROUTER_SPECIES])
 # API Endpoint to retrieve all species
 @species_router.get(
     "/",
-    response=List[SpeciesSchema],
+    response=list[SpeciesSchema],
     summary="Get all species",
     description="Get all available species",
 )

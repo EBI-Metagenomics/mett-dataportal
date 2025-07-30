@@ -5,7 +5,7 @@ Download service for PyHMMER results export functionality.
 import csv
 import io
 import logging
-from typing import List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class DownloadTSVService:
     """Service for generating downloadable content from PyHMMER results."""
 
     @staticmethod
-    def generate_tsv_content(results: List[Dict[str, Any]]) -> str:
+    def generate_tsv_content(results: list[dict[str, Any]]) -> str:
         """Generate TSV content from search results."""
         output = io.StringIO()
         writer = csv.writer(output, delimiter="\t")

@@ -1,4 +1,5 @@
 import factory
+
 from dataportal.models import StrainDocument
 from dataportal.tests.factories.species_factory import SpeciesFactory
 

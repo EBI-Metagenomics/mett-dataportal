@@ -1,9 +1,9 @@
+from dataportal.services.app_health_service import AppHealthService
+from dataportal.services.essentiality_service import EssentialityService
+from dataportal.services.gene_service import GeneService
+from dataportal.services.genome_service import GenomeService
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.services.species_service import SpeciesService
-from dataportal.services.genome_service import GenomeService
-from dataportal.services.gene_service import GeneService
-from dataportal.services.essentiality_service import EssentialityService
-from dataportal.services.app_health_service import AppHealthService
 
 
 class TestServiceFactory:
@@ -48,7 +48,6 @@ class TestServiceFactory:
 
         assert service1 is service2
         assert isinstance(service1, AppHealthService)
-
 
     def test_different_services_are_different_instances(self):
         """Test that different services are different instances."""

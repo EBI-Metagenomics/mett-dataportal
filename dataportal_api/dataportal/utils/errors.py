@@ -1,8 +1,8 @@
+import inspect
 import json
 import logging
-import inspect
 import uuid
-from typing import List, Optional, Dict
+
 from ninja.errors import HttpError
 
 from dataportal.schema.response_schemas import (
@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 def raise_http_error(
     status_code: int,
     message: str,
-    error_code: Optional[ErrorCode] = None,
-    details: Optional[List[ErrorDetailSchema]] = None,
-    request_id: Optional[str] = None,
+    error_code: ErrorCode | None = None,
+    details: list[ErrorDetailSchema] | None = None,
+    request_id: str | None = None,
 ):
     """Raise an HTTP error with standardized error response."""
     frame = inspect.currentframe().f_back
@@ -58,8 +58,8 @@ def raise_http_error(
 
 def raise_validation_error(
     message: str,
-    details: Optional[List[ErrorDetailSchema]] = None,
-    request_id: Optional[str] = None,
+    details: list[ErrorDetailSchema] | None = None,
+    request_id: str | None = None,
 ):
     """Raise a validation error (400 Bad Request)."""
     raise_http_error(
@@ -74,7 +74,7 @@ def raise_validation_error(
 def raise_not_found_error(
     message: str,
     error_code: ErrorCode = ErrorCode.GENE_NOT_FOUND,
-    request_id: Optional[str] = None,
+    request_id: str | None = None,
 ):
     """Raise a not found error (404 Not Found)."""
     raise_http_error(
@@ -83,7 +83,7 @@ def raise_not_found_error(
 
 
 def raise_internal_server_error(
-    message: str = "An internal server error occurred", request_id: Optional[str] = None
+    message: str = "An internal server error occurred", request_id: str | None = None
 ):
     """Raise an internal server error (500 Internal Server Error)."""
     raise_http_error(
@@ -95,7 +95,7 @@ def raise_internal_server_error(
 
 
 def raise_service_unavailable_error(
-    message: str = "Service temporarily unavailable", request_id: Optional[str] = None
+    message: str = "Service temporarily unavailable", request_id: str | None = None
 ):
     """Raise a service unavailable error (503 Service Unavailable)."""
     raise_http_error(
@@ -106,7 +106,7 @@ def raise_service_unavailable_error(
     )
 
 
-def raise_elasticsearch_error(message: str, request_id: Optional[str] = None):
+def raise_elasticsearch_error(message: str, request_id: str | None = None):
     """Raise an Elasticsearch-specific error."""
     raise_http_error(
         status_code=500,
@@ -117,7 +117,7 @@ def raise_elasticsearch_error(message: str, request_id: Optional[str] = None):
 
 
 def raise_rate_limit_error(
-    message: str = "Rate limit exceeded", request_id: Optional[str] = None
+    message: str = "Rate limit exceeded", request_id: str | None = None
 ):
     """Raise a rate limit error (429 Too Many Requests)."""
     raise_http_error(
@@ -129,8 +129,8 @@ def raise_rate_limit_error(
 
 
 def create_validation_error_details(
-    field_errors: Dict[str, str]
-) -> List[ErrorDetailSchema]:
+    field_errors: dict[str, str]
+) -> list[ErrorDetailSchema]:
     """Create validation error details from field errors."""
     details = []
     for field, error_message in field_errors.items():

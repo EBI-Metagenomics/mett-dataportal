@@ -1,13 +1,10 @@
-from typing import Optional, List
-
-from pydantic import BaseModel, ConfigDict
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from dataportal.schema.base_schemas import BasePaginationSchema
 from dataportal.utils.constants import (
+    DEFAULT_FACET_LIMIT,
     DEFAULT_PER_PAGE_CNT,
     DEFAULT_SORT,
-    DEFAULT_FACET_LIMIT,
 )
 
 
@@ -18,7 +15,7 @@ class GeneAutocompleteQuerySchema(BaseModel):
         ...,
         description="Free-text input to search gene names, locus tags, or annotations.",
     )
-    filter: Optional[str] = Field(
+    filter: str | None = Field(
         None,
         description="Optional semicolon-separated gene filters, e.g., 'essentiality:essential_liquid;interpro:IPR035952'.",
     )
@@ -26,10 +23,10 @@ class GeneAutocompleteQuerySchema(BaseModel):
         DEFAULT_PER_PAGE_CNT,
         description="Maximum number of gene suggestions to return.",
     )
-    species_acronym: Optional[str] = Field(
+    species_acronym: str | None = Field(
         None, description="Optional species acronym filter (e.g., 'BU', 'PV')."
     )
-    isolates: Optional[str] = Field(
+    isolates: str | None = Field(
         None,
         description="Comma-separated list of isolate names to restrict the search scope.",
     )
@@ -46,11 +43,11 @@ class GeneSearchQuerySchema(BaseModel):
     per_page: int = Field(
         DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
     )
-    sort_field: Optional[str] = Field(
+    sort_field: str | None = Field(
         None,
         description="Field to sort results by (e.g., 'gene_name', 'isolate_name').",
     )
-    sort_order: Optional[str] = Field(
+    sort_order: str | None = Field(
         DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
 
@@ -58,49 +55,49 @@ class GeneSearchQuerySchema(BaseModel):
 class GeneFacetedSearchQuerySchema(BaseModel):
     """Schema for faceted gene search filtering by functional/metadata facets."""
 
-    query: Optional[str] = Field(
+    query: str | None = Field(
         None,
         description="Free-text search across gene fields such as gene name and product.",
     )
-    species_acronym: Optional[str] = Field(
+    species_acronym: str | None = Field(
         None, description="Species acronym filter (e.g., 'BU', 'PV')."
     )
-    essentiality: Optional[str] = Field(
+    essentiality: str | None = Field(
         None, description="Filter by essentiality status, e.g., 'essential'."
     )
-    isolates: Optional[str] = Field(
+    isolates: str | None = Field(
         "", description="Comma-separated list of isolate names to filter."
     )
-    cog_id: Optional[str] = Field(
+    cog_id: str | None = Field(
         None, description="Comma-separated list of COG IDs to filter."
     )
-    cog_funcats: Optional[str] = Field(
+    cog_funcats: str | None = Field(
         None, description="Comma-separated list of COG functional categories to filter."
     )
-    kegg: Optional[str] = Field(None, description="KEGG pathway or gene ID to filter.")
-    go_term: Optional[str] = Field(None, description="GO term ID or label to filter.")
-    pfam: Optional[str] = Field(None, description="Pfam domain ID to filter.")
-    interpro: Optional[str] = Field(None, description="InterPro ID to filter.")
-    has_amr_info: Optional[bool] = Field(
+    kegg: str | None = Field(None, description="KEGG pathway or gene ID to filter.")
+    go_term: str | None = Field(None, description="GO term ID or label to filter.")
+    pfam: str | None = Field(None, description="Pfam domain ID to filter.")
+    interpro: str | None = Field(None, description="InterPro ID to filter.")
+    has_amr_info: bool | None = Field(
         None, description="Filter genes that have associated AMR information."
     )
-    pfam_operator: Optional[str] = Field(
+    pfam_operator: str | None = Field(
         "OR", description="Logical operator ('AND'/'OR') for Pfam filtering."
     )
-    interpro_operator: Optional[str] = Field(
+    interpro_operator: str | None = Field(
         "OR", description="Logical operator ('AND'/'OR') for InterPro filtering."
     )
-    cog_id_operator: Optional[str] = Field(
+    cog_id_operator: str | None = Field(
         "OR", description="Logical operator ('AND'/'OR') for COG ID filtering."
     )
-    cog_funcats_operator: Optional[str] = Field(
+    cog_funcats_operator: str | None = Field(
         "OR",
         description="Logical operator ('AND'/'OR') for COG functional categories filtering.",
     )
-    kegg_operator: Optional[str] = Field(
+    kegg_operator: str | None = Field(
         "OR", description="Logical operator ('AND'/'OR') for KEGG filtering."
     )
-    go_term_operator: Optional[str] = Field(
+    go_term_operator: str | None = Field(
         "OR", description="Logical operator ('AND'/'OR') for GO term filtering."
     )
     limit: int = Field(
@@ -114,28 +111,28 @@ class GeneAdvancedSearchQuerySchema(BaseModel):
     isolates: str = Field(
         "", description="Comma-separated list of isolate names to filter."
     )
-    species_acronym: Optional[str] = Field(
+    species_acronym: str | None = Field(
         None, description="Species acronym to filter (e.g., 'BU', 'PV')."
     )
     query: str = Field(
         "",
         description="Free-text search string for gene names, locus tags, or annotations.",
     )
-    filter: Optional[str] = Field(
+    filter: str | None = Field(
         None,
         description="Additional gene filter, e.g., 'pfam:PF07715;interpro:IPR012910'.",
     )
-    filter_operators: Optional[str] = Field(
+    filter_operators: str | None = Field(
         None, description="Logical operators for filters, e.g., 'pfam:AND;interpro:OR'."
     )
     page: int = Field(1, description="Page number for pagination (1-based).")
     per_page: int = Field(
         DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
     )
-    sort_field: Optional[str] = Field(
+    sort_field: str | None = Field(
         None, description="Field to sort results by, e.g., 'gene_name', 'isolate_name'."
     )
-    sort_order: Optional[str] = Field(
+    sort_order: str | None = Field(
         DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
 
@@ -146,40 +143,40 @@ class GeneDownloadTSVQuerySchema(BaseModel):
     isolates: str = Field(
         "", description="Comma-separated list of isolate names to filter."
     )
-    species_acronym: Optional[str] = Field(
+    species_acronym: str | None = Field(
         None, description="Species acronym filter (e.g., 'BU', 'PV')."
     )
     query: str = Field(
         "",
         description="Free-text search string for gene names, locus tags, or annotations.",
     )
-    filter: Optional[str] = Field(
+    filter: str | None = Field(
         None,
         description="Additional gene filter, e.g., 'pfam:PF07715;interpro:IPR012910'.",
     )
-    filter_operators: Optional[str] = Field(
+    filter_operators: str | None = Field(
         None, description="Logical operators for filters, e.g., 'pfam:AND;interpro:OR'."
     )
-    sort_field: Optional[str] = Field(None, description="Field to sort results by.")
-    sort_order: Optional[str] = Field(
+    sort_field: str | None = Field(None, description="Field to sort results by.")
+    sort_order: str | None = Field(
         DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
     )
 
 
 class GeneAutocompleteResponseSchema(BaseModel):
-    locus_tag: Optional[str] = None
-    gene_name: Optional[str] = None
-    alias: Optional[List[str]] = None
-    isolate_name: Optional[str] = None
-    species_scientific_name: Optional[str] = None
-    species_acronym: Optional[str] = None
-    product: Optional[str] = None
-    kegg: Optional[List[str]] = None
-    uniprot_id: Optional[str] = None
-    pfam: Optional[List[str]] = None
-    cog_id: Optional[List[str]] = None
-    interpro: Optional[List[str]] = None
-    essentiality: Optional[str] = "Unknown"
+    locus_tag: str | None = None
+    gene_name: str | None = None
+    alias: list[str] | None = None
+    isolate_name: str | None = None
+    species_scientific_name: str | None = None
+    species_acronym: str | None = None
+    product: str | None = None
+    kegg: list[str] | None = None
+    uniprot_id: str | None = None
+    pfam: list[str] | None = None
+    cog_id: list[str] | None = None
+    interpro: list[str] | None = None
+    essentiality: str | None = "Unknown"
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -198,15 +195,15 @@ class DBXRefSchema(BaseModel):
 
 
 class AMRSchema(BaseModel):
-    gene_symbol: Optional[str] = None
-    sequence_name: Optional[str] = None
-    scope: Optional[str] = None
-    element_type: Optional[str] = None
-    element_subtype: Optional[str] = None
-    drug_class: Optional[str] = None
-    drug_subclass: Optional[str] = None
-    uf_keyword: Optional[List[str]] = None
-    uf_ecnumber: Optional[str] = None
+    gene_symbol: str | None = None
+    sequence_name: str | None = None
+    scope: str | None = None
+    element_type: str | None = None
+    element_subtype: str | None = None
+    drug_class: str | None = None
+    drug_subclass: str | None = None
+    uf_keyword: list[str] | None = None
+    uf_ecnumber: str | None = None
 
 
 class GeneQuery(BaseModel):
@@ -294,46 +291,46 @@ class NaturalLanguageGeneQuery(BaseModel):
 
 
 class GeneResponseSchema(BaseModel):
-    locus_tag: Optional[str] = None
-    gene_name: Optional[str] = None
-    alias: Optional[List[str]] = None
-    product: Optional[str] = None
-    start_position: Optional[int] = None
-    end_position: Optional[int] = None
-    seq_id: Optional[str] = None
-    isolate_name: Optional[str] = None
-    species_scientific_name: Optional[str] = None
-    species_acronym: Optional[str] = None
-    uniprot_id: Optional[str] = None
-    essentiality: Optional[str] = "Unknown"
-    cog_funcats: Optional[List[str]] = None
-    cog_id: Optional[List[str]] = None
-    kegg: Optional[List[str]] = None
-    pfam: Optional[List[str]] = None
-    interpro: Optional[List[str]] = None
-    ec_number: Optional[str] = None
-    dbxref: Optional[List[DBXRefSchema]] = None
-    eggnog: Optional[str] = None
-    amr: Optional[List[AMRSchema]] = None
-    has_amr_info: Optional[bool] = None
+    locus_tag: str | None = None
+    gene_name: str | None = None
+    alias: list[str] | None = None
+    product: str | None = None
+    start_position: int | None = None
+    end_position: int | None = None
+    seq_id: str | None = None
+    isolate_name: str | None = None
+    species_scientific_name: str | None = None
+    species_acronym: str | None = None
+    uniprot_id: str | None = None
+    essentiality: str | None = "Unknown"
+    cog_funcats: list[str] | None = None
+    cog_id: list[str] | None = None
+    kegg: list[str] | None = None
+    pfam: list[str] | None = None
+    interpro: list[str] | None = None
+    ec_number: str | None = None
+    dbxref: list[DBXRefSchema] | None = None
+    eggnog: str | None = None
+    amr: list[AMRSchema] | None = None
+    has_amr_info: bool | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
 class GeneProteinSeqSchema(BaseModel):
-    locus_tag: Optional[str] = None
-    protein_sequence: Optional[str] = None
+    locus_tag: str | None = None
+    protein_sequence: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class GenePaginationSchema(BasePaginationSchema):
-    results: List[GeneResponseSchema]
+    results: list[GeneResponseSchema]
 
 
 class EssentialityByContigSchema(BaseModel):
     locus_tag: str
-    start: Optional[int]
-    end: Optional[int]
+    start: int | None
+    end: int | None
     essentiality: str
 
 

@@ -4,24 +4,23 @@ import re
 import time
 import uuid
 from datetime import timedelta
-from typing import Optional
 
 from Bio import pairwise2
 from celery import shared_task
 from django.db import transaction
 from django.utils import timezone
 from django_celery_results.models import TaskResult
-from pyhmmer.easel import DigitalSequenceBlock
-from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
-from pyhmmer.plan7 import Pipeline, Background, Builder
+from pyhmmer.easel import Alphabet, DigitalSequenceBlock, SequenceFile, TextSequence
+from pyhmmer.plan7 import Background, Builder, Pipeline
 
 from dataportal import settings
+
 from .models import HmmerJob
 from .schemas import (
-    PyhmmerAlignmentSchema,
     AlignmentDisplay,
     DomainSchema,
     HitSchema,
+    PyhmmerAlignmentSchema,
 )
 from .utils import AlignmentCalculator
 
@@ -43,7 +42,7 @@ def _log_query_sequences(raw_bytes):
         logger.error(f"Error logging query sequences: {e}")
 
 
-def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
+def extract_pyhmmer_alignment(alignment) -> PyhmmerAlignmentSchema | None:
     try:
         if alignment is None:
             return None
@@ -81,7 +80,7 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
         return None
 
 
-def create_simple_alignment_display(alignment) -> Optional[AlignmentDisplay]:
+def create_simple_alignment_display(alignment) -> AlignmentDisplay | None:
     try:
         if alignment is None:
             return None
@@ -535,7 +534,7 @@ def run_search(self, job_id: str):
         raise
 
 
-def parse_biopython_alignment(query: str, target: str) -> Optional[AlignmentDisplay]:
+def parse_biopython_alignment(query: str, target: str) -> AlignmentDisplay | None:
     """Create simple alignment display using Biopython for phmmer cases"""
     try:
         alignments = pairwise2.align.globalxx(query, target)

@@ -1,10 +1,9 @@
-from typing import Dict
-from dataportal.services.base_service import BaseService
-from dataportal.services.species_service import SpeciesService
-from dataportal.services.essentiality_service import EssentialityService
 from dataportal.services.app_health_service import AppHealthService
-from dataportal.services.genome_service import GenomeService
+from dataportal.services.base_service import BaseService
+from dataportal.services.essentiality_service import EssentialityService
 from dataportal.services.gene_service import GeneService
+from dataportal.services.genome_service import GenomeService
+from dataportal.services.species_service import SpeciesService
 
 
 class ServiceFactory:
@@ -13,7 +12,7 @@ class ServiceFactory:
     Provides singleton pattern for services and centralized service management.
     """
 
-    _instances: Dict[str, BaseService] = {}
+    _instances: dict[str, BaseService] = {}
 
     @classmethod
     def get_species_service(cls) -> SpeciesService:
@@ -68,6 +67,6 @@ class ServiceFactory:
         cls._instances.clear()
 
     @classmethod
-    def get_all_services(cls) -> Dict[str, BaseService]:
+    def get_all_services(cls) -> dict[str, BaseService]:
         """Get all registered services."""
         return cls._instances.copy()

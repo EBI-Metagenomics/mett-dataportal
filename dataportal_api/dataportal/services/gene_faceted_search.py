@@ -1,19 +1,19 @@
 import logging
 
-from elasticsearch_dsl import A, FacetedSearch, TermsFacet, Q
+from elasticsearch_dsl import A, FacetedSearch, Q, TermsFacet
 
 from dataportal.utils.constants import (
-    GENE_ESSENTIALITY,
     DEFAULT_FACET_LIMIT,
-    ES_FIELD_PFAM,
-    ES_FIELD_INTERPRO,
-    ES_FIELD_KEGG,
-    ES_FIELD_COG_ID,
-    ES_FIELD_ISOLATE_NAME,
-    ES_FIELD_SPECIES_ACRONYM,
-    ES_FIELD_COG_FUNCATS,
     ES_FIELD_AMR_INFO,
+    ES_FIELD_COG_FUNCATS,
+    ES_FIELD_COG_ID,
     ES_FIELD_GO_TERM,
+    ES_FIELD_INTERPRO,
+    ES_FIELD_ISOLATE_NAME,
+    ES_FIELD_KEGG,
+    ES_FIELD_PFAM,
+    ES_FIELD_SPECIES_ACRONYM,
+    GENE_ESSENTIALITY,
     GENE_SEARCH_FIELDS,
 )
 

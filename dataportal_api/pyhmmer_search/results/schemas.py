@@ -1,25 +1,23 @@
 import json
-from typing import Literal, Optional, List
+from typing import Literal
 
 from django_celery_results.models import TaskResult
-from ninja import ModelSchema
-from ninja import Schema, Field
-from pydantic import UUID4, field_validator
-from pydantic import model_validator
+from ninja import Field, ModelSchema, Schema
+from pydantic import UUID4, field_validator, model_validator
 
-from ..constants import MX_CHOICES_LITERAL, DEFAULT_MX
-from ..search.models import HmmerJob, Database
+from ..constants import DEFAULT_MX, MX_CHOICES_LITERAL
+from ..search.models import Database, HmmerJob
 from ..search.schemas import (
-    PyhmmerAlignmentSchema,
     AlignmentDisplay,
     DomainSchema,
+    PyhmmerAlignmentSchema,
 )
 
 MXChoicesType = Literal[MX_CHOICES_LITERAL]
 
 
 class TaskResultSchema(ModelSchema):
-    result: Optional[List[dict]] = Field(default_factory=list)
+    result: list[dict] | None = Field(default_factory=list)
 
     @field_validator("result", mode="before")
     @classmethod
@@ -47,8 +45,8 @@ class SearchResponseSchema(Schema):
 
 
 class JobDetailsResponseSchema(ModelSchema):
-    task: Optional[TaskResultSchema] = None
-    database: Optional[DatabaseResponseSchema] = None
+    task: TaskResultSchema | None = None
+    database: DatabaseResponseSchema | None = None
     status: str
 
     class Meta:
@@ -67,24 +65,20 @@ class JobsResponseSchema(ModelSchema):
 class HmmerJobStatusSchema(Schema):
     id: UUID4 = Field(..., description="The id of the job")
     status: str = Field(..., description="The status of the job")
-    result_url: Optional[str] = Field(
-        ..., description="URL to get the result of the job"
-    )
-    error_message: Optional[str] = Field(
-        ..., description="The error message of the job"
-    )
+    result_url: str | None = Field(..., description="URL to get the result of the job")
+    error_message: str | None = Field(..., description="The error message of the job")
 
 
 class CutOffSchema(Schema):
     threshold: Literal["evalue", "bitscore"] = "evalue"
-    incE: Optional[float] = Field(0.01, gt=0, le=10)
-    incdomE: Optional[float] = Field(0.03, gt=0, le=10)
-    E: Optional[float] = Field(1.0, gt=0, le=10)
-    domE: Optional[float] = Field(1.0, gt=0, le=10)
-    incT: Optional[float] = Field(25.0, gt=0)
-    incdomT: Optional[float] = Field(22.0, gt=0)
-    T: Optional[float] = Field(7.0, gt=0)
-    domT: Optional[float] = Field(5.0, gt=0)
+    incE: float | None = Field(0.01, gt=0, le=10)
+    incdomE: float | None = Field(0.03, gt=0, le=10)
+    E: float | None = Field(1.0, gt=0, le=10)
+    domE: float | None = Field(1.0, gt=0, le=10)
+    incT: float | None = Field(25.0, gt=0)
+    incdomT: float | None = Field(22.0, gt=0)
+    T: float | None = Field(7.0, gt=0)
+    domT: float | None = Field(5.0, gt=0)
 
     @model_validator(mode="after")
     def clean_threshold_fields(self):
@@ -102,9 +96,9 @@ class CutOffSchema(Schema):
 
 
 class GapPenaltiesSchema(Schema):
-    popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
-    pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
-    mx: Optional[MXChoicesType] = Field(
+    popen: float | None = Field(0.02, ge=0, lt=0.5)
+    pextend: float | None = Field(0.4, ge=0, lt=1.0)
+    mx: MXChoicesType | None = Field(
         default=DEFAULT_MX, description="Substitution matrix"
     )
 
@@ -112,14 +106,14 @@ class GapPenaltiesSchema(Schema):
 class ResultQuerySchema(Schema):
     page: int = Field(default=1, gt=0)
     page_size: int = Field(default=50, gt=0)
-    taxonomy_ids: Optional[List[int]] = Field(default=None)
-    architecture: Optional[str] = Field(default=None)
-    with_domains: Optional[bool] = Field(default=False)
+    taxonomy_ids: list[int] | None = Field(default=None)
+    architecture: str | None = Field(default=None)
+    with_domains: bool | None = Field(default=False)
 
 
 class DomainDetailsResponseSchema(Schema):
     target: str = Field(..., description="Target sequence name")
-    domains: Optional[List[DomainSchema]] = Field(
+    domains: list[DomainSchema] | None = Field(
         None, description="List of domains with alignment data"
     )
 
@@ -129,10 +123,10 @@ class AlignmentDetailsResponseSchema(Schema):
 
     status: str = Field(..., description="Status of the request")
     target: str = Field(..., description="Target sequence name")
-    domain_index: Optional[int] = Field(None, description="Index of the domain")
-    alignment: Optional[PyhmmerAlignmentSchema] = Field(
+    domain_index: int | None = Field(None, description="Index of the domain")
+    alignment: PyhmmerAlignmentSchema | None = Field(
         None, description="PyHMMER alignment data"
     )
-    simple_alignment: Optional[AlignmentDisplay] = Field(
+    simple_alignment: AlignmentDisplay | None = Field(
         None, description="Simple alignment display for UI"
     )

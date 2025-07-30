@@ -1,69 +1,69 @@
 import json
 import logging
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Any
 
 from asgiref.sync import sync_to_async
 from django.forms.models import model_to_dict
 from elasticsearch_dsl import Search, connections
 
 from dataportal.schema.gene_schemas import (
-    GenePaginationSchema,
-    GeneResponseSchema,
-    GeneProteinSeqSchema,
-    GeneSearchQuerySchema,
-    GeneFacetedSearchQuerySchema,
     GeneAdvancedSearchQuerySchema,
     GeneAutocompleteQuerySchema,
+    GeneFacetedSearchQuerySchema,
+    GenePaginationSchema,
+    GeneProteinSeqSchema,
+    GeneResponseSchema,
+    GeneSearchQuerySchema,
 )
 from dataportal.services.base_service import BaseService
 from dataportal.services.gene_faceted_search import GeneFacetedSearch
 from dataportal.unmanaged_models.gene_data import gene_from_hit
 from dataportal.utils.constants import (
-    GENE_DEFAULT_SORT_FIELD,
-    DEFAULT_SORT,
-    DEFAULT_PER_PAGE_CNT,
-    SORT_DESC,
-    SORT_ASC,
-    GENE_ESSENTIALITY,
     DEFAULT_FACET_LIMIT,
-    ES_FIELD_PFAM,
-    ES_FIELD_INTERPRO,
-    ES_FIELD_KEGG,
+    DEFAULT_PER_PAGE_CNT,
+    DEFAULT_SORT,
+    ES_FIELD_ALIAS,
+    ES_FIELD_COG_FUNCATS,
     ES_FIELD_COG_ID,
     ES_FIELD_GENE_NAME,
-    ES_FIELD_ALIAS,
-    ES_FIELD_PRODUCT,
+    ES_FIELD_GO_TERM,
+    ES_FIELD_INTERPRO,
     ES_FIELD_ISOLATE_NAME,
-    GENE_SORT_FIELD_STRAIN,
-    FIELD_SEQ_ID,
-    ES_FIELD_UNIPROT_ID,
+    ES_FIELD_KEGG,
     ES_FIELD_LOCUS_TAG,
+    ES_FIELD_PFAM,
+    ES_FIELD_PRODUCT,
     ES_FIELD_SPECIES_ACRONYM,
+    ES_FIELD_UNIPROT_ID,
     ES_INDEX_GENE,
     FACET_FIELDS,
-    ES_FIELD_COG_FUNCATS,
+    FIELD_SEQ_ID,
+    GENE_DEFAULT_SORT_FIELD,
+    GENE_ESSENTIALITY,
+    GENE_SORT_FIELD_STRAIN,
     SCROLL_BATCH_SIZE,
     SCROLL_MAX_RESULTS,
     SCROLL_TIMEOUT,
-    ES_FIELD_GO_TERM,
+    SORT_ASC,
+    SORT_DESC,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
-    ServiceError,
     InvalidGenomeIdError,
+    ServiceError,
 )
 from dataportal.utils.utils import split_comma_param
 
 logger = logging.getLogger(__name__)
 
 
-class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
+class GeneService(BaseService[GeneResponseSchema, dict[str, Any]]):
     """Service for managing gene data operations in the read-only data portal."""
 
     def __init__(self):
         super().__init__(ES_INDEX_GENE)
 
-    async def get_by_id(self, id: str) -> Optional[GeneResponseSchema]:
+    async def get_by_id(self, id: str) -> GeneResponseSchema | None:
         """Retrieve a single gene by ID (locus tag)."""
         try:
             return await self.get_gene_by_locus_tag(id)
@@ -72,7 +72,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         except Exception as e:
             self._handle_elasticsearch_error(e, f"get_by_id for gene {id}")
 
-    async def get_all(self, **kwargs) -> List[GeneResponseSchema]:
+    async def get_all(self, **kwargs) -> list[GeneResponseSchema]:
         """Retrieve all genes with optional filtering."""
         try:
             page = kwargs.get("page", 1)
@@ -91,7 +91,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         except Exception as e:
             self._handle_elasticsearch_error(e, "get_all genes")
 
-    async def search(self, query: Dict[str, Any]) -> List[GeneResponseSchema]:
+    async def search(self, query: dict[str, Any]) -> list[GeneResponseSchema]:
         """Search genes based on query parameters."""
         try:
             # Convert dict to GeneSearchQuerySchema
@@ -118,7 +118,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def autocomplete_gene_suggestions(
         self,
         params: GeneAutocompleteQuerySchema,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         try:
             isolate_list = (
                 [gid.strip() for gid in params.isolates.split(",") if gid.strip()]
@@ -145,11 +145,11 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def _autocomplete_impl(
         self,
         query: str,
-        filter: Optional[str] = None,
+        filter: str | None = None,
         limit: int = None,
-        species_acronym: Optional[str] = None,
-        isolates: Optional[List[str]] = None,
-    ) -> List[Dict]:
+        species_acronym: str | None = None,
+        isolates: list[str] | None = None,
+    ) -> list[dict]:
         """Internal implementation of gene autocomplete."""
         try:
             s = Search(index=self.index_name)
@@ -235,8 +235,8 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         self,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+        sort_field: str | None = None,
+        sort_order: str | None = DEFAULT_SORT,
     ) -> GenePaginationSchema:
         try:
             es_query = {"match_all": {}}
@@ -280,12 +280,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def get_genes_by_genome(
         self,
         isolate_name: str,
-        filter: Optional[str] = None,
-        filter_operators: Optional[str] = None,
+        filter: str | None = None,
+        filter_operators: str | None = None,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = SORT_ASC,
+        sort_field: str | None = None,
+        sort_order: str | None = SORT_ASC,
     ) -> GenePaginationSchema:
         try:
             filter_criteria = {"isolate_name": isolate_name}
@@ -389,9 +389,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def _fetch_all_genes_with_scroll(
         self,
         query: dict,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
-    ) -> Tuple[List[GeneResponseSchema], int]:
+        sort_field: str | None = None,
+        sort_order: str | None = DEFAULT_SORT,
+    ) -> tuple[list[GeneResponseSchema], int]:
         """Fetch all genes using Elasticsearch scroll API for large downloads."""
         order_prefix = "desc" if sort_order == SORT_DESC else "asc"
 
@@ -463,7 +463,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 # Get next batch using scroll
                 try:
                     response = await sync_to_async(
-                        lambda: es_client.scroll(
+                        lambda scroll_id=scroll_id: es_client.scroll(
                             scroll_id=scroll_id, scroll=SCROLL_TIMEOUT
                         )
                     )()
@@ -488,7 +488,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
     # helper methods
 
-    def _parse_filters(self, filter_str: Optional[str]) -> Dict[str, List[str]]:
+    def _parse_filters(self, filter_str: str | None) -> dict[str, list[str]]:
         if not filter_str:
             return {}
 
@@ -512,7 +512,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         logger.debug(f"Parsed filters: {filters}")
         return filters
 
-    def _parse_filter_operators(self, filter_str: Optional[str]) -> Dict[str, str]:
+    def _parse_filter_operators(self, filter_str: str | None) -> dict[str, str]:
         if not filter_str:
             return {}
 
@@ -546,10 +546,10 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
     async def _apply_filters_for_type_strain(
         self,
-        base_filters: Dict,
-        filters: Dict[str, List[str]],
-        facet_operators: Optional[Dict[str, str]] = None,
-    ) -> Dict:
+        base_filters: dict,
+        filters: dict[str, list[str]],
+        facet_operators: dict[str, str] | None = None,
+    ) -> dict:
         facet_operators = facet_operators or {}
         bool_query = {"bool": {"must": []}}
 
@@ -589,9 +589,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         query: dict,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE_CNT,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
-    ) -> Tuple[List[GeneResponseSchema], int]:
+        sort_field: str | None = None,
+        sort_order: str | None = DEFAULT_SORT,
+    ) -> tuple[list[GeneResponseSchema], int]:
         start = (page - 1) * per_page
         order_prefix = "desc" if sort_order == SORT_DESC else "asc"
 
@@ -647,9 +647,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
     def _build_es_query(
         self,
-        query: Optional[str],
-        isolate_name: Optional[str],
-        filter_criteria: Optional[dict],
+        query: str | None,
+        isolate_name: str | None,
+        filter_criteria: dict | None,
     ) -> dict:
         """Build a properly structured Elasticsearch query for both full-text search and filters."""
         es_query = {"bool": {"must": []}}
@@ -733,19 +733,19 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
     async def _faceted_search_impl(
         self,
-        query: Optional[str] = None,
-        species_acronym: Optional[str] = None,
-        isolates: Optional[List[str]] = None,
-        essentiality: Optional[str] = None,
-        cog_id: Optional[str] = None,
-        cog_funcats: Optional[str] = None,
-        kegg: Optional[str] = None,
-        go_term: Optional[str] = None,
-        pfam: Optional[str] = None,
-        interpro: Optional[str] = None,
-        has_amr_info: Optional[bool] = None,
-        limit: Optional[int] = DEFAULT_FACET_LIMIT,
-        operators: Optional[Dict[str, str]] = None,
+        query: str | None = None,
+        species_acronym: str | None = None,
+        isolates: list[str] | None = None,
+        essentiality: str | None = None,
+        cog_id: str | None = None,
+        cog_funcats: str | None = None,
+        kegg: str | None = None,
+        go_term: str | None = None,
+        pfam: str | None = None,
+        interpro: str | None = None,
+        has_amr_info: bool | None = None,
+        limit: int | None = DEFAULT_FACET_LIMIT,
+        operators: dict[str, str] | None = None,
     ):
         """Internal implementation of faceted search."""
         try:
@@ -816,10 +816,10 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
     def process_aggregation_results(
         self,
-        aggregation_dict: Dict[str, int],
-        selected_values: Optional[List[str]] = None,
-        facet_group: Optional[str] = None,
-    ) -> List[Dict[str, object]]:
+        aggregation_dict: dict[str, int],
+        selected_values: list[str] | None = None,
+        facet_group: str | None = None,
+    ) -> list[dict[str, object]]:
         """Removes empty keys from aggregation results and marks selected items."""
         selected_values = selected_values or []
 
@@ -885,7 +885,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             )
             raise ServiceError(f"Error fetching protein sequence: {str(e)}")
 
-    def convert_to_tsv(self, genes: List[GeneResponseSchema]) -> str:
+    def convert_to_tsv(self, genes: list[GeneResponseSchema]) -> str:
         """Convert gene data to TSV format for download."""
         if not genes:
             return ""
@@ -951,12 +951,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def stream_genes_with_scroll(
         self,
         isolates: str = None,
-        species_acronym: Optional[int] = None,
+        species_acronym: int | None = None,
         query: str = None,
-        filter: Optional[str] = None,
-        filter_operators: Optional[str] = None,
-        sort_field: Optional[str] = None,
-        sort_order: Optional[str] = SORT_ASC,
+        filter: str | None = None,
+        filter_operators: str | None = None,
+        sort_field: str | None = None,
+        sort_order: str | None = SORT_ASC,
     ):
         """Stream genes directly from Elasticsearch scroll API without loading all into memory."""
         isolate_names_list = (
@@ -1060,7 +1060,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 # Get next batch using scroll
                 try:
                     response = await sync_to_async(
-                        lambda: es_client.scroll(
+                        lambda scroll_id=scroll_id: es_client.scroll(
                             scroll_id=scroll_id, scroll=SCROLL_TIMEOUT
                         )
                     )()

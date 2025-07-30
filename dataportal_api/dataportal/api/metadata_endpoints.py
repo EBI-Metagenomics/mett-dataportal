@@ -1,5 +1,4 @@
 import logging
-from typing import List, Dict
 
 from ninja import Router
 
@@ -17,7 +16,7 @@ metadata_router = Router(tags=[ROUTER_METADATA])
     "/cog-categories",
     summary="List all COG categories",
     description="Returns a list of all standardized COG category codes with their functional descriptions.",
-    response=List[Dict[str, str]],
+    response=list[dict[str, str]],
     include_in_schema=False,
 )
 def get_all_categories(request):

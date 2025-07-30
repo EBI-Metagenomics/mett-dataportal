@@ -1,14 +1,14 @@
 from elasticsearch_dsl import (
-    Document,
-    Text,
-    Keyword,
-    Integer,
     Boolean,
-    analyzer,
-    tokenizer,
-    Nested,
-    normalizer,
+    Document,
     Float,
+    Integer,
+    Keyword,
+    Nested,
+    Text,
+    analyzer,
+    normalizer,
+    tokenizer,
 )
 
 edge_ngram_tokenizer = tokenizer(

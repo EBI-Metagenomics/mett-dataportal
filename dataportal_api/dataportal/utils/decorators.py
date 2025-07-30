@@ -1,9 +1,10 @@
+import asyncio
 import functools
 import logging
 import time
-from typing import Callable, Optional
+from collections.abc import Callable
+
 from cachetools import TTLCache
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ def retry_on_failure(max_retries: int = 3, delay: float = 1.0):
     return decorator
 
 
-def validate_input(validator_func: Optional[Callable] = None):
+def validate_input(validator_func: Callable | None = None):
     """Decorator to validate input parameters."""
 
     def decorator(func: Callable) -> Callable:

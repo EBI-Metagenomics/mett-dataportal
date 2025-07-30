@@ -1,9 +1,10 @@
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from dataportal.services.base_service import BaseService
 
 
-class ValidationService(BaseService[Dict, Dict]):
+class ValidationService(BaseService[dict, dict]):
     """
     Abstract base class for validation services.
     Provides common validation functionality across the application.
@@ -13,7 +14,7 @@ class ValidationService(BaseService[Dict, Dict]):
         super().__init__(index_name)
 
     @abstractmethod
-    async def validate_entity(self, data: Dict[str, Any]) -> Dict[str, List[str]]:
+    async def validate_entity(self, data: dict[str, Any]) -> dict[str, list[str]]:
         """
         Validate entity data and return validation errors.
 
@@ -26,7 +27,7 @@ class ValidationService(BaseService[Dict, Dict]):
         pass
 
     @abstractmethod
-    async def validate_query(self, query: Dict[str, Any]) -> Dict[str, List[str]]:
+    async def validate_query(self, query: dict[str, Any]) -> dict[str, list[str]]:
         """
         Validate query parameters and return validation errors.
 
@@ -39,7 +40,7 @@ class ValidationService(BaseService[Dict, Dict]):
         pass
 
     @abstractmethod
-    async def is_valid(self, data: Dict[str, Any]) -> bool:
+    async def is_valid(self, data: dict[str, Any]) -> bool:
         """
         Check if data is valid.
 
@@ -52,8 +53,8 @@ class ValidationService(BaseService[Dict, Dict]):
         pass
 
     def _validate_required_fields(
-        self, data: Dict[str, Any], required_fields: List[str]
-    ) -> List[str]:
+        self, data: dict[str, Any], required_fields: list[str]
+    ) -> list[str]:
         """Validate that required fields are present."""
         errors = []
         for field in required_fields:
@@ -62,8 +63,8 @@ class ValidationService(BaseService[Dict, Dict]):
         return errors
 
     def _validate_field_types(
-        self, data: Dict[str, Any], field_types: Dict[str, type]
-    ) -> List[str]:
+        self, data: dict[str, Any], field_types: dict[str, type]
+    ) -> list[str]:
         """Validate field types."""
         errors = []
         for field, expected_type in field_types.items():
@@ -74,8 +75,8 @@ class ValidationService(BaseService[Dict, Dict]):
         return errors
 
     def _validate_string_length(
-        self, data: Dict[str, Any], field_lengths: Dict[str, int]
-    ) -> List[str]:
+        self, data: dict[str, Any], field_lengths: dict[str, int]
+    ) -> list[str]:
         """Validate string field lengths."""
         errors = []
         for field, max_length in field_lengths.items():
@@ -90,8 +91,8 @@ class ValidationService(BaseService[Dict, Dict]):
         return errors
 
     def _validate_numeric_range(
-        self, data: Dict[str, Any], field_ranges: Dict[str, tuple]
-    ) -> List[str]:
+        self, data: dict[str, Any], field_ranges: dict[str, tuple]
+    ) -> list[str]:
         """Validate numeric field ranges."""
         errors = []
         for field, (min_val, max_val) in field_ranges.items():
@@ -107,14 +108,14 @@ class ValidationService(BaseService[Dict, Dict]):
         return errors
 
     # Implement abstract methods from BaseService
-    async def get_by_id(self, id: str) -> Optional[Dict]:
+    async def get_by_id(self, id: str) -> dict | None:
         """Not implemented for validation service."""
         raise NotImplementedError("Validation service does not support get_by_id")
 
-    async def get_all(self, **kwargs) -> List[Dict]:
+    async def get_all(self, **kwargs) -> list[dict]:
         """Not implemented for validation service."""
         raise NotImplementedError("Validation service does not support get_all")
 
-    async def search(self, query: Dict) -> List[Dict]:
+    async def search(self, query: dict) -> list[dict]:
         """Not implemented for validation service."""
         raise NotImplementedError("Validation service does not support search")
