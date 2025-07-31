@@ -43,12 +43,6 @@ class ErrorCode(str, Enum):
     FORBIDDEN = "FORBIDDEN"
     INVALID_API_KEY = "INVALID_API_KEY"
 
-    # Feedback errors
-    FEEDBACK_SUBMISSION_FAILED = "FEEDBACK_SUBMISSION_FAILED"
-    FEEDBACK_VALIDATION_ERROR = "FEEDBACK_VALIDATION_ERROR"
-    FEEDBACK_SERVICE_UNAVAILABLE = "FEEDBACK_SERVICE_UNAVAILABLE"
-    RT_QUEUE_ERROR = "RT_QUEUE_ERROR"
-
 
 class BaseResponseSchema(BaseModel):
     """Base response schema with common fields."""

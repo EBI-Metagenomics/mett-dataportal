@@ -53,8 +53,10 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                                 <span style={{color: '#333', fontWeight: '500'}}>
                                     We value your feedback! Help us improve by sharing your thoughts.
                                 </span>
-                                <Link
-                                    to="/feedback"
+                                <a
+                                    href="https://www.ebi.ac.uk/about/contact/support/mett-feedback"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="vf-link"
                                     style={{
                                         display: 'inline-flex',
@@ -89,7 +91,7 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                                             fillRule="nonzero"
                                         />
                                     </svg>
-                                </Link>
+                                </a>
                             </div>
                         )}
 

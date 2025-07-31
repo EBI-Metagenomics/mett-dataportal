@@ -1,14 +1,16 @@
 import logging
+from datetime import timedelta
 
 from django.utils import timezone
 from django_celery_results.models import TaskResult
 from ninja import Router
 from ninja.errors import HttpError
 
-from .models import HmmerJob, Database
+from dataportal.utils.response_wrappers import wrap_success_response
+from .models import Database
+from .models import HmmerJob
 from .schemas import SearchRequestSchema, SearchResponseSchema
 from .tasks import run_search
-from dataportal.utils.response_wrappers import wrap_success_response
 
 logger = logging.getLogger(__name__)
 
@@ -21,70 +23,20 @@ def search(request, body: SearchRequestSchema):
         logger.info("=== SEARCH REQUEST RECEIVED ===")
         logger.info(f"Request body: {body.dict()}")
 
-        # Enhanced logging for all user-selected parameters
-        logger.info("=== USER SELECTED PARAMETERS ===")
-        logger.info(f"Database: {body.database}")
-        logger.info(f"Threshold type: {body.threshold}")
-        logger.info(f"Threshold value: {body.threshold_value}")
-        logger.info(f"Substitution matrix (mx): {body.mx}")
-        logger.info(f"Input sequence length: {len(body.input) if body.input else 0}")
-
-        # E-value parameters
-        logger.info("=== E-VALUE PARAMETERS ===")
-        logger.info(f"E (Report E-values - Sequence): {body.E}")
-        logger.info(f"domE (Report E-values - Hit): {body.domE}")
-        logger.info(f"incE (Significance E-values - Sequence): {body.incE}")
-        logger.info(f"incdomE (Significance E-values - Hit): {body.incdomE}")
-
-        # Bit score parameters
-        logger.info("=== BIT SCORE PARAMETERS ===")
-        logger.info(f"T (Report Bit scores - Sequence): {body.T}")
-        logger.info(f"domT (Report Bit scores - Hit): {body.domT}")
-        logger.info(f"incT (Significance Bit scores - Sequence): {body.incT}")
-        logger.info(f"incdomT (Significance Bit scores - Hit): {body.incdomT}")
-
-        # Gap penalties
-        logger.info("=== GAP PENALTIES ===")
-        logger.info(f"popen (Gap open penalty): {body.popen}")
-        logger.info(f"pextend (Gap extend penalty): {body.pextend}")
-
         # Create the job
         logger.info("Creating HmmerJob...")
         job = HmmerJob(**body.dict(), algo=HmmerJob.AlgoChoices.PHMMER)
         logger.info(f"Job object created: {job}")
         logger.info(f"Job ID before save: {job.id}")
 
-        # Log the job parameters after creation
-        logger.info("=== JOB PARAMETERS VERIFICATION ===")
-        logger.info(f"Job database: {job.database}")
-        logger.info(f"Job threshold: {job.threshold}")
-        logger.info(f"Job threshold_value: {job.threshold_value}")
-        logger.info(f"Job mx: {job.mx}")
-        logger.info(f"Job E: {job.E}")
-        logger.info(f"Job domE: {job.domE}")
-        logger.info(f"Job incE: {job.incE}")
-        logger.info(f"Job incdomE: {job.incdomE}")
-        logger.info(f"Job T: {job.T}")
-        logger.info(f"Job domT: {job.domT}")
-        logger.info(f"Job incT: {job.incT}")
-        logger.info(f"Job incdomT: {job.incdomT}")
-        logger.info(f"Job popen: {job.popen}")
-        logger.info(f"Job pextend: {job.pextend}")
-
         job.clean()
-        logger.info("Job cleaned successfully")
-
-        # Save job first and ensure it's committed
         job.save()
         logger.info(f"Job saved to database with ID: {job.id}")
 
-        # Verify job exists in database before starting task
         try:
-            # Refresh from database to ensure we have the latest state
             job.refresh_from_db()
             logger.info(f"Job verified in database with ID: {job.id}")
 
-            # Add a small delay to ensure the job is fully committed
             import time
 
             time.sleep(0.1)
@@ -96,9 +48,6 @@ def search(request, body: SearchRequestSchema):
         # Start the task
         logger.info("Starting Celery task...")
         job_id_str = str(job.id)
-        logger.info(f"Passing job ID to task: {job_id_str}")
-        logger.info(f"Job ID type: {type(job_id_str)}")
-        logger.info(f"Job ID length: {len(job_id_str)}")
 
         result = run_search.delay(job_id_str)
         logger.info(f"Celery task started with ID: {result.id}")
@@ -116,8 +65,6 @@ def search(request, body: SearchRequestSchema):
         )
         logger.info(f"TaskResult created: {task_result}")
 
-        # Link the task to the job
-        logger.info("Linking task to job...")
         job.task = task_result
         job.save()
         logger.info("Task linked successfully")
@@ -140,60 +87,6 @@ def get_databases(request):
     try:
         databases = Database.objects.all().order_by("order")
 
-        # If no databases exist, return default ones
-        if not databases.exists():
-            default_databases = [
-                {
-                    "id": "bu_all",
-                    "name": "Bacteroides uniformis All Strains",
-                    "type": "seq",
-                    "version": "1.0",
-                    "release_date": "2024-01-01",
-                    "order": 1,
-                },
-                {
-                    "id": "bu_type_strains",
-                    "name": "Bacteroides uniformis Type Strains",
-                    "type": "seq",
-                    "version": "1.0",
-                    "release_date": "2024-01-01",
-                    "order": 2,
-                },
-                {
-                    "id": "pv_all",
-                    "name": "Phocaeicola vulgatus All Strains",
-                    "type": "seq",
-                    "version": "1.0",
-                    "release_date": "2024-01-01",
-                    "order": 3,
-                },
-                {
-                    "id": "pv_type_strains",
-                    "name": "Phocaeicola vulgatus Type Strains",
-                    "type": "seq",
-                    "version": "1.0",
-                    "release_date": "2024-01-01",
-                    "order": 4,
-                },
-                {
-                    "id": "bu_pv_all",
-                    "name": "Bacteroides uniformis + Phocaeicola vulgatus All Strains",
-                    "type": "seq",
-                    "version": "1.0",
-                    "release_date": "2024-01-01",
-                    "order": 5,
-                },
-                {
-                    "id": "bu_pv_type_strains",
-                    "name": "Bacteroides uniformis + Phocaeicola vulgatus Type Strains",
-                    "type": "seq",
-                    "version": "1.0",
-                    "release_date": "2024-01-01",
-                    "order": 6,
-                },
-            ]
-            return default_databases
-
         return [
             {
                 "id": db.id,
@@ -209,11 +102,10 @@ def get_databases(request):
         ]
     except Exception as e:
         logger.error(f"Error getting databases: {e}")
-        # Return default databases as fallback
         return [
             {
-                "id": "bu_all",
-                "name": "Burkholderia ubonensis All Strains",
+                "id": "bu_pv_all",
+                "name": "Bacteroides uniformis + Phocaeicola vulgatus All Strains",
                 "type": "seq",
                 "version": "1.0",
                 "release_date": "2024-01-01",
@@ -222,20 +114,82 @@ def get_databases(request):
         ]
 
 
-@pyhmmer_router_search.get("/mx-choices", include_in_schema=False)
-@wrap_success_response
-def get_mx_choices(request):
-    """Get available substitution matrices for PyHMMER search."""
+# @pyhmmer_router_search.get("/mx-choices", include_in_schema=False)
+# @wrap_success_response
+# def get_mx_choices(request):
+#     try:
+#         choices = [
+#             {"value": choice[0], "label": choice[1]}
+#             for choice in HmmerJob.MXChoices.choices
+#         ]
+#         return choices
+#     except Exception as e:
+#         logger.error(f"Error getting MX choices: {e}")
+#         raise HttpError(500, f"Internal server error: {str(e)}")
+
+
+@pyhmmer_router_search.get("/tasks-status", include_in_schema=False)
+def get_tasks_status(request, threshold_days: int = 30):
+    """Get current status of PyHMMER task results in the database."""
     try:
-        choices = [
-            {"value": "BLOSUM62", "label": "BLOSUM62"},
-            {"value": "BLOSUM45", "label": "BLOSUM45"},
-            {"value": "BLOSUM90", "label": "BLOSUM90"},
-            {"value": "PAM30", "label": "PAM30"},
-            {"value": "PAM70", "label": "PAM70"},
-            {"value": "PAM250", "label": "PAM250"},
-        ]
-        return choices
+        # Validate threshold_days parameter
+        if threshold_days < 1 or threshold_days > 365:
+            return {
+                "status": "error",
+                "message": "threshold_days must be between 1 and 365",
+            }, 400
+
+        cutoff = timezone.now() - timedelta(days=threshold_days)
+
+        total_tasks = TaskResult.objects.count()
+        old_tasks = TaskResult.objects.filter(date_done__lt=cutoff).count()
+        recent_tasks = total_tasks - old_tasks
+
+        return {
+            "status": "success",
+            "total_tasks": total_tasks,
+            "old_tasks_eligible_for_cleanup": old_tasks,
+            "recent_tasks": recent_tasks,
+            "cutoff_date": cutoff.isoformat(),
+            "cleanup_threshold_days": threshold_days,
+        }
     except Exception as e:
-        logger.error(f"Error getting MX choices: {e}")
-        raise HttpError(500, f"Internal server error: {str(e)}")
+        logger.error(f"Error getting PyHMMER tasks status: {e}")
+        return {
+            "status": "error",
+            "message": f"Failed to get tasks status: {str(e)}",
+        }, 500
+
+
+@pyhmmer_router_search.post("/cleanup-tasks", include_in_schema=False)
+def cleanup_tasks_manual(request, threshold_days: int = 30):
+    """Manually trigger cleanup of old PyHMMER task results."""
+    try:
+        # Validate threshold_days parameter
+        if threshold_days < 1 or threshold_days > 365:
+            return {
+                "status": "error",
+                "message": "threshold_days must be between 1 and 365",
+            }, 400
+
+        # Use the same logic as the scheduled task
+        cutoff = timezone.now() - timedelta(days=threshold_days)
+        deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
+
+        logger.info(
+            f"Manual PyHMMER cleanup triggered: Deleted {deleted} old task results (threshold: {threshold_days} days)"
+        )
+
+        return {
+            "status": "success",
+            "message": f"Successfully deleted {deleted} old PyHMMER task results (older than {threshold_days} days)",
+            "deleted_count": deleted,
+            "cutoff_date": cutoff.isoformat(),
+            "cleanup_threshold_days": threshold_days,
+        }
+    except Exception as e:
+        logger.error(f"Error during manual PyHMMER cleanup: {e}")
+        return {
+            "status": "error",
+            "message": f"Failed to cleanup old PyHMMER tasks: {str(e)}",
+        }, 500

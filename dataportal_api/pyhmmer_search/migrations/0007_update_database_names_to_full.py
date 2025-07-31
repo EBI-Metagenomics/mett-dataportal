@@ -5,7 +5,7 @@ from django.db import migrations
 
 def update_database_names_to_full(apps, schema_editor):
     Database = apps.get_model("pyhmmer_search", "Database")
-    
+
     # Update database names to full descriptive versions
     name_updates = {
         "bu_type_strains": "Bacteroides uniformis Type Strains",
@@ -15,7 +15,7 @@ def update_database_names_to_full(apps, schema_editor):
         "bu_pv_type_strains": "Bacteroides uniformis + Phocaeicola vulgatus Type Strains",
         "bu_pv_all": "Bacteroides uniformis + Phocaeicola vulgatus All Strains",
     }
-    
+
     for db_id, full_name in name_updates.items():
         try:
             database = Database.objects.get(id=db_id)
@@ -28,7 +28,7 @@ def update_database_names_to_full(apps, schema_editor):
 
 def reverse_update_database_names_to_full(apps, schema_editor):
     Database = apps.get_model("pyhmmer_search", "Database")
-    
+
     # Revert database names back to short versions
     name_reverts = {
         "bu_type_strains": "BU Type Strains",
@@ -38,7 +38,7 @@ def reverse_update_database_names_to_full(apps, schema_editor):
         "bu_pv_type_strains": "BU+PV Type Strains",
         "bu_pv_all": "BU+PV All Strains",
     }
-    
+
     for db_id, short_name in name_reverts.items():
         try:
             database = Database.objects.get(id=db_id)
@@ -56,5 +56,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(update_database_names_to_full, reverse_update_database_names_to_full),
+        migrations.RunPython(
+            update_database_names_to_full, reverse_update_database_names_to_full
+        ),
     ]

@@ -10,7 +10,6 @@ from dataportal.api.genome_endpoints import genome_router
 from dataportal.api.health_endpoints import health_router
 from dataportal.api.metadata_endpoints import metadata_router
 from dataportal.api.species_endpoints import species_router
-from dataportal.api.feedback_endpoints import feedback_router
 
 from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
@@ -51,7 +50,6 @@ URL_PREFIX_GENES = "/genes"
 URL_PREFIX_METADATA = "/metadata"
 URL_PREFIX_PYHMMER_SEARCH = "/pyhmmer/search"
 URL_PREFIX_PYHMMER_RESULT = "/pyhmmer/result"
-URL_PREFIX_FEEDBACK = "/feedback"
 
 
 def custom_error_handler(request, exc):
@@ -206,10 +204,6 @@ api.add_router(URL_PREFIX_METADATA, metadata_router)
 if getattr(settings, "ENABLE_PYHMMER_SEARCH", False):
     api.add_router(URL_PREFIX_PYHMMER_SEARCH, pyhmmer_router_search)
     api.add_router(URL_PREFIX_PYHMMER_RESULT, pyhmmer_router_result)
-
-# Conditionally register feedback router based on feature flag
-if getattr(settings, "ENABLE_FEEDBACK", False):
-    api.add_router(URL_PREFIX_FEEDBACK, feedback_router)
 
 api.add_router("/", health_router)
 # Register specific handlers

@@ -48,6 +48,40 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Features-Check",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/features",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"features"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				},
@@ -2924,12 +2958,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/search/databases",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/search/databases",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -2976,12 +3008,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/search/mxchoices",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/search/mxchoices",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3025,7 +3055,7 @@
 										],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+											"raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -3033,12 +3063,206 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/search",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/search",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
+											"path": [
+												"api",
+												"pyhmmer",
+												"search"
+											]
+										},
+										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+									},
+									"response": []
+								},
+								{
+									"name": "pyhmmer-search-varied-seq",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let json = pm.response.json();",
+													"if (json.id) {",
+													"    pm.globals.set(\"hmmer_job_id\", json.id);",
+													"}"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVKQVP\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{mett-current}}/api/pyhmmer/search",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"pyhmmer",
+												"search"
+											]
+										},
+										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+									},
+									"response": []
+								},
+								{
+									"name": "pyhmmer-search-long",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let json = pm.response.json();",
+													"if (json.id) {",
+													"    pm.globals.set(\"hmmer_job_id\", json.id);",
+													"}"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">test_long_sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVYQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKER\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{mett-current}}/api/pyhmmer/search",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"pyhmmer",
+												"search"
+											]
+										},
+										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+									},
+									"response": []
+								},
+								{
+									"name": "pyhmmer-search-invalid",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let json = pm.response.json();",
+													"if (json.id) {",
+													"    pm.globals.set(\"hmmer_job_id\", json.id);",
+													"}"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \"MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{mett-current}}/api/pyhmmer/search",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"pyhmmer",
+												"search"
+											]
+										},
+										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+									},
+									"response": []
+								},
+								{
+									"name": "pyhmmer-search-dna",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let json = pm.response.json();",
+													"if (json.id) {",
+													"    pm.globals.set(\"hmmer_job_id\", json.id);",
+													"}"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"database\": \"bu_type_strains\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">test_dna\\nATGAGTGAAATAGATCATGTCGGGCTGTGGAACCGCTGTCTTGAAATCATCAG\",\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{mett-current}}/api/pyhmmer/search",
+											"host": [
+												"{{mett-current}}"
+											],
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3072,17 +3296,93 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/result/{{hmmer_job_id}}",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
 												"result",
 												"{{hmmer_job_id}}"
+											]
+										},
+										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+									},
+									"response": []
+								},
+								{
+									"name": "download-fasta-debug",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{mett-current}}/api/pyhmmer/result/dfef7a0e-38f0-4568-8e10-5f7333ed2c13/debug-fasta",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"pyhmmer",
+												"result",
+												"dfef7a0e-38f0-4568-8e10-5f7333ed2c13",
+												"debug-fasta"
+											]
+										},
+										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+									},
+									"response": []
+								},
+								{
+									"name": "debug-aligned-fasta",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/debug-pyhmmer-msa",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"pyhmmer",
+												"result",
+												"{{hmmer_job_id}}",
+												"debug-pyhmmer-msa"
 											]
 										},
 										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
@@ -3112,17 +3412,60 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/result/{{hmmer_job_id}}/domains?target=BU_CLA-JM-H26-B_04207",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/domains?target=BU_CLA-JM-H26-B_04207",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
 												"result",
 												"{{hmmer_job_id}}",
+												"domains"
+											],
+											"query": [
+												{
+													"key": "target",
+													"value": "BU_CLA-JM-H26-B_04207"
+												}
+											]
+										},
+										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+									},
+									"response": []
+								},
+								{
+									"name": "test-Query-Domain",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{mett-current}}/api/pyhmmer/result/851eb6cd-0852-4f63-967b-5130fe7129d6/domains?target=BU_CLA-JM-H26-B_04207",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"pyhmmer",
+												"result",
+												"851eb6cd-0852-4f63-967b-5130fe7129d6",
 												"domains"
 											],
 											"query": [
@@ -3159,12 +3502,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/result/94da93bb-624a-4a3e-a8cb-947ac92390b3",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/result/94da93bb-624a-4a3e-a8cb-947ac92390b3",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3196,12 +3537,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/testtask",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/testtask",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3235,12 +3574,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/debug/task/2a6f5b95-9c43-46a6-ab80-9762b00db8aa",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/debug/task/2a6f5b95-9c43-46a6-ab80-9762b00db8aa",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3281,7 +3618,7 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/result/{{hmmer_job_id}}/download?format=tsv",
+											"raw": "http://localhost:8000/api/pyhmmer/result/{{hmmer_job_id}}/download?format=tab",
 											"protocol": "http",
 											"host": [
 												"localhost"
@@ -3297,7 +3634,7 @@
 											"query": [
 												{
 													"key": "format",
-													"value": "tsv"
+													"value": "tab"
 												}
 											]
 										},

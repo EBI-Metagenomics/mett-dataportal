@@ -72,7 +72,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const setGeneSortField = useFilterStore(state => state.setGeneSortField);
     const setGeneSortOrder = useFilterStore(state => state.setGeneSortOrder);
 
-    // Use the new faceted filters hook
+
     const {
         facets,
         loading: facetsLoading,

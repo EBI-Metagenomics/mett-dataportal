@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 from Bio import SeqIO
 from django.core.management.base import BaseCommand
-from elasticsearch_dsl import connections
 from dataportal.models import StrainDocument
 
 # Note: Elasticsearch connection is already established in settings.py via elasticsearch_client.py

@@ -7,12 +7,8 @@ interface UseGeneDataReturn {
     // Data
     geneResults: any[];
     selectedGenomes: BaseGenome[];
-
-    // UI State
     loading: boolean;
     error: string | null;
-
-    // Actions
     handleGeneSearch: (field?: string, order?: 'asc' | 'desc') => Promise<void>;
     handleGeneSortClick: (field: string) => Promise<void>;
     handleRemoveGenome: (isolate_name: string) => void;
@@ -39,7 +35,7 @@ export const useGeneData = (): UseGeneDataReturn => {
                 field,
                 order
             );
-            setGeneResults(response.results);
+            setGeneResults(response.data);
         } catch (err) {
             console.error('Error in gene search:', err);
             setError('Failed to search genes');

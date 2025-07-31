@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2020",
+    "lib": ["es2020", "dom", "dom.iterable"]
+  },
+  "include": [
+    "jest.setup.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
+  ]
+}

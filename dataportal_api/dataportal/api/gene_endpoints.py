@@ -15,7 +15,7 @@ from dataportal.schema.response_schemas import (
     PaginatedResponseSchema,
     create_success_response,
 )
-from ..services.gene_service import GeneService
+from ..services.service_factory import ServiceFactory
 from ..utils.constants import (
     DEFAULT_PER_PAGE_CNT,
     DEFAULT_SORT,
@@ -50,7 +50,7 @@ from ..utils.response_wrappers import wrap_success_response, wrap_paginated_resp
 
 logger = logging.getLogger(__name__)
 
-gene_service = GeneService()
+gene_service = ServiceFactory.get_gene_service()
 
 ROUTER_GENE = "Genes"
 gene_router = Router(tags=[ROUTER_GENE])

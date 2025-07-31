@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Tuple, Dict, Any
 
 from asgiref.sync import sync_to_async
 from django.forms.models import model_to_dict
@@ -15,6 +15,7 @@ from dataportal.schema.gene_schemas import (
     GeneAdvancedSearchQuerySchema,
     GeneAutocompleteQuerySchema,
 )
+from dataportal.services.base_service import BaseService
 from dataportal.services.gene_faceted_search import GeneFacetedSearch
 from dataportal.unmanaged_models.gene_data import gene_from_hit
 from dataportal.utils.constants import (
@@ -56,22 +57,68 @@ from dataportal.utils.utils import split_comma_param
 logger = logging.getLogger(__name__)
 
 
-class GeneService:
-    INDEX_NAME = ES_INDEX_GENE
+class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
+    """Service for managing gene data operations in the read-only data portal."""
 
+    def __init__(self):
+        super().__init__(ES_INDEX_GENE)
+
+    async def get_by_id(self, id: str) -> Optional[GeneResponseSchema]:
+        """Retrieve a single gene by ID (locus tag)."""
+        try:
+            return await self.get_gene_by_locus_tag(id)
+        except GeneNotFoundError:
+            return None
+        except Exception as e:
+            self._handle_elasticsearch_error(e, f"get_by_id for gene {id}")
+
+    async def get_all(self, **kwargs) -> List[GeneResponseSchema]:
+        """Retrieve all genes with optional filtering."""
+        try:
+            page = kwargs.get("page", 1)
+            per_page = kwargs.get("per_page", DEFAULT_PER_PAGE_CNT)
+            sort_field = kwargs.get("sort_field")
+            sort_order = kwargs.get("sort_order", DEFAULT_SORT)
+
+            pagination_result = await self.get_all_genes(
+                page=page,
+                per_page=per_page,
+                sort_field=sort_field,
+                sort_order=sort_order,
+            )
+
+            return pagination_result.results
+        except Exception as e:
+            self._handle_elasticsearch_error(e, "get_all genes")
+
+    async def search(self, query: Dict[str, Any]) -> List[GeneResponseSchema]:
+        """Search genes based on query parameters."""
+        try:
+            # Convert dict to GeneSearchQuerySchema
+            search_params = GeneSearchQuerySchema(
+                query=query.get("query", ""),
+                page=query.get("page", 1),
+                per_page=query.get("per_page", DEFAULT_PER_PAGE_CNT),
+                sort_field=query.get("sort_field"),
+                sort_order=query.get("sort_order", DEFAULT_SORT),
+            )
+
+            pagination_result = await self.search_genes(search_params)
+            return pagination_result.results
+        except Exception as e:
+            self._handle_elasticsearch_error(e, "search genes")
+
+    def _convert_hit_to_entity(self, hit) -> GeneResponseSchema:
+        """Convert Elasticsearch hit to GeneResponseSchema."""
+        gene_obj = gene_from_hit(hit)
+        gene_dict = model_to_dict(gene_obj)
+        return GeneResponseSchema.model_validate(gene_dict)
+
+    # Original methods with minimal changes - keeping existing query logic
     async def autocomplete_gene_suggestions(
         self,
         params: GeneAutocompleteQuerySchema,
     ) -> List[Dict]:
-        """
-        Provides autocomplete suggestions for genes based on query & filters.
-
-        Args:
-            params: GeneAutocompleteQuerySchema containing autocomplete parameters
-
-        Returns:
-            List of gene suggestion dictionaries
-        """
         try:
             isolate_list = (
                 [gid.strip() for gid in params.isolates.split(",") if gid.strip()]
@@ -105,7 +152,7 @@ class GeneService:
     ) -> List[Dict]:
         """Internal implementation of gene autocomplete."""
         try:
-            s = Search(index=self.INDEX_NAME)
+            s = Search(index=self.index_name)
             s = s.query(
                 "multi_match",
                 query=query,
@@ -145,7 +192,7 @@ class GeneService:
                 f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}"
             )
 
-            response = s.execute()
+            response = await sync_to_async(s.execute)()
 
             results = []
             for hit in response:
@@ -176,7 +223,7 @@ class GeneService:
             raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
 
     def fetch_gene_by_locus_tag(self, locus_tag: str):
-        s = Search(index=self.INDEX_NAME).query("match", locus_tag=locus_tag)
+        s = Search(index=self.index_name).query("match", locus_tag=locus_tag)
         response = s.execute()
 
         if not response.hits:
@@ -209,15 +256,6 @@ class GeneService:
         self,
         params: GeneSearchQuerySchema,
     ) -> GenePaginationSchema:
-        """
-        Search genes using the provided search parameters.
-
-        Args:
-            params: GeneSearchQuerySchema containing search parameters
-
-        Returns:
-            GenePaginationSchema with search results
-        """
         try:
             # Build query filters
             es_query = self._build_es_query(params.query, None, None)
@@ -282,16 +320,6 @@ class GeneService:
         params: GeneAdvancedSearchQuerySchema,
         use_scroll: bool = False,
     ) -> GenePaginationSchema:
-        """
-        Fetch genes by multiple genomes, species, and optional search query.
-
-        Args:
-            params: GeneAdvancedSearchQuerySchema containing search parameters
-            use_scroll: Whether to use scroll API for large downloads
-
-        Returns:
-            GenePaginationSchema with search results
-        """
         try:
             isolate_names_list = (
                 [id.strip() for id in params.isolates.split(",")]
@@ -399,7 +427,7 @@ class GeneService:
             # Execute initial search
             response = await sync_to_async(
                 lambda: es_client.search(
-                    index=self.INDEX_NAME, body=search_body, scroll=SCROLL_TIMEOUT
+                    index=self.index_name, body=search_body, scroll=SCROLL_TIMEOUT
                 )
             )()
 
@@ -586,7 +614,7 @@ class GeneService:
 
         try:
             s = (
-                Search(index=self.INDEX_NAME)
+                Search(index=self.index_name)
                 .query(query)
                 .sort({sort_by: {"order": order_prefix}})[start : start + per_page]
                 .extra(track_total_hits=True)
@@ -665,15 +693,6 @@ class GeneService:
         self,
         params: GeneFacetedSearchQuerySchema,
     ):
-        """
-        Perform faceted search on genes using the provided parameters.
-
-        Args:
-            params: GeneFacetedSearchQuerySchema containing faceted search parameters
-
-        Returns:
-            Dictionary containing faceted search results
-        """
         try:
             isolate_list = (
                 [id.strip() for id in params.isolates.split(",") if id.strip()]
@@ -838,7 +857,7 @@ class GeneService:
     async def get_gene_protein_seq(self, locus_tag: str) -> GeneProteinSeqSchema:
         """Fetch protein sequence information for a gene by its locus tag."""
         try:
-            s = Search(index=self.INDEX_NAME)
+            s = Search(index=self.index_name)
             s = s.query("match", locus_tag=locus_tag)
             s = s.source([ES_FIELD_LOCUS_TAG, "protein_sequence"])
 
@@ -1005,7 +1024,7 @@ class GeneService:
             # Execute initial search
             response = await sync_to_async(
                 lambda: es_client.search(
-                    index=self.INDEX_NAME, body=search_body, scroll=SCROLL_TIMEOUT
+                    index=self.index_name, body=search_body, scroll=SCROLL_TIMEOUT
                 )
             )()
 

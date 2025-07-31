@@ -20,13 +20,13 @@ from dataportal.schema.genome_schemas import (
 from ..schema.response_schemas import PaginatedResponseSchema
 from ..services.essentiality_service import EssentialityService
 from ..services.gene_service import GeneService
-from ..services.genome_service import GenomeService
+from ..services.service_factory import ServiceFactory
 from ..utils.constants import (
     DEFAULT_SORT,
     STRAIN_FIELD_ISOLATE_NAME,
     SCROLL_MAX_RESULTS,
 )
-from ..utils.decorators import log_endpoint_access
+
 from ..utils.errors import raise_http_error, raise_internal_server_error
 from ..utils.exceptions import (
     ServiceError,
@@ -35,7 +35,7 @@ from ..utils.response_wrappers import wrap_paginated_response
 
 logger = logging.getLogger(__name__)
 
-genome_service = GenomeService()
+genome_service = ServiceFactory.get_genome_service()
 gene_service = GeneService()
 essentiality_service = EssentialityService()
 
@@ -50,7 +50,6 @@ genome_router = Router(tags=[ROUTER_GENOME])
     description="Returns isolate suggestions based on the input query. You can optionally filter by species acronym. ",
     include_in_schema=False,
 )
-@log_endpoint_access("genome_autocomplete_suggestions")
 async def autocomplete_suggestions(
     request, query: GenomeAutocompleteQuerySchema = Query(...)
 ):

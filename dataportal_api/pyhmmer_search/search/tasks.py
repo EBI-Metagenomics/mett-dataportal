@@ -1,31 +1,37 @@
 import json
 import logging
+import re
+import time
+import uuid
+from datetime import timedelta
 from typing import Optional
 
 from Bio import pairwise2
 from celery import shared_task
+from django.db import transaction
 from django.utils import timezone
 from django_celery_results.models import TaskResult
 from pyhmmer.easel import DigitalSequenceBlock
 from pyhmmer.easel import TextSequence, Alphabet, SequenceFile
 from pyhmmer.plan7 import Pipeline, Background, Builder
-import re
 
 from dataportal import settings
 from .models import HmmerJob
 from .schemas import (
     PyhmmerAlignmentSchema,
-    LegacyAlignmentDisplay,
+    AlignmentDisplay,
     DomainSchema,
     HitSchema,
 )
+from .utils import AlignmentCalculator
 
 logger = logging.getLogger(__name__)
+
+MAX_RESULT_SIZE = 50 * 1024 * 1024  # 50MB limit
 
 
 def _log_query_sequences(raw_bytes):
     try:
-        # For pyhmmer 0.11+, TextSequence.sequence is str
         lines = raw_bytes.decode().strip().splitlines()
         name = lines[0].lstrip(">").encode()
         sequence = "".join(lines[1:])
@@ -38,7 +44,6 @@ def _log_query_sequences(raw_bytes):
 
 
 def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
-    """Extract alignment data from pyhmmer.plan7.Alignment object"""
     try:
         if alignment is None:
             return None
@@ -76,28 +81,32 @@ def extract_pyhmmer_alignment(alignment) -> Optional[PyhmmerAlignmentSchema]:
         return None
 
 
-def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDisplay]:
-    """Create legacy alignment display from pyhmmer alignment for backward compatibility"""
+def create_simple_alignment_display(alignment) -> Optional[AlignmentDisplay]:
     try:
         if alignment is None:
             return None
 
-        # Calculate identity by comparing the actual sequences
-        # PyHMMER provides the sequences in different cases, so we need to compare them case-insensitively
-        hmm_seq = alignment.hmm_sequence.lower()
-        target_seq = alignment.target_sequence.lower()
-
-        # Count matches (identical characters, ignoring gaps)
-        matches = sum(1 for a, b in zip(hmm_seq, target_seq) if a == b and a != "-")
-        total_positions = len(hmm_seq)
-        identity_pct = matches / total_positions if total_positions > 0 else 0
-
-        # Create match line showing matches with '|' and mismatches with spaces
-        mline = "".join(
-            "|" if a == b and a != "-" else " " for a, b in zip(hmm_seq, target_seq)
+        # Create our own match line from the sequences
+        mline = AlignmentCalculator.create_match_line(
+            alignment.hmm_sequence, alignment.target_sequence
+        )
+        logger.info(f"Created match line: '{mline}' (length: {len(mline)})")
+        logger.info(
+            f"HMM sequence: '{alignment.hmm_sequence}' (length: {len(alignment.hmm_sequence)})"
+        )
+        logger.info(
+            f"Target sequence: '{alignment.target_sequence}' (length: {len(alignment.target_sequence)})"
         )
 
-        return LegacyAlignmentDisplay(
+        # Calculate identity and similarity using our match line
+        (identity_pct, number_of_identical), (
+            similarity_pct,
+            number_of_identical_and_similar,
+        ) = AlignmentCalculator.calculate_identity_and_similarity_from_match_line(
+            alignment.hmm_sequence, mline, alignment.target_sequence
+        )
+
+        return AlignmentDisplay(
             hmmfrom=alignment.hmm_from,
             hmmto=alignment.hmm_to,
             sqfrom=alignment.target_from,
@@ -106,11 +115,11 @@ def create_legacy_alignment_display(alignment) -> Optional[LegacyAlignmentDispla
             aseq=alignment.target_sequence,
             mline=mline,
             ppline=getattr(alignment, "posterior_probabilities", None),
-            identity=(identity_pct, matches),
-            similarity=(identity_pct, matches),  # For now, similarity = identity
+            identity=(identity_pct, number_of_identical),
+            similarity=(similarity_pct, number_of_identical_and_similar),
         )
     except Exception as e:
-        logger.warning(f"Failed to create legacy alignment display: {e}")
+        logger.warning(f"Failed to create simple alignment display: {e}")
         return None
 
 
@@ -122,9 +131,7 @@ def run_search(self, job_id: str):
     logger.info(f"Task ID: {task_id}")
     logger.info(f"Celery task ID: {self.request.id}")
 
-    # Validate job_id format
     try:
-        import uuid
 
         job_uuid = uuid.UUID(job_id)
         logger.info(f"Job ID validated as UUID: {job_uuid}")
@@ -138,41 +145,14 @@ def run_search(self, job_id: str):
         logger.info(f"Looking for job with ID: {job_id}")
         logger.info(f"Job ID type: {type(job_id)}")
 
-        # Check database connection and configuration
-        from django.db import connection
-
-        logger.info(
-            f"Database connection: {connection.settings_dict.get('NAME', 'unknown')}"
-        )
-        logger.info(
-            f"Database engine: {connection.settings_dict.get('ENGINE', 'unknown')}"
-        )
-        logger.info(f"Database host: {connection.settings_dict.get('HOST', 'unknown')}")
-        logger.info(f"Database port: {connection.settings_dict.get('PORT', 'unknown')}")
-
-        # Check model configuration
         logger.info(f"HmmerJob model app_label: {HmmerJob._meta.app_label}")
         logger.info(f"HmmerJob model db_table: {HmmerJob._meta.db_table}")
         logger.info(f"HmmerJob model pk field: {HmmerJob._meta.pk.name}")
 
-        # Check if we can access the database at all
         try:
-            from django.db import connection
-
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
-                logger.info("Database connection test successful")
-        except Exception as e:
-            logger.error(f"Database connection test failed: {e}")
-            raise
-
-        # Try to find the job with more detailed error handling
-        try:
-            # First, check if we can query the database at all
             total_jobs = HmmerJob.objects.count()
             logger.info(f"Total jobs in database: {total_jobs}")
 
-            # Try to get the job with retry logic for potential race conditions
             max_retries = 5
             retry_delay = 0.5  # seconds
 
@@ -186,7 +166,6 @@ def run_search(self, job_id: str):
                         logger.warning(
                             f"Job not found on attempt {attempt + 1}, retrying in {retry_delay} seconds..."
                         )
-                        import time
 
                         time.sleep(retry_delay)
                         retry_delay *= 1.5  # Gradual backoff
@@ -196,9 +175,7 @@ def run_search(self, job_id: str):
                         )
                         logger.error("Available jobs in database:")
                         try:
-                            all_jobs = HmmerJob.objects.all()[
-                                :10
-                            ]  # Get first 10 jobs for debugging
+                            all_jobs = HmmerJob.objects.all()[:10]
                             for j in all_jobs:
                                 logger.error(f"  - Job ID: {j.id}, Created: {j.pk}")
                         except Exception as e:
@@ -207,27 +184,9 @@ def run_search(self, job_id: str):
 
             logger.info(f"Job task: {job.task}")
             logger.info(f"Job task ID: {job.task.task_id if job.task else 'None'}")
-            logger.info(f"Job input length: {len(job.input) if job.input else 0}")
-            logger.info(f"Job database: {job.database}")
-            logger.info(f"Job threshold: {job.threshold}")
-            logger.info(f"Job threshold_value: {job.threshold_value}")
         except Exception as e:
             logger.error(f"Unexpected error fetching job {job_id}: {e}")
             raise
-
-        # Enhanced logging for all job parameters
-        logger.info("=== JOB PARAMETERS IN TASK ===")
-        logger.info(f"Job mx (substitution matrix): {job.mx}")
-        logger.info(f"Job E (Report E-values - Sequence): {job.E}")
-        logger.info(f"Job domE (Report E-values - Hit): {job.domE}")
-        logger.info(f"Job incE (Significance E-values - Sequence): {job.incE}")
-        logger.info(f"Job incdomE (Significance E-values - Hit): {job.incdomE}")
-        logger.info(f"Job T (Report Bit scores - Sequence): {job.T}")
-        logger.info(f"Job domT (Report Bit scores - Hit): {job.domT}")
-        logger.info(f"Job incT (Significance Bit scores - Sequence): {job.incT}")
-        logger.info(f"Job incdomT (Significance Bit scores - Hit): {job.incdomT}")
-        logger.info(f"Job popen (Gap open penalty): {job.popen}")
-        logger.info(f"Job pextend (Gap extend penalty): {job.pextend}")
 
         logger.info("Updating task state to STARTED...")
         self.update_state(state="STARTED")
@@ -243,8 +202,6 @@ def run_search(self, job_id: str):
         if not db_path:
             raise ValueError(f"Invalid database ID '{job.database}'")
 
-        # Prepare alphabet and background
-        logger.info("Setting up alphabet and background...")
         alphabet = Alphabet.amino()
         background = Background(alphabet)
 
@@ -260,18 +217,14 @@ def run_search(self, job_id: str):
             "incdomT": job.incdomT,
         }
         logger.info(f"Pipeline kwargs: {pipeline_kwargs}")
-        # Filter out None values before passing to Pipeline
         filtered_kwargs = {k: v for k, v in pipeline_kwargs.items() if v is not None}
         logger.info(f"Filtered pipeline kwargs: {filtered_kwargs}")
         logger.info("=== PIPELINE CONFIGURATION DETAILS ===")
-        logger.info(f"Pipeline kwargs before filtering: {pipeline_kwargs}")
         logger.info(
             f"Pipeline kwargs after filtering (None values removed): {filtered_kwargs}"
         )
-        logger.info(f"Number of parameters passed to Pipeline: {len(filtered_kwargs)}")
         pipeline = Pipeline(alphabet, **filtered_kwargs)
 
-        # Configure bias composition filter
         if hasattr(job, "bias_filter") and job.bias_filter == "off":
             logger.info("Disabling bias composition filter")
             pipeline.bias_filter = False
@@ -290,8 +243,6 @@ def run_search(self, job_id: str):
         name = lines[0].lstrip(">").encode("utf-8")
         sequence = "".join(lines[1:])
         logger.info(f"Query name: {name}")
-        logger.info(f"Query sequence length: {len(sequence)}")
-        logger.info(f"Query sequence preview: {sequence[:100]}...")
 
         text_seq = TextSequence(name=name, sequence=sequence)
         digital_seq = text_seq.digitize(alphabet)
@@ -313,8 +264,6 @@ def run_search(self, job_id: str):
             f"Target sequence mapping built with {len(target_sequences)} entries"
         )
 
-        # Create a Builder and configure it with gap penalties only
-        # Note: PyHMMER Builder doesn't support custom scoring matrices in the same way as HMMER
         logger.info("Configuring builder...")
         builder_kwargs = {}
         if job.popen is not None:
@@ -322,7 +271,7 @@ def run_search(self, job_id: str):
         if job.pextend is not None:
             builder_kwargs["pextend"] = job.pextend
 
-        # Log matrix request but don't use it - PyHMMER uses internal scoring
+        # TODO - Log matrix request but still resolve - PyHMMER uses internal scoring
         if job.mx:
             logger.info(
                 f"Scoring matrix requested: {job.mx}, but PyHMMER uses internal scoring system"
@@ -366,7 +315,7 @@ def run_search(self, job_id: str):
 
         logger.info("Processing individual hits...")
         for i, hit in enumerate(hit_list):
-            logger.info(f"Processing hit {i+1}/{len(hit_list)}: {hit.name.decode()}")
+            logger.info(f"Processing hit {i + 1}/{len(hit_list)}: {hit.name.decode()}")
             logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
 
             domains = []
@@ -376,9 +325,9 @@ def run_search(self, job_id: str):
                     # Extract alignment from pyhmmer.plan7.Alignment
                     alignment = getattr(domain, "alignment", None)
 
-                    # Extract both new and legacy alignment formats
+                    # Extract both detailed and simple alignment formats
                     pyhmmer_alignment = extract_pyhmmer_alignment(alignment)
-                    legacy_alignment = create_legacy_alignment_display(alignment)
+                    simple_alignment = create_simple_alignment_display(alignment)
 
                     domain_obj = DomainSchema(
                         env_from=domain.env_from,
@@ -389,7 +338,7 @@ def run_search(self, job_id: str):
                         bias=getattr(domain, "bias", None),
                         strand=getattr(domain, "strand", None),
                         alignment=pyhmmer_alignment,
-                        alignment_display=legacy_alignment,
+                        alignment_display=simple_alignment,
                     )
                     domains.append(domain_obj)
             else:
@@ -397,7 +346,7 @@ def run_search(self, job_id: str):
                 # For hits without domains (phmmer case), create alignment with Biopython
                 target_seq = target_sequences.get(hit.name.decode())
                 pyhmmer_alignment = None
-                legacy_alignment = None
+                simple_alignment = None
 
                 if target_seq is not None:
                     try:
@@ -412,6 +361,11 @@ def run_search(self, job_id: str):
                         if alignments:
                             aln = alignments[0]
                             aligned_query, aligned_target, score, begin, end = aln
+
+                            identity_sequence = AlignmentCalculator.create_match_line(
+                                aligned_query, aligned_target
+                            )
+
                             pyhmmer_alignment = PyhmmerAlignmentSchema(
                                 hmm_name=name.decode(),
                                 hmm_accession=None,
@@ -424,13 +378,10 @@ def run_search(self, job_id: str):
                                 target_to=len(target_seq_str),
                                 target_length=len(target_seq_str),
                                 target_sequence=aligned_target,
-                                identity_sequence="".join(
-                                    "|" if a == b else " "
-                                    for a, b in zip(aligned_query, aligned_target)
-                                ),
+                                identity_sequence=identity_sequence,
                                 posterior_probabilities=None,
                             )
-                        legacy_alignment = parse_biopython_alignment(
+                        simple_alignment = parse_biopython_alignment(
                             query_seq_str, target_seq_str
                         )
 
@@ -448,7 +399,7 @@ def run_search(self, job_id: str):
                     bias=getattr(hit, "bias", None),
                     strand=None,
                     alignment=pyhmmer_alignment,
-                    alignment_display=legacy_alignment,
+                    alignment_display=simple_alignment,
                 )
                 domains.append(domain_obj)
 
@@ -479,12 +430,6 @@ def run_search(self, job_id: str):
                 f"Job threshold: {job.threshold}, threshold_value: {job.threshold_value}"
             )
             logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
-
-            logger.info("=== FILTERING LOGIC DETAILS ===")
-            logger.info(f"Threshold type: {job.threshold}")
-            logger.info(f"Threshold value: {job.threshold_value}")
-            logger.info(f"Hit E-value: {hit.evalue}")
-            logger.info(f"Hit bit score: {hit.score}")
 
             if (
                 job.threshold == HmmerJob.ThresholdChoices.EVALUE
@@ -528,20 +473,10 @@ def run_search(self, job_id: str):
 
             logger.info("Converting results to JSON...")
             result_json = json.dumps(result_dicts)
-            logger.info(f"Result JSON created, length: {len(result_json)}")
-            logger.info(f"Result JSON preview: {result_json[:500]}...")
 
-            # Check if result is too large (PostgreSQL text field limit is ~1GB, but let's be conservative)
-            MAX_RESULT_SIZE = 50 * 1024 * 1024  # 50MB limit
             if len(result_json) > MAX_RESULT_SIZE:
-                logger.error(
-                    f"Result JSON too large: {len(result_json)} bytes (limit: {MAX_RESULT_SIZE})"
-                )
-                logger.error(
-                    "This may cause database storage issues. Consider truncating results."
-                )
                 # Truncate the result to prevent database issues
-                truncated_results = result_dicts[:10]  # Keep only first 10 results
+                truncated_results = result_dicts[:10]
                 result_json = json.dumps(truncated_results)
                 logger.warning(
                     f"Truncated to {len(truncated_results)} results, new size: {len(result_json)} bytes"
@@ -558,7 +493,6 @@ def run_search(self, job_id: str):
             )
 
             try:
-                from django.db import transaction
 
                 with transaction.atomic():
                     job.task.save()
@@ -601,69 +535,15 @@ def run_search(self, job_id: str):
         raise
 
 
-@shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
-def test_task(self):
-    task_id = self.request.id
-    logger.info(f">>> Starting test task with ID: {task_id}")
-
-    try:
-        # Update task state using Celery's state management
-        self.update_state(state="STARTED")
-        logger.info(f"Updated task {task_id} state to STARTED")
-
-        # Update database record
-        task_result = TaskResult.objects.get(task_id=task_id)
-        task_result.status = "STARTED"
-        task_result.save()
-        logger.info(f"Updated database record for task {task_id} to STARTED")
-
-        # Simulate some work
-        logger.info(">>> Hello from test_task")
-
-        # Check if any jobs are linked to this task
-        linked_jobs = HmmerJob.objects.filter(task__task_id=task_id)
-        logger.info(f"Found {linked_jobs.count()} jobs linked to task {task_id}")
-        for job in linked_jobs:
-            logger.info(
-                f"Linked job: {job.id}, Status: {job.task.status if job.task else 'No task'}"
-            )
-
-        # Update database record with success
-        task_result.status = "SUCCESS"
-        task_result.result = "OK"
-        task_result.date_done = timezone.now()
-        task_result.save()
-        logger.info(f"Updated database record for task {task_id} to SUCCESS")
-
-    except Exception as e:
-        logger.error(f"Error in test_task: {str(e)}", exc_info=True)
-        # Update database record with failure
-        if "task_result" in locals():
-            task_result.status = "FAILURE"
-            task_result.result = str(e)
-            task_result.date_done = timezone.now()
-            task_result.save()
-            logger.info(f"Updated database record for task {task_id} to FAILURE")
-        raise
-
-    logger.info(f">>> Completed test task {task_id}")
-    return "OK"
-
-
-def parse_biopython_alignment(
-    query: str, target: str
-) -> Optional[LegacyAlignmentDisplay]:
-    """Create legacy alignment display using Biopython for phmmer cases"""
+def parse_biopython_alignment(query: str, target: str) -> Optional[AlignmentDisplay]:
+    """Create simple alignment display using Biopython for phmmer cases"""
     try:
         alignments = pairwise2.align.globalxx(query, target)
         if not alignments:
             return None
         aln = alignments[0]
         aligned_query, aligned_target, score, begin, end = aln
-        mline = "".join(
-            "|" if a == b and a != "-" else " "
-            for a, b in zip(aligned_query, aligned_target)
-        )
+        mline = AlignmentCalculator.create_match_line(aligned_query, aligned_target)
 
         def first_non_gap(seq):
             for i, c in enumerate(seq):
@@ -682,17 +562,14 @@ def parse_biopython_alignment(
         sqfrom = first_non_gap(aligned_target) + 1
         sqto = last_non_gap(aligned_target) + 1
 
-        # Calculate identity based on the aligned sequences
-        matches = sum(
-            1 for a, b in zip(aligned_query, aligned_target) if a == b and a != "-"
+        (identity_pct, number_of_identical), (
+            similarity_pct,
+            number_of_identical_and_similar,
+        ) = AlignmentCalculator.calculate_identity_and_similarity_from_sequences(
+            aligned_query, aligned_target
         )
-        # Count non-gap positions in aligned sequences
-        non_gap_positions = sum(
-            1 for a, b in zip(aligned_query, aligned_target) if a != "-" and b != "-"
-        )
-        identity_pct = matches / non_gap_positions if non_gap_positions > 0 else 0
 
-        return LegacyAlignmentDisplay(
+        return AlignmentDisplay(
             hmmfrom=hmmfrom,
             hmmto=hmmto,
             sqfrom=sqfrom,
@@ -701,8 +578,8 @@ def parse_biopython_alignment(
             aseq=aligned_target,
             mline=mline,
             ppline=None,
-            identity=(identity_pct, matches),
-            similarity=(identity_pct, matches),
+            identity=(identity_pct, number_of_identical),
+            similarity=(similarity_pct, number_of_identical_and_similar),
         )
     except Exception as e:
         logger.warning(f"Biopython alignment parsing failed: {e}")
@@ -711,10 +588,6 @@ def parse_biopython_alignment(
 
 @shared_task
 def cleanup_old_tasks():
-    from django_celery_results.models import TaskResult
-    from django.utils import timezone
-    from datetime import timedelta
-
     cutoff = timezone.now() - timedelta(days=30)
     deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
     return f"Deleted {deleted} old task results"

@@ -2,11 +2,11 @@ import logging
 from django.conf import settings
 from ninja import Router
 
-from ..services.app_health_service import AppHealthService
+from ..services.service_factory import ServiceFactory
 
 logger = logging.getLogger(__name__)
 
-app_health_service = AppHealthService()
+app_health_service = ServiceFactory.get_app_health_service()
 
 health_router = Router()
 

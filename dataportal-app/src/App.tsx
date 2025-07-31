@@ -4,7 +4,6 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import Header from '@components/organisms/Header/Header';
 import HomePage from './components/pages/HomePage';
 import GeneViewerPage from './components/pages/GeneViewerPage';
-import FeedbackPage from './components/pages/FeedbackPage';
 import ErrorBoundary from "@components/atoms/ErrorBoundary";
 import Footer from "@components/organisms/Footer/Footer";
 import NaturalQuerySearchPage from "@components/pages/NaturalQuerySearchPage";
@@ -64,7 +63,6 @@ const App: React.FC = () => {
                         <Routes>
                             <Route path="/" element={<HomePage/>}/>
                             <Route path="/home" element={<HomePage/>}/>
-                            <Route path="/feedback" element={<FeedbackPage/>}/>
                             <Route path="/genome/:strainName" element={
                                 <ErrorBoundary>
                                     <GeneViewerPage/>
