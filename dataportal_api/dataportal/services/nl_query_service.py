@@ -1,7 +1,12 @@
 import os
 from typing import Any, Dict, List, Optional
 
-from openai import OpenAI
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    OpenAI = None
 
 from dataportal.schema.nl_schemas import METT_GENE_QUERY_SCHEMA
 from dataportal.schema.gene_schemas import NaturalLanguageGeneQuery, GenePaginationSchema
@@ -51,6 +56,8 @@ class NaturalLanguageQueryService:
     
     def _get_openai_client(self):
         """Get OpenAI client instance. This method can be overridden for testing."""
+        if not OPENAI_AVAILABLE:
+            raise ImportError("OpenAI module is not available. Please install it with: pip install openai")
         return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
     async def interpret_and_execute_query(self, user_query: str) -> Dict[str, Any]:
@@ -89,6 +96,9 @@ class NaturalLanguageQueryService:
     
     async def _interpret_query(self, user_query: str) -> Dict[str, Any]:
         """Interpret natural language query using OpenAI."""
+        if not OPENAI_AVAILABLE:
+            return {"error": "OpenAI module is not available. Natural language query feature is disabled."}
+        
         try:
             client = self._get_openai_client()
             response = client.chat.completions.create(

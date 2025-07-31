@@ -30,7 +30,8 @@ dependencies = [
     "celery[redis]>=5.5.2",
     "django-celery-results==2.6.0",
     "django-celery-beat==2.8.1",
-    "biopython==1.85"
+    "biopython==1.85",
+    "openai==1.98.0"
 ]
 
 [dependency-groups]

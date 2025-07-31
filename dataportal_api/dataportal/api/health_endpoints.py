@@ -24,8 +24,14 @@ def get_features(request):
         "feedback": getattr(settings, "ENABLE_FEEDBACK", False),
     }
     
-    # Only include natural_query if the feature is enabled
+    # Only include natural_query if the feature is enabled and dependencies are available
     if getattr(settings, "ENABLE_NATURAL_QUERY", False):
-        features["natural_query"] = True
+        try:
+            # Try to import the natural query service to check if dependencies are available
+            from dataportal.services.nl_query_service import NaturalLanguageQueryService
+            features["natural_query"] = True
+        except ImportError:
+            # Dependencies not available, don't include the feature
+            pass
     
     return features

@@ -174,6 +174,14 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                             predictions, etc) as well as functional annotations (including biosynthetic gene clusters,
                             carbohydrate active enzymes, etc).
                         </p>
+                        <p>
+                            This data portal is powered by annotation results generated using the &nbsp;
+                            <a href="https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/README_annotation_release_v1.txt"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                                METTAnnotator Release v1.0
+                            </a>.
+                        </p>
 
 
                     </div>

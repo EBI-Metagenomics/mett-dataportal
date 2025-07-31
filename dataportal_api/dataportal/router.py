@@ -15,7 +15,13 @@ from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
 from django.conf import settings
 
-from dataportal.api.api_natural_query import nl_query_router as natural_query_router
+try:
+    from dataportal.api.api_natural_query import nl_query_router as natural_query_router
+    NATURAL_QUERY_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Natural query router not available: {e}")
+    NATURAL_QUERY_AVAILABLE = False
+    natural_query_router = None
 from dataportal.schema.response_schemas import (
     ErrorCode,
     create_error_response,
@@ -210,6 +216,8 @@ api.add_router("/", health_router)
 api.add_exception_handler(HttpError, custom_error_handler)
 api.add_exception_handler(Exception, custom_error_handler)
 
-# Conditionally register natural query router based on feature flag
-if getattr(settings, "ENABLE_NATURAL_QUERY", False):
+# Conditionally register natural query router based on feature flag and availability
+if getattr(settings, "ENABLE_NATURAL_QUERY", False) and NATURAL_QUERY_AVAILABLE:
     api.add_router("/query", natural_query_router)
+elif getattr(settings, "ENABLE_NATURAL_QUERY", False) and not NATURAL_QUERY_AVAILABLE:
+    logger.warning("Natural query feature flag is enabled but router is not available due to missing dependencies")
