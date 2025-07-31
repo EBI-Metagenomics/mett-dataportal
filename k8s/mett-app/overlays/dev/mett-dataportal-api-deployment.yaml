@@ -132,6 +132,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-dev
                   key: ENABLE_FEEDBACK
+            - name: ENABLE_NATURAL_QUERY
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: ENABLE_NATURAL_QUERY
             - name: PYHMMER_FAA_BASE_PATH
               valueFrom:
                 configMapKeyRef:

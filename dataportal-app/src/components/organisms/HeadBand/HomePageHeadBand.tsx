@@ -95,6 +95,63 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                             </div>
                         )}
 
+                        {/* Yellow Band - Natural Search Query */}
+                        {isFeatureEnabled('natural_query') && (
+                            <div
+                                style={{
+                                    backgroundColor: '#fff3cd',
+                                    border: '1px solid #ffeaa7',
+                                    borderRadius: '4px',
+                                    padding: '0.75rem 1rem',
+                                    margin: '1rem 0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    fontSize: '1rem',
+                                    gap: '1rem',
+                                }}
+                            >
+                                <span style={{color: '#333', fontWeight: '500'}}>
+                                    Simple POC to demonstrate the Natural Search Query
+                                </span>
+                                <a
+                                    href="/natural-query"
+                                    className="vf-link"
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        color: '#005ea5',
+                                        textDecoration: 'none',
+                                        transition: 'color 0.2s ease',
+                                        gap: '0.4rem',
+                                        lineHeight: '1',
+                                        overflow: 'visible',
+                                    }}
+                                >Natural Search Query
+                                    <svg
+                                        aria-hidden="true"
+                                        className="vf-icon vf-icon-arrow--inline-end"
+                                        style={{
+                                            verticalAlign: 'middle',
+                                            display: 'block',
+                                            overflow: 'visible',
+                                        }}
+                                        width="1.3em"
+                                        height="1.3em"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12S18.627 0 12 0C5.376.008.008 5.376 0 12zm13.707-5.209l4.5 4.5a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414l2.366-2.367a.25.25 0 00-.177-.424H6a1 1 0 010-2h8.482a.25.25 0 00.177-.427l-2.366-2.368a1 1 0 011.414-1.414z"
+                                            fill="currentColor"
+                                            fillRule="nonzero"
+                                        ></path>
+                                    </svg>
+                                </a>
+
+
+                            </div>
+                        )}
+
                         <p>
                             The transversal theme aims at mechanistically understanding the complex role that
                             human-associated
@@ -192,49 +249,6 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                     ))}
                 </div>
 
-                <div
-                    style={{
-                        display: 'flex',
-                        gap: '2.5rem',
-                        alignItems: 'center',
-                    }}
-                >
-
-                        <a
-                            href="/natural-query"
-                            className="vf-link"
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                color: '#005ea5',
-                                textDecoration: 'none',
-                                transition: 'color 0.2s ease',
-                                gap: '0.4rem',
-                                lineHeight: '1',
-                                overflow: 'visible',
-                            }}
-                        >Natural Search Query
-                            <svg
-                                aria-hidden="true"
-                                className="vf-icon vf-icon-arrow--inline-end"
-                                style={{
-                                    verticalAlign: 'middle',
-                                    display: 'block',
-                                    overflow: 'visible',
-                                }}
-                                width="1.3em"
-                                height="1.3em"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12S18.627 0 12 0C5.376.008.008 5.376 0 12zm13.707-5.209l4.5 4.5a1 1 0 010 1.414l-4.5 4.5a1 1 0 01-1.414-1.414l2.366-2.367a.25.25 0 00-.177-.424H6a1 1 0 010-2h8.482a.25.25 0 00.177-.427l-2.366-2.368a1 1 0 011.414-1.414z"
-                                    fill="currentColor"
-                                    fillRule="nonzero"
-                                ></path>
-                            </svg>
-                        </a>
-
-                </div>
 
             </div>
 

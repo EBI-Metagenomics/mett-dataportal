@@ -19,7 +19,13 @@ def health(request):
 @health_router.get("/features", include_in_schema=False)
 def get_features(request):
     """Get available features based on environment configuration."""
-    return {
+    features = {
         "pyhmmer_search": getattr(settings, "ENABLE_PYHMMER_SEARCH", False),
         "feedback": getattr(settings, "ENABLE_FEEDBACK", False),
     }
+    
+    # Only include natural_query if the feature is enabled
+    if getattr(settings, "ENABLE_NATURAL_QUERY", False):
+        features["natural_query"] = True
+    
+    return features

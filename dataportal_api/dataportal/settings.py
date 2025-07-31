@@ -28,6 +28,7 @@ ENABLE_PYHMMER_SEARCH = (
     os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
 )
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
+ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")

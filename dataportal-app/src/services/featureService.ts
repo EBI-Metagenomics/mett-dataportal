@@ -3,6 +3,7 @@ import { ApiService } from './api';
 export interface FeatureFlags {
   pyhmmer_search: boolean;
   feedback: boolean;
+  natural_query: boolean;
 }
 
 export class FeatureService {
@@ -35,7 +36,8 @@ export class FeatureService {
       // Return default values if feature flags can't be fetched
       this.features = {
         pyhmmer_search: false,
-        feedback: false
+        feedback: false,
+        natural_query: false
       };
       return this.features;
     } finally {
@@ -48,6 +50,10 @@ export class FeatureService {
    */
   static async isFeatureEnabled(feature: keyof FeatureFlags): Promise<boolean> {
     const features = await this.getFeatures();
+    // For natural_query, if it's not in the response, it means it's disabled
+    if (feature === 'natural_query') {
+      return features[feature] === true;
+    }
     return features[feature] || false;
   }
 

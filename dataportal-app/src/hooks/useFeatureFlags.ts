@@ -18,7 +18,8 @@ export const useFeatureFlags = () => {
                 // Set default features on error
                 setFeatures({
                     pyhmmer_search: false,
-                    feedback: false
+                    feedback: false,
+                    natural_query: false
                 });
             } finally {
                 setLoading(false);
@@ -29,6 +30,10 @@ export const useFeatureFlags = () => {
     }, []);
 
     const isFeatureEnabled = (feature: keyof FeatureFlags): boolean => {
+        // For natural_query, if it's not in the response, it means it's disabled
+        if (feature === 'natural_query') {
+            return features?.[feature] === true;
+        }
         return features?.[feature] || false;
     };
 

@@ -210,4 +210,6 @@ api.add_router("/", health_router)
 api.add_exception_handler(HttpError, custom_error_handler)
 api.add_exception_handler(Exception, custom_error_handler)
 
-api.add_router("/query", natural_query_router)
+# Conditionally register natural query router based on feature flag
+if getattr(settings, "ENABLE_NATURAL_QUERY", False):
+    api.add_router("/query", natural_query_router)

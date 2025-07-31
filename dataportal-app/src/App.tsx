@@ -7,6 +7,7 @@ import GeneViewerPage from './components/pages/GeneViewerPage';
 import ErrorBoundary from "@components/atoms/ErrorBoundary";
 import Footer from "@components/organisms/Footer/Footer";
 import NaturalQuerySearchPage from "@components/pages/NaturalQuerySearchPage";
+import {useFeatureFlags} from "./hooks/useFeatureFlags";
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -45,6 +46,16 @@ const PageCleanupHandler: React.FC = () => {
     return null;
 };
 
+const ConditionalNaturalQueryRoute: React.FC = () => {
+    const {isFeatureEnabled} = useFeatureFlags();
+    
+    if (!isFeatureEnabled('natural_query')) {
+        return <div>Feature not available</div>;
+    }
+    
+    return <NaturalQuerySearchPage />;
+};
+
 const App: React.FC = () => {
     return (
         <QueryClientProvider client={queryClient}>
@@ -68,7 +79,7 @@ const App: React.FC = () => {
                                     <GeneViewerPage/>
                                 </ErrorBoundary>
                             }/>
-                            <Route path="/natural-query" element={<NaturalQuerySearchPage />} />
+                            <Route path="/natural-query" element={<ConditionalNaturalQueryRoute />} />
                         </Routes>
                     </main>
                     <Footer/>
