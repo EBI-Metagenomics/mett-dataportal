@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mett-elasticsearch-backup-nfs-pv-dev
+spec:
+  capacity:
+    storage: 30Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - nfsvers=3
+  nfs:
+    server: hh-isi-srv-vlan1496.ebi.ac.uk
+    path: /ifs/public/rw/metagenomics/mett-dataportal/es_backup/dev
+

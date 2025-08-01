@@ -14,10 +14,16 @@ spec:
       labels:
         app: mett-elasticsearch-dev
     spec:
+      securityContext:
+        runAsUser: 7123
+        runAsGroup: 1347
       initContainers:
         - name: init-fix-permissions
           image: busybox
-          command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data && chmod -R 777 /usr/share/elasticsearch/data"]
+          command:
+            - sh
+            - -c
+            - chown -R 1000:1000 /usr/share/elasticsearch/data && chmod -R 777 /usr/share/elasticsearch/data
           securityContext:
             runAsUser: 0
           volumeMounts:
@@ -57,6 +63,18 @@ spec:
           volumeMounts:
             - name: mett-elasticsearch-data
               mountPath: /usr/share/elasticsearch/data
+            - name: es-nfs-backup
+              mountPath: /mnt/nfs_backups
+            - name: es-config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              subPath: elasticsearch.yml
+      volumes:
+        - name: es-nfs-backup
+          persistentVolumeClaim:
+            claimName: mett-elasticsearch-backup-nfs-pvc-dev
+        - name: es-config
+          configMap:
+            name: mett-elasticsearch-config-dev
   volumeClaimTemplates:
     - metadata:
         name: mett-elasticsearch-data
