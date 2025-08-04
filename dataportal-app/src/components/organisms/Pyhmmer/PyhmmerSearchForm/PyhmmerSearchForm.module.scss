@@ -161,7 +161,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
-  align-items: center;
+  align-items: start;
 }
 
 .cutoffHeader {
@@ -176,6 +176,12 @@
   font-weight: 500;
   color: #555;
   font-size: 0.95rem;
+}
+
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .input {
@@ -198,16 +204,34 @@
     color: #555;
   }
 
+  &.inputError {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+    
+    &:focus {
+      border-color: #d32f2f;
+      box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+    }
+  }
+
   &::placeholder {
     color: #bbb;
   }
+}
+
+.errorMessage {
+  color: #d32f2f;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-top: 2px;
 }
 
 .gapRow {
   display: grid;
   grid-template-columns: 1fr 1fr 2fr;
   gap: 16px;
-  align-items: end;
+  align-items: start;
 }
 
 .gapLabel {
@@ -234,6 +258,16 @@
     border-color: #1976d2;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
     color: #555;
+  }
+
+  &.inputError {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+    
+    &:focus {
+      border-color: #d32f2f;
+      box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+    }
   }
 
   &::placeholder {
@@ -275,6 +309,16 @@
     font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s;
+    
+    &:disabled {
+      background: #e0e0e0;
+      color: #9e9e9e;
+      cursor: not-allowed;
+      
+      &:hover {
+        background: #e0e0e0;
+      }
+    }
   }
 }
 

@@ -12,6 +12,84 @@ import {PYHMMER_CUTOFF_HELP, PYHMMER_FILTER_HELP, PYHMMER_GAP_PENALTIES_HELP} fr
 
 const HISTORY_KEY = 'pyhmmer_search_history';
 
+// Validation error interface
+interface ValidationError {
+    field: string;
+    message: string;
+}
+
+// Validation functions
+const validateEValue = (value: string, fieldName: string): ValidationError | null => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+        return { field: fieldName, message: 'Must be a valid number' };
+    }
+    if (numValue < 0 || numValue > 100.0) {
+        return { field: fieldName, message: 'Must be between 0 and 100.0' };
+    }
+    return null;
+};
+
+const validateBitScore = (value: string, fieldName: string): ValidationError | null => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+        return { field: fieldName, message: 'Must be a valid number' };
+    }
+    if (numValue < 0.0 || numValue > 1000.0) {
+        return { field: fieldName, message: 'Must be between 0.0 and 1000.0' };
+    }
+    return null;
+};
+
+const validateGapPenalty = (value: string, fieldName: string, maxValue: number): ValidationError | null => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+        return { field: fieldName, message: 'Must be a valid number' };
+    }
+    if (numValue < 0 || numValue >= maxValue) {
+        return { field: fieldName, message: `Must be between 0 and ${maxValue}` };
+    }
+    return null;
+};
+
+const validateCutoffRelationships = (
+    evalueType: 'evalue' | 'bitscore',
+    significanceSeq: string,
+    significanceHit: string,
+    reportSeq: string,
+    reportHit: string
+): ValidationError[] => {
+    const errors: ValidationError[] = [];
+    
+    if (evalueType === 'evalue') {
+        const incE = parseFloat(significanceSeq);
+        const incdomE = parseFloat(significanceHit);
+        const E = parseFloat(reportSeq);
+        const domE = parseFloat(reportHit);
+        
+        if (!isNaN(incE) && !isNaN(E) && incE > E) {
+            errors.push({ field: 'significanceEValueSeq', message: 'Significance E-value (Sequence) should be ≤ Report E-value (Sequence)' });
+        }
+        if (!isNaN(incdomE) && !isNaN(domE) && incdomE > domE) {
+            errors.push({ field: 'significanceEValueHit', message: 'Significance E-value (Hit) should be ≤ Report E-value (Hit)' });
+        }
+    } else {
+        const incT = parseFloat(significanceSeq);
+        const incdomT = parseFloat(significanceHit);
+        const T = parseFloat(reportSeq);
+        const domT = parseFloat(reportHit);
+        
+        if (!isNaN(incT) && !isNaN(T) && incT < T) {
+            errors.push({ field: 'significanceBitScoreSeq', message: 'Significance Bit Score (Sequence) should be ≥ Report Bit Score (Sequence)' });
+        }
+        if (!isNaN(incdomT) && !isNaN(domT) && incdomT < domT) {
+            errors.push({ field: 'significanceBitScoreHit', message: 'Significance Bit Score (Hit) should be ≥ Report Bit Score (Hit)' });
+        }
+    }
+    
+    return errors;
+};
+
 const PyhmmerSearchForm: React.FC = () => {
     const [evalueType, setEvalueType] = useState<'evalue' | 'bitscore'>('evalue');
     const [sequence, setSequence] = useState('');
@@ -46,6 +124,89 @@ const PyhmmerSearchForm: React.FC = () => {
     // Search history state
     const [history, setHistory] = useState<SearchHistoryItem[]>([]);
     const [selectedJobId, setSelectedJobId] = useState<string | undefined>(undefined);
+
+    // Validation state
+    const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+
+    // Validation function
+    const validateForm = (): ValidationError[] => {
+        const errors: ValidationError[] = [];
+
+        // Validate sequence
+        // if (!sequence.trim()) {
+        //     errors.push({ field: 'sequence', message: 'Sequence is required' });
+        // }
+
+        // Validate E-value parameters when E-value is selected
+        if (evalueType === 'evalue') {
+            const incEError = validateEValue(significanceEValueSeq, 'significanceEValueSeq');
+            if (incEError) errors.push(incEError);
+
+            const incdomEError = validateEValue(significanceEValueHit, 'significanceEValueHit');
+            if (incdomEError) errors.push(incdomEError);
+
+            const EError = validateEValue(reportEValueSeq, 'reportEValueSeq');
+            if (EError) errors.push(EError);
+
+            const domEError = validateEValue(reportEValueHit, 'reportEValueHit');
+            if (domEError) errors.push(domEError);
+        }
+
+        // Validate Bit Score parameters when Bit Score is selected
+        if (evalueType === 'bitscore') {
+            const incTError = validateBitScore(significanceBitScoreSeq, 'significanceBitScoreSeq');
+            if (incTError) errors.push(incTError);
+
+            const incdomTError = validateBitScore(significanceBitScoreHit, 'significanceBitScoreHit');
+            if (incdomTError) errors.push(incdomTError);
+
+            const TError = validateBitScore(reportBitScoreSeq, 'reportBitScoreSeq');
+            if (TError) errors.push(TError);
+
+            const domTError = validateBitScore(reportBitScoreHit, 'reportBitScoreHit');
+            if (domTError) errors.push(domTError);
+        }
+
+        // Validate gap penalties
+        const gapOpenError = validateGapPenalty(gapOpen, 'gapOpen', 0.5);
+        if (gapOpenError) errors.push(gapOpenError);
+
+        const gapExtendError = validateGapPenalty(gapExtend, 'gapExtend', 1.0);
+        if (gapExtendError) errors.push(gapExtendError);
+
+        // Validate cutoff relationships
+        const relationshipErrors = validateCutoffRelationships(
+            evalueType,
+            evalueType === 'evalue' ? significanceEValueSeq : significanceBitScoreSeq,
+            evalueType === 'evalue' ? significanceEValueHit : significanceBitScoreHit,
+            evalueType === 'evalue' ? reportEValueSeq : reportBitScoreSeq,
+            evalueType === 'evalue' ? reportEValueHit : reportBitScoreHit
+        );
+        errors.push(...relationshipErrors);
+
+        return errors;
+    };
+
+    // Get error for a specific field
+    const getFieldError = (fieldName: string): string | undefined => {
+        return validationErrors.find(error => error.field === fieldName)?.message;
+    };
+
+    // Check if form is valid
+    const isFormValid = (): boolean => {
+        return validationErrors.length === 0;
+    };
+
+    // Update validation errors when form values change
+    useEffect(() => {
+        const errors = validateForm();
+        setValidationErrors(errors);
+    }, [
+        sequence, evalueType, 
+        significanceEValueSeq, significanceEValueHit, reportEValueSeq, reportEValueHit,
+        significanceBitScoreSeq, significanceBitScoreHit, reportBitScoreSeq, reportBitScoreHit,
+        gapOpen, gapExtend
+    ]);
 
     useEffect(() => {
         const fetchDatabases = async () => {
@@ -148,6 +309,15 @@ const PyhmmerSearchForm: React.FC = () => {
     // Handle new search submit
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
+        
+        // Validate form before submission
+        const errors = validateForm();
+        if (errors.length > 0) {
+            setValidationErrors(errors);
+            setError('Please fix the validation errors before submitting.');
+            return;
+        }
+
         setLoading(true);
         setLoadingMessage('Submitting search job...');
         setError(undefined);
@@ -324,68 +494,108 @@ const PyhmmerSearchForm: React.FC = () => {
                             {evalueType === 'evalue' ? (
                                 <>
                                     <div className={styles.cutoffLabel}>Significance E-values</div>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={significanceEValueSeq}
-                                        onChange={e => setSignificanceEValueSeq(e.target.value)}
-                                        className={styles.input}
-                                    />
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={significanceEValueHit}
-                                        onChange={e => setSignificanceEValueHit(e.target.value)}
-                                        className={styles.input}
-                                    />
+                                    <div className={styles.inputContainer}>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={significanceEValueSeq}
+                                            onChange={e => setSignificanceEValueSeq(e.target.value)}
+                                            className={`${styles.input} ${getFieldError('significanceEValueSeq') ? styles.inputError : ''}`}
+                                        />
+                                        {getFieldError('significanceEValueSeq') && (
+                                            <div className={styles.errorMessage}>{getFieldError('significanceEValueSeq')}</div>
+                                        )}
+                                    </div>
+                                    <div className={styles.inputContainer}>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={significanceEValueHit}
+                                            onChange={e => setSignificanceEValueHit(e.target.value)}
+                                            className={`${styles.input} ${getFieldError('significanceEValueHit') ? styles.inputError : ''}`}
+                                        />
+                                        {getFieldError('significanceEValueHit') && (
+                                            <div className={styles.errorMessage}>{getFieldError('significanceEValueHit')}</div>
+                                        )}
+                                    </div>
                                     <div className={styles.cutoffLabel}>Report E-values</div>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={reportEValueSeq}
-                                        onChange={e => setReportEValueSeq(e.target.value)}
-                                        className={styles.input}
-                                    />
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={reportEValueHit}
-                                        onChange={e => setReportEValueHit(e.target.value)}
-                                        className={styles.input}
-                                    />
+                                    <div className={styles.inputContainer}>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={reportEValueSeq}
+                                            onChange={e => setReportEValueSeq(e.target.value)}
+                                            className={`${styles.input} ${getFieldError('reportEValueSeq') ? styles.inputError : ''}`}
+                                        />
+                                        {getFieldError('reportEValueSeq') && (
+                                            <div className={styles.errorMessage}>{getFieldError('reportEValueSeq')}</div>
+                                        )}
+                                    </div>
+                                    <div className={styles.inputContainer}>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={reportEValueHit}
+                                            onChange={e => setReportEValueHit(e.target.value)}
+                                            className={`${styles.input} ${getFieldError('reportEValueHit') ? styles.inputError : ''}`}
+                                        />
+                                        {getFieldError('reportEValueHit') && (
+                                            <div className={styles.errorMessage}>{getFieldError('reportEValueHit')}</div>
+                                        )}
+                                    </div>
                                 </>
                             ) : (
                                 <>
                                     <div className={styles.cutoffLabel}>Significance Bit scores</div>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={significanceBitScoreSeq}
-                                        onChange={e => setSignificanceBitScoreSeq(e.target.value)}
-                                        className={styles.input}
-                                    />
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={significanceBitScoreHit}
-                                        onChange={e => setSignificanceBitScoreHit(e.target.value)}
-                                        className={styles.input}
-                                    />
+                                    <div className={styles.inputContainer}>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={significanceBitScoreSeq}
+                                            onChange={e => setSignificanceBitScoreSeq(e.target.value)}
+                                            className={`${styles.input} ${getFieldError('significanceBitScoreSeq') ? styles.inputError : ''}`}
+                                        />
+                                        {getFieldError('significanceBitScoreSeq') && (
+                                            <div className={styles.errorMessage}>{getFieldError('significanceBitScoreSeq')}</div>
+                                        )}
+                                    </div>
+                                    <div className={styles.inputContainer}>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={significanceBitScoreHit}
+                                            onChange={e => setSignificanceBitScoreHit(e.target.value)}
+                                            className={`${styles.input} ${getFieldError('significanceBitScoreHit') ? styles.inputError : ''}`}
+                                        />
+                                        {getFieldError('significanceBitScoreHit') && (
+                                            <div className={styles.errorMessage}>{getFieldError('significanceBitScoreHit')}</div>
+                                        )}
+                                    </div>
                                     <div className={styles.cutoffLabel}>Report Bit scores</div>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={reportBitScoreSeq}
-                                        onChange={e => setReportBitScoreSeq(e.target.value)}
-                                        className={styles.input}
-                                    />
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={reportBitScoreHit}
-                                        onChange={e => setReportBitScoreHit(e.target.value)}
-                                        className={styles.input}
-                                    />
+                                    <div className={styles.inputContainer}>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={reportBitScoreSeq}
+                                            onChange={e => setReportBitScoreSeq(e.target.value)}
+                                            className={`${styles.input} ${getFieldError('reportBitScoreSeq') ? styles.inputError : ''}`}
+                                        />
+                                        {getFieldError('reportBitScoreSeq') && (
+                                            <div className={styles.errorMessage}>{getFieldError('reportBitScoreSeq')}</div>
+                                        )}
+                                    </div>
+                                    <div className={styles.inputContainer}>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={reportBitScoreHit}
+                                            onChange={e => setReportBitScoreHit(e.target.value)}
+                                            className={`${styles.input} ${getFieldError('reportBitScoreHit') ? styles.inputError : ''}`}
+                                        />
+                                        {getFieldError('reportBitScoreHit') && (
+                                            <div className={styles.errorMessage}>{getFieldError('reportBitScoreHit')}</div>
+                                        )}
+                                    </div>
                                 </>
                             )}
                         </div>
@@ -427,23 +637,33 @@ const PyhmmerSearchForm: React.FC = () => {
                         <div className={styles.gapRow}>
                             <div>
                                 <div className={styles.gapLabel}>Open</div>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    value={gapOpen}
-                                    onChange={e => setGapOpen(e.target.value)}
-                                    className={styles.inputSmall}
-                                />
+                                <div className={styles.inputContainer}>
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        value={gapOpen}
+                                        onChange={e => setGapOpen(e.target.value)}
+                                        className={`${styles.inputSmall} ${getFieldError('gapOpen') ? styles.inputError : ''}`}
+                                    />
+                                    {getFieldError('gapOpen') && (
+                                        <div className={styles.errorMessage}>{getFieldError('gapOpen')}</div>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <div className={styles.gapLabel}>Extend</div>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    value={gapExtend}
-                                    onChange={e => setGapExtend(e.target.value)}
-                                    className={styles.inputSmall}
-                                />
+                                <div className={styles.inputContainer}>
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        value={gapExtend}
+                                        onChange={e => setGapExtend(e.target.value)}
+                                        className={`${styles.inputSmall} ${getFieldError('gapExtend') ? styles.inputError : ''}`}
+                                    />
+                                    {getFieldError('gapExtend') && (
+                                        <div className={styles.errorMessage}>{getFieldError('gapExtend')}</div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -516,6 +736,8 @@ const PyhmmerSearchForm: React.FC = () => {
                         sequence={sequence}
                         setSequence={setSequence}
                         handleSubmit={handleSubmit}
+                        sequenceError={getFieldError('sequence')}
+                        isFormValid={isFormValid()}
                     />
                 </div>
             </div>

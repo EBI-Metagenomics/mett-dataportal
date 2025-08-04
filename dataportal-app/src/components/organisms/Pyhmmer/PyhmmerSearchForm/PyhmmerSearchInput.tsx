@@ -6,9 +6,17 @@ interface PyhmmerSearchInputProps {
     sequence: string;
     setSequence: (value: string) => void;
     handleSubmit: (e?: React.FormEvent) => void;
+    sequenceError?: string;
+    isFormValid: boolean;
 }
 
-const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({sequence, setSequence, handleSubmit}) => {
+const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({
+    sequence, 
+    setSequence, 
+    handleSubmit, 
+    sequenceError, 
+    isFormValid
+}) => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleUseExample = (e: React.MouseEvent) => {
@@ -37,12 +45,15 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({sequence, setSeq
 
             <div className={styles.sequenceContainer}>
                 <textarea
-                    className={styles.textarea}
+                    className={`${styles.textarea} ${sequenceError ? styles.textareaError : ''}`}
                     value={sequence}
                     onChange={e => setSequence(e.target.value)}
                     placeholder="Paste in your sequence, use the example"
                     rows={10}
                 />
+                {sequenceError && (
+                    <div className={styles.errorMessage}>{sequenceError}</div>
+                )}
 
                 {/* Help text integrated at the bottom */}
                 <div className={styles.helpText}>
@@ -56,6 +67,7 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({sequence, setSeq
                     className="vf-button vf-button--primary vf-button--sm"
                     onClick={handleSubmit}
                     type="button"
+                    disabled={!isFormValid}
                 >
                     Submit
                 </button>

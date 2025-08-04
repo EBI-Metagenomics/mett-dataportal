@@ -335,27 +335,29 @@ class HmmerJobStatusSchema(Schema):
 
 class CutOffSchema(Schema):
     threshold: Literal["evalue", "bitscore"] = "evalue"
-    incE: Optional[float] = Field(0.01, gt=0, le=10)
-    incdomE: Optional[float] = Field(0.03, gt=0, le=10)
-    E: Optional[float] = Field(1.0, gt=0, le=10)
-    domE: Optional[float] = Field(1.0, gt=0, le=10)
-    incT: Optional[float] = Field(25.0, gt=0)
-    incdomT: Optional[float] = Field(22.0, gt=0)
-    T: Optional[float] = Field(7.0, gt=0)
-    domT: Optional[float] = Field(5.0, gt=0)
+    incE: Optional[float] = Field(0.01, ge=0, le=100.0)
+    incdomE: Optional[float] = Field(0.03, ge=0, le=100.0)
+    E: Optional[float] = Field(1.0, ge=0, le=100.0)
+    domE: Optional[float] = Field(1.0, ge=0, le=100.0)
+    incT: Optional[float] = Field(25.0, ge=0.0, le=1000.0)
+    incdomT: Optional[float] = Field(22.0, ge=0.0, le=1000.0)
+    T: Optional[float] = Field(7.0, ge=0.0, le=1000.0)
+    domT: Optional[float] = Field(5.0, ge=0.0, le=1000.0)
 
     @model_validator(mode="after")
     def clean_threshold_fields(self):
         if self.threshold == "evalue":
-            self.incT = None
-            self.incdomT = None
-            self.T = None
-            self.domT = None
+            self.incT = self.incdomT = self.T = self.domT = None
+            if self.E and self.incE and self.incE > self.E:
+                raise ValueError("incE should be ≤ E")
+            if self.domE and self.incdomE and self.incdomE > self.domE:
+                raise ValueError("incdomE should be ≤ domE")
         else:
-            self.incE = None
-            self.incdomE = None
-            self.E = None
-            self.domE = None
+            self.incE = self.incdomE = self.E = self.domE = None
+            if self.T and self.incT and self.incT < self.T:
+                raise ValueError("incT should be ≥ T")
+            if self.domT and self.incdomT and self.incdomT < self.domT:
+                raise ValueError("incdomT should be ≥ domT")
         return self
 
 
@@ -366,10 +368,9 @@ class GapPenaltiesSchema(Schema):
         default=DEFAULT_MX, description="Substitution matrix"
     )
 
-
 class ResultQuerySchema(Schema):
     page: int = Field(default=1, gt=0)
-    page_size: int = Field(default=50, gt=0)
+    page_size: int = Field(default=20, gt=0)
     taxonomy_ids: Optional[List[int]] = Field(default=None)
     architecture: Optional[str] = Field(default=None)
     with_domains: Optional[bool] = Field(default=False)
