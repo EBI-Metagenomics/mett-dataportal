@@ -122,8 +122,7 @@ Table SP1_gene_essentiality {
 	genomic_region_id integer [ not null ]
 	experimental_condition_id integer
 	tas_hit double
-	essentiality_call boolean [ not null ]
-	confidence_score double
+	essentiality_call text [ not null ]
 
 	indexes {
 		(gene_id, genomic_region_id) [ name: 'SP1_gene_essentiality_index_6' unique ]
