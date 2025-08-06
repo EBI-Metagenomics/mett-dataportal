@@ -13,6 +13,10 @@ interface UseGeneViewerSearchReturn {
     // Data
     geneResults: any[];
     totalPages: number;
+    currentPage: number;
+    hasPrevious: boolean;
+    hasNext: boolean;
+    totalCount: number;
 
     // UI State
     geneSearchQuery: string;
@@ -36,6 +40,10 @@ export const useGeneViewerSearch = ({
     // Local state
     const [geneResults, setGeneResults] = useState<any[]>([]);
     const [totalPages, setTotalPages] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [hasPrevious, setHasPrevious] = useState(false);
+    const [hasNext, setHasNext] = useState(false);
+    const [totalCount, setTotalCount] = useState(0);
     const [geneSearchQuery, setGeneSearchQuery] = useState('');
     const [sortField, setSortField] = useState<string>('locus_tag');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -47,6 +55,10 @@ export const useGeneViewerSearch = ({
                 const response = await GeneService.fetchGeneBySearch(genomeMeta.isolate_name, geneSearchQuery);
                 setGeneResults(response.data || []);
                 setTotalPages(response.pagination?.num_pages || 1);
+                setCurrentPage(response.pagination?.page_number || 1);
+                setHasPrevious(response.pagination?.has_previous || false);
+                setHasNext(response.pagination?.has_next || false);
+                setTotalCount(response.pagination?.total_results || 0);
             } catch (error) {
                 console.error('Error searching genes:', error);
             } finally {
@@ -74,6 +86,10 @@ export const useGeneViewerSearch = ({
         // Data
         geneResults,
         totalPages,
+        currentPage,
+        hasPrevious,
+        hasNext,
+        totalCount,
 
         // UI State
         geneSearchQuery,

@@ -11,6 +11,7 @@ import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils
 import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../organisms/Gene/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {useFilterStore} from '../../stores/filterStore';
+import {DEFAULT_PER_PAGE_CNT} from '../../utils/appConstants';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -25,6 +26,7 @@ const GeneViewerPage: React.FC = () => {
     // Local state
     const [height] = useState(450);
     const [includeEssentiality, setIncludeEssentiality] = useState(true);
+    const [pageSize, setPageSize] = useState(DEFAULT_PER_PAGE_CNT);
 
     // Custom hooks for data management
     const geneViewerData = useGeneViewerData();
@@ -114,19 +116,24 @@ const GeneViewerPage: React.FC = () => {
         console.error('GeneViewerPage error:', error, errorInfo);
     }, []);
 
-    // Memoize selected genomes to prevent unnecessary re-renders
-    const selectedGenomes = useMemo(() => {
-        console.log('GeneViewerPage selectedGenomes:', geneViewerConfig.selectedGenomes, 'genomeMeta:', geneViewerData.genomeMeta);
-        return geneViewerConfig.selectedGenomes;
-    }, [geneViewerConfig.selectedGenomes, geneViewerData.genomeMeta]);
+    const selectedGenomes = useMemo(() => geneViewerData.genomeMeta ? [{
+        isolate_name: geneViewerData.genomeMeta.isolate_name,
+        type_strain: geneViewerData.genomeMeta.type_strain || false
+    }] : [], [geneViewerData.genomeMeta]);
 
     const linkData = useMemo(() => ({
-        template: '/genome/${strain_name}',
-        alias: 'Select'
+        template: '/genome/${strain_name}?locus_tag=${locus_tag}',
+        alias: 'Browse'
     }), []);
 
     const handleRemoveGenome = useCallback((isolate_name: string) => {
         // if needed
+    }, []);
+
+    // Callback to handle page size changes (same pattern as HomePage)
+    const handlePageSizeChange = useCallback((newPageSize: number) => {
+        console.log('GeneViewerPage - handlePageSizeChange called with:', newPageSize);
+        setPageSize(newPageSize);
     }, []);
 
     // Memoize the loading spinner to prevent unnecessary re-renders
@@ -198,7 +205,9 @@ const GeneViewerPage: React.FC = () => {
                                 searchQuery={filterStore.geneSearchQuery}
                                 onSearchQueryChange={() => {
                                 }}
-                                onSearchSubmit={geneViewerSearch.handleGeneSearch}
+                                onSearchSubmit={() => {
+                                    // GeneSearchForm handles search internally
+                                }}
                                 selectedSpecies={[]}
                                 selectedGenomes={selectedGenomes}
                                 results={geneViewerSearch.geneResults}
@@ -209,6 +218,7 @@ const GeneViewerPage: React.FC = () => {
                                 viewState={viewState || undefined}
                                 setLoading={geneViewerData.setLoading}
                                 handleRemoveGenome={handleRemoveGenome}
+                                onPageSizeChange={handlePageSizeChange}
                             />
                         </section>
                     </div>

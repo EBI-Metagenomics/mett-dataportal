@@ -88,6 +88,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [isDownloading, setIsDownloading] = useState(false);
     const [isProcessingSuggestion, setIsProcessingSuggestion] = useState<boolean>(false);
     const [currentLocusTag, setCurrentLocusTag] = useState<string>('');
+    const lastPageSizeRef = useRef<number>(DEFAULT_PER_PAGE_CNT);
 
     useEffect(() => {
         if (resultsProp && resultsProp.length > 0) {
@@ -333,6 +334,15 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         },
         [query, selectedGenomes, selectedSpecies, pageSize, getLegacyFilters, getLegacyOperators]
     );
+
+    // Trigger new search when page size changes
+    useEffect(() => {
+        if (pageSize !== lastPageSizeRef.current && (query || selectedGenomes.length > 0 || (selectedSpecies && selectedSpecies.length > 0))) {
+            console.log('GeneSearchForm - Page size changed, triggering new search with pageSize:', pageSize);
+            lastPageSizeRef.current = pageSize;
+            fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+        }
+    }, [pageSize, sortField, sortOrder, query, selectedGenomes.length, selectedSpecies]);
 
     // Debounced
     const debouncedUpdateQuery = useCallback(

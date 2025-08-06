@@ -14,6 +14,7 @@ import {useTabAwareUrlSync} from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {GeneService} from '../../services/geneService';
 import {DEFAULT_PER_PAGE_CNT} from '../../utils/appConstants';
+import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../utils/filterUtils';
 
 interface Tab {
     id: string;
@@ -87,8 +88,8 @@ const HomePage: React.FC = () => {
                 'asc',
                 [], // selectedGenomes
                 [], // selectedSpecies
-                {}, // selectedFacets
-                {} // facetOperators
+                convertFacetedFiltersToLegacy(filterStore.facetedFilters), // Convert to legacy format
+                convertFacetOperatorsToLegacy(filterStore.facetOperators)  // Convert to legacy format
             )
                 .then((response: any) => {
                     setGeneResults(response.data || []);
@@ -109,6 +110,10 @@ const HomePage: React.FC = () => {
             console.log('HomePage - Search query cleared, reloading initial data');
             setGeneLoading(true);
 
+            // Convert faceted filters to legacy format
+            const legacyFilters = convertFacetedFiltersToLegacy(filterStore.facetedFilters);
+            const legacyOperators = convertFacetOperatorsToLegacy(filterStore.facetOperators);
+
             // Load initial gene data
             GeneService.fetchGeneSearchResultsAdvanced(
                 '', // empty query for initial load
@@ -118,8 +123,8 @@ const HomePage: React.FC = () => {
                 'asc',
                 [], // selectedGenomes
                 [], // selectedSpecies
-                {}, // selectedFacets
-                {} // facetOperators
+                legacyFilters, // Convert to legacy format
+                legacyOperators  // Convert to legacy format
             )
                 .then((response: any) => {
                     // console.log('HomePage - Reload API response:', response);

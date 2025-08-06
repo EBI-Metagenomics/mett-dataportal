@@ -62,40 +62,36 @@ export const useFacetedFilters = ({
     // Update facets when filter store changes to keep checkbox state in sync
     useEffect(() => {
         if (facets && Object.keys(facets).length > 0) {
-            // Use a small timeout to ensure filter store has updated
-            const timeoutId = setTimeout(() => {
-                const updatedFacets = { ...facets };
-                
-                for (const [facetGroup, items] of Object.entries(updatedFacets)) {
-                    if (
-                        facetGroup === 'total_hits' ||
-                        facetGroup === 'operators' ||
-                        !Array.isArray(items)
-                    ) continue;
-
-                    const selectedValues = filterStore.facetedFilters[facetGroup as keyof FacetedFilters] || [];
-                    
-                    // Update the selected state for each item
-                    items.forEach(item => {
-                        const wasSelected = item.selected;
-                        item.selected = selectedValues.some(v => String(v) === String(item.value));
-                        if (wasSelected !== item.selected) {
-                            console.log(`Checkbox state changed for ${facetGroup}:${item.value}:`, { wasSelected, isSelected: item.selected });
-                        }
-                    });
-                }
-                
-                // Only update if the facets have actually changed
-                const facetsChanged = JSON.stringify(updatedFacets) !== JSON.stringify(currentFacetsRef.current);
-                if (facetsChanged) {
-                    currentFacetsRef.current = updatedFacets;
-                    setFacets(updatedFacets);
-                }
-            }, 10); // Small delay to ensure filter store has updated
+            const updatedFacets = { ...facets };
+            let hasChanges = false;
             
-            return () => clearTimeout(timeoutId);
+            for (const [facetGroup, items] of Object.entries(updatedFacets)) {
+                if (
+                    facetGroup === 'total_hits' ||
+                    facetGroup === 'operators' ||
+                    !Array.isArray(items)
+                ) continue;
+
+                const selectedValues = filterStore.facetedFilters[facetGroup as keyof FacetedFilters] || [];
+                
+                // Update the selected state for each item
+                items.forEach(item => {
+                    const wasSelected = item.selected;
+                    const isSelected = selectedValues.some(v => String(v) === String(item.value));
+                    
+                    if (wasSelected !== isSelected) {
+                        item.selected = isSelected;
+                        hasChanges = true;
+                    }
+                });
+            }
+            
+            // Only update if there are actual changes
+            if (hasChanges) {
+                setFacets(updatedFacets);
+            }
         }
-    }, [filterStore.facetedFilters, filterStore.facetOperators]); // Removed facets dependency
+    }, [filterStore.facetedFilters, filterStore.facetOperators]);
 
     const loadFacets = useCallback(async (forceRefresh = false) => {
         // Prevent duplicate calls
@@ -247,15 +243,13 @@ export const useFacetedFilters = ({
             filterStore.updateFacetedFilter(facetGroup as keyof FacetedFilters, newValues);
         }
 
-        // Debounce the API call for filter changes
-        debouncedLoadFacets(300);
-    }, [filterStore, debouncedLoadFacets]);
+        // The main useEffect will handle the API call for filter changes
+    }, [filterStore]);
 
     const handleOperatorChange = useCallback((facetGroup: string, operator: 'AND' | 'OR') => {
         filterStore.updateFacetOperator(facetGroup as keyof FacetOperators, operator);
-        // Debounce the API call for operator changes
-        debouncedLoadFacets(300);
-    }, [filterStore, debouncedLoadFacets]);
+        // The main useEffect will handle the API call for operator changes
+    }, [filterStore]);
 
     const refreshFacets = useCallback(async () => {
         await loadFacets(true); // Force refresh
@@ -359,6 +353,11 @@ export const useFacetedFilters = ({
             hasLoadedInitialFacets.current = true;
             console.log('Case 4: GeneViewerPage genome data became available');
         }
+        // Case 5: Filter changes (but not initial load)
+        else if (!filtersAreInitial && (filtersChanged || operatorsChanged)) {
+            shouldLoadFacets = true;
+            console.log('Case 5: Filter changes detected');
+        }
 
         // Load facets if needed
         if (shouldLoadFacets) {
@@ -378,25 +377,9 @@ export const useFacetedFilters = ({
         searchQuery,
         isGeneViewerPage,
         filtersAreInitial,
-        loadFacets
+        filterStore.facetedFilters,
+        filterStore.facetOperators
     ]);
-
-    // User interaction effect: runs only on user-driven changes (excluding query changes which are handled by debouncing)
-    useEffect(() => {
-        if (!filtersAreInitial) {
-            // Use refs to get the latest values without creating dependencies
-            const currentFilters = getApiFilters();
-            const currentOperators = filterStore.facetOperators;
-            
-            // Use a timeout to break the circular dependency
-            const timeoutId = setTimeout(() => {
-                // Call loadFacets instead of fetchSearchResults since we're in the useFacetedFilters hook
-                loadFacets();
-            }, 0);
-            
-            return () => clearTimeout(timeoutId);
-        }
-    }, [filterStore.facetedFilters, filterStore.facetOperators, filtersAreInitial, loadFacets]);
 
     // Cleanup on unmount
     useEffect(() => {
