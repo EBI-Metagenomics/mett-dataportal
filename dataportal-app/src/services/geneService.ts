@@ -211,7 +211,7 @@ export class GeneService extends BaseService {
 
             console.log('Making API call to genes/faceted-search with params:', params.toString());
             const response = await this.getWithRetry<GeneFacetResponse>('genes/faceted-search', params);
-            console.log('API response received:', response);
+            // console.log('API response received:', response);
             return response;
         } catch (error) {
             console.error('Error fetching gene facets:', error);

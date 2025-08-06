@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback, useMemo, useRef} from 'react';
 import useGeneViewerState from '@components/organisms/Gene/GeneViewer/geneViewerState';
 import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm";
@@ -6,12 +6,16 @@ import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearch
 // Import new hooks and utilities
 import {useGeneViewerData, useGeneViewerNavigation, useGeneViewerSearch} from '../../hooks';
 import {useGeneViewerUrlSync} from '../../hooks/useGeneViewerUrlSync';
+import {useDebouncedLoading} from '../../hooks/useDebouncedLoading';
 import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils/geneViewerConfig';
 import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../organisms/Gene/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {useFilterStore} from '../../stores/filterStore';
 
 const GeneViewerPage: React.FC = () => {
+    const renderCount = useRef(0);
+    renderCount.current += 1;
+
     // Get state from Zustand stores
     const filterStore = useFilterStore();
 
@@ -29,7 +33,13 @@ const GeneViewerPage: React.FC = () => {
         setLoading: geneViewerData.setLoading,
     });
 
-    // At the top level, call the hook as usual (no useMemo)
+    const debouncedLoading = useDebouncedLoading({
+        loading: geneViewerData.loading,
+        delay: 300,
+        minLoadingTime: 500
+    });
+
+    // Call the hook directly - it's already optimized internally
     const geneViewerConfig = useGeneViewerConfig(
         geneViewerData.genomeMeta,
         geneViewerData.geneMeta,
@@ -55,29 +65,36 @@ const GeneViewerPage: React.FC = () => {
         jbrowseInitKey
     );
 
-    useEffect(() => {
+    const handleTrackRefresh = useCallback(() => {
         if (!viewState) return;
+        
         const session = viewState.session;
         const view = session.views[0];
         if (!view) return;
 
-        // Hide the track
-        view.hideTrack('structural_annotation');
+        try {
+            view.hideTrack('structural_annotation');
 
-        // Find the new config for the track
-        const newTrack = geneViewerConfig.tracks.find(
-            (track: any) => track.trackId === 'structural_annotation'
-        );
-        if (newTrack) {
-            view.showTrack('structural_annotation', {
-                ...newTrack,
-                adapter: {
-                    ...newTrack.adapter,
-                    includeEssentiality,
-                },
-            });
+            const newTrack = geneViewerConfig.tracks.find(
+                (track: any) => track.trackId === 'structural_annotation'
+            );
+            if (newTrack) {
+                view.showTrack('structural_annotation', {
+                    ...newTrack,
+                    adapter: {
+                        ...newTrack.adapter,
+                        includeEssentiality,
+                    },
+                });
+            }
+        } catch (error) {
+            console.warn('Error refreshing structural annotation track:', error);
         }
-    }, [includeEssentiality, viewState, geneViewerConfig.tracks]);
+    }, [viewState, geneViewerConfig.tracks, includeEssentiality]);
+
+    useEffect(() => {
+        handleTrackRefresh();
+    }, [handleTrackRefresh]);
 
     // Navigation logic
     const navigation = useGeneViewerNavigation({
@@ -87,41 +104,55 @@ const GeneViewerPage: React.FC = () => {
         setLoading: geneViewerData.setLoading,
     });
 
-    const handleRefreshTracks = () => {
+    const handleRefreshTracks = useCallback(() => {
         if (viewState) {
             refreshStructuralAnnotationTrack(viewState);
         }
-    };
+    }, [viewState]);
 
-    const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
+    const handleError = useCallback((error: Error, errorInfo: React.ErrorInfo) => {
         console.error('GeneViewerPage error:', error, errorInfo);
-    };
+    }, []);
 
-    const selectedGenomes = React.useMemo(
-        () => {
-            console.log('GeneViewerPage selectedGenomes:', geneViewerConfig.selectedGenomes, 'genomeMeta:', geneViewerData.genomeMeta);
-            return geneViewerConfig.selectedGenomes;
-        },
-        [geneViewerConfig.selectedGenomes, geneViewerData.genomeMeta]
-    );
+    // Memoize selected genomes to prevent unnecessary re-renders
+    const selectedGenomes = useMemo(() => {
+        console.log('GeneViewerPage selectedGenomes:', geneViewerConfig.selectedGenomes, 'genomeMeta:', geneViewerData.genomeMeta);
+        return geneViewerConfig.selectedGenomes;
+    }, [geneViewerConfig.selectedGenomes, geneViewerData.genomeMeta]);
 
-    const linkData = React.useMemo(() => ({
+    const linkData = useMemo(() => ({
         template: '/genome/${strain_name}',
         alias: 'Select'
     }), []);
 
-    const handleRemoveGenome = React.useCallback((isolate_name: string) => {
+    const handleRemoveGenome = useCallback((isolate_name: string) => {
         // if needed
     }, []);
 
-    // Loading spinner
-    const spinner = geneViewerData.loading && (
-        <div className={styles.spinnerOverlay}>
-            <div className={styles.spinner}></div>
-        </div>
-    );
+    // Memoize the loading spinner to prevent unnecessary re-renders
+    const spinner = useMemo(() => {
+        if (!debouncedLoading) return null;
+        
+        return (
+            <div className={styles.spinnerOverlay}>
+                <div className={styles.spinner}></div>
+            </div>
+        );
+    }, [debouncedLoading]);
 
-    const errorMessage = geneViewerData.error || navigation.navigationError || (initializationError ? initializationError.toString() : null);
+    // Memoize error message to prevent unnecessary re-renders
+    const errorMessage = useMemo(() => {
+        return geneViewerData.error || 
+               navigation.navigationError || 
+               (initializationError ? initializationError.toString() : null);
+    }, [geneViewerData.error, navigation.navigationError, initializationError]);
+
+    // Debug: Log when loading state changes
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Loading state changed:', geneViewerData.loading, 'Debounced:', debouncedLoading);
+        }
+    }, [geneViewerData.loading, debouncedLoading]);
 
     return (
         <ErrorBoundary onError={handleError}>

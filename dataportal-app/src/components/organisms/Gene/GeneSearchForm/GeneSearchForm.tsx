@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState, useRef} from 'react';
 import GeneSearchInput from './GeneSearchInput';
 import styles from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm.module.scss";
 import GeneResultsTable from "@components/organisms/Gene/GeneResultsHandler/GeneResultsTable";
@@ -37,6 +37,13 @@ interface GeneSearchFormProps {
     viewState?: ViewModel;
     handleRemoveGenome: (genomeId: string) => void;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    currentPage?: number;
+    totalPages?: number;
+    hasPrevious?: boolean;
+    hasNext?: boolean;
+    totalCount?: number;
+    onResultsUpdate?: (results: any[], pagination: any) => void;
+    onPageSizeChange?: (newPageSize: number) => void;
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -50,7 +57,23 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            handleRemoveGenome,
                                                            setLoading,
                                                            searchQuery,
+                                                           results: resultsProp,
+                                                           currentPage: currentPageProp,
+                                                           totalPages: totalPagesProp,
+                                                           hasPrevious: hasPreviousProp,
+                                                           hasNext: hasNextProp,
+                                                           totalCount: totalCountProp,
+                                                           onResultsUpdate,
+                                                           onPageSizeChange,
                                                        }) => {
+
+    const renderCount = useRef(0);
+    renderCount.current += 1;
+
+    if (process.env.NODE_ENV === 'development' && renderCount.current % 100 === 0) {
+        console.log(`GeneSearchForm render #${renderCount.current}`);
+    }
+
     const [searchInput, setSearchInput] = useState<string>('');
     const [query, setQuery] = useState<string>(searchQuery || '');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
@@ -65,6 +88,32 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [isDownloading, setIsDownloading] = useState(false);
     const [isProcessingSuggestion, setIsProcessingSuggestion] = useState<boolean>(false);
     const [currentLocusTag, setCurrentLocusTag] = useState<string>('');
+
+    useEffect(() => {
+        if (resultsProp && resultsProp.length > 0) {
+            console.log('GeneSearchForm - Syncing results from props:', resultsProp.length);
+            setResults(resultsProp);
+            setCurrentPage(currentPageProp || 1);
+            setTotalPages(totalPagesProp || 1);
+            setHasPrevious(hasPreviousProp || false);
+            setHasNext(hasNextProp || false);
+        }
+    }, [resultsProp, currentPageProp, totalPagesProp, hasPreviousProp, hasNextProp]);
+
+    useEffect(() => {
+        if (currentPageProp !== undefined) {
+            setCurrentPage(currentPageProp);
+        }
+        if (totalPagesProp !== undefined) {
+            setTotalPages(totalPagesProp);
+        }
+        if (hasPreviousProp !== undefined) {
+            setHasPrevious(hasPreviousProp);
+        }
+        if (hasNextProp !== undefined) {
+            setHasNext(hasNextProp);
+        }
+    }, [currentPageProp, totalPagesProp, hasPreviousProp, hasNextProp]);
 
     const facetedFilters = useFilterStore(state => state.facetedFilters);
     const facetOperators = useFilterStore(state => state.facetOperators);
@@ -86,8 +135,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         searchQuery: isProcessingSuggestion ? currentLocusTag : debouncedSearchQuery, // Use locus tag when processing suggestion
     });
 
-    console.log('GeneSearchForm - selectedSpecies:', selectedSpecies, 'selectedGenomes:', selectedGenomes);
-
     const [apiRequestDetails, setApiRequestDetails] = useState<{
         url: string;
         method: string;
@@ -98,26 +145,25 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, DEFAULT_PER_PAGE_CNT);
         setPageSize(newSize);
+        if (onPageSizeChange) {
+            onPageSizeChange(newSize);
+        }
     };
 
-    // Convert faceted filters to legacy format for API calls
     const getLegacyFilters = useCallback(() => {
         return convertFacetedFiltersToLegacy(facetedFilters);
     }, [facetedFilters]);
 
-    // Convert facet operators to legacy format for API calls
     const getLegacyOperators = useCallback(() => {
         return convertFacetOperatorsToLegacy(facetOperators);
     }, [facetOperators]);
 
-    // Fetch suggestions for autocomplete based on the query and selected species
     const fetchSuggestions = useCallback(
         async (inputQuery: string) => {
             if (inputQuery.length >= 2) {
                 try {
                     let response;
 
-                    // If species is selected (used in HomePage.tsx)
                     if (selectedSpecies && selectedSpecies.length === 1) {
                         response = await GeneService.fetchGeneAutocompleteSuggestions(
                             inputQuery,
@@ -127,7 +173,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             getLegacyFilters()
                         );
                     }
-                    // If genome is selected (used in GeneViewerPage.tsx)
                     else if (selectedGenomes && selectedGenomes.length > 0) {
                         const genomeIds = selectedGenomes.map(genome => genome.isolate_name).join(',');
                         response = await GeneService.fetchGeneAutocompleteSuggestions(
@@ -169,16 +214,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         };
     };
 
-    // Update internal query when searchQuery prop changes - REMOVED THIS PROBLEMATIC useEffect
-    /*
-    useEffect(() => {
-        if (searchQuery !== query) {
-            setQuery(searchQuery || '');
-            setSearchInput(searchQuery || '');
-            setDebouncedSearchQuery(searchQuery || '');
-        }
-    }, [searchQuery, query]);
-    */
 
     // Fetch search results based on the query, selected species, page, sort field, and sort order
     const fetchSearchResults = useCallback(
@@ -212,7 +247,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setLoading(true); // Start spinner
                 let response = null;
 
-                // Always use the advanced search API - the query parameter will contain the locus tag when selected from autocomplete
                 const params = GeneService.buildParamsFetchGeneSearchResults(
                     query,
                     page,
@@ -259,11 +293,33 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     facetOperators
                 );
                 if (response && response.data && response.pagination) {
-                    setResults(response.data);
-                    setCurrentPage(response.pagination.page_number);
-                    setTotalPages(response.pagination.num_pages);
-                    setHasPrevious(response.pagination.has_previous);
-                    setHasNext(response.pagination.has_next);
+                    // If onResultsUpdate callback is provided
+                    if (onResultsUpdate) {
+                        console.log('GeneSearchForm - Using onResultsUpdate callback for fetchSearchResults');
+                        onResultsUpdate(response.data, response.pagination);
+                    } else {
+                        console.log('GeneSearchForm - Updating internal state for fetchSearchResults');
+                        setResults(response.data);
+                        setCurrentPage(response.pagination.page_number);
+                        setTotalPages(response.pagination.num_pages);
+                        setHasPrevious(response.pagination.has_previous);
+                        setHasNext(response.pagination.has_next);
+                    }
+                } else {
+                    if (onResultsUpdate) {
+                        onResultsUpdate([], null);
+                    } else {
+                        setResults([]);
+                        setCurrentPage(1);
+                        setTotalPages(1);
+                        setHasPrevious(false);
+                        setHasNext(false);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                if (onResultsUpdate) {
+                    onResultsUpdate([], null);
                 } else {
                     setResults([]);
                     setCurrentPage(1);
@@ -271,13 +327,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     setHasPrevious(false);
                     setHasNext(false);
                 }
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                setResults([]);
-                setCurrentPage(1);
-                setTotalPages(1);
-                setHasPrevious(false);
-                setHasNext(false);
             } finally {
                 setLoading(false); // Stop spinner
             }
@@ -285,13 +334,12 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         [query, selectedGenomes, selectedSpecies, pageSize, getLegacyFilters, getLegacyOperators]
     );
 
-    // Debounced function for updating query and triggering search
+    // Debounced
     const debouncedUpdateQuery = useCallback(
         debounce((newQuery: string) => {
             if (!isProcessingSuggestion) {
                 console.log('debouncedUpdateQuery called with:', newQuery);
                 setQuery(newQuery);
-                // Create a temporary function that uses the newQuery directly
                 const searchWithQuery = async () => {
                     const genomeFilter = selectedGenomes?.length
                         ? selectedGenomes.map((genome) => ({
@@ -303,7 +351,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     try {
                         setLoading(true);
                         const response = await GeneService.fetchGeneSearchResultsAdvanced(
-                            newQuery, // Use newQuery directly instead of query state
+                            newQuery,
                             1,
                             pageSize,
                             sortField,
@@ -314,11 +362,33 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             getLegacyOperators()
                         );
                         if (response && response.data && response.pagination) {
-                            setResults(response.data);
-                            setCurrentPage(response.pagination.page_number);
-                            setTotalPages(response.pagination.num_pages);
-                            setHasPrevious(response.pagination.has_previous);
-                            setHasNext(response.pagination.has_next);
+                            // If onResultsUpdate callback is provided
+                            if (onResultsUpdate) {
+                                console.log('GeneSearchForm - Using onResultsUpdate callback for debouncedUpdateQuery');
+                                onResultsUpdate(response.data, response.pagination);
+                            } else {
+                                console.log('GeneSearchForm - Updating internal state for debouncedUpdateQuery');
+                                setResults(response.data);
+                                setCurrentPage(response.pagination.page_number);
+                                setTotalPages(response.pagination.num_pages);
+                                setHasPrevious(response.pagination.has_previous);
+                                setHasNext(response.pagination.has_next);
+                            }
+                        } else {
+                            if (onResultsUpdate) {
+                                onResultsUpdate([], null);
+                            } else {
+                                setResults([]);
+                                setCurrentPage(1);
+                                setTotalPages(1);
+                                setHasPrevious(false);
+                                setHasNext(false);
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error fetching data:", error);
+                        if (onResultsUpdate) {
+                            onResultsUpdate([], null);
                         } else {
                             setResults([]);
                             setCurrentPage(1);
@@ -326,13 +396,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             setHasPrevious(false);
                             setHasNext(false);
                         }
-                    } catch (error) {
-                        console.error("Error fetching data:", error);
-                        setResults([]);
-                        setCurrentPage(1);
-                        setTotalPages(1);
-                        setHasPrevious(false);
-                        setHasNext(false);
                     } finally {
                         setLoading(false);
                     }
@@ -342,7 +405,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 console.log('debouncedUpdateQuery skipped due to suggestion processing');
             }
         }, 500), // 500ms delay
-        [selectedGenomes, selectedSpecies, pageSize, sortField, sortOrder, getLegacyFilters, getLegacyOperators, isProcessingSuggestion]
+        [selectedGenomes, selectedSpecies, pageSize, sortField, sortOrder, getLegacyFilters, getLegacyOperators, isProcessingSuggestion, onResultsUpdate]
     );
 
     // Debounced function for updating the search query used by faceted filters
@@ -390,8 +453,16 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         [facetedFilters, facetOperators]
     );
 
-    // Initial load effect: only runs on context change and when filters are initial
+    // Initial load effect
     useEffect(() => {
+        console.log('GeneSearchForm - Initial load effect:', {
+            isGeneViewerPage,
+            filtersAreInitial,
+            selectedGenomes,
+            selectedSpecies,
+            hasLoadedInitialData: hasLoadedInitialData.current
+        });
+        
         if (isGeneViewerPage && filtersAreInitial) {
             const genomeId = selectedGenomes[0]?.isolate_name || null;
             if (genomeId !== lastGenomeRef.current) {
@@ -400,62 +471,81 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             }
             if (selectedGenomes.length > 0 && !hasLoadedInitialData.current) {
                 hasLoadedInitialData.current = true;
-                fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
-            }
-        } else if (!isGeneViewerPage && filtersAreInitial) {
-            // For HomePage: load initial data when species are selected OR when no filters are applied
-            const currentSpecies = selectedSpecies || [];
-            const speciesKey = currentSpecies.join(',');
-            if (speciesKey !== lastSpeciesRef.current.join(',')) {
-                lastSpeciesRef.current = currentSpecies;
-                hasLoadedInitialData.current = false;
-            }
+                console.log('GeneSearchForm - Loading initial data for GeneViewerPage');
 
-            // Load data if species are selected OR if no species/genomes are selected (default view)
-            if (!hasLoadedInitialData.current && (currentSpecies.length > 0 || (currentSpecies.length === 0 && selectedGenomes.length === 0))) {
-                hasLoadedInitialData.current = true;
-                fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+                const timeoutId = setTimeout(() => {
+                    const currentFilters = getLegacyFilters();
+                    const currentOperators = getLegacyOperators();
+                    fetchSearchResults(1, sortField, sortOrder, currentFilters, currentOperators);
+                }, 0);
+                
+                return () => clearTimeout(timeoutId);
             }
         }
-    }, [selectedGenomes, selectedSpecies, isGeneViewerPage, filtersAreInitial, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators]);
+        // Removed the HomePage logic - HomePage now handles its own initial load
+    }, [selectedGenomes, selectedSpecies, isGeneViewerPage, filtersAreInitial]);
 
-    // User interaction effect: runs only on user-driven changes (excluding query changes which are handled by debouncing)
     useEffect(() => {
+        console.log('GeneSearchForm - User interaction effect triggered:', {
+            filtersAreInitial,
+            facetedFilters,
+            facetOperators
+        });
+        
         if (!filtersAreInitial) {
-            fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+            // Use refs to get the latest values without creating dependencies
+            const currentFilters = getLegacyFilters();
+            const currentOperators = getLegacyOperators();
+            
+            console.log('GeneSearchForm - Calling fetchSearchResults with:', {
+                currentFilters,
+                currentOperators
+            });
+            
+            // Use a timeout to break the circular dependency
+            const timeoutId = setTimeout(() => {
+                fetchSearchResults(1, sortField, sortOrder, currentFilters, currentOperators);
+            }, 0);
+            
+            return () => clearTimeout(timeoutId);
         }
-    }, [facetedFilters, facetOperators, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators, filtersAreInitial]);
+    }, [facetedFilters, facetOperators, filtersAreInitial]);
 
-    // Fallback effect: ensure data is loaded when component mounts
     useEffect(() => {
-        // If no initial data has been loaded yet and we have no results, load default data
-        if (!hasLoadedInitialData.current && results.length === 0) {
-            hasLoadedInitialData.current = true;
-            fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
-        }
-    }, [results.length, fetchSearchResults, sortField, sortOrder, getLegacyFilters, getLegacyOperators]);
+        console.log('GeneSearchForm - Fallback effect:', {
+            hasLoadedInitialData: hasLoadedInitialData.current,
+            resultsLength: results.length
+        });
+
+    }, [results.length]);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newInput = event.target.value;
         console.log('handleInputChange called with:', newInput, 'isProcessingSuggestion:', isProcessingSuggestion);
 
-        // Check if this looks like a display text from autocomplete (contains parentheses and dashes)
         const looksLikeDisplayText = newInput.includes('(') && newInput.includes(')') && newInput.includes(' - ');
 
-        // Only update the search input state, don't trigger any immediate effects
         setSearchInput(newInput);
-
-        // Clear gene state immediately
         setGeneName('');
 
-        // Only call debounced functions if we're not processing a suggestion and it doesn't look like display text
         if (!isProcessingSuggestion && !looksLikeDisplayText) {
             console.log('Calling debounced functions for input:', newInput);
+            
+            // Special handling for empty input - trigger HomePage initial load
+            if (newInput.trim() === '' && onResultsUpdate) {
+                console.log('GeneSearchForm - Empty input detected, triggering HomePage initial load');
+                // Reset to initial state for HomePage
+                setQuery('');
+                setDebouncedSearchQuery('');
+                setGeneSearchQuery('');
+                setSuggestions([]);
+                return;
+            }
+            
             debouncedUpdateQuery(newInput);
             debouncedUpdateSearchQuery(newInput);
             debouncedFetchSuggestions(newInput);
 
-            // Update filter store for URL synchronization
             setGeneSearchQuery(newInput);
         } else {
             console.log('Skipping debounced functions - processing suggestion or display text detected');
@@ -463,7 +553,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     };
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
-        // Use locus_tag for the query to find the specific gene record
         const selectedValue = suggestion.locus_tag;
         console.log('handleSuggestionClick - selectedValue (locus tag):', selectedValue);
         console.log('handleSuggestionClick - suggestion:', suggestion);
@@ -477,13 +566,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             : suggestion.locus_tag;
         setSearchInput(displayValue);
         setGeneName(suggestion.gene_name);
-        // Remove setSelectedGeneId since we're not using the special case anymore
         setSuggestions([]);
 
-        // Update filter store for URL synchronization
         setGeneSearchQuery(selectedValue);
 
-        // Use the locus tag directly instead of relying on query state
         const searchWithLocusTag = async () => {
             const genomeFilter = selectedGenomes?.length
                 ? selectedGenomes.map((genome) => ({
@@ -496,7 +582,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setLoading(true);
                 console.log('Making API call with locus tag:', selectedValue);
                 const response = await GeneService.fetchGeneSearchResultsAdvanced(
-                    selectedValue, // Use selectedValue (locus tag) directly
+                    selectedValue,
                     1,
                     pageSize,
                     sortField,
@@ -507,11 +593,33 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     getLegacyOperators()
                 );
                 if (response && response.data && response.pagination) {
-                    setResults(response.data);
-                    setCurrentPage(response.pagination.page_number);
-                    setTotalPages(response.pagination.num_pages);
-                    setHasPrevious(response.pagination.has_previous);
-                    setHasNext(response.pagination.has_next);
+                    // If onResultsUpdate callback is provided
+                    if (onResultsUpdate) {
+                        console.log('GeneSearchForm - Using onResultsUpdate callback for HomePage');
+                        onResultsUpdate(response.data, response.pagination);
+                    } else {
+                        console.log('GeneSearchForm - Updating internal state for GeneViewerPage');
+                        setResults(response.data);
+                        setCurrentPage(response.pagination.page_number);
+                        setTotalPages(response.pagination.num_pages);
+                        setHasPrevious(response.pagination.has_previous);
+                        setHasNext(response.pagination.has_next);
+                    }
+                } else {
+                    if (onResultsUpdate) {
+                        onResultsUpdate([], null);
+                    } else {
+                        setResults([]);
+                        setCurrentPage(1);
+                        setTotalPages(1);
+                        setHasPrevious(false);
+                        setHasNext(false);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                if (onResultsUpdate) {
+                    onResultsUpdate([], null);
                 } else {
                     setResults([]);
                     setCurrentPage(1);
@@ -519,13 +627,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     setHasPrevious(false);
                     setHasNext(false);
                 }
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                setResults([]);
-                setCurrentPage(1);
-                setTotalPages(1);
-                setHasPrevious(false);
-                setHasNext(false);
             } finally {
                 setLoading(false);
                 setIsProcessingSuggestion(false);
@@ -539,9 +640,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         const currentSearchInput = searchInput;
         setQuery(currentSearchInput);
 
-        // Update filter store for URL synchronization
         setGeneSearchQuery(currentSearchInput);
-        // Use the same approach as debouncedUpdateQuery to avoid timing issues
         const searchWithQuery = async () => {
             const genomeFilter = selectedGenomes?.length
                 ? selectedGenomes.map((genome) => ({
@@ -564,11 +663,33 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     getLegacyOperators()
                 );
                 if (response && response.data && response.pagination) {
-                    setResults(response.data);
-                    setCurrentPage(response.pagination.page_number);
-                    setTotalPages(response.pagination.num_pages);
-                    setHasPrevious(response.pagination.has_previous);
-                    setHasNext(response.pagination.has_next);
+                    // If onResultsUpdate callback is provided
+                    if (onResultsUpdate) {
+                        console.log('GeneSearchForm - Using onResultsUpdate callback for HomePage search');
+                        onResultsUpdate(response.data, response.pagination);
+                    } else {
+                        console.log('GeneSearchForm - Updating internal state for GeneViewerPage search');
+                        setResults(response.data);
+                        setCurrentPage(response.pagination.page_number);
+                        setTotalPages(response.pagination.num_pages);
+                        setHasPrevious(response.pagination.has_previous);
+                        setHasNext(response.pagination.has_next);
+                    }
+                } else {
+                    if (onResultsUpdate) {
+                        onResultsUpdate([], null);
+                    } else {
+                        setResults([]);
+                        setCurrentPage(1);
+                        setTotalPages(1);
+                        setHasPrevious(false);
+                        setHasNext(false);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                if (onResultsUpdate) {
+                    onResultsUpdate([], null);
                 } else {
                     setResults([]);
                     setCurrentPage(1);
@@ -576,13 +697,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     setHasPrevious(false);
                     setHasNext(false);
                 }
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                setResults([]);
-                setCurrentPage(1);
-                setTotalPages(1);
-                setHasPrevious(false);
-                setHasNext(false);
             } finally {
                 setLoading(false);
             }
@@ -610,7 +724,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 getLegacyFilters(),
                 getLegacyOperators()
             );
-            // Show success message
             // alert('Download completed successfully!');
         } catch (error) {
             console.error('Error downloading TSV:', error);
@@ -655,23 +768,11 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 <div>
                     <p>&nbsp;</p>
                 </div>
-                {/* Show helpful message when no filters are applied
-                {!isGeneViewerPage && (selectedSpecies?.length ?? 0) === 0 && selectedGenomes.length === 0 && query.length === 0 && (
-                    <div className={styles.noFiltersMessage}>
-                        <p><strong>No filters applied</strong></p>
-                        <p>To see gene results, please either:</p>
-                        <ul>
-                            <li>Select a species from the dropdown above, or</li>
-                            <li>Select genomes from the Genomes tab, or</li>
-                            <li>Enter a search term in the search box</li>
-                        </ul>
-                    </div>
-                )} */}
 
                 <div className="vf-grid__col--span-3" id="results-table"
-                     style={{display: results.length > 0 ? 'block' : 'none'}}>
+                     style={{display: (results.length > 0 || (resultsProp && resultsProp.length > 0)) ? 'block' : 'none'}}>
                     <GeneResultsTable
-                        results={results}
+                        results={resultsProp && resultsProp.length > 0 ? resultsProp : results}
                         onSortClick={onSortClick}
                         linkData={linkData}
                         viewState={viewState}
@@ -696,15 +797,63 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             </select>
                         </div>
                         <div className={styles.paginationBar}>
-                            {totalPages > 1 && (
+                            {(() => {
+                                const effectiveTotalPages = totalPagesProp || totalPages;
+                                const effectiveHasNext = hasNextProp !== undefined ? hasNextProp : hasNext;
+                                const effectiveHasPrevious = hasPreviousProp !== undefined ? hasPreviousProp : hasPrevious;
+
+                                const shouldShowPagination = effectiveTotalPages > 1 || effectiveHasNext || effectiveHasPrevious;
+                                
+                                return shouldShowPagination;
+                            })() && (
                                 <Pagination
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    hasPrevious={hasPrevious}
-                                    hasNext={hasNext}
+                                    currentPage={currentPageProp || currentPage}
+                                    totalPages={totalPagesProp || totalPages}
+                                    hasPrevious={hasPreviousProp !== undefined ? hasPreviousProp : hasPrevious}
+                                    hasNext={hasNextProp !== undefined ? hasNextProp : hasNext}
                                     onPageClick={(page) => {
-                                        setCurrentPage(page);
-                                        fetchSearchResults(page, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+
+                                        if (onResultsUpdate) {
+                                            console.log('GeneSearchForm - Pagination click for HomePage, page:', page);
+
+                                            const searchWithPage = async () => {
+                                                const genomeFilter = selectedGenomes?.length
+                                                    ? selectedGenomes.map((genome) => ({
+                                                        isolate_name: genome.isolate_name,
+                                                        type_strain: genome.type_strain
+                                                    }))
+                                                    : undefined;
+                                                const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+                                                try {
+                                                    setLoading(true);
+                                                    const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                                                        query,
+                                                        page,
+                                                        pageSize,
+                                                        sortField,
+                                                        sortOrder,
+                                                        genomeFilter,
+                                                        speciesFilter,
+                                                        getLegacyFilters(),
+                                                        getLegacyOperators()
+                                                    );
+                                                    if (response && response.data && response.pagination) {
+                                                        onResultsUpdate(response.data, response.pagination);
+                                                    } else {
+                                                        onResultsUpdate([], null);
+                                                    }
+                                                } catch (error) {
+                                                    console.error("Error fetching data for pagination:", error);
+                                                    onResultsUpdate([], null);
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            };
+                                            searchWithPage();
+                                        } else {
+                                            setCurrentPage(page);
+                                            fetchSearchResults(page, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+                                        }
                                     }}
                                 />
                             )}

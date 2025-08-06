@@ -118,12 +118,11 @@ export const useFilterStore = create<FilterState>()(
       setFacetedFilters: (filters) => set({ facetedFilters: filters }),
       updateFacetedFilter: (filterType, values) => {
         const current = get().facetedFilters;
-        set({ 
-          facetedFilters: {
-            ...current,
-            [filterType]: values.length > 0 ? values : undefined
-          }
-        });
+        const newFilters = {
+          ...current,
+          [filterType]: values.length > 0 ? values : undefined
+        };
+        set({ facetedFilters: newFilters });
       },
       setFacetOperators: (operators) => set({ facetOperators: operators }),
       updateFacetOperator: (filterType, operator) => {

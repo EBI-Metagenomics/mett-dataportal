@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '@components/organisms/Gene/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '@components/organisms/Genome/GenomeSearchForm/GenomeSearchForm';
@@ -12,6 +12,8 @@ import {useFilterStore} from '../../stores/filterStore';
 import {useGenomeData} from '../../hooks';
 import {useTabAwareUrlSync} from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
+import {GeneService} from '../../services/geneService';
+import {DEFAULT_PER_PAGE_CNT} from '../../utils/appConstants';
 
 interface Tab {
     id: string;
@@ -47,8 +49,13 @@ const HomePage: React.FC = () => {
     const {isFeatureEnabled} = useFeatureFlags();
 
     const [activeTab, setActiveTab] = useState('genomes');
+    const [geneResults, setGeneResults] = useState<any[]>([]);
+    const [geneLoading, setGeneLoading] = useState(false);
+    const [genePagination, setGenePagination] = useState<any>(null);
+    const [genePerPage, setGenePerPage] = useState(DEFAULT_PER_PAGE_CNT);
 
     const hasUserSelectedTab = useRef(false);
+    const hasLoadedInitialGenes = useRef(false);
 
     // Only use URL to set the initial tab
     useEffect(() => {
@@ -64,6 +71,69 @@ const HomePage: React.FC = () => {
             }
         }
     }, [location.pathname, location.search, isFeatureEnabled]);
+
+    // Load initial gene data when genes tab is selected
+    useEffect(() => {
+        if (activeTab === 'genes' && !hasLoadedInitialGenes.current) {
+            hasLoadedInitialGenes.current = true;
+            setGeneLoading(true);
+
+            // Load initial gene data
+            GeneService.fetchGeneSearchResultsAdvanced(
+                '', // empty query for initial load
+                1, // page
+                genePerPage, // perPage - use state instead of hardcoded 20
+                'locus_tag',
+                'asc',
+                [], // selectedGenomes
+                [], // selectedSpecies
+                {}, // selectedFacets
+                {} // facetOperators
+            )
+                .then((response: any) => {
+                    setGeneResults(response.data || []);
+                    setGenePagination(response.pagination || null);
+                })
+                .catch((error: any) => {
+                    console.error('Failed to load initial gene data:', error);
+                })
+                .finally(() => {
+                    setGeneLoading(false);
+                });
+        }
+    }, [activeTab, genePerPage]);
+
+    // Reload initial data when search query is cleared
+    useEffect(() => {
+        if (activeTab === 'genes' && filterStore.geneSearchQuery === '') {
+            console.log('HomePage - Search query cleared, reloading initial data');
+            setGeneLoading(true);
+
+            // Load initial gene data
+            GeneService.fetchGeneSearchResultsAdvanced(
+                '', // empty query for initial load
+                1, // page
+                genePerPage, // perPage - use state instead of hardcoded 20
+                'locus_tag',
+                'asc',
+                [], // selectedGenomes
+                [], // selectedSpecies
+                {}, // selectedFacets
+                {} // facetOperators
+            )
+                .then((response: any) => {
+                    // console.log('HomePage - Reload API response:', response);
+                    setGeneResults(response.data || []);
+                    setGenePagination(response.pagination || null);
+                })
+                .catch((error: any) => {
+                    console.error('Failed to reload initial gene data:', error);
+                })
+                .finally(() => {
+                    setGeneLoading(false);
+                });
+        }
+    }, [activeTab, filterStore.geneSearchQuery, genePerPage]);
 
     // Clean up gene viewer state when returning to home page
     useEffect(() => {
@@ -111,6 +181,12 @@ const HomePage: React.FC = () => {
             filterStore.setFacetedFilters({});
             filterStore.setFacetOperators({});
 
+            // Reset gene results when switching away from genes tab
+            if (activeTab === 'genes' && tabId !== 'genes') {
+                setGeneResults([]);
+                hasLoadedInitialGenes.current = false;
+            }
+
             if (tabId === 'proteinsearch') {
                 filterStore.setSelectedSpecies([]);
                 filterStore.setSelectedGenomes([]);
@@ -125,6 +201,22 @@ const HomePage: React.FC = () => {
         }
     };
 
+    // Callback to handle results updates from GeneSearchForm
+    const handleGeneResultsUpdate = useCallback((results: any[], pagination: any) => {
+        console.log('HomePage - handleGeneResultsUpdate called with:', {
+            resultsCount: results.length,
+            pagination
+        });
+        setGeneResults(results);
+        setGenePagination(pagination);
+    }, []);
+
+    // Callback to handle page size changes from GeneSearchForm
+    const handleGenePageSizeChange = useCallback((newPageSize: number) => {
+        console.log('HomePage - handleGenePageSizeChange called with:', newPageSize);
+        setGenePerPage(newPageSize);
+    }, []);
+
     // Error handling
     const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
         console.error('HomePage error:', error, errorInfo);
@@ -135,6 +227,13 @@ const HomePage: React.FC = () => {
             <div>
                 {/* Loading spinner */}
                 {genomeData.loading && (
+                    <div className={styles.spinnerOverlay}>
+                        <div className={styles.spinner}></div>
+                    </div>
+                )}
+
+                {/* Gene loading spinner */}
+                {activeTab === 'genes' && geneLoading && (
                     <div className={styles.spinnerOverlay}>
                         <div className={styles.spinner}></div>
                     </div>
@@ -188,13 +287,16 @@ const HomePage: React.FC = () => {
                             <ErrorBoundary>
                                 <GeneSearchForm
                                     searchQuery={filterStore.geneSearchQuery}
-                                    onSearchQueryChange={() => {
-                                    }} // GeneSearchForm manages its own state
+                                    onSearchQueryChange={(e) => {
+                                        // GeneSearchForm manages its own state
+                                        filterStore.setGeneSearchQuery(e.target.value);
+                                    }}
                                     onSearchSubmit={() => {
+                                        // GeneSearchForm manages its own search
                                     }}
                                     selectedSpecies={filterStore.selectedSpecies}
                                     selectedGenomes={filterStore.selectedGenomes}
-                                    results={[]} // GeneSearchForm manages its own results
+                                    results={geneResults} // Pass actual results
                                     onSortClick={(field, order) => {
                                         filterStore.setGeneSortField(field);
                                         filterStore.setGeneSortOrder(order);
@@ -202,10 +304,25 @@ const HomePage: React.FC = () => {
                                     sortField={filterStore.geneSortField}
                                     sortOrder={filterStore.geneSortOrder}
                                     linkData={geneLinkData}
-                                    handleRemoveGenome={() => {
+                                    handleRemoveGenome={(genomeId) => {
+                                        // Remove genome from selected genomes
+                                        const updatedGenomes = filterStore.selectedGenomes.filter(
+                                            genome => genome.isolate_name !== genomeId
+                                        );
+                                        filterStore.setSelectedGenomes(updatedGenomes);
                                     }}
-                                    setLoading={() => {
+                                    setLoading={(loading) => {
+                                        // GeneSearchForm manages its own loading state
+                                        console.log('GeneSearchForm loading state:', loading);
                                     }}
+                                    // Add pagination props for HomePage
+                                    currentPage={genePagination?.current_page || genePagination?.page_number || 1}
+                                    totalPages={genePagination?.total_pages || genePagination?.num_pages || 1}
+                                    hasPrevious={genePagination?.has_previous || false}
+                                    hasNext={genePagination?.has_next || false}
+                                    totalCount={genePagination?.total_count || genePagination?.total || 0}
+                                    onResultsUpdate={handleGeneResultsUpdate}
+                                    onPageSizeChange={handleGenePageSizeChange}
                                 />
                             </ErrorBoundary>
                         )}

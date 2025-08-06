@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback, useMemo} from 'react';
 import styles from './GeneFacetedFilter.module.scss';
 import {GeneFacetResponse} from "../../interfaces/Gene";
 import {FacetItem} from "../../interfaces/Auxiliary";
@@ -37,32 +37,32 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
     const [cogCategoryDefs, setCogCategoryDefs] = useState<Record<string, string>>({});
     const [manualCollapsedGroups, setManualCollapsedGroups] = useState<Record<string, boolean>>({});
 
-
-    const handleOperatorChange = (facetGroup: string, operator: 'AND' | 'OR') => {
+    const handleOperatorChange = useCallback((facetGroup: string, operator: 'AND' | 'OR') => {
         onOperatorChange?.(facetGroup, operator);
-    };
+    }, [onOperatorChange]);
 
-
-    const getFacetLabel = (facetGroup: string, value: string | number | boolean): string => {
+    const getFacetLabel = useCallback((facetGroup: string, value: string | number | boolean): string => {
         if (facetGroup === 'has_amr_info') {
             return value === true || value === "true" ? "Present" : "Absent";
         }
         return String(value).toUpperCase();
-    };
+    }, []);
 
+    const orderedFacetEntries = useMemo(() => {
+        return Object.entries(facets)
+            .filter(([facetGroup, values]) => facetGroup !== 'total_hits' && Array.isArray(values))
+            .sort(([a], [b]) => {
+                const indexA = FACET_ORDER.indexOf(a);
+                const indexB = FACET_ORDER.indexOf(b);
 
-    const orderedFacetEntries = Object.entries(facets)
-        .filter(([facetGroup, values]) => facetGroup !== 'total_hits' && Array.isArray(values))
-        .sort(([a], [b]) => {
-            const indexA = FACET_ORDER.indexOf(a);
-            const indexB = FACET_ORDER.indexOf(b);
+                // Unlisted facets go to the end, sorted alphabetically
+                if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+    }, [facets]);
 
-            // Unlisted facets go to the end, sorted alphabetically
-            if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
-        });
 
     useEffect(() => {
         const initialCollapsed = Object.entries(facets).reduce((acc, [key, values]) => {
@@ -76,32 +76,47 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
         }, {} as Record<string, boolean>);
 
         setCollapsedGroups(prev => ({...prev, ...initialCollapsed}));
+    }, [facets, manualCollapsedGroups]);
+
+    useEffect(() => {
+        let isMounted = true;
 
         MetadataService.fetchCOGCategories()
             .then((data) => {
-                const mapping = data.reduce((acc: Record<string, string>, item: { code: string, label: string }) => {
-                    acc[item.code] = item.label;
-                    return acc;
-                }, {});
-                setCogCategoryDefs(mapping);
+                if (isMounted) {
+                    const mapping = data.reduce((acc: Record<string, string>, item: {
+                        code: string,
+                        label: string
+                    }) => {
+                        acc[item.code] = item.label;
+                        return acc;
+                    }, {});
+                    setCogCategoryDefs(mapping);
+                }
+            })
+            .catch((error) => {
+                console.warn('Failed to fetch COG categories:', error);
             });
-    }, [facets, manualCollapsedGroups]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
 
-    const handleLoadMore = (group: string, total: number) => {
+    const handleLoadMore = useCallback((group: string, total: number) => {
         setVisibleCount((prev) => ({
             ...prev,
             [group]: Math.min((prev[group] || initialVisibleCount) + loadMoreStep, total),
         }));
-    };
+    }, [initialVisibleCount, loadMoreStep]);
 
-    const handleFilterChange = (group: string, text: string) => {
+    const handleFilterChange = useCallback((group: string, text: string) => {
         setFilterText((prev) => ({...prev, [group]: text}));
-        // Reset visible count to show from start of filtered results
         setVisibleCount((prev) => ({...prev, [group]: initialVisibleCount}));
-    };
+    }, [initialVisibleCount]);
 
-    const toggleCollapse = (group: string) => {
+    const toggleCollapse = useCallback((group: string) => {
         setCollapsedGroups(prev => ({
             ...prev,
             [group]: !prev[group]
@@ -110,8 +125,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
             ...prev,
             [group]: true
         }));
-    };
-
+    }, []);
 
     return (
         <div className={styles.facetedFilter}>
@@ -128,7 +142,6 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                 const total = filtered.length;
                 const showCount = visibleCount[facetGroup] || initialVisibleCount;
 
-                // Determine if this facet group should use OR logic (show all values)
                 const isOrMode =
                     facetGroup === 'essentiality' ||
                     facetGroup === 'has_amr_info' ||
@@ -304,19 +317,23 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                 )}
 
                                 <ul className={styles.facetList}>
-                                    {dedupedFiltered.slice(0, showCount).map((facet: FacetItem) => (
-                                        <li key={facet.value}>
-                                            <label className={facet.count === 0 ? styles.disabledFacet : ''}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={facet.selected}
-                                                    onChange={() => onToggleFacet(facetGroup, facet.value)}
-                                                />
-                                                {getFacetLabel(facetGroup, facet.value)} <span
-                                                className={styles.countBadge}>{facet.count}</span>
-                                            </label>
-                                        </li>
-                                    ))}
+                                    {dedupedFiltered.slice(0, showCount).map((facet: FacetItem) => {
+                                        return (
+                                            <li key={facet.value}>
+                                                <label className={facet.count === 0 ? styles.disabledFacet : ''}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={facet.selected}
+                                                        onChange={() => {
+                                                            onToggleFacet(facetGroup, facet.value);
+                                                        }}
+                                                    />
+                                                    {getFacetLabel(facetGroup, facet.value)} <span
+                                                    className={styles.countBadge}>{facet.count}</span>
+                                                </label>
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
 
                                 <div className={styles.loadMoreSection}>
