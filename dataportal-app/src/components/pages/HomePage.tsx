@@ -86,10 +86,10 @@ const HomePage: React.FC = () => {
                 genePerPage, // perPage - use state instead of hardcoded 20
                 'locus_tag',
                 'asc',
-                [], // selectedGenomes
-                [], // selectedSpecies
-                convertFacetedFiltersToLegacy(filterStore.facetedFilters), // Convert to legacy format
-                convertFacetOperatorsToLegacy(filterStore.facetOperators)  // Convert to legacy format
+                filterStore.selectedGenomes,
+                filterStore.selectedSpecies,
+                convertFacetedFiltersToLegacy(filterStore.facetedFilters),
+                convertFacetOperatorsToLegacy(filterStore.facetOperators)
             )
                 .then((response: any) => {
                     setGeneResults(response.data || []);
@@ -121,10 +121,10 @@ const HomePage: React.FC = () => {
                 genePerPage, // perPage - use state instead of hardcoded 20
                 'locus_tag',
                 'asc',
-                [], // selectedGenomes
-                [], // selectedSpecies
-                legacyFilters, // Convert to legacy format
-                legacyOperators  // Convert to legacy format
+                filterStore.selectedGenomes,
+                filterStore.selectedSpecies,
+                legacyFilters,
+                legacyOperators
             )
                 .then((response: any) => {
                     // console.log('HomePage - Reload API response:', response);
@@ -227,6 +227,41 @@ const HomePage: React.FC = () => {
         console.error('HomePage error:', error, errorInfo);
     };
 
+    // Context-aware species selection handler
+    const handleSpeciesSelect = async (species_acronym: string): Promise<void> => {
+        if (activeTab === 'genes') {
+            const updatedSelectedSpecies = filterStore.selectedSpecies.includes(species_acronym)
+                ? filterStore.selectedSpecies.filter((acronym) => acronym !== species_acronym)
+                : [...filterStore.selectedSpecies, species_acronym];
+            
+            filterStore.setSelectedSpecies(updatedSelectedSpecies);
+
+            setGeneLoading(true);
+            try {
+                const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                    filterStore.geneSearchQuery,
+                    1,
+                    genePerPage,
+                    filterStore.geneSortField,
+                    filterStore.geneSortOrder,
+                    filterStore.selectedGenomes,
+                    updatedSelectedSpecies,
+                    convertFacetedFiltersToLegacy(filterStore.facetedFilters),
+                    convertFacetOperatorsToLegacy(filterStore.facetOperators)
+                );
+                setGeneResults(response.data || []);
+                setGenePagination(response.pagination || null);
+
+            } catch (error) {
+                console.error('Error fetching gene data after species selection:', error);
+            } finally {
+                setGeneLoading(false);
+            }
+        } else {
+            await genomeData.handleSpeciesSelect(species_acronym);
+        }
+    };
+
     return (
         <ErrorBoundary onError={handleError}>
             <div>
@@ -257,7 +292,8 @@ const HomePage: React.FC = () => {
                         linkTemplate="/genome/$strain_name"
                         speciesList={genomeData.speciesList}
                         selectedSpecies={filterStore.selectedSpecies}
-                        handleSpeciesSelect={genomeData.handleSpeciesSelect}
+                        handleSpeciesSelect={handleSpeciesSelect}
+                        activeTab={activeTab}
                     />
                 </div>
 

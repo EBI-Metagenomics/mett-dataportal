@@ -14,7 +14,7 @@ interface HomePageHeadBandProps {
     speciesList: { acronym: string; scientific_name: string, common_name: string, taxonomy_id: number }[];
     selectedSpecies: string[];
     handleSpeciesSelect: (species_acronym: string) => Promise<void>;
-
+    activeTab: string;
 }
 
 const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
@@ -22,7 +22,8 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                                                                linkTemplate,
                                                                speciesList,
                                                                selectedSpecies,
-                                                               handleSpeciesSelect
+                                                               handleSpeciesSelect,
+                                                               activeTab
                                                            }) => {
     const generateLink = (strainName: string) => linkTemplate.replace('$strain_name', strainName);
     const {isFeatureEnabled} = useFeatureFlags();
@@ -256,7 +257,8 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
 
             </div>
 
-
+            {/* Species Filter */}
+            {activeTab !== 'proteinsearch' && (
             <div
                 className="vf-section-header vf-grid__col--span-3 | vf-u-fullbleed"
                 style={{
@@ -277,14 +279,14 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                 >
                     Species:
                 </h3>
-                {/* Species Filter */}
-                <SpeciesFilter
-                    speciesList={speciesList}
-                    selectedSpecies={selectedSpecies}
-                    onSpeciesSelect={handleSpeciesSelect}
-                />
-
+                    <SpeciesFilter
+                        speciesList={speciesList}
+                        selectedSpecies={selectedSpecies}
+                        onSpeciesSelect={handleSpeciesSelect}
+                    />
+                
             </div>
+        )}
         </section>
     );
 };

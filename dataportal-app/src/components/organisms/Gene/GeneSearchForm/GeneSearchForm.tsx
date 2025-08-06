@@ -121,7 +121,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const setGeneSearchQuery = useFilterStore(state => state.setGeneSearchQuery);
     const setGeneSortField = useFilterStore(state => state.setGeneSortField);
     const setGeneSortOrder = useFilterStore(state => state.setGeneSortOrder);
-
+    const selectedSpeciesFromStore = useFilterStore(state => state.selectedSpecies);
 
     const {
         facets,
@@ -131,7 +131,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         handleOperatorChange,
         refreshFacets
     } = useFacetedFilters({
-        selectedSpecies: selectedSpecies || [],
+        selectedSpecies: selectedSpeciesFromStore,
         selectedGenomes,
         searchQuery: isProcessingSuggestion ? currentLocusTag : debouncedSearchQuery, // Use locus tag when processing suggestion
     });

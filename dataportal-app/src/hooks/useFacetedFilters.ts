@@ -114,14 +114,14 @@ export const useFacetedFilters = ({
             setLoading(true);
             setError(null);
 
-            const speciesAcronym = selectedSpecies?.[0];
+            const speciesAcronym = selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined;
             const isolates = selectedGenomes.map(genome => genome.isolate_name).join(',');
             const apiFilters = getApiFilters();
 
             // Create a unique key for this API call to prevent duplicates
             const apiCallKey = JSON.stringify({
                 searchQuery,
-                speciesAcronym,
+                selectedSpecies,
                 isolates,
                 apiFilters,
                 operators: filterStore.facetOperators
@@ -267,26 +267,24 @@ export const useFacetedFilters = ({
     const filtersAreInitial = Object.keys(filterStore.facetedFilters).length === 0 && Object.keys(filterStore.facetOperators).length === 0;
 
     useEffect(() => {
-        // Create change detection keys
-        const currentGenomeKey = selectedGenomes[0]?.isolate_name || '';
-        const currentSpeciesKey = selectedSpecies.join(',');
+        const currentGenomeKey = selectedGenomes.map(g => g.isolate_name).join(',');
         const currentFiltersKey = JSON.stringify(filterStore.facetedFilters);
         const currentOperatorsKey = JSON.stringify(filterStore.facetOperators);
 
         const genomeChanged = currentGenomeKey !== lastGenomeRef.current;
-        const speciesChanged = currentSpeciesKey !== lastSpeciesRef.current.join(',');
+        const speciesChanged = JSON.stringify(selectedSpecies) !== JSON.stringify(lastSpeciesRef.current);
         const searchQueryChanged = searchQuery !== lastSearchQueryRef.current;
         const filtersChanged = currentFiltersKey !== lastFiltersRef.current;
         const operatorsChanged = currentOperatorsKey !== lastOperatorsRef.current;
 
         if (genomeChanged && isLoadingFacets.current) {
-            console.log('Genome changed while loading, resetting loading flag');
-            isLoadingFacets.current = false;
+            console.log('Skipping facet load - already loading facets for genome change');
+            return;
         }
 
         console.log('useFacetedFilters useEffect:', {
             currentGenomeKey,
-            currentSpeciesKey,
+            selectedSpecies,
             searchQuery,
             searchQueryLength: searchQuery.length,
             isGeneViewerPage,
@@ -341,6 +339,11 @@ export const useFacetedFilters = ({
             shouldLoadFacets = true;
             hasLoadedInitialFacets.current = true;
             console.log('Case 2: HomePage initial load');
+        }
+        // Case 2.5: Species changed on HomePage (with or without filters applied)
+        else if (!isGeneViewerPage && speciesChanged) {
+            shouldLoadFacets = true;
+            console.log('Case 2.5: HomePage species changed');
         }
         // Case 3: User interaction (search query changes) - for queries >= 2 characters OR when query becomes empty
         else if (searchQueryChanged && (searchQuery.length >= 2 || searchQuery.length === 0)) {
