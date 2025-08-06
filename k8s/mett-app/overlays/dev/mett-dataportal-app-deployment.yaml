@@ -45,6 +45,26 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-dev
                   key: VITE_BACINTERACTOME_SHINY_APP_URL
+            - name: VITE_PFAM_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: VITE_PFAM_URL
+            - name: VITE_INTERPRO_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: VITE_INTERPRO_URL
+            - name: VITE_KEGG_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: VITE_KEGG_URL
+            - name: VITE_COG_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: VITE_COG_URL
           ports:
             - containerPort: 80
               name: react-app

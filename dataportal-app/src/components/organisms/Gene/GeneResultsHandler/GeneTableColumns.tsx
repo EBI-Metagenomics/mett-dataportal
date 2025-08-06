@@ -1,6 +1,6 @@
 import React from 'react';
 import {GeneMeta} from '../../../../interfaces/Gene';
-import {getBacinteractomeUniprotUrl, getIconForEssentiality} from '../../../../utils/appConstants';
+import {getBacinteractomeUniprotUrl, getIconForEssentiality, renderExternalDbLinks} from '../../../../utils/appConstants';
 
 export interface ColumnDefinition {
     key: string;
@@ -94,21 +94,21 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         label: 'PFAM',
         sortable: false,
         defaultVisible: false,
-        render: gene => gene.pfam?.join(', ') || '---',
+        render: gene => renderExternalDbLinks('PFAM', gene.pfam || []),
     },
     {
         key: 'interpro',
         label: 'InterPro',
         sortable: false,
         defaultVisible: false,
-        render: gene => gene.interpro?.join(', ') || '---',
+        render: gene => renderExternalDbLinks('INTERPRO', gene.interpro || []),
     },
     {
         key: 'kegg',
         label: 'KEGG',
         sortable: false,
         defaultVisible: false,
-        render: gene => gene.kegg?.join(', ') || '---',
+        render: gene => renderExternalDbLinks('KEGG', gene.kegg || []),
     },
     {
         key: 'cog_funcats',
@@ -122,7 +122,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         label: 'COG Id',
         sortable: false,
         defaultVisible: false,
-        render: gene => gene.cog_id?.join(', ') || '---',
+        render: gene => renderExternalDbLinks('COG', gene.cog_id || []),
     },
     {
         key: 'amr',

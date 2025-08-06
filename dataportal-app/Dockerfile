@@ -17,6 +17,10 @@ RUN PUBLIC_URL=$PUBLIC_URL \
     VITE_ASSEMBLY_INDEXES_PATH="VITE_ASSEMBLY_INDEXES_PATH_PLACEHOLDER" \
     VITE_BACINTERACTOME_SHINY_APP_URL="VITE_BACINTERACTOME_SHINY_APP_URL_PLACEHOLDER" \
     VITE_GFF_INDEXES_PATH="VITE_GFF_INDEXES_PATH_PLACEHOLDER" \
+    VITE_PFAM_URL="VITE_PFAM_URL_PLACEHOLDER" \
+    VITE_INTERPRO_URL="VITE_INTERPRO_URL_PLACEHOLDER" \
+    VITE_KEGG_URL="VITE_KEGG_URL_PLACEHOLDER" \
+    VITE_COG_URL="VITE_COG_URL_PLACEHOLDER" \
     npm run build
 
 # Production stage
@@ -65,4 +69,8 @@ CMD /bin/sh -c "\
     find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_ASSEMBLY_INDEXES_PATH_PLACEHOLDER|'\"\$VITE_ASSEMBLY_INDEXES_PATH\"'|g' {} + && \
     find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_GFF_INDEXES_PATH_PLACEHOLDER|'\"\$VITE_GFF_INDEXES_PATH\"'|g' {} + && \
     find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_BACINTERACTOME_SHINY_APP_URL_PLACEHOLDER|'\"\$VITE_BACINTERACTOME_SHINY_APP_URL\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_PFAM_URL_PLACEHOLDER|'\"\$VITE_PFAM_URL\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_INTERPRO_URL_PLACEHOLDER|'\"\$VITE_INTERPRO_URL\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_KEGG_URL_PLACEHOLDER|'\"\$VITE_KEGG_URL\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_COG_URL_PLACEHOLDER|'\"\$VITE_COG_URL\"'|g' {} + && \
     nginx -g 'daemon off;'"

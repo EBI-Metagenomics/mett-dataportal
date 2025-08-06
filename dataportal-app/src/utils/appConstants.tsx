@@ -1,3 +1,5 @@
+import React from 'react';
+
 export const ZOOM_LEVELS = {
     MIN: -2,
     MAX: 5,
@@ -7,6 +9,73 @@ export const ZOOM_LEVELS = {
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 export const API_GENOMES_BY_ISOLATE_NAMES = `${API_BASE_URL}/genomes/by-isolate-names`;
+
+export const EXTERNAL_DB_URLS = {
+    PFAM: import.meta.env.VITE_PFAM_URL || 'https://www.ebi.ac.uk/interpro/entry/pfam/',
+    INTERPRO: import.meta.env.VITE_INTERPRO_URL || 'https://www.ebi.ac.uk/interpro/entry/',
+    KEGG: import.meta.env.VITE_KEGG_URL || 'https://www.genome.jp/entry/',
+    COG: import.meta.env.VITE_COG_URL || 'https://www.ncbi.nlm.nih.gov/research/cog/cog/',
+};
+
+export const generateExternalDbLink = (dbType: keyof typeof EXTERNAL_DB_URLS, id: string): string => {
+    const baseUrl = EXTERNAL_DB_URLS[dbType];
+
+    switch (dbType) {
+        case 'PFAM': {
+            return `${baseUrl}${id}`;
+        }
+        case 'INTERPRO': {
+            return `${baseUrl}${id}`;
+        }
+        case 'KEGG': {
+            const keggId = id.startsWith('ko:') ? id.substring(3) : id;
+            return `${baseUrl}${keggId}`;
+        }
+        case 'COG': {
+            return `${baseUrl}${id}`;
+        }
+        default:
+            return `${baseUrl}${id}`;
+    }
+};
+
+export const renderExternalDbLinks = (dbType: keyof typeof EXTERNAL_DB_URLS, ids: string[] | string): React.ReactNode => {
+    if (!ids || (Array.isArray(ids) && ids.length === 0)) {
+        return '---';
+    }
+    
+    const idArray = Array.isArray(ids) ? ids : [ids];
+    
+    return idArray.map((id, index) => {
+        const trimmedId = id.trim();
+        if (!trimmedId || trimmedId === '---') {
+            return null;
+        }
+        
+        const link = generateExternalDbLink(dbType, trimmedId);
+        
+        return (
+            <React.Fragment key={`${dbType}-${trimmedId}-${index}`}>
+                <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`View ${trimmedId} in ${dbType}`}
+                    style={{ color: '#007bff', textDecoration: 'none' }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.textDecoration = 'underline';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.textDecoration = 'none';
+                    }}
+                >
+                    {trimmedId}
+                </a>
+                {index < idArray.length - 1 && ', '}
+            </React.Fragment>
+        );
+    }).filter(Boolean);
+};
 
 export const BACINTERACTOME_SHINY_APP_BASE_URL = import.meta.env.VITE_BACINTERACTOME_SHINY_APP_URL;
 export const getBacinteractomeUniprotUrl =
