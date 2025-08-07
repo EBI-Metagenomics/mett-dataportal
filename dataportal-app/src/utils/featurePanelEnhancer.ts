@@ -2,6 +2,8 @@
  * Utility functions to enhance JBrowse feature panel with external database links
  */
 
+import { EXTERNAL_DB_URLS, generateExternalDbLink } from './appConstants';
+
 export interface ExternalLink {
     label: string;
     url: string;
@@ -18,7 +20,7 @@ export const getExternalLinks = (feature: any): ExternalLink[] => {
             if (/^IPR\d+$/.test(id)) {
                 links.push({
                     label: 'InterPro',
-                    url: `https://www.ebi.ac.uk/interpro/protein/entry/${id}`,
+                    url: generateExternalDbLink('INTERPRO', id),
                     id
                 });
             }
@@ -34,7 +36,7 @@ export const getExternalLinks = (feature: any): ExternalLink[] => {
                 const keggId = match[2]; // Extract just the K number
                 links.push({
                     label: 'KEGG',
-                    url: `https://www.kegg.jp/kegg-bin/show_pathway?${keggId}`,
+                    url: generateExternalDbLink('KEGG', keggId),
                     id
                 });
             }
@@ -49,14 +51,14 @@ export const getExternalLinks = (feature: any): ExternalLink[] => {
                 // Single letter COG category
                 links.push({
                     label: 'COG Category',
-                    url: `https://www.ncbi.nlm.nih.gov/research/cog/cog_category/${id}`,
+                    url: generateExternalDbLink('COG_CATEGORY', id),
                     id
                 });
             } else if (/^COG\d+$/.test(id)) {
                 // Full COG number
                 links.push({
                     label: 'COG',
-                    url: `https://www.ncbi.nlm.nih.gov/research/cog/protein/${id}`,
+                    url: generateExternalDbLink('COG', id),
                     id
                 });
             }
@@ -84,7 +86,7 @@ export const getExternalLinks = (feature: any): ExternalLink[] => {
             if (/^GO:\d+$/.test(term)) {
                 links.push({
                     label: 'GO',
-                    url: `https://quickgo.org/term/${term}`,
+                    url: generateExternalDbLink('GO', term),
                     id: term
                 });
             }
@@ -107,10 +109,36 @@ export const getExternalLinks = (feature: any): ExternalLink[] => {
             if (/^PF\d+$/.test(id)) {
                 links.push({
                     label: 'Pfam',
-                    url: `https://pfam.xfam.org/family/${id}`,
+                    url: generateExternalDbLink('PFAM', id),
                     id
                 });
             }
+        });
+    }
+    
+    // Process Dbxref IDs (comma-separated values like "COG:COG0593,UniProt:A7V2E8")
+    if (feature.dbxref) {
+        const dbxrefValues = Array.isArray(feature.dbxref) ? feature.dbxref : [feature.dbxref];
+        dbxrefValues.forEach((dbxref: string) => {
+            // Split by comma and process each value
+            const values = dbxref.split(',').map((v: string) => v.trim());
+            values.forEach((value: string) => {
+                if (/^COG:COG\d+$/.test(value)) {
+                    const cogId = value.replace('COG:', '');
+                    links.push({
+                        label: 'COG',
+                        url: generateExternalDbLink('COG', cogId),
+                        id: value
+                    });
+                } else if (/^UniProt:[A-Z0-9]+$/.test(value)) {
+                    const uniprotId = value.replace('UniProt:', '');
+                    links.push({
+                        label: 'UniProt',
+                        url: generateExternalDbLink('UNIPROT', uniprotId),
+                        id: value
+                    });
+                }
+            });
         });
     }
     
