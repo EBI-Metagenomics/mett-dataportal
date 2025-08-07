@@ -539,11 +539,11 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         setGeneName('');
 
         if (!isProcessingSuggestion && !looksLikeDisplayText) {
-            console.log('Calling debounced functions for input:', newInput);
+            // console.log('Calling debounced functions for input:', newInput);
             
             // Special handling for empty input - trigger HomePage initial load
             if (newInput.trim() === '' && onResultsUpdate) {
-                console.log('GeneSearchForm - Empty input detected, triggering HomePage initial load');
+                // console.log('GeneSearchForm - Empty input detected, triggering HomePage initial load');
                 // Reset to initial state for HomePage
                 setQuery('');
                 setDebouncedSearchQuery('');

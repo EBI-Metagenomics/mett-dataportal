@@ -209,7 +209,7 @@ export class GeneService extends BaseService {
                 if (facetOperators.go_term) params.append('go_term_operator', facetOperators.go_term);
             }
 
-            console.log('Making API call to genes/faceted-search with params:', params.toString());
+            // console.log('Making API call to genes/faceted-search with params:', params.toString());
             const response = await this.getWithRetry<GeneFacetResponse>('genes/faceted-search', params);
             // console.log('API response received:', response);
             return response;
