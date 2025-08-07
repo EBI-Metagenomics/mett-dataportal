@@ -58,17 +58,20 @@ export default class EnhancedGeneFeatureAdapter extends BaseFeatureDataAdapter {
 
             const flattenedFeatures = FeatureProcessor.flattenAttributes(featuresWithProtein);
             
-            // Process external links for all features
-            const featuresWithLinks = flattenedFeatures.map(feature => 
-                ExternalLinkProcessor.processExternalLinks(feature, this.speciesName)
-            );
-            
             if (this.isTypeStrain && this.includeEssentiality) {
                 const essentialityData = await GeneService.fetchEssentialityData(this.apiUrl, region.refName);
-                return FeatureProcessor.mergeAnnotationsWithEssentiality(featuresWithLinks, essentialityData);
+                const featuresWithEssentiality = FeatureProcessor.mergeAnnotationsWithEssentiality(flattenedFeatures, essentialityData);
+                
+                // Process external links AFTER essentiality merging
+                return featuresWithEssentiality.map(feature => 
+                    ExternalLinkProcessor.processExternalLinks(feature, this.speciesName)
+                );
+            } else {
+                // Process external links for non-essentiality features
+                return flattenedFeatures.map(feature => 
+                    ExternalLinkProcessor.processExternalLinks(feature, this.speciesName)
+                );
             }
-
-            return featuresWithLinks;
         })
             .catch((error) => {
                 console.error('Error in getFeatures pipeline:', error);

@@ -266,21 +266,21 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     params: Object.fromEntries(params.entries()),
                 };
 
-                console.log('API details:', apiDetails);
-                console.log('API params:', Object.fromEntries(params.entries()));
+                // console.log('API details:', apiDetails);
+                // console.log('API params:', Object.fromEntries(params.entries()));
                 setApiRequestDetails(apiDetails);
 
-                console.log('Calling GeneService.fetchGeneSearchResultsAdvanced with:', {
-                    query,
-                    page,
-                    pageSize,
-                    sortField,
-                    sortOrder,
-                    genomeFilter,
-                    speciesFilter,
-                    selectedFacetFilters,
-                    facetOperators
-                });
+                // console.log('Calling GeneService.fetchGeneSearchResultsAdvanced with:', {
+                //     query,
+                //     page,
+                //     pageSize,
+                //     sortField,
+                //     sortOrder,
+                //     genomeFilter,
+                //     speciesFilter,
+                //     selectedFacetFilters,
+                //     facetOperators
+                // });
 
                 response = await GeneService.fetchGeneSearchResultsAdvanced(
                     query,
@@ -296,10 +296,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 if (response && response.data && response.pagination) {
                     // If onResultsUpdate callback is provided
                     if (onResultsUpdate) {
-                        console.log('GeneSearchForm - Using onResultsUpdate callback for fetchSearchResults');
+                        // console.log('GeneSearchForm - Using onResultsUpdate callback for fetchSearchResults');
                         onResultsUpdate(response.data, response.pagination);
                     } else {
-                        console.log('GeneSearchForm - Updating internal state for fetchSearchResults');
+                        // console.log('GeneSearchForm - Updating internal state for fetchSearchResults');
                         setResults(response.data);
                         setCurrentPage(response.pagination.page_number);
                         setTotalPages(response.pagination.num_pages);
@@ -374,10 +374,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         if (response && response.data && response.pagination) {
                             // If onResultsUpdate callback is provided
                             if (onResultsUpdate) {
-                                console.log('GeneSearchForm - Using onResultsUpdate callback for debouncedUpdateQuery');
+                                // console.log('GeneSearchForm - Using onResultsUpdate callback for debouncedUpdateQuery');
                                 onResultsUpdate(response.data, response.pagination);
                             } else {
-                                console.log('GeneSearchForm - Updating internal state for debouncedUpdateQuery');
+                                // console.log('GeneSearchForm - Updating internal state for debouncedUpdateQuery');
                                 setResults(response.data);
                                 setCurrentPage(response.pagination.page_number);
                                 setTotalPages(response.pagination.num_pages);
@@ -465,13 +465,13 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
     // Initial load effect
     useEffect(() => {
-        console.log('GeneSearchForm - Initial load effect:', {
-            isGeneViewerPage,
-            filtersAreInitial,
-            selectedGenomes,
-            selectedSpecies,
-            hasLoadedInitialData: hasLoadedInitialData.current
-        });
+        // console.log('GeneSearchForm - Initial load effect:', {
+        //     isGeneViewerPage,
+        //     filtersAreInitial,
+        //     selectedGenomes,
+        //     selectedSpecies,
+        //     hasLoadedInitialData: hasLoadedInitialData.current
+        // });
         
         if (isGeneViewerPage && filtersAreInitial) {
             const genomeId = selectedGenomes[0]?.isolate_name || null;
@@ -496,11 +496,11 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     }, [selectedGenomes, selectedSpecies, isGeneViewerPage, filtersAreInitial]);
 
     useEffect(() => {
-        console.log('GeneSearchForm - User interaction effect triggered:', {
-            filtersAreInitial,
-            facetedFilters,
-            facetOperators
-        });
+        // console.log('GeneSearchForm - User interaction effect triggered:', {
+        //     filtersAreInitial,
+        //     facetedFilters,
+        //     facetOperators
+        // });
         
         if (!filtersAreInitial) {
             // Use refs to get the latest values without creating dependencies
@@ -605,10 +605,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 if (response && response.data && response.pagination) {
                     // If onResultsUpdate callback is provided
                     if (onResultsUpdate) {
-                        console.log('GeneSearchForm - Using onResultsUpdate callback for HomePage');
+                        // console.log('GeneSearchForm - Using onResultsUpdate callback for HomePage');
                         onResultsUpdate(response.data, response.pagination);
                     } else {
-                        console.log('GeneSearchForm - Updating internal state for GeneViewerPage');
+                        // console.log('GeneSearchForm - Updating internal state for GeneViewerPage');
                         setResults(response.data);
                         setCurrentPage(response.pagination.page_number);
                         setTotalPages(response.pagination.num_pages);
@@ -675,10 +675,10 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 if (response && response.data && response.pagination) {
                     // If onResultsUpdate callback is provided
                     if (onResultsUpdate) {
-                        console.log('GeneSearchForm - Using onResultsUpdate callback for HomePage search');
+                        // console.log('GeneSearchForm - Using onResultsUpdate callback for HomePage search');
                         onResultsUpdate(response.data, response.pagination);
                     } else {
-                        console.log('GeneSearchForm - Updating internal state for GeneViewerPage search');
+                        // console.log('GeneSearchForm - Updating internal state for GeneViewerPage search');
                         setResults(response.data);
                         setCurrentPage(response.pagination.page_number);
                         setTotalPages(response.pagination.num_pages);

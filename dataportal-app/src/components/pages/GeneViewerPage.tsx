@@ -159,12 +159,6 @@ const GeneViewerPage: React.FC = () => {
                (initializationError ? initializationError.toString() : null);
     }, [geneViewerData.error, navigation.navigationError, initializationError]);
 
-    // Debug: Log when loading state changes
-    useEffect(() => {
-        if (process.env.NODE_ENV === 'development') {
-            console.log('Loading state changed:', geneViewerData.loading, 'Debounced:', debouncedLoading);
-        }
-    }, [geneViewerData.loading, debouncedLoading]);
 
     return (
         <ErrorBoundary onError={handleError}>

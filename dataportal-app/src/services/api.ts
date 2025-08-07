@@ -10,10 +10,10 @@ export class ApiService {
      */
     static async get<T = any>(endpoint: string, params: ParamsType = {}): Promise<T> {
         try {
-            console.log('ApiService.get called:', { endpoint, params });
+            // console.log('ApiService.get called:', { endpoint, params });
             const response = await apiInstance.get(endpoint, {params});
             const responseData = response.data;
-            console.log('ApiService.get raw response:', responseData);
+            // console.log('ApiService.get raw response:', responseData);
             
             // Handle new standardized response format
             if (ApiResponseHandler.isLegacyResponse(responseData)) {

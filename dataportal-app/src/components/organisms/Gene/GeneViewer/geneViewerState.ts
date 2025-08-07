@@ -66,8 +66,8 @@ const useGeneViewerState = (
                     makeWorkerInstance,
                 });
 
-                console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
-                console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
+                // console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
+                // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
 
                 setViewState(state);
                 setInitializationError(null); // Clear any previous errors

@@ -75,8 +75,8 @@ export class GeneService extends BaseService {
             );
 
             const response = await BaseService.getRawResponse<GeneMeta[]>("/genes/search/advanced", params);
-            console.log('GeneService.fetchGeneSearchResultsAdvanced - URL params:', params.toString());
-            console.log('GeneService.fetchGeneSearchResultsAdvanced response:', response);
+            // console.log('GeneService.fetchGeneSearchResultsAdvanced - URL params:', params.toString());
+            // console.log('GeneService.fetchGeneSearchResultsAdvanced response:', response);
             return response as PaginatedApiResponse<GeneMeta>;
         } catch (error) {
             console.error("Error fetching gene search results:", error);
@@ -180,10 +180,10 @@ export class GeneService extends BaseService {
         facetOperators?: Record<string, 'AND' | 'OR'>
     ): Promise<GeneFacetResponse> {
         try {
-            console.log('GeneService.fetchGeneFacets called with:', {
-                query, speciesAcronym, isolates, essentiality, cogId, cogFuncats,
-                kegg, goTerm, pfam, interpro, hasAmrInfo, facetOperators
-            });
+            // console.log('GeneService.fetchGeneFacets called with:', {
+            //     query, speciesAcronym, isolates, essentiality, cogId, cogFuncats,
+            //     kegg, goTerm, pfam, interpro, hasAmrInfo, facetOperators
+            // });
 
             const params = this.buildParams({
                 query,

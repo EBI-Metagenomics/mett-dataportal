@@ -41,7 +41,7 @@ export class FeatureProcessor {
             const newFeature = new SimpleFeature({
                 ...featureWithoutAttributes,
                 ...attributes,
-                attributes, // Preserve the original attributes for external link processing
+                // Don't add attributes object to avoid duplication
             });
             
             return newFeature;
@@ -69,14 +69,6 @@ export class FeatureProcessor {
                     : 'unknown';
             const EssentialityVisual = getIconForEssentiality(Essentiality);
 
-            const description = [
-                attributes.gene ? `Gene: ${attributes.gene}` : null,
-                `Locus Tag: ${locusTag}`,
-                `Product: ${attributes.product}`,
-                `Alias: ${attributes.alias}`,
-                `Essentiality: ${Essentiality || 'unknown'}`,
-            ].filter(Boolean).join('\n');
-
             // Preserve external links from the original feature
             const externalLinks = feature.get('externalLinks');
 
@@ -86,7 +78,6 @@ export class FeatureProcessor {
                 Essentiality,
                 EssentialityVisual,
                 externalLinks, // Preserve the processed external links
-                // description,
             });
         });
     }

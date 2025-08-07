@@ -17,9 +17,9 @@ export abstract class BaseService {
     retries: number = this.MAX_RETRIES
   ): Promise<T> {
     try {
-      console.log('BaseService.getWithRetry called:', { endpoint, params });
+      // console.log('BaseService.getWithRetry called:', { endpoint, params });
       const result = await ApiService.get<T>(endpoint, params);
-      console.log('BaseService.getWithRetry result:', result);
+      // console.log('BaseService.getWithRetry result:', result);
       return result;
     } catch (error) {
       console.error('BaseService.getWithRetry error:', error);

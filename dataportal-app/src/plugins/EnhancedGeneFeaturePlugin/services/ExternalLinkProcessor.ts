@@ -218,15 +218,18 @@ export class ExternalLinkProcessor {
      * Process external links for a feature and replace attributes with clickable links
      */
     static processExternalLinks(feature: any, speciesName?: string): any {
-        const attributes = feature.get('attributes') || {};
+        // Get attributes from the feature - try multiple approaches
+        let attributes = feature.get('attributes');
+        if (!attributes || Object.keys(attributes).length === 0) {
+            const featureData = feature.toJSON();
+            attributes = featureData;
+        }
         
         // Extract external links from attributes
         const externalLinks = this.extractExternalLinks(attributes, speciesName);
         
         // Replace existing attributes with clickable links
         if (Object.keys(externalLinks).length > 0) {
-            const newAttributes = { ...attributes };
-            
             Object.entries(externalLinks).forEach(([key, linkData]: [string, any]) => {
                 if (Array.isArray(linkData)) {
                     // Handle arrays (like GO terms)
@@ -243,21 +246,19 @@ export class ExternalLinkProcessor {
                         // Replace the original attribute with clickable links
                         const originalKey = this.getOriginalAttributeKey(key);
                         if (originalKey) {
-                            // Always replace, even if the original attribute doesn't exist
-                            newAttributes[originalKey] = linkTexts.join(', ');
+                                                    // Set the attribute directly on the feature (flattened)
+                        feature.set(originalKey, linkTexts.join(', '));
                         }
                     }
                 } else if (linkData && linkData.url && linkData.url !== '#') {
                     // Handle single links - replace the original attribute
                     const originalKey = this.getOriginalAttributeKey(key);
                     if (originalKey) {
-                        // Always replace, even if the original attribute doesn't exist
-                        newAttributes[originalKey] = `<a href="${linkData.url}" target="_blank" rel="noopener noreferrer">${linkData.id}</a>`;
+                        // Set the attribute directly on the feature (flattened)
+                        feature.set(originalKey, `<a href="${linkData.url}" target="_blank" rel="noopener noreferrer">${linkData.id}</a>`);
                     }
                 }
             });
-            
-            feature.set('attributes', newAttributes);
         }
         
         return feature;
