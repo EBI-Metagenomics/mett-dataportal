@@ -16,6 +16,10 @@ Table strain {
 	fasta_file text
 	gff_file text
 	type_strain boolean [ default: false ]
+
+	indexes {
+		(species_id) [ name: 'strain_species_idx' ]
+	}
 }
 
 Table strain_contigs {
@@ -23,19 +27,27 @@ Table strain_contigs {
 	strain_id integer [ not null ]
 	seq_id text [ not null ]
 	length integer [ not null ]
+
+	indexes {
+		(strain_id) [ name: 'strain_contigs_strain_idx' ]
+	}
 }
 
 Table genomic_region {
 	id serial [ pk, unique ]
-	uniprot_id text [ not null ]
 	strain_id integer [ not null ]
 	start_pos integer [ not null ]
 	end_pos integer [ not null ]
-	locus_tag_start text
-	locus_tag_end text
+	strand char(1)
+	region_type text [ not null ]
+	name text
+	description text
+	uniprot_id text
 
 	indexes {
-		(strain_id, start_pos, end_pos) [ name: 'genomic_region_index_0' ]
+		(strain_id, start_pos, end_pos) [ name: 'genomic_region_strain_position_idx' ]
+		(region_type) [ name: 'genomic_region_type_idx' ]
+		(uniprot_id) [ name: 'genomic_region_uniprot_idx' ]
 	}
 }
 
@@ -49,21 +61,23 @@ Table gene {
 	product_source text
 	start_pos integer [ not null ]
 	end_pos integer [ not null ]
+	strand char(1)
 	gene_biotype text
 	strain_id integer [ not null ]
 	genomic_region_id integer
 	protein_id integer
 
 	indexes {
-		(strain_id, start_pos, end_pos) [ name: 'gene_index_1' ]
-		(genomic_region_id) [ name: 'gene_index_2' ]
-		(protein_id) [ name: 'gene_index_3' ]
+		(strain_id, locus_tag) [ name: 'gene_strain_locus_idx' ]
+		(strain_id, start_pos, end_pos) [ name: 'gene_position_idx' ]
+		(protein_id) [ name: 'gene_protein_idx' ]
+		(genomic_region_id) [ name: 'gene_genomic_region_idx' ]
 	}
 }
 
 Table protein {
 	id serial [ pk, unique ]
-	uniprot_id text [ not null ]
+	uniprot_id text [ not null, unique ]
 	protein_sequence text
 	protein_full_name text
 }
@@ -71,17 +85,13 @@ Table protein {
 Table gene_dbxref {
 	id serial [ pk, unique ]
 	gene_id integer [ not null ]
-	uniprot_id text [ not null ]
-	ec_number text[]
-	cog text[]
-	cog_funcats text[]
-	kegg text[]
-	pfam text[]
-	eggnog text[]
-	interpro text[]
+	database_name text [ not null ]
+	accession text [ not null ]
+	description text
 
 	indexes {
-		(gene_id, uniprot_id) [ name: 'gene_dbxref_index_4' unique ]
+		(gene_id, database_name, accession) [ name: 'gene_dbxref_unique_idx', unique ]
+		(database_name) [ name: 'gene_dbxref_database_idx' ]
 	}
 }
 
@@ -93,7 +103,7 @@ Table gene_ontology_terms {
 	ontology_description text
 
 	indexes {
-		(gene_id, ontology_type, ontology_id) [ name: 'gene_ontology_terms_index_5' unique ]
+		(gene_id, ontology_type, ontology_id) [ name: 'gene_ontology_unique_idx', unique ]
 	}
 }
 
@@ -125,7 +135,7 @@ Table SP1_gene_essentiality {
 	essentiality_call text [ not null ]
 
 	indexes {
-		(gene_id, genomic_region_id) [ name: 'SP1_gene_essentiality_index_6' unique ]
+		(gene_id, genomic_region_id) [ name: 'SP1_gene_essentiality_unique_idx', unique ]
 	}
 }
 
@@ -140,7 +150,7 @@ Table SP1_gene_fitness_data {
 	replicate_id text
 
 	indexes {
-		(gene_id, genomic_region_id, experimental_condition_id, contrast) [ name: 'SP1_gene_fitness_data_index_7' ]
+		(gene_id, genomic_region_id, experimental_condition_id, contrast) [ name: 'SP1_gene_fitness_data_search_idx' ]
 	}
 }
 
@@ -155,7 +165,7 @@ Table SP1_gene_fitness_correlation {
 	p_value double
 
 	indexes {
-		(gene1_id, gene2_id, genomic_region_id_1, genomic_region_id_2) [ name: 'SP1_gene_fitness_correlation_index_8' unique ]
+		(gene1_id, gene2_id, genomic_region_id_1, genomic_region_id_2) [ name: 'SP1_gene_fitness_correlation_unique_idx', unique ]
 	}
 }
 
@@ -170,7 +180,7 @@ Table SP3_mutant_growth_rate {
 	doubling_rate_h double [ not null ]
 
 	indexes {
-		(gene_id, genomic_region_id, media_id, replicate) [ name: 'SP3_mutant_growth_rate_index_9' unique ]
+		(gene_id, genomic_region_id, media_id, replicate) [ name: 'SP3_mutant_growth_unique_idx', unique ]
 	}
 }
 
@@ -204,7 +214,7 @@ Table SP5_drug_bacteria_interaction {
 	experimental_condition_id integer
 
 	indexes {
-		(strain_id, drug_id) [ name: 'SP5_drug_bacteria_interaction_index_10' unique ]
+		(strain_id, drug_id) [ name: 'SP5_drug_bacteria_unique_idx', unique ]
 	}
 }
 
@@ -219,12 +229,8 @@ Table SP5_operon_prediction {
 	experimental_condition_id integer
 
 	indexes {
-		(strain_id, gene_a_id, gene_b_id) [ name: 'SP5_operon_prediction_index_11' unique ]
-		(operon_id) [ name: 'SP5_operon_prediction_index_12' ]
-		(gene_a_id) [ name: 'SP5_operon_prediction_index_13' ]
-		(gene_b_id) [ name: 'SP5_operon_prediction_index_14' ]
-		(is_partial) [ name: 'SP5_operon_prediction_index_15' ]
-		(is_intergenomic) [ name: 'SP5_operon_prediction_index_16' ]
+		(strain_id, gene_a_id, gene_b_id) [ name: 'SP5_operon_prediction_unique_idx', unique ]
+		(operon_id) [ name: 'SP5_operon_id_idx' ]
 	}
 }
 
@@ -240,13 +246,15 @@ Table gene_amr {
 	uf_ecnumber text
 
 	indexes {
-		(gene_id, genomic_region_id, drug_id) [ name: 'gene_amr_index_17' unique ]
+		(gene_id, genomic_region_id, drug_id) [ name: 'gene_amr_unique_idx', unique ]
 	}
+
+	Note: 'Why do we need this to be connected to gene and genomic region?'
 }
 
 Table SP2_protein_compound_interaction {
 	id serial [ pk, unique ]
-	uniprot_id text [ not null ]
+	protein_id integer [ not null ]
 	compound_id integer [ not null ]
 	ttp_score double
 	fdr double
@@ -254,14 +262,14 @@ Table SP2_protein_compound_interaction {
 	experimental_condition_id integer
 
 	indexes {
-		(uniprot_id, compound_id) [ name: 'SP2_protein_compound_interaction_index_18' unique ]
+		(protein_id, compound_id) [ name: 'SP2_protein_compound_unique_idx', unique ]
 	}
 }
 
 Table SP2_ppi_interaction {
 	id serial [ pk, unique ]
-	uniprot_id_a text [ not null ]
-	uniprot_id_b text [ not null ]
+	protein_id_a integer [ not null ]
+	protein_id_b integer [ not null ]
 	dl_score float
 	comelt_score float
 	abundance_score float
@@ -272,190 +280,174 @@ Table SP2_ppi_interaction {
 	experimental_condition_id integer
 
 	indexes {
-		(uniprot_id_a, uniprot_id_b) [ name: 'SP2_ppi_interaction_index_19' unique ]
+		(protein_id_a, protein_id_b) [ name: 'SP2_ppi_unique_idx', unique ]
 	}
 }
 
-Ref fk_species_id_strain {
-	species.id < strain.species_id [ delete: no action, update: no action ]
+Ref fk_strain_species_id_species {
+	strain.species_id > species.id [ delete: no action, update: no action ]
 }
 
-Ref fk_strain_id_strain_contigs {
-	strain.id < strain_contigs.strain_id [ delete: no action, update: no action ]
+Ref fk_strain_contigs_strain_id_strain {
+	strain_contigs.strain_id > strain.id [ delete: no action, update: no action ]
 }
 
-Ref fk_strain_id_genomic_region {
-	strain.id < genomic_region.strain_id [ delete: no action, update: no action ]
+Ref fk_genomic_region_strain_id_strain {
+	genomic_region.strain_id > strain.id [ delete: no action, update: no action ]
 }
 
-Ref fk_strain_id_gene {
-	strain.id < gene.strain_id [ delete: no action, update: no action ]
+Ref fk_gene_strain_id_strain {
+	gene.strain_id > strain.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_id_gene {
-	genomic_region.id < gene.genomic_region_id [ delete: no action, update: no action ]
+Ref fk_gene_genomic_region_id_genomic_region {
+	gene.genomic_region_id > genomic_region.id [ delete: no action, update: no action ]
 }
 
-Ref fk_protein_id_gene {
-	protein.id < gene.protein_id [ delete: no action, update: no action ]
+Ref fk_gene_protein_id_protein {
+	gene.protein_id > protein.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_uniprot_id_protein {
-	genomic_region.uniprot_id < protein.uniprot_id [ delete: no action, update: no action ]
+Ref fk_gene_dbxref_gene_id_gene {
+	gene_dbxref.gene_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_gene_dbxref {
-	gene.id < gene_dbxref.gene_id [ delete: no action, update: no action ]
+Ref fk_gene_ontology_terms_gene_id_gene {
+	gene_ontology_terms.gene_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_uniprot_id_gene_dbxref {
-	genomic_region.uniprot_id < gene_dbxref.uniprot_id [ delete: no action, update: no action ]
+Ref fk_experimental_condition_media_id_media {
+	experimental_condition.media_id > media.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_gene_ontology_terms {
-	gene.id < gene_ontology_terms.gene_id [ delete: no action, update: no action ]
+Ref fk_drug_compound_id_compound {
+	drug.compound_id > compound.id [ delete: no action, update: no action ]
 }
 
-Ref fk_media_id_experimental_condition {
-	media.id < experimental_condition.media_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_essentiality_gene_id_gene {
+	SP1_gene_essentiality.gene_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_SP1_gene_essentiality {
-	gene.id < SP1_gene_essentiality.gene_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_essentiality_genomic_region_id_genomic_region {
+	SP1_gene_essentiality.genomic_region_id > genomic_region.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_id_SP1_gene_essentiality {
-	genomic_region.id < SP1_gene_essentiality.genomic_region_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_essentiality_experimental_condition_id_experimental_condition {
+	SP1_gene_essentiality.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_experimental_condition_id_SP1_gene_essentiality {
-	experimental_condition.id < SP1_gene_essentiality.experimental_condition_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_fitness_data_gene_id_gene {
+	SP1_gene_fitness_data.gene_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_SP1_gene_fitness_data {
-	gene.id < SP1_gene_fitness_data.gene_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_fitness_data_genomic_region_id_genomic_region {
+	SP1_gene_fitness_data.genomic_region_id > genomic_region.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_id_SP1_gene_fitness_data {
-	genomic_region.id < SP1_gene_fitness_data.genomic_region_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_fitness_data_experimental_condition_id_experimental_condition {
+	SP1_gene_fitness_data.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_experimental_condition_id_SP1_gene_fitness_data {
-	experimental_condition.id < SP1_gene_fitness_data.experimental_condition_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_fitness_correlation_gene1_id_gene {
+	SP1_gene_fitness_correlation.gene1_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_SP1_gene_fitness_correlation {
-	gene.id < SP1_gene_fitness_correlation.gene1_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_fitness_correlation_gene2_id_gene {
+	SP1_gene_fitness_correlation.gene2_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_SP1_gene_fitness_correlation {
-	gene.id < SP1_gene_fitness_correlation.gene2_id [ delete: no action, update: no action ]
+Ref fk_SP1_gene_fitness_correlation_genomic_region_id_1_genomic_region {
+	SP1_gene_fitness_correlation.genomic_region_id_1 > genomic_region.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_id_SP1_gene_fitness_correlation {
-	genomic_region.id < SP1_gene_fitness_correlation.genomic_region_id_1 [ delete: no action, update: no action ]
+Ref fk_SP1_gene_fitness_correlation_genomic_region_id_2_genomic_region {
+	SP1_gene_fitness_correlation.genomic_region_id_2 > genomic_region.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_id_SP1_gene_fitness_correlation {
-	genomic_region.id < SP1_gene_fitness_correlation.genomic_region_id_2 [ delete: no action, update: no action ]
+Ref fk_SP1_gene_fitness_correlation_experimental_condition_id_experimental_condition {
+	SP1_gene_fitness_correlation.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_experimental_condition_id_SP1_gene_fitness_correlation {
-	experimental_condition.id < SP1_gene_fitness_correlation.experimental_condition_id [ delete: no action, update: no action ]
+Ref fk_SP2_protein_compound_interaction_protein_id_protein {
+	SP2_protein_compound_interaction.protein_id > protein.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_SP3_mutant_growth_rate {
-	gene.id < SP3_mutant_growth_rate.gene_id [ delete: no action, update: no action ]
+Ref fk_SP2_protein_compound_interaction_compound_id_compound {
+	SP2_protein_compound_interaction.compound_id > compound.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_id_SP3_mutant_growth_rate {
-	genomic_region.id < SP3_mutant_growth_rate.genomic_region_id [ delete: no action, update: no action ]
+Ref fk_SP2_protein_compound_interaction_experimental_condition_id_experimental_condition {
+	SP2_protein_compound_interaction.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_media_id_SP3_mutant_growth_rate {
-	media.id < SP3_mutant_growth_rate.media_id [ delete: no action, update: no action ]
+Ref fk_SP2_ppi_interaction_protein_id_a_protein {
+	SP2_ppi_interaction.protein_id_a > protein.id [ delete: no action, update: no action ]
 }
 
-Ref fk_experimental_condition_id_SP3_mutant_growth_rate {
-	experimental_condition.id < SP3_mutant_growth_rate.experimental_condition_id [ delete: no action, update: no action ]
+Ref fk_SP2_ppi_interaction_protein_id_b_protein {
+	SP2_ppi_interaction.protein_id_b > protein.id [ delete: no action, update: no action ]
 }
 
-Ref fk_compound_id_drug {
-	compound.id < drug.compound_id [ delete: no action, update: no action ]
+Ref fk_SP2_ppi_interaction_experimental_condition_id_experimental_condition {
+	SP2_ppi_interaction.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_strain_id_SP5_drug_bacteria_interaction {
-	strain.id < SP5_drug_bacteria_interaction.strain_id [ delete: no action, update: no action ]
+Ref fk_SP3_mutant_growth_rate_gene_id_gene {
+	SP3_mutant_growth_rate.gene_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_drug_id_SP5_drug_bacteria_interaction {
-	drug.id < SP5_drug_bacteria_interaction.drug_id [ delete: no action, update: no action ]
+Ref fk_SP3_mutant_growth_rate_genomic_region_id_genomic_region {
+	SP3_mutant_growth_rate.genomic_region_id > genomic_region.id [ delete: no action, update: no action ]
 }
 
-Ref fk_compound_id_SP5_drug_bacteria_interaction {
-	compound.id < SP5_drug_bacteria_interaction.compound_id [ delete: no action, update: no action ]
+Ref fk_SP3_mutant_growth_rate_media_id_media {
+	SP3_mutant_growth_rate.media_id > media.id [ delete: no action, update: no action ]
 }
 
-Ref fk_experimental_condition_id_SP5_drug_bacteria_interaction {
-	experimental_condition.id < SP5_drug_bacteria_interaction.experimental_condition_id [ delete: no action, update: no action ]
+Ref fk_SP3_mutant_growth_rate_experimental_condition_id_experimental_condition {
+	SP3_mutant_growth_rate.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_strain_id_SP5_operon_prediction {
-	strain.id < SP5_operon_prediction.strain_id [ delete: no action, update: no action ]
+Ref fk_SP5_drug_bacteria_interaction_strain_id_strain {
+	SP5_drug_bacteria_interaction.strain_id > strain.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_SP5_operon_prediction {
-	gene.id < SP5_operon_prediction.gene_a_id [ delete: no action, update: no action ]
+Ref fk_SP5_drug_bacteria_interaction_drug_id_drug {
+	SP5_drug_bacteria_interaction.drug_id > drug.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_SP5_operon_prediction {
-	gene.id < SP5_operon_prediction.gene_b_id [ delete: no action, update: no action ]
+Ref fk_SP5_drug_bacteria_interaction_compound_id_compound {
+	SP5_drug_bacteria_interaction.compound_id > compound.id [ delete: no action, update: no action ]
 }
 
-Ref fk_experimental_condition_id_SP5_operon_prediction {
-	experimental_condition.id < SP5_operon_prediction.experimental_condition_id [ delete: no action, update: no action ]
+Ref fk_SP5_drug_bacteria_interaction_experimental_condition_id_experimental_condition {
+	SP5_drug_bacteria_interaction.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_id_gene_amr {
-	gene.id < gene_amr.gene_id [ delete: no action, update: no action ]
+Ref fk_SP5_operon_prediction_strain_id_strain {
+	SP5_operon_prediction.strain_id > strain.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_id_gene_amr {
-	genomic_region.id < gene_amr.genomic_region_id [ delete: no action, update: no action ]
+Ref fk_SP5_operon_prediction_gene_a_id_gene {
+	SP5_operon_prediction.gene_a_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_drug_id_gene_amr {
-	drug.id < gene_amr.drug_id [ delete: no action, update: no action ]
+Ref fk_SP5_operon_prediction_gene_b_id_gene {
+	SP5_operon_prediction.gene_b_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_uniprot_id_SP2_protein_compound_interaction {
-	genomic_region.uniprot_id < SP2_protein_compound_interaction.uniprot_id [ delete: no action, update: no action ]
+Ref fk_SP5_operon_prediction_experimental_condition_id_experimental_condition {
+	SP5_operon_prediction.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_compound_id_SP2_protein_compound_interaction {
-	compound.id < SP2_protein_compound_interaction.compound_id [ delete: no action, update: no action ]
+Ref fk_gene_amr_gene_id_gene {
+	gene_amr.gene_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_experimental_condition_id_SP2_protein_compound_interaction {
-	experimental_condition.id < SP2_protein_compound_interaction.experimental_condition_id [ delete: no action, update: no action ]
+Ref fk_gene_amr_genomic_region_id_genomic_region {
+	gene_amr.genomic_region_id > genomic_region.id [ delete: no action, update: no action ]
 }
 
-Ref fk_genomic_region_uniprot_id_SP2_ppi_interaction {
-	genomic_region.uniprot_id < SP2_ppi_interaction.uniprot_id_a [ delete: no action, update: no action ]
-}
-
-Ref fk_genomic_region_uniprot_id_SP2_ppi_interaction {
-	genomic_region.uniprot_id < SP2_ppi_interaction.uniprot_id_b [ delete: no action, update: no action ]
-}
-
-Ref fk_experimental_condition_id_SP2_ppi_interaction {
-	experimental_condition.id < SP2_ppi_interaction.experimental_condition_id [ delete: no action, update: no action ]
-}
-
-Ref fk_gene_start_pos_gene {
-	gene.start_pos < gene.end_pos [ delete: no action, update: no action ]
-}
-
-Ref fk_genomic_region_start_pos_genomic_region {
-	genomic_region.start_pos < genomic_region.end_pos [ delete: no action, update: no action ]
+Ref fk_gene_amr_drug_id_drug {
+	gene_amr.drug_id > drug.id [ delete: no action, update: no action ]
 }
