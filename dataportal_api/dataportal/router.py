@@ -17,9 +17,9 @@ from django.conf import settings
 
 try:
     from dataportal.api.api_natural_query import nl_query_router as natural_query_router
+
     NATURAL_QUERY_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Natural query router not available: {e}")
+except ImportError:
     NATURAL_QUERY_AVAILABLE = False
     natural_query_router = None
 from dataportal.schema.response_schemas import (
@@ -220,4 +220,6 @@ api.add_exception_handler(Exception, custom_error_handler)
 if getattr(settings, "ENABLE_NATURAL_QUERY", False) and NATURAL_QUERY_AVAILABLE:
     api.add_router("/query", natural_query_router)
 elif getattr(settings, "ENABLE_NATURAL_QUERY", False) and not NATURAL_QUERY_AVAILABLE:
-    logger.warning("Natural query feature flag is enabled but router is not available due to missing dependencies")
+    logger.warning(
+        "Natural query feature flag is enabled but router is not available due to missing dependencies"
+    )

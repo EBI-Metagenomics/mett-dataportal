@@ -368,6 +368,7 @@ class GapPenaltiesSchema(Schema):
         default=DEFAULT_MX, description="Substitution matrix"
     )
 
+
 class ResultQuerySchema(Schema):
     page: int = Field(default=1, gt=0)
     page_size: int = Field(default=20, gt=0)

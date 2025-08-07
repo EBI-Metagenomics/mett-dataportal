@@ -1,20 +1,8 @@
-#!/usr/bin/env python3
-"""
-Test script for the automated natural language query service.
-
-This script demonstrates how the enhanced NL query service can automatically:
-1. Interpret natural language queries
-2. Map them to appropriate API endpoints
-3. Execute the queries and return results
-
-Usage:
-    python test_nl_query.py
-"""
-
 import asyncio
 import os
 import sys
 import django
+from dataportal.services.nl_query_service import NaturalLanguageQueryService
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -22,8 +10,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Setup Django environment
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dataportal.settings")
 django.setup()
-
-from dataportal.services.nl_query_service import NaturalLanguageQueryService
 
 
 async def test_natural_language_queries():

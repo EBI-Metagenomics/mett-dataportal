@@ -49,7 +49,6 @@ class TestServiceFactory:
         assert service1 is service2
         assert isinstance(service1, AppHealthService)
 
-
     def test_different_services_are_different_instances(self):
         """Test that different services are different instances."""
         species_service = ServiceFactory.get_species_service()

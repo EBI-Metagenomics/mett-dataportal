@@ -1,17 +1,23 @@
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 try:
     from openai import OpenAI
+
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
     OpenAI = None
 
 from dataportal.schema.nl_schemas import METT_GENE_QUERY_SCHEMA
-from dataportal.schema.gene_schemas import NaturalLanguageGeneQuery, GenePaginationSchema
+from dataportal.schema.gene_schemas import (
+    NaturalLanguageGeneQuery,
+)
 from dataportal.services.gene_service import GeneService
-from dataportal.schema.gene_schemas import GeneAdvancedSearchQuerySchema, GeneSearchQuerySchema
+from dataportal.schema.gene_schemas import (
+    GeneAdvancedSearchQuerySchema,
+    GeneSearchQuerySchema,
+)
 
 SYSTEM_PROMPT = """
 You are an intelligent bioinformatics data portal assistant that converts natural language queries into structured API requests.
@@ -50,74 +56,78 @@ Output:
 }
 """
 
+
 class NaturalLanguageQueryService:
     def __init__(self):
         self.gene_service = GeneService()
-    
+
     def _get_openai_client(self):
         """Get OpenAI client instance. This method can be overridden for testing."""
         if not OPENAI_AVAILABLE:
-            raise ImportError("OpenAI module is not available. Please install it with: pip install openai")
+            raise ImportError(
+                "OpenAI module is not available. Please install it with: pip install openai"
+            )
         return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
+
     async def interpret_and_execute_query(self, user_query: str) -> Dict[str, Any]:
         """
         Interpret natural language query and automatically execute the appropriate API request.
-        
+
         Args:
             user_query: Natural language query from user
-            
+
         Returns:
             Dictionary containing query results and metadata
         """
         try:
             # Step 1: Interpret the natural language query
             interpreted_query = await self._interpret_query(user_query)
-            
+
             if "error" in interpreted_query:
                 return interpreted_query
-            
+
             # Step 2: Execute the API call directly using the interpreted query
             results = await self._execute_api_call(interpreted_query)
-            
+
             return {
                 "original_query": user_query,
                 "interpreted_query": interpreted_query,
                 "results": results,
-                "success": True
+                "success": True,
             }
-            
+
         except Exception as e:
             return {
                 "error": f"Failed to process query: {str(e)}",
                 "original_query": user_query,
-                "success": False
+                "success": False,
             }
-    
+
     async def _interpret_query(self, user_query: str) -> Dict[str, Any]:
         """Interpret natural language query using OpenAI."""
         if not OPENAI_AVAILABLE:
-            return {"error": "OpenAI module is not available. Natural language query feature is disabled."}
-        
+            return {
+                "error": "OpenAI module is not available. Natural language query feature is disabled."
+            }
+
         try:
             client = self._get_openai_client()
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_query}
+                    {"role": "user", "content": user_query},
                 ],
-                tools=[{
-                    "type": "function",
-                    "function": METT_GENE_QUERY_SCHEMA
-                }],
+                tools=[{"type": "function", "function": METT_GENE_QUERY_SCHEMA}],
                 tool_choice="auto",
-                temperature=0
+                temperature=0,
             )
 
             tool_calls = response.choices[0].message.tool_calls
             if not tool_calls:
-                return {"error": "No tool call returned by GPT. Check prompt or query clarity."}
+                return {
+                    "error": "No tool call returned by GPT. Check prompt or query clarity."
+                }
 
             arguments = tool_calls[0].function.arguments
             parsed_query = NaturalLanguageGeneQuery.model_validate_json(arguments)
@@ -125,21 +135,23 @@ class NaturalLanguageQueryService:
 
         except Exception as e:
             return {"error": str(e)}
-    
-    async def _execute_api_call(self, interpreted_query: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _execute_api_call(
+        self, interpreted_query: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Execute the API call based on the interpreted query parameters.
-        
+
         Args:
             interpreted_query: Dictionary containing the interpreted query parameters
-            
+
         Returns:
             API response results
         """
         try:
             # Determine the best API method based on the query complexity
             method_name = self._determine_api_method(interpreted_query)
-            
+
             if method_name == "get_genes_by_multiple_genomes_and_string":
                 # Create advanced search query schema
                 # Build filter string from individual parameters
@@ -147,12 +159,16 @@ class NaturalLanguageQueryService:
                 if interpreted_query.get("filter"):
                     filter_parts.append(interpreted_query.get("filter"))
                 if interpreted_query.get("essentiality"):
-                    filter_parts.append(f"essentiality:{interpreted_query.get('essentiality')}")
+                    filter_parts.append(
+                        f"essentiality:{interpreted_query.get('essentiality')}"
+                    )
                 if interpreted_query.get("has_amr_info") is not None:
-                    filter_parts.append(f"has_amr_info:{str(interpreted_query.get('has_amr_info')).lower()}")
-                
+                    filter_parts.append(
+                        f"has_amr_info:{str(interpreted_query.get('has_amr_info')).lower()}"
+                    )
+
                 filter_string = ";".join(filter_parts) if filter_parts else None
-                
+
                 advanced_params = GeneAdvancedSearchQuerySchema(
                     isolates=interpreted_query.get("isolates", ""),
                     species_acronym=interpreted_query.get("species_acronym"),
@@ -162,15 +178,25 @@ class NaturalLanguageQueryService:
                     page=interpreted_query.get("page", 1),
                     per_page=interpreted_query.get("per_page", 50),
                     sort_field=interpreted_query.get("sort_field"),
-                    sort_order=interpreted_query.get("sort_order", "asc")
+                    sort_order=interpreted_query.get("sort_order", "asc"),
                 )
-                result = await self.gene_service.get_genes_by_multiple_genomes_and_string(advanced_params)
+                result = (
+                    await self.gene_service.get_genes_by_multiple_genomes_and_string(
+                        advanced_params
+                    )
+                )
                 return {
                     "type": "paginated_results",
-                    "data": result.model_dump() if hasattr(result, 'model_dump') else result,
-                    "total_results": result.total_results if hasattr(result, 'total_results') else len(result.results) if hasattr(result, 'results') else 0
+                    "data": (
+                        result.model_dump() if hasattr(result, "model_dump") else result
+                    ),
+                    "total_results": (
+                        result.total_results
+                        if hasattr(result, "total_results")
+                        else len(result.results) if hasattr(result, "results") else 0
+                    ),
                 }
-            
+
             else:  # Default to search_genes
                 # Create basic search query schema
                 search_params = GeneSearchQuerySchema(
@@ -178,37 +204,41 @@ class NaturalLanguageQueryService:
                     page=interpreted_query.get("page", 1),
                     per_page=interpreted_query.get("per_page", 50),
                     sort_field=interpreted_query.get("sort_field"),
-                    sort_order=interpreted_query.get("sort_order", "asc")
+                    sort_order=interpreted_query.get("sort_order", "asc"),
                 )
                 result = await self.gene_service.search_genes(search_params)
                 return {
                     "type": "paginated_results",
-                    "data": result.model_dump() if hasattr(result, 'model_dump') else result,
-                    "total_results": result.total_results if hasattr(result, 'total_results') else len(result.results) if hasattr(result, 'results') else 0
+                    "data": (
+                        result.model_dump() if hasattr(result, "model_dump") else result
+                    ),
+                    "total_results": (
+                        result.total_results
+                        if hasattr(result, "total_results")
+                        else len(result.results) if hasattr(result, "results") else 0
+                    ),
                 }
-                
+
         except Exception as e:
-            return {
-                "error": f"API execution failed: {str(e)}",
-                "type": "error"
-            }
-    
+            return {"error": f"API execution failed: {str(e)}", "type": "error"}
+
     def _determine_api_method(self, interpreted_query: Dict[str, Any]) -> str:
         """
         Determine the best API method based on the interpreted query parameters.
-        
+
         Args:
             interpreted_query: Dictionary containing the interpreted query parameters
-            
+
         Returns:
             String indicating the API method to use
         """
         has_species = bool(interpreted_query.get("species_acronym"))
-        
+
         if has_species:
             return "get_genes_by_multiple_genomes_and_string"
         else:
             return "search_genes"
+
 
 # Backward compatibility function
 async def interpret_natural_language_query(user_query: str) -> dict[str, Any]:
