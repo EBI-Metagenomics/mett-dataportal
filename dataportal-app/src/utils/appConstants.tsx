@@ -11,10 +11,13 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export const API_GENOMES_BY_ISOLATE_NAMES = `${API_BASE_URL}/genomes/by-isolate-names`;
 
 export const EXTERNAL_DB_URLS = {
-    PFAM: import.meta.env.VITE_PFAM_URL || 'https://www.ebi.ac.uk/interpro/entry/pfam/',
-    INTERPRO: import.meta.env.VITE_INTERPRO_URL || 'https://www.ebi.ac.uk/interpro/entry/',
-    KEGG: import.meta.env.VITE_KEGG_URL || 'https://www.genome.jp/entry/',
-    COG: import.meta.env.VITE_COG_URL || 'https://www.ncbi.nlm.nih.gov/research/cog/cog/',
+    PFAM: import.meta.env.VITE_PFAM_URL || 'https://pfam.xfam.org/family/',
+    INTERPRO: import.meta.env.VITE_INTERPRO_URL || 'https://www.ebi.ac.uk/interpro/protein/entry/',
+    KEGG: import.meta.env.VITE_KEGG_URL || 'https://www.kegg.jp/kegg-bin/show_pathway?',
+    COG: import.meta.env.VITE_COG_URL || 'https://www.ncbi.nlm.nih.gov/research/cog/protein/',
+    COG_CATEGORY: import.meta.env.VITE_COG_CATEGORY_URL || 'https://www.ncbi.nlm.nih.gov/research/cog/cogcategory/',
+    UNIPROT: import.meta.env.VITE_UNIPROT_URL || 'http://platform.mgnify.org/shiny-apps/app/bacinteractome/',
+    GO: import.meta.env.VITE_GO_URL || 'https://quickgo.org/term/',
 };
 
 export const generateExternalDbLink = (dbType: keyof typeof EXTERNAL_DB_URLS, id: string): string => {
@@ -32,6 +35,15 @@ export const generateExternalDbLink = (dbType: keyof typeof EXTERNAL_DB_URLS, id
             return `${baseUrl}${keggId}`;
         }
         case 'COG': {
+            return `${baseUrl}${id}`;
+        }
+        case 'COG_CATEGORY': {
+            return `${baseUrl}${id}`;
+        }
+        case 'UNIPROT': {
+            return `${baseUrl}${id}`;
+        }
+        case 'GO': {
             return `${baseUrl}${id}`;
         }
         default:
