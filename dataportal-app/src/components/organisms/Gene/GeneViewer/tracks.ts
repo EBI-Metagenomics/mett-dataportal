@@ -12,13 +12,14 @@ const getTracks
             assemblyNames: [genomeMeta.assembly_name],
             category: ['Annotations'],
             adapter: {
-                type: 'EssentialityAdapter',
+                type: 'EnhancedGeneFeatureAdapter',
                 gffGzLocation: {
                     uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz`,
                 },
                 apiUrl: apiUrl,
                 isTypeStrain: genomeMeta.type_strain,
                 includeEssentiality: includeEssentiality,
+                speciesName: genomeMeta.species_scientific_name || genomeMeta.species_acronym,
                 index: {
                     location: {
                         uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz.tbi`,
@@ -70,7 +71,7 @@ const getTracks
                       (get(feature, 'product') && 'Product: ' + get(feature, 'product') + '<br/>' || '') +
                       (get(feature, 'Alias') && 'Alias: ' + get(feature, 'Alias') + '<br/>'  || '') +
                       (get(feature, 'Essentiality') && 'Essentiality: ' + get(feature, 'Essentiality') + '<br/>' || '')
-                    `,
+                    `
                 }
             ],
         });

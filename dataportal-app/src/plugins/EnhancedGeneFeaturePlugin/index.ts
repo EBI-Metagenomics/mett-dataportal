@@ -4,8 +4,8 @@ import AdapterType from '@jbrowse/core/pluggableElementTypes/AdapterType';
 import configSchema from "./configSchema";
 import {getColorForEssentiality} from '../../utils/appConstants';
 
-export default class CustomEssentialityPlugin extends Plugin {
-    name = 'CustomEssentialityPlugin';
+export default class EnhancedGeneFeaturePlugin extends Plugin {
+    name = 'EnhancedGeneFeaturePlugin';
 
     install(pluginManager: PluginManager) {
 
@@ -16,11 +16,11 @@ export default class CustomEssentialityPlugin extends Plugin {
         pluginManager.addAdapterType(
             () =>
                 new AdapterType({
-                    name: 'EssentialityAdapter',
-                    displayName: 'Essentiality Adapter',
+                    name: 'EnhancedGeneFeatureAdapter',
+                    displayName: 'Enhanced Gene Feature Adapter',
                     configSchema,
                     getAdapterClass: () =>
-                        import('./EssentialityAdapter').then(r => r.default),
+                        import('./EnhancedGeneFeatureAdapter').then(r => r.default),
                 }),
         );
     }

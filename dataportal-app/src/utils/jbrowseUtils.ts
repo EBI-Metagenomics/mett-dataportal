@@ -25,7 +25,7 @@ export const getFeatureByCoords = async (
 
   const track = view.tracks.find(
     (t: BaseTrackModel) =>
-      (t as any).adapter?.constructor?.name === 'EssentialityAdapter'
+              (t as any).adapter?.constructor?.name === 'EnhancedGeneFeatureAdapter'
   ) as BaseTrackModel & { adapter?: FeatureAdapter }
 
   if (!track?.adapter?.getFeatures) return null

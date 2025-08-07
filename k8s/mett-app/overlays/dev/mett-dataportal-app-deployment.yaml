@@ -70,11 +70,6 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-dev
                   key: VITE_COG_CATEGORY_URL
-            - name: VITE_UNIPROT_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: mett-app-config-dev
-                  key: VITE_UNIPROT_URL
             - name: VITE_GO_URL
               valueFrom:
                 configMapKeyRef:

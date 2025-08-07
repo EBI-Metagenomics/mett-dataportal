@@ -3,8 +3,8 @@ import {createViewState} from '@jbrowse/react-app2';
 import makeWorkerInstance from '@jbrowse/react-app2/esm/makeWorkerInstance';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
-import CustomEssentialityPlugin from "../../../../plugins/CustomEssentialityPlugin";
-import FeaturePanelEnhancerPlugin from "../../../../plugins/FeaturePanelEnhancerPlugin";
+import EnhancedGeneFeaturePlugin from "../../../../plugins/EnhancedGeneFeaturePlugin";
+
 
 interface Track {
     type: string;
@@ -48,7 +48,7 @@ const useGeneViewerState = (
                 const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
                     .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
 
-                const plugins: PluginConstructor[] = [CustomEssentialityPlugin, FeaturePanelEnhancerPlugin, ...corePluginConstructors];
+                const plugins: PluginConstructor[] = [EnhancedGeneFeaturePlugin, ...corePluginConstructors];
 
                 const config = {
                     assemblies: [assembly],

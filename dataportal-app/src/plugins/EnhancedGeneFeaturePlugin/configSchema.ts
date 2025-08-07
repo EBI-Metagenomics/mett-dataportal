@@ -4,7 +4,7 @@ import {types} from "mobx-state-tree";
 function x() {
 }
 
-const essentialityAdapterConfigSchema = ConfigurationSchema('EssentialityAdapter', {
+const enhancedGeneFeatureAdapterConfigSchema = ConfigurationSchema('EnhancedGeneFeatureAdapter', {
         /**
          * #slot
          */
@@ -23,6 +23,10 @@ const essentialityAdapterConfigSchema = ConfigurationSchema('EssentialityAdapter
         includeEssentiality: {
             type: 'boolean',
             defaultValue: true,
+        },
+        speciesName: {
+            type: 'string',
+            defaultValue: '',
         },
 
         index: ConfigurationSchema('Gff3TabixIndex', {
@@ -60,4 +64,4 @@ const essentialityAdapterConfigSchema = ConfigurationSchema('EssentialityAdapter
     {explicitlyTyped: true},
 )
 
-export default essentialityAdapterConfigSchema;
+export default enhancedGeneFeatureAdapterConfigSchema;
