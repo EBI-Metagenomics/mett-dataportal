@@ -7,6 +7,7 @@ import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearch
 import {useGeneViewerData, useGeneViewerNavigation, useGeneViewerSearch} from '../../hooks';
 import {useGeneViewerUrlSync} from '../../hooks/useGeneViewerUrlSync';
 import {useDebouncedLoading} from '../../hooks/useDebouncedLoading';
+import {useFeaturePanelEnhancer} from '../../hooks/useFeaturePanelEnhancer';
 import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils/geneViewerConfig';
 import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../organisms/Gene/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
@@ -41,6 +42,8 @@ const GeneViewerPage: React.FC = () => {
         minLoadingTime: 500
     });
 
+    const { enhanceFeaturePanel, triggerOnFeatureClick } = useFeaturePanelEnhancer();
+
     // Call the hook directly - it's already optimized internally
     const geneViewerConfig = useGeneViewerConfig(
         geneViewerData.genomeMeta,
@@ -66,6 +69,15 @@ const GeneViewerPage: React.FC = () => {
         geneViewerData.genomeMeta?.isolate_name || '',
         jbrowseInitKey
     );
+
+    // Set up feature click detection
+    useEffect(() => {
+        if (viewState) {
+            console.log('🔧 Setting up feature click detection');
+            const cleanup = triggerOnFeatureClick();
+            return cleanup;
+        }
+    }, [viewState, triggerOnFeatureClick]);
 
     const handleTrackRefresh = useCallback(() => {
         if (!viewState) return;
@@ -222,6 +234,8 @@ const GeneViewerPage: React.FC = () => {
                             />
                         </section>
                     </div>
+
+
                 </section>
             </div>
         </ErrorBoundary>

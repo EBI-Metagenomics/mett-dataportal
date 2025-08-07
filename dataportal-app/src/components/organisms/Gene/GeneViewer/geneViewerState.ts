@@ -4,6 +4,7 @@ import makeWorkerInstance from '@jbrowse/react-app2/esm/makeWorkerInstance';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
 import CustomEssentialityPlugin from "../../../../plugins/CustomEssentialityPlugin";
+import FeaturePanelEnhancerPlugin from "../../../../plugins/FeaturePanelEnhancerPlugin";
 
 interface Track {
     type: string;
@@ -47,7 +48,7 @@ const useGeneViewerState = (
                 const corePluginConstructors = (Object.values(CorePlugins) as unknown[])
                     .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
 
-                const plugins: PluginConstructor[] = [CustomEssentialityPlugin, ...corePluginConstructors];
+                const plugins: PluginConstructor[] = [CustomEssentialityPlugin, FeaturePanelEnhancerPlugin, ...corePluginConstructors];
 
                 const config = {
                     assemblies: [assembly],
@@ -65,8 +66,8 @@ const useGeneViewerState = (
                     makeWorkerInstance,
                 });
 
-                // console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
-                // console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
+                console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
+                console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
 
                 setViewState(state);
                 setInitializationError(null); // Clear any previous errors
