@@ -1,0 +1,248 @@
+// EMBL-EBI Visual Framework theme overrides
+// This file contains specific customizations for the VF framework
+
+// Import mixins explicitly since they're not auto-imported
+@use '../mixins' as *;
+
+// VF Framework specific overrides
+.vf-content {
+  // Ensure consistent typography
+  h1, h2, h3, h4, h5, h6 {
+    font-family: $font-family-primary;
+    color: #1a1c1a;
+  }
+  
+  p, li, td, th {
+    font-family: $font-family-primary;
+  }
+  
+  code, pre {
+    font-family: $font-family-mono;
+  }
+}
+
+// VF Hero section customizations
+.vf-hero {
+  &--search {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  
+  &__heading {
+    @include heading-1;
+    margin-bottom: 16px;
+  }
+  
+  &__subheading {
+    @include body-text;
+    margin-bottom: 24px;
+  }
+}
+
+// VF Navigation customizations
+.vf-navigation {
+  &__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  &__item {
+    margin-bottom: 8px;
+  }
+  
+  &__link {
+    color: #3b6fb6;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+      color: #193f90;
+    }
+  }
+}
+
+// VF Footer customizations
+.vf-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  padding: 24px 0;
+  
+  &__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  
+  &__notice {
+    @include small-text;
+    margin-bottom: 16px;
+  }
+  
+  &__link {
+    color: #3b6fb6;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// VF Grid system enhancements
+.vf-grid {
+  display: grid;
+  gap: 16px;
+  
+  &--2-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  &--3-col {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  &--4-col {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  @include mobile {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+// VF Stack system enhancements
+.vf-stack {
+  display: flex;
+  flex-direction: column;
+  
+  &--400 {
+    gap: 16px;
+  }
+  
+  &--600 {
+    gap: 24px;
+  }
+  
+  &--800 {
+    gap: 32px;
+  }
+}
+
+// VF Box customizations
+.vf-box {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 16px;
+  
+  &--highlight {
+    background-color: #f8f9fa;
+    border-color: #3b6fb6;
+  }
+  
+  &--error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+  
+  &--success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+  }
+}
+
+// VF Divider customizations
+.vf-divider {
+  border: none;
+  height: 1px;
+  background-color: #dee2e6;
+  margin: 24px 0;
+}
+
+// VF Badge customizations
+.vf-badge {
+  &--primary {
+    background-color: #3b6fb6;
+    color: white;
+  }
+  
+  &--secondary {
+    background-color: transparent;
+    color: #3b6fb6;
+    border: 1px solid #3b6fb6;
+  }
+  
+  &--tertiary {
+    background-color: #54585a;
+    color: white;
+  }
+}
+
+// VF Form enhancements
+.vf-form {
+  &__label {
+    @include small-text;
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: block;
+  }
+  
+  &__helper {
+    @include small-text;
+    color: #6c757d;
+    margin-top: 4px;
+  }
+  
+  &__helper--error {
+    color: #dc3545;
+  }
+}
+
+// VF Table enhancements
+.vf-table {
+  &__header {
+    background-color: #f8f9fa;
+  }
+  
+  &__heading {
+    @include small-text;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  &__row {
+    &:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+    
+    &:hover {
+      background-color: #e9ecef;
+    }
+  }
+}
+
+// Responsive VF framework adjustments
+@include mobile {
+  .vf-hero {
+    &__heading {
+      font-size: 28px;
+      line-height: 1.3;
+    }
+    
+    &__subheading {
+      font-size: 16px;
+    }
+  }
+  
+  .vf-grid {
+    gap: 8px;
+  }
+  
+  .vf-box {
+    padding: 8px;
+  }
+}

@@ -718,11 +718,16 @@ const PyhmmerSearchForm: React.FC = () => {
                     {/* Sequence database */}
                     <div className={styles.formSection}>
                         <label className={`vf-form__label ${styles.label}`}>Sequence database</label>
-                        <select className={`vf-form__select ${styles.select}`} value={database}
-                                onChange={e => setDatabase(e.target.value)}>
+                        <select 
+                            className={`vf-form__select ${styles.databaseSelect}`} 
+                            value={database}
+                            onChange={e => setDatabase(e.target.value)}
+                        >
                             {databases.length > 0 ? (
                                 databases.map(db => (
-                                    <option key={db.id} value={db.id}>{db.name}</option>
+                                    <option key={db.id} value={db.id}>
+                                        {db.name}
+                                    </option>
                                 ))
                             ) : (
                                 <option value="">No databases available</option>

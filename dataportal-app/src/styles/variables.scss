@@ -7,12 +7,12 @@ $background-color: #ffffff;
 $text-color: #333333;
 $border-color: #e0e0e0;
 
-// Typography
-$font-family-primary: 'IBM Plex Sans', sans-serif;
-$font-family-mono: 'IBM Plex Mono', monospace;
-$font-size-base: 16px;
-$font-size-small: 14px;
-$font-size-large: 18px;
+// Typography - Following EMBL-EBI Visual Framework
+$font-family-primary: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+$font-family-mono: 'IBM Plex Mono', Monaco, Consolas, 'Lucida Console', monospace;
+$font-size-base: 19px; // VF framework body text size
+$font-size-small: 16px; // VF framework small text size
+$font-size-large: 21px; // VF framework h4 size
 
 // Spacing
 $spacing-xs: 4px;

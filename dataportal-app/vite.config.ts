@@ -48,7 +48,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        // Auto-import shared SCSS vars/mixins (optional)
+        // Auto-import shared SCSS vars/mixins
         additionalData: `@use "@/styles/variables.scss" as *;`,
       },
     },

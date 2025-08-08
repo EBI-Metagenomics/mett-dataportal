@@ -1,7 +1,6 @@
 .pyhmmerSection {
   padding: 0.1rem;
   background-color: transparent;
-  font-family: 'Open Sans', sans-serif;
 }
 
 .errorBand {
@@ -79,11 +78,12 @@
   margin-bottom: 24px;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: #1a1c1a;
 }
 
 .formSection {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  position: relative;
 }
 
 .sectionDivider {
@@ -102,17 +102,32 @@
   display: block;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #333;
+  color: #1a1c1a;
   font-size: 1rem;
 }
 
 .select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  background-color: white;
+  width: 100% !important;
+  padding: 8px 12px !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 4px !important;
+  font-size: 0.9rem !important;
+  background-color: white !important;
+  color: #1a1c1a !important;
+  margin-top: 8px !important;
+  
+  &:focus {
+    outline: none !important;
+    border-color: #3b6fb6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 111, 182, 0.2) !important;
+  }
+  
+  // Override VF framework dark background
+  option {
+    background-color: white !important;
+    color: #1a1c1a !important;
+    padding: 8px 12px !important;
+  }
 }
 
 .radioRow {
@@ -134,7 +149,7 @@
 }
 
 .radioText {
-  color: #333;
+  color: #1a1c1a;
 }
 
 .checkboxRow {
@@ -154,7 +169,7 @@
 }
 
 .checkboxText {
-  color: #333;
+  color: #1a1c1a;
 }
 
 .cutoffGrid {
@@ -167,15 +182,15 @@
 .cutoffHeader {
   font-weight: 600;
   text-align: center;
-  color: #333;
+  color: #1a1c1a;
   font-size: 0.95rem;
 }
 
 .cutoffLabel {
   justify-self: start;
   font-weight: 500;
-  color: #555;
-  font-size: 0.95rem;
+  color: #495057;
+  font-size: 0.85rem;
 }
 
 .inputContainer {
@@ -237,7 +252,7 @@
 .gapLabel {
   margin-bottom: 8px;
   font-weight: 500;
-  color: #555;
+  color: #495057;
   font-size: 0.95rem;
 }
 
@@ -353,6 +368,161 @@
   padding: 0;
   display: inline-block;
   vertical-align: baseline;
+}
+
+// Dropdown menu styling
+.select {
+  position: relative;
+  
+  &:focus + .dropdown-menu,
+  &:focus-within + .dropdown-menu {
+    display: block;
+  }
+}
+
+// Database dropdown specific styling
+.databaseDropdown {
+  margin-bottom: 16px;
+  
+  .select {
+    margin-top: 8px;
+  }
+}
+
+// Override VF framework select for database dropdown with higher specificity
+select.vf-form__select {
+  background-color: white !important;
+  color: #1a1c1a !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 4px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  margin-top: 8px !important;
+  
+  option {
+    background-color: white !important;
+    color: #1a1c1a !important;
+    padding: 4px 8px !important;
+  }
+}
+
+// Even more specific override for the database dropdown
+.formSection select.vf-form__select {
+  background-color: white !important;
+  color: #1a1c1a !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 4px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  margin-top: 8px !important;
+  
+  option {
+    background-color: white !important;
+    color: #1a1c1a !important;
+    padding: 4px 8px !important;
+  }
+}
+
+// Maximum specificity override for database dropdown
+.pyhmmerSection .formSection select.vf-form__select {
+  background-color: white !important;
+  color: #1a1c1a !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 4px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  margin-top: 8px !important;
+  width: 100% !important;
+  
+  option {
+    background-color: white !important;
+    color: #1a1c1a !important;
+    padding: 4px 8px !important;
+  }
+}
+
+// Global override for all VF form selects in this component
+:global(.vf-form__select) {
+  background-color: white !important;
+  color: #1a1c1a !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 4px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  margin-top: 8px !important;
+  
+  option {
+    background-color: white !important;
+    color: #1a1c1a !important;
+    padding: 4px 8px !important;
+  }
+}
+
+// Database select styling that works with VF framework
+.databaseSelect {
+  margin-top: 8px !important;
+  width: 100% !important;
+  
+  // Override any VF framework dark styling
+  background-color: white !important;
+  color: #1a1c1a !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 4px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  
+  &:focus {
+    outline: none !important;
+    border-color: #3b6fb6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 111, 182, 0.2) !important;
+  }
+  
+  option {
+    background-color: white !important;
+    color: #1a1c1a !important;
+    padding: 4px 8px !important;
+  }
+  
+  &:hover {
+    border-color: #adb5bd !important;
+  }
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 4px;
+  
+  .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #1a1c1a;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #f8f9fa;
+    
+    &:hover {
+      background-color: #f8f9fa;
+    }
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    &.selected {
+      background-color: #e3f2fd;
+      color: #3b6fb6;
+      font-weight: 500;
+    }
+  }
 }
 
 .popoverContent {

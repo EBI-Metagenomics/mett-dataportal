@@ -1,19 +1,17 @@
 .historyContainer {
   width: 100%;
   padding: 8px 0;
-  font-family: 'Open Sans', sans-serif;
 }
 
 .historyTitle {
   margin: 0 0 16px 0;
   font-weight: 600;
   font-size: 1.1rem;
-  color: #333;
-  font-family: 'Open Sans', sans-serif;
+  color: #1a1c1a;
 }
 
 .emptyState {
-  color: #888;
+  color: #6c757d;
   font-size: 0.95rem;
   font-style: italic;
   text-align: center;
@@ -23,7 +21,7 @@
 .scrollContainer {
   max-height: 800px; 
   overflow-y: auto;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #dee2e6;
   border-radius: 6px;
   background: #fff;
 }
@@ -45,15 +43,15 @@
   border: 1px solid transparent;
 
   &:hover {
-    background: #f5f5f5;
-    border-color: #e0e0e0;
+    background: #f8f9fa;
+    border-color: #dee2e6;
   }
 
   &.selected {
     background: #e3f2fd;
-    border-color: #1976d2;
+    border-color: #3b6fb6;
     font-weight: 600;
-    box-shadow: 0 1px 3px rgba(25, 118, 210, 0.2);
+    box-shadow: 0 1px 3px rgba(59, 111, 182, 0.2);
   }
 }
 
@@ -62,14 +60,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #333;
+  color: #1a1c1a;
   margin-bottom: 4px;
   font-weight: inherit;
 }
 
 .tooltip {
   position: fixed;
-  background: #333;
+  background: #495057;
   color: #fff;
   padding: 12px 16px;
   border-radius: 6px;
@@ -84,12 +82,12 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   transform: translateY(-100%);
-  font-family: 'Courier New', monospace;
+  font-family: 'IBM Plex Mono', Monaco, Consolas, 'Lucida Console', monospace;
   line-height: 1.4;
 }
 
 .dateText {
   font-size: 0.85rem;
-  color: #888;
+  color: #6c757d;
   font-weight: 400;
 } 

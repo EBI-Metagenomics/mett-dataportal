@@ -1,0 +1,147 @@
+// SCSS Mixins for the application
+// Note: Variables are auto-imported via Vite config
+
+// Typography mixins
+@mixin heading-1 {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1.547;
+  color: #1a1c1a;
+}
+
+@mixin heading-2 {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.333;
+  color: #1a1c1a;
+}
+
+@mixin heading-3 {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.333;
+  color: #1a1c1a;
+}
+
+@mixin body-text {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.421;
+  color: #1a1c1a;
+}
+
+@mixin small-text {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.71;
+  color: #373a36;
+}
+
+@mixin mono-text {
+  font-family: 'IBM Plex Mono', Monaco, Consolas, 'Lucida Console', monospace;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.57;
+  color: #1a1c1a;
+}
+
+// Layout mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// Spacing mixins
+@mixin margin-bottom($size) {
+  margin-bottom: $size;
+}
+
+@mixin padding($size) {
+  padding: $size;
+}
+
+// Responsive mixins
+@mixin mobile {
+  @media (max-width: 576px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: 576px) and (max-width: 768px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: 992px) {
+    @content;
+  }
+}
+
+// Interactive mixins
+@mixin hover-effect {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    @content;
+  }
+}
+
+@mixin focus-visible {
+  &:focus-visible {
+    outline: 2px solid #3b6fb6;
+    outline-offset: 2px;
+  }
+}
+
+// Component mixins
+@mixin card {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: $spacing-md;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@mixin button-base {
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+@mixin table-cell {
+  padding: 6px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 14px;
+  line-height: 1.3;
+}
