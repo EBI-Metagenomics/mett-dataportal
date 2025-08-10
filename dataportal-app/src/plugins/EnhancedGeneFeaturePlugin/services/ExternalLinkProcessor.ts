@@ -110,42 +110,42 @@ export class ExternalLinkProcessor {
         }
         
         // Process GO terms
-        if (attributes.go || attributes.Ontology_term) {
-            const goTerms = [];
-            if (attributes.go) {
-                goTerms.push(...(Array.isArray(attributes.go) ? attributes.go : [attributes.go]));
-            }
-            if (attributes.Ontology_term) {
-                const ontologyTerms = Array.isArray(attributes.Ontology_term) ? attributes.Ontology_term : [attributes.Ontology_term];
-                ontologyTerms.forEach((term: any) => {
-                    if (typeof term === 'string') {
-                        goTerms.push(...term.split(',').map((t: string) => t.trim()));
-                    }
-                });
-            }
-            
-            // Limit to first 10 GO terms to prevent performance issues
-            const limitedGoTerms = goTerms.slice(0, 10);
-            links.go = limitedGoTerms.map((term: string) => {
-                if (/^GO:\d+$/.test(term)) {
-                    return {
-                        label: 'GO',
-                        url: generateExternalDbLink('GO', term),
-                        id: term
-                    };
-                }
-                return null;
-            }).filter(Boolean);
-            
-            // Add a note if there are more GO terms
-            if (goTerms.length > 10) {
-                links.goNote = {
-                    label: 'GO',
-                    url: '#',
-                    id: `... and ${goTerms.length - 10} more GO terms`
-                };
-            }
-        }
+        // if (attributes.go || attributes.Ontology_term) {
+        //     const goTerms = [];
+        //     if (attributes.go) {
+        //         goTerms.push(...(Array.isArray(attributes.go) ? attributes.go : [attributes.go]));
+        //     }
+        //     if (attributes.Ontology_term) {
+        //         const ontologyTerms = Array.isArray(attributes.Ontology_term) ? attributes.Ontology_term : [attributes.Ontology_term];
+        //         ontologyTerms.forEach((term: any) => {
+        //             if (typeof term === 'string') {
+        //                 goTerms.push(...term.split(',').map((t: string) => t.trim()));
+        //             }
+        //         });
+        //     }
+        //
+        //     // Limit to first 10 GO terms to prevent performance issues
+        //     const limitedGoTerms = goTerms.slice(0, 10);
+        //     links.go = limitedGoTerms.map((term: string) => {
+        //         if (/^GO:\d+$/.test(term)) {
+        //             return {
+        //                 label: 'GO',
+        //                 url: generateExternalDbLink('GO', term),
+        //                 id: term
+        //             };
+        //         }
+        //         return null;
+        //     }).filter(Boolean);
+        //
+        //     // Add a note if there are more GO terms
+        //     if (goTerms.length > 10) {
+        //         links.goNote = {
+        //             label: 'GO',
+        //             url: '#',
+        //             id: `... and ${goTerms.length - 10} more GO terms`
+        //         };
+        //     }
+        // }
         
         // Process Dbxref
         const dbxrefKey = Object.keys(attributes).find(key => key.toLowerCase() === 'dbxref');

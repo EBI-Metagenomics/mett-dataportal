@@ -89,7 +89,8 @@ const HomePage: React.FC = () => {
                 filterStore.selectedGenomes,
                 filterStore.selectedSpecies,
                 convertFacetedFiltersToLegacy(filterStore.facetedFilters),
-                convertFacetOperatorsToLegacy(filterStore.facetOperators)
+                convertFacetOperatorsToLegacy(filterStore.facetOperators),
+                undefined // No locus_tag for initial load
             )
                 .then((response: any) => {
                     setGeneResults(response.data || []);
@@ -124,7 +125,8 @@ const HomePage: React.FC = () => {
                 filterStore.selectedGenomes,
                 filterStore.selectedSpecies,
                 legacyFilters,
-                legacyOperators
+                legacyOperators,
+                undefined // No locus_tag for reload
             )
                 .then((response: any) => {
                     // console.log('HomePage - Reload API response:', response);

@@ -291,7 +291,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     genomeFilter,
                     speciesFilter,
                     selectedFacetFilters,
-                    facetOperators
+                    facetOperators,
+                    undefined // No locus_tag for faceted search
                 );
                 if (response && response.data && response.pagination) {
                     console.log('GeneSearchForm - Search results received:', {
@@ -364,20 +365,21 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         }))
                         : undefined;
                     const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
-                    try {
-                        setLoading(true);
-                        const response = await GeneService.fetchGeneSearchResultsAdvanced(
-                            newQuery,
-                            1,
-                            pageSize,
-                            sortField,
-                            sortOrder,
-                            genomeFilter,
-                            speciesFilter,
-                            getLegacyFilters(),
-                            getLegacyOperators()
-                        );
-                        if (response && response.data && response.pagination) {
+                                    try {
+                    setLoading(true);
+                    const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                        newQuery,
+                        1,
+                        pageSize,
+                        sortField,
+                        sortOrder,
+                        genomeFilter,
+                        speciesFilter,
+                        getLegacyFilters(),
+                        getLegacyOperators(),
+                        undefined // No locus_tag for text search
+                    );
+                    if (response && response.data && response.pagination) {
                             // If onResultsUpdate callback is provided
                             if (onResultsUpdate) {
                                 // console.log('GeneSearchForm - Using onResultsUpdate callback for debouncedUpdateQuery');
@@ -625,7 +627,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setLoading(true);
                 console.log('Making API call with locus tag:', selectedValue);
                 const response = await GeneService.fetchGeneSearchResultsAdvanced(
-                    selectedValue,
+                    "", // Empty query since we're using locus_tag
                     1,
                     pageSize,
                     sortField,
@@ -633,7 +635,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     genomeFilter,
                     speciesFilter,
                     getLegacyFilters(),
-                    getLegacyOperators()
+                    getLegacyOperators(),
+                    selectedValue // Pass as locus_tag parameter
                 );
                 if (response && response.data && response.pagination) {
                     // If onResultsUpdate callback is provided
@@ -703,7 +706,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     genomeFilter,
                     speciesFilter,
                     getLegacyFilters(),
-                    getLegacyOperators()
+                    getLegacyOperators(),
+                    undefined // No locus_tag for text search
                 );
                 if (response && response.data && response.pagination) {
                     // If onResultsUpdate callback is provided
@@ -892,7 +896,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                         genomeFilter,
                                                         speciesFilter,
                                                         getLegacyFilters(),
-                                                        getLegacyOperators()
+                                                        getLegacyOperators(),
+                                                        undefined // No locus_tag for pagination
                                                     );
                                                     if (response && response.data && response.pagination) {
                                                         onResultsUpdate(response.data, response.pagination);

@@ -54,11 +54,12 @@ export class GeneService extends BaseService {
         selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
         selectedFacets?: Record<string, string[]>,
-        facetOperators?: Record<string, 'AND' | 'OR'>
+        facetOperators?: Record<string, 'AND' | 'OR'>,
+        locusTag?: string
     ): Promise<PaginatedApiResponse<GeneMeta>> {
         try {
             console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
-                query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators
+                query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators, locusTag
             });
             
             // Use the same parameter construction logic as buildParamsFetchGeneSearchResults
@@ -71,7 +72,8 @@ export class GeneService extends BaseService {
                 selectedGenomes,
                 selectedSpecies,
                 selectedFacets,
-                facetOperators
+                facetOperators,
+                locusTag
             );
 
             const response = await BaseService.getRawResponse<GeneMeta[]>("/genes/search/advanced", params);
@@ -291,7 +293,8 @@ export class GeneService extends BaseService {
         selectedGenomes?: { isolate_name: string; type_strain: boolean }[],
         selectedSpecies?: string[],
         selectedFacets?: Record<string, string[]>,
-        facetOperators?: Record<string, 'AND' | 'OR'>
+        facetOperators?: Record<string, 'AND' | 'OR'>,
+        locusTag?: string
     ): URLSearchParams {
         const params = this.buildParams({
             query,
@@ -302,6 +305,11 @@ export class GeneService extends BaseService {
             isolates: selectedGenomes?.map(g => g.isolate_name).join(","),
             species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined
         });
+
+        // Add locus_tag parameter if provided (takes precedence over query)
+        if (locusTag) {
+            params.append("locus_tag", locusTag);
+        }
 
         if (selectedFacets) {
             const filterParts: string[] = [];

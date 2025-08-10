@@ -61,7 +61,8 @@ export const useGeneViewerSearch = ({
                     [{ isolate_name: genomeMeta.isolate_name, type_strain: genomeMeta.type_strain }], // genomeFilter
                     undefined, // speciesFilter
                     {}, // selectedFacetFilters
-                    {} // facetOperators
+                    {}, // facetOperators
+                    undefined // No locus_tag for gene viewer search
                 );
                 console.log('useGeneViewerSearch - Search results received:', {
                     dataLength: response.data?.length || 0,
