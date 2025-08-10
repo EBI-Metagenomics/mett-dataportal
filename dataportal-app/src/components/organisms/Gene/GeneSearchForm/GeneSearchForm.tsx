@@ -294,12 +294,18 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     facetOperators
                 );
                 if (response && response.data && response.pagination) {
+                    console.log('GeneSearchForm - Search results received:', {
+                        dataLength: response.data.length,
+                        pagination: response.pagination,
+                        isHomePage: !!onResultsUpdate
+                    });
+                    
                     // If onResultsUpdate callback is provided
                     if (onResultsUpdate) {
-                        // console.log('GeneSearchForm - Using onResultsUpdate callback for fetchSearchResults');
+                        console.log('GeneSearchForm - Using onResultsUpdate callback for fetchSearchResults');
                         onResultsUpdate(response.data, response.pagination);
                     } else {
-                        // console.log('GeneSearchForm - Updating internal state for fetchSearchResults');
+                        console.log('GeneSearchForm - Updating internal state for fetchSearchResults');
                         setResults(response.data);
                         setCurrentPage(response.pagination.page_number);
                         setTotalPages(response.pagination.num_pages);
@@ -528,6 +534,33 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         });
 
     }, [results.length]);
+
+    // Trigger search when sort parameters change (ONLY for GeneViewerPage)
+    useEffect(() => {
+        // Skip this effect for HomePage (which uses onResultsUpdate callback)
+        if (onResultsUpdate) {
+            console.log('GeneSearchForm - Skipping sort trigger for HomePage');
+            return;
+        }
+        
+        // Only trigger if we have existing results (to avoid triggering on initial load)
+        const effectiveResults = resultsProp && resultsProp.length > 0 ? resultsProp : results;
+        if (effectiveResults.length > 0) {
+            console.log('GeneSearchForm - Sort parameters changed, triggering search for GeneViewerPage:', {
+                sortField,
+                sortOrder,
+                resultsLength: effectiveResults.length
+            });
+            
+            // timeout
+            const timeoutId = setTimeout(() => {
+                // reset to page 1 when sorting
+                fetchSearchResults(1, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
+            }, 0);
+            
+            return () => clearTimeout(timeoutId);
+        }
+    }, [sortField, sortOrder, results.length, resultsProp, onResultsUpdate]);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newInput = event.target.value;
@@ -808,11 +841,25 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         </div>
                         <div className={styles.paginationBar}>
                             {(() => {
+                                // Use props if available (HomePage), otherwise use internal state (GeneViewerPage)
                                 const effectiveTotalPages = totalPagesProp || totalPages;
                                 const effectiveHasNext = hasNextProp !== undefined ? hasNextProp : hasNext;
                                 const effectiveHasPrevious = hasPreviousProp !== undefined ? hasPreviousProp : hasPrevious;
-
-                                const shouldShowPagination = effectiveTotalPages > 1 || effectiveHasNext || effectiveHasPrevious;
+                                const effectiveCurrentPage = currentPageProp || currentPage;
+                                const effectiveResults = resultsProp && resultsProp.length > 0 ? resultsProp : results;
+                                
+                                // Show pagination if we have results AND (more than 1 page OR pagination data)
+                                const shouldShowPagination = effectiveResults.length > 0 && (effectiveTotalPages > 1 || effectiveHasNext || effectiveHasPrevious);
+                                
+                                console.log('GeneSearchForm - Pagination visibility check:', {
+                                    effectiveTotalPages,
+                                    effectiveHasNext,
+                                    effectiveHasPrevious,
+                                    effectiveCurrentPage,
+                                    shouldShowPagination,
+                                    resultsLength: effectiveResults.length,
+                                    isHomePage: !!onResultsUpdate
+                                });
                                 
                                 return shouldShowPagination;
                             })() && (

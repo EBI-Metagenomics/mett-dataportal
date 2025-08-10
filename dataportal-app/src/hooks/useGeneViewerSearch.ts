@@ -52,7 +52,22 @@ export const useGeneViewerSearch = ({
         if (genomeMeta?.isolate_name) {
             try {
                 setLoading(true);
-                const response = await GeneService.fetchGeneBySearch(genomeMeta.isolate_name, geneSearchQuery);
+                const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                    geneSearchQuery,
+                    1, // page
+                    10, // pageSize
+                    sortField,
+                    sortOrder,
+                    [{ isolate_name: genomeMeta.isolate_name, type_strain: genomeMeta.type_strain }], // genomeFilter
+                    undefined, // speciesFilter
+                    {}, // selectedFacetFilters
+                    {} // facetOperators
+                );
+                console.log('useGeneViewerSearch - Search results received:', {
+                    dataLength: response.data?.length || 0,
+                    pagination: response.pagination
+                });
+                
                 setGeneResults(response.data || []);
                 setTotalPages(response.pagination?.num_pages || 1);
                 setCurrentPage(response.pagination?.page_number || 1);
@@ -78,8 +93,8 @@ export const useGeneViewerSearch = ({
 
         console.log('Geneviewer Sorting Genes by:', {field, order: newSortOrder});
 
-        // Optionally trigger a new search with the updated sort parameters
-        // await handleGeneSearch();
+        // Trigger a new search with the updated sort parameters
+        await handleGeneSearch();
     };
 
     return {

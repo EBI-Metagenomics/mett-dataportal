@@ -338,9 +338,46 @@ const HomePage: React.FC = () => {
                                     selectedSpecies={filterStore.selectedSpecies}
                                     selectedGenomes={filterStore.selectedGenomes}
                                     results={geneResults} // Pass actual results
-                                    onSortClick={(field, order) => {
+                                    onSortClick={async (field, order) => {
+                                        console.log('HomePage - Sort clicked:', { field, order });
                                         filterStore.setGeneSortField(field);
                                         filterStore.setGeneSortOrder(order);
+                                        
+                                        // Trigger a new search with updated sort parameters
+                                        setGeneLoading(true);
+                                        try {
+                                            console.log('HomePage - Making API call with sort params:', {
+                                                query: filterStore.geneSearchQuery,
+                                                field,
+                                                order,
+                                                genomes: filterStore.selectedGenomes.length,
+                                                species: filterStore.selectedSpecies.length
+                                            });
+                                            
+                                            const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                                                filterStore.geneSearchQuery,
+                                                1, // Reset to page 1 when sorting
+                                                genePerPage,
+                                                field,
+                                                order,
+                                                filterStore.selectedGenomes,
+                                                filterStore.selectedSpecies,
+                                                convertFacetedFiltersToLegacy(filterStore.facetedFilters),
+                                                convertFacetOperatorsToLegacy(filterStore.facetOperators)
+                                            );
+                                            
+                                            console.log('HomePage - Sort API response:', {
+                                                dataLength: response.data?.length || 0,
+                                                pagination: response.pagination
+                                            });
+                                            
+                                            setGeneResults(response.data || []);
+                                            setGenePagination(response.pagination || null);
+                                        } catch (error) {
+                                            console.error('Error fetching gene data after sort:', error);
+                                        } finally {
+                                            setGeneLoading(false);
+                                        }
                                     }}
                                     sortField={filterStore.geneSortField}
                                     sortOrder={filterStore.geneSortOrder}
