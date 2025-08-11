@@ -2,7 +2,7 @@ import { BaseService } from "./BaseService";
 import { Gene, GeneFacetResponse, GeneMeta, GeneProteinSeq, GeneSuggestion } from "../interfaces/Gene";
 import { PaginatedApiResponse } from "../interfaces/ApiResponse";
 import { cacheResponse } from "./cachingDecorator";
-import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../utils/appConstants";
+import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../utils/constants";
 
 export class GeneService extends BaseService {
     /**

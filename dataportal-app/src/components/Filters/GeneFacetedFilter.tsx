@@ -9,7 +9,7 @@ import {
     EXT_LINK_ESSENTIALITY_JOURNAL,
     FACET_ORDER,
     LOGICAL_OPERATOR_FACETS
-} from "../../utils/appConstants";
+} from "../../utils/constants";
 import * as Popover from '@radix-ui/react-popover';
 import {MetadataService} from "../../services/metadataService";
 import {useFilterStore} from '../../stores/filterStore';

@@ -13,7 +13,7 @@ import {
     DEFAULT_PER_PAGE_CNT,
     FACET_INITIAL_VISIBLE_CNT,
     FACET_STEP_CNT
-} from "../../../../utils/appConstants";
+} from "../../../../utils/constants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 import SelectedGenomes from "@components/Filters/SelectedGenomes";
 import GeneFacetedFilter from "@components/Filters/GeneFacetedFilter";

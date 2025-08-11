@@ -1,6 +1,6 @@
 import React from 'react';
 import {GeneMeta} from '../../../../interfaces/Gene';
-import {getBacinteractomeUniprotUrl, getIconForEssentiality, renderExternalDbLinks} from '../../../../utils/appConstants';
+import {getBacinteractomeUniprotUrl, getIconForEssentiality, renderExternalDbLinks} from '../../../../utils/constants';
 
 export interface ColumnDefinition {
     key: string;

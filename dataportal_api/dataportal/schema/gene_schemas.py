@@ -118,7 +118,8 @@ class GeneAdvancedSearchQuerySchema(BaseModel):
         None, description="Species acronym to filter (e.g., 'BU', 'PV')."
     )
     locus_tag: Optional[str] = Field(
-        None, description="Exact locus tag to search for (takes precedence over query if provided)."
+        None,
+        description="Exact locus tag to search for (takes precedence over query if provided).",
     )
     query: str = Field(
         "",

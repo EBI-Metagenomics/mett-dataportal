@@ -1,6 +1,6 @@
 import SimpleFeature from '@jbrowse/core/util/simpleFeature';
 import {GeneService} from "../../../services/geneService";
-import {getIconForEssentiality} from "../../../utils/appConstants";
+import {getIconForEssentiality} from "../../../utils/constants";
 
 export class FeatureProcessor {
     /**

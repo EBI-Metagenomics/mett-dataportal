@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import getAssembly from '@components/organisms/Gene/GeneViewer/assembly';
 import getTracks from '@components/organisms/Gene/GeneViewer/tracks';
 import getDefaultSessionConfig from '@components/organisms/Gene/GeneViewer/defaultSessionConfig';
-import { getEssentialityDataUrl } from '../utils/appConstants';
+import { getEssentialityDataUrl } from '../utils/constants';
 import { GenomeMeta } from '../interfaces/Genome';
 import { GeneMeta } from '../interfaces/Gene';
 

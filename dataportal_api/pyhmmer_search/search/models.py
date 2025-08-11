@@ -59,13 +59,6 @@ class HmmerJob(models.Model):
 
     threshold_value = models.FloatField(default=1.0)
 
-    bias_filter = models.CharField(
-        max_length=8,
-        choices=[("on", "On"), ("off", "Off")],
-        default="on",
-        help_text="Bias composition filter setting",
-    )
-
     task = models.OneToOneField(
         TaskResult, related_name="+", null=True, blank=True, on_delete=models.CASCADE
     )

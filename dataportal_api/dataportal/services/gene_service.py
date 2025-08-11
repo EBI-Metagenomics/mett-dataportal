@@ -322,15 +322,17 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         use_scroll: bool = False,
     ) -> GenePaginationSchema:
         try:
-            logger.info(f"DEBUG - Received params: query='{params.query}', isolates='{params.isolates}', species='{params.species_acronym}'")
-            
+            logger.info(
+                f"DEBUG - Received params: query='{params.query}', isolates='{params.isolates}', species='{params.species_acronym}'"
+            )
+
             isolate_names_list = (
                 [id.strip() for id in params.isolates.split(",")]
                 if params.isolates
                 else []
             )
             logger.info(f"DEBUG - Parsed isolate names: {isolate_names_list}")
-            
+
             filter_criteria = {"bool": {"must": []}}
 
             # Filters for genome IDs and species ID
@@ -338,7 +340,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 filter_criteria["bool"]["must"].append(
                     {"terms": {ES_FIELD_ISOLATE_NAME: isolate_names_list}}
                 )
-                logger.info(f"DEBUG - Added isolate filter: {filter_criteria['bool']['must']}")
+                logger.info(
+                    f"DEBUG - Added isolate filter: {filter_criteria['bool']['must']}"
+                )
             if params.species_acronym:
                 filter_criteria["bool"]["must"].append(
                     {"term": {ES_FIELD_SPECIES_ACRONYM: params.species_acronym}}
@@ -358,8 +362,10 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     type_strain_filters["bool"]["must"]
                 )
 
-            logger.info(f"DEBUG - Final filter_criteria before building ES query: {json.dumps(filter_criteria, indent=2)}")
-            
+            logger.info(
+                f"DEBUG - Final filter_criteria before building ES query: {json.dumps(filter_criteria, indent=2)}"
+            )
+
             es_query = self._build_es_query(
                 params=params,
                 query=params.query,
@@ -703,7 +709,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     else:
                         es_query["bool"]["must"].append({"term": {field: value}})
 
-        logger.info(f"DEBUG - Final Elasticsearch Query: {json.dumps(es_query, indent=2)}")
+        logger.info(
+            f"DEBUG - Final Elasticsearch Query: {json.dumps(es_query, indent=2)}"
+        )
         return es_query
 
     async def get_faceted_search(

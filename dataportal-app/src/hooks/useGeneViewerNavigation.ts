@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {GeneMeta} from '../interfaces/Gene';
-import {ZOOM_LEVELS} from '../utils/appConstants';
+import {ZOOM_LEVELS} from '../utils/constants';
 
 interface UseGeneViewerNavigationProps {
     viewState: any;

@@ -3,7 +3,7 @@ import styles from './GeneResultsTable.module.scss';
 import {createViewState} from '@jbrowse/react-app2';
 import {LinkData} from '../../../../interfaces/Auxiliary';
 import {GeneMeta} from '../../../../interfaces/Gene';
-import {TABLE_MAX_COLUMNS, ZOOM_LEVELS} from '../../../../utils/appConstants';
+import {TABLE_MAX_COLUMNS, ZOOM_LEVELS} from '../../../../utils/constants';
 import {GENE_TABLE_COLUMNS} from "@components/organisms/Gene/GeneResultsHandler/GeneTableColumns";
 import * as Dialog from '@radix-ui/react-dialog';
 

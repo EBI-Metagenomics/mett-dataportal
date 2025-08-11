@@ -211,7 +211,6 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
                 "incdomT": job.incdomT,
                 "popen": job.popen,
                 "pextend": job.pextend,
-                "bias_filter": job.bias_filter,
                 "mx": job.mx,
             }
             return response_data
@@ -281,7 +280,6 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
             "incdomT": job.incdomT,
             "popen": job.popen,
             "pextend": job.pextend,
-            "bias_filter": job.bias_filter,
             "mx": job.mx,
         }
 

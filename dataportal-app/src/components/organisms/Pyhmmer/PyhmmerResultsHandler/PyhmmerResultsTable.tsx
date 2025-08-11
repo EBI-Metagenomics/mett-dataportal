@@ -46,13 +46,17 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
     };
 
     const handleRowExpand = (rowIndex: number) => {
+        console.log(`PyhmmerResultsTable: Expanding row ${rowIndex}`);
         const newExpandedRows = new Set(expandedRows);
         if (newExpandedRows.has(rowIndex)) {
+            console.log(`PyhmmerResultsTable: Collapsing row ${rowIndex}`);
             newExpandedRows.delete(rowIndex);
         } else {
+            console.log(`PyhmmerResultsTable: Expanding row ${rowIndex}`);
             newExpandedRows.add(rowIndex);
         }
         setExpandedRows(newExpandedRows);
+        console.log(`PyhmmerResultsTable: Updated expanded rows:`, Array.from(newExpandedRows));
     };
 
     const handlePageClick = (page: number) => {
@@ -144,13 +148,14 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                 <tbody>
                 {paginatedResults.map((result, idx) => {
                     const isExpanded = expandedRows.has(idx);
-                    const hasDomains = result.domains && result.domains.length > 0;
+                    // Show expansion button if there are hits (domains will be fetched on-demand)
+                    const hasHits = result.num_hits > 0;
 
                     return (
                         <React.Fragment key={idx}>
                             <tr className={`${styles.resultRow} ${isExpanded ? styles.expanded : ''}`}>
                                 <td className={styles.expandCell}>
-                                    {hasDomains && (
+                                    {hasHits && (
                                         <button
                                             className={`${styles.expandButton} ${isExpanded ? styles.expanded : ''}`}
                                             onClick={() => handleRowExpand(idx)}
@@ -178,7 +183,7 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                                 <td>{result.num_significant}</td>
                                 <td>{result.description ?? '-'}</td>
                             </tr>
-                            {isExpanded && hasDomains && jobId && (
+                            {isExpanded && hasHits && jobId && (
                                 <tr className={styles.expandedRow}>
                                     <td colSpan={7} className={styles.expandedCell}>
                                         <AlignmentView jobId={jobId} target={result.target}/>

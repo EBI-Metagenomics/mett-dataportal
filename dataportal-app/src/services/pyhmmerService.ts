@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../utils/appConstants';
+import { API_BASE_URL } from '../utils/constants';
 import {
     PyhmmerDatabase,
     PyhmmerSearchRequest,
@@ -128,7 +128,7 @@ export class PyhmmerService extends BaseService {
             console.log(`PyhmmerService.getJobDetails: Response status: ${result.status}`);
             console.log(`PyhmmerService.getJobDetails: Task status: ${result.task?.status}`);
             console.log(`PyhmmerService.getJobDetails: Task result type: ${typeof result.task?.result}`);
-            console.log(`PyhmmerService.getJobDetails: Task result length: ${Array.isArray(result.task?.result) ? result.task.result.length : 'N/A'}`);
+            console.log(`PyhmmerService.getJobDetails: Task result length: ${Array.isArray(result.task?.result) ? result.task?.result.length : 'N/A'}`);
             return result;
         } catch (error) {
             console.error("Error fetching Pyhmmer job details:", error);
@@ -169,20 +169,35 @@ export class PyhmmerService extends BaseService {
             console.log(`PyhmmerService.downloadResults: Download URL: ${url}`);
             
             const response = await fetch(url);
-            
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`PyhmmerService.downloadResults: Download failed with status ${response.status}: ${errorText}`);
-                throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const blob = await response.blob();
             console.log(`PyhmmerService.downloadResults: Successfully downloaded ${blob.size} bytes`);
-            
             return blob;
         } catch (error) {
             console.error("Error downloading Pyhmmer results:", error);
             throw new Error(`Failed to download results: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    // Remove a search from browser history
+    static removeFromHistory(jobId: string): void {
+        try {
+            const historyKey = 'pyhmmer_search_history';
+            const existingHistory = localStorage.getItem(historyKey);
+            
+            if (existingHistory) {
+                const history = JSON.parse(existingHistory);
+                const filteredHistory = history.filter((item: any) => item.jobId !== jobId);
+                
+                // Update localStorage
+                localStorage.setItem(historyKey, JSON.stringify(filteredHistory));
+                console.log(`PyhmmerService.removeFromHistory: Removed job ${jobId} from history`);
+            }
+        } catch (error) {
+            console.error("Error removing item from history:", error);
         }
     }
 }

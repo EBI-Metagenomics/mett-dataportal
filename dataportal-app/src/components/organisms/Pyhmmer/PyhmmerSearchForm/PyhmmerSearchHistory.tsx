@@ -10,10 +10,11 @@ export interface SearchHistoryItem {
 interface PyhmmerSearchHistoryProps {
     history: SearchHistoryItem[];
     onSelect: (jobId: string) => void;
+    onDelete: (jobId: string) => void;
     selectedJobId?: string;
 }
 
-const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onSelect, selectedJobId}) => {
+const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onSelect, onDelete, selectedJobId}) => {
     const [tooltip, setTooltip] = useState<{text: string, x: number, y: number} | null>(null);
 
     const handleMouseEnter = (e: React.MouseEvent, query: string) => {
@@ -27,6 +28,11 @@ const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onS
 
     const handleMouseLeave = () => {
         setTooltip(null);
+    };
+
+    const handleDelete = (e: React.MouseEvent, jobId: string) => {
+        e.stopPropagation(); // Prevent triggering onSelect
+        onDelete(jobId);
     };
 
     return (
@@ -45,14 +51,24 @@ const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onS
                             className={`${styles.historyItem} ${item.jobId === selectedJobId ? styles.selected : ''}`}
                             onClick={() => onSelect(item.jobId)}
                         >
-                            <div 
-                                className={styles.queryText}
-                                onMouseEnter={(e) => handleMouseEnter(e, item.query)}
-                                onMouseLeave={handleMouseLeave}
-                            >
-                                {item.query}
+                            <div className={styles.itemContent}>
+                                <div 
+                                    className={styles.queryText}
+                                    onMouseEnter={(e) => handleMouseEnter(e, item.query)}
+                                    onMouseLeave={handleMouseLeave}
+                                >
+                                    {item.query}
+                                </div>
+                                <div className={styles.dateText}>{item.date}</div>
                             </div>
-                            <div className={styles.dateText}>{item.date}</div>
+                            <button
+                                className={styles.deleteButton}
+                                onClick={(e) => handleDelete(e, item.jobId)}
+                                title="Delete this search from history"
+                                aria-label="Delete search"
+                            >
+                                ×
+                            </button>
                         </li>
                     ))}
                 </ul>

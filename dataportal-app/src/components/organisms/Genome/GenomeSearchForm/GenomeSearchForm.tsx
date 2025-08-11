@@ -6,7 +6,7 @@ import styles from "@components/organisms/Genome/GenomeSearchForm/GenomeSearchFo
 import {GenomeService} from "../../../../services/genomeService";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {AutocompleteResponse, BaseGenome, GenomeMeta} from "../../../../interfaces/Genome";
-import {DEFAULT_PER_PAGE_CNT} from "../../../../utils/appConstants";
+import {DEFAULT_PER_PAGE_CNT} from "../../../../utils/constants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/apiHelpers";
 import TypeStrainsFilter from "@components/Filters/TypeStrainsFilter";
 import SelectedGenomes from "@components/Filters/SelectedGenomes";

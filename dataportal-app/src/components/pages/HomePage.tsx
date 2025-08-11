@@ -13,7 +13,7 @@ import {useGenomeData} from '../../hooks';
 import {useTabAwareUrlSync} from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {GeneService} from '../../services/geneService';
-import {DEFAULT_PER_PAGE_CNT} from '../../utils/appConstants';
+import {DEFAULT_PER_PAGE_CNT} from '../../utils/constants';
 import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../utils/filterUtils';
 
 interface Tab {

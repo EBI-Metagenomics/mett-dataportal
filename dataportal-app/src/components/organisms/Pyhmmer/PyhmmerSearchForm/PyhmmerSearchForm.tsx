@@ -8,7 +8,7 @@ import PyhmmerSearchHistory, {
     SearchHistoryItem
 } from "@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchHistory";
 import * as Popover from '@radix-ui/react-popover';
-import {PYHMMER_CUTOFF_HELP, PYHMMER_FILTER_HELP, PYHMMER_GAP_PENALTIES_HELP} from '../../../../utils/constants';
+import {PYHMMER_CUTOFF_HELP, PYHMMER_FILTER_HELP, PYHMMER_GAP_PENALTIES_HELP, PYHMMER_CONFIG} from '../../../../utils/constants';
 
 const HISTORY_KEY = 'pyhmmer_search_history';
 
@@ -109,9 +109,6 @@ const PyhmmerSearchForm: React.FC = () => {
     const [gapOpen, setGapOpen] = useState('0.02');
     const [gapExtend, setGapExtend] = useState('0.4');
 
-    // Bias composition filter
-    const [turnOffBiasFilter, setTurnOffBiasFilter] = useState(false);
-
     // Results state
     const [results, setResults] = useState<PyhmmerResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -124,9 +121,111 @@ const PyhmmerSearchForm: React.FC = () => {
     // Search history state
     const [history, setHistory] = useState<SearchHistoryItem[]>([]);
     const [selectedJobId, setSelectedJobId] = useState<string | undefined>(undefined);
+    const [currentSearchJobId, setCurrentSearchJobId] = useState<string | undefined>(undefined);
 
     // Validation state
     const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+
+    // Load search history from localStorage
+    const loadSearchHistory = () => {
+        try {
+            const historyKey = 'pyhmmer_search_history';
+            const existingHistory = localStorage.getItem(historyKey);
+            
+            if (existingHistory) {
+                const history = JSON.parse(existingHistory);
+                
+                // Automatically clean up old items if cleanup is enabled
+                let cleanedHistory = history;
+                if (PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS > 0) {
+                    const cleanupThresholdMs = PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS * 24 * 60 * 60 * 1000;
+                    const cutoffTime = Date.now() - cleanupThresholdMs;
+                    cleanedHistory = history.filter((item: any) => {
+                        const itemDate = new Date(item.dateCreated).getTime();
+                        return itemDate > cutoffTime;
+                    });
+                    
+                    // Update localStorage if items were removed
+                    if (cleanedHistory.length < history.length) {
+                        const removedCount = history.length - cleanedHistory.length;
+                        console.log(`Automatically removed ${removedCount} old search history items (older than ${PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS} days)`);
+                        localStorage.setItem(historyKey, JSON.stringify(cleanedHistory));
+                    }
+                } else {
+                    console.log('Search history cleanup is disabled (SEARCH_HISTORY_CLEANUP_DAYS = 0)');
+                }
+                
+                // Format dates for display
+                const formattedHistory = cleanedHistory.map((item: any) => ({
+                    ...item,
+                    date: formatRelativeDate(item.dateCreated)
+                }));
+                
+                setHistory(formattedHistory);
+            }
+        } catch (error) {
+            console.error('Error loading search history:', error);
+        }
+    };
+
+    // Format date to relative time (e.g., "2 hours ago")
+    const formatRelativeDate = (dateString: string): string => {
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInMs = now.getTime() - date.getTime();
+            const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+            const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+            const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+            if (diffInMinutes < 1) return 'Just now';
+            if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+            if (diffInHours < 24) return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
+            if (diffInDays < 7) return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+            if (diffInDays < 14) return `${Math.floor(diffInDays / 7)} week ago`;
+            return date.toLocaleDateString();
+        } catch (error) {
+            return 'Unknown date';
+        }
+    };
+
+    // Save search to history
+    const saveSearchToHistory = (jobId: string, query: string) => {
+        try {
+            const historyKey = 'pyhmmer_search_history';
+            const existingHistory = localStorage.getItem(historyKey);
+            const history = existingHistory ? JSON.parse(existingHistory) : [];
+            
+            const newHistoryItem = {
+                jobId,
+                query: query.substring(0, 100) + (query.length > 100 ? '...' : ''), // Truncate long queries
+                dateCreated: new Date().toISOString(),
+                date: 'Just now', // User-friendly date display
+                status: 'pending'
+            };
+            
+            // Add to beginning of history
+            const updatedHistory = [newHistoryItem, ...history];
+            
+            // Keep only last 50 items to prevent localStorage from getting too large
+            const trimmedHistory = updatedHistory.slice(0, 50);
+            
+            localStorage.setItem(historyKey, JSON.stringify(trimmedHistory));
+            setHistory(trimmedHistory);
+        } catch (error) {
+            console.error('Error saving search to history:', error);
+        }
+    };
+
+    // Remove item from history
+    const removeFromHistory = (jobId: string) => {
+        try {
+            PyhmmerService.removeFromHistory(jobId);
+            setHistory(prev => prev.filter(item => item.jobId !== jobId));
+        } catch (error) {
+            console.error('Error removing item from history:', error);
+        }
+    };
 
     // Validation function
     const validateForm = (): ValidationError[] => {
@@ -222,10 +321,7 @@ const PyhmmerSearchForm: React.FC = () => {
 
         fetchDatabases();
 
-        const stored = localStorage.getItem(HISTORY_KEY);
-        if (stored) {
-            setHistory(JSON.parse(stored));
-        }
+        loadSearchHistory();
     }, []);
 
     // Helper to poll for job status
@@ -295,17 +391,6 @@ const PyhmmerSearchForm: React.FC = () => {
         }));
     };
 
-    // Save search to localStorage
-    const saveSearchToHistory = (jobId: string, query: string) => {
-        const date = new Date().toLocaleString();
-        const newItem: SearchHistoryItem = {jobId, query, date};
-        let updated = [newItem, ...history.filter(h => h.jobId !== jobId)];
-        // Limit to 20 most recent
-        if (updated.length > 20) updated = updated.slice(0, 20);
-        setHistory(updated);
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-    };
-
     // Handle new search submit
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -344,8 +429,6 @@ const PyhmmerSearchForm: React.FC = () => {
                 // Gap penalties
                 popen: parseFloat(gapOpen),
                 pextend: parseFloat(gapExtend),
-                // Bias composition filter
-                bias_filter: turnOffBiasFilter ? 'off' : 'on',
             };
 
             // Enhanced logging for form values
@@ -376,31 +459,51 @@ const PyhmmerSearchForm: React.FC = () => {
             console.log('Gap open penalty:', gapOpen);
             console.log('Gap extend penalty:', gapExtend);
 
-            // Bias composition filter
-            console.log('=== BIAS COMPOSITION FILTER FORM VALUES ===');
-            console.log('Turn off bias filter:', turnOffBiasFilter);
-
             console.log('=== FINAL REQUEST OBJECT ===');
             console.log('Request object:', req);
 
             setLoadingMessage('Creating search job...');
             const {id} = await PyhmmerService.search(req);
-            console.log(`Search job created with ID: ${id}`);
+            console.log('PyhmmerService.search: Search submitted successfully, job ID:', id);
 
-            setLoadingMessage('Processing search results... This may take a few minutes.');
-            const rawResults = await pollJobStatus(id);
-            if (rawResults) {
-                setResults(mapResults(rawResults));
-                setSelectedJobId(id);
-                saveSearchToHistory(id, sequence);
+            // Set the current search job ID for domain fetching
+            setCurrentSearchJobId(id);
+
+            setLoadingMessage('Search submitted successfully!');
+            setLoading(false);
+
+            // Save to history
+            saveSearchToHistory(id, sequence);
+
+            // Start polling for results
+            setLoading(true);
+            setLoadingMessage('Waiting for results...');
+            const searchResults = await pollJobStatus(id);
+            
+            // Set the results to state so they display in the UI
+            console.log('=== RESULTS PROCESSING ===');
+            console.log('Raw search results:', searchResults);
+            console.log('Results type:', typeof searchResults);
+            console.log('Results is array:', Array.isArray(searchResults));
+            console.log('Results length:', Array.isArray(searchResults) ? searchResults.length : 'N/A');
+            
+            if (searchResults && Array.isArray(searchResults)) {
+                const mappedResults = mapResults(searchResults);
+                console.log('Mapped results:', mappedResults);
+                console.log('Mapped results length:', mappedResults.length);
+                setResults(mappedResults);
+                setLoadingMessage(`Search completed! Found ${searchResults.length} results.`);
+            } else {
+                console.error('Invalid search results:', searchResults);
+                setError('No results returned from search');
                 setLoadingMessage('');
             }
-        } catch (err) {
-            console.error('Search error:', err);
+        } catch (error) {
+            console.error('Search error:', error);
 
             // Handle different types of errors
-            if (err instanceof Error) {
-                setError(err.message || 'Error running search');
+            if (error instanceof Error) {
+                setError(error.message || 'Error running search');
             } else {
                 setError('An unknown error occurred while running the search.');
             }
@@ -413,6 +516,7 @@ const PyhmmerSearchForm: React.FC = () => {
     // Handle selecting a past search
     const handleSelectHistory = async (jobId: string) => {
         setSelectedJobId(jobId);
+        setCurrentSearchJobId(undefined); // Clear current search job ID
         setLoading(true);
         setError(undefined);
         setResults([]);
@@ -429,6 +533,41 @@ const PyhmmerSearchForm: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // Reset form to default values
+    const handleReset = () => {
+        setEvalueType('evalue');
+        setSequence('');
+        setDatabase('bu_all');
+
+        // Cutoff parameters
+        setSignificanceEValueSeq('0.01');
+        setSignificanceEValueHit('0.03');
+        setReportEValueSeq('1');
+        setReportEValueHit('1');
+        setSignificanceBitScoreSeq('25');
+        setSignificanceBitScoreHit('22');
+        setReportBitScoreSeq('7');
+        setReportBitScoreHit('5');
+
+        // Gap penalties
+        setGapOpen('0.02');
+        setGapExtend('0.4');
+
+        // Clear results and job IDs
+        setResults([]);
+        setCurrentSearchJobId(undefined);
+        setSelectedJobId(undefined);
+
+        // Validation errors
+        setValidationErrors([]);
+        setError(undefined);
+    };
+
+    // Debug logging for job ID
+    console.log('PyhmmerSearchForm: currentSearchJobId:', currentSearchJobId);
+    console.log('PyhmmerSearchForm: selectedJobId:', selectedJobId);
+    console.log('PyhmmerSearchForm: jobId being passed to results table:', currentSearchJobId || selectedJobId);
 
     return (
         <section className={styles.pyhmmerSection}>
@@ -668,51 +807,6 @@ const PyhmmerSearchForm: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className={styles.sectionDivider}></div>
-
-                    {/* Bias composition filter */}
-                    <div className={styles.formSection}>
-                        <div className={styles.flexRow}>
-                            <label className={`vf-form__label ${styles.label}`}>Filter
-                                <Popover.Root>
-                                    <Popover.Trigger asChild>
-                                        <button
-                                            className={styles.infoIcon}
-                                            onClick={e => e.stopPropagation()}
-                                            aria-label="Filter info"
-                                            type="button"
-                                        >
-                                            ℹ️
-                                        </button>
-                                    </Popover.Trigger>
-                                    <Popover.Portal>
-                                        <Popover.Content
-                                            className={styles.popoverContent}
-                                            side="top"
-                                            align="end"
-                                            sideOffset={5}
-                                        >
-                                            <div className={styles.popoverInner}>
-                                                <strong>Bias composition filter:</strong><br/>
-                                                <p style={{whiteSpace: 'pre-line'}}>{PYHMMER_FILTER_HELP}</p>
-                                            </div>
-                                        </Popover.Content>
-                                    </Popover.Portal>
-                                </Popover.Root>
-                            </label>
-                        </div>
-                        <div className={styles.checkboxRow}>
-                            <label className={styles.checkboxLabel}>
-                                <input
-                                    type="checkbox"
-                                    className={styles.checkboxInput}
-                                    checked={turnOffBiasFilter}
-                                    onChange={e => setTurnOffBiasFilter(e.target.checked)}
-                                />
-                                <span className={styles.checkboxText}>Turn off bias composition filter</span>
-                            </label>
-                        </div>
-                    </div>
                 </div>
                 <div className={styles.rightPane}>
                     {/* Sequence database */}
@@ -743,6 +837,7 @@ const PyhmmerSearchForm: React.FC = () => {
                         handleSubmit={handleSubmit}
                         sequenceError={getFieldError('sequence')}
                         isFormValid={isFormValid()}
+                        onResetAll={handleReset}
                     />
                 </div>
             </div>
@@ -757,6 +852,7 @@ const PyhmmerSearchForm: React.FC = () => {
                         history={history}
                         onSelect={handleSelectHistory}
                         selectedJobId={selectedJobId}
+                        onDelete={removeFromHistory}
                     />
                 </div>
                 <div className={styles.resultsPane}>
@@ -765,7 +861,7 @@ const PyhmmerSearchForm: React.FC = () => {
                         loading={loading}
                         loadingMessage={loadingMessage}
                         error={error}
-                        jobId={selectedJobId}
+                        jobId={currentSearchJobId || selectedJobId}
                     />
                 </div>
             </div>

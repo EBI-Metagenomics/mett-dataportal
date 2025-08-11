@@ -138,11 +138,6 @@ class SearchRequestSchema(ModelSchema):
     popen: float = Field(default=0.02, ge=0.0, description="Gap open penalty")
     pextend: float = Field(default=0.4, ge=0.0, description="Gap extend penalty")
 
-    # Bias composition filter
-    bias_filter: str = Field(
-        default="on", description="Bias composition filter setting"
-    )
-
     @field_validator("input", mode="after", check_fields=False)
     @classmethod
     def check_input(cls, value: str, info: ValidationInfo):

@@ -18,6 +18,7 @@ export const AlignmentView: React.FC<AlignmentViewProps> = ({jobId, target}) => 
     useEffect(() => {
         const fetchDomains = async () => {
             try {
+                console.log(`AlignmentView: Starting to fetch domains for jobId: ${jobId}, target: ${target}`);
                 setLoading(true);
                 setError(null);
                 const domains = await PyhmmerService.getDomainsByTarget(jobId, target);
@@ -34,7 +35,10 @@ export const AlignmentView: React.FC<AlignmentViewProps> = ({jobId, target}) => 
         };
 
         if (jobId && target) {
+            console.log(`AlignmentView: useEffect triggered with jobId: ${jobId}, target: ${target}`);
             fetchDomains();
+        } else {
+            console.log(`AlignmentView: useEffect skipped - missing jobId: ${jobId}, target: ${target}`);
         }
     }, [jobId, target]);
 

@@ -225,11 +225,8 @@ def run_search(self, job_id: str):
         )
         pipeline = Pipeline(alphabet, **filtered_kwargs)
 
-        if hasattr(job, "bias_filter") and job.bias_filter == "off":
-            logger.info("Disabling bias composition filter")
-            pipeline.bias_filter = False
-        else:
-            logger.info("Using default bias composition filter (enabled)")
+        # Bias filter is disabled for now
+        logger.info("Bias composition filter disabled")
 
         logger.info("Pipeline configured successfully")
 
@@ -414,6 +411,36 @@ def run_search(self, job_id: str):
             # Truncate bracketed content from description
             desc = hit.description.decode() if hit.description else ""
             desc = re.sub(r"\s*\[.*\]$", "", desc)
+
+            # Calculate significant hits using HMMER's internal significance determination
+            if hasattr(hit_list[0], "included"):
+                # Use HMMER's internal significance determination
+                num_significant = sum(1 for h in hit_list if h.included)
+                logger.info(
+                    f"Using HMMER's internal significance: {num_significant} significant hits out of {len(hit_list)} total hits"
+                )
+            else:
+                # Fallback for older pyhmmer versions that don't have the included attribute
+                logger.warning(
+                    "Hit.included attribute not available, falling back to manual threshold calculation"
+                )
+                if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
+                    inc_threshold = job.incE or 0.01
+                    num_significant = sum(
+                        1 for h in hit_list if h.evalue < inc_threshold
+                    )
+                    logger.info(
+                        f"Manual E-value threshold calculation: {num_significant} hits below {inc_threshold}"
+                    )
+                else:
+                    inc_threshold = job.incT or 25.0
+                    num_significant = sum(
+                        1 for h in hit_list if h.score > inc_threshold
+                    )
+                    logger.info(
+                        f"Manual bit score threshold calculation: {num_significant} hits above {inc_threshold}"
+                    )
+
             hit_obj = HitSchema(
                 target=hit.name.decode(),
                 description=desc,
@@ -421,7 +448,7 @@ def run_search(self, job_id: str):
                 score=f"{hit.score:.2f}",
                 sequence=first_domain_seq,
                 num_hits=len(hit_list) or None,
-                num_significant=sum(1 for h in hit_list if h.evalue < 0.01),
+                num_significant=num_significant,
                 domains=domains,
             )
 

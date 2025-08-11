@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from "axios";
-import { API_BASE_URL } from "../utils/appConstants";
+import { API_BASE_URL } from "../utils/constants";
 
 export class ApiClient {
     private static instance: AxiosInstance | null = null;

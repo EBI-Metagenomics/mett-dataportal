@@ -33,36 +33,66 @@
 }
 
 .historyItem {
-  background: transparent;
-  border-radius: 6px;
-  margin-bottom: 6px;
-  padding: 12px 14px;
-  cursor: pointer;
-  font-weight: 400;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
 
-  &:hover {
-    background: #f8f9fa;
-    border-color: #dee2e6;
-  }
+    &:hover {
+        background-color: #f8f9fa;
+    }
 
-  &.selected {
-    background: #e3f2fd;
-    border-color: #3b6fb6;
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(59, 111, 182, 0.2);
-  }
-}
+    &.selected {
+        background-color: #e3f2fd;
+        border-left: 3px solid #2196f3;
+    }
 
-.queryText {
-  font-size: 0.95rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #1a1c1a;
-  margin-bottom: 4px;
-  font-weight: inherit;
+    .itemContent {
+        flex: 1;
+        min-width: 0; // Allow text to truncate
+    }
+
+    .queryText {
+        font-size: 0.9rem;
+        color: #333;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+
+    .dateText {
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    .deleteButton {
+        background: none;
+        border: none;
+        color: #999;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        line-height: 1;
+
+        &:hover {
+            background-color: #ffebee;
+            color: #d32f2f;
+        }
+
+        &:active {
+            transform: scale(0.95);
+        }
+    }
 }
 
 .tooltip {
@@ -84,10 +114,4 @@
   transform: translateY(-100%);
   font-family: 'IBM Plex Mono', Monaco, Consolas, 'Lucida Console', monospace;
   line-height: 1.4;
-}
-
-.dateText {
-  font-size: 0.85rem;
-  color: #6c757d;
-  font-weight: 400;
 } 

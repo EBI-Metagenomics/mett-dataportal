@@ -12,7 +12,7 @@ import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils
 import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../organisms/Gene/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {useFilterStore} from '../../stores/filterStore';
-import {DEFAULT_PER_PAGE_CNT} from '../../utils/appConstants';
+import {DEFAULT_PER_PAGE_CNT} from '../../utils/constants';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);

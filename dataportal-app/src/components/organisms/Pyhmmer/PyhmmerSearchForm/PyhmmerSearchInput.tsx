@@ -1,6 +1,6 @@
 import React, {useRef} from 'react';
 import styles from './PyhmmerSearchInput.module.scss';
-import {EXAMPLE_SEQUENCE} from '../../../../utils/appConstants';
+import {EXAMPLE_SEQUENCE} from '../../../../utils/constants';
 
 interface PyhmmerSearchInputProps {
     sequence: string;
@@ -8,6 +8,8 @@ interface PyhmmerSearchInputProps {
     handleSubmit: (e?: React.FormEvent) => void;
     sequenceError?: string;
     isFormValid: boolean;
+    // Reset functions for all form values
+    onResetAll: () => void;
 }
 
 const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({
@@ -15,7 +17,8 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({
     setSequence, 
     handleSubmit, 
     sequenceError, 
-    isFormValid
+    isFormValid,
+    onResetAll
 }) => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -36,7 +39,7 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({
     };
 
     const handleReset = () => {
-        setSequence('');
+        onResetAll();
     };
 
     return (
@@ -71,19 +74,12 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({
                 >
                     Submit
                 </button>
-                {/* <button 
-                    className="vf-button vf-button--sm" 
-                    type="button" 
-                    onClick={handleReset}
-                >
-                    Reset
-                </button> */}
                 <button
                     className="vf-button vf-button--sm"
                     type="button"
                     onClick={handleReset}
                 >
-                    Clean
+                    Reset
                 </button>
             </div>
         </div>
