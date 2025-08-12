@@ -79,6 +79,9 @@ export const AlignmentView: React.FC<AlignmentViewProps> = ({jobId, target}) => 
                         <div className="domain-header">
                             <span className="domain-number">Domain {index + 1}</span>
                             <span className="domain-score">Bit Score: {domain.bitscore.toFixed(1)}</span>
+                            <span className={`domain-significance ${domain.is_significant ? 'significant' : 'insignificant'}`}>
+                                {domain.is_significant ? '✓ Significant match' : '✗ Insignificant match'}
+                            </span>
                         </div>
                         <AlignmentTable domain={domain}/>
                     </div>

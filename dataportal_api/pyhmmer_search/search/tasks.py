@@ -311,6 +311,36 @@ def run_search(self, job_id: str):
             logger.error(f"Could not log top hits due to error: {e}")
 
         logger.info("Processing individual hits...")
+        
+        # Calculate significant hits count once for all hits
+        if hasattr(hit_list[0], "included"):
+            # Use HMMER's internal significance determination
+            num_significant_total = sum(1 for h in hit_list if h.included)
+            logger.info(
+                f"Using HMMER's internal significance: {num_significant_total} significant hits out of {len(hit_list)} total hits"
+            )
+        else:
+            # Fallback for older pyhmmer versions that don't have the included attribute
+            logger.warning(
+                "Hit.included attribute not available, falling back to manual threshold calculation"
+            )
+            if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
+                inc_threshold = job.incE or 0.01
+                num_significant_total = sum(
+                    1 for h in hit_list if h.evalue < inc_threshold
+                )
+                logger.info(
+                    f"Manual E-value threshold calculation: {num_significant_total} hits below {inc_threshold}"
+                )
+            else:
+                inc_threshold = job.incT or 25.0
+                num_significant_total = sum(
+                    1 for h in hit_list if h.score > inc_threshold
+                )
+                logger.info(
+                    f"Manual bit score threshold calculation: {num_significant_total} hits above {inc_threshold}"
+                )
+        
         for i, hit in enumerate(hit_list):
             logger.info(f"Processing hit {i + 1}/{len(hit_list)}: {hit.name.decode()}")
             logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
@@ -326,6 +356,14 @@ def run_search(self, job_id: str):
                     pyhmmer_alignment = extract_pyhmmer_alignment(alignment)
                     simple_alignment = create_simple_alignment_display(alignment)
 
+                    # Calculate domain significance based on threshold type
+                    if job.threshold == HmmerJob.ThresholdChoices.BITSCORE:
+                        inc_threshold = job.incT or 25.0
+                        domain_is_significant = domain.score > inc_threshold
+                    else:
+                        inc_threshold = job.incE or 0.01
+                        domain_is_significant = domain.i_evalue < inc_threshold
+
                     domain_obj = DomainSchema(
                         env_from=domain.env_from,
                         env_to=domain.env_to,
@@ -334,6 +372,7 @@ def run_search(self, job_id: str):
                         cevalue=getattr(domain, "c_evalue", None),
                         bias=getattr(domain, "bias", None),
                         strand=getattr(domain, "strand", None),
+                        is_significant=domain_is_significant,
                         alignment=pyhmmer_alignment,
                         alignment_display=simple_alignment,
                     )
@@ -387,6 +426,7 @@ def run_search(self, job_id: str):
                             f"Biopython alignment failed for {hit.name.decode()}: {e}"
                         )
 
+                # Create domain object for phmmer case
                 domain_obj = DomainSchema(
                     env_from=getattr(hit, "envelope_from", None),
                     env_to=getattr(hit, "envelope_to", None),
@@ -395,11 +435,13 @@ def run_search(self, job_id: str):
                     cevalue=getattr(hit, "c_evalue", None),
                     bias=getattr(hit, "bias", None),
                     strand=None,
+                    is_significant=is_significant,  # Use the hit-level significance for phmmer case
                     alignment=pyhmmer_alignment,
                     alignment_display=simple_alignment,
                 )
                 domains.append(domain_obj)
 
+            # Get first domain sequence for display
             first_domain_seq = None
             if (
                 domains
@@ -408,38 +450,43 @@ def run_search(self, job_id: str):
             ):
                 first_domain_seq = domains[0].alignment.target_sequence.replace("-", "")
 
+            # Determine if this specific hit is significant
+            if hasattr(hit, "included"):
+                # Use HMMER's internal significance determination
+                is_significant = hit.included
+            else:
+                # Fallback for older pyhmmer versions
+                if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
+                    inc_threshold = job.incE or 0.01
+                    is_significant = hit.evalue < inc_threshold
+                else:
+                    inc_threshold = job.incT or 25.0
+                    is_significant = hit.score > inc_threshold
+
+            # Count domains for this specific gene
+            gene_domain_count = len(domains)
+            
+            # Count significant domains for this gene based on threshold type
+            if job.threshold == HmmerJob.ThresholdChoices.BITSCORE:
+                inc_threshold = job.incT or 25.0
+                gene_significant_domain_count = sum(1 for domain in domains if domain.bitscore > inc_threshold)
+            else:
+                inc_threshold = job.incE or 0.01
+                gene_significant_domain_count = sum(1 for domain in domains if domain.ievalue < inc_threshold)
+
+            # Get bias value with proper type conversion
+            raw_bias = getattr(hit, "bias", None)
+            bias_value = None
+            if raw_bias is not None:
+                try:
+                    bias_value = float(raw_bias)
+                except (ValueError, TypeError):
+                    logger.warning(f"Could not convert bias value {raw_bias} to float for hit {hit.name.decode()}")
+                    bias_value = None
+
             # Truncate bracketed content from description
             desc = hit.description.decode() if hit.description else ""
             desc = re.sub(r"\s*\[.*\]$", "", desc)
-
-            # Calculate significant hits using HMMER's internal significance determination
-            if hasattr(hit_list[0], "included"):
-                # Use HMMER's internal significance determination
-                num_significant = sum(1 for h in hit_list if h.included)
-                logger.info(
-                    f"Using HMMER's internal significance: {num_significant} significant hits out of {len(hit_list)} total hits"
-                )
-            else:
-                # Fallback for older pyhmmer versions that don't have the included attribute
-                logger.warning(
-                    "Hit.included attribute not available, falling back to manual threshold calculation"
-                )
-                if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
-                    inc_threshold = job.incE or 0.01
-                    num_significant = sum(
-                        1 for h in hit_list if h.evalue < inc_threshold
-                    )
-                    logger.info(
-                        f"Manual E-value threshold calculation: {num_significant} hits below {inc_threshold}"
-                    )
-                else:
-                    inc_threshold = job.incT or 25.0
-                    num_significant = sum(
-                        1 for h in hit_list if h.score > inc_threshold
-                    )
-                    logger.info(
-                        f"Manual bit score threshold calculation: {num_significant} hits above {inc_threshold}"
-                    )
 
             hit_obj = HitSchema(
                 target=hit.name.decode(),
@@ -447,51 +494,41 @@ def run_search(self, job_id: str):
                 evalue=f"{hit.evalue:.2e}",
                 score=f"{hit.score:.2f}",
                 sequence=first_domain_seq,
-                num_hits=len(hit_list) or None,
-                num_significant=num_significant,
+                bias=bias_value,
+                num_hits=gene_domain_count,  # Number of domains for this gene
+                num_significant=gene_significant_domain_count,  # Number of significant domains for this gene
+                is_significant=is_significant, # Whether this gene has any significant domains
                 domains=domains,
             )
 
-            logger.info("Checking if hit passes filter...")
-            logger.info(
-                f"Job threshold: {job.threshold}, threshold_value: {job.threshold_value}"
-            )
-            logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
+            # Debug logging for is_significant
+            logger.info(f"Hit {hit.name.decode()}: is_significant = {is_significant}")
+            logger.info(f"Hit object is_significant field: {hit_obj.is_significant}")
+            logger.info(f"Hit raw bias: {getattr(hit, 'bias', None)}")
+            logger.info(f"Hit converted bias: {bias_value}")
+            logger.info(f"Hit object bias field: {hit_obj.bias}")
 
-            if (
-                job.threshold == HmmerJob.ThresholdChoices.EVALUE
-                and hit.evalue < job.threshold_value
-            ):
-                logger.info(
-                    f"Hit passes EVALUE filter: {hit.evalue} < {job.threshold_value}"
-                )
-                results.append(hit_obj)
-            elif (
-                job.threshold == HmmerJob.ThresholdChoices.BITSCORE
-                and hit.score > job.threshold_value
-            ):
-                logger.info(
-                    f"Hit passes BITSCORE filter: {hit.score} > {job.threshold_value}"
-                )
-                results.append(hit_obj)
-            else:
-                if job.threshold == HmmerJob.ThresholdChoices.EVALUE:
-                    logger.info(
-                        f"Hit does not pass EVALUE filter: {hit.evalue} >= {job.threshold_value}"
-                    )
-                else:
-                    logger.info(
-                        f"Hit does not pass BITSCORE filter: {hit.score} <= {job.threshold_value}"
-                    )
+            logger.info("Adding hit to results (no filtering applied)...")
+            # Add ALL hits to results, don't filter by threshold
+            results.append(hit_obj)
+            logger.info(f"Added hit {hit.name.decode()} to results. Results count now: {len(results)}")
 
         logger.info("=== SEARCH COMPLETED ===")
         logger.info(f"Total hits processed: {len(hit_list)}")
-        logger.info(f"Hits passing filter: {len(results)}")
+        logger.info(f"Hits added to results: {len(results)}")
+        logger.info(f"Results list contents: {[r.target for r in results]}")
 
         # Convert results to dicts for return
         result_dicts = [h.model_dump() for h in results]
         logger.info(f"Result dicts created: {len(result_dicts)}")
         logger.info(f"First result dict: {result_dicts[0] if result_dicts else 'None'}")
+        
+        # Debug: Check if is_significant is in the first result
+        if result_dicts:
+            first_result = result_dicts[0]
+            logger.info(f"First result keys: {list(first_result.keys())}")
+            logger.info(f"First result is_significant: {first_result.get('is_significant')}")
+            logger.info(f"First result target: {first_result.get('target')}")
 
         logger.info("Saving results to database...")
         if job.task:

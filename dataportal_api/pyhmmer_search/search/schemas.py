@@ -82,6 +82,7 @@ class DomainSchema(Schema):
     strand: Optional[str] = Field(
         None, description="Strand where domain is located (+/-)"
     )
+    is_significant: bool = Field(..., description="Whether this domain is significant")
 
     # Alignment data
     alignment: Optional[PyhmmerAlignmentSchema] = Field(
@@ -99,10 +100,13 @@ class HitSchema(Schema):
     description: str = Field(..., description="Target sequence description")
     evalue: str = Field(..., description="E-value formatted as string")
     score: str = Field(..., description="Bit score formatted as string")
+    sequence: Optional[str] = Field(None, description="Target sequence")
+    bias: Optional[float] = Field(None, description="Bias score contribution")
     num_hits: Optional[int] = Field(None, description="Total number of hits")
     num_significant: Optional[int] = Field(
         None, description="Number of significant hits"
     )
+    is_significant: bool = Field(..., description="Whether this individual hit is significant")
     domains: List[DomainSchema] = Field(..., description="List of domains for this hit")
 
 

@@ -133,6 +133,27 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                     </button>
                 </div>
             )}
+            {/* Results summary */}
+            {results.length > 0 && (
+                <div className={styles.resultsSummary}>
+                    <div className={styles.summaryItem}>
+                        <span className={styles.summaryLabel}>Total Genes:</span>
+                        <span className={styles.summaryValue}>{results.length}</span>
+                    </div>
+                    <div className={styles.summaryItem}>
+                        <span className={styles.summaryLabel}>Total Domains:</span>
+                        <span className={styles.summaryValue}>
+                            {results.reduce((sum, r) => sum + (r.num_hits || 0), 0)}
+                        </span>
+                    </div>
+                    <div className={styles.summaryItem}>
+                        <span className={styles.summaryLabel}>Significant Domains:</span>
+                        <span className={styles.summaryValue}>
+                            {results.reduce((sum, r) => sum + (r.num_significant || 0), 0)}
+                        </span>
+                    </div>
+                </div>
+            )}
             <table className={styles.resultsTable}>
                 <thead>
                 <tr>
@@ -179,8 +200,8 @@ const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loadi
                                 </td>
                                 <td>{result.evalue}</td>
                                 <td>{result.score}</td>
-                                <td>{result.num_hits}</td>
-                                <td>{result.num_significant}</td>
+                                <td>{result.num_hits || 0}</td>
+                                <td>{result.num_significant || 0}</td>
                                 <td>{result.description ?? '-'}</td>
                             </tr>
                             {isExpanded && hasHits && jobId && (

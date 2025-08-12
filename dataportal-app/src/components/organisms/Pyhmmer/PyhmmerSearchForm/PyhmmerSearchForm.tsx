@@ -129,11 +129,18 @@ const PyhmmerSearchForm: React.FC = () => {
     // Load search history from localStorage
     const loadSearchHistory = () => {
         try {
+            console.log('=== LOAD SEARCH HISTORY ===');
             const historyKey = 'pyhmmer_search_history';
             const existingHistory = localStorage.getItem(historyKey);
             
             if (existingHistory) {
                 const history = JSON.parse(existingHistory);
+                console.log('Raw history from localStorage:', history.length, 'items');
+                console.log('Raw history dates:', history.map((item: any) => ({ 
+                    jobId: item.jobId, 
+                    dateCreated: item.dateCreated, 
+                    date: item.date 
+                })));
                 
                 // Automatically clean up old items if cleanup is enabled
                 let cleanedHistory = history;
@@ -155,13 +162,24 @@ const PyhmmerSearchForm: React.FC = () => {
                     console.log('Search history cleanup is disabled (SEARCH_HISTORY_CLEANUP_DAYS = 0)');
                 }
                 
+                console.log('Cleaned history items:', cleanedHistory.length);
+                
                 // Format dates for display
                 const formattedHistory = cleanedHistory.map((item: any) => ({
                     ...item,
                     date: formatRelativeDate(item.dateCreated)
                 }));
                 
+                console.log('Formatted history dates:', formattedHistory.map((item: any) => ({ 
+                    jobId: item.jobId, 
+                    dateCreated: item.dateCreated, 
+                    date: item.date 
+                })));
+                
                 setHistory(formattedHistory);
+                console.log('History state set with formatted dates');
+            } else {
+                console.log('No existing history found in localStorage');
             }
         } catch (error) {
             console.error('Error loading search history:', error);
@@ -178,13 +196,18 @@ const PyhmmerSearchForm: React.FC = () => {
             const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
             const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-            if (diffInMinutes < 1) return 'Just now';
-            if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
-            if (diffInHours < 24) return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
-            if (diffInDays < 7) return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
-            if (diffInDays < 14) return `${Math.floor(diffInDays / 7)} week ago`;
-            return date.toLocaleDateString();
+            let result: string;
+            if (diffInMinutes < 1) result = 'Just now';
+            else if (diffInMinutes < 60) result = `${diffInMinutes} min ago`;
+            else if (diffInHours < 24) result = `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
+            else if (diffInDays < 7) result = `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+            else if (diffInDays < 14) result = `${Math.floor(diffInDays / 7)} week ago`;
+            else result = date.toLocaleDateString();
+
+            console.log(`formatRelativeDate: "${dateString}" -> "${result}" (${diffInMinutes} min ago)`);
+            return result;
         } catch (error) {
+            console.error('Error formatting date:', error, 'for date string:', dateString);
             return 'Unknown date';
         }
     };
@@ -196,6 +219,14 @@ const PyhmmerSearchForm: React.FC = () => {
             const existingHistory = localStorage.getItem(historyKey);
             const history = existingHistory ? JSON.parse(existingHistory) : [];
             
+            console.log('=== SAVE SEARCH TO HISTORY ===');
+            console.log('Existing history items:', history.length);
+            console.log('Existing history dates:', history.map((item: any) => ({ 
+                jobId: item.jobId, 
+                dateCreated: item.dateCreated, 
+                date: item.date 
+            })));
+            
             const newHistoryItem = {
                 jobId,
                 query: query.substring(0, 100) + (query.length > 100 ? '...' : ''), // Truncate long queries
@@ -204,14 +235,37 @@ const PyhmmerSearchForm: React.FC = () => {
                 status: 'pending'
             };
             
+            console.log('New history item:', newHistoryItem);
+            
             // Add to beginning of history
             const updatedHistory = [newHistoryItem, ...history];
             
             // Keep only last 50 items to prevent localStorage from getting too large
             const trimmedHistory = updatedHistory.slice(0, 50);
             
-            localStorage.setItem(historyKey, JSON.stringify(trimmedHistory));
-            setHistory(trimmedHistory);
+            // Save raw data to localStorage (without formatted dates)
+            const rawHistoryForStorage = trimmedHistory.map(item => ({
+                ...item,
+                date: undefined // Remove formatted date for storage
+            }));
+            localStorage.setItem(historyKey, JSON.stringify(rawHistoryForStorage));
+            
+            console.log('Saved raw history to localStorage (without formatted dates)');
+            
+            // Format dates for display before setting state
+            const formattedHistory = trimmedHistory.map((item: any) => ({
+                ...item,
+                date: formatRelativeDate(item.dateCreated)
+            }));
+            
+            console.log('Formatted history dates:', formattedHistory.map((item: any) => ({ 
+                jobId: item.jobId, 
+                dateCreated: item.dateCreated, 
+                date: item.date 
+            })));
+            
+            setHistory(formattedHistory);
+            console.log('History state updated with formatted dates');
         } catch (error) {
             console.error('Error saving search to history:', error);
         }
@@ -221,7 +275,15 @@ const PyhmmerSearchForm: React.FC = () => {
     const removeFromHistory = (jobId: string) => {
         try {
             PyhmmerService.removeFromHistory(jobId);
-            setHistory(prev => prev.filter(item => item.jobId !== jobId));
+            // Update state with properly formatted dates
+            setHistory(prev => {
+                const filteredHistory = prev.filter(item => item.jobId !== jobId);
+                // Re-format dates to ensure they're current
+                return filteredHistory.map((item: any) => ({
+                    ...item,
+                    date: formatRelativeDate(item.dateCreated)
+                }));
+            });
         } catch (error) {
             console.error('Error removing item from history:', error);
         }
@@ -385,6 +447,7 @@ const PyhmmerSearchForm: React.FC = () => {
             score: (hit.score ?? hit.Score ?? '-') as string,
             num_hits: (hit.num_hits ?? 0) as number,
             num_significant: (hit.num_significant ?? 0) as number,
+            is_significant: (hit.is_significant ?? false) as boolean,
             bias: (hit.bias ?? 0) as number,
             description: (hit.description ?? hit.desc ?? '-') as string,
             domains: (hit.domains || []) as any[], // Include domains from backend

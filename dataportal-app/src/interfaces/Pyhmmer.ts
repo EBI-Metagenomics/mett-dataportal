@@ -49,6 +49,7 @@ export interface PyhmmerDomain {
     cevalue?: number;
     bias?: number;
     strand?: string;
+    is_significant: boolean;
     alignment?: PyhmmerAlignment;
     alignment_display?: AlignmentDisplay;
 }
@@ -60,6 +61,7 @@ export interface PyhmmerResult {
     score: string;
     num_hits: number;
     num_significant: number;
+    is_significant: boolean;
     bias?: number;
     description?: string;
     domains?: PyhmmerDomain[];
