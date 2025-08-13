@@ -12,6 +12,8 @@ from .models import HmmerJob
 from .schemas import SearchRequestSchema, SearchResponseSchema
 from .tasks import run_search
 
+import time
+
 logger = logging.getLogger(__name__)
 
 pyhmmer_router_search = Router(tags=["PyHMMER Search"])
@@ -36,9 +38,6 @@ def search(request, body: SearchRequestSchema):
         try:
             job.refresh_from_db()
             logger.info(f"Job verified in database with ID: {job.id}")
-
-            import time
-
             time.sleep(0.1)
             logger.info(f"Job {job.id} should be committed to database")
         except Exception as e:

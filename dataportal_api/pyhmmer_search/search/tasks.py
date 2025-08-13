@@ -312,7 +312,7 @@ def run_search(self, job_id: str):
 
         logger.info("Processing individual hits...")
         
-        # Calculate significant hits count once for all hits
+
         if hasattr(hit_list[0], "included"):
             # Use HMMER's internal significance determination
             num_significant_total = sum(1 for h in hit_list if h.included)
