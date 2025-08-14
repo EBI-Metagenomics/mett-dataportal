@@ -1,7 +1,7 @@
 import {useEffect} from 'react'
 import {useUrlState} from './useUrlState'
 import {useFilterStore} from '../stores/filterStore'
-import {GENE_TAB_URL_CONFIG, GENOME_TAB_URL_CONFIG, syncStoreToUrl, syncUrlToStore} from '../utils/urlSync'
+import {GENE_TAB_URL_CONFIG, GENOME_TAB_URL_CONFIG, syncStoreToUrl, syncUrlToStore} from '../utils/common/urlSync'
 
 export const useTabAwareUrlSync = (activeTab: string) => {
     const {searchParams, updateUrl} = useUrlState()

@@ -311,7 +311,6 @@ def run_search(self, job_id: str):
             logger.error(f"Could not log top hits due to error: {e}")
 
         logger.info("Processing individual hits...")
-        
 
         if hasattr(hit_list[0], "included"):
             # Use HMMER's internal significance determination
@@ -340,7 +339,7 @@ def run_search(self, job_id: str):
                 logger.info(
                     f"Manual bit score threshold calculation: {num_significant_total} hits above {inc_threshold}"
                 )
-        
+
         for i, hit in enumerate(hit_list):
             logger.info(f"Processing hit {i + 1}/{len(hit_list)}: {hit.name.decode()}")
             logger.info(f"Hit evalue: {hit.evalue}, score: {hit.score}")
@@ -465,14 +464,18 @@ def run_search(self, job_id: str):
 
             # Count domains for this specific gene
             gene_domain_count = len(domains)
-            
+
             # Count significant domains for this gene based on threshold type
             if job.threshold == HmmerJob.ThresholdChoices.BITSCORE:
                 inc_threshold = job.incT or 25.0
-                gene_significant_domain_count = sum(1 for domain in domains if domain.bitscore > inc_threshold)
+                gene_significant_domain_count = sum(
+                    1 for domain in domains if domain.bitscore > inc_threshold
+                )
             else:
                 inc_threshold = job.incE or 0.01
-                gene_significant_domain_count = sum(1 for domain in domains if domain.ievalue < inc_threshold)
+                gene_significant_domain_count = sum(
+                    1 for domain in domains if domain.ievalue < inc_threshold
+                )
 
             # Get bias value with proper type conversion
             raw_bias = getattr(hit, "bias", None)
@@ -481,7 +484,9 @@ def run_search(self, job_id: str):
                 try:
                     bias_value = float(raw_bias)
                 except (ValueError, TypeError):
-                    logger.warning(f"Could not convert bias value {raw_bias} to float for hit {hit.name.decode()}")
+                    logger.warning(
+                        f"Could not convert bias value {raw_bias} to float for hit {hit.name.decode()}"
+                    )
                     bias_value = None
 
             # Truncate bracketed content from description
@@ -497,7 +502,7 @@ def run_search(self, job_id: str):
                 bias=bias_value,
                 num_hits=gene_domain_count,  # Number of domains for this gene
                 num_significant=gene_significant_domain_count,  # Number of significant domains for this gene
-                is_significant=is_significant, # Whether this gene has any significant domains
+                is_significant=is_significant,  # Whether this gene has any significant domains
                 domains=domains,
             )
 
@@ -511,7 +516,9 @@ def run_search(self, job_id: str):
             logger.info("Adding hit to results (no filtering applied)...")
             # Add ALL hits to results, don't filter by threshold
             results.append(hit_obj)
-            logger.info(f"Added hit {hit.name.decode()} to results. Results count now: {len(results)}")
+            logger.info(
+                f"Added hit {hit.name.decode()} to results. Results count now: {len(results)}"
+            )
 
         logger.info("=== SEARCH COMPLETED ===")
         logger.info(f"Total hits processed: {len(hit_list)}")
@@ -522,12 +529,14 @@ def run_search(self, job_id: str):
         result_dicts = [h.model_dump() for h in results]
         logger.info(f"Result dicts created: {len(result_dicts)}")
         logger.info(f"First result dict: {result_dicts[0] if result_dicts else 'None'}")
-        
+
         # Debug: Check if is_significant is in the first result
         if result_dicts:
             first_result = result_dicts[0]
             logger.info(f"First result keys: {list(first_result.keys())}")
-            logger.info(f"First result is_significant: {first_result.get('is_significant')}")
+            logger.info(
+                f"First result is_significant: {first_result.get('is_significant')}"
+            )
             logger.info(f"First result target: {first_result.get('target')}")
 
         logger.info("Saving results to database...")

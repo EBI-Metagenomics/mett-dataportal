@@ -101,14 +101,14 @@ export const useFacetedFilters = ({
         }
 
         try {
-            console.log('loadFacets called with:', {
-                selectedSpecies,
-                selectedGenomes,
-                searchQuery,
-                filterStore: filterStore.facetedFilters,
-                operators: filterStore.facetOperators,
-                forceRefresh
-            });
+            // console.log('loadFacets called with:', {
+            //     selectedSpecies,
+            //     selectedGenomes,
+            //     searchQuery,
+            //     filterStore: filterStore.facetedFilters,
+            //     operators: filterStore.facetOperators,
+            //     forceRefresh
+            // });
 
             isLoadingFacets.current = true;
             setLoading(true);
@@ -193,7 +193,7 @@ export const useFacetedFilters = ({
                 updatedFacets[facetGroup] = Array.from(responseMap.values());
             }
 
-            console.log('Setting facets:', updatedFacets);
+            // console.log('Setting facets:', updatedFacets);
             setFacets(updatedFacets);
         } catch (err) {
             console.error('Error loading facets:', err);
@@ -282,23 +282,23 @@ export const useFacetedFilters = ({
             return;
         }
 
-        console.log('useFacetedFilters useEffect:', {
-            currentGenomeKey,
-            selectedSpecies,
-            searchQuery,
-            searchQueryLength: searchQuery.length,
-            isGeneViewerPage,
-            filtersAreInitial,
-            genomeChanged,
-            speciesChanged,
-            searchQueryChanged,
-            filtersChanged,
-            operatorsChanged,
-            hasLoadedInitialFacets: hasLoadedInitialFacets.current,
-            isInitialMount: isInitialMount.current,
-            selectedGenomes: selectedGenomes,
-            selectedGenomesLength: selectedGenomes.length
-        });
+        // console.log('useFacetedFilters useEffect:', {
+        //     currentGenomeKey,
+        //     selectedSpecies,
+        //     searchQuery,
+        //     searchQueryLength: searchQuery.length,
+        //     isGeneViewerPage,
+        //     filtersAreInitial,
+        //     genomeChanged,
+        //     speciesChanged,
+        //     searchQueryChanged,
+        //     filtersChanged,
+        //     operatorsChanged,
+        //     hasLoadedInitialFacets: hasLoadedInitialFacets.current,
+        //     isInitialMount: isInitialMount.current,
+        //     selectedGenomes: selectedGenomes,
+        //     selectedGenomesLength: selectedGenomes.length
+        // });
 
         lastGenomeRef.current = currentGenomeKey;
         lastSpeciesRef.current = selectedSpecies;
@@ -372,7 +372,7 @@ export const useFacetedFilters = ({
             // Call loadFacets directly for immediate changes
             loadFacets();
         } else {
-            console.log('No facets loading needed');
+            // console.log('No facets loading needed');
         }
     }, [
         selectedSpecies,

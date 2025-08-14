@@ -1,7 +1,7 @@
 import {useState} from 'react';
-import {GeneService} from '../services/geneService';
+import {GeneService} from '../services/gene';
 import {GenomeMeta} from '../interfaces/Genome';
-import {APP_CONSTANTS} from '../utils/constants';
+import {APP_CONSTANTS} from '../utils/common/constants';
 import {useFilterStore} from '../stores/filterStore';
 
 interface UseGeneViewerSearchProps {

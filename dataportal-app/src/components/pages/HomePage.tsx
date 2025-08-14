@@ -1,8 +1,8 @@
 import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {useLocation} from 'react-router-dom'
-import GeneSearchForm from '@components/organisms/Gene/GeneSearchForm/GeneSearchForm';
-import GenomeSearchForm from '@components/organisms/Genome/GenomeSearchForm/GenomeSearchForm';
-import PyhmmerSearchForm from '@components/organisms/Pyhmmer/PyhmmerSearchForm/PyhmmerSearchForm';
+import GeneSearchForm from '@components/features/gene-viewer/GeneSearchForm/GeneSearchForm';
+import GenomeSearchForm from '@components/features/genome/GenomeSearchForm/GenomeSearchForm';
+import PyhmmerSearchForm from '@components/features/pyhmmer/PyhmmerSearchForm/PyhmmerSearchForm';
 import {useFeatureFlags} from '../../hooks/useFeatureFlags';
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
@@ -12,9 +12,8 @@ import {useFilterStore} from '../../stores/filterStore';
 import {useGenomeData} from '../../hooks';
 import {useTabAwareUrlSync} from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
-import {GeneService} from '../../services/geneService';
-import {DEFAULT_PER_PAGE_CNT} from '../../utils/constants';
-import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../utils/filterUtils';
+import {GeneService} from '../../services/gene';
+import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../utils/common/filterUtils';
 
 interface Tab {
     id: string;
@@ -53,7 +52,7 @@ const HomePage: React.FC = () => {
     const [geneResults, setGeneResults] = useState<any[]>([]);
     const [geneLoading, setGeneLoading] = useState(false);
     const [genePagination, setGenePagination] = useState<any>(null);
-    const [genePerPage, setGenePerPage] = useState(DEFAULT_PER_PAGE_CNT);
+    const [genePerPage, setGenePerPage] = useState(20); // Default per page count
 
     const hasUserSelectedTab = useRef(false);
     const hasLoadedInitialGenes = useRef(false);

@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {FeatureFlags, FeatureService} from '../services/featureService';
+import {FeatureFlags, FeatureService} from '../services/common/featureService';
 
 export const useFeatureFlags = () => {
     const [features, setFeatures] = useState<FeatureFlags | null>(null);

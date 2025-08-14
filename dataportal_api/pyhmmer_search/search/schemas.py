@@ -106,7 +106,9 @@ class HitSchema(Schema):
     num_significant: Optional[int] = Field(
         None, description="Number of significant hits"
     )
-    is_significant: bool = Field(..., description="Whether this individual hit is significant")
+    is_significant: bool = Field(
+        ..., description="Whether this individual hit is significant"
+    )
     domains: List[DomainSchema] = Field(..., description="List of domains for this hit")
 
 

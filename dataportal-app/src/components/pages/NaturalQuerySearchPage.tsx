@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { ApiClient } from '../../services/apiInstance';
-import GeneResultsTable from '@components/organisms/Gene/GeneResultsHandler/GeneResultsTable';
+import { ApiClient } from '../../services/common/apiInstance';
+import GeneResultsTable from '@components/features/gene-viewer/GeneResultsHandler/GeneResultsTable';
 import Pagination from '@components/molecules/Pagination';
 import { GeneMeta } from '../../interfaces/Gene';
 import { LinkData } from '../../interfaces/Auxiliary';

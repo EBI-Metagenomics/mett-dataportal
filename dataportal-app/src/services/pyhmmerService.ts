@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../utils/constants';
+import { API_BASE_URL } from '../utils/common/constants';
 import {
     PyhmmerDatabase,
     PyhmmerSearchRequest,
@@ -7,9 +7,9 @@ import {
     PyhmmerMXChoice,
     PyhmmerDomain
 } from '../interfaces/Pyhmmer';
-import { BaseService } from './BaseService';
-import { cacheResponse } from './cachingDecorator';
-import { ApiService } from './api';
+import { BaseService } from './common/BaseService';
+import { cacheResponse } from './common/cachingDecorator';
+import { ApiService } from './common/api';
 
 const API_BASE_SEARCH = '/pyhmmer/search';
 const API_BASE_RESULT = '/pyhmmer/result';

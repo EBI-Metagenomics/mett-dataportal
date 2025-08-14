@@ -5,12 +5,9 @@ These tests focus on schema validation, basic API structure, and core functional
 without requiring database connections or complex test data setup.
 """
 
-import pytest
 from django.test import TestCase
-from ninja.testing import TestClient
 
-from pyhmmer_search.search.api import pyhmmer_router_search
-from pyhmmer_search.search.schemas import SearchRequestSchema, HitSchema, DomainSchema
+from pyhmmer_search.search.schemas import SearchRequestSchema, HitSchema
 
 
 class TestPyhmmerBasicFunctionality(TestCase):
@@ -33,15 +30,18 @@ class TestPyhmmerBasicFunctionality(TestCase):
             "incT": None,
             "incdomT": None,
             "popen": 0.02,
-            "pextend": 0.4
+            "pextend": 0.4,
         }
-        
+
         try:
             schema = SearchRequestSchema(**valid_request)
             self.assertEqual(schema.database, "bu_pv_all")
             self.assertEqual(schema.threshold, "evalue")
             self.assertEqual(schema.threshold_value, 0.01)
-            self.assertEqual(schema.input, ">Example protein sequence\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY")
+            self.assertEqual(
+                schema.input,
+                ">Example protein sequence\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY",
+            )
         except Exception as e:
             self.fail(f"Valid request should not raise exception: {e}")
 
@@ -58,7 +58,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
     #         "incE": 0.01,
     #         "incdomE": 0.03
     #     }
-        
+
     #     with self.assertRaises(Exception):
     #         SearchRequestSchema(**invalid_request)
 
@@ -72,9 +72,9 @@ class TestPyhmmerBasicFunctionality(TestCase):
             "num_hits": 3,
             "num_significant": 2,
             "is_significant": True,
-            "domains": []
+            "domains": [],
         }
-        
+
         try:
             hit = HitSchema(**valid_hit_data)
             self.assertEqual(hit.target, "BU_GENE_1")
@@ -88,6 +88,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
         except Exception as e:
             self.fail(f"Valid hit data should not raise exception: {e}")
 
+
 #     def test_domain_schema_creation(self):
 #         """Test that DomainSchema can be created with valid data."""
 #         valid_domain_data = {
@@ -97,7 +98,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #             "ievalue": 1e-10,
 #             "is_significant": True
 #         }
-        
+
 #         try:
 #             domain = DomainSchema(**valid_domain_data)
 #             self.assertEqual(domain.env_from, 1)
@@ -112,7 +113,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #         """Test that the API router is properly initialized."""
 #         # Check that the router has the expected endpoints
 #         routes = pyhmmer_router_search.routes
-        
+
 #         # Should have at least the search endpoint
 #         self.assertIsNotNone(routes)
 #         self.assertGreater(len(routes), 0)
@@ -120,13 +121,13 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #     def test_api_response_structure(self):
 #         """Test basic API response structure without database operations."""
 #         client = TestClient(pyhmmer_router_search)
-        
+
 #         # Test with empty request (should fail validation)
 #         response = client.post("", json={})
-        
+
 #         # Should return 422 (validation error) for empty request
 #         self.assertEqual(response.status_code, 422)
-        
+
 #         # Response should contain error details
 #         response_data = response.json()
 #         self.assertIsInstance(response_data, dict)
@@ -144,7 +145,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #             "incE": 0.01,
 #             "incdomE": 0.03
 #         }
-        
+
 #         try:
 #             schema = SearchRequestSchema(**valid_evalue_request)
 #             # E-value threshold should be positive
@@ -165,7 +166,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #             "incT": 25.0,
 #             "incdomT": 25.0
 #         }
-        
+
 #         try:
 #             schema = SearchRequestSchema(**valid_bitscore_request)
 #             # Bit score threshold should be positive
@@ -189,7 +190,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #             "incE": 0.01,
 #             "incdomE": 0.03
 #         }
-        
+
 #         try:
 #             schema = SearchRequestSchema(**valid_request)
 #             self.assertEqual(schema.input, valid_sequence)
@@ -208,7 +209,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #             "incE": 0.01,
 #             "incdomE": 0.03
 #         }
-        
+
 #         with self.assertRaises(Exception):
 #             SearchRequestSchema(**invalid_request)
 
@@ -231,7 +232,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #             "popen": 0.02,
 #             "pextend": 0.4
 #         }
-        
+
 #         try:
 #             schema = SearchRequestSchema(**float_request)
 #             self.assertIsInstance(schema.E, float)
@@ -250,7 +251,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #             "threshold_value": 0.01,
 #             "input": ">Example protein sequence\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY"
 #         }
-        
+
 #         try:
 #             schema = SearchRequestSchema(**minimal_request)
 #             # Optional fields should have default values or be None
@@ -274,7 +275,7 @@ class TestPyhmmerBasicFunctionality(TestCase):
 #             "incE": 0.01,
 #             "incdomE": 0.03
 #         }
-        
+
 #         try:
 #             schema = SearchRequestSchema(**valid_string_request)
 #             self.assertIsInstance(schema.database, str)

@@ -1,18 +1,21 @@
 import React, {useEffect, useState, useCallback, useMemo, useRef} from 'react';
-import useGeneViewerState from '@components/organisms/Gene/GeneViewer/geneViewerState';
+import useGeneViewerState from '@components/features/gene-viewer/GeneViewer/geneViewerState';
 import styles from "./GeneViewerPage.module.scss";
-import GeneSearchForm from "@components/organisms/Gene/GeneSearchForm/GeneSearchForm";
+import GeneSearchForm from "@components/features/gene-viewer/GeneSearchForm/GeneSearchForm";
 
 // Import new hooks and utilities
 import {useGeneViewerData, useGeneViewerNavigation, useGeneViewerSearch} from '../../hooks';
 import {useGeneViewerUrlSync} from '../../hooks/useGeneViewerUrlSync';
 import {useDebouncedLoading} from '../../hooks/useDebouncedLoading';
 
-import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils/geneViewerConfig';
-import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../organisms/Gene/GeneViewerUI';
+import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils/gene-viewer';
+import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../features/gene-viewer/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {useFilterStore} from '../../stores/filterStore';
-import {DEFAULT_PER_PAGE_CNT} from '../../utils/constants';
+import {DEFAULT_PER_PAGE_CNT} from '../../utils/common/constants';
+
+// Import PyHMMER integration component
+import { PyhmmerIntegration } from '../features/pyhmmer/feature-panel/PyhmmerIntegration';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -42,8 +45,6 @@ const GeneViewerPage: React.FC = () => {
         minLoadingTime: 500
     });
 
-
-
     // Call the hook directly - it's already optimized internally
     const geneViewerConfig = useGeneViewerConfig(
         geneViewerData.genomeMeta,
@@ -69,8 +70,6 @@ const GeneViewerPage: React.FC = () => {
         geneViewerData.genomeMeta?.isolate_name || '',
         jbrowseInitKey
     );
-
-
 
     const handleTrackRefresh = useCallback(() => {
         if (!viewState) return;
@@ -159,7 +158,6 @@ const GeneViewerPage: React.FC = () => {
                (initializationError ? initializationError.toString() : null);
     }, [geneViewerData.error, navigation.navigationError, initializationError]);
 
-
     return (
         <ErrorBoundary onError={handleError}>
             <div>
@@ -173,10 +171,10 @@ const GeneViewerPage: React.FC = () => {
                 )} */}
 
                 <div className={`vf-content ${styles.vfContent}`}>
-                    <div style={{height: '20px'}}></div>
+                    <div className={styles.spacer}></div>
                 </div>
                 <div className={`vf-content ${styles.vfContent}`}>
-                    <span style={{display: 'none'}}><p>placeholder</p></span>
+                    <span className={styles.hidden}><p>placeholder</p></span>
                 </div>
 
                 <section>
@@ -195,7 +193,16 @@ const GeneViewerPage: React.FC = () => {
                         viewState={viewState}
                         height={height}
                         onRefreshTracks={handleRefreshTracks}
+                        // Feature selection is now handled by JBrowse's built-in feature panel
                     />
+
+                    {/* PyHMMER Integration - handles all PyHMMER functionality */}
+                    <PyhmmerIntegration />
+
+                    {/* Instructions for JBrowse Integration */}
+                    <div className={styles.pyhmmerIntegration}> 
+                        {/* PyHMMER search links will use CSS classes from the module */}
+                    </div>
 
                     {/* Gene Search Section */}
                     <div className={styles.geneSearchContainer}>
@@ -221,8 +228,6 @@ const GeneViewerPage: React.FC = () => {
                             />
                         </section>
                     </div>
-
-
                 </section>
             </div>
         </ErrorBoundary>

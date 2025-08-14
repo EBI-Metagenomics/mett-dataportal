@@ -1,8 +1,8 @@
-import { BaseService } from "./BaseService";
+import { BaseService } from "./common/BaseService";
 import { AutocompleteResponse, GenomeMeta } from "../interfaces/Genome";
 import { PaginatedApiResponse } from "../interfaces/ApiResponse";
-import { transformAutocompleteResponse, transformGenomeMeta } from "../utils/transformer";
-import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../utils/constants";
+import { transformAutocompleteResponse, transformGenomeMeta } from "../utils/common/transformer";
+import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../utils/common/constants";
 
 // Valid sort fields for genomes
 const VALID_GENOME_SORT_FIELDS = {

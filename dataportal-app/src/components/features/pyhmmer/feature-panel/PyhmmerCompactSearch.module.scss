@@ -1,0 +1,249 @@
+.pyhmmerCompactSearch {
+  font-family: inherit;
+  color: inherit;
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.searchForm {
+  padding: 1rem;
+}
+
+// Header
+.header {
+  margin-bottom: 1rem;
+  text-align: center;
+  
+  .title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+  }
+}
+
+// Form Groups
+.formGroup {
+  margin-bottom: 1rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+// Threshold Row (side by side)
+.thresholdRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+// Input Styles
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &:disabled {
+    background-color: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+  }
+}
+
+.select {
+  background-color: white;
+  cursor: pointer;
+  
+  &:hover:not(:disabled) {
+    border-color: #9ca3af;
+  }
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: 'Courier New', monospace;
+  line-height: 1.4;
+}
+
+// Submit Section
+.submitSection {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.submitButton {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+  min-width: 100px;
+
+  &:hover:not(:disabled) {
+    background-color: #2563eb;
+  }
+
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+}
+
+// Error Messages
+.errorMessage {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.25rem;
+}
+
+.generalErrors {
+  margin-bottom: 1rem;
+
+  .errorMessage {
+    margin-bottom: 0.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 480px) {
+  .searchForm {
+    padding: 0.75rem;
+  }
+  
+  .thresholdRow {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .submitButton {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.8125rem;
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .pyhmmerCompactSearch {
+    background-color: #1e293b;
+  }
+  
+  .header .title {
+    color: #f1f5f9;
+  }
+  
+  .label {
+    color: #d1d5db;
+  }
+  
+  .input,
+  .select,
+  .textarea {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: #f9fafb;
+
+    &:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    }
+  }
+  
+  .submitButton {
+    background-color: #60a5fa;
+    
+    &:hover:not(:disabled) {
+      background-color: #3b82f6;
+    }
+  }
+
+  // Sequence Info Section
+  .sequenceInfo {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 0.5rem;
+
+    .sequenceStatus {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+
+      .statusIcon {
+        font-size: 1.125rem;
+        color: #10b981;
+      }
+
+      .statusText {
+        font-weight: 500;
+        color: #e2e8f0;
+        font-size: 0.875rem;
+      }
+    }
+
+    .sequencePreview {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid #334155;
+
+      .previewLabel {
+        font-weight: 500;
+        color: #94a3b8;
+        font-size: 0.75rem;
+        min-width: 60px;
+      }
+
+      .previewText {
+        color: #94a3b8;
+        font-size: 0.75rem;
+        font-family: 'Courier New', monospace;
+        background-color: #1e293b;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        border: 1px solid #334155;
+        flex: 1;
+        word-break: break-all;
+      }
+    }
+  }
+}

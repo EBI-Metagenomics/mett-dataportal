@@ -7,7 +7,6 @@ This file provides common fixtures and configuration for all PyHMMER tests.
 import pytest
 import os
 import tempfile
-from django.test import TestCase
 from django.contrib.auth.models import User
 from django_celery_results.models import TaskResult
 from ninja.testing import TestClient
@@ -27,9 +26,7 @@ def authenticated_client():
     """Provide a test client with a test user."""
     client = TestClient(pyhmmer_router_search)
     user = User.objects.create_user(
-        username='testuser',
-        password='testpass123',
-        email='test@example.com'
+        username="testuser", password="testpass123", email="test@example.com"
     )
     return client, user
 
@@ -39,17 +36,17 @@ def test_database():
     """Provide a test database for PyHMMER searches."""
     # Create a temporary directory for the test database
     temp_dir = tempfile.mkdtemp()
-    db_path = os.path.join(temp_dir, 'test_db')
-    
+    db_path = os.path.join(temp_dir, "test_db")
+
     database = Database.objects.create(
-        name='test_db',
-        description='Test database for integration tests',
+        name="test_db",
+        description="Test database for integration tests",
         path=db_path,
-        is_active=True
+        is_active=True,
     )
-    
+
     yield database
-    
+
     # Cleanup
     database.delete()
     os.rmdir(temp_dir)
@@ -72,7 +69,7 @@ def sample_search_request():
         "incT": None,
         "incdomT": None,
         "popen": 0.02,
-        "pextend": 0.4
+        "pextend": 0.4,
     }
 
 
@@ -93,7 +90,7 @@ def sample_bitscore_request():
         "incT": 25.0,
         "incdomT": 25.0,
         "popen": 0.02,
-        "pextend": 0.4
+        "pextend": 0.4,
     }
 
 
@@ -106,7 +103,7 @@ def test_sequence_data():
         "long": "MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY" * 100,
         "with_special": "MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY*X",
         "empty": "",
-        "whitespace": "   MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY   "
+        "whitespace": "   MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY   ",
     }
 
 
@@ -128,23 +125,23 @@ def mock_pyhmmer_results():
                     "env_to": 50,
                     "bitscore": 100.0,
                     "ievalue": 1e-10,
-                    "is_significant": True
+                    "is_significant": True,
                 },
                 {
                     "env_from": 51,
                     "env_to": 100,
                     "bitscore": 75.0,
                     "ievalue": 1e-8,
-                    "is_significant": True
+                    "is_significant": True,
                 },
                 {
                     "env_from": 101,
                     "env_to": 150,
                     "bitscore": 25.0,
                     "ievalue": 1e-3,
-                    "is_significant": False
-                }
-            ]
+                    "is_significant": False,
+                },
+            ],
         },
         {
             "target": "BU_GENE_2",
@@ -160,10 +157,10 @@ def mock_pyhmmer_results():
                     "env_to": 100,
                     "bitscore": 50.0,
                     "ievalue": 1e-5,
-                    "is_significant": True
+                    "is_significant": True,
                 }
-            ]
-        }
+            ],
+        },
     ]
 
 
@@ -171,16 +168,16 @@ def mock_pyhmmer_results():
 def test_job_creation(authenticated_client, test_database, sample_search_request):
     """Helper fixture to create a test job."""
     client, user = authenticated_client
-    
+
     # Update the request to use the test database
     request_data = {**sample_search_request}
     request_data["database"] = test_database.name
-    
+
     # Create the job
     response = client.post("", json=request_data)
-    
+
     if response.status_code == 200:
-        job_id = response.json()['id']
+        job_id = response.json()["id"]
         job = HmmerJob.objects.get(id=job_id)
         return job, job_id
     else:
@@ -191,41 +188,40 @@ def test_job_creation(authenticated_client, test_database, sample_search_request
 def cleanup_test_data():
     """Automatically clean up test data after each test."""
     yield
-    
+
     # Only clean up if we're in a test that actually uses the database
     # For basic functionality tests, we don't need to clean up
     try:
         # Check if the tables exist before trying to clean them up
-        from django.db import connection
-        
+
         # Try to clean up test jobs if the table exists
         try:
             HmmerJob.objects.all().delete()
         except Exception:
             # Table doesn't exist or other error, skip cleanup
             pass
-        
+
         # Try to clean up task results if the table exists
         try:
             TaskResult.objects.all().delete()
         except Exception:
             # Table doesn't exist or other error, skip cleanup
             pass
-        
+
         # Try to clean up test users if the table exists
         try:
-            User.objects.filter(username='testuser').delete()
+            User.objects.filter(username="testuser").delete()
         except Exception:
             # Table doesn't exist or other error, skip cleanup
             pass
-        
+
         # Try to clean up test databases if the table exists
         try:
-            Database.objects.filter(name='test_db').delete()
+            Database.objects.filter(name="test_db").delete()
         except Exception:
             # Table doesn't exist or other error, skip cleanup
             pass
-            
+
     except Exception:
         # If any cleanup fails, just continue - this is not critical for basic tests
         pass
@@ -237,18 +233,10 @@ pytest_plugins = []
 
 def pytest_configure(config):
     """Configure pytest with custom markers."""
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "slow: marks tests as slow running"
-    )
-    config.addinivalue_line(
-        "markers", "api: marks tests as API tests"
-    )
-    config.addinivalue_line(
-        "markers", "workflow: marks tests as workflow tests"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "slow: marks tests as slow running")
+    config.addinivalue_line("markers", "api: marks tests as API tests")
+    config.addinivalue_line("markers", "workflow: marks tests as workflow tests")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -257,15 +245,18 @@ def pytest_collection_modifyitems(config, items):
         # Mark integration tests
         if "integration" in item.name.lower():
             item.add_marker(pytest.mark.integration)
-        
+
         # Mark API tests
         if "api" in item.name.lower():
             item.add_marker(pytest.mark.api)
-        
+
         # Mark workflow tests
         if "workflow" in item.name.lower():
             item.add_marker(pytest.mark.workflow)
-        
+
         # Mark slow tests
-        if any(slow_indicator in item.name.lower() for slow_indicator in ["performance", "concurrent", "large"]):
+        if any(
+            slow_indicator in item.name.lower()
+            for slow_indicator in ["performance", "concurrent", "large"]
+        ):
             item.add_marker(pytest.mark.slow)

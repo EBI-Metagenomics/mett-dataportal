@@ -3,9 +3,9 @@ import {Link} from 'react-router-dom';
 import styles from './HomePageHeadBand.module.scss';
 import {GenomeMeta} from "../../../interfaces/Genome";
 import SpeciesFilter from "@components/Filters/SpeciesFilter";
-import {EBI_FTP_SERVER} from "../../../utils/constants";
+import {EBI_FTP_SERVER} from "../../../utils/common/constants";
 import {useFeatureFlags} from '../../../hooks/useFeatureFlags';
-import {HOMEPAGE_TEXT} from "../../../utils/homePageConstants";
+import {HOMEPAGE_TEXT} from "../../../utils/common/homePageConstants";
 
 
 interface HomePageHeadBandProps {

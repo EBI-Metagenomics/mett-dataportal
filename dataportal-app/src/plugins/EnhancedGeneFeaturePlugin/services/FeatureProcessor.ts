@@ -1,6 +1,17 @@
 import SimpleFeature from '@jbrowse/core/util/simpleFeature';
-import {GeneService} from "../../../services/geneService";
-import {getIconForEssentiality} from "../../../utils/constants";
+import {GeneService} from "../../../services/gene";
+import {getIconForEssentiality} from "../../../utils/common/constants";
+
+// PyHMMER search configuration
+const PYHMMER_CONFIG = {
+    database: 'bu_pv_all',
+    threshold: 'evalue',
+    threshold_value: 0.01,
+    E: 0.01,
+    domE: 0.01,
+    incE: 0.01,
+    incdomE: 0.01
+};
 
 export class FeatureProcessor {
     /**
@@ -38,14 +49,37 @@ export class FeatureProcessor {
                 : {};
             
             const {attributes: _, ...featureWithoutAttributes} = featureData;
+            
+            // Add PyHMMER search information
+            const pyhmmerInfo = this.createPyhmmerSearchInfo(feature);
+            
             const newFeature = new SimpleFeature({
                 ...featureWithoutAttributes,
-                ...attributes,
-                // Don't add attributes object to avoid duplication
+                ...attributes, // Keep all original attributes
+                pyhmmerSearch: pyhmmerInfo, // Add PyHMMER search info
             });
             
             return newFeature;
         });
+    }
+
+    /**
+     * Create PyHMMER search information for a feature
+     */
+    static createPyhmmerSearchInfo(feature: SimpleFeature): any {
+        const proteinSequence = feature.get('protein_sequence');
+        
+        if (!proteinSequence) {
+            return null;
+        }
+
+        // Return the search link that will appear in JBrowse feature panel
+        return {
+            proteinSequence: proteinSequence, // Keep the actual sequence for search
+            proteinLength: proteinSequence.length,
+            // Add a clickable search link that will appear in JBrowse feature panel
+            pyhmmerSearchLink: `<a href="#" data-pyhmmer-search="${proteinSequence}" class="pyhmmer-search-link">Search Protein Domains (${proteinSequence.length})</a>`,
+        };
     }
 
     /**
@@ -72,12 +106,16 @@ export class FeatureProcessor {
             // Preserve external links from the original feature
             const externalLinks = feature.get('externalLinks');
 
+            // Add PyHMMER search information
+            const pyhmmerInfo = this.createPyhmmerSearchInfo(feature);
+
             return new SimpleFeature({
                 ...featureWithoutAttributes,
-                ...attributes,
+                ...attributes, // Keep all original attributes
                 Essentiality,
                 EssentialityVisual,
                 externalLinks, // Preserve the processed external links
+                pyhmmerSearch: pyhmmerInfo, // Add PyHMMER search info
             });
         });
     }

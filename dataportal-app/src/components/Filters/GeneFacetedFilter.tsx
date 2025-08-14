@@ -9,9 +9,9 @@ import {
     EXT_LINK_ESSENTIALITY_JOURNAL,
     FACET_ORDER,
     LOGICAL_OPERATOR_FACETS
-} from "../../utils/constants";
+} from "../../utils/common/constants";
 import * as Popover from '@radix-ui/react-popover';
-import {MetadataService} from "../../services/metadataService";
+import {MetadataService} from "../../services/common/metadataService";
 import {useFilterStore} from '../../stores/filterStore';
 
 interface GeneFacetedFilterProps {

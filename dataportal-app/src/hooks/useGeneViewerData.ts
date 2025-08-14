@@ -4,7 +4,7 @@ import {GenomeService} from '../services/genomeService';
 import {GeneService} from '../services/geneService';
 import {GenomeMeta} from '../interfaces/Genome';
 import {GeneMeta} from '../interfaces/Gene';
-import {APP_CONSTANTS} from '../utils/constants';
+import {APP_CONSTANTS} from '../utils/common/constants';
 
 interface UseGeneViewerDataReturn {
     geneMeta: GeneMeta | null;
