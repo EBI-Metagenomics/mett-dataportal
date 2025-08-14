@@ -144,11 +144,11 @@ spec:
                   key: PYHMMER_FAA_BASE_PATH
           resources:
             requests:
-              memory: "4Gi"
-              cpu: "3"
+              memory: "2Gi"
+              cpu: "1"
             limits:
-              memory: "8Gi"
-              cpu: "4"
+              memory: "4Gi"
+              cpu: "2"
           volumeMounts:
             - name: pyhmmer-data
               mountPath: /data/pyhmmer
