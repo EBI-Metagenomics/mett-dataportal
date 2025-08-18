@@ -131,6 +131,7 @@ Table SP1_gene_essentiality {
 	gene_id integer [ not null ]
 	genomic_region_id integer [ not null ]
 	experimental_condition_id integer
+	tas_in_locus integer
 	tas_hit double
 	essentiality_call text [ not null ]
 
@@ -203,18 +204,32 @@ Table drug {
 	notes text
 }
 
-Table SP5_drug_bacteria_interaction {
-	id serial [ pk, unique ]
-	strain_id integer [ not null ]
-	drug_id integer [ not null ]
-	compound_id integer
-	mic_um double
-	drug_metabolism_percent double
-	drug_metabolism_fdr double
-	experimental_condition_id integer
+Table SP5_drug_bacteria_metabolism {
+  id serial [pk]
+  strain_id integer
+  drug_id integer
+  compound_id integer  // optional reference
+  drug_metabolism_percent float
+  drug_metabolism_pval float
+  drug_metabolism_fdr float
+  metabolizer_classification text
+  experimental_condition_id integer
 
 	indexes {
-		(strain_id, drug_id) [ name: 'SP5_drug_bacteria_unique_idx', unique ]
+		(strain_id, drug_id) [ name: 'SP5_drug_bacteria_metabolism_unique_idx', unique ]
+	}
+}
+
+Table SP5_drug_bacteria_mic {
+  id serial [pk]
+  strain_id integer
+  drug_id integer
+  relation text
+  mic_um float
+  experimental_condition_id integer
+
+	indexes {
+		(strain_id, drug_id) [ name: 'SP5_drug_bacteria_mic_unique_idx', unique ]
 	}
 }
 
@@ -270,10 +285,20 @@ Table SP2_ppi_interaction {
 	id serial [ pk, unique ]
 	protein_id_a integer [ not null ]
 	protein_id_b integer [ not null ]
-	dl_score float
+	ds_score float
+	tt_score float
+	perturb_score float
+	gp_score float
+	melt_score float
+	sec_score float
+	bn_score float
+	string_physical_score float
+	operon_score float
+	ecocyc_score float
+	xlms_peptides text
+	xlms_score text
 	comelt_score float
 	abundance_score float
-	xlms_score float
 	alphafold_score float
 	drugs_score float
 	ensemble_score float
@@ -408,20 +433,32 @@ Ref fk_SP3_mutant_growth_rate_experimental_condition_id_experimental_condition {
 	SP3_mutant_growth_rate.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_drug_bacteria_interaction_strain_id_strain {
-	SP5_drug_bacteria_interaction.strain_id > strain.id [ delete: no action, update: no action ]
+Ref fk_SP5_drug_bacteria_metabolism_strain_id_strain {
+	SP5_drug_bacteria_metabolism.strain_id > strain.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_drug_bacteria_interaction_drug_id_drug {
-	SP5_drug_bacteria_interaction.drug_id > drug.id [ delete: no action, update: no action ]
+Ref fk_SP5_drug_bacteria_metabolism_drug_id_drug {
+	SP5_drug_bacteria_metabolism.drug_id > drug.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_drug_bacteria_interaction_compound_id_compound {
-	SP5_drug_bacteria_interaction.compound_id > compound.id [ delete: no action, update: no action ]
+Ref fk_SP5_drug_bacteria_metabolism_compound_id_compound {
+	SP5_drug_bacteria_metabolism.compound_id > compound.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_drug_bacteria_interaction_experimental_condition_id_experimental_condition {
-	SP5_drug_bacteria_interaction.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
+Ref fk_SP5_drug_bacteria_metabolism_experimental_condition_id_experimental_condition {
+	SP5_drug_bacteria_metabolism.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
+}
+
+Ref fk_SP5_drug_bacteria_mic_strain_id_strain {
+	SP5_drug_bacteria_mic.strain_id > strain.id [ delete: no action, update: no action ]
+}
+
+Ref fk_SP5_drug_bacteria_mic_drug_id_drug {
+	SP5_drug_bacteria_mic.drug_id > drug.id [ delete: no action, update: no action ]
+}
+
+Ref fk_SP5_drug_bacteria_mic_experimental_condition_id_experimental_condition {
+	SP5_drug_bacteria_mic.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
 Ref fk_SP5_operon_prediction_strain_id_strain {
