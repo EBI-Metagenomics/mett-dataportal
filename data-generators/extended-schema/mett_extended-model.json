@@ -1,13 +1,13 @@
 {
   "tables": [
     {
-      "id": "Po_VBvUjQqiuhK_dL6M63",
+      "id": "2Oc01VDjBnMBpNcqGlVTj",
       "name": "species",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "cy__KjwauZw2aGSgSvKAD",
+          "id": "Ogy7vp4JwULltujmArxQL",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -19,7 +19,7 @@
           "comment": ""
         },
         {
-          "id": "IQadUNx1_r136Y3Ufb6EZ",
+          "id": "clt-8jOWqYkK1wbzjIkr3",
           "name": "scientific_name",
           "type": "TEXT",
           "default": "",
@@ -31,7 +31,7 @@
           "comment": ""
         },
         {
-          "id": "xsXrLaJgOY-kFmHYtmx2T",
+          "id": "j2spGmh6B67xRIDSyo3fT",
           "name": "common_name",
           "type": "TEXT",
           "default": "",
@@ -43,7 +43,7 @@
           "comment": ""
         },
         {
-          "id": "o3hn9RdrCiNsqklz46bJI",
+          "id": "z_iR1e801_PJnFjzxKVbV",
           "name": "acronym",
           "type": "TEXT",
           "default": "",
@@ -55,7 +55,7 @@
           "comment": ""
         },
         {
-          "id": "x0bcI720Txt6cnAvsy5Cj",
+          "id": "G7XFGrDVkuzXKao1K2Gzo",
           "name": "taxonomy_id",
           "type": "INTEGER",
           "default": "",
@@ -68,17 +68,17 @@
         }
       ],
       "indices": [],
-      "x": -75.51912245057275,
-      "y": -8.923054756556013
+      "x": 54,
+      "y": 40
     },
     {
-      "id": "BZfysrIuQWbY-7-MIEK0H",
+      "id": "iNZxmNuOjF3pKt2q-TdJK",
       "name": "strain",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "U7nL3QXgzAjJwOgUSXBs6",
+          "id": "zCaLed1VGF_-0rEExGZY9",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -90,7 +90,7 @@
           "comment": ""
         },
         {
-          "id": "8a17Kc1x0vZVoyHDsYzg4",
+          "id": "CjOTtRd1p4g0r8jcMMSsM",
           "name": "species_id",
           "type": "INTEGER",
           "default": "",
@@ -102,7 +102,7 @@
           "comment": ""
         },
         {
-          "id": "S8hyvMheq0LcKAwobjdnA",
+          "id": "H65GEad7ExhPHgJLCGzvc",
           "name": "strain_id",
           "type": "TEXT",
           "default": "",
@@ -114,7 +114,7 @@
           "comment": ""
         },
         {
-          "id": "jqlTIB1eaOa1Z8PcFkQgR",
+          "id": "54BbJWjAGCtMUTjpJ7pDI",
           "name": "isolate_name",
           "type": "TEXT",
           "default": "",
@@ -126,7 +126,7 @@
           "comment": ""
         },
         {
-          "id": "cXBaFOsUo0VLCZnLk6OLF",
+          "id": "dxU2ajpzwVYOjWTaBfLQo",
           "name": "assembly_name",
           "type": "TEXT",
           "default": "",
@@ -138,7 +138,7 @@
           "comment": ""
         },
         {
-          "id": "gkzZZaNzzUQyr7WHGE2EM",
+          "id": "KBtdVUXj2fhYiA9SyBMJh",
           "name": "assembly_accession",
           "type": "TEXT",
           "default": "",
@@ -150,7 +150,7 @@
           "comment": ""
         },
         {
-          "id": "6Q39gMR5pzYzBdWZIGkI6",
+          "id": "bUYpV2dOjG6n_9HnjB4pg",
           "name": "fasta_file",
           "type": "TEXT",
           "default": "",
@@ -162,7 +162,7 @@
           "comment": ""
         },
         {
-          "id": "-tve2eZ5T7HZJ2OZUWJBB",
+          "id": "krF_9qk3FFwFx5CvHXaol",
           "name": "gff_file",
           "type": "TEXT",
           "default": "",
@@ -174,7 +174,7 @@
           "comment": ""
         },
         {
-          "id": "9hpZd13bzY7eHORRsSd9o",
+          "id": "JfmW1p7MzkE91JlKcSVdV",
           "name": "type_strain",
           "type": "BOOLEAN",
           "default": "false",
@@ -196,17 +196,17 @@
           "unique": false
         }
       ],
-      "x": 246.1622128363864,
-      "y": -61.921861565529454
+      "x": 36.41882107179384,
+      "y": 399.5641087757435
     },
     {
-      "id": "rKQYAL9BA8QGbClPbJP6V",
+      "id": "py9ijzY5A6aoc78ok6kGL",
       "name": "strain_contigs",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "jRpJpg1pW48TawspbG0rM",
+          "id": "eiicQ4hfW6dFEK1JgG0eG",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -218,7 +218,7 @@
           "comment": ""
         },
         {
-          "id": "P497La5_I2zPQU4CrR8-L",
+          "id": "v8y_KM9chz1H7zy1RnbDG",
           "name": "strain_id",
           "type": "INTEGER",
           "default": "",
@@ -230,7 +230,7 @@
           "comment": ""
         },
         {
-          "id": "63m1uhO44TE4v14Xq4Nft",
+          "id": "JSGq8hGXNgEje4eZ90FuL",
           "name": "seq_id",
           "type": "TEXT",
           "default": "",
@@ -242,7 +242,7 @@
           "comment": ""
         },
         {
-          "id": "hm_29c7xb62-IjiRjpL9Z",
+          "id": "jzTFTTO5-ioNNLU86hJD-",
           "name": "length",
           "type": "INTEGER",
           "default": "",
@@ -264,17 +264,17 @@
           "unique": false
         }
       ],
-      "x": -55.81666653425424,
-      "y": 266.33401758897674
+      "x": 358.99106945799053,
+      "y": 25.47180292503191
     },
     {
-      "id": "UZIvzZtNuSdPkRUHqtma2",
+      "id": "3Tr1GTBYGlJcsKSb1jlQF",
       "name": "genomic_region",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "_JNgeC7FJDHLOhHyNahWk",
+          "id": "JFzbsys3tWscRWKarod-2",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -286,7 +286,7 @@
           "comment": ""
         },
         {
-          "id": "FNTwamByQ0td268t2OLFg",
+          "id": "T5uEZyeGYFc7rY4jz3P2z",
           "name": "strain_id",
           "type": "INTEGER",
           "default": "",
@@ -298,7 +298,7 @@
           "comment": ""
         },
         {
-          "id": "gAUV7Zr7me22vtjCY1xKf",
+          "id": "HZDLT8hSdo-TAC62mE8Oq",
           "name": "start_pos",
           "type": "INTEGER",
           "default": "",
@@ -310,7 +310,7 @@
           "comment": ""
         },
         {
-          "id": "zC7sBwaPQyNGLp3tHdqhF",
+          "id": "F-U7uz_A5GqIQAtkhzY2k",
           "name": "end_pos",
           "type": "INTEGER",
           "default": "",
@@ -322,7 +322,7 @@
           "comment": ""
         },
         {
-          "id": "VDQQxG2fMuTl1rlRh4S79",
+          "id": "Px8V6XV973PZ2LgSlbLnG",
           "name": "strand",
           "type": "CHAR(1)",
           "default": "",
@@ -334,7 +334,7 @@
           "comment": ""
         },
         {
-          "id": "bD7XvuJNgI5-S0Ruc7A5R",
+          "id": "om8QSIwEXyNrdcXkYAfa3",
           "name": "region_type",
           "type": "TEXT",
           "default": "",
@@ -346,7 +346,7 @@
           "comment": ""
         },
         {
-          "id": "HvSop7s69Y7eJkjTyHgOy",
+          "id": "LDLGNjMt3Cud6y2lH30Yt",
           "name": "name",
           "type": "TEXT",
           "default": "",
@@ -358,7 +358,7 @@
           "comment": ""
         },
         {
-          "id": "AySkQhHp8RpUy_5NcRRzM",
+          "id": "ksipbeCEdu4jJzVMGVFRk",
           "name": "description",
           "type": "TEXT",
           "default": "",
@@ -370,7 +370,7 @@
           "comment": ""
         },
         {
-          "id": "D6BwXYbKkk49q18pmCWpl",
+          "id": "BPXX6nR3ZIQGyW9yY1A0f",
           "name": "uniprot_id",
           "type": "TEXT",
           "default": "",
@@ -410,17 +410,17 @@
           "unique": false
         }
       ],
-      "x": 638.6521727415409,
-      "y": 8.958342802156551
+      "x": 816,
+      "y": 40
     },
     {
-      "id": "XJzh6_VMRwA-DrViTqIeg",
+      "id": "eFhKbHkDoqJ1sfvnzGKoB",
       "name": "gene",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "sqSWEVE-lHSCWC5PrAswc",
+          "id": "VsSsA4veUEuTj7Be2g0w6",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -432,7 +432,7 @@
           "comment": ""
         },
         {
-          "id": "C0FZnZl7tXcXJy7y6qVX_",
+          "id": "ddACi9U0JaVgdEhj3m2ot",
           "name": "locus_tag",
           "type": "TEXT",
           "default": "",
@@ -444,7 +444,7 @@
           "comment": ""
         },
         {
-          "id": "jV9b5LRoI-90gjL_iVQpQ",
+          "id": "Qtkd-AseMKGTYj4KZF59n",
           "name": "gene_id",
           "type": "TEXT",
           "default": "",
@@ -456,7 +456,7 @@
           "comment": ""
         },
         {
-          "id": "SUBLoy-howvjMCl3zNUB3",
+          "id": "lxaiDvTNlYVu5pFo5sbV3",
           "name": "gene_name",
           "type": "TEXT",
           "default": "",
@@ -468,7 +468,7 @@
           "comment": ""
         },
         {
-          "id": "rlPhjQcLXijnYbfGGpVrR",
+          "id": "qQBfuReb6QJk65u-bgVFM",
           "name": "alias",
           "type": "TEXT",
           "default": "",
@@ -480,7 +480,7 @@
           "comment": ""
         },
         {
-          "id": "ViNW1wMLZ8QJJwx2Cna7g",
+          "id": "1gLn9pYtL3L6ay3raDKcH",
           "name": "product",
           "type": "TEXT",
           "default": "",
@@ -492,7 +492,7 @@
           "comment": ""
         },
         {
-          "id": "MpIrJApRcOcP6fIHbA1-w",
+          "id": "ALKyEayOnA5FV61j_M0Ar",
           "name": "product_source",
           "type": "TEXT",
           "default": "",
@@ -504,7 +504,7 @@
           "comment": ""
         },
         {
-          "id": "l3qP1mWW_s6_DEYykyn6G",
+          "id": "qZxTZBP4C0A_pR7Ujkfor",
           "name": "start_pos",
           "type": "INTEGER",
           "default": "",
@@ -516,7 +516,7 @@
           "comment": ""
         },
         {
-          "id": "4YAI0fUN68wtlJwR7wAer",
+          "id": "D5-6EdrQCFL3a4z2TZnUQ",
           "name": "end_pos",
           "type": "INTEGER",
           "default": "",
@@ -528,7 +528,7 @@
           "comment": ""
         },
         {
-          "id": "BZWMDmfyJberZ7ql6xKSs",
+          "id": "45pg9QeNZDj5tGWf-2lUw",
           "name": "strand",
           "type": "CHAR(1)",
           "default": "",
@@ -540,7 +540,7 @@
           "comment": ""
         },
         {
-          "id": "ibT1NS1IKegQD-UvskOld",
+          "id": "-8Hdh-wAk50HBNqMPGbUv",
           "name": "gene_biotype",
           "type": "TEXT",
           "default": "",
@@ -552,7 +552,7 @@
           "comment": ""
         },
         {
-          "id": "j1MqJt2S4dvwOc3tqPj0R",
+          "id": "WCMeP3eJ1mXtLk9KbVoBy",
           "name": "strain_id",
           "type": "INTEGER",
           "default": "",
@@ -564,7 +564,7 @@
           "comment": ""
         },
         {
-          "id": "IEG6qcYIneNMg7w0b9EjV",
+          "id": "b8VtbkgOjRaQe_uMzlwRE",
           "name": "genomic_region_id",
           "type": "INTEGER",
           "default": "",
@@ -576,7 +576,7 @@
           "comment": ""
         },
         {
-          "id": "cC-C4b7274oisJOTy-u5X",
+          "id": "RS7SuLuEyFJiUi05XPTZq",
           "name": "protein_id",
           "type": "INTEGER",
           "default": "",
@@ -629,13 +629,13 @@
       "y": 40
     },
     {
-      "id": "kEuII5apkgz7oUUXFgmPL",
+      "id": "7-VGI4LxolEahGI6v1Gtr",
       "name": "protein",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "G_CouAI2dpKNPobTqt0TS",
+          "id": "k17IfInT9l1dHB0wIewo9",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -647,7 +647,7 @@
           "comment": ""
         },
         {
-          "id": "RR3LNoEY8RVnXluz73zm_",
+          "id": "IalV6xsnpXgkDVXv6-Ojx",
           "name": "uniprot_id",
           "type": "TEXT",
           "default": "",
@@ -659,7 +659,7 @@
           "comment": ""
         },
         {
-          "id": "uXS-WinznsptJZraj0pEr",
+          "id": "quE3OCABWYvs2hg7XKyxv",
           "name": "protein_sequence",
           "type": "TEXT",
           "default": "",
@@ -671,7 +671,7 @@
           "comment": ""
         },
         {
-          "id": "XCRE_8YG8cXgU1dgm_W95",
+          "id": "viNAUMP9qOPpIDB3gX9VB",
           "name": "protein_full_name",
           "type": "TEXT",
           "default": "",
@@ -688,13 +688,13 @@
       "y": 40
     },
     {
-      "id": "RrJUixg17zWdTBG6Dh6t1",
+      "id": "E_j3JPnr18Ew6BE63iaHk",
       "name": "gene_dbxref",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "wIoK0XqXSoQrMNvstz-2H",
+          "id": "zuo8AiTWvzWWfJjnxXBLO",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -706,7 +706,7 @@
           "comment": ""
         },
         {
-          "id": "_Q1J-GGii89pFTO0ZAQIi",
+          "id": "qIktbOAx9saZ2wOHwx1J9",
           "name": "gene_id",
           "type": "INTEGER",
           "default": "",
@@ -718,7 +718,7 @@
           "comment": ""
         },
         {
-          "id": "mb3oxDSUfkYwx9SV3jmD5",
+          "id": "ENK-2lb7P9MZCF_t6i8c7",
           "name": "database_name",
           "type": "TEXT",
           "default": "",
@@ -730,7 +730,7 @@
           "comment": ""
         },
         {
-          "id": "xRS2C2sYzQj4skVJ3I4Xe",
+          "id": "-oGipLLqy-ejVoYwUO_wp",
           "name": "accession",
           "type": "TEXT",
           "default": "",
@@ -742,7 +742,7 @@
           "comment": ""
         },
         {
-          "id": "v89mRthx1RMozt85FC1HZ",
+          "id": "nLFikfqwfgAE8oXduM-mE",
           "name": "description",
           "type": "TEXT",
           "default": "",
@@ -778,13 +778,13 @@
       "y": 40
     },
     {
-      "id": "QWAycHBft3V47Y7qiseuB",
+      "id": "jEHhT9wOvrGY-TwBZZD3w",
       "name": "gene_ontology_terms",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "fTe7cBJSbJygj9frliLm2",
+          "id": "4rNWKOyaW9y82fVpyG84i",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -796,7 +796,7 @@
           "comment": ""
         },
         {
-          "id": "-e793SoPPhHpvErKxUcU3",
+          "id": "L4GPLl26gcaRhQcOHBqsn",
           "name": "gene_id",
           "type": "INTEGER",
           "default": "",
@@ -808,7 +808,7 @@
           "comment": ""
         },
         {
-          "id": "bxPDMxUXSc1Fe3GaEeAYX",
+          "id": "W5re7abQio8D-uikcw8u_",
           "name": "ontology_type",
           "type": "TEXT",
           "default": "",
@@ -820,7 +820,7 @@
           "comment": ""
         },
         {
-          "id": "hHbq9K0P7FbcEUEfIyMJv",
+          "id": "NDMQQEMEacfdJ8rvdjZoh",
           "name": "ontology_id",
           "type": "TEXT",
           "default": "",
@@ -832,7 +832,7 @@
           "comment": ""
         },
         {
-          "id": "uAY6w_2yeddhwl6Pd6p0j",
+          "id": "svj8DxWt-DbS3d1uXpS2H",
           "name": "ontology_description",
           "type": "TEXT",
           "default": "",
@@ -860,13 +860,13 @@
       "y": 40
     },
     {
-      "id": "MBgbTNCIq9te6ihBbVWkg",
+      "id": "jc50XE0QP3atmM41xDIiL",
       "name": "media",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "w83U2T3tYgB-jzqivk79l",
+          "id": "0br5jDqlrGd0kkQWgRQPj",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -878,7 +878,7 @@
           "comment": ""
         },
         {
-          "id": "UrIxOVbMRBjARygnDMTAX",
+          "id": "7w2pc1rdpfI7JTtT6i3Nm",
           "name": "name",
           "type": "TEXT",
           "default": "",
@@ -890,7 +890,7 @@
           "comment": ""
         },
         {
-          "id": "PoWuhCuwFFdqGzIX3Fr9q",
+          "id": "27jgl0kpD_6ESFxCYyGNG",
           "name": "description",
           "type": "TEXT",
           "default": "",
@@ -902,7 +902,7 @@
           "comment": ""
         },
         {
-          "id": "yuTX6R99sNvdDbEGQKqmy",
+          "id": "KrYHhMoN1XdyD21_SWygm",
           "name": "ph",
           "type": "DOUBLE",
           "default": "",
@@ -914,7 +914,7 @@
           "comment": ""
         },
         {
-          "id": "-0nUZLFRzPRNv10jaPzMg",
+          "id": "fjAYybXBNAlrZzDcx53y-",
           "name": "notes",
           "type": "TEXT",
           "default": "",
@@ -927,17 +927,17 @@
         }
       ],
       "indices": [],
-      "x": 2086,
-      "y": 40
+      "x": 2032.9731329359329,
+      "y": 463.8291080049965
     },
     {
-      "id": "g_HiILFtQEc4p_0f-kq_t",
+      "id": "qE-UkcyC0qVIez3PAvWFM",
       "name": "experimental_condition",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "QY1Jf3Kq6r7lCkf0xqR2j",
+          "id": "0Fe_MrgVAo-dbgmJQGGfI",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -949,7 +949,7 @@
           "comment": ""
         },
         {
-          "id": "7qp_8jn10CbfOZMjzMQB6",
+          "id": "KUC06AJizPf_jTK9Ak-Cb",
           "name": "name",
           "type": "TEXT",
           "default": "",
@@ -961,7 +961,7 @@
           "comment": ""
         },
         {
-          "id": "pjZ4MVM6EWDq4xKZXIs9d",
+          "id": "2X2h_5s0dnIM5QXfPDQPK",
           "name": "description",
           "type": "TEXT",
           "default": "",
@@ -973,7 +973,7 @@
           "comment": ""
         },
         {
-          "id": "mVTEmjkJzXt2-XmyxxUUy",
+          "id": "1o24rJs6EQzXii3DoPdCV",
           "name": "media_id",
           "type": "INTEGER",
           "default": "",
@@ -985,7 +985,7 @@
           "comment": ""
         },
         {
-          "id": "_BjvuBQCdQSz4U4EzrZBo",
+          "id": "r7V0IGbpb5ONjDOf2YOTM",
           "name": "temperature",
           "type": "DOUBLE",
           "default": "",
@@ -997,7 +997,7 @@
           "comment": ""
         },
         {
-          "id": "Qia2tjQqhmSSwL9iFkX6W",
+          "id": "_5FTRNQzSEn62lAfSidEe",
           "name": "ph",
           "type": "DOUBLE",
           "default": "",
@@ -1009,7 +1009,7 @@
           "comment": ""
         },
         {
-          "id": "rylr2LIv_x6z6caGP5o8T",
+          "id": "ON9UZ4B2vR1scf-CpOEut",
           "name": "oxygen_level",
           "type": "TEXT",
           "default": "",
@@ -1021,7 +1021,7 @@
           "comment": ""
         },
         {
-          "id": "TdUKWzRoUokikhxiAmqq7",
+          "id": "0SNex6qhxvq4lnptdhhWr",
           "name": "other_conditions",
           "type": "TEXT",
           "default": "",
@@ -1034,17 +1034,17 @@
         }
       ],
       "indices": [],
-      "x": 1898.1562082245946,
-      "y": 721.5274757253986
+      "x": 1986.1531681996785,
+      "y": 1097.8225116009967
     },
     {
-      "id": "PePT7sxZYWMjJshPzCmO_",
+      "id": "b3Al2a0lkx9mq9QyR9HSU",
       "name": "SP1_gene_essentiality",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "Ho5IGPV9HXKnmYw9-IXKz",
+          "id": "mMUl1KJQBaozTYNeZluNl",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1056,7 +1056,7 @@
           "comment": ""
         },
         {
-          "id": "LwlbiHLIPa43xKnRQ7y7H",
+          "id": "R8ufrFZ2_FQ28r-ylaBU0",
           "name": "gene_id",
           "type": "INTEGER",
           "default": "",
@@ -1068,7 +1068,7 @@
           "comment": ""
         },
         {
-          "id": "tFhtPs36pcnHvFdHW0iKD",
+          "id": "Vpbe-F-Daya_2nRoO-3Sl",
           "name": "genomic_region_id",
           "type": "INTEGER",
           "default": "",
@@ -1080,7 +1080,7 @@
           "comment": ""
         },
         {
-          "id": "Vr3iLg4g55t0nPyHKV1w4",
+          "id": "hoJk-aRWFf25zFkjcutKw",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -1092,7 +1092,7 @@
           "comment": ""
         },
         {
-          "id": "B5y8nRRzNvo52Esrt8jMy",
+          "id": "lRIA5qcNAp5hgx69W9CI0",
           "name": "tas_in_locus",
           "type": "INTEGER",
           "default": "",
@@ -1104,7 +1104,7 @@
           "comment": ""
         },
         {
-          "id": "WrmarXWko_wHHM4GQuqjm",
+          "id": "KTwqichgirOrXNPgzxyJ1",
           "name": "tas_hit",
           "type": "DOUBLE",
           "default": "",
@@ -1116,7 +1116,7 @@
           "comment": ""
         },
         {
-          "id": "fFe7wxfyE9BlpGx4hF0Lo",
+          "id": "wSjEKuSCA2sB8gdZtvusw",
           "name": "essentiality_call",
           "type": "TEXT",
           "default": "",
@@ -1139,17 +1139,17 @@
           "unique": true
         }
       ],
-      "x": 2594,
-      "y": 40
+      "x": 2641.9339307644887,
+      "y": 234.33129665416044
     },
     {
-      "id": "dds-vG8FyV8Z9RZyFJvR1",
+      "id": "9wjed5gn0QYeSuqaQw3dB",
       "name": "SP1_gene_fitness_data",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "MHsjEf3D6YBV5fF_tU2zq",
+          "id": "claSURFDfoFtsRzb98Z5u",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1161,7 +1161,7 @@
           "comment": ""
         },
         {
-          "id": "hujnY8xIEX7QffZQSbT7V",
+          "id": "yVxOr_AoWZrdY1KLFcnD2",
           "name": "gene_id",
           "type": "INTEGER",
           "default": "",
@@ -1173,7 +1173,7 @@
           "comment": ""
         },
         {
-          "id": "F9qrWwetMp5gGZro5epR9",
+          "id": "djy8xBVEFgTRzsUWa8CfW",
           "name": "genomic_region_id",
           "type": "INTEGER",
           "default": "",
@@ -1185,7 +1185,7 @@
           "comment": ""
         },
         {
-          "id": "nwaXEhw8CWr86VLoBJK-0",
+          "id": "-oO6h-tL2hN3qOEU3x6pC",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -1197,7 +1197,7 @@
           "comment": ""
         },
         {
-          "id": "sEoeJ3pc_c31IimntxY4U",
+          "id": "mrIopDX8mhUZL6xyMwmXP",
           "name": "contrast",
           "type": "TEXT",
           "default": "",
@@ -1209,7 +1209,7 @@
           "comment": ""
         },
         {
-          "id": "DiNaE7XcmFuC3NtA-qcgM",
+          "id": "y4kVoLBO3Tdip1b_h00T7",
           "name": "lfc",
           "type": "DOUBLE",
           "default": "",
@@ -1221,7 +1221,7 @@
           "comment": ""
         },
         {
-          "id": "vG6VGqWb8BfNTg5-MQD2X",
+          "id": "5bauORb8QxjVFpiVXjCY7",
           "name": "fdr",
           "type": "DOUBLE",
           "default": "",
@@ -1233,7 +1233,7 @@
           "comment": ""
         },
         {
-          "id": "IMScDW_apDmmft6prl0Em",
+          "id": "3ZE-rFlrd-fTay4RQzW-S",
           "name": "replicate_id",
           "type": "TEXT",
           "default": "",
@@ -1258,17 +1258,17 @@
           "unique": false
         }
       ],
-      "x": 2605.7362016931056,
-      "y": 382.79654768790397
+      "x": 2594,
+      "y": 641
     },
     {
-      "id": "v7rjMqsKPcfafcHQfrUNt",
+      "id": "E6D2YZjagFqsHB3zWki9e",
       "name": "SP1_gene_fitness_correlation",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "3LyE6fWQhlV2nKvb50f_a",
+          "id": "ljbvOq0XmGgoVnS3Hmp-q",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1280,7 +1280,7 @@
           "comment": ""
         },
         {
-          "id": "Wtf3ShCnfT1bdF7lIf4_j",
+          "id": "TSjwoqaXVzkicvDSfu2Ei",
           "name": "gene1_id",
           "type": "INTEGER",
           "default": "",
@@ -1292,7 +1292,7 @@
           "comment": ""
         },
         {
-          "id": "-DJcugxc_ZyqaLob-3TwH",
+          "id": "PzkumHfpxep4wFqlllZtd",
           "name": "gene2_id",
           "type": "INTEGER",
           "default": "",
@@ -1304,7 +1304,7 @@
           "comment": ""
         },
         {
-          "id": "WbrfpxR8pF2YIhKlEN_oT",
+          "id": "UMkND5Om0RR04iSbs-q7R",
           "name": "genomic_region_id_1",
           "type": "INTEGER",
           "default": "",
@@ -1316,7 +1316,7 @@
           "comment": ""
         },
         {
-          "id": "bVpmC2KdElVzLnzpbd47i",
+          "id": "Gmjnbm61aYTLtdXH_cnkS",
           "name": "genomic_region_id_2",
           "type": "INTEGER",
           "default": "",
@@ -1328,7 +1328,7 @@
           "comment": ""
         },
         {
-          "id": "9nhKv8k86QukSUOJaBLLB",
+          "id": "PttWVo_3-17vCy-tydFgj",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -1340,7 +1340,7 @@
           "comment": ""
         },
         {
-          "id": "mGTEwIpfPzCqn3aML8j8u",
+          "id": "au-fbNs71a-GGDcLh_2UR",
           "name": "correlation_value",
           "type": "DOUBLE",
           "default": "",
@@ -1352,7 +1352,7 @@
           "comment": ""
         },
         {
-          "id": "XqD6VVvk3UCs-6upWEbxH",
+          "id": "Y1oUrneWFFFSqxdFNfAuZ",
           "name": "p_value",
           "type": "DOUBLE",
           "default": "",
@@ -1377,17 +1377,17 @@
           "unique": true
         }
       ],
-      "x": 2350.164827407836,
-      "y": 349.8397780798885
+      "x": 2340,
+      "y": 641
     },
     {
-      "id": "GlXgCw6539IENno7qhyUx",
+      "id": "gDrkCAcUAOjmCJG6dScxd",
       "name": "SP3_mutant_growth_rate",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "JPLdVkeM3lgfzAzfU5eGu",
+          "id": "Jo0ADU87kP0LoRbpgEHnK",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1399,7 +1399,7 @@
           "comment": ""
         },
         {
-          "id": "8-k8AAKebpmKtwa17sReX",
+          "id": "umgpV60HKZWdKTKAd7119",
           "name": "gene_id",
           "type": "INTEGER",
           "default": "",
@@ -1411,7 +1411,7 @@
           "comment": ""
         },
         {
-          "id": "itU3jAQppsrK-0kpQyOQK",
+          "id": "fWHJ7l_eYhbeKnDScIykh",
           "name": "genomic_region_id",
           "type": "INTEGER",
           "default": "",
@@ -1423,7 +1423,7 @@
           "comment": ""
         },
         {
-          "id": "E4m88XwAoNmpB8cqDQBpC",
+          "id": "3RdivVDvh3oNn9KaCVQhH",
           "name": "media_id",
           "type": "INTEGER",
           "default": "",
@@ -1435,7 +1435,7 @@
           "comment": ""
         },
         {
-          "id": "nNzGEiGSJEOW5QSjE8Pr6",
+          "id": "ze5L_3d9qwGbv2vIAb4FX",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -1447,7 +1447,7 @@
           "comment": ""
         },
         {
-          "id": "q4Odz_IUZ7woqir_KnmuP",
+          "id": "lqswyLpv2GDafrywkstZT",
           "name": "replicate",
           "type": "SMALLINT",
           "default": "",
@@ -1459,7 +1459,7 @@
           "comment": ""
         },
         {
-          "id": "QjkQgIIRBUMOGIRxqTTgs",
+          "id": "UTkoeL5lysksh1qkOoX5c",
           "name": "tas_hit",
           "type": "DOUBLE",
           "default": "",
@@ -1471,7 +1471,7 @@
           "comment": ""
         },
         {
-          "id": "8OmsiGIgiPUO7PYV39ZTo",
+          "id": "a2pvwcvS5ybZ0CnngmE0_",
           "name": "doubling_rate_h",
           "type": "DOUBLE",
           "default": "",
@@ -1496,17 +1496,17 @@
           "unique": true
         }
       ],
-      "x": 1571.6625391889977,
-      "y": 338.3841789377238
+      "x": 2321.4465854307837,
+      "y": 1059.3784034529683
     },
     {
-      "id": "9qZeEBP_KBt65cf3209eq",
+      "id": "1yKEIpOo4nrI43mBVWFI6",
       "name": "compound",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "ByjJ8QdvbZtp14LlAyoQp",
+          "id": "oH-JPlEAasMTUvkUDj-FL",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1518,7 +1518,7 @@
           "comment": ""
         },
         {
-          "id": "SKyG_cibMv8nyn4QdcnjI",
+          "id": "GCKwZxwVD4Fb2Q6vjBLCT",
           "name": "pubchem_id",
           "type": "TEXT",
           "default": "",
@@ -1530,7 +1530,7 @@
           "comment": ""
         },
         {
-          "id": "_DkgueAfCQaU4aGgmgUCy",
+          "id": "j_cT5-YmbePpT6qDfiEax",
           "name": "name",
           "type": "TEXT",
           "default": "",
@@ -1542,7 +1542,7 @@
           "comment": ""
         },
         {
-          "id": "vPlSZFaztR8EMa0UKO4wN",
+          "id": "s3BMdSb2cZJFMTURRve49",
           "name": "molecular_formula",
           "type": "TEXT",
           "default": "",
@@ -1554,7 +1554,7 @@
           "comment": ""
         },
         {
-          "id": "Ckd-_x7CGSOqYmENMPsPH",
+          "id": "uH2kUsU7KIu0D5UvWceVa",
           "name": "molecular_weight",
           "type": "DOUBLE",
           "default": "",
@@ -1566,7 +1566,7 @@
           "comment": ""
         },
         {
-          "id": "uBjMPkAyW0sJrDY5zgm84",
+          "id": "d_kiuGlPFA39h-aVVEwI6",
           "name": "smiles",
           "type": "TEXT",
           "default": "",
@@ -1578,7 +1578,7 @@
           "comment": ""
         },
         {
-          "id": "j3f8aNzZ_Gb5QncGbQvZC",
+          "id": "vFzp-nRsiTrGYu6mEd6ek",
           "name": "inchi",
           "type": "TEXT",
           "default": "",
@@ -1591,17 +1591,17 @@
         }
       ],
       "indices": [],
-      "x": 1383.1832348337114,
-      "y": 888.8351880548274
+      "x": 1748.7943285822325,
+      "y": 742.4027468462884
     },
     {
-      "id": "9iQrAya6wz0E8KilWDxUI",
+      "id": "risUgMgwWoSkJ3hvn-O5q",
       "name": "drug",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "_esiE2JWUC7xLtsut2EHZ",
+          "id": "Kq6TXs176AmBFXdzh8PjX",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1613,7 +1613,7 @@
           "comment": ""
         },
         {
-          "id": "6gy-Lmt5E74jcAQVJj_US",
+          "id": "YFdowxnQ-EJmoaeqznDsw",
           "name": "compound_id",
           "type": "INTEGER",
           "default": "",
@@ -1625,7 +1625,7 @@
           "comment": ""
         },
         {
-          "id": "lZHnwD41vu_JvW_5mJdvc",
+          "id": "r5nmultIBBBDZzgtjWHAh",
           "name": "name",
           "type": "TEXT",
           "default": "",
@@ -1637,7 +1637,7 @@
           "comment": ""
         },
         {
-          "id": "Oiq5OOMW7doPBpdDVTSQx",
+          "id": "OaShFnzZr3o4nbsPHu950",
           "name": "drug_class",
           "type": "TEXT",
           "default": "",
@@ -1649,7 +1649,7 @@
           "comment": ""
         },
         {
-          "id": "o5hoZ9E6osnze5zFvnqKg",
+          "id": "eaPuBCdPaEyZldpt8XG-b",
           "name": "drug_subclass",
           "type": "TEXT",
           "default": "",
@@ -1661,7 +1661,7 @@
           "comment": ""
         },
         {
-          "id": "phnReYb69RoAQkexhjX_a",
+          "id": "14SaHSVcbz_WrobKO88Dq",
           "name": "notes",
           "type": "TEXT",
           "default": "",
@@ -1674,17 +1674,17 @@
         }
       ],
       "indices": [],
-      "x": 1250.3824916488845,
-      "y": 1436.0732979636573
+      "x": 1417.7969886040335,
+      "y": 765.3630505770327
     },
     {
-      "id": "V12ShRyAnSnKgxO7o9c0L",
+      "id": "HXFII9xjddPxmhX5HcYKK",
       "name": "SP5_drug_bacteria_metabolism",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "KIJ7eiyE17Rcr_D0BSSnc",
+          "id": "W0v-3p5tQ3qPunUmZj-Ar",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1696,7 +1696,7 @@
           "comment": ""
         },
         {
-          "id": "u5a67Y3CJNqo-8wwHw1Ax",
+          "id": "lM8OWn1R-VFn2cEX1Kyt_",
           "name": "strain_id",
           "type": "INTEGER",
           "default": "",
@@ -1708,7 +1708,7 @@
           "comment": ""
         },
         {
-          "id": "fe7tm694ekRX3N7QEyg0N",
+          "id": "udjQRCDaAd4OPHJsaEe_Q",
           "name": "drug_id",
           "type": "INTEGER",
           "default": "",
@@ -1720,7 +1720,7 @@
           "comment": ""
         },
         {
-          "id": "pbfacW1lrg_msD85cGeXz",
+          "id": "B64TkBMOrucK_rM4fK2uE",
           "name": "compound_id",
           "type": "INTEGER",
           "default": "",
@@ -1732,7 +1732,7 @@
           "comment": ""
         },
         {
-          "id": "qoEtN5zEnbx5nBnRbmCuT",
+          "id": "METrTMnzs_g8xWZZgyvHP",
           "name": "drug_metabolism_percent",
           "type": "FLOAT",
           "default": "",
@@ -1744,7 +1744,7 @@
           "comment": ""
         },
         {
-          "id": "gOtKBT4d3lgtzIC-abRp-",
+          "id": "zBAOptgRAtPiDeqT6g8sT",
           "name": "drug_metabolism_pval",
           "type": "FLOAT",
           "default": "",
@@ -1756,7 +1756,7 @@
           "comment": ""
         },
         {
-          "id": "qHaQjUQiHF82lEWrvsh05",
+          "id": "-PgmmMes_s0pKiu9DCS7W",
           "name": "drug_metabolism_fdr",
           "type": "FLOAT",
           "default": "",
@@ -1768,7 +1768,7 @@
           "comment": ""
         },
         {
-          "id": "ZQRAKpC1FSC-z3rmRdlZZ",
+          "id": "ZSqHAg2PWZlGFZ-WHMk6J",
           "name": "metabolizer_classification",
           "type": "TEXT",
           "default": "",
@@ -1780,7 +1780,7 @@
           "comment": ""
         },
         {
-          "id": "eovMZ9JI5r1Rs_kH9_lov",
+          "id": "eZx08pZECaM9VcmG2BdKh",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -1803,17 +1803,17 @@
           "unique": true
         }
       ],
-      "x": 2157.8174951848305,
-      "y": 1087.2702970164999
+      "x": 1567.2262911556222,
+      "y": 1121.5950040603523
     },
     {
-      "id": "224639gYtQAUvHpltbwq1",
+      "id": "1b91kJYGiRhcKgoOSCCCK",
       "name": "SP5_drug_bacteria_mic",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "9BNyOO1VviuThscPvW1yN",
+          "id": "a-LJz3cuW3E7oYEXL8EYb",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1825,7 +1825,7 @@
           "comment": ""
         },
         {
-          "id": "Ylv2iFSqrdA7EVbNQ81nD",
+          "id": "ep-jlmkGSVCm56TplOzsW",
           "name": "strain_id",
           "type": "INTEGER",
           "default": "",
@@ -1837,7 +1837,7 @@
           "comment": ""
         },
         {
-          "id": "I0ccampW15vHDwdZiaalR",
+          "id": "Wak7QRVkS1SwIFhvgYOoa",
           "name": "drug_id",
           "type": "INTEGER",
           "default": "",
@@ -1849,7 +1849,7 @@
           "comment": ""
         },
         {
-          "id": "uCQ0asWE__C6YU-Pf4GaA",
+          "id": "4MI6psaNx_4gBOPft56xj",
           "name": "relation",
           "type": "TEXT",
           "default": "",
@@ -1861,7 +1861,7 @@
           "comment": ""
         },
         {
-          "id": "ZzqriucLBLZy0KTsjQgi9",
+          "id": "U3WNGehQ1qxV0KGt7nHrN",
           "name": "mic_um",
           "type": "FLOAT",
           "default": "",
@@ -1873,7 +1873,7 @@
           "comment": ""
         },
         {
-          "id": "imiI63uHEthClUo-anl_x",
+          "id": "plFVkGmMzV-BsDtGxJsir",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -1896,17 +1896,17 @@
           "unique": true
         }
       ],
-      "x": 1809.1421944973508,
-      "y": 1149.0730088612456
+      "x": 1229.6768816129522,
+      "y": 1144.2957504314754
     },
     {
-      "id": "HWpM6jHOerOyyI79x2GPx",
+      "id": "SC-WbbZGv8GC6RUrcUw3B",
       "name": "SP5_operon_prediction",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "36Oz8-eIe4-NQw1H-j4wD",
+          "id": "DvGyp-MByXPcQc16Gtmjg",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -1918,7 +1918,7 @@
           "comment": ""
         },
         {
-          "id": "_napXyb39Gmke5haasHml",
+          "id": "w6j9Is3Lm6_9ANgh429d1",
           "name": "strain_id",
           "type": "INTEGER",
           "default": "",
@@ -1930,7 +1930,7 @@
           "comment": ""
         },
         {
-          "id": "dyC35JdKOnjBZUNWNlpVi",
+          "id": "GQ-uNrvIJR3hYtn2wXwT2",
           "name": "gene_a_id",
           "type": "INTEGER",
           "default": "",
@@ -1942,7 +1942,7 @@
           "comment": ""
         },
         {
-          "id": "CePI5YhrB0TaYsRHyqi0B",
+          "id": "XYIE94MpSTLUU6UA9zHRh",
           "name": "gene_b_id",
           "type": "INTEGER",
           "default": "",
@@ -1954,7 +1954,7 @@
           "comment": ""
         },
         {
-          "id": "C5nKnHQgXDRnNeEHhT5vp",
+          "id": "nisrQbSlABPXQN2djF-BT",
           "name": "operon_id",
           "type": "TEXT",
           "default": "",
@@ -1966,7 +1966,7 @@
           "comment": ""
         },
         {
-          "id": "1yaDAeghjPXa-NcZLgEwn",
+          "id": "loaTqEVuHWT6PCLLc80ti",
           "name": "prediction_confidence",
           "type": "DOUBLE",
           "default": "",
@@ -1978,7 +1978,7 @@
           "comment": ""
         },
         {
-          "id": "Rt9H_1FDS04_lKmpv3wpD",
+          "id": "Z3K0_y8SKQtZHk_50zPAY",
           "name": "prediction_method",
           "type": "TEXT",
           "default": "",
@@ -1990,7 +1990,7 @@
           "comment": ""
         },
         {
-          "id": "y4IycBGpFPPgxCsHVLyp5",
+          "id": "MI4coIgZM-Wwx5Yv1ACyX",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -2022,17 +2022,17 @@
           "unique": false
         }
       ],
-      "x": 601.8932385682756,
-      "y": 1107.628012087266
+      "x": 816,
+      "y": 641
     },
     {
-      "id": "bigTwdSxgMyeKICmLo8iC",
+      "id": "LL1Zzx7-GnxRRP_zaHIDy",
       "name": "gene_amr",
       "comment": "Why do we need this to be connected to gene and genomic region?",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "fW78D0WVBixRzTmEWekkj",
+          "id": "qhqyoppfFXkKdKnrY8bcc",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -2044,7 +2044,7 @@
           "comment": ""
         },
         {
-          "id": "w75-V00hytqFasgFElIAk",
+          "id": "ePUrgg6Q7xiRpUtMr3v_1",
           "name": "gene_id",
           "type": "INTEGER",
           "default": "",
@@ -2056,7 +2056,7 @@
           "comment": ""
         },
         {
-          "id": "EVBni787Z-W4aa4jOnctu",
+          "id": "-oUWhURJN1bnf11NiTUwT",
           "name": "genomic_region_id",
           "type": "INTEGER",
           "default": "",
@@ -2068,7 +2068,7 @@
           "comment": ""
         },
         {
-          "id": "EoB2LhBsPCJr_1q7D-kwe",
+          "id": "gilD8WSsmoPLZQYozbUY3",
           "name": "scope",
           "type": "TEXT",
           "default": "",
@@ -2080,7 +2080,7 @@
           "comment": ""
         },
         {
-          "id": "42GMlUwQqvq13JowQctyc",
+          "id": "LDvveA4w_DPST0U-jMldw",
           "name": "element_type",
           "type": "TEXT",
           "default": "",
@@ -2092,7 +2092,7 @@
           "comment": ""
         },
         {
-          "id": "H4SJrKYt5ygFgZOm3LKuI",
+          "id": "qGlOU2gzessFblQ-mOF5z",
           "name": "element_subtype",
           "type": "TEXT",
           "default": "",
@@ -2104,7 +2104,7 @@
           "comment": ""
         },
         {
-          "id": "61WwVjViRCbdXc_pE6lil",
+          "id": "pdbyfBeS4mw_hSJvz7GxK",
           "name": "drug_id",
           "type": "INTEGER",
           "default": "",
@@ -2116,7 +2116,7 @@
           "comment": ""
         },
         {
-          "id": "p4t6Z3-JKP46iOqlCeCta",
+          "id": "0y5YwSOl__9o6cNQDqQcg",
           "name": "uf_keyword",
           "type": "TEXT[]",
           "default": "",
@@ -2128,7 +2128,7 @@
           "comment": ""
         },
         {
-          "id": "MmsNO_QIF8D5Odou9Caqd",
+          "id": "Hnjt3jTw9dIW3fG7w00Ln",
           "name": "uf_ecnumber",
           "type": "TEXT",
           "default": "",
@@ -2152,17 +2152,17 @@
           "unique": true
         }
       ],
-      "x": 562,
-      "y": 641
+      "x": 430.93054845547863,
+      "y": 304.24887861575644
     },
     {
-      "id": "xIJdIKDGjyLuae76YS5UN",
+      "id": "LfrA4NBT6R778BaIEsVNh",
       "name": "SP2_protein_compound_interaction",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "t4TmngRTAuJTSdUvA2RzN",
+          "id": "RLtMNVxWGEEFdo7BwxHRl",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -2174,7 +2174,7 @@
           "comment": ""
         },
         {
-          "id": "ZDEbI3s4km1bfSOIlstDf",
+          "id": "PtvBFBRp12OjLRzvxzhXP",
           "name": "protein_id",
           "type": "INTEGER",
           "default": "",
@@ -2186,7 +2186,7 @@
           "comment": ""
         },
         {
-          "id": "yvHRq47vXg2FWuYbzzLgD",
+          "id": "s1sfp2BDToNwXMsVOgYe5",
           "name": "compound_id",
           "type": "INTEGER",
           "default": "",
@@ -2198,7 +2198,7 @@
           "comment": ""
         },
         {
-          "id": "ElN2wPsZZnOqYw_3VxLmz",
+          "id": "JUlWh2R2pnPg-rmIH2nyE",
           "name": "ttp_score",
           "type": "DOUBLE",
           "default": "",
@@ -2210,7 +2210,7 @@
           "comment": ""
         },
         {
-          "id": "mz9hTKA7_1qV41W3XDKA9",
+          "id": "Lvlwb-oTBu4zRo7n5aG-n",
           "name": "fdr",
           "type": "DOUBLE",
           "default": "",
@@ -2222,7 +2222,7 @@
           "comment": ""
         },
         {
-          "id": "CQK3YPuCVn6JyoTvyH6qc",
+          "id": "MtqaoPE55DAfOHmMyfMc1",
           "name": "hit_calling",
           "type": "BOOLEAN",
           "default": "",
@@ -2234,7 +2234,7 @@
           "comment": ""
         },
         {
-          "id": "IsnCeMNpj31xyOcyV4xew",
+          "id": "0ZW3XF7wD9Cea0g6WQM81",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -2257,17 +2257,17 @@
           "unique": true
         }
       ],
-      "x": 240.92897526133754,
-      "y": 1095.9619610318957
+      "x": 287.0810798273516,
+      "y": 1088.855701429316
     },
     {
-      "id": "ftDdTpiMnEy2PY08FlqRe",
+      "id": "VmgFccnpriFS8O70VnBnw",
       "name": "SP2_ppi_interaction",
       "comment": "",
       "color": "#175e7a",
       "fields": [
         {
-          "id": "DV5flSGbm4Kr9wPvTyFi1",
+          "id": "upgDPemBYrgxL-lLs_dTa",
           "name": "id",
           "type": "SERIAL",
           "default": "",
@@ -2279,7 +2279,7 @@
           "comment": ""
         },
         {
-          "id": "mut7z109_sctIDVCmuT55",
+          "id": "3OKdsOq2SSm0i8w2-mk8x",
           "name": "protein_id_a",
           "type": "INTEGER",
           "default": "",
@@ -2291,7 +2291,7 @@
           "comment": ""
         },
         {
-          "id": "bynT-ZpQzNIRaKxNnjRzz",
+          "id": "jY_YqgP8JEKW-O2fHEPhk",
           "name": "protein_id_b",
           "type": "INTEGER",
           "default": "",
@@ -2303,8 +2303,8 @@
           "comment": ""
         },
         {
-          "id": "9V15g2oeXbPDiXbWiIe-l",
-          "name": "ds_score",
+          "id": "cHeJYKvNGtox501vdpidG",
+          "name": "dl_score",
           "type": "FLOAT",
           "default": "",
           "check": "",
@@ -2315,139 +2315,7 @@
           "comment": ""
         },
         {
-          "id": "7wiEfTuexZKIh2XTArz9l",
-          "name": "tt_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "8MJXA8dqul4eW4YvFcV_L",
-          "name": "perturb_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "Wx658IoQekWdh8QPEVpVs",
-          "name": "gp_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "hrtR2jnLZIF5Qzg3u47D8",
-          "name": "melt_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "oBCiQiFt5DaVxoQwr7sNf",
-          "name": "sec_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "jp5VQg8jLYidm_AOEu7Eq",
-          "name": "bn_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "rScF2LvObVoqDovi_35Ej",
-          "name": "string_physical_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "DrsoDehxSDDD_r98qx_GW",
-          "name": "operon_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "OO6JfhjbyzzZLBD117uwq",
-          "name": "ecocyc_score",
-          "type": "FLOAT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "iSpnwwTvm_M-RcleQqkCU",
-          "name": "xlms_peptides",
-          "type": "TEXT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "6Hic-zNYRhgKrIbm_gshD",
-          "name": "xlms_score",
-          "type": "TEXT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": ""
-        },
-        {
-          "id": "FBALCah14yPv_pKWQQJlJ",
+          "id": "4c8EA7RmMrugZZ2lL3Zs5",
           "name": "comelt_score",
           "type": "FLOAT",
           "default": "",
@@ -2459,7 +2327,19 @@
           "comment": ""
         },
         {
-          "id": "Ydo-mZJq575IDT6fPJeVo",
+          "id": "2BqHUKTigfjt6DLmZSEe3",
+          "name": "perturbation_score",
+          "type": "FLOAT",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": ""
+        },
+        {
+          "id": "0UqMVQ5UTe8SuF59QLsHA",
           "name": "abundance_score",
           "type": "FLOAT",
           "default": "",
@@ -2471,8 +2351,8 @@
           "comment": ""
         },
         {
-          "id": "2xLd3hWbZvVn1_f9mt5KF",
-          "name": "alphafold_score",
+          "id": "RHp2My_-iTSd228lXOR5_",
+          "name": "melt_score",
           "type": "FLOAT",
           "default": "",
           "check": "",
@@ -2483,8 +2363,8 @@
           "comment": ""
         },
         {
-          "id": "jhMFPSachee-jtsmKe1f9",
-          "name": "drugs_score",
+          "id": "L6fH6G_sFtoZ98eQHy_wK",
+          "name": "secondary_score",
           "type": "FLOAT",
           "default": "",
           "check": "",
@@ -2495,8 +2375,8 @@
           "comment": ""
         },
         {
-          "id": "q1AdHiDdmIqHYtec6ZVov",
-          "name": "ensemble_score",
+          "id": "zA-Hc0czlS4-IW60dcpfz",
+          "name": "bayesian_score",
           "type": "FLOAT",
           "default": "",
           "check": "",
@@ -2507,7 +2387,67 @@
           "comment": ""
         },
         {
-          "id": "TST9XN9BzvFLqgj20q-Vk",
+          "id": "GixjV7mm3SXpQ2Ik6UbQ8",
+          "name": "string_score",
+          "type": "FLOAT",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": ""
+        },
+        {
+          "id": "0MGjKvXI6ZJUJhSDUl0t3",
+          "name": "operon_score",
+          "type": "FLOAT",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": ""
+        },
+        {
+          "id": "kY7fE1J_ibs5wM2EECmQo",
+          "name": "ecocyc_score",
+          "type": "FLOAT",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": ""
+        },
+        {
+          "id": "fAcDIwCgGE9FLhPr0hhgh",
+          "name": "xlms_peptides",
+          "type": "TEXT",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": ""
+        },
+        {
+          "id": "6KTI4-r4FiYibrRK892_D",
+          "name": "xlms_files",
+          "type": "TEXT",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": ""
+        },
+        {
+          "id": "xsPmPxAjBhgNasuMqrR4I",
           "name": "experimental_condition_id",
           "type": "INTEGER",
           "default": "",
@@ -2530,17 +2470,17 @@
           "unique": true
         }
       ],
-      "x": -64.14770407369036,
-      "y": 494.3220315593877
+      "x": 13.698458621104919,
+      "y": 821.3292293622065
     }
   ],
   "relationships": [
     {
       "name": "fk_strain_species_id_species",
-      "startTableId": "BZfysrIuQWbY-7-MIEK0H",
-      "endTableId": "Po_VBvUjQqiuhK_dL6M63",
-      "endFieldId": "cy__KjwauZw2aGSgSvKAD",
-      "startFieldId": "8a17Kc1x0vZVoyHDsYzg4",
+      "startTableId": "iNZxmNuOjF3pKt2q-TdJK",
+      "endTableId": "2Oc01VDjBnMBpNcqGlVTj",
+      "endFieldId": "Ogy7vp4JwULltujmArxQL",
+      "startFieldId": "CjOTtRd1p4g0r8jcMMSsM",
       "id": 0,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2548,10 +2488,10 @@
     },
     {
       "name": "fk_strain_contigs_strain_id_strain",
-      "startTableId": "rKQYAL9BA8QGbClPbJP6V",
-      "endTableId": "BZfysrIuQWbY-7-MIEK0H",
-      "endFieldId": "U7nL3QXgzAjJwOgUSXBs6",
-      "startFieldId": "P497La5_I2zPQU4CrR8-L",
+      "startTableId": "py9ijzY5A6aoc78ok6kGL",
+      "endTableId": "iNZxmNuOjF3pKt2q-TdJK",
+      "endFieldId": "zCaLed1VGF_-0rEExGZY9",
+      "startFieldId": "v8y_KM9chz1H7zy1RnbDG",
       "id": 1,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2559,10 +2499,10 @@
     },
     {
       "name": "fk_genomic_region_strain_id_strain",
-      "startTableId": "UZIvzZtNuSdPkRUHqtma2",
-      "endTableId": "BZfysrIuQWbY-7-MIEK0H",
-      "endFieldId": "U7nL3QXgzAjJwOgUSXBs6",
-      "startFieldId": "FNTwamByQ0td268t2OLFg",
+      "startTableId": "3Tr1GTBYGlJcsKSb1jlQF",
+      "endTableId": "iNZxmNuOjF3pKt2q-TdJK",
+      "endFieldId": "zCaLed1VGF_-0rEExGZY9",
+      "startFieldId": "T5uEZyeGYFc7rY4jz3P2z",
       "id": 2,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2570,10 +2510,10 @@
     },
     {
       "name": "fk_gene_strain_id_strain",
-      "startTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endTableId": "BZfysrIuQWbY-7-MIEK0H",
-      "endFieldId": "U7nL3QXgzAjJwOgUSXBs6",
-      "startFieldId": "j1MqJt2S4dvwOc3tqPj0R",
+      "startTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endTableId": "iNZxmNuOjF3pKt2q-TdJK",
+      "endFieldId": "zCaLed1VGF_-0rEExGZY9",
+      "startFieldId": "WCMeP3eJ1mXtLk9KbVoBy",
       "id": 3,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2581,10 +2521,10 @@
     },
     {
       "name": "fk_gene_genomic_region_id_genomic_region",
-      "startTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endTableId": "UZIvzZtNuSdPkRUHqtma2",
-      "endFieldId": "_JNgeC7FJDHLOhHyNahWk",
-      "startFieldId": "IEG6qcYIneNMg7w0b9EjV",
+      "startTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endTableId": "3Tr1GTBYGlJcsKSb1jlQF",
+      "endFieldId": "JFzbsys3tWscRWKarod-2",
+      "startFieldId": "b8VtbkgOjRaQe_uMzlwRE",
       "id": 4,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2592,10 +2532,10 @@
     },
     {
       "name": "fk_gene_protein_id_protein",
-      "startTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endTableId": "kEuII5apkgz7oUUXFgmPL",
-      "endFieldId": "G_CouAI2dpKNPobTqt0TS",
-      "startFieldId": "cC-C4b7274oisJOTy-u5X",
+      "startTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endTableId": "7-VGI4LxolEahGI6v1Gtr",
+      "endFieldId": "k17IfInT9l1dHB0wIewo9",
+      "startFieldId": "RS7SuLuEyFJiUi05XPTZq",
       "id": 5,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2603,10 +2543,10 @@
     },
     {
       "name": "fk_gene_dbxref_gene_id_gene",
-      "startTableId": "RrJUixg17zWdTBG6Dh6t1",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "_Q1J-GGii89pFTO0ZAQIi",
+      "startTableId": "E_j3JPnr18Ew6BE63iaHk",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "qIktbOAx9saZ2wOHwx1J9",
       "id": 6,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2614,10 +2554,10 @@
     },
     {
       "name": "fk_gene_ontology_terms_gene_id_gene",
-      "startTableId": "QWAycHBft3V47Y7qiseuB",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "-e793SoPPhHpvErKxUcU3",
+      "startTableId": "jEHhT9wOvrGY-TwBZZD3w",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "L4GPLl26gcaRhQcOHBqsn",
       "id": 7,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2625,10 +2565,10 @@
     },
     {
       "name": "fk_experimental_condition_media_id_media",
-      "startTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endTableId": "MBgbTNCIq9te6ihBbVWkg",
-      "endFieldId": "w83U2T3tYgB-jzqivk79l",
-      "startFieldId": "mVTEmjkJzXt2-XmyxxUUy",
+      "startTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endTableId": "jc50XE0QP3atmM41xDIiL",
+      "endFieldId": "0br5jDqlrGd0kkQWgRQPj",
+      "startFieldId": "1o24rJs6EQzXii3DoPdCV",
       "id": 8,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2636,10 +2576,10 @@
     },
     {
       "name": "fk_drug_compound_id_compound",
-      "startTableId": "9iQrAya6wz0E8KilWDxUI",
-      "endTableId": "9qZeEBP_KBt65cf3209eq",
-      "endFieldId": "ByjJ8QdvbZtp14LlAyoQp",
-      "startFieldId": "6gy-Lmt5E74jcAQVJj_US",
+      "startTableId": "risUgMgwWoSkJ3hvn-O5q",
+      "endTableId": "1yKEIpOo4nrI43mBVWFI6",
+      "endFieldId": "oH-JPlEAasMTUvkUDj-FL",
+      "startFieldId": "YFdowxnQ-EJmoaeqznDsw",
       "id": 9,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2647,10 +2587,10 @@
     },
     {
       "name": "fk_SP1_gene_essentiality_gene_id_gene",
-      "startTableId": "PePT7sxZYWMjJshPzCmO_",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "LwlbiHLIPa43xKnRQ7y7H",
+      "startTableId": "b3Al2a0lkx9mq9QyR9HSU",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "R8ufrFZ2_FQ28r-ylaBU0",
       "id": 10,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2658,10 +2598,10 @@
     },
     {
       "name": "fk_SP1_gene_essentiality_genomic_region_id_genomic_region",
-      "startTableId": "PePT7sxZYWMjJshPzCmO_",
-      "endTableId": "UZIvzZtNuSdPkRUHqtma2",
-      "endFieldId": "_JNgeC7FJDHLOhHyNahWk",
-      "startFieldId": "tFhtPs36pcnHvFdHW0iKD",
+      "startTableId": "b3Al2a0lkx9mq9QyR9HSU",
+      "endTableId": "3Tr1GTBYGlJcsKSb1jlQF",
+      "endFieldId": "JFzbsys3tWscRWKarod-2",
+      "startFieldId": "Vpbe-F-Daya_2nRoO-3Sl",
       "id": 11,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2669,10 +2609,10 @@
     },
     {
       "name": "fk_SP1_gene_essentiality_experimental_condition_id_experimental_condition",
-      "startTableId": "PePT7sxZYWMjJshPzCmO_",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "Vr3iLg4g55t0nPyHKV1w4",
+      "startTableId": "b3Al2a0lkx9mq9QyR9HSU",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "hoJk-aRWFf25zFkjcutKw",
       "id": 12,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2680,10 +2620,10 @@
     },
     {
       "name": "fk_SP1_gene_fitness_data_gene_id_gene",
-      "startTableId": "dds-vG8FyV8Z9RZyFJvR1",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "hujnY8xIEX7QffZQSbT7V",
+      "startTableId": "9wjed5gn0QYeSuqaQw3dB",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "yVxOr_AoWZrdY1KLFcnD2",
       "id": 13,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2691,10 +2631,10 @@
     },
     {
       "name": "fk_SP1_gene_fitness_data_genomic_region_id_genomic_region",
-      "startTableId": "dds-vG8FyV8Z9RZyFJvR1",
-      "endTableId": "UZIvzZtNuSdPkRUHqtma2",
-      "endFieldId": "_JNgeC7FJDHLOhHyNahWk",
-      "startFieldId": "F9qrWwetMp5gGZro5epR9",
+      "startTableId": "9wjed5gn0QYeSuqaQw3dB",
+      "endTableId": "3Tr1GTBYGlJcsKSb1jlQF",
+      "endFieldId": "JFzbsys3tWscRWKarod-2",
+      "startFieldId": "djy8xBVEFgTRzsUWa8CfW",
       "id": 14,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2702,10 +2642,10 @@
     },
     {
       "name": "fk_SP1_gene_fitness_data_experimental_condition_id_experimental_condition",
-      "startTableId": "dds-vG8FyV8Z9RZyFJvR1",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "nwaXEhw8CWr86VLoBJK-0",
+      "startTableId": "9wjed5gn0QYeSuqaQw3dB",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "-oO6h-tL2hN3qOEU3x6pC",
       "id": 15,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2713,10 +2653,10 @@
     },
     {
       "name": "fk_SP1_gene_fitness_correlation_gene1_id_gene",
-      "startTableId": "v7rjMqsKPcfafcHQfrUNt",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "Wtf3ShCnfT1bdF7lIf4_j",
+      "startTableId": "E6D2YZjagFqsHB3zWki9e",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "TSjwoqaXVzkicvDSfu2Ei",
       "id": 16,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2724,10 +2664,10 @@
     },
     {
       "name": "fk_SP1_gene_fitness_correlation_gene2_id_gene",
-      "startTableId": "v7rjMqsKPcfafcHQfrUNt",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "-DJcugxc_ZyqaLob-3TwH",
+      "startTableId": "E6D2YZjagFqsHB3zWki9e",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "PzkumHfpxep4wFqlllZtd",
       "id": 17,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2735,10 +2675,10 @@
     },
     {
       "name": "fk_SP1_gene_fitness_correlation_genomic_region_id_1_genomic_region",
-      "startTableId": "v7rjMqsKPcfafcHQfrUNt",
-      "endTableId": "UZIvzZtNuSdPkRUHqtma2",
-      "endFieldId": "_JNgeC7FJDHLOhHyNahWk",
-      "startFieldId": "WbrfpxR8pF2YIhKlEN_oT",
+      "startTableId": "E6D2YZjagFqsHB3zWki9e",
+      "endTableId": "3Tr1GTBYGlJcsKSb1jlQF",
+      "endFieldId": "JFzbsys3tWscRWKarod-2",
+      "startFieldId": "UMkND5Om0RR04iSbs-q7R",
       "id": 18,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2746,10 +2686,10 @@
     },
     {
       "name": "fk_SP1_gene_fitness_correlation_genomic_region_id_2_genomic_region",
-      "startTableId": "v7rjMqsKPcfafcHQfrUNt",
-      "endTableId": "UZIvzZtNuSdPkRUHqtma2",
-      "endFieldId": "_JNgeC7FJDHLOhHyNahWk",
-      "startFieldId": "bVpmC2KdElVzLnzpbd47i",
+      "startTableId": "E6D2YZjagFqsHB3zWki9e",
+      "endTableId": "3Tr1GTBYGlJcsKSb1jlQF",
+      "endFieldId": "JFzbsys3tWscRWKarod-2",
+      "startFieldId": "Gmjnbm61aYTLtdXH_cnkS",
       "id": 19,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2757,10 +2697,10 @@
     },
     {
       "name": "fk_SP1_gene_fitness_correlation_experimental_condition_id_experimental_condition",
-      "startTableId": "v7rjMqsKPcfafcHQfrUNt",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "9nhKv8k86QukSUOJaBLLB",
+      "startTableId": "E6D2YZjagFqsHB3zWki9e",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "PttWVo_3-17vCy-tydFgj",
       "id": 20,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2768,10 +2708,10 @@
     },
     {
       "name": "fk_SP2_protein_compound_interaction_protein_id_protein",
-      "startTableId": "xIJdIKDGjyLuae76YS5UN",
-      "endTableId": "kEuII5apkgz7oUUXFgmPL",
-      "endFieldId": "G_CouAI2dpKNPobTqt0TS",
-      "startFieldId": "ZDEbI3s4km1bfSOIlstDf",
+      "startTableId": "LfrA4NBT6R778BaIEsVNh",
+      "endTableId": "7-VGI4LxolEahGI6v1Gtr",
+      "endFieldId": "k17IfInT9l1dHB0wIewo9",
+      "startFieldId": "PtvBFBRp12OjLRzvxzhXP",
       "id": 21,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2779,10 +2719,10 @@
     },
     {
       "name": "fk_SP2_protein_compound_interaction_compound_id_compound",
-      "startTableId": "xIJdIKDGjyLuae76YS5UN",
-      "endTableId": "9qZeEBP_KBt65cf3209eq",
-      "endFieldId": "ByjJ8QdvbZtp14LlAyoQp",
-      "startFieldId": "yvHRq47vXg2FWuYbzzLgD",
+      "startTableId": "LfrA4NBT6R778BaIEsVNh",
+      "endTableId": "1yKEIpOo4nrI43mBVWFI6",
+      "endFieldId": "oH-JPlEAasMTUvkUDj-FL",
+      "startFieldId": "s1sfp2BDToNwXMsVOgYe5",
       "id": 22,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2790,10 +2730,10 @@
     },
     {
       "name": "fk_SP2_protein_compound_interaction_experimental_condition_id_experimental_condition",
-      "startTableId": "xIJdIKDGjyLuae76YS5UN",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "IsnCeMNpj31xyOcyV4xew",
+      "startTableId": "LfrA4NBT6R778BaIEsVNh",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "0ZW3XF7wD9Cea0g6WQM81",
       "id": 23,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2801,10 +2741,10 @@
     },
     {
       "name": "fk_SP2_ppi_interaction_protein_id_a_protein",
-      "startTableId": "ftDdTpiMnEy2PY08FlqRe",
-      "endTableId": "kEuII5apkgz7oUUXFgmPL",
-      "endFieldId": "G_CouAI2dpKNPobTqt0TS",
-      "startFieldId": "mut7z109_sctIDVCmuT55",
+      "startTableId": "VmgFccnpriFS8O70VnBnw",
+      "endTableId": "7-VGI4LxolEahGI6v1Gtr",
+      "endFieldId": "k17IfInT9l1dHB0wIewo9",
+      "startFieldId": "3OKdsOq2SSm0i8w2-mk8x",
       "id": 24,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2812,10 +2752,10 @@
     },
     {
       "name": "fk_SP2_ppi_interaction_protein_id_b_protein",
-      "startTableId": "ftDdTpiMnEy2PY08FlqRe",
-      "endTableId": "kEuII5apkgz7oUUXFgmPL",
-      "endFieldId": "G_CouAI2dpKNPobTqt0TS",
-      "startFieldId": "bynT-ZpQzNIRaKxNnjRzz",
+      "startTableId": "VmgFccnpriFS8O70VnBnw",
+      "endTableId": "7-VGI4LxolEahGI6v1Gtr",
+      "endFieldId": "k17IfInT9l1dHB0wIewo9",
+      "startFieldId": "jY_YqgP8JEKW-O2fHEPhk",
       "id": 25,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2823,10 +2763,10 @@
     },
     {
       "name": "fk_SP2_ppi_interaction_experimental_condition_id_experimental_condition",
-      "startTableId": "ftDdTpiMnEy2PY08FlqRe",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "TST9XN9BzvFLqgj20q-Vk",
+      "startTableId": "VmgFccnpriFS8O70VnBnw",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "xsPmPxAjBhgNasuMqrR4I",
       "id": 26,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2834,10 +2774,10 @@
     },
     {
       "name": "fk_SP3_mutant_growth_rate_gene_id_gene",
-      "startTableId": "GlXgCw6539IENno7qhyUx",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "8-k8AAKebpmKtwa17sReX",
+      "startTableId": "gDrkCAcUAOjmCJG6dScxd",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "umgpV60HKZWdKTKAd7119",
       "id": 27,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2845,10 +2785,10 @@
     },
     {
       "name": "fk_SP3_mutant_growth_rate_genomic_region_id_genomic_region",
-      "startTableId": "GlXgCw6539IENno7qhyUx",
-      "endTableId": "UZIvzZtNuSdPkRUHqtma2",
-      "endFieldId": "_JNgeC7FJDHLOhHyNahWk",
-      "startFieldId": "itU3jAQppsrK-0kpQyOQK",
+      "startTableId": "gDrkCAcUAOjmCJG6dScxd",
+      "endTableId": "3Tr1GTBYGlJcsKSb1jlQF",
+      "endFieldId": "JFzbsys3tWscRWKarod-2",
+      "startFieldId": "fWHJ7l_eYhbeKnDScIykh",
       "id": 28,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2856,10 +2796,10 @@
     },
     {
       "name": "fk_SP3_mutant_growth_rate_media_id_media",
-      "startTableId": "GlXgCw6539IENno7qhyUx",
-      "endTableId": "MBgbTNCIq9te6ihBbVWkg",
-      "endFieldId": "w83U2T3tYgB-jzqivk79l",
-      "startFieldId": "E4m88XwAoNmpB8cqDQBpC",
+      "startTableId": "gDrkCAcUAOjmCJG6dScxd",
+      "endTableId": "jc50XE0QP3atmM41xDIiL",
+      "endFieldId": "0br5jDqlrGd0kkQWgRQPj",
+      "startFieldId": "3RdivVDvh3oNn9KaCVQhH",
       "id": 29,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2867,10 +2807,10 @@
     },
     {
       "name": "fk_SP3_mutant_growth_rate_experimental_condition_id_experimental_condition",
-      "startTableId": "GlXgCw6539IENno7qhyUx",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "nNzGEiGSJEOW5QSjE8Pr6",
+      "startTableId": "gDrkCAcUAOjmCJG6dScxd",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "ze5L_3d9qwGbv2vIAb4FX",
       "id": 30,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2878,10 +2818,10 @@
     },
     {
       "name": "fk_SP5_drug_bacteria_metabolism_strain_id_strain",
-      "startTableId": "V12ShRyAnSnKgxO7o9c0L",
-      "endTableId": "BZfysrIuQWbY-7-MIEK0H",
-      "endFieldId": "U7nL3QXgzAjJwOgUSXBs6",
-      "startFieldId": "u5a67Y3CJNqo-8wwHw1Ax",
+      "startTableId": "HXFII9xjddPxmhX5HcYKK",
+      "endTableId": "iNZxmNuOjF3pKt2q-TdJK",
+      "endFieldId": "zCaLed1VGF_-0rEExGZY9",
+      "startFieldId": "lM8OWn1R-VFn2cEX1Kyt_",
       "id": 31,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2889,10 +2829,10 @@
     },
     {
       "name": "fk_SP5_drug_bacteria_metabolism_drug_id_drug",
-      "startTableId": "V12ShRyAnSnKgxO7o9c0L",
-      "endTableId": "9iQrAya6wz0E8KilWDxUI",
-      "endFieldId": "_esiE2JWUC7xLtsut2EHZ",
-      "startFieldId": "fe7tm694ekRX3N7QEyg0N",
+      "startTableId": "HXFII9xjddPxmhX5HcYKK",
+      "endTableId": "risUgMgwWoSkJ3hvn-O5q",
+      "endFieldId": "Kq6TXs176AmBFXdzh8PjX",
+      "startFieldId": "udjQRCDaAd4OPHJsaEe_Q",
       "id": 32,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2900,10 +2840,10 @@
     },
     {
       "name": "fk_SP5_drug_bacteria_metabolism_compound_id_compound",
-      "startTableId": "V12ShRyAnSnKgxO7o9c0L",
-      "endTableId": "9qZeEBP_KBt65cf3209eq",
-      "endFieldId": "ByjJ8QdvbZtp14LlAyoQp",
-      "startFieldId": "pbfacW1lrg_msD85cGeXz",
+      "startTableId": "HXFII9xjddPxmhX5HcYKK",
+      "endTableId": "1yKEIpOo4nrI43mBVWFI6",
+      "endFieldId": "oH-JPlEAasMTUvkUDj-FL",
+      "startFieldId": "B64TkBMOrucK_rM4fK2uE",
       "id": 33,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2911,10 +2851,10 @@
     },
     {
       "name": "fk_SP5_drug_bacteria_metabolism_experimental_condition_id_experimental_condition",
-      "startTableId": "V12ShRyAnSnKgxO7o9c0L",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "eovMZ9JI5r1Rs_kH9_lov",
+      "startTableId": "HXFII9xjddPxmhX5HcYKK",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "eZx08pZECaM9VcmG2BdKh",
       "id": 34,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2922,10 +2862,10 @@
     },
     {
       "name": "fk_SP5_drug_bacteria_mic_strain_id_strain",
-      "startTableId": "224639gYtQAUvHpltbwq1",
-      "endTableId": "BZfysrIuQWbY-7-MIEK0H",
-      "endFieldId": "U7nL3QXgzAjJwOgUSXBs6",
-      "startFieldId": "Ylv2iFSqrdA7EVbNQ81nD",
+      "startTableId": "1b91kJYGiRhcKgoOSCCCK",
+      "endTableId": "iNZxmNuOjF3pKt2q-TdJK",
+      "endFieldId": "zCaLed1VGF_-0rEExGZY9",
+      "startFieldId": "ep-jlmkGSVCm56TplOzsW",
       "id": 35,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2933,10 +2873,10 @@
     },
     {
       "name": "fk_SP5_drug_bacteria_mic_drug_id_drug",
-      "startTableId": "224639gYtQAUvHpltbwq1",
-      "endTableId": "9iQrAya6wz0E8KilWDxUI",
-      "endFieldId": "_esiE2JWUC7xLtsut2EHZ",
-      "startFieldId": "I0ccampW15vHDwdZiaalR",
+      "startTableId": "1b91kJYGiRhcKgoOSCCCK",
+      "endTableId": "risUgMgwWoSkJ3hvn-O5q",
+      "endFieldId": "Kq6TXs176AmBFXdzh8PjX",
+      "startFieldId": "Wak7QRVkS1SwIFhvgYOoa",
       "id": 36,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2944,10 +2884,10 @@
     },
     {
       "name": "fk_SP5_drug_bacteria_mic_experimental_condition_id_experimental_condition",
-      "startTableId": "224639gYtQAUvHpltbwq1",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "imiI63uHEthClUo-anl_x",
+      "startTableId": "1b91kJYGiRhcKgoOSCCCK",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "plFVkGmMzV-BsDtGxJsir",
       "id": 37,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2955,10 +2895,10 @@
     },
     {
       "name": "fk_SP5_operon_prediction_strain_id_strain",
-      "startTableId": "HWpM6jHOerOyyI79x2GPx",
-      "endTableId": "BZfysrIuQWbY-7-MIEK0H",
-      "endFieldId": "U7nL3QXgzAjJwOgUSXBs6",
-      "startFieldId": "_napXyb39Gmke5haasHml",
+      "startTableId": "SC-WbbZGv8GC6RUrcUw3B",
+      "endTableId": "iNZxmNuOjF3pKt2q-TdJK",
+      "endFieldId": "zCaLed1VGF_-0rEExGZY9",
+      "startFieldId": "w6j9Is3Lm6_9ANgh429d1",
       "id": 38,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2966,10 +2906,10 @@
     },
     {
       "name": "fk_SP5_operon_prediction_gene_a_id_gene",
-      "startTableId": "HWpM6jHOerOyyI79x2GPx",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "dyC35JdKOnjBZUNWNlpVi",
+      "startTableId": "SC-WbbZGv8GC6RUrcUw3B",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "GQ-uNrvIJR3hYtn2wXwT2",
       "id": 39,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2977,10 +2917,10 @@
     },
     {
       "name": "fk_SP5_operon_prediction_gene_b_id_gene",
-      "startTableId": "HWpM6jHOerOyyI79x2GPx",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "CePI5YhrB0TaYsRHyqi0B",
+      "startTableId": "SC-WbbZGv8GC6RUrcUw3B",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "XYIE94MpSTLUU6UA9zHRh",
       "id": 40,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2988,10 +2928,10 @@
     },
     {
       "name": "fk_SP5_operon_prediction_experimental_condition_id_experimental_condition",
-      "startTableId": "HWpM6jHOerOyyI79x2GPx",
-      "endTableId": "g_HiILFtQEc4p_0f-kq_t",
-      "endFieldId": "QY1Jf3Kq6r7lCkf0xqR2j",
-      "startFieldId": "y4IycBGpFPPgxCsHVLyp5",
+      "startTableId": "SC-WbbZGv8GC6RUrcUw3B",
+      "endTableId": "qE-UkcyC0qVIez3PAvWFM",
+      "endFieldId": "0Fe_MrgVAo-dbgmJQGGfI",
+      "startFieldId": "MI4coIgZM-Wwx5Yv1ACyX",
       "id": 41,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -2999,10 +2939,10 @@
     },
     {
       "name": "fk_gene_amr_gene_id_gene",
-      "startTableId": "bigTwdSxgMyeKICmLo8iC",
-      "endTableId": "XJzh6_VMRwA-DrViTqIeg",
-      "endFieldId": "sqSWEVE-lHSCWC5PrAswc",
-      "startFieldId": "w75-V00hytqFasgFElIAk",
+      "startTableId": "LL1Zzx7-GnxRRP_zaHIDy",
+      "endTableId": "eFhKbHkDoqJ1sfvnzGKoB",
+      "endFieldId": "VsSsA4veUEuTj7Be2g0w6",
+      "startFieldId": "ePUrgg6Q7xiRpUtMr3v_1",
       "id": 42,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -3010,10 +2950,10 @@
     },
     {
       "name": "fk_gene_amr_genomic_region_id_genomic_region",
-      "startTableId": "bigTwdSxgMyeKICmLo8iC",
-      "endTableId": "UZIvzZtNuSdPkRUHqtma2",
-      "endFieldId": "_JNgeC7FJDHLOhHyNahWk",
-      "startFieldId": "EVBni787Z-W4aa4jOnctu",
+      "startTableId": "LL1Zzx7-GnxRRP_zaHIDy",
+      "endTableId": "3Tr1GTBYGlJcsKSb1jlQF",
+      "endFieldId": "JFzbsys3tWscRWKarod-2",
+      "startFieldId": "-oUWhURJN1bnf11NiTUwT",
       "id": 43,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
@@ -3021,10 +2961,10 @@
     },
     {
       "name": "fk_gene_amr_drug_id_drug",
-      "startTableId": "bigTwdSxgMyeKICmLo8iC",
-      "endTableId": "9iQrAya6wz0E8KilWDxUI",
-      "endFieldId": "_esiE2JWUC7xLtsut2EHZ",
-      "startFieldId": "61WwVjViRCbdXc_pE6lil",
+      "startTableId": "LL1Zzx7-GnxRRP_zaHIDy",
+      "endTableId": "risUgMgwWoSkJ3hvn-O5q",
+      "endFieldId": "Kq6TXs176AmBFXdzh8PjX",
+      "startFieldId": "pdbyfBeS4mw_hSJvz7GxK",
       "id": 44,
       "updateConstraint": "No action",
       "deleteConstraint": "No action",
