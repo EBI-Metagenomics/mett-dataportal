@@ -2,16 +2,6 @@ import SimpleFeature from '@jbrowse/core/util/simpleFeature';
 import {GeneService} from "../../../services/gene";
 import {getIconForEssentiality} from "../../../utils/common/constants";
 
-// PyHMMER search configuration
-const PYHMMER_CONFIG = {
-    database: 'bu_pv_all',
-    threshold: 'evalue',
-    threshold_value: 0.01,
-    E: 0.01,
-    domE: 0.01,
-    incE: 0.01,
-    incdomE: 0.01
-};
 
 export class FeatureProcessor {
     /**

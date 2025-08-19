@@ -1,6 +1,7 @@
 // PyHMMER Services
-export { PyhmmerSearchService } from './PyhmmerSearchService';
-export type { PyhmmerSearchRequest, PyhmmerSearchResult } from './PyhmmerSearchService';
+export { PyhmmerService } from './pyhmmerService';
+export type { PyhmmerSearchResult } from './pyhmmerService';
+export type { PyhmmerSearchRequest } from '../../interfaces/Pyhmmer';
 
-// Re-export the main PyHMMER service
-export { PyhmmerService } from '../pyhmmerService';
+// History service
+export * from './pyhmmerHistoryService';

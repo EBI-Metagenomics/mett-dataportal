@@ -131,7 +131,7 @@ const PyhmmerCompactResults: React.FC<PyhmmerCompactResultsProps> = ({
                     <div className={styles.domainsPreview}>
                         <span className={styles.domainsLabel}>Domains:</span>
                         <div className={styles.domainsList}>
-                            {result.domains.slice(0, 2).map((domain, domainIndex) => (
+                            {result.domains?.slice(0, 2).map((domain, domainIndex) => (
                                 <span key={domainIndex} className={styles.domainItem}>
                                     {domain.env_from}-{domain.env_to}
                                     <span className={styles.domainScore}>
@@ -139,7 +139,7 @@ const PyhmmerCompactResults: React.FC<PyhmmerCompactResultsProps> = ({
                                     </span>
                                 </span>
                             ))}
-                            {result.domains.length > 2 && (
+                            {result.domains && Array.isArray(result.domains) && result.domains.length > 2 && (
                                 <span className={styles.moreDomains}>
                                     +{result.domains.length - 2} more
                                 </span>

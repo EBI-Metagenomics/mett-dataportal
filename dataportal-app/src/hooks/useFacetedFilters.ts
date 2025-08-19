@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {useLocation} from 'react-router-dom';
 import {useFilterStore, FacetedFilters, FacetOperators} from '../stores/filterStore';
-import {GeneService} from '../services/geneService';
+import {GeneService} from '../services/gene';
 import {GeneFacetResponse} from '../interfaces/Gene';
 
 interface UseFacetedFiltersProps {

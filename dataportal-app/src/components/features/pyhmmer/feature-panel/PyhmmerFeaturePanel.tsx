@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { PyhmmerSearchService, PyhmmerSearchResult } from './PyhmmerSearchService';
-import { PyhmmerResultsDisplay } from './PyhmmerResultsDisplay';
+import React, {useState} from 'react';
+import {PyhmmerSearchResult, PyhmmerService} from '../../../../services/pyhmmer';
+import {PyhmmerResultsDisplay} from '@components/features';
 import styles from './PyhmmerFeaturePanel.module.scss';
 
 interface PyhmmerFeaturePanelProps {
     proteinSequence: string;
 }
 
-export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({ proteinSequence }) => {
+export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({proteinSequence}) => {
     const [isSearching, setIsSearching] = useState(false);
     const [results, setResults] = useState<PyhmmerSearchResult[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({ protei
         setHasSearched(true);
 
         try {
-            const searchResults = await PyhmmerSearchService.executeSearch(proteinSequence);
+            const searchResults = await PyhmmerService.executeSearch(proteinSequence);
             setResults(searchResults);
         } catch (error: any) {
             setError(error.message || 'Search failed');
@@ -69,9 +69,9 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({ protei
                 )}
 
                 {!isSearching && !error && hasSearched && (
-                    <PyhmmerResultsDisplay 
-                        results={results} 
-                        onClear={handleClear} 
+                    <PyhmmerResultsDisplay
+                        results={results}
+                        onClear={handleClear}
                     />
                 )}
             </div>

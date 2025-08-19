@@ -1,7 +1,7 @@
 import {Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
-import {GenomeService} from '../services/genomeService';
-import {GeneService} from '../services/geneService';
+import {GenomeService} from '../services/genome';
+import {GeneService} from '../services/gene';
 import {GenomeMeta} from '../interfaces/Genome';
 import {GeneMeta} from '../interfaces/Gene';
 import {APP_CONSTANTS} from '../utils/common/constants';

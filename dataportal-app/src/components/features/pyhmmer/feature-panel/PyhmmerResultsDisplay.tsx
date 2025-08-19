@@ -1,5 +1,5 @@
 import React from 'react';
-import { PyhmmerSearchResult, PyhmmerSearchService } from './PyhmmerSearchService';
+import {PyhmmerSearchResult, PyhmmerService} from '../../../../services/pyhmmer';
 import styles from './PyhmmerResultsDisplay.module.scss';
 
 interface PyhmmerResultsDisplayProps {
@@ -7,7 +7,7 @@ interface PyhmmerResultsDisplayProps {
     onClear: () => void;
 }
 
-export const PyhmmerResultsDisplay: React.FC<PyhmmerResultsDisplayProps> = ({ results, onClear }) => {
+export const PyhmmerResultsDisplay: React.FC<PyhmmerResultsDisplayProps> = ({results, onClear}) => {
     if (!Array.isArray(results) || results.length === 0) {
         return (
             <div className={styles.noResultsMessage}>
@@ -17,8 +17,8 @@ export const PyhmmerResultsDisplay: React.FC<PyhmmerResultsDisplayProps> = ({ re
     }
 
     // Count significant results
-    const significantCount = results.filter(result => 
-        PyhmmerSearchService.isResultSignificant(result)
+    const significantCount = results.filter(result =>
+        PyhmmerService.isResultSignificant(result)
     ).length;
 
     // Show top 10 results
@@ -39,27 +39,28 @@ export const PyhmmerResultsDisplay: React.FC<PyhmmerResultsDisplayProps> = ({ re
             {/* Results list */}
             <div className={styles.resultsList}>
                 {resultsToShow.map((result, index) => {
-                    const isSignificant = PyhmmerSearchService.isResultSignificant(result);
-                    const targetName = PyhmmerSearchService.getTargetName(result);
-                    const evalueFormatted = PyhmmerSearchService.formatEvalue(result.evalue);
-                    const scoreFormatted = PyhmmerSearchService.formatScore(result.score);
-                    const genomeViewerUrl = PyhmmerSearchService.generateGenomeViewerUrl(targetName);
+                    const isSignificant = PyhmmerService.isResultSignificant(result);
+                    const targetName = PyhmmerService.getTargetName(result);
+                    const evalueFormatted = PyhmmerService.formatEvalue(result.evalue);
+                    const scoreFormatted = PyhmmerService.formatScore(result.score);
+                    const genomeViewerUrl = PyhmmerService.generateGenomeViewerUrl(targetName);
 
                     const resultClass = isSignificant ? styles.resultItem : `${styles.resultItem} ${styles.notSignificant}`;
 
                     return (
                         <div key={index} className={resultClass}>
                             <div className={styles.targetName}>
-                                <a 
+                                <a
                                     href={genomeViewerUrl}
-                                    target="_blank" 
-                                    className={styles.locusTagLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={styles.genomeViewerLink}
                                 >
                                     {targetName}
                                 </a>
                             </div>
                             <div className={styles.resultDetails}>
-                                E-value: {evalueFormatted} | 
+                                E-value: {evalueFormatted} |
                                 Score: {scoreFormatted}
                                 {isSignificant && (
                                     <span className={styles.significant}>✓ Significant</span>
@@ -78,7 +79,7 @@ export const PyhmmerResultsDisplay: React.FC<PyhmmerResultsDisplayProps> = ({ re
             )}
 
             {/* Clear button */}
-            <button 
+            <button
                 onClick={onClear}
                 className={styles.clearButton}
             >

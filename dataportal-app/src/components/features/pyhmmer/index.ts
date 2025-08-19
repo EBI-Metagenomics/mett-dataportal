@@ -1,10 +1,10 @@
-// PyHMMER Feature Module - Main exports
-
-// Feature Panel Components
+// PyHMMER Components
 export { PyhmmerFeaturePanel } from './feature-panel/PyhmmerFeaturePanel';
-export { PyhmmerResultsDisplay } from './feature-panel/PyhmmerResultsDisplay';
 export { PyhmmerIntegration } from './feature-panel/PyhmmerIntegration';
+export { PyhmmerResultsDisplay } from './feature-panel/PyhmmerResultsDisplay';
+export { default as PyhmmerSearchForm } from './PyhmmerSearchForm/PyhmmerSearchForm';
+export { default as PyhmmerResultsTable } from './PyhmmerResultsHandler/PyhmmerResultsTable';
 
-// Services and Types
-export { PyhmmerSearchService } from '../../../services/pyhmmer/PyhmmerSearchService';
-export type { PyhmmerSearchRequest, PyhmmerSearchResult } from '../../../services/pyhmmer/PyhmmerSearchService';
+// Re-export types from services
+export type { PyhmmerSearchResult } from '../../../services/pyhmmer/pyhmmerService';
+export type { PyhmmerSearchRequest } from '../../../interfaces/Pyhmmer';

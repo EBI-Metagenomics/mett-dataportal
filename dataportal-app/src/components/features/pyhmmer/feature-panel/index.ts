@@ -1,5 +1,5 @@
 export { PyhmmerFeaturePanel } from './PyhmmerFeaturePanel';
-export { PyhmmerResultsDisplay } from './PyhmmerResultsDisplay';
 export { PyhmmerIntegration } from './PyhmmerIntegration';
-export { PyhmmerSearchService } from './PyhmmerSearchService';
-export type { PyhmmerSearchRequest, PyhmmerSearchResult } from './PyhmmerSearchService';
+export { PyhmmerResultsDisplay } from './PyhmmerResultsDisplay';
+export type { PyhmmerSearchResult } from '../../../../services/pyhmmer/pyhmmerService';
+export type { PyhmmerSearchRequest } from '../../../../interfaces/Pyhmmer';

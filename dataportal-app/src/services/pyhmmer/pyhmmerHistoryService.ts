@@ -1,8 +1,8 @@
-import { formatRelativeDate } from './formatting';
-import { PYHMMER_CONFIG } from './constants';
+import { formatRelativeDate } from '../../utils/pyhmmer/formatting';
+import { PYHMMER_CONSTANTS } from '../../utils/pyhmmer/pyhmmerConstants';
 
 // Import SearchHistoryItem from types
-import { SearchHistoryItem } from './types';
+import { SearchHistoryItem } from '../../utils/pyhmmer/types';
 
 const HISTORY_KEY = 'pyhmmer_search_history';
 
@@ -20,8 +20,8 @@ export const loadSearchHistory = (): SearchHistoryItem[] => {
             
             // Automatically clean up old items if cleanup is enabled
             let cleanedHistory = history;
-            if (PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS > 0) {
-                const cleanupThresholdMs = PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS * 24 * 60 * 60 * 1000;
+            if (PYHMMER_CONSTANTS.HISTORY.CLEANUP_DAYS > 0) {
+                const cleanupThresholdMs = PYHMMER_CONSTANTS.HISTORY.CLEANUP_DAYS * 24 * 60 * 60 * 1000;
                 const cutoffTime = Date.now() - cleanupThresholdMs;
                 cleanedHistory = history.filter((item: any) => {
                     const itemDate = new Date(item.dateCreated).getTime();
@@ -31,7 +31,7 @@ export const loadSearchHistory = (): SearchHistoryItem[] => {
                 // Update localStorage if items were removed
                 if (cleanedHistory.length < history.length) {
                     const removedCount = history.length - cleanedHistory.length;
-                    console.log(`Automatically removed ${removedCount} old search history items (older than ${PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS} days)`);
+                    console.log(`Automatically removed ${removedCount} old search history items (older than ${PYHMMER_CONSTANTS.HISTORY.CLEANUP_DAYS} days)`);
                     localStorage.setItem(HISTORY_KEY, JSON.stringify(cleanedHistory));
                 }
             }
@@ -39,7 +39,8 @@ export const loadSearchHistory = (): SearchHistoryItem[] => {
             // Format dates for display
             const formattedHistory = cleanedHistory.map((item: any) => ({
                 ...item,
-                date: formatRelativeDate(item.dateCreated)
+                date: formatRelativeDate(item.dateCreated),
+                query: item.input // Map input to query for backward compatibility
             }));
             
             console.log('History state set with formatted dates');
@@ -67,6 +68,7 @@ export const saveSearchToHistory = (jobId: string, searchRequest: any): void => 
             threshold: searchRequest.threshold,
             threshold_value: searchRequest.threshold_value,
             input: searchRequest.input,
+            query: searchRequest.input, // Include query field for backward compatibility
         };
 
         const existingHistory = localStorage.getItem(HISTORY_KEY);

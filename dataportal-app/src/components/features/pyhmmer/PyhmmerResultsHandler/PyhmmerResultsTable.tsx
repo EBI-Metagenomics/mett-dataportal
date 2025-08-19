@@ -5,9 +5,9 @@ import {PyhmmerService} from '../../../../services/pyhmmer';
 import {PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import Pagination from '@components/molecules/Pagination';
 import {saveAs} from 'file-saver';
-import AlignmentView from '@components/atoms/AlignmentView/AlignmentView';
+import AlignmentView from '@components/features/pyhmmer/Alignment/AlignmentView';
+import {DEFAULT_PER_PAGE_CNT} from "../../../../utils/common";
 
-const DEFAULT_PAGE_SIZE = 10;
 
 interface PyhmmerResultsTableProps {
     results: PyhmmerResult[];
@@ -20,7 +20,7 @@ interface PyhmmerResultsTableProps {
 const PyhmmerResultsTable: React.FC<PyhmmerResultsTableProps> = ({results, loading, loadingMessage, error, jobId}) => {
     const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [pageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+    const [pageSize] = useState<number>(DEFAULT_PER_PAGE_CNT);
     const [downloading, setDownloading] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 

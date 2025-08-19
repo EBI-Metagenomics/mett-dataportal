@@ -1,15 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
+import {PyhmmerCompactSearchRequest, validatePyhmmerSearchRequest, ValidationError} from '../../../../utils/pyhmmer';
 import {
-    validatePyhmmerSearchRequest,
-    ValidationError,
-    formatValidationErrors,
-    PYHMMER_CONFIG,
     PYHMMER_DATABASES,
     PYHMMER_ERROR_MESSAGES,
     PYHMMER_LOADING_MESSAGES
 } from '../../../../utils/pyhmmer';
-import { PyhmmerService } from '../../../../services/pyhmmerService';
-import { PyhmmerCompactSearchRequest } from '../../../../utils/pyhmmer';
+import {PyhmmerService} from '../../../../services/pyhmmer';
 import styles from './PyhmmerCompactSearch.module.scss';
 
 interface PyhmmerCompactSearchProps {
@@ -27,13 +23,13 @@ interface PyhmmerCompactSearchProps {
 }
 
 const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
-    defaultSequence = '',
-    defaultDatabase = 'bu_all',
-    onSearch,
-    onSearchStart,
-    onError,
-    className = ''
-}) => {
+                                                                       defaultSequence = '',
+                                                                       defaultDatabase = 'bu_all',
+                                                                       onSearch,
+                                                                       onSearchStart,
+                                                                       onError,
+                                                                       className = ''
+                                                                   }) => {
     // Form state
     const [database, setDatabase] = useState(defaultDatabase);
     const [sequence, setSequence] = useState(defaultSequence);
@@ -58,7 +54,6 @@ const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
 
         loadDatabases();
     }, []);
-
 
 
     // Validate form
@@ -94,8 +89,8 @@ const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
             // Prepare search request
             const searchRequest: PyhmmerCompactSearchRequest = {
                 database,
-                threshold: 'evalue' as const, // Use default threshold
-                threshold_value: '0.01', // Use default value
+                threshold: 'evalue' as const,
+                threshold_value: '0.01',
                 input: sequence
             };
 
@@ -104,7 +99,7 @@ const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : PYHMMER_ERROR_MESSAGES.SEARCH_FAILED;
-            setValidationErrors([{ field: 'general', message: errorMessage }]);
+            setValidationErrors([{field: 'general', message: errorMessage}]);
             onError?.(errorMessage);
         } finally {
             setLoading(false);

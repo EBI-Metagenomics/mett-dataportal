@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react';
 import { getSession } from '@jbrowse/core/util';
-import { PyhmmerService } from '../../../../services/pyhmmerService';
+import { PyhmmerService } from '../../../../services/pyhmmer/pyhmmerService';
 
 interface PyHMMERButtonProps {
     model: any;

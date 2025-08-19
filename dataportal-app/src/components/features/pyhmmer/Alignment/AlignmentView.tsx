@@ -1,8 +1,8 @@
 import React, {useEffect, useState} from 'react';
-import {PyhmmerDomain} from '../../../interfaces/Pyhmmer';
-import {PyhmmerService} from '../../../services/pyhmmerService';
-import AlignmentTable from '../AlignmentTable/AlignmentTable';
-import LoadingSpinner from '../../shared/LoadingSpinner/LoadingSpinner';
+import {PyhmmerDomain} from '../../../../interfaces/Pyhmmer';
+import {PyhmmerService} from '../../../../services/pyhmmer';
+import AlignmentTable from './AlignmentTable';
+import LoadingSpinner from '../../../shared/LoadingSpinner/LoadingSpinner';
 import './AlignmentView.scss';
 
 interface AlignmentViewProps {
@@ -79,7 +79,8 @@ export const AlignmentView: React.FC<AlignmentViewProps> = ({jobId, target}) => 
                         <div className="domain-header">
                             <span className="domain-number">Domain {index + 1}</span>
                             <span className="domain-score">Bit Score: {domain.bitscore.toFixed(1)}</span>
-                            <span className={`domain-significance ${domain.is_significant ? 'significant' : 'insignificant'}`}>
+                            <span
+                                className={`domain-significance ${domain.is_significant ? 'significant' : 'insignificant'}`}>
                                 {domain.is_significant ? '✓ Significant match' : '✗ Insignificant match'}
                             </span>
                         </div>

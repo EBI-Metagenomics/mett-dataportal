@@ -48,26 +48,7 @@ export const APP_CONSTANTS = {
 
 // Type definitions for constants
 export type SortOrder = typeof APP_CONSTANTS.DEFAULT_SORT_ORDER;
-export type TabId = typeof APP_CONSTANTS.TABS[keyof typeof APP_CONSTANTS.TABS]; 
-
-// PyHMMER help text for popovers
-export const PYHMMER_CUTOFF_HELP = `
-E-value: Expected number of false positives. Lower values are more stringent (e.g., 0.01 means 1% chance of false positive).
-
-Bit Score: Log-odds score for alignment quality. Higher values indicate better alignments.
-
-Significance: Threshold for including hits in results.
-
-Report: Threshold for reporting hits in output.
-`;
-
-export const PYHMMER_GAP_PENALTIES_HELP = `
-Gap open and extension penalties control the cost of introducing and extending gaps in the alignment. Lower values allow more gaps; higher values penalize gaps more strongly. Default values are usually appropriate for most searches.
-`;
-
-export const PYHMMER_FILTER_HELP = `
-The bias composition filter reduces the impact of low-complexity or biased regions in protein sequences, which can otherwise lead to spurious hits. It is recommended to keep this filter enabled unless you have a specific reason to turn it off.
-`;
+export type TabId = typeof APP_CONSTANTS.TABS[keyof typeof APP_CONSTANTS.TABS];
 
 // API Configuration
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';

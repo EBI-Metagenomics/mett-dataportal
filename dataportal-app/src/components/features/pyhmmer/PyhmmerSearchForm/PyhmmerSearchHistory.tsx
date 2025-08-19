@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import styles from './PyhmmerSearchHistory.module.scss';
-
-export interface SearchHistoryItem {
-    jobId: string;
-    query: string;
-    date: string;
-}
+import { SearchHistoryItem } from '../../../../utils/pyhmmer/types';
 
 interface PyhmmerSearchHistoryProps {
     history: SearchHistoryItem[];
@@ -20,7 +15,7 @@ const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onS
     const handleMouseEnter = (e: React.MouseEvent, query: string) => {
         const rect = e.currentTarget.getBoundingClientRect();
         setTooltip({
-            text: query,
+            text: query || 'Unknown',
             x: rect.left,
             y: rect.top - 10
         });
@@ -31,7 +26,7 @@ const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onS
     };
 
     const handleDelete = (e: React.MouseEvent, jobId: string) => {
-        e.stopPropagation(); // Prevent triggering onSelect
+        e.stopPropagation(); 
         onDelete(jobId);
     };
 
@@ -54,10 +49,10 @@ const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onS
                             <div className={styles.itemContent}>
                                 <div 
                                     className={styles.queryText}
-                                    onMouseEnter={(e) => handleMouseEnter(e, item.query)}
+                                    onMouseEnter={(e) => handleMouseEnter(e, item.query || item.input || 'Unknown')}
                                     onMouseLeave={handleMouseLeave}
                                 >
-                                    {item.query}
+                                    {item.query || item.input || 'Unknown'}
                                 </div>
                                 <div className={styles.dateText}>{item.date}</div>
                             </div>

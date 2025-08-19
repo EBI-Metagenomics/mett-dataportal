@@ -1,7 +1,7 @@
 import React, {useMemo} from 'react';
 import {Column, Row, useExpanded, useTable,} from "react-table";
-import {PyhmmerDomain} from '../../../interfaces/Pyhmmer';
-import Alignment from '../Alignment/Alignment';
+import {PyhmmerDomain} from '../../../../interfaces/Pyhmmer';
+import Alignment from './Alignment';
 import './AlignmentTable.scss';
 
 interface AlignmentTableProps {

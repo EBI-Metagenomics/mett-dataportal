@@ -1,6 +1,6 @@
 import {Dispatch, SetStateAction, useState} from 'react';
 import {useFilterStore} from '../stores/filterStore';
-import {GenomeService} from '../services/genomeService';
+import {GenomeService} from '../services/genome';
 import {BaseGenome} from '../interfaces/Genome';
 
 interface UseGeneDataReturn {

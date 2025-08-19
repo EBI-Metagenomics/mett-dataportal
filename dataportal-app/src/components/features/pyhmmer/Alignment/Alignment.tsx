@@ -1,5 +1,5 @@
 import React from 'react';
-import {AlignmentDisplay} from '../../../interfaces/Pyhmmer';
+import {AlignmentDisplay} from '../../../../interfaces/Pyhmmer';
 import './Alignment.scss';
 
 interface AlignmentProps {
@@ -35,13 +35,13 @@ const Alignment: React.FC<AlignmentProps> = ({alignment, algorithm, included = t
         for (let i = 0; i < sequence.length; i++) {
             const position = start + i;
             const char = sequence[i];
- 
+
             if (char === '-' || char === ' ') {
-                marker.push(' '); 
+                marker.push(' ');
             } else if (position % 10 === 0) {
-                marker.push('*'); 
+                marker.push('*');
             } else {
-                marker.push('·'); 
+                marker.push('·');
             }
         }
         const result = marker.join('');
@@ -53,7 +53,7 @@ const Alignment: React.FC<AlignmentProps> = ({alignment, algorithm, included = t
     const queryLines = formatSequence(alignment.model, alignment.hmmfrom, alignment.hmmto);
     const targetLines = formatSequence(alignment.aseq, alignment.sqfrom, alignment.sqto);
     const matchLines = formatSequence(alignment.mline, alignment.hmmfrom, alignment.hmmto);
-    
+
     console.log('Formatted lines:', {
         queryLines: queryLines,
         targetLines: targetLines,
@@ -62,7 +62,7 @@ const Alignment: React.FC<AlignmentProps> = ({alignment, algorithm, included = t
         aseq: alignment.aseq,
         mline: alignment.mline
     });
-    
+
     // Debug: Check if match line data exists
     console.log('Alignment data:', {
         mline: alignment.mline,

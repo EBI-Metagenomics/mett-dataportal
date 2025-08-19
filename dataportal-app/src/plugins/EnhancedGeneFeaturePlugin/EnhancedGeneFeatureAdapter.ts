@@ -2,7 +2,7 @@ import {BaseFeatureDataAdapter} from '@jbrowse/core/data_adapters/BaseAdapter';
 import SimpleFeature, {SimpleFeatureSerialized} from '@jbrowse/core/util/simpleFeature';
 import {from, Observable} from 'rxjs';
 import {mergeMap} from 'rxjs/operators';
-import {GeneService} from "../../services/geneService";
+import {GeneService} from "../../services/gene";
 import {GFFParser, FeatureProcessor, ExternalLinkProcessor} from "./services";
 
 export default class EnhancedGeneFeatureAdapter extends BaseFeatureDataAdapter {

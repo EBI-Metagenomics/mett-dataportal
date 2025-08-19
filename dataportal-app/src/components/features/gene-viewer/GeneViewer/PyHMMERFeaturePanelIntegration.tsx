@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PyhmmerService } from '../../../../services/pyhmmerService';
+import { PyhmmerService } from '../../../../services/pyhmmer/pyhmmerService';
 
 interface PyHMMERFeaturePanelIntegrationProps {
     feature: any;

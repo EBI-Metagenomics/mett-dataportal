@@ -1,17 +1,19 @@
 import React, {useEffect, useState} from 'react';
 import styles from './PyhmmerSearchForm.module.scss';
-import {PyhmmerService} from '../../../../services/pyhmmer';
+import {
+    loadSearchHistory,
+    PyhmmerService,
+    removeFromHistory as removeFromHistoryService,
+    saveSearchToHistory
+} from '../../../../services/pyhmmer';
 import {PyhmmerMXChoice, PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import PyhmmerResultsTable from "../PyhmmerResultsHandler/PyhmmerResultsTable";
 import PyhmmerSearchInput from "./PyhmmerSearchInput";
-import PyhmmerSearchHistory, {
-    SearchHistoryItem
-} from "./PyhmmerSearchHistory";
+import PyhmmerSearchHistory from "./PyhmmerSearchHistory";
+import {SearchHistoryItem} from '../../../../utils/pyhmmer';
 import * as Popover from '@radix-ui/react-popover';
-import {PYHMMER_CUTOFF_HELP, PYHMMER_FILTER_HELP, PYHMMER_GAP_PENALTIES_HELP} from '../../../../utils/common/constants';
-import {PYHMMER_CONFIG} from '../../../../utils/pyhmmer/constants';
+import {PYHMMER_CUTOFF_HELP, PYHMMER_GAP_PENALTIES_HELP} from '../../../../utils/pyhmmer';
 
-const HISTORY_KEY = 'pyhmmer_search_history';
 
 // Validation error interface
 interface ValidationError {
@@ -23,10 +25,10 @@ interface ValidationError {
 const validateEValue = (value: string, fieldName: string): ValidationError | null => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) {
-        return { field: fieldName, message: 'Must be a valid number' };
+        return {field: fieldName, message: 'Must be a valid number'};
     }
     if (numValue < 0 || numValue > 100.0) {
-        return { field: fieldName, message: 'Must be between 0 and 100.0' };
+        return {field: fieldName, message: 'Must be between 0 and 100.0'};
     }
     return null;
 };
@@ -34,10 +36,10 @@ const validateEValue = (value: string, fieldName: string): ValidationError | nul
 const validateBitScore = (value: string, fieldName: string): ValidationError | null => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) {
-        return { field: fieldName, message: 'Must be a valid number' };
+        return {field: fieldName, message: 'Must be a valid number'};
     }
     if (numValue < 0.0 || numValue > 1000.0) {
-        return { field: fieldName, message: 'Must be between 0.0 and 1000.0' };
+        return {field: fieldName, message: 'Must be between 0.0 and 1000.0'};
     }
     return null;
 };
@@ -45,10 +47,10 @@ const validateBitScore = (value: string, fieldName: string): ValidationError | n
 const validateGapPenalty = (value: string, fieldName: string, maxValue: number): ValidationError | null => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) {
-        return { field: fieldName, message: 'Must be a valid number' };
+        return {field: fieldName, message: 'Must be a valid number'};
     }
     if (numValue < 0 || numValue >= maxValue) {
-        return { field: fieldName, message: `Must be between 0 and ${maxValue}` };
+        return {field: fieldName, message: `Must be between 0 and ${maxValue}`};
     }
     return null;
 };
@@ -61,33 +63,45 @@ const validateCutoffRelationships = (
     reportHit: string
 ): ValidationError[] => {
     const errors: ValidationError[] = [];
-    
+
     if (evalueType === 'evalue') {
         const incE = parseFloat(significanceSeq);
         const incdomE = parseFloat(significanceHit);
         const E = parseFloat(reportSeq);
         const domE = parseFloat(reportHit);
-        
+
         if (!isNaN(incE) && !isNaN(E) && incE > E) {
-            errors.push({ field: 'significanceEValueSeq', message: 'Significance E-value (Sequence) should be ≤ Report E-value (Sequence)' });
+            errors.push({
+                field: 'significanceEValueSeq',
+                message: 'Significance E-value (Sequence) should be ≤ Report E-value (Sequence)'
+            });
         }
         if (!isNaN(incdomE) && !isNaN(domE) && incdomE > domE) {
-            errors.push({ field: 'significanceEValueHit', message: 'Significance E-value (Hit) should be ≤ Report E-value (Hit)' });
+            errors.push({
+                field: 'significanceEValueHit',
+                message: 'Significance E-value (Hit) should be ≤ Report E-value (Hit)'
+            });
         }
     } else {
         const incT = parseFloat(significanceSeq);
         const incdomT = parseFloat(significanceHit);
         const T = parseFloat(reportSeq);
         const domT = parseFloat(reportHit);
-        
+
         if (!isNaN(incT) && !isNaN(T) && incT < T) {
-            errors.push({ field: 'significanceBitScoreSeq', message: 'Significance Bit Score (Sequence) should be ≥ Report Bit Score (Sequence)' });
+            errors.push({
+                field: 'significanceBitScoreSeq',
+                message: 'Significance Bit Score (Sequence) should be ≥ Report Bit Score (Sequence)'
+            });
         }
         if (!isNaN(incdomT) && !isNaN(domT) && incdomT < domT) {
-            errors.push({ field: 'significanceBitScoreHit', message: 'Significance Bit Score (Hit) should be ≥ Report Bit Score (Hit)' });
+            errors.push({
+                field: 'significanceBitScoreHit',
+                message: 'Significance Bit Score (Hit) should be ≥ Report Bit Score (Hit)'
+            });
         }
     }
-    
+
     return errors;
 };
 
@@ -128,163 +142,31 @@ const PyhmmerSearchForm: React.FC = () => {
     const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
     // Load search history from localStorage
-    const loadSearchHistory = () => {
-        try {
-            console.log('=== LOAD SEARCH HISTORY ===');
-            const historyKey = 'pyhmmer_search_history';
-            const existingHistory = localStorage.getItem(historyKey);
-            
-            if (existingHistory) {
-                const history = JSON.parse(existingHistory);
-                console.log('Raw history from localStorage:', history.length, 'items');
-                console.log('Raw history dates:', history.map((item: any) => ({ 
-                    jobId: item.jobId, 
-                    dateCreated: item.dateCreated, 
-                    date: item.date 
-                })));
-                
-                // Automatically clean up old items if cleanup is enabled
-                let cleanedHistory = history;
-                if (PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS > 0) {
-                    const cleanupThresholdMs = PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS * 24 * 60 * 60 * 1000;
-                    const cutoffTime = Date.now() - cleanupThresholdMs;
-                    cleanedHistory = history.filter((item: any) => {
-                        const itemDate = new Date(item.dateCreated).getTime();
-                        return itemDate > cutoffTime;
-                    });
-                    
-                    // Update localStorage if items were removed
-                    if (cleanedHistory.length < history.length) {
-                        const removedCount = history.length - cleanedHistory.length;
-                        console.log(`Automatically removed ${removedCount} old search history items (older than ${PYHMMER_CONFIG.SEARCH_HISTORY_CLEANUP_DAYS} days)`);
-                        localStorage.setItem(historyKey, JSON.stringify(cleanedHistory));
-                    }
-                } else {
-                    console.log('Search history cleanup is disabled (SEARCH_HISTORY_CLEANUP_DAYS = 0)');
-                }
-                
-                console.log('Cleaned history items:', cleanedHistory.length);
-                
-                // Format dates for display
-                const formattedHistory = cleanedHistory.map((item: any) => ({
-                    ...item,
-                    date: formatRelativeDate(item.dateCreated)
-                }));
-                
-                console.log('Formatted history dates:', formattedHistory.map((item: any) => ({ 
-                    jobId: item.jobId, 
-                    dateCreated: item.dateCreated, 
-                    date: item.date 
-                })));
-                
-                setHistory(formattedHistory);
-                console.log('History state set with formatted dates');
-            } else {
-                console.log('No existing history found in localStorage');
-            }
-        } catch (error) {
-            console.error('Error loading search history:', error);
-        }
+    const loadSearchHistoryLocal = () => {
+        const history = loadSearchHistory();
+        setHistory(history);
     };
 
-    // Format date to relative time (e.g., "2 hours ago")
-    const formatRelativeDate = (dateString: string): string => {
-        try {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffInMs = now.getTime() - date.getTime();
-            const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-            const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-            const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-            let result: string;
-            if (diffInMinutes < 1) result = 'Just now';
-            else if (diffInMinutes < 60) result = `${diffInMinutes} min ago`;
-            else if (diffInHours < 24) result = `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
-            else if (diffInDays < 7) result = `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
-            else if (diffInDays < 14) result = `${Math.floor(diffInDays / 7)} week ago`;
-            else result = date.toLocaleDateString();
-
-            console.log(`formatRelativeDate: "${dateString}" -> "${result}" (${diffInMinutes} min ago)`);
-            return result;
-        } catch (error) {
-            console.error('Error formatting date:', error, 'for date string:', dateString);
-            return 'Unknown date';
-        }
+    // Save search to history using centralized service
+    const saveSearchToHistoryLocal = (jobId: string, query: string) => {
+        const searchRequest = {
+            database: database,
+            threshold: evalueType,
+            threshold_value: evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq),
+            input: query
+        };
+        saveSearchToHistory(jobId, searchRequest);
+        // Reload history to update UI
+        loadSearchHistoryLocal();
     };
 
-    // Save search to history
-    const saveSearchToHistory = (jobId: string, query: string) => {
-        try {
-            const historyKey = 'pyhmmer_search_history';
-            const existingHistory = localStorage.getItem(historyKey);
-            const history = existingHistory ? JSON.parse(existingHistory) : [];
-            
-            console.log('=== SAVE SEARCH TO HISTORY ===');
-            console.log('Existing history items:', history.length);
-            console.log('Existing history dates:', history.map((item: any) => ({ 
-                jobId: item.jobId, 
-                dateCreated: item.dateCreated, 
-                date: item.date 
-            })));
-            
-            const newHistoryItem = {
-                jobId,
-                query: query.substring(0, 100) + (query.length > 100 ? '...' : ''), // Truncate long queries
-                dateCreated: new Date().toISOString(),
-                date: 'Just now', // User-friendly date display
-                status: 'pending'
-            };
-            
-            console.log('New history item:', newHistoryItem);
-            
-            // Add to beginning of history
-            const updatedHistory = [newHistoryItem, ...history];
-            
-            // Keep only last 50 items to prevent localStorage from getting too large
-            const trimmedHistory = updatedHistory.slice(0, 50);
-            
-            // Save raw data to localStorage (without formatted dates)
-            const rawHistoryForStorage = trimmedHistory.map(item => ({
-                ...item,
-                date: undefined // Remove formatted date for storage
-            }));
-            localStorage.setItem(historyKey, JSON.stringify(rawHistoryForStorage));
-            
-            console.log('Saved raw history to localStorage (without formatted dates)');
-            
-            // Format dates for display before setting state
-            const formattedHistory = trimmedHistory.map((item: any) => ({
-                ...item,
-                date: formatRelativeDate(item.dateCreated)
-            }));
-            
-            console.log('Formatted history dates:', formattedHistory.map((item: any) => ({ 
-                jobId: item.jobId, 
-                dateCreated: item.dateCreated, 
-                date: item.date 
-            })));
-            
-            setHistory(formattedHistory);
-            console.log('History state updated with formatted dates');
-        } catch (error) {
-            console.error('Error saving search to history:', error);
-        }
-    };
-
-    // Remove item from history
+    // Remove item from history using centralized service
     const removeFromHistory = (jobId: string) => {
         try {
-            PyhmmerService.removeFromHistory(jobId);
-            // Update state with properly formatted dates
-            setHistory(prev => {
-                const filteredHistory = prev.filter(item => item.jobId !== jobId);
-                // Re-format dates to ensure they're current
-                return filteredHistory.map((item: any) => ({
-                    ...item,
-                    date: formatRelativeDate(item.dateCreated)
-                }));
-            });
+            removeFromHistoryService(jobId);
+            // Reload history to update UI
+            loadSearchHistoryLocal();
         } catch (error) {
             console.error('Error removing item from history:', error);
         }
@@ -364,7 +246,7 @@ const PyhmmerSearchForm: React.FC = () => {
         const errors = validateForm();
         setValidationErrors(errors);
     }, [
-        sequence, evalueType, 
+        sequence, evalueType,
         significanceEValueSeq, significanceEValueHit, reportEValueSeq, reportEValueHit,
         significanceBitScoreSeq, significanceBitScoreHit, reportBitScoreSeq, reportBitScoreHit,
         gapOpen, gapExtend
@@ -384,7 +266,7 @@ const PyhmmerSearchForm: React.FC = () => {
 
         fetchDatabases();
 
-        loadSearchHistory();
+        loadSearchHistoryLocal();
     }, []);
 
     // Helper to poll for job status
@@ -458,7 +340,7 @@ const PyhmmerSearchForm: React.FC = () => {
     // Handle new search submit
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        
+
         // Validate form before submission
         const errors = validateForm();
         if (errors.length > 0) {
@@ -537,20 +419,20 @@ const PyhmmerSearchForm: React.FC = () => {
             setLoading(false);
 
             // Save to history
-            saveSearchToHistory(id, sequence);
+            saveSearchToHistoryLocal(id, sequence);
 
             // Start polling for results
             setLoading(true);
             setLoadingMessage('Waiting for results...');
             const searchResults = await pollJobStatus(id);
-            
+
             // Set the results to state so they display in the UI
             console.log('=== RESULTS PROCESSING ===');
             console.log('Raw search results:', searchResults);
             console.log('Results type:', typeof searchResults);
             console.log('Results is array:', Array.isArray(searchResults));
             console.log('Results length:', Array.isArray(searchResults) ? searchResults.length : 'N/A');
-            
+
             if (searchResults && Array.isArray(searchResults)) {
                 const mappedResults = mapResults(searchResults);
                 console.log('Mapped results:', mappedResults);
@@ -706,7 +588,8 @@ const PyhmmerSearchForm: React.FC = () => {
                                             className={`${styles.input} ${getFieldError('significanceEValueSeq') ? styles.inputError : ''}`}
                                         />
                                         {getFieldError('significanceEValueSeq') && (
-                                            <div className={styles.errorMessage}>{getFieldError('significanceEValueSeq')}</div>
+                                            <div
+                                                className={styles.errorMessage}>{getFieldError('significanceEValueSeq')}</div>
                                         )}
                                     </div>
                                     <div className={styles.inputContainer}>
@@ -718,7 +601,8 @@ const PyhmmerSearchForm: React.FC = () => {
                                             className={`${styles.input} ${getFieldError('significanceEValueHit') ? styles.inputError : ''}`}
                                         />
                                         {getFieldError('significanceEValueHit') && (
-                                            <div className={styles.errorMessage}>{getFieldError('significanceEValueHit')}</div>
+                                            <div
+                                                className={styles.errorMessage}>{getFieldError('significanceEValueHit')}</div>
                                         )}
                                     </div>
                                     <div className={styles.cutoffLabel}>Report E-values</div>
@@ -731,7 +615,8 @@ const PyhmmerSearchForm: React.FC = () => {
                                             className={`${styles.input} ${getFieldError('reportEValueSeq') ? styles.inputError : ''}`}
                                         />
                                         {getFieldError('reportEValueSeq') && (
-                                            <div className={styles.errorMessage}>{getFieldError('reportEValueSeq')}</div>
+                                            <div
+                                                className={styles.errorMessage}>{getFieldError('reportEValueSeq')}</div>
                                         )}
                                     </div>
                                     <div className={styles.inputContainer}>
@@ -743,7 +628,8 @@ const PyhmmerSearchForm: React.FC = () => {
                                             className={`${styles.input} ${getFieldError('reportEValueHit') ? styles.inputError : ''}`}
                                         />
                                         {getFieldError('reportEValueHit') && (
-                                            <div className={styles.errorMessage}>{getFieldError('reportEValueHit')}</div>
+                                            <div
+                                                className={styles.errorMessage}>{getFieldError('reportEValueHit')}</div>
                                         )}
                                     </div>
                                 </>
@@ -759,7 +645,8 @@ const PyhmmerSearchForm: React.FC = () => {
                                             className={`${styles.input} ${getFieldError('significanceBitScoreSeq') ? styles.inputError : ''}`}
                                         />
                                         {getFieldError('significanceBitScoreSeq') && (
-                                            <div className={styles.errorMessage}>{getFieldError('significanceBitScoreSeq')}</div>
+                                            <div
+                                                className={styles.errorMessage}>{getFieldError('significanceBitScoreSeq')}</div>
                                         )}
                                     </div>
                                     <div className={styles.inputContainer}>
@@ -771,7 +658,8 @@ const PyhmmerSearchForm: React.FC = () => {
                                             className={`${styles.input} ${getFieldError('significanceBitScoreHit') ? styles.inputError : ''}`}
                                         />
                                         {getFieldError('significanceBitScoreHit') && (
-                                            <div className={styles.errorMessage}>{getFieldError('significanceBitScoreHit')}</div>
+                                            <div
+                                                className={styles.errorMessage}>{getFieldError('significanceBitScoreHit')}</div>
                                         )}
                                     </div>
                                     <div className={styles.cutoffLabel}>Report Bit scores</div>
@@ -784,7 +672,8 @@ const PyhmmerSearchForm: React.FC = () => {
                                             className={`${styles.input} ${getFieldError('reportBitScoreSeq') ? styles.inputError : ''}`}
                                         />
                                         {getFieldError('reportBitScoreSeq') && (
-                                            <div className={styles.errorMessage}>{getFieldError('reportBitScoreSeq')}</div>
+                                            <div
+                                                className={styles.errorMessage}>{getFieldError('reportBitScoreSeq')}</div>
                                         )}
                                     </div>
                                     <div className={styles.inputContainer}>
@@ -796,7 +685,8 @@ const PyhmmerSearchForm: React.FC = () => {
                                             className={`${styles.input} ${getFieldError('reportBitScoreHit') ? styles.inputError : ''}`}
                                         />
                                         {getFieldError('reportBitScoreHit') && (
-                                            <div className={styles.errorMessage}>{getFieldError('reportBitScoreHit')}</div>
+                                            <div
+                                                className={styles.errorMessage}>{getFieldError('reportBitScoreHit')}</div>
                                         )}
                                     </div>
                                 </>
@@ -876,8 +766,8 @@ const PyhmmerSearchForm: React.FC = () => {
                     {/* Sequence database */}
                     <div className={styles.formSection}>
                         <label className={`vf-form__label ${styles.label}`}>Sequence database</label>
-                        <select 
-                            className={`vf-form__select ${styles.databaseSelect}`} 
+                        <select
+                            className={`vf-form__select ${styles.databaseSelect}`}
                             value={database}
                             onChange={e => setDatabase(e.target.value)}
                         >

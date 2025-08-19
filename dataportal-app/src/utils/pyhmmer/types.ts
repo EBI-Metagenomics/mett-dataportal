@@ -163,7 +163,7 @@ export interface CollapsibleSectionProps {
     title: string;
     expanded?: boolean;
     onToggle?: (expanded: boolean) => void;
-    children: React.ReactNode;
+    children: any; 
     className?: string;
 }
 
@@ -178,6 +178,7 @@ export interface SearchHistoryItem {
     threshold: string;
     threshold_value: string;
     input: string;
+    query?: string; 
     results?: any[];
 }
 

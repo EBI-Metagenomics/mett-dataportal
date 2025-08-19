@@ -1,18 +1,30 @@
-import { API_BASE_URL } from '../utils/common/constants';
+import {API_BASE_URL} from '../../utils/common';
+import {PYHMMER_CONSTANTS} from '../../utils/pyhmmer';
 import {
     PyhmmerDatabase,
-    PyhmmerSearchRequest,
-    PyhmmerSearchResponse,
+    PyhmmerDomain,
     PyhmmerJobDetailsResponse,
     PyhmmerMXChoice,
-    PyhmmerDomain
-} from '../interfaces/Pyhmmer';
-import { BaseService } from './common/BaseService';
-import { cacheResponse } from './common/cachingDecorator';
-import { ApiService } from './common/api';
+    PyhmmerSearchRequest,
+    PyhmmerSearchResponse
+} from '../../interfaces/Pyhmmer';
+import {ApiService, BaseService, cacheResponse} from '../common';
 
 const API_BASE_SEARCH = '/pyhmmer/search';
 const API_BASE_RESULT = '/pyhmmer/result';
+
+// Unified PyHMMER Search Result interface
+export interface PyhmmerSearchResult {
+    target_name: string;
+    evalue: string | number;
+    score: string | number;
+    is_significant?: boolean;
+    significant?: boolean;
+    significant_match?: boolean;
+    significantMatch?: boolean;
+    description?: string;
+    sequence?: string;
+}
 
 export class PyhmmerService extends BaseService {
     @cacheResponse(60 * 60 * 1000, () => "getDatabases")
@@ -47,7 +59,7 @@ export class PyhmmerService extends BaseService {
         try {
             console.log('PyhmmerService.search: Attempting to submit search request to:', API_BASE_SEARCH);
             console.log('PyhmmerService.search: Request payload:', request);
-            
+
             // Enhanced logging for all parameters
             console.log('=== FRONTEND SEARCH PARAMETERS ===');
             console.log('Database:', request.database);
@@ -55,33 +67,33 @@ export class PyhmmerService extends BaseService {
             console.log('Threshold value:', request.threshold_value);
             console.log('Substitution matrix (mx):', request.mx);
             console.log('Input sequence length:', request.input?.length || 0);
-            
+
             // E-value parameters
             console.log('=== E-VALUE PARAMETERS ===');
             console.log('E (Report E-values - Sequence):', request.E);
             console.log('domE (Report E-values - Hit):', request.domE);
             console.log('incE (Significance E-values - Sequence):', request.incE);
             console.log('incdomE (Significance E-values - Hit):', request.incdomE);
-            
+
             // Bit score parameters
             console.log('=== BIT SCORE PARAMETERS ===');
             console.log('T (Report Bit scores - Sequence):', request.T);
             console.log('domT (Report Bit scores - Hit):', request.domT);
             console.log('incT (Significance Bit scores - Sequence):', request.incT);
             console.log('incdomT (Significance Bit scores - Hit):', request.incdomT);
-            
+
             // Gap penalties
             console.log('=== GAP PENALTIES ===');
             console.log('popen (Gap open penalty):', request.popen);
             console.log('pextend (Gap extend penalty):', request.pextend);
-            
+
             // Call API directly to handle validation errors properly
             const result = await ApiService.post<PyhmmerSearchResponse>(`${API_BASE_SEARCH}`, request);
             console.log('PyhmmerService.search: Successfully submitted search, received response:', result);
             return result;
         } catch (error) {
             console.error("Error performing Pyhmmer search:", error);
-            
+
             // Enhanced error handling for validation errors
             if (error && typeof error === 'object' && 'response' in error) {
                 const axiosError = error as any;
@@ -89,11 +101,11 @@ export class PyhmmerService extends BaseService {
                     // This is a validation error - try to extract the actual message
                     const responseData = axiosError.response.data;
                     console.log('PyhmmerService.search: Validation error response:', responseData);
-                    
+
                     if (responseData && typeof responseData === 'object') {
                         // Try to extract validation message from different possible formats
                         let validationMessage = '';
-                        
+
                         if (responseData.detail && Array.isArray(responseData.detail)) {
                             // Pydantic validation error format
                             const messages = responseData.detail.map((err: any) => err.msg || err.message || err).filter(Boolean);
@@ -108,14 +120,14 @@ export class PyhmmerService extends BaseService {
                             // Handle array of validation errors
                             validationMessage = responseData.map((err: any) => err.message || err.msg || err).join('; ');
                         }
-                        
+
                         if (validationMessage) {
                             throw new Error(validationMessage);
                         }
                     }
                 }
             }
-            
+
             throw new Error(`Failed to submit Pyhmmer search: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
@@ -143,7 +155,7 @@ export class PyhmmerService extends BaseService {
             const timestamp = Date.now();
             const result = await this.getWithRetry<any>(`${API_BASE_RESULT}/${jobId}/domains?target=${encodeURIComponent(target)}&_t=${timestamp}`);
             console.log(`PyhmmerService.getDomainsByTarget: Received response:`, result);
-            
+
             // Debug: Log the specific domain data
             if (result && Array.isArray(result.domains)) {
                 console.log('PyhmmerService.getDomainsByTarget: Domain identity:', result.domains[0]?.alignment_display?.identity);
@@ -164,15 +176,15 @@ export class PyhmmerService extends BaseService {
     static async downloadResults(jobId: string, format: 'tab' | 'fasta' | 'aligned_fasta'): Promise<Blob> {
         try {
             console.log(`PyhmmerService.downloadResults: Downloading results for job ${jobId} in format ${format}`);
-            
+
             const url = `${API_BASE_URL}${API_BASE_RESULT}/${jobId}/download?format=${format}`;
             console.log(`PyhmmerService.downloadResults: Download URL: ${url}`);
-            
+
             const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const blob = await response.blob();
             console.log(`PyhmmerService.downloadResults: Successfully downloaded ${blob.size} bytes`);
             return blob;
@@ -182,16 +194,157 @@ export class PyhmmerService extends BaseService {
         }
     }
 
+    // NEW: Unified search execution method (replaces PyhmmerSearchService)
+    static async executeSearch(proteinSequence: string, database: string = PYHMMER_CONSTANTS.DATABASES.DEFAULT): Promise<PyhmmerSearchResult[]> {
+        try {
+            // Convert to FASTA format
+            const fastaSequence = `>protein\n${proteinSequence}`;
+
+            const searchRequest: PyhmmerSearchRequest = {
+                database: database,
+                threshold: 'evalue',
+                threshold_value: PYHMMER_CONSTANTS.THRESHOLDS.DEFAULT_EVALUE,
+                input: fastaSequence,
+                E: PYHMMER_CONSTANTS.THRESHOLDS.DEFAULT_EVALUE,
+                domE: PYHMMER_CONSTANTS.THRESHOLDS.DEFAULT_DOM_EVALUE,
+                incE: PYHMMER_CONSTANTS.THRESHOLDS.DEFAULT_INC_EVALUE,
+                incdomE: PYHMMER_CONSTANTS.THRESHOLDS.DEFAULT_INCDOM_EVALUE
+            };
+
+            const response = await this.search(searchRequest);
+
+            if (response.id) {
+                // Poll for results
+                const results = await this.pollJobStatus(response.id);
+                return results;
+            } else {
+                throw new Error('Failed to submit search');
+            }
+        } catch (error: any) {
+            console.error('PyHMMER search error:', error);
+            throw error;
+        }
+    }
+
+    // NEW: Poll job status until completion (moved from PyhmmerSearchService)
+    private static async pollJobStatus(jobId: string): Promise<PyhmmerSearchResult[]> {
+        const maxAttempts = PYHMMER_CONSTANTS.TIMING.MAX_JOB_POLL_ATTEMPTS;
+        let attempts = 0;
+
+        while (attempts < maxAttempts) {
+            try {
+                const jobDetails = await this.getJobDetails(jobId);
+                const status = jobDetails.status;
+
+                if (status === 'completed' || status === 'SUCCESS') {
+                    const results = jobDetails.task?.result || [];
+
+                    // Handle different result formats
+                    if (Array.isArray(results)) {
+                        // Convert unknown results to PyhmmerSearchResult
+                        return results.map(result => this.convertToSearchResult(result));
+                    } else if (results && typeof results === 'object') {
+                        // If results is an object, try to extract the array
+                        const resultKeys = Object.keys(results);
+
+                        // Look for common result array keys
+                        for (const key of ['hits', 'domains', 'results', 'data']) {
+                            if (Array.isArray(results[key])) {
+                                return (results[key] as unknown[]).map(result => this.convertToSearchResult(result));
+                            }
+                        }
+
+                        // If no array found, return the object as a single result
+                        return [this.convertToSearchResult(results)];
+                    } else {
+                        return [];
+                    }
+                } else if (status === 'failed' || status === 'FAILED') {
+                    throw new Error('PyHMMER search failed');
+                }
+
+                await new Promise(resolve => setTimeout(resolve, PYHMMER_CONSTANTS.TIMING.JOB_POLL_INTERVAL));
+                attempts++;
+            } catch (error) {
+                console.error('Error polling job status:', error);
+                throw error;
+            }
+        }
+        throw new Error('PyHMMER search timed out');
+    }
+
+    // Helper method to convert unknown results to PyhmmerSearchResult
+    private static convertToSearchResult(result: unknown): PyhmmerSearchResult {
+        if (result && typeof result === 'object') {
+            const resultObj = result as Record<string, unknown>;
+            return {
+                target_name: String(resultObj.target_name || resultObj.name || resultObj.target || 'Unknown'),
+                evalue: Number(resultObj.evalue) || 0,
+                score: Number(resultObj.score) || 0,
+                is_significant: Boolean(resultObj.is_significant || resultObj.significant || resultObj.significant_match),
+                description: String(resultObj.description || ''),
+                sequence: String(resultObj.sequence || '')
+            };
+        }
+
+        // Fallback for unexpected result types
+        return {
+            target_name: 'Unknown',
+            evalue: 0,
+            score: 0,
+            is_significant: false
+        };
+    }
+
+    // Utility methods for formatting and validation
+    static formatEvalue(evalueRaw: string | number): string {
+        const evalue = typeof evalueRaw === 'string' ? parseFloat(evalueRaw) : Number(evalueRaw);
+
+        if (!isNaN(evalue) && isFinite(evalue)) {
+            if (evalue < 0.01) {
+                return evalue.toExponential(2);
+            } else {
+                return evalue.toFixed(6);
+            }
+        } else {
+            return String(evalueRaw);
+        }
+    }
+
+    static formatScore(scoreRaw: string | number): string {
+        const score = typeof scoreRaw === 'string' ? parseFloat(scoreRaw) : Number(scoreRaw);
+
+        if (!isNaN(score) && isFinite(score)) {
+            return score.toFixed(1);
+        } else {
+            return String(scoreRaw);
+        }
+    }
+
+    static isResultSignificant(result: PyhmmerSearchResult): boolean {
+        const isSignificant = result.is_significant || result.significant || result.significant_match || result.significantMatch;
+        return isSignificant === true;
+    }
+
+    static getTargetName(result: PyhmmerSearchResult): string {
+        return result.target_name || 'Unknown';
+    }
+
+    static generateGenomeViewerUrl(targetName: string): string {
+        const strainPrefix = targetName.substring(0, targetName.lastIndexOf('_'));
+        return `/genome/${strainPrefix}?locus_tag=${encodeURIComponent(targetName)}`;
+    }
+
     // Remove a search from browser history
     static removeFromHistory(jobId: string): void {
         try {
             const historyKey = 'pyhmmer_search_history';
             const existingHistory = localStorage.getItem(historyKey);
-            
+
             if (existingHistory) {
                 const history = JSON.parse(existingHistory);
                 const filteredHistory = history.filter((item: any) => item.jobId !== jobId);
-                
+
                 // Update localStorage
                 localStorage.setItem(historyKey, JSON.stringify(filteredHistory));
                 console.log(`PyhmmerService.removeFromHistory: Removed job ${jobId} from history`);

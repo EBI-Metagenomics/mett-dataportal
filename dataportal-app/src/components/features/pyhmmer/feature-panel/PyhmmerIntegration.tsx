@@ -1,13 +1,15 @@
-import React, { useEffect } from 'react';
-import { createRoot } from 'react-dom/client';
-import { PyhmmerFeaturePanel } from './PyhmmerFeaturePanel';
+import React, {useEffect} from 'react';
+import {createRoot} from 'react-dom/client';
+import {PyhmmerFeaturePanel} from '@components/features';
+import {PYHMMER_CONSTANTS} from '../../../../utils/pyhmmer';
+import styles from './PyhmmerIntegration.module.scss';
 
 export const PyhmmerIntegration: React.FC = () => {
     console.log('PyhmmerIntegration: Component loaded');
-    
+
     useEffect(() => {
         console.log('PyhmmerIntegration: useEffect running');
-        
+
         // Simple approach: style the existing pyhmmerSearch.pyhmmerSearchLink to look like a button
         const styleLink = () => {
             // First, hide the unwanted attributes
@@ -15,7 +17,7 @@ export const PyhmmerIntegration: React.FC = () => {
                 const allElements = document.querySelectorAll('*');
                 allElements.forEach(element => {
                     const text = element.textContent || '';
-                    if (text.includes('pyhmmerSearch.proteinSequence') || 
+                    if (text.includes('pyhmmerSearch.proteinSequence') ||
                         text.includes('pyhmmerSearch.proteinLength') ||
                         text.includes('pyhmmerSearch.pyhmmerSearchLink')) {
                         // Only hide the field name elements, not the value elements
@@ -27,14 +29,14 @@ export const PyhmmerIntegration: React.FC = () => {
                     }
                 });
             };
-            
+
             // Hide unwanted attributes first
             hideUnwantedAttributes();
-            
+
             // Find elements containing the pyhmmerSearch.pyhmmerSearchLink text
             const allElements = document.querySelectorAll('*');
             let foundFieldElement = false;
-            
+
             allElements.forEach(element => {
                 const text = element.textContent || '';
                 // Look for the actual button text instead of the hidden attribute name
@@ -43,12 +45,14 @@ export const PyhmmerIntegration: React.FC = () => {
                     if (element.classList.contains('pyhmmer-button-styled')) {
                         return;
                     }
-                    
-                    // Check if this element looks like a button value (not a field name)
-                    // Be more specific to avoid styling the wrong elements
+
+                    // Be VERY specific about which elements we can style
+                    // Only style elements that are likely to be button values, not entire containers
                     if (element.classList.contains('css-1m8nxnb-field') ||
-                        element.classList.contains('css-xb19vs-fieldValue')) {
-                        
+                        element.classList.contains('css-xb19vs-fieldValue') ||
+                        (element.tagName === 'SPAN' && element.textContent?.trim() === text.trim()) ||
+                        (element.tagName === 'DIV' && element.children.length === 0)) {
+
                         // Only style if we haven't found a field element yet (avoid duplicates)
                         if (!foundFieldElement) {
                             console.log('PyhmmerIntegration: Found Search Protein Domains element, styling it as button');
@@ -57,56 +61,38 @@ export const PyhmmerIntegration: React.FC = () => {
                                 className: element.className,
                                 textContent: element.textContent?.substring(0, 50)
                             });
-                            
+
                             // Style this element directly as the button
                             console.log('PyhmmerIntegration: Styling element as button');
-                            
-                            // Add button styling to the element - be more specific to avoid affecting other elements
+
+                            // Add button styling to the element - be very specific to avoid affecting other elements
                             element.classList.add('pyhmmer-button-styled');
-                            (element as HTMLElement).style.cssText = `
-                                display: inline-block !important;
-                                background-color: #1976d2 !important;
-                                color: white !important;
-                                padding: 8px 16px !important;
-                                border-radius: 6px !important;
-                                cursor: pointer !important;
-                                font-size: 14px !important;
-                                font-weight: 500 !important;
-                                margin: 8px 0 !important;
-                                text-decoration: none !important;
-                                border: none !important;
-                                outline: none !important;
-                                transition: all 0.2s !important;
-                                min-width: 120px !important;
-                                text-align: center !important;
-                                pointer-events: auto !important;
-                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-                            `;
-                            
+                            element.classList.add(styles.pyhmmerButton);
+
                             // Remove any existing href or link behavior
                             if (element.tagName === 'A') {
                                 (element as HTMLAnchorElement).href = 'javascript:void(0);';
                                 (element as HTMLAnchorElement).target = '';
                                 (element as HTMLAnchorElement).rel = '';
                             }
-                            
+
                             // Add click handler with stronger event prevention
                             const clickHandler = (e: Event) => {
                                 console.log('PyhmmerIntegration: Button clicked!');
                                 e.preventDefault();
                                 e.stopPropagation();
                                 e.stopImmediatePropagation();
-                                
+
                                 // Try to find the sequence in multiple ways
                                 let sequence = '';
-                                
+
                                 // Method 1: Look in the closest panel
                                 const panel = element.closest('.MuiAccordionDetails-root, [role="region"]');
                                 if (panel) {
                                     console.log('PyhmmerIntegration: Found panel, extracting sequence...');
                                     const panelText = panel.textContent || '';
                                     console.log('PyhmmerIntegration: Full panel text length:', panelText.length);
-                                    
+
                                     // Try multiple sequence patterns
                                     const seqMatch = panelText.match(/pyhmmerSearch\._proteinSequence([A-Z*]+)/);
                                     if (seqMatch) {
@@ -122,7 +108,7 @@ export const PyhmmerIntegration: React.FC = () => {
                                         }
                                     }
                                 }
-                                
+
                                 // Method 2: If no sequence found, search the entire document
                                 if (!sequence) {
                                     console.log('PyhmmerIntegration: Searching entire document for sequence...');
@@ -139,7 +125,7 @@ export const PyhmmerIntegration: React.FC = () => {
                                         }
                                     }
                                 }
-                                
+
                                 // Method 3: Look for any protein sequence
                                 if (!sequence) {
                                     console.log('PyhmmerIntegration: Looking for any protein sequence...');
@@ -156,7 +142,7 @@ export const PyhmmerIntegration: React.FC = () => {
                                         }
                                     }
                                 }
-                                
+
                                 if (sequence) {
                                     console.log('PyhmmerIntegration: Button clicked, sequence length:', sequence.length);
                                     injectPyhmmerSearchIntoFeaturePanel(sequence);
@@ -169,55 +155,60 @@ export const PyhmmerIntegration: React.FC = () => {
                                         console.log('PyhmmerIntegration: Available panel content lines:', lines.slice(0, 10));
                                     }
                                 }
-                                
+
                                 return false;
                             };
-                            
+
                             // Remove any existing click handlers and add our own
                             element.removeEventListener('click', clickHandler);
                             element.addEventListener('click', clickHandler, true);
-                            
+
                             // Add hover effect - darker blue on hover
                             element.addEventListener('mouseenter', () => {
-                                (element as HTMLElement).style.backgroundColor = '#1565c0 !important';
-                                (element as HTMLElement).style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2) !important';
+                                element.classList.add(styles.buttonHover);
                             });
-                            
+
                             element.addEventListener('mouseleave', () => {
-                                (element as HTMLElement).style.backgroundColor = '#1976d2 !important';
-                                (element as HTMLElement).style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1) !important';
+                                element.classList.remove(styles.buttonHover);
                             });
-                            
+
                             console.log('PyhmmerIntegration: Successfully styled Search Protein Domains as button');
                             foundFieldElement = true;
                         }
                     }
                 }
             });
-            
+
             if (!foundFieldElement) {
                 console.log('PyhmmerIntegration: No suitable field element found for styling');
             }
-            
+
             // Return whether we found and styled an element
             return foundFieldElement;
         };
-        
+
         // Run immediately and set up interval to catch late-rendered elements
         let interval: any;
-        
+        let startTime = Date.now();
+
         const runStyling = () => {
             const success = styleLink();
             if (success) {
                 // If we successfully styled the button, clear the interval
                 console.log('PyhmmerIntegration: Button styled successfully, stopping interval');
                 clearInterval(interval);
+            } else {
+                // If we've been trying for more than the configured timeout, stop to avoid infinite logs
+                if (Date.now() - startTime > PYHMMER_CONSTANTS.TIMING.BUTTON_STYLING_TIMEOUT) {
+                    console.log('PyhmmerIntegration: No button found after timeout, stopping interval');
+                    clearInterval(interval);
+                }
             }
         };
-        
+
         runStyling();
-        interval = setInterval(runStyling, 1000);
-        
+        interval = setInterval(runStyling, PYHMMER_CONSTANTS.TIMING.STYLING_CHECK_INTERVAL);
+
         return () => {
             if (interval) {
                 clearInterval(interval);
@@ -228,28 +219,43 @@ export const PyhmmerIntegration: React.FC = () => {
     // Render the React component when the button is clicked
     const injectPyhmmerSearchIntoFeaturePanel = (proteinSequence: string) => {
         console.log('PyhmmerIntegration: injectPyhmmerSearchIntoFeaturePanel called with sequence length:', proteinSequence.length);
-        
+
         // Find or create container
         let container = document.getElementById('pyhmmer-search-react');
         if (!container) {
             console.log('PyhmmerIntegration: Creating new container');
             container = document.createElement('div');
             container.id = 'pyhmmer-search-react';
-            
+
             // Try to find the button to position the panel next to it
             const button = document.querySelector('.pyhmmer-button-styled');
             console.log('PyhmmerIntegration: Found button:', button);
-            
+
             if (button && button.parentNode) {
                 console.log('PyhmmerIntegration: Positioning container after button');
                 // Find the actual JBrowse feature panel that contains the button
                 const jbrowsePanel = button.closest('.MuiAccordionDetails-root, [role="region"], .MuiAccordion-region');
                 console.log('PyhmmerIntegration: JBrowse panel found:', jbrowsePanel);
-                
+
                 if (jbrowsePanel) {
-                    // Insert the container directly into the JBrowse feature panel
-                    jbrowsePanel.appendChild(container);
-                    console.log('PyhmmerIntegration: Container appended to JBrowse panel');
+                    // Always insert into the JBrowse feature panel, but try to position it after the button
+                    try {
+                        // Find the button's immediate parent container
+                        const buttonParent = button.parentNode;
+                        if (buttonParent && buttonParent.parentNode) {
+                            // Insert after the button's parent container
+                            buttonParent.parentNode.insertBefore(container, buttonParent.nextSibling);
+                            console.log('PyhmmerIntegration: Container inserted after button parent');
+                        } else {
+                            // Fallback: append to the end of the JBrowse panel
+                            jbrowsePanel.appendChild(container);
+                            console.log('PyhmmerIntegration: Container appended to JBrowse panel');
+                        }
+                    } catch (error) {
+                        console.log('PyhmmerIntegration: Error with positioning, falling back to panel append');
+                        // Fallback: append to the end of the JBrowse panel
+                        jbrowsePanel.appendChild(container);
+                    }
                 } else {
                     // Fallback: try to find the button's immediate parent row
                     const buttonRow = button.closest('div[style*="display: flex"]') || button.parentNode;
@@ -278,43 +284,26 @@ export const PyhmmerIntegration: React.FC = () => {
         } else {
             console.log('PyhmmerIntegration: Using existing container');
         }
-        
+
         console.log('PyhmmerIntegration: Container element:', container);
         console.log('PyhmmerIntegration: Container parent:', container.parentNode);
-        
+
         // Make the container collapsible
-        container.style.cssText = `
-            margin: 8px 0;
-            border: 1px solid #e5e5e5;
-            border-radius: 6px;
-            background-color: #f5f5f5;
-            overflow: hidden;
-        `;
-        
+        container.className = styles.searchPanelContainer;
+
         // Create collapsible header
         const header = document.createElement('div');
-        header.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background-color: #e5e5e5;
-            cursor: pointer;
-            user-select: none;
-        `;
+        header.className = styles.searchPanelHeader;
         header.innerHTML = `
-            <span style="font-weight: 600; color: #374151;">🧬 PyHMMER Protein Search</span>
-            <span style="font-size: 18px; color: #6b7280;">−</span>
+            <span class="${styles.searchPanelTitle}">🧬 PyHMMER Protein Search</span>
+            <span class="${styles.searchPanelToggle}">−</span>
         `;
-        
+
         // Create content container
         const content = document.createElement('div');
         content.id = 'pyhmmer-search-content';
-        content.style.cssText = `
-            padding: 12px;
-            background-color: #f5f5f5;
-        `;
-        
+        content.className = styles.searchPanelContent;
+
         // Toggle functionality
         let isCollapsed = false;
         header.addEventListener('click', () => {
@@ -327,26 +316,26 @@ export const PyhmmerIntegration: React.FC = () => {
                 header.querySelector('span:last-child')!.textContent = '−';
             }
         });
-        
+
         // Clear existing content and add new structure
         container.innerHTML = '';
         container.appendChild(header);
         container.appendChild(content);
-        
+
         console.log('PyhmmerIntegration: Container structure created, header and content added');
         console.log('PyhmmerIntegration: Container children count:', container.children.length);
-        
+
         // Mount with React 18 root
         try {
             const root = (content as any).__root || createRoot(content);
             (content as any).__root = root;
             console.log('PyhmmerIntegration: React root created, rendering PyhmmerFeaturePanel');
-            root.render(<PyhmmerFeaturePanel proteinSequence={proteinSequence} />);
+            root.render(<PyhmmerFeaturePanel proteinSequence={proteinSequence}/>);
             console.log('PyhmmerIntegration: PyhmmerFeaturePanel rendered successfully');
         } catch (error) {
             console.error('PyhmmerIntegration: Error rendering PyhmmerFeaturePanel:', error);
         }
-        
+
         // Make sure container is visible
         container.style.display = 'block';
         container.style.visibility = 'visible';
