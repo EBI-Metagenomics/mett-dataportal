@@ -10,119 +10,34 @@ import {PyhmmerMXChoice, PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import PyhmmerResultsTable from "../PyhmmerResultsHandler/PyhmmerResultsTable";
 import PyhmmerSearchInput from "./PyhmmerSearchInput";
 import PyhmmerSearchHistory from "./PyhmmerSearchHistory";
+import { ThresholdTypeSelector, CutoffParameters, GapPenalties, InfoPopover, DatabaseSelector } from "./components";
 import {SearchHistoryItem} from '../../../../utils/pyhmmer';
-import * as Popover from '@radix-ui/react-popover';
 import {PYHMMER_CUTOFF_HELP, PYHMMER_GAP_PENALTIES_HELP} from '../../../../utils/pyhmmer';
+import { usePyhmmerSearchForm } from '../../../../hooks/usePyhmmerSearchForm';
 
 
-// Validation error interface
-interface ValidationError {
-    field: string;
-    message: string;
-}
-
-// Validation functions
-const validateEValue = (value: string, fieldName: string): ValidationError | null => {
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-        return {field: fieldName, message: 'Must be a valid number'};
-    }
-    if (numValue < 0 || numValue > 100.0) {
-        return {field: fieldName, message: 'Must be between 0 and 100.0'};
-    }
-    return null;
-};
-
-const validateBitScore = (value: string, fieldName: string): ValidationError | null => {
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-        return {field: fieldName, message: 'Must be a valid number'};
-    }
-    if (numValue < 0.0 || numValue > 1000.0) {
-        return {field: fieldName, message: 'Must be between 0.0 and 1000.0'};
-    }
-    return null;
-};
-
-const validateGapPenalty = (value: string, fieldName: string, maxValue: number): ValidationError | null => {
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-        return {field: fieldName, message: 'Must be a valid number'};
-    }
-    if (numValue < 0 || numValue >= maxValue) {
-        return {field: fieldName, message: `Must be between 0 and ${maxValue}`};
-    }
-    return null;
-};
-
-const validateCutoffRelationships = (
-    evalueType: 'evalue' | 'bitscore',
-    significanceSeq: string,
-    significanceHit: string,
-    reportSeq: string,
-    reportHit: string
-): ValidationError[] => {
-    const errors: ValidationError[] = [];
-
-    if (evalueType === 'evalue') {
-        const incE = parseFloat(significanceSeq);
-        const incdomE = parseFloat(significanceHit);
-        const E = parseFloat(reportSeq);
-        const domE = parseFloat(reportHit);
-
-        if (!isNaN(incE) && !isNaN(E) && incE > E) {
-            errors.push({
-                field: 'significanceEValueSeq',
-                message: 'Significance E-value (Sequence) should be ≤ Report E-value (Sequence)'
-            });
-        }
-        if (!isNaN(incdomE) && !isNaN(domE) && incdomE > domE) {
-            errors.push({
-                field: 'significanceEValueHit',
-                message: 'Significance E-value (Hit) should be ≤ Report E-value (Hit)'
-            });
-        }
-    } else {
-        const incT = parseFloat(significanceSeq);
-        const incdomT = parseFloat(significanceHit);
-        const T = parseFloat(reportSeq);
-        const domT = parseFloat(reportHit);
-
-        if (!isNaN(incT) && !isNaN(T) && incT < T) {
-            errors.push({
-                field: 'significanceBitScoreSeq',
-                message: 'Significance Bit Score (Sequence) should be ≥ Report Bit Score (Sequence)'
-            });
-        }
-        if (!isNaN(incdomT) && !isNaN(domT) && incdomT < domT) {
-            errors.push({
-                field: 'significanceBitScoreHit',
-                message: 'Significance Bit Score (Hit) should be ≥ Report Bit Score (Hit)'
-            });
-        }
-    }
-
-    return errors;
-};
+// Validation functions are now imported from utils/pyhmmer/validation
 
 const PyhmmerSearchForm: React.FC = () => {
-    const [evalueType, setEvalueType] = useState<'evalue' | 'bitscore'>('evalue');
-    const [sequence, setSequence] = useState('');
-    const [database, setDatabase] = useState('bu_all');
-
-    // Cutoff parameters
-    const [significanceEValueSeq, setSignificanceEValueSeq] = useState('0.01');
-    const [significanceEValueHit, setSignificanceEValueHit] = useState('0.03');
-    const [reportEValueSeq, setReportEValueSeq] = useState('1');
-    const [reportEValueHit, setReportEValueHit] = useState('1');
-    const [significanceBitScoreSeq, setSignificanceBitScoreSeq] = useState('25');
-    const [significanceBitScoreHit, setSignificanceBitScoreHit] = useState('22');
-    const [reportBitScoreSeq, setReportBitScoreSeq] = useState('7');
-    const [reportBitScoreHit, setReportBitScoreHit] = useState('5');
-
-    // Gap penalties
-    const [gapOpen, setGapOpen] = useState('0.02');
-    const [gapExtend, setGapExtend] = useState('0.4');
+    // Use custom hook for form state management
+    const {
+        evalueType, setEvalueType,
+        sequence, setSequence,
+        database, setDatabase,
+        significanceEValueSeq, setSignificanceEValueSeq,
+        significanceEValueHit, setSignificanceEValueHit,
+        reportEValueSeq, setReportEValueSeq,
+        reportEValueHit, setReportEValueHit,
+        significanceBitScoreSeq, setSignificanceBitScoreSeq,
+        significanceBitScoreHit, setSignificanceBitScoreHit,
+        reportBitScoreSeq, setReportBitScoreSeq,
+        reportBitScoreHit, setReportBitScoreHit,
+        gapOpen, setGapOpen,
+        gapExtend, setGapExtend,
+        getFieldError,
+        isFormValid,
+        resetForm
+    } = usePyhmmerSearchForm();
 
     // Results state
     const [results, setResults] = useState<PyhmmerResult[]>([]);
@@ -138,15 +53,11 @@ const PyhmmerSearchForm: React.FC = () => {
     const [selectedJobId, setSelectedJobId] = useState<string | undefined>(undefined);
     const [currentSearchJobId, setCurrentSearchJobId] = useState<string | undefined>(undefined);
 
-    // Validation state
-    const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
-
     // Load search history from localStorage
     const loadSearchHistoryLocal = () => {
         const history = loadSearchHistory();
         setHistory(history);
     };
-
 
     // Save search to history using centralized service
     const saveSearchToHistoryLocal = (jobId: string, query: string) => {
@@ -171,86 +82,6 @@ const PyhmmerSearchForm: React.FC = () => {
             console.error('Error removing item from history:', error);
         }
     };
-
-    // Validation function
-    const validateForm = (): ValidationError[] => {
-        const errors: ValidationError[] = [];
-
-        // Validate sequence
-        // if (!sequence.trim()) {
-        //     errors.push({ field: 'sequence', message: 'Sequence is required' });
-        // }
-
-        // Validate E-value parameters when E-value is selected
-        if (evalueType === 'evalue') {
-            const incEError = validateEValue(significanceEValueSeq, 'significanceEValueSeq');
-            if (incEError) errors.push(incEError);
-
-            const incdomEError = validateEValue(significanceEValueHit, 'significanceEValueHit');
-            if (incdomEError) errors.push(incdomEError);
-
-            const EError = validateEValue(reportEValueSeq, 'reportEValueSeq');
-            if (EError) errors.push(EError);
-
-            const domEError = validateEValue(reportEValueHit, 'reportEValueHit');
-            if (domEError) errors.push(domEError);
-        }
-
-        // Validate Bit Score parameters when Bit Score is selected
-        if (evalueType === 'bitscore') {
-            const incTError = validateBitScore(significanceBitScoreSeq, 'significanceBitScoreSeq');
-            if (incTError) errors.push(incTError);
-
-            const incdomTError = validateBitScore(significanceBitScoreHit, 'significanceBitScoreHit');
-            if (incdomTError) errors.push(incdomTError);
-
-            const TError = validateBitScore(reportBitScoreSeq, 'reportBitScoreSeq');
-            if (TError) errors.push(TError);
-
-            const domTError = validateBitScore(reportBitScoreHit, 'reportBitScoreHit');
-            if (domTError) errors.push(domTError);
-        }
-
-        // Validate gap penalties
-        const gapOpenError = validateGapPenalty(gapOpen, 'gapOpen', 0.5);
-        if (gapOpenError) errors.push(gapOpenError);
-
-        const gapExtendError = validateGapPenalty(gapExtend, 'gapExtend', 1.0);
-        if (gapExtendError) errors.push(gapExtendError);
-
-        // Validate cutoff relationships
-        const relationshipErrors = validateCutoffRelationships(
-            evalueType,
-            evalueType === 'evalue' ? significanceEValueSeq : significanceBitScoreSeq,
-            evalueType === 'evalue' ? significanceEValueHit : significanceBitScoreHit,
-            evalueType === 'evalue' ? reportEValueSeq : reportBitScoreSeq,
-            evalueType === 'evalue' ? reportEValueHit : reportBitScoreHit
-        );
-        errors.push(...relationshipErrors);
-
-        return errors;
-    };
-
-    // Get error for a specific field
-    const getFieldError = (fieldName: string): string | undefined => {
-        return validationErrors.find(error => error.field === fieldName)?.message;
-    };
-
-    // Check if form is valid
-    const isFormValid = (): boolean => {
-        return validationErrors.length === 0;
-    };
-
-    // Update validation errors when form values change
-    useEffect(() => {
-        const errors = validateForm();
-        setValidationErrors(errors);
-    }, [
-        sequence, evalueType,
-        significanceEValueSeq, significanceEValueHit, reportEValueSeq, reportEValueHit,
-        significanceBitScoreSeq, significanceBitScoreHit, reportBitScoreSeq, reportBitScoreHit,
-        gapOpen, gapExtend
-    ]);
 
     useEffect(() => {
         const fetchDatabases = async () => {
@@ -342,9 +173,7 @@ const PyhmmerSearchForm: React.FC = () => {
         if (e) e.preventDefault();
 
         // Validate form before submission
-        const errors = validateForm();
-        if (errors.length > 0) {
-            setValidationErrors(errors);
+        if (!isFormValid()) {
             setError('Please fix the validation errors before submitting.');
             return;
         }
@@ -482,31 +311,13 @@ const PyhmmerSearchForm: React.FC = () => {
 
     // Reset form to default values
     const handleReset = () => {
-        setEvalueType('evalue');
-        setSequence('');
-        setDatabase('bu_all');
-
-        // Cutoff parameters
-        setSignificanceEValueSeq('0.01');
-        setSignificanceEValueHit('0.03');
-        setReportEValueSeq('1');
-        setReportEValueHit('1');
-        setSignificanceBitScoreSeq('25');
-        setSignificanceBitScoreHit('22');
-        setReportBitScoreSeq('7');
-        setReportBitScoreHit('5');
-
-        // Gap penalties
-        setGapOpen('0.02');
-        setGapExtend('0.4');
+        // Use the form hook's reset function
+        resetForm();
 
         // Clear results and job IDs
         setResults([]);
         setCurrentSearchJobId(undefined);
         setSelectedJobId(undefined);
-
-        // Validation errors
-        setValidationErrors([]);
         setError(undefined);
     };
 
@@ -522,266 +333,63 @@ const PyhmmerSearchForm: React.FC = () => {
 
                     {/* Cut off */}
                     <div className={styles.formSection}>
-                        <div className={styles.flexRow}>
-                            <label className={`vf-form__label ${styles.label}`}>Cut off
-                                <Popover.Root>
-                                    <Popover.Trigger asChild>
-                                        <button
-                                            className={styles.infoIcon}
-                                            onClick={e => e.stopPropagation()}
-                                            aria-label="Cut off info"
-                                            type="button"
-                                        >
-                                            ℹ️
-                                        </button>
-                                    </Popover.Trigger>
-                                    <Popover.Portal>
-                                        <Popover.Content
-                                            className={styles.popoverContent}
-                                            side="top"
-                                            align="end"
-                                            sideOffset={5}
-                                        >
-                                            <div className={styles.popoverInner}>
-                                                <strong>Cut off parameters:</strong><br/>
-                                                <p style={{whiteSpace: 'pre-line'}}>{PYHMMER_CUTOFF_HELP}</p>
-                                            </div>
-                                        </Popover.Content>
-                                    </Popover.Portal>
-                                </Popover.Root>
-                            </label>
-                        </div>
-                        <div className={styles.radioRow}>
-                            <label className={styles.radioLabel}>
-                                <input
-                                    type="radio"
-                                    className={styles.radioInput}
-                                    checked={evalueType === 'evalue'}
-                                    onChange={() => setEvalueType('evalue')}
-                                />
-                                <span className={styles.radioText}>E-value</span>
-                            </label>
-                            <label className={styles.radioLabel}>
-                                <input
-                                    type="radio"
-                                    className={styles.radioInput}
-                                    checked={evalueType === 'bitscore'}
-                                    onChange={() => setEvalueType('bitscore')}
-                                />
-                                <span className={styles.radioText}>Bit Score</span>
-                            </label>
-                        </div>
-                        <div className={styles.cutoffGrid}>
-                            <div></div>
-                            <div className={styles.cutoffHeader}>Sequence</div>
-                            <div className={styles.cutoffHeader}>Hit</div>
-
-                            {evalueType === 'evalue' ? (
-                                <>
-                                    <div className={styles.cutoffLabel}>Significance E-values</div>
-                                    <div className={styles.inputContainer}>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={significanceEValueSeq}
-                                            onChange={e => setSignificanceEValueSeq(e.target.value)}
-                                            className={`${styles.input} ${getFieldError('significanceEValueSeq') ? styles.inputError : ''}`}
-                                        />
-                                        {getFieldError('significanceEValueSeq') && (
-                                            <div
-                                                className={styles.errorMessage}>{getFieldError('significanceEValueSeq')}</div>
-                                        )}
-                                    </div>
-                                    <div className={styles.inputContainer}>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={significanceEValueHit}
-                                            onChange={e => setSignificanceEValueHit(e.target.value)}
-                                            className={`${styles.input} ${getFieldError('significanceEValueHit') ? styles.inputError : ''}`}
-                                        />
-                                        {getFieldError('significanceEValueHit') && (
-                                            <div
-                                                className={styles.errorMessage}>{getFieldError('significanceEValueHit')}</div>
-                                        )}
-                                    </div>
-                                    <div className={styles.cutoffLabel}>Report E-values</div>
-                                    <div className={styles.inputContainer}>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={reportEValueSeq}
-                                            onChange={e => setReportEValueSeq(e.target.value)}
-                                            className={`${styles.input} ${getFieldError('reportEValueSeq') ? styles.inputError : ''}`}
-                                        />
-                                        {getFieldError('reportEValueSeq') && (
-                                            <div
-                                                className={styles.errorMessage}>{getFieldError('reportEValueSeq')}</div>
-                                        )}
-                                    </div>
-                                    <div className={styles.inputContainer}>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={reportEValueHit}
-                                            onChange={e => setReportEValueHit(e.target.value)}
-                                            className={`${styles.input} ${getFieldError('reportEValueHit') ? styles.inputError : ''}`}
-                                        />
-                                        {getFieldError('reportEValueHit') && (
-                                            <div
-                                                className={styles.errorMessage}>{getFieldError('reportEValueHit')}</div>
-                                        )}
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className={styles.cutoffLabel}>Significance Bit scores</div>
-                                    <div className={styles.inputContainer}>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={significanceBitScoreSeq}
-                                            onChange={e => setSignificanceBitScoreSeq(e.target.value)}
-                                            className={`${styles.input} ${getFieldError('significanceBitScoreSeq') ? styles.inputError : ''}`}
-                                        />
-                                        {getFieldError('significanceBitScoreSeq') && (
-                                            <div
-                                                className={styles.errorMessage}>{getFieldError('significanceBitScoreSeq')}</div>
-                                        )}
-                                    </div>
-                                    <div className={styles.inputContainer}>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={significanceBitScoreHit}
-                                            onChange={e => setSignificanceBitScoreHit(e.target.value)}
-                                            className={`${styles.input} ${getFieldError('significanceBitScoreHit') ? styles.inputError : ''}`}
-                                        />
-                                        {getFieldError('significanceBitScoreHit') && (
-                                            <div
-                                                className={styles.errorMessage}>{getFieldError('significanceBitScoreHit')}</div>
-                                        )}
-                                    </div>
-                                    <div className={styles.cutoffLabel}>Report Bit scores</div>
-                                    <div className={styles.inputContainer}>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={reportBitScoreSeq}
-                                            onChange={e => setReportBitScoreSeq(e.target.value)}
-                                            className={`${styles.input} ${getFieldError('reportBitScoreSeq') ? styles.inputError : ''}`}
-                                        />
-                                        {getFieldError('reportBitScoreSeq') && (
-                                            <div
-                                                className={styles.errorMessage}>{getFieldError('reportBitScoreSeq')}</div>
-                                        )}
-                                    </div>
-                                    <div className={styles.inputContainer}>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={reportBitScoreHit}
-                                            onChange={e => setReportBitScoreHit(e.target.value)}
-                                            className={`${styles.input} ${getFieldError('reportBitScoreHit') ? styles.inputError : ''}`}
-                                        />
-                                        {getFieldError('reportBitScoreHit') && (
-                                            <div
-                                                className={styles.errorMessage}>{getFieldError('reportBitScoreHit')}</div>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                        <InfoPopover
+                            label="Cut off"
+                            helpText={PYHMMER_CUTOFF_HELP}
+                            ariaLabel="Cut off info"
+                        />
+                        <ThresholdTypeSelector
+                            evalueType={evalueType}
+                            onEvalueTypeChange={setEvalueType}
+                        />
+                        <CutoffParameters
+                            evalueType={evalueType}
+                            significanceEValueSeq={significanceEValueSeq}
+                            significanceEValueHit={significanceEValueHit}
+                            reportEValueSeq={reportEValueSeq}
+                            reportEValueHit={reportEValueHit}
+                            significanceBitScoreSeq={significanceBitScoreSeq}
+                            significanceBitScoreHit={significanceBitScoreHit}
+                            reportBitScoreSeq={reportBitScoreSeq}
+                            reportBitScoreHit={reportBitScoreHit}
+                            setSignificanceEValueSeq={setSignificanceEValueSeq}
+                            setSignificanceEValueHit={setSignificanceEValueHit}
+                            setReportEValueSeq={setReportEValueSeq}
+                            setReportEValueHit={setReportEValueHit}
+                            setSignificanceBitScoreSeq={setSignificanceBitScoreSeq}
+                            setSignificanceBitScoreHit={setSignificanceBitScoreHit}
+                            setReportBitScoreSeq={setReportBitScoreSeq}
+                            setReportBitScoreHit={setReportBitScoreHit}
+                            getFieldError={getFieldError}
+                        />
                     </div>
 
                     <div className={styles.sectionDivider}></div>
 
                     {/* Gap penalties */}
                     <div className={styles.formSection}>
-                        <div className={styles.flexRow}>
-                            <label className={`vf-form__label ${styles.label}`}>Gap penalties
-                                <Popover.Root>
-                                    <Popover.Trigger asChild>
-                                        <button
-                                            className={styles.infoIcon}
-                                            onClick={e => e.stopPropagation()}
-                                            aria-label="Gap penalties info"
-                                            type="button"
-                                        >
-                                            ℹ️
-                                        </button>
-                                    </Popover.Trigger>
-                                    <Popover.Portal>
-                                        <Popover.Content
-                                            className={styles.popoverContent}
-                                            side="top"
-                                            align="end"
-                                            sideOffset={5}
-                                        >
-                                            <div className={styles.popoverInner}>
-                                                <strong>Gap penalties:</strong><br/>
-                                                <p style={{whiteSpace: 'pre-line'}}>{PYHMMER_GAP_PENALTIES_HELP}</p>
-                                            </div>
-                                        </Popover.Content>
-                                    </Popover.Portal>
-                                </Popover.Root>
-                            </label>
-                        </div>
-                        <div className={styles.gapRow}>
-                            <div>
-                                <div className={styles.gapLabel}>Open</div>
-                                <div className={styles.inputContainer}>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={gapOpen}
-                                        onChange={e => setGapOpen(e.target.value)}
-                                        className={`${styles.inputSmall} ${getFieldError('gapOpen') ? styles.inputError : ''}`}
-                                    />
-                                    {getFieldError('gapOpen') && (
-                                        <div className={styles.errorMessage}>{getFieldError('gapOpen')}</div>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <div className={styles.gapLabel}>Extend</div>
-                                <div className={styles.inputContainer}>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={gapExtend}
-                                        onChange={e => setGapExtend(e.target.value)}
-                                        className={`${styles.inputSmall} ${getFieldError('gapExtend') ? styles.inputError : ''}`}
-                                    />
-                                    {getFieldError('gapExtend') && (
-                                        <div className={styles.errorMessage}>{getFieldError('gapExtend')}</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        <InfoPopover
+                            label="Gap penalties"
+                            helpText={PYHMMER_GAP_PENALTIES_HELP}
+                            ariaLabel="Gap penalties info"
+                        />
+                        <GapPenalties
+                            gapOpen={gapOpen}
+                            gapExtend={gapExtend}
+                            setGapOpen={setGapOpen}
+                            setGapExtend={setGapExtend}
+                            getFieldError={getFieldError}
+                        />
                     </div>
 
                 </div>
                 <div className={styles.rightPane}>
                     {/* Sequence database */}
-                    <div className={styles.formSection}>
-                        <label className={`vf-form__label ${styles.label}`}>Sequence database</label>
-                        <select
-                            className={`vf-form__select ${styles.databaseSelect}`}
-                            value={database}
-                            onChange={e => setDatabase(e.target.value)}
-                        >
-                            {databases.length > 0 ? (
-                                databases.map(db => (
-                                    <option key={db.id} value={db.id}>
-                                        {db.name}
-                                    </option>
-                                ))
-                            ) : (
-                                <option value="">No databases available</option>
-                            )}
-                        </select>
-                    </div>
+                    <DatabaseSelector
+                        database={database}
+                        databases={databases}
+                        onDatabaseChange={setDatabase}
+                    />
 
                     {/* <div className={`${styles.sectionDivider} ${styles.tight}`}></div> */}
 

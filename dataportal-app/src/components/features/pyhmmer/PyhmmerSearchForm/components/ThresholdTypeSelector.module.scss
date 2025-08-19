@@ -1,0 +1,21 @@
+.radioRow {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.radioInput {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.radioText {
+  color: #1a1c1a;
+}

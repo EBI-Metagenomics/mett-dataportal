@@ -1,37 +1,34 @@
-// Import ValidationError from types
-import { ValidationError } from './types';
+import { PYHMMER_DEFAULTS } from './pyhmmerDefaults';
 
-/**
- * Validate E-value input
- */
+// Validation error interface
+export interface ValidationError {
+    field: string;
+    message: string;
+}
+
+// Validation functions
 export const validateEValue = (value: string, fieldName: string): ValidationError | null => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) {
         return { field: fieldName, message: 'Must be a valid number' };
     }
-    if (numValue < 0 || numValue > 100.0) {
-        return { field: fieldName, message: 'Must be between 0 and 100.0' };
+    if (numValue < PYHMMER_DEFAULTS.VALIDATION.EVALUE.MIN || numValue > PYHMMER_DEFAULTS.VALIDATION.EVALUE.MAX) {
+        return { field: fieldName, message: `Must be between ${PYHMMER_DEFAULTS.VALIDATION.EVALUE.MIN} and ${PYHMMER_DEFAULTS.VALIDATION.EVALUE.MAX}` };
     }
     return null;
 };
 
-/**
- * Validate Bit Score input
- */
 export const validateBitScore = (value: string, fieldName: string): ValidationError | null => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) {
         return { field: fieldName, message: 'Must be a valid number' };
     }
-    if (numValue < 0.0 || numValue > 1000.0) {
-        return { field: fieldName, message: 'Must be between 0.0 and 1000.0' };
+    if (numValue < PYHMMER_DEFAULTS.VALIDATION.BITSCORE.MIN || numValue > PYHMMER_DEFAULTS.VALIDATION.BITSCORE.MAX) {
+        return { field: fieldName, message: `Must be between ${PYHMMER_DEFAULTS.VALIDATION.BITSCORE.MIN} and ${PYHMMER_DEFAULTS.VALIDATION.BITSCORE.MAX}` };
     }
     return null;
 };
 
-/**
- * Validate Gap Penalty input
- */
 export const validateGapPenalty = (value: string, fieldName: string, maxValue: number): ValidationError | null => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) {
@@ -43,9 +40,6 @@ export const validateGapPenalty = (value: string, fieldName: string, maxValue: n
     return null;
 };
 
-/**
- * Validate cutoff relationships based on threshold type
- */
 export const validateCutoffRelationships = (
     evalueType: 'evalue' | 'bitscore',
     significanceSeq: string,
@@ -54,13 +48,13 @@ export const validateCutoffRelationships = (
     reportHit: string
 ): ValidationError[] => {
     const errors: ValidationError[] = [];
-    
+
     if (evalueType === 'evalue') {
         const incE = parseFloat(significanceSeq);
         const incdomE = parseFloat(significanceHit);
         const E = parseFloat(reportSeq);
         const domE = parseFloat(reportHit);
-        
+
         if (!isNaN(incE) && !isNaN(E) && incE > E) {
             errors.push({
                 field: 'significanceEValueSeq',
@@ -78,7 +72,7 @@ export const validateCutoffRelationships = (
         const incdomT = parseFloat(significanceHit);
         const T = parseFloat(reportSeq);
         const domT = parseFloat(reportHit);
-        
+
         if (!isNaN(incT) && !isNaN(T) && incT < T) {
             errors.push({
                 field: 'significanceBitScoreSeq',
@@ -92,7 +86,7 @@ export const validateCutoffRelationships = (
             });
         }
     }
-    
+
     return errors;
 };
 

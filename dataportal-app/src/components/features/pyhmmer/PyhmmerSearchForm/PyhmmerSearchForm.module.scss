@@ -3,6 +3,18 @@
   background-color: transparent;
 }
 
+.sectionDivider {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 24px 0;
+  width: 100%;
+  border-radius: 0;
+
+  &.tight {
+    margin: 16px 0;
+  }
+}
+
 .errorBand {
   background: #fff3cd;
   border: 1px solid #ffeaa7;
@@ -34,68 +46,27 @@
 
 .leftPane {
   flex: 1;
-  padding: 24px 2rem 24px 0; // Add top/bottom padding for better balance
+  padding: 24px 2rem 24px 0;
 
   .formSection {
-    margin-bottom: 2rem; // Increased from default to add more vertical spacing
+    margin-bottom: 2rem;
 
     &:last-child {
       margin-bottom: 0;
     }
   }
 
-  // Add extra spacing between major sections
-  .sectionDivider {
-    height: 1px;
-    background-color: #e0e0e0;
-    margin: 1.5rem 0; // Increased margin for better separation
-  }
 
-  // Add spacing to radio button groups
-  .radioRow {
-    margin-bottom: 1.5rem; // Add space below radio buttons
-  }
 
-  // Add spacing to cutoff grid
-  .cutoffGrid {
-    margin-top: 1.5rem; // Add space above the cutoff table
-    margin-bottom: 1.5rem; // Add space below the cutoff table
-    
-    // Add spacing to cutoff headers
-    .cutoffHeader {
-      margin-bottom: 0.75rem; // Space below column headers
-      font-weight: 600; // Make headers more prominent
-    }
-    
-    // Add spacing to cutoff labels
-    .cutoffLabel {
-      margin-top: 1rem; // Space above row labels
-      margin-bottom: 0.5rem; // Space below row labels
-      font-weight: 500; // Make labels more prominent
+  // Spacing for form sections
+  .formSection {
+    margin-bottom: 2rem;
+
+    &:last-child {
+      margin-bottom: 0;
     }
   }
 
-  // Add spacing to gap penalty inputs
-  .gapRow {
-    margin-top: 1.5rem; // Add space above gap penalty inputs
-    margin-bottom: 1rem; // Add space below gap penalty inputs
-    
-    // Add spacing to gap labels
-    .gapLabel {
-      margin-bottom: 0.5rem; // Space below gap penalty labels
-      font-weight: 500; // Make labels more prominent
-    }
-  }
-
-  // Add spacing to labels
-  .label {
-    margin-bottom: 1rem; // Add space below section labels
-  }
-
-  // Add spacing to input containers
-  .inputContainer {
-    margin-bottom: 0.75rem; // Add space between input rows
-  }
 }
 
 .rightPane {
@@ -138,30 +109,7 @@
   color: #1a1c1a;
 }
 
-.formSection {
-  margin-bottom: 24px;
-  position: relative;
-}
-
-.sectionDivider {
-  height: 1px;
-  background-color: #e0e0e0;
-  margin: 24px 0;
-  width: 100%;
-  border-radius: 0;
-
-  &.tight {
-    margin: 16px 0;
-  }
-}
-
-.label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: #1a1c1a;
-  font-size: 1rem;
-}
+// Form section and label styles moved to individual component CSS files
 
 .select {
   width: 100% !important;
@@ -187,27 +135,7 @@
   }
 }
 
-.radioRow {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 16px;
-}
-
-.radioLabel {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.radioInput {
-  margin-right: 8px;
-  cursor: pointer;
-}
-
-.radioText {
-  color: #1a1c1a;
-}
+// Radio button styles moved to ThresholdTypeSelector.module.scss
 
 .checkboxRow {
   margin-bottom: 16px;
@@ -229,123 +157,9 @@
   color: #1a1c1a;
 }
 
-.cutoffGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  align-items: start;
-}
+// Cutoff grid and input styles moved to CutoffParameters.module.scss
 
-.cutoffHeader {
-  font-weight: 600;
-  text-align: center;
-  color: #1a1c1a;
-  font-size: 0.95rem;
-}
-
-.cutoffLabel {
-  justify-self: start;
-  font-weight: 500;
-  color: #495057;
-  font-size: 0.85rem;
-}
-
-.inputContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.input {
-  width: 100%;
-  padding: 6px 10px;
-  height: 25px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background-color: #fff;
-  text-align: center;
-  font-size: 0.8rem;
-  font-family: inherit;
-  box-sizing: border-box;
-  color: #888;
-
-  &:focus {
-    outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
-    color: #555;
-  }
-
-  &.inputError {
-    border-color: #d32f2f;
-    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
-
-    &:focus {
-      border-color: #d32f2f;
-      box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
-    }
-  }
-
-  &::placeholder {
-    color: #bbb;
-  }
-}
-
-.errorMessage {
-  color: #d32f2f;
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1.2;
-  margin-top: 2px;
-}
-
-.gapRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr 2fr;
-  gap: 16px;
-  align-items: start;
-}
-
-.gapLabel {
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #495057;
-  font-size: 0.95rem;
-}
-
-.inputSmall {
-  width: 100%;
-  padding: 6px 10px;
-  height: 25px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background-color: #fff;
-  font-size: 0.8rem;
-  font-family: inherit;
-  box-sizing: border-box;
-  color: #888;
-
-  &:focus {
-    outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
-    color: #555;
-  }
-
-  &.inputError {
-    border-color: #d32f2f;
-    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
-
-    &:focus {
-      border-color: #d32f2f;
-      box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
-    }
-  }
-
-  &::placeholder {
-    color: #bbb;
-  }
-}
+// Gap penalty styles moved to GapPenalties.module.scss
 
 .selectSmall {
   width: 100%;
@@ -415,17 +229,7 @@
   margin-bottom: 0;
 }
 
-// Info icon and popover styles
-.infoIcon {
-  font-size: 0.9rem;
-  margin-left: 6px;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  padding: 0;
-  display: inline-block;
-  vertical-align: baseline;
-}
+// Info icon styles moved to InfoPopover.module.scss
 
 // Dropdown menu styling
 .select {
@@ -437,113 +241,7 @@
   }
 }
 
-// Database dropdown specific styling
-.databaseDropdown {
-  margin-bottom: 16px;
-
-  .select {
-    margin-top: 8px;
-  }
-}
-
-// Override VF framework select for database dropdown with higher specificity
-select.vf-form__select {
-  background-color: white !important;
-  color: #1a1c1a !important;
-  border: 1px solid #dee2e6 !important;
-  border-radius: 4px !important;
-  padding: 8px 12px !important;
-  font-size: 14px !important;
-  margin-top: 8px !important;
-
-  option {
-    background-color: white !important;
-    color: #1a1c1a !important;
-    padding: 4px 8px !important;
-  }
-}
-
-// Even more specific override for the database dropdown
-.formSection select.vf-form__select {
-  background-color: white !important;
-  color: #1a1c1a !important;
-  border: 1px solid #dee2e6 !important;
-  border-radius: 4px !important;
-  padding: 8px 12px !important;
-  font-size: 14px !important;
-  margin-top: 8px !important;
-
-  option {
-    background-color: white !important;
-    color: #1a1c1a !important;
-    padding: 4px 8px !important;
-  }
-}
-
-// Maximum specificity override for database dropdown
-.pyhmmerSection .formSection select.vf-form__select {
-  background-color: white !important;
-  color: #1a1c1a !important;
-  border: 1px solid #dee2e6 !important;
-  border-radius: 4px !important;
-  padding: 8px 12px !important;
-  font-size: 14px !important;
-  margin-top: 8px !important;
-  width: 100% !important;
-
-  option {
-    background-color: white !important;
-    color: #1a1c1a !important;
-    padding: 4px 8px !important;
-  }
-}
-
-// Global override for all VF form selects in this component
-:global(.vf-form__select) {
-  background-color: white !important;
-  color: #1a1c1a !important;
-  border: 1px solid #dee2e6 !important;
-  border-radius: 4px !important;
-  padding: 8px 12px !important;
-  font-size: 14px !important;
-  margin-top: 8px !important;
-
-  option {
-    background-color: white !important;
-    color: #1a1c1a !important;
-    padding: 4px 8px !important;
-  }
-}
-
-// Database select styling that works with VF framework
-.databaseSelect {
-  margin-top: 8px !important;
-  width: 100% !important;
-
-  // Override any VF framework dark styling
-  background-color: white !important;
-  color: #1a1c1a !important;
-  border: 1px solid #dee2e6 !important;
-  border-radius: 4px !important;
-  padding: 8px 12px !important;
-  font-size: 14px !important;
-
-  &:focus {
-    outline: none !important;
-    border-color: #3b6fb6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 111, 182, 0.2) !important;
-  }
-
-  option {
-    background-color: white !important;
-    color: #1a1c1a !important;
-    padding: 4px 8px !important;
-  }
-
-  &:hover {
-    border-color: #adb5bd !important;
-  }
-}
+// Database select styles moved to DatabaseSelector.module.scss
 
 .dropdown-menu {
   position: absolute;
@@ -582,35 +280,4 @@ select.vf-form__select {
   }
 }
 
-.popoverContent {
-  background: white;
-  border: 1px solid #ccc;
-  padding: 1rem;
-  border-radius: 6px;
-  width: 420px;
-  max-width: 90vw;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-}
-
-.popoverInner {
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.flexRow {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
-
-  .label {
-    display: inline-flex;
-    align-items: center;
-    margin-bottom: 0;
-  }
-
-  .checkboxLabel {
-    margin-left: 40px;
-  }
-}
+// Popover and flex row styles moved to InfoPopover.module.scss

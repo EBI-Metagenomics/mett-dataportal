@@ -1,0 +1,42 @@
+.flexRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+
+  .label {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0;
+    font-weight: 600;
+    color: #1a1c1a;
+    font-size: 1rem;
+  }
+}
+
+.infoIcon {
+  font-size: 0.9rem;
+  margin-left: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: inline-block;
+  vertical-align: baseline;
+}
+
+.popoverContent {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 6px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.popoverInner {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}

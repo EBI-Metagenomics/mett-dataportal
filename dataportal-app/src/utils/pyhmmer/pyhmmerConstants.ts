@@ -23,10 +23,12 @@ export const PYHMMER_CONSTANTS = {
     // Database configurations
     DATABASES: {
         BU_ALL: 'bu_all',
-        BU_PV_ALL: 'bu_pv_all',
-        BU_ATCC: 'bu_atcc',
+        BU_TYPE_STRAINS: 'bu_type_strains',
         PV_ALL: 'pv_all',
-        DEFAULT: 'bu_all'
+        PV_TYPE_STRAINS: 'pv_type_strains',
+        BU_PV_TYPE_STRAINS: 'bu_pv_type_strains',
+        BU_PV_ALL: 'bu_pv_all',
+        DEFAULT: 'bu_pv_all'
     },
     
     // Threshold configurations
@@ -133,10 +135,12 @@ export const PYHMMER_CONSTANTS = {
 
 // Database options for UI components
 export const PYHMMER_DATABASES = [
+    { id: 'bu_type_strains', name: 'BU Type Strains', description: 'All BU type strain databases' },
     { id: 'bu_all', name: 'BU All Strains', description: 'All BU strain databases' },
+    { id: 'pv_all', name: 'PV All Strains', description: 'All PV strain databases' },
+    { id: 'pv_type_strains', name: 'PV Type Strains', description: 'All PV type strain databases' },
     { id: 'bu_pv_all', name: 'BU + PV All Strains', description: 'BU and PV strain databases' },
-    { id: 'bu_atcc', name: 'BU ATCC Strains', description: 'BU ATCC strain databases' },
-    { id: 'pv_all', name: 'PV All Strains', description: 'All PV strain databases' }
+    { id: 'bu_pv_type_strains', name: 'BU PV Type Strains', description: 'BU PV type strain databases' },
 ];
 
 // Threshold type options

@@ -7,6 +7,7 @@ import {
 } from '../../../../utils/pyhmmer';
 import {PyhmmerService} from '../../../../services/pyhmmer';
 import styles from './PyhmmerCompactSearch.module.scss';
+import { PYHMMER_DEFAULTS } from '../../../../utils/pyhmmer/pyhmmerDefaults';
 
 interface PyhmmerCompactSearchProps {
     // Initial values
@@ -24,7 +25,7 @@ interface PyhmmerCompactSearchProps {
 
 const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
                                                                        defaultSequence = '',
-                                                                       defaultDatabase = 'bu_all',
+                                                                       defaultDatabase = PYHMMER_DEFAULTS.DATABASE,
                                                                        onSearch,
                                                                        onSearchStart,
                                                                        onError,
@@ -60,8 +61,8 @@ const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
     const validateForm = (): boolean => {
         const request = {
             database,
-            threshold: 'evalue' as const, // Use default threshold
-            threshold_value: '0.01', // Use default value
+            threshold: PYHMMER_DEFAULTS.EVALUE_TYPE, 
+            threshold_value: PYHMMER_DEFAULTS.SIGNIFICANCE_EVALUE_SEQ,
             input: sequence
         };
 
@@ -89,8 +90,8 @@ const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
             // Prepare search request
             const searchRequest: PyhmmerCompactSearchRequest = {
                 database,
-                threshold: 'evalue' as const,
-                threshold_value: '0.01',
+                threshold: PYHMMER_DEFAULTS.EVALUE_TYPE, 
+                threshold_value: PYHMMER_DEFAULTS.SIGNIFICANCE_EVALUE_SEQ,
                 input: sequence
             };
 

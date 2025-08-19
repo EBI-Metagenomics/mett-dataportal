@@ -4,30 +4,30 @@ import { ConfigurationSchema } from '@jbrowse/core/configuration';
 import { types } from 'mobx-state-tree';
 import React from 'react';
 import { observer } from 'mobx-react';
-import PyHMMERButton from './PyHMMERButton';
+import PyhmmerFeatureWidget from '../../components/features/pyhmmer/PyhmmerSearchForm/components/PyhmmerFeatureWidget';
 
-// Simple widget that just shows our PyHMMER button
-const PyHMMERFeatureWidget = observer(({ model }: { model: any }) => {
+// Simple widget that just shows our PyHMMER feature widget
+const PyhmmerFeatureWidgetContent = observer(({ model }: { model: any }) => {
     return (
         <div style={{ padding: 8 }}>
-            <PyHMMERButton model={model} />
+            <PyhmmerFeatureWidget model={model} />
         </div>
     );
 });
 
-export default class PyHMMERFeaturePlugin extends Plugin {
-    name = 'PyHMMERFeaturePlugin';
+export default class PyhmmerFeaturePlugin extends Plugin {
+    name = 'PyhmmerFeaturePlugin';
     
     install(pm: PluginManager) {
         pm.addWidgetType(() => ({
-            name: 'PyHMMERFeatureWidget',
+            name: 'PyhmmerFeatureWidget',
             displayName: 'PyHMMER Feature Widget',
             heading: 'PyHMMER Search',
-            configSchema: ConfigurationSchema('PyHMMERFeatureWidget', {}),
+            configSchema: ConfigurationSchema('PyhmmerFeatureWidget', {}),
             stateModel: types.model({}).volatile(() => ({
                 featureData: undefined as any,
             })),
-            ReactComponent: PyHMMERFeatureWidget,
+            ReactComponent: PyhmmerFeatureWidgetContent,
         }));
     }
 
