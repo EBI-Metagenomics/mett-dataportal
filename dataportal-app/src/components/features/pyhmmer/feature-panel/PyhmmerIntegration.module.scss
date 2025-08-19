@@ -1,7 +1,7 @@
 // PyHMMER Integration Styles
 .pyhmmerButton {
   display: inline-block !important;
-  background-color: #3b6fb6 !important;
+  background-color: #0D233F !important;
   color: white !important;
   padding: 8px 16px !important;
   border-radius: 6px !important;
@@ -10,6 +10,9 @@
   font-weight: 500 !important;
   margin: 8px 0 !important;
   text-decoration: none !important;
+  text-decoration-line: none !important;
+  text-decoration-style: none !important;
+  text-decoration-color: transparent !important;
   border: none !important;
   outline: none !important;
   transition: all 0.2s !important;
@@ -21,6 +24,27 @@
   &:hover {
     background-color: #193f90 !important;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+  }
+
+  &:focus {
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+  }
+
+  &:active {
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+  }
+
+  // Ensure all child elements also have white text and no underlines
+  * {
+    color: white !important;
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+    text-decoration-style: none !important;
+    text-decoration-color: transparent !important;
   }
 }
 
@@ -71,4 +95,19 @@
 // Global styles for PyHMMER button (when not using CSS modules)
 :global(.pyhmmer-button-styled) {
   @extend .pyhmmerButton;
+  
+  // Additional global overrides to ensure white text and no underlines
+  color: white !important;
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+  text-decoration-style: none !important;
+  text-decoration-color: transparent !important;
+  
+  * {
+    color: white !important;
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+    text-decoration-style: none !important;
+    text-decoration-color: transparent !important;
+  }
 }
