@@ -33,14 +33,14 @@ export class PyhmmerSearchService {
             const fastaSequence = `>protein\n${proteinSequence}`;
             
             const searchRequest: PyhmmerSearchRequest = {
-                database: 'bu_all',
+                database: 'bu_pv_all',
                 threshold: 'evalue',
                 threshold_value: 0.01,
                 input: fastaSequence,
                 E: 0.01,
-                domE: 0.01,
+                domE: 1.0,
                 incE: 0.01,
-                incdomE: 0.01
+                incdomE: 0.03
             };
             
             const response = await PyhmmerService.search(searchRequest);
