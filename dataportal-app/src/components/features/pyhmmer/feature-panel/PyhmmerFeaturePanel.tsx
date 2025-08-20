@@ -1,13 +1,15 @@
 import React, {useState} from 'react';
 import {PyhmmerSearchResult, PyhmmerService} from '../../../../services/pyhmmer';
 import {PyhmmerResultsDisplay} from '@components/features';
+import {updateJBrowseSearchWithRealJobId} from '../../../../services/pyhmmer/pyhmmerHistoryService';
 import styles from './PyhmmerFeaturePanel.module.scss';
 
 interface PyhmmerFeaturePanelProps {
     proteinSequence: string;
+    tempJobId?: string;
 }
 
-export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({proteinSequence}) => {
+export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({proteinSequence, tempJobId}) => {
     const [isSearching, setIsSearching] = useState(false);
     const [results, setResults] = useState<PyhmmerSearchResult[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -22,8 +24,14 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
         setHasSearched(true);
 
         try {
-            const searchResults = await PyhmmerService.executeSearch(proteinSequence);
-            setResults(searchResults);
+            const searchResponse = await PyhmmerService.executeSearch(proteinSequence);
+            setResults(searchResponse.results);
+            
+            // If this was a JBrowse search, update the history with the real job ID
+            if (tempJobId && searchResponse.jobId) {
+                updateJBrowseSearchWithRealJobId(tempJobId, searchResponse.jobId);
+                console.log('Updated JBrowse search history with real job ID:', searchResponse.jobId);
+            }
         } catch (error: any) {
             setError(error.message || 'Search failed');
         } finally {

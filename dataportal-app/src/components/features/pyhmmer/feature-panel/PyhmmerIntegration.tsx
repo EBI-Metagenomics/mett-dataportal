@@ -2,10 +2,124 @@ import React, {useEffect} from 'react';
 import {createRoot} from 'react-dom/client';
 import {PyhmmerFeaturePanel} from '@components/features';
 import {PYHMMER_CONSTANTS} from '../../../../utils/pyhmmer';
+import {saveJBrowseSearchToHistory} from '../../../../services/pyhmmer/pyhmmerHistoryService';
 import styles from './PyhmmerIntegration.module.scss';
 
 export const PyhmmerIntegration: React.FC = () => {
     console.log('PyhmmerIntegration: Component loaded');
+
+    // Function to extract gene information from JBrowse feature panel
+    const extractGeneContext = (panel: Element): {
+        source: 'jbrowse';
+        geneId?: string;
+        locusTag?: string;
+        product?: string;
+        geneName?: string;
+        featureType?: string;
+        genome?: string;
+        coordinates?: {
+            start?: number;
+            end?: number;
+            strand?: string;
+            contig?: string;
+        };
+    } => {
+        const context: any = {
+            source: 'jbrowse' as const
+        };
+
+        try {
+                    // Extract locus tag from the panel text
+        let locusTag = '';
+        const panelText = panel.textContent || '';
+        
+        // Look for "locus_tag" followed by the actual locus tag value
+        const locusTagMatch = panelText.match(/locus_tag\s*\n?([A-Z0-9_]+)/i);
+        if (locusTagMatch) {
+            // Clean the locus tag - remove any appended product information
+            let rawLocusTag = locusTagMatch[1];
+            
+            // If the locus tag contains product info (like "BU_ATCC8492_00001productChromosomal"),
+            // extract just the locus tag part
+            const cleanLocusTagMatch = rawLocusTag.match(/^([A-Z]{2}_[A-Z0-9]+_[0-9]+)/);
+            if (cleanLocusTagMatch) {
+                locusTag = cleanLocusTagMatch[1];
+                console.log('PyhmmerIntegration: Cleaned locus tag from:', rawLocusTag, 'to:', locusTag);
+                
+                // Extract product information from the remaining part
+                const productMatch = rawLocusTag.match(/^[A-Z]{2}_[A-Z0-9]+_[0-9]+(.+)/);
+                if (productMatch && productMatch[1]) {
+                    context.product = productMatch[1];
+                    console.log('PyhmmerIntegration: Extracted product info:', context.product);
+                }
+            } else {
+                locusTag = rawLocusTag;
+                console.log('PyhmmerIntegration: Found locus tag from locus_tag attribute:', locusTag);
+            }
+        }
+            
+            if (locusTag) {
+                context.geneId = locusTag;
+                context.locusTag = locusTag;
+            }
+
+            // Try to find gene name (different from locus tag)
+            const geneNameElement = panel.querySelector('.gene-name, .feature-name, [data-gene-name]');
+            if (geneNameElement) {
+                const geneName = geneNameElement.textContent?.trim() || geneNameElement.getAttribute('data-gene-name');
+                if (geneName && geneName !== locusTag) {
+                    context.geneName = geneName;
+                }
+            }
+
+            // Try to find feature type
+            const featureTypeElement = panel.querySelector('.feature-type, [data-feature-type]');
+            if (featureTypeElement) {
+                context.featureType = featureTypeElement.textContent?.trim() || featureTypeElement.getAttribute('data-feature-type');
+            }
+
+            // Try to find genome information
+            const genomeElement = panel.querySelector('.genome, [data-genome]');
+            if (genomeElement) {
+                context.genome = genomeElement.textContent?.trim() || genomeElement.getAttribute('data-genome');
+            }
+
+            // Try to find coordinates from the panel text
+            const coordMatch = panelText.match(/coordinates?[:\s]+(\d+)\s*-\s*(\d+)/i);
+            if (coordMatch) {
+                context.coordinates = {
+                    start: parseInt(coordMatch[1]),
+                    end: parseInt(coordMatch[2])
+                };
+            }
+
+            // Try to find strand information
+            const strandMatch = panelText.match(/strand[:\s]+([+-])/i);
+            if (strandMatch) {
+                if (context.coordinates) {
+                    context.coordinates.strand = strandMatch[1];
+                } else {
+                    context.coordinates = { strand: strandMatch[1] };
+                }
+            }
+
+            // Try to find contig information
+            const contigMatch = panelText.match(/contig[:\s]+([^\s\n]+)/i);
+            if (contigMatch) {
+                if (context.coordinates) {
+                    context.coordinates.contig = contigMatch[1];
+                } else {
+                    context.coordinates = { contig: contigMatch[1] };
+                }
+            }
+
+            console.log('PyhmmerIntegration: Extracted gene context:', context);
+        } catch (error) {
+            console.warn('PyhmmerIntegration: Error extracting gene context:', error);
+        }
+
+        return context;
+    };
 
     useEffect(() => {
         console.log('PyhmmerIntegration: Starting integration');
@@ -71,7 +185,7 @@ export const PyhmmerIntegration: React.FC = () => {
                                 e.stopPropagation();
                                 e.stopImmediatePropagation();
 
-                                // Extract protein sequence
+                                // Extract protein sequence and gene context
                                 let sequence = '';
                                 const panel = element.closest('.MuiAccordionDetails-root, [role="region"]');
                                 
@@ -96,7 +210,31 @@ export const PyhmmerIntegration: React.FC = () => {
 
                                     if (sequence) {
                                         console.log('PyhmmerIntegration: Sequence found, injecting search panel');
-                                        injectPyhmmerSearchIntoFeaturePanel(sequence);
+                                        
+                                        // Extract gene context and save to history
+                                        const geneContext = extractGeneContext(panel);
+                                        
+                                        // Debug: Log what we're extracting
+                                        console.log('PyhmmerIntegration: Extracted gene context:', geneContext);
+                                        console.log('PyhmmerIntegration: Locus tag:', geneContext.locusTag);
+                                        console.log('PyhmmerIntegration: Gene ID:', geneContext.geneId);
+                                        
+                                        // Save to history with context
+                                        const searchRequest = {
+                                            database: PYHMMER_CONSTANTS.DATABASES.DEFAULT,
+                                            threshold: 'evalue',
+                                            threshold_value: PYHMMER_CONSTANTS.THRESHOLDS.DEFAULT_EVALUE.toString(),
+                                            input: `>${geneContext.locusTag || geneContext.geneId || 'jbrowse_gene'}${geneContext.product ? ' ' + geneContext.product : ''}\n${sequence}`
+                                        };
+                                        
+                                        console.log('PyhmmerIntegration: Search request input:', searchRequest.input);
+                                        
+                                        // Save JBrowse search to history and get the temporary job ID
+                                        const tempJobId = saveJBrowseSearchToHistory(searchRequest, geneContext);
+                                        console.log('PyhmmerIntegration: JBrowse search saved to history with temp ID:', tempJobId);
+                                        
+                                        // Inject the search panel with the temporary job ID for tracking
+                                        injectPyhmmerSearchIntoFeaturePanel(sequence, tempJobId);
                                     } else {
                                         console.log('PyhmmerIntegration: Could not find sequence');
                                     }
@@ -175,7 +313,7 @@ export const PyhmmerIntegration: React.FC = () => {
     }, []);
 
     // Function to inject the PyHMMER search panel
-    const injectPyhmmerSearchIntoFeaturePanel = (proteinSequence: string) => {
+    const injectPyhmmerSearchIntoFeaturePanel = (proteinSequence: string, tempJobId?: string) => {
         console.log('PyhmmerIntegration: injectPyhmmerSearchIntoFeaturePanel called with sequence length:', proteinSequence.length);
 
         // Find or create container
@@ -249,14 +387,14 @@ export const PyhmmerIntegration: React.FC = () => {
             }
         }
 
-        // Mount React component
-        try {
-            const root = createRoot(content);
-            root.render(<PyhmmerFeaturePanel proteinSequence={proteinSequence}/>);
-            console.log('PyhmmerIntegration: PyhmmerFeaturePanel rendered successfully');
-        } catch (error) {
-            console.error('PyhmmerIntegration: Error rendering PyhmmerFeaturePanel:', error);
-        }
+                        // Mount React component
+                try {
+                    const root = createRoot(content);
+                    root.render(<PyhmmerFeaturePanel proteinSequence={proteinSequence} tempJobId={tempJobId}/>);
+                    console.log('PyhmmerIntegration: PyhmmerFeaturePanel rendered successfully with temp job ID:', tempJobId);
+                } catch (error) {
+                    console.error('PyhmmerIntegration: Error rendering PyhmmerFeaturePanel:', error);
+                }
 
         // Make container visible
         container.style.display = 'block';

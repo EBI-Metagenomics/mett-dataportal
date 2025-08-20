@@ -180,6 +180,25 @@ export interface SearchHistoryItem {
     input: string;
     query?: string; 
     results?: any[];
+    
+    // JBrowse context information
+    source?: 'jbrowse' | 'main' | 'api';
+    geneId?: string;
+    locusTag?: string;
+    product?: string;
+    geneName?: string;
+    featureType?: string;
+    genome?: string;
+    coordinates?: {
+        start?: number;
+        end?: number;
+        strand?: string;
+        contig?: string;
+    };
+    
+    // Special flags for different search types
+    isJBrowseSearch?: boolean;
+    hasResults?: boolean;
 }
 
 /**

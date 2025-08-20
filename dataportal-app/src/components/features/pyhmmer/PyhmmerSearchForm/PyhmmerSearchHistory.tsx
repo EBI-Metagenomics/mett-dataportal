@@ -43,8 +43,20 @@ const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onS
                     {history.map(item => (
                         <li
                             key={item.jobId}
-                            className={`${styles.historyItem} ${item.jobId === selectedJobId ? styles.selected : ''}`}
-                            onClick={() => onSelect(item.jobId)}
+                            className={`${styles.historyItem} ${item.jobId === selectedJobId ? styles.selected : ''} ${item.isJBrowseSearch ? styles.jbrowseItem : ''}`}
+                            onClick={() => {
+                                if (item.isJBrowseSearch) {
+                                    // For JBrowse searches, just show the search details without fetching results
+                                    console.log('JBrowse search selected:', item);
+                                    // You could show a modal or info panel here instead
+                                } else if (item.source === 'jbrowse' && !item.isJBrowseSearch) {
+                                    // This was a JBrowse search that now has a real job ID - fetch results
+                                    onSelect(item.jobId);
+                                } else {
+                                    // Regular search - fetch results
+                                    onSelect(item.jobId);
+                                }
+                            }}
                         >
                             <div className={styles.itemContent}>
                                 <div 
@@ -52,8 +64,29 @@ const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onS
                                     onMouseEnter={(e) => handleMouseEnter(e, item.query || item.input || 'Unknown')}
                                     onMouseLeave={handleMouseLeave}
                                 >
-                                    {item.query || item.input || 'Unknown'}
+                                    {item.source === 'jbrowse' && item.locusTag ? (
+                                        <span className={styles.locusTagDescription}>{item.locusTag}</span>
+                                    ) : (
+                                        item.query || item.input || 'Unknown'
+                                    )}
                                 </div>
+                                
+                                {/* Show JBrowse context if available */}
+                                {item.source === 'jbrowse' && (
+                                    <div className={styles.jbrowseContext}>
+                                        <span className={styles.jbrowseBadge}>JBrowse</span>
+                                        {item.product && (
+                                            <span className={styles.productInfo}>{item.product}</span>
+                                        )}
+                                        {item.geneName && item.geneName !== item.locusTag && (
+                                            <span className={styles.geneName}>{item.geneName}</span>
+                                        )}
+                                        {item.genome && (
+                                            <span className={styles.genomeInfo}>{item.genome}</span>
+                                        )}
+                                    </div>
+                                )}
+                                
                                 <div className={styles.dateText}>{item.date}</div>
                             </div>
                             <button

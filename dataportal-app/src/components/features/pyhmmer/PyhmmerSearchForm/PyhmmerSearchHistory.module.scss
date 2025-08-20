@@ -51,6 +51,20 @@
         border-left: 3px solid #2196f3;
     }
 
+    &.jbrowseItem {
+        background-color: #faf5ff;
+        border-left: 3px solid #7c3aed;
+        
+        &:hover {
+            background-color: #f3e8ff;
+        }
+        
+        &.selected {
+            background-color: #ede9fe;
+            border-left: 3px solid #7c3aed;
+        }
+    }
+
     .itemContent {
         flex: 1;
         min-width: 0; // Allow text to truncate
@@ -69,6 +83,79 @@
     .dateText {
         font-size: 0.8rem;
         color: #666;
+    }
+
+    // JBrowse context styling
+    .jbrowseContext {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0;
+        flex-wrap: wrap;
+    }
+
+    .jbrowseBadge {
+        background-color: #7c3aed;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .locusTag {
+        font-size: 0.8rem;
+        color: #1e40af;
+        background-color: #dbeafe;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-family: 'IBM Plex Mono', Monaco, Consolas, monospace;
+        letter-spacing: 0.5px;
+    }
+
+    .locusTagDescription {
+        font-family: 'IBM Plex Mono', Monaco, Consolas, monospace;
+        font-weight: 600;
+        color: #1e40af;
+        background-color: #dbeafe;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+    }
+
+    .geneName {
+        font-size: 0.75rem;
+        color: #059669;
+        background-color: #d1fae5;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+
+    .genomeInfo {
+        font-size: 0.75rem;
+        color: #7c3aed;
+        background-color: #ede9fe;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+
+    .productInfo {
+        font-size: 0.75rem;
+        color: #dc2626;
+        background-color: #fee2e2;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 500;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .deleteButton {

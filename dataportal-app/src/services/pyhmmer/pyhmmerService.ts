@@ -195,7 +195,7 @@ export class PyhmmerService extends BaseService {
     }
 
     // NEW: Unified search execution method (replaces PyhmmerSearchService)
-    static async executeSearch(proteinSequence: string, database: string = PYHMMER_CONSTANTS.DATABASES.DEFAULT): Promise<PyhmmerSearchResult[]> {
+    static async executeSearch(proteinSequence: string, database: string = PYHMMER_CONSTANTS.DATABASES.DEFAULT): Promise<{results: PyhmmerSearchResult[], jobId: string}> {
         try {
             // Convert to FASTA format
             const fastaSequence = `>protein\n${proteinSequence}`;
@@ -216,7 +216,7 @@ export class PyhmmerService extends BaseService {
             if (response.id) {
                 // Poll for results
                 const results = await this.pollJobStatus(response.id);
-                return results;
+                return { results, jobId: response.id };
             } else {
                 throw new Error('Failed to submit search');
             }
