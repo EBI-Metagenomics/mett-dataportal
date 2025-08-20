@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {PyhmmerSearchResult, PyhmmerService} from '../../../../services/pyhmmer';
 import styles from './PyhmmerResultsDisplay.module.scss';
 
@@ -8,6 +8,9 @@ interface PyhmmerResultsDisplayProps {
 }
 
 export const PyhmmerResultsDisplay: React.FC<PyhmmerResultsDisplayProps> = ({results, onClear}) => {
+    const [visibleCount, setVisibleCount] = useState(10);
+    const RESULTS_PER_PAGE = 10;
+
     if (!Array.isArray(results) || results.length === 0) {
         return (
             <div className={styles.noResultsMessage}>
@@ -21,8 +24,14 @@ export const PyhmmerResultsDisplay: React.FC<PyhmmerResultsDisplayProps> = ({res
         PyhmmerService.isResultSignificant(result)
     ).length;
 
-    // Show top 10 results
-    const resultsToShow = results.slice(0, 10);
+    // Show results based on current visible count
+    const resultsToShow = results.slice(0, visibleCount);
+    
+    const handleShowMore = () => {
+        setVisibleCount((prev: number) => Math.min(prev + RESULTS_PER_PAGE, results.length));
+    };
+    
+    const hasMoreResults = visibleCount < results.length;
 
     return (
         <div className={styles.resultsContainer}>
@@ -72,9 +81,26 @@ export const PyhmmerResultsDisplay: React.FC<PyhmmerResultsDisplayProps> = ({res
             </div>
 
             {/* Footer section */}
-            {results.length > 10 && (
+            {hasMoreResults && (
                 <div className={styles.resultsFooter}>
-                    ... and {results.length - 10} more results
+                    <span className={styles.resultsCount}>
+                        Showing {visibleCount} of {results.length} results
+                    </span>
+                    <button
+                        onClick={handleShowMore}
+                        className={styles.showMoreButton}
+                    >
+                        Show More...
+                        {/* Show More ({Math.min(RESULTS_PER_PAGE, results.length - visibleCount)}) */}
+                    </button>
+                </div>
+            )}
+            
+            {!hasMoreResults && results.length > 10 && (
+                <div className={styles.resultsFooter}>
+                    <span className={styles.resultsCount}>
+                        Showing all {results.length} results
+                    </span>
                 </div>
             )}
 
