@@ -132,21 +132,49 @@ export const PyhmmerIntegration: React.FC = () => {
 
         // Function to style the search button
         const styleSearchButton = () => {
-            // Hide unwanted attributes first
+            // Hide unwanted attributes first - SAFE VERSION
             const hideUnwantedAttributes = () => {
-                const allElements = document.querySelectorAll('*');
-                allElements.forEach(element => {
-                    const text = element.textContent || '';
-                    if (text.includes('pyhmmerSearch.proteinSequence') ||
-                        text.includes('pyhmmerSearch.proteinLength') ||
-                        text.includes('pyhmmerSearch.pyhmmerSearchLink')) {
-                        // Only hide the field name elements, not the value elements
-                        if (element.classList.contains('css-ify9vk-fieldName')) {
-                            console.log('PyhmmerIntegration: Hiding unwanted attribute name:', text);
-                            (element as HTMLElement).style.display = 'none';
-                        }
+                try {
+                    console.log('PyhmmerIntegration: Starting to hide unwanted attributes...');
+                    
+                    // Only look for elements within the current feature panel, not the entire document
+                    const featurePanel = document.querySelector('.MuiAccordionDetails-root, [role="region"]');
+                    if (!featurePanel) {
+                        console.log('PyhmmerIntegration: No feature panel found, skipping attribute hiding');
+                        return;
                     }
-                });
+                    
+                    // Look for specific PyHMMER attribute elements within the panel only
+                    const pyhmmerElements = featurePanel.querySelectorAll('*');
+                    console.log('PyhmmerIntegration: Checking', pyhmmerElements.length, 'elements in feature panel');
+                    
+                    let hiddenCount = 0;
+                    pyhmmerElements.forEach((element) => {
+                        try {
+                            const text = element.textContent || '';
+                            
+                            // Only hide elements that are clearly PyHMMER attributes
+                            if (text.includes('pyhmmerSearch.proteinSequence') ||
+                                text.includes('pyhmmerSearch.proteinLength') ||
+                                text.includes('pyhmmerSearch.pyhmmerSearchLink')) {
+                                
+                                // Make sure we don't hide the element we're about to style
+                                if (!text.includes('Search Protein Domains')) {
+                                    console.log('PyhmmerIntegration: Hiding PyHMMER attribute:', text.substring(0, 50) + '...');
+                                    (element as HTMLElement).style.display = 'none';
+                                    hiddenCount++;
+                                }
+                            }
+                        } catch (elementError) {
+                            console.warn('PyhmmerIntegration: Error processing element:', elementError);
+                        }
+                    });
+                    
+                    console.log('PyhmmerIntegration: Hidden', hiddenCount, 'PyHMMER attribute elements');
+                    
+                } catch (error) {
+                    console.error('PyhmmerIntegration: Error in hideUnwantedAttributes:', error);
+                }
             };
 
             hideUnwantedAttributes();
@@ -207,6 +235,24 @@ export const PyhmmerIntegration: React.FC = () => {
                                             }
                                         }
                                     }
+                                    
+                                    // Clean and deduplicate the sequence if found
+                                    if (sequence) {
+                                        // Remove any non-amino acid characters
+                                        sequence = sequence.replace(/[^A-Z*]/g, '');
+                                        
+                                        // Check if sequence is duplicated within itself
+                                        if (sequence.length > 200) {
+                                            const halfLength = Math.floor(sequence.length / 2);
+                                            const firstHalf = sequence.substring(0, halfLength);
+                                            const secondHalf = sequence.substring(halfLength);
+                                            
+                                            if (firstHalf === secondHalf) {
+                                                console.log('PyhmmerIntegration: Detected duplicated sequence, using first half only');
+                                                sequence = firstHalf;
+                                            }
+                                        }
+                                    }
 
                                     if (sequence) {
                                         console.log('PyhmmerIntegration: Sequence found, injecting search panel');
@@ -235,7 +281,7 @@ export const PyhmmerIntegration: React.FC = () => {
                                         
                                         // Inject the search panel with the temporary job ID for tracking
                                         injectPyhmmerSearchIntoFeaturePanel(sequence, tempJobId);
-                                    } else {
+            } else {
                                         console.log('PyhmmerIntegration: Could not find sequence');
                                     }
                                 }

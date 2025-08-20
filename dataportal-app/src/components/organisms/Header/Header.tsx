@@ -25,6 +25,7 @@ const Header: React.FC = () => {
                         style={{
                             maxWidth: '55em',
                             width: '100%',
+                            zIndex: 1,
                         }}
                     >
                         <h2 className="vf-hero__heading" style={{maxWidth: "50ch"}}>Microbial Ecosystems Transversal
