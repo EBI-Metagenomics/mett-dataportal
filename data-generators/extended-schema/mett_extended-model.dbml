@@ -77,7 +77,7 @@ Table gene {
 
 Table protein {
 	id serial [ pk, unique ]
-	uniprot_id text [ not null, unique ]
+	uniprot_id text [ not null ]
 	protein_sequence text
 	protein_full_name text
 }
@@ -205,15 +205,14 @@ Table drug {
 }
 
 Table SP5_drug_bacteria_metabolism {
-  id serial [pk]
-  strain_id integer
-  drug_id integer
-  compound_id integer  // optional reference
-  drug_metabolism_percent float
-  drug_metabolism_pval float
-  drug_metabolism_fdr float
-  metabolizer_classification text
-  experimental_condition_id integer
+	id serial [ pk, unique ]
+	strain_id integer
+	drug_id integer
+	drug_metabolism_percent float
+	drug_metabolism_pval float
+	drug_metabolism_fdr float
+	metabolizer_classification text
+	experimental_condition_id integer
 
 	indexes {
 		(strain_id, drug_id) [ name: 'SP5_drug_bacteria_metabolism_unique_idx', unique ]
@@ -221,24 +220,26 @@ Table SP5_drug_bacteria_metabolism {
 }
 
 Table SP5_drug_bacteria_mic {
-  id serial [pk]
-  strain_id integer
-  drug_id integer
-  relation text
-  mic_um float
-  experimental_condition_id integer
+	id serial [ pk, unique ]
+	strain_id integer
+	drug_id integer
+	relation text
+	mic_um float
+	experimental_condition_id integer
 
 	indexes {
 		(strain_id, drug_id) [ name: 'SP5_drug_bacteria_mic_unique_idx', unique ]
 	}
 }
 
-Table SP5_operon_prediction {
+Table SP3_operon_prediction {
 	id serial [ pk, unique ]
 	strain_id integer [ not null ]
 	gene_a_id integer [ not null ]
 	gene_b_id integer [ not null ]
 	operon_id text [ not null ]
+	has_tss boolean
+	has_terminator boolean
 	prediction_confidence double
 	prediction_method text
 	experimental_condition_id integer
@@ -285,23 +286,96 @@ Table SP2_ppi_interaction {
 	id serial [ pk, unique ]
 	protein_id_a integer [ not null ]
 	protein_id_b integer [ not null ]
-    dl_score float               // ds_score
-    comelt_score float           // tt_score
-    perturbation_score float     // perturb_score
-    abundance_score float        // gp_score
-    melt_score float             // melt_score
-    secondary_score float        // sec_score
-    bayesian_score float         // bn_score
-    string_score float           // string_physical_score
-    operon_score float
-    ecocyc_score float
-    xlms_peptides text
-    xlms_files text
-    experimental_condition_id integer
+	dl_score float
+	comelt_score float
+	perturbation_score float
+	abundance_score float
+	melt_score float
+	secondary_score float
+	bayesian_score float
+	string_score float
+	operon_score float
+	ecocyc_score float
+	xlms_peptides text
+	xlms_files text
+	experimental_condition_id integer
 
 	indexes {
 		(protein_id_a, protein_id_b) [ name: 'SP2_ppi_unique_idx', unique ]
 	}
+}
+
+Table reaction {
+	id text [ pk, unique ]
+	name text
+	gpr_rule text
+}
+
+Table gene_reaction {
+	id serial [ pk, unique ]
+	locus_tag text [ not null ]
+	reaction_id text
+
+	indexes {
+		(locus_tag, reaction_id) [ name: 'gene_reaction_unique_idx', unique ]
+	}
+}
+
+Table metabolite {
+	id text [ pk, unique ]
+	name text
+	compound_id integer
+}
+
+Table metabolite_reaction {
+	id serial [ pk, unique ]
+	metabolite_id text
+	reaction_id text
+	role text [ not null ]
+
+	indexes {
+		(reaction_id, metabolite_id, role) [ name: 'metabolite_reaction_idx' ]
+	}
+}
+
+Table ortholog_pair {
+	id serial [ pk, unique ]
+	gene_a_locus_tag text [ not null ]
+	gene_b_locus_tag text [ not null ]
+	orthology_type text
+	oma_group text
+
+	indexes {
+		(gene_a_locus_tag, gene_b_locus_tag) [ name: 'ortholog_pair_unique_idx', unique ]
+	}
+}
+
+Ref fk_compound_id_metabolite {
+	compound.id < metabolite.compound_id [ delete: no action, update: no action ]
+}
+
+Ref fk_gene_reaction_locus_tag_gene {
+	gene_reaction.locus_tag > gene.locus_tag [ delete: no action, update: no action ]
+}
+
+Ref fk_metabolite_reaction_metabolite_id_metabolite {
+	metabolite_reaction.metabolite_id > metabolite.id [ delete: no action, update: no action ]
+}
+
+Ref fk_metabolite_reaction_reaction_id_reaction {
+	metabolite_reaction.reaction_id > reaction.id [ delete: no action, update: no action ]
+}
+
+Ref fk_gene_reaction_reaction_id_reaction {
+	gene_reaction.reaction_id > reaction.id [ delete: no action, update: no action ]
+}
+
+Ref fk_ortholog_pair_gene_a_locus_tag_gene {
+	ortholog_pair.gene_a_locus_tag > gene.locus_tag [ delete: no action, update: no action ]
+}
+
+Ref fk_ortholog_pair_gene_b_locus_tag_gene {
+	ortholog_pair.gene_b_locus_tag > gene.locus_tag [ delete: no action, update: no action ]
 }
 
 Ref fk_strain_species_id_species {
@@ -436,10 +510,6 @@ Ref fk_SP5_drug_bacteria_metabolism_drug_id_drug {
 	SP5_drug_bacteria_metabolism.drug_id > drug.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_drug_bacteria_metabolism_compound_id_compound {
-	SP5_drug_bacteria_metabolism.compound_id > compound.id [ delete: no action, update: no action ]
-}
-
 Ref fk_SP5_drug_bacteria_metabolism_experimental_condition_id_experimental_condition {
 	SP5_drug_bacteria_metabolism.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
@@ -456,20 +526,20 @@ Ref fk_SP5_drug_bacteria_mic_experimental_condition_id_experimental_condition {
 	SP5_drug_bacteria_mic.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_operon_prediction_strain_id_strain {
-	SP5_operon_prediction.strain_id > strain.id [ delete: no action, update: no action ]
+Ref fk_SP3_operon_prediction_strain_id_strain {
+	SP3_operon_prediction.strain_id > strain.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_operon_prediction_gene_a_id_gene {
-	SP5_operon_prediction.gene_a_id > gene.id [ delete: no action, update: no action ]
+Ref fk_SP3_operon_prediction_gene_a_id_gene {
+	SP3_operon_prediction.gene_a_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_operon_prediction_gene_b_id_gene {
-	SP5_operon_prediction.gene_b_id > gene.id [ delete: no action, update: no action ]
+Ref fk_SP3_operon_prediction_gene_b_id_gene {
+	SP3_operon_prediction.gene_b_id > gene.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP5_operon_prediction_experimental_condition_id_experimental_condition {
-	SP5_operon_prediction.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
+Ref fk_SP3_operon_prediction_experimental_condition_id_experimental_condition {
+	SP3_operon_prediction.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
 Ref fk_gene_amr_gene_id_gene {
