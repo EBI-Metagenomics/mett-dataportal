@@ -79,6 +79,12 @@ const useGeneViewerState = (
                 console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
                 console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
                 console.log('✅ Custom feature widget configured for tracks')
+                
+                // Debug: Check if our adapter is registered
+                const adapterElements = state.pluginManager.getAdapterElements();
+                const ourAdapter = adapterElements.find((adapter: any) => adapter.name === 'EnhancedGeneFeatureAdapter');
+                console.log('🔧 Our adapter found:', ourAdapter);
+                console.log('🔧 All adapter types:', adapterElements.map((a: any) => a.name));
 
                 setViewState(state);
                 setInitializationError(null); // Clear any previous errors

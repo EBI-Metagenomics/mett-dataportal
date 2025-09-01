@@ -5,7 +5,7 @@ import styles from './GeneViewerControls.module.scss';
 interface GeneViewerControlsProps {
     genomeMeta: GenomeMeta | null;
     includeEssentiality: boolean;
-    onEssentialityToggle: (include: boolean) => void;
+    onEssentialityToggle?: (include: boolean) => void;
 }
 
 const GeneViewerControls: React.FC<GeneViewerControlsProps> = ({
@@ -24,7 +24,7 @@ const GeneViewerControls: React.FC<GeneViewerControlsProps> = ({
                     type="checkbox"
                     id="toggleEssentiality"
                     checked={includeEssentiality}
-                    onChange={() => onEssentialityToggle(!includeEssentiality)}
+                    onChange={() => onEssentialityToggle?.(!includeEssentiality)}
                     className={styles.essentialityCheckbox}
                 />
                 Include Essentiality in viewer

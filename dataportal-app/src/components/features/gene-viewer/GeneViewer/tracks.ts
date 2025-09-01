@@ -2,6 +2,14 @@ import {GenomeMeta} from "../../../../interfaces/Genome";
 
 const getTracks
         = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string, includeEssentiality: boolean) => {
+        console.log('🔧 getTracks called with:', {
+            genomeMeta: genomeMeta?.isolate_name,
+            type_strain: genomeMeta?.type_strain,
+            includeEssentiality,
+            gffBaseUrl,
+            apiUrl
+        });
+        
         const tracks = [];
 
         // Structural Annotation Track

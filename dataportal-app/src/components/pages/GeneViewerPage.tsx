@@ -29,11 +29,18 @@ const GeneViewerPage: React.FC = () => {
 
     // Local state
     const [height] = useState(450);
-    const [includeEssentiality, setIncludeEssentiality] = useState(true);
     const [pageSize, setPageSize] = useState(DEFAULT_PER_PAGE_CNT);
 
     // Custom hooks for data management
     const geneViewerData = useGeneViewerData();
+    
+    // Determine if essentiality should be included based on strain capabilities
+    const includeEssentiality = useMemo(() => {
+        if (!geneViewerData.genomeMeta) return false;
+        
+        // Only include essentiality for type strains that likely have this data
+        return geneViewerData.genomeMeta.type_strain === true;
+    }, [geneViewerData.genomeMeta]);
     const geneViewerSearch = useGeneViewerSearch({
         genomeMeta: geneViewerData.genomeMeta,
         setLoading: geneViewerData.setLoading,
@@ -72,6 +79,8 @@ const GeneViewerPage: React.FC = () => {
     );
 
     const handleTrackRefresh = useCallback(() => {
+        console.log('🔧 handleTrackRefresh called with:', { includeEssentiality, hasViewState: !!viewState });
+        
         if (!viewState) return;
         
         const session = viewState.session;
@@ -79,12 +88,16 @@ const GeneViewerPage: React.FC = () => {
         if (!view) return;
 
         try {
+            console.log('🔧 Hiding track: structural_annotation');
             view.hideTrack('structural_annotation');
 
             const newTrack = geneViewerConfig.tracks.find(
                 (track: any) => track.trackId === 'structural_annotation'
             );
+            console.log('🔧 Found track:', newTrack?.trackId, 'with adapter:', newTrack?.adapter?.type);
+            
             if (newTrack) {
+                console.log('🔧 Showing track with includeEssentiality:', includeEssentiality);
                 view.showTrack('structural_annotation', {
                     ...newTrack,
                     adapter: {
@@ -99,6 +112,7 @@ const GeneViewerPage: React.FC = () => {
     }, [viewState, geneViewerConfig.tracks, includeEssentiality]);
 
     useEffect(() => {
+        console.log('🔧 Track refresh effect triggered');
         handleTrackRefresh();
     }, [handleTrackRefresh]);
 
@@ -185,7 +199,6 @@ const GeneViewerPage: React.FC = () => {
                     <GeneViewerControls
                         genomeMeta={geneViewerData.genomeMeta}
                         includeEssentiality={includeEssentiality}
-                        onEssentialityToggle={setIncludeEssentiality}
                     />
 
                     {/* Main JBrowse content */}

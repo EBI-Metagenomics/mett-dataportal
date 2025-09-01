@@ -11,17 +11,39 @@ export class FeatureProcessor {
         const attributes = feature.get('attributes') || {};
         const locusTag = attributes.locus_tag;
 
+        console.log('🔧 fetchProteinSequence called for feature:', {
+            hasAttributes: !!attributes,
+            locusTag,
+            featureKeys: Object.keys(feature.toJSON())
+        });
+
         if (!locusTag) {
+            console.log('🔧 No locus tag found, returning feature as-is');
             return feature;
         }
 
         try {
+            console.log('🔧 Fetching protein sequence for locus tag:', locusTag);
             const proteinData = await GeneService.fetchGeneProteinSeq(locusTag);
-
-            feature.set('attributes', {
-                ...attributes,
-                protein_sequence: proteinData.protein_sequence
+            console.log('🔧 Protein data received:', {
+                hasSequence: !!proteinData.protein_sequence,
+                sequenceLength: proteinData.protein_sequence?.length || 0
             });
+
+            // Create a new feature with protein sequence as a direct property
+            const updatedFeature = new SimpleFeature({
+                ...feature.toJSON(),
+                protein_sequence: proteinData.protein_sequence  // Set as direct property
+            });
+            
+            console.log('🔧 Protein sequence set on feature');
+            console.log('🔧 Feature after setting protein sequence:', {
+                hasProteinSequence: !!updatedFeature.get('protein_sequence'),
+                proteinSequenceLength: updatedFeature.get('protein_sequence')?.length || 0,
+                allKeys: Object.keys(updatedFeature.toJSON())
+            });
+            
+            return updatedFeature;
         } catch (error) {
             console.warn(`Failed to fetch protein sequence for ${locusTag}:`, error);
         }
@@ -32,16 +54,32 @@ export class FeatureProcessor {
      * Flatten attributes from SimpleFeature to make them directly accessible
      */
     static flattenAttributes(features: SimpleFeature[]): SimpleFeature[] {
-        return features.map(feature => {
+        console.log('🔧 flattenAttributes called with', features.length, 'features');
+        
+        return features.map((feature, index) => {
+            console.log(`🔧 Before toJSON for feature ${index}:`, {
+                hasProteinSequence: !!feature.get('protein_sequence'),
+                proteinSequenceLength: feature.get('protein_sequence')?.length || 0
+            });
+            
             const featureData = feature.toJSON();
             const attributes = featureData.attributes && typeof featureData.attributes === 'object'
                 ? featureData.attributes as Record<string, string>
                 : {};
             
+            console.log(`🔧 Processing feature ${index}:`, {
+                hasAttributes: !!attributes,
+                attributeKeys: Object.keys(attributes),
+                locusTag: attributes.locus_tag,
+                hasProteinSequenceInData: !!featureData.protein_sequence,
+                proteinSequenceInDataLength: (featureData.protein_sequence as string)?.length || 0
+            });
+            
             const {attributes: _, ...featureWithoutAttributes} = featureData;
             
             // Add PyHMMER search information
             const pyhmmerInfo = this.createPyhmmerSearchInfo(feature);
+            console.log(`🔧 PyHMMER info for feature ${index}:`, pyhmmerInfo ? 'created' : 'null');
             
             const newFeature = new SimpleFeature({
                 ...featureWithoutAttributes,
@@ -59,10 +97,19 @@ export class FeatureProcessor {
     static createPyhmmerSearchInfo(feature: SimpleFeature): any {
         const proteinSequence = feature.get('protein_sequence');
         
+        console.log('🔧 createPyhmmerSearchInfo called for feature:', {
+            hasProteinSequence: !!proteinSequence,
+            proteinSequenceLength: proteinSequence?.length || 0,
+            featureKeys: Object.keys(feature.toJSON())
+        });
+        
         if (!proteinSequence) {
+            console.log('🔧 No protein sequence found, returning null');
             return null;
         }
 
+        console.log('🔧 Creating PyHMMER info for protein sequence length:', proteinSequence.length);
+        
         // Return the search link that will appear in JBrowse feature panel
         return {
             proteinSequence: proteinSequence, // Keep the actual sequence for search
