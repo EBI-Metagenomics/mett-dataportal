@@ -59,6 +59,40 @@ We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config file
 #### Elasticsearch Database setup
 ```shell
 $ python manage.py create_es_index
+$ python manage.py create_es_indexes --es-version 2025.09.03
+$ python manage.py create_es_indexes --es-version 2025.09.03 --if-exists recreate
+```
+#### Import data
+
+##### Strains
+Strains + contigs only:
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index-2025.09.03 \
+  --csv ../data-generators/data/gff-assembly-prefixes.tsv \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
+  --set-type-strains BU_ATCC8492 PV_ATCC8482
+```
+Add Drug MIC:
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index-2025.09.03 \
+  --include-mic \
+  --mic-bu-file /path/to/BU_growth_inhibition.csv \
+  --mic-pv-file /path/to/PV_growth_inhibition.csv
+```
+Add Drug Metabolism:
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index-2025.09.03 \
+  --include-metabolism \
+  --metab-bu-file /path/to/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file /path/to/SP5_drug_metabolism_PV_v0.csv
+
+```
+
+```shell
 $ python manage.py import_species --csv ../data-generators/data/species.csv
 $ python manage.py import_strains_contigs --csv ../data-generators/data/gff-assembly-prefixes.tsv  --set-type-strains BU_ATCC8492 PV_ATCC8482
 $ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv --essentiality-csv ../data-generators/data/essentiality_table_all_libraries_240818_14102024.csv
