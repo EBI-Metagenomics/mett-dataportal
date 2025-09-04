@@ -2,31 +2,31 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand
 
 from dataportal.ingest.es_repo import StrainIndexRepository
-from dataportal.ingest.strain.importers import (
-    StrainContigImporter, DrugMICImporter, DrugMetabolismImporter
-)
 from dataportal.ingest.strain.parsers import read_mapping_tsv
+from dataportal.ingest.strain.importers import StrainContigImporter
+from dataportal.ingest.strain.drug_importers import DrugMICUpserter, DrugMetabolismUpserter
 
 class Command(BaseCommand):
-    help = "Imports strains/contigs from FTP and (optionally) Drug MIC & Metabolism from local CSVs into a concrete ES index."
+    help = "Single entrypoint: optionally import strains/contigs (FTP) and upsert Drug MIC/Metabolism into a concrete ES index."
 
     def add_arguments(self, parser):
         parser.add_argument("--es-index", required=True, help="Concrete ES index (e.g., strain_index-2025.09.03)")
 
-        # FTP strain/contigs
-        parser.add_argument("--ftp-server", type=str, default="ftp.ebi.ac.uk")
-        parser.add_argument("--ftp-directory", type=str, default="/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/")
-        parser.add_argument("--map-tsv", type=str, default="../data-generators/data/gff-assembly-prefixes.tsv",
+        # Step A: strains/contigs (optional)
+        parser.add_argument("--skip-strains", action="store_true", help="Skip FTP strain/contig import")
+        parser.add_argument("--ftp-server", default="ftp.ebi.ac.uk")
+        parser.add_argument("--ftp-directory", default="/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/")
+        parser.add_argument("--map-tsv", default="../data-generators/data/gff-assembly-prefixes.tsv",
                             help="TSV with columns: assembly, prefix")
-        parser.add_argument("--set-type-strains", nargs="+", help="e.g., BU_ATCC8492 PV_ATCC8482")
+        parser.add_argument("--set-type-strains", nargs="*", help="If provided, set only these isolates to type_strain=True; others False. If omitted, preserve existing flags.")
 
-        # feature flags
+        # Step B: MIC upsert (optional)
         parser.add_argument("--include-mic", action="store_true")
-        parser.add_argument("--include-metabolism", action="store_true")
-
-        # local CSVs
         parser.add_argument("--mic-bu-file", type=str)
         parser.add_argument("--mic-pv-file", type=str)
+
+        # Step C: Metabolism upsert (optional)
+        parser.add_argument("--include-metabolism", action="store_true")
         parser.add_argument("--metab-bu-file", type=str)
         parser.add_argument("--metab-pv-file", type=str)
 
@@ -34,40 +34,45 @@ class Command(BaseCommand):
         es_index = opts["es_index"]
         repo = StrainIndexRepository(concrete_index=es_index)
 
-        # 1) strains + contigs
-        self.stdout.write(self.style.SUCCESS("Importing strains/contigs..."))
-        mapping = read_mapping_tsv(opts["map_tsv"])
-        StrainContigImporter(
-            repo=repo,
-            ftp_server=opts["ftp_server"],
-            ftp_directory=opts["ftp_directory"],
-            assembly_to_isolate=mapping,
-            type_strains=opts.get("set_type_strains"),
-        ).run()
-        self.stdout.write(self.style.SUCCESS("Strains/contigs done."))
+        # A) Strains/Contigs (FTP) — only if not skipped
+        if not opts["skip_strains"]:
+            self.stdout.write(self.style.SUCCESS("Importing strains/contigs from FTP..."))
+            mapping = read_mapping_tsv(opts["map_tsv"])
+            # If --set-type-strains is omitted => None => DO NOT modify existing type_strain flags
+            type_list = opts.get("set_type_strains", None)
+            StrainContigImporter(
+                repo=repo,
+                ftp_server=opts["ftp_server"],
+                ftp_directory=opts["ftp_directory"],
+                assembly_to_isolate=mapping,
+                type_strains=type_list,  # None preserves; [] resets all to False; list sets True as given
+            ).run()
+            self.stdout.write(self.style.SUCCESS("Strains/contigs import complete."))
+        else:
+            self.stdout.write(self.style.WARNING("Skipped strains/contigs (--skip-strains)."))
 
-        # 2) MIC (optional)
+        # B) MIC upsert
         if opts["include_mic"]:
-            self.stdout.write(self.style.SUCCESS("Importing Drug MIC..."))
-            DrugMICImporter(
+            self.stdout.write(self.style.SUCCESS("Upserting Drug MIC..."))
+            DrugMICUpserter(
                 repo=repo,
                 bu_csv=opts.get("mic_bu_file"),
                 pv_csv=opts.get("mic_pv_file"),
             ).run()
-            self.stdout.write(self.style.SUCCESS("Drug MIC done."))
+            self.stdout.write(self.style.SUCCESS("Drug MIC upsert complete."))
         else:
-            self.stdout.write(self.style.WARNING("Drug MIC skipped."))
+            self.stdout.write(self.style.WARNING("MIC upsert skipped (no --include-mic)."))
 
-        # 3) Metabolism (optional)
+        # C) Metabolism upsert
         if opts["include_metabolism"]:
-            self.stdout.write(self.style.SUCCESS("Importing Drug Metabolism..."))
-            DrugMetabolismImporter(
+            self.stdout.write(self.style.SUCCESS("Upserting Drug Metabolism..."))
+            DrugMetabolismUpserter(
                 repo=repo,
                 bu_csv=opts.get("metab_bu_file"),
                 pv_csv=opts.get("metab_pv_file"),
             ).run()
-            self.stdout.write(self.style.SUCCESS("Drug Metabolism done."))
+            self.stdout.write(self.style.SUCCESS("Drug Metabolism upsert complete."))
         else:
-            self.stdout.write(self.style.WARNING("Drug Metabolism skipped."))
+            self.stdout.write(self.style.WARNING("Metabolism upsert skipped (no --include-metabolism)."))
 
-        self.stdout.write(self.style.SUCCESS("All imports finished."))
+        self.stdout.write(self.style.SUCCESS("All tasks finished."))

@@ -64,12 +64,22 @@ $ python manage.py create_es_indexes --es-version 2025.09.03 --if-exists recreat
 ```
 #### Import data
 
+##### Species
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index-2025.09.03 \
+  --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
+  --set-type-strains BU_ATCC8492 PV_ATCC8482
+```
+
 ##### Strains
 Strains + contigs only:
 ```shell
 $ python manage.py import_strains \
   --es-index strain_index-2025.09.03 \
-  --csv ../data-generators/data/gff-assembly-prefixes.tsv \
+  --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
   --set-type-strains BU_ATCC8492 PV_ATCC8482
@@ -78,17 +88,19 @@ Add Drug MIC:
 ```shell
 $ python manage.py import_strains \
   --es-index strain_index-2025.09.03 \
+  --skip-strains \
   --include-mic \
-  --mic-bu-file /path/to/BU_growth_inhibition.csv \
-  --mic-pv-file /path/to/PV_growth_inhibition.csv
+  --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
+  --mic-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/PV_growth_inhibition.csv
 ```
 Add Drug Metabolism:
 ```shell
 $ python manage.py import_strains \
   --es-index strain_index-2025.09.03 \
+  --skip-strains \
   --include-metabolism \
-  --metab-bu-file /path/to/SP5_drug_metabolism_BU_v0.csv \
-  --metab-pv-file /path/to/SP5_drug_metabolism_PV_v0.csv
+  --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv
 
 ```
 

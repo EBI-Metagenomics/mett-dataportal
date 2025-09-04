@@ -1,16 +1,24 @@
 from __future__ import annotations
-from typing import Dict, Iterable, List, Tuple, Optional
+from typing import Iterable, Tuple, Optional, List, Dict
 import os
-import ftplib
 import pandas as pd
 from Bio import SeqIO
+import ftplib
+
+def _safe_float(x) -> Optional[float]:
+    try:
+        return float(x)
+    except Exception:
+        return None
 
 def read_mapping_tsv(path: str) -> Dict[str, str]:
     """TSV with columns: assembly, prefix"""
     df = pd.read_csv(path, sep="\t")
     return dict(zip(df["assembly"], df["prefix"]))
 
-def iter_mic_rows(csv_paths: List[str]) -> Iterable[Tuple[str, dict]]:
+# -------- MIC & Metabolism CSVs --------
+
+def iter_mic_rows(csv_paths: List[str], default_unit: str = "uM") -> Iterable[Tuple[str, dict]]:
     """
     Yields (strain, payload) from MIC CSVs with columns: Strain, Drug, relation, drug_conc_um
     """
@@ -24,7 +32,7 @@ def iter_mic_rows(csv_paths: List[str]) -> Iterable[Tuple[str, dict]]:
                 "drug_name": str(row[cols.get("drug", "Drug")]).strip(),
                 "relation": str(row[cols.get("relation", "relation")]).strip(),
                 "mic_value": _safe_float(row[cols.get("drug_conc_um", "drug_conc_um")]),
-                "unit": "uM",
+                "unit": default_unit,
             }
 
 def iter_metabolism_rows(csv_paths: List[str]) -> Iterable[Tuple[str, dict]]:
@@ -42,9 +50,18 @@ def iter_metabolism_rows(csv_paths: List[str]) -> Iterable[Tuple[str, dict]]:
                 "degr_percent": _safe_float(row[cols.get("degr_perc", "DEGR_PERC")]),
                 "pval": _safe_float(row[cols.get("pval", "PVAL")]),
                 "fdr": _safe_float(row[cols.get("pfdr", "PFDR")]),
-                "metabolizer_classification": str(row[cols.get("metabolizer", "Metabolizer")]).strip()
-                    if cols.get("metabolizer") or "Metabolizer" in df.columns else None,
+                "metabolizer_classification": (
+                    str(row[cols.get("metabolizer", "Metabolizer")]).strip()
+                    if (cols.get("metabolizer") or "Metabolizer" in df.columns) else None
+                ),
             }
+
+# -------- FTP helpers for strain/contigs --------
+
+def ftp_connect(server: str) -> ftplib.FTP:
+    ftp = ftplib.FTP(server)
+    ftp.login()
+    return ftp
 
 def ftp_list_fasta(ftp: ftplib.FTP, directory: str) -> List[str]:
     ftp.cwd(directory)
@@ -53,17 +70,11 @@ def ftp_list_fasta(ftp: ftplib.FTP, directory: str) -> List[str]:
 def ftp_download(ftp: ftplib.FTP, remote: str, local: str) -> None:
     ftp.voidcmd("TYPE I")
     with open(local, "wb") as f:
-        ftp.retrbinary(f"RETR {remote}", f.write)
+        ftp.retrbinary(f"RETR " + remote, f.write)
 
 def parse_fasta_contigs(local_path: str) -> List[dict]:
-    out = []
+    out: List[dict] = []
     with open(local_path, "r") as fh:
         for record in SeqIO.parse(fh, "fasta"):
             out.append({"seq_id": record.id, "length": len(record.seq)})
     return out
-
-def _safe_float(x) -> Optional[float]:
-    try:
-        return float(x)
-    except Exception:
-        return None
