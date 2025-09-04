@@ -57,7 +57,6 @@ class DrugMetabolismUpserter(BaseImporter):
     repo: StrainIndexRepository
     bu_csv: Optional[str] = None
     pv_csv: Optional[str] = None
-    significance_fdr: float = 0.05
 
     @staticmethod
     def _dedup(existing: List[dict], new_items: List[dict]) -> List[dict]:
@@ -83,8 +82,7 @@ class DrugMetabolismUpserter(BaseImporter):
         by_strain: Dict[str, List[dict]] = {}
         for strain, payload in iter_metabolism_rows([self.bu_csv, self.pv_csv]):
             strain = normalize_strain_id(strain)
-            fdr = payload.get("fdr")
-            payload["is_significant"] = (fdr is not None and fdr < self.significance_fdr)
+            # NOTE: no is_significant computation
             by_strain.setdefault(strain, []).append(payload)
 
         for strain, items in by_strain.items():

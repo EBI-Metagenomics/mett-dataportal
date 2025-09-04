@@ -32,7 +32,7 @@ def iter_mic_rows(csv_paths: List[str], default_unit: str = "uM") -> Iterable[Tu
                 "drug_name": str(row[cols.get("drug", "Drug")]).strip(),
                 "relation": str(row[cols.get("relation", "relation")]).strip(),
                 "mic_value": _safe_float(row[cols.get("drug_conc_um", "drug_conc_um")]),
-                "unit": default_unit,
+                # "unit": default_unit,
             }
 
 def iter_metabolism_rows(csv_paths: List[str]) -> Iterable[Tuple[str, dict]]:
