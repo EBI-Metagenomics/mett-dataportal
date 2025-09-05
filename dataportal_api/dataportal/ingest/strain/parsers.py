@@ -78,3 +78,24 @@ def parse_fasta_contigs(local_path: str) -> List[dict]:
         for record in SeqIO.parse(fh, "fasta"):
             out.append({"seq_id": record.id, "length": len(record.seq)})
     return out
+
+def ftp_list_gff_for_isolate(ftp: ftplib.FTP, gff_base: str, isolate: str) -> List[str]:
+    """
+    Returns full remote paths for GFF files under:
+      <gff_base>/<isolate>/functional_annotation/merged_gff/
+    """
+    gff_dir = f"{gff_base.rstrip('/')}/{isolate}/functional_annotation/merged_gff"
+    try:
+        lst = ftp.nlst(gff_dir)
+    except Exception:
+        return []
+    return [p for p in lst if p.endswith(".gff")]
+
+def choose_primary_gff(gff_paths: List[str]) -> str | None:
+    """
+    Choose one GFF per isolate; prefer '*_annotations.gff', else first sorted.
+    """
+    if not gff_paths:
+        return None
+    preferred = [p for p in gff_paths if p.endswith("_annotations.gff")]
+    return sorted(preferred or gff_paths)[0]

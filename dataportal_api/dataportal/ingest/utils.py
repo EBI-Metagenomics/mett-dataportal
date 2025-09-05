@@ -22,3 +22,47 @@ def strain_prefix(isolate_name: str) -> Optional[str]:
 def species_name_for_isolate(isolate_name: str) -> Optional[str]:
     acr = strain_prefix(isolate_name)
     return SPECIES_NAME_BY_ACRONYM.get(acr)
+
+
+def parse_dbxref(dbxref_string):
+    if not dbxref_string or not dbxref_string.strip():
+        return [], None, None
+    parsed, uniprot_id, cog_id = [], None, None
+    for entry in dbxref_string.split(","):
+        parts = entry.split(":", 1)
+        if len(parts) != 2:
+            continue
+        db, ref = parts
+        parsed.append({"db": db, "ref": ref})
+        if db == "UniProt":
+            uniprot_id = ref
+        elif db == "COG":
+            cog_id = ref
+    return parsed, uniprot_id, cog_id
+
+def parse_ig_neighbors(feature_id: str):
+    # Expect: IG-between-<A>-and-<B>
+    try:
+        core = feature_id.split("IG-between-")[1]
+        left, right = core.split("-and-")
+        return left, right
+    except Exception:
+        return None, None
+
+def read_tsv_mapping(path, key_col, val_col, strip_suffix=".fa"):
+    mapping = {}
+    with open(path, "r") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        for row in reader:
+            v = row[val_col]
+            if strip_suffix and v.endswith(strip_suffix):
+                v = v[: -len(strip_suffix)]
+            mapping[row[key_col]] = v
+    return mapping
+
+def pick(d: dict, *keys, default=None):
+    """Return first non-empty key value from dict."""
+    for k in keys:
+        if k in d and d[k] not in (None, "", []):
+            return d[k]
+    return default

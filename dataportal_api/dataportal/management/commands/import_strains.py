@@ -5,6 +5,8 @@ from dataportal.ingest.es_repo import StrainIndexRepository
 from dataportal.ingest.strain.parsers import read_mapping_tsv
 from dataportal.ingest.strain.importers import StrainContigImporter
 from dataportal.ingest.strain.drug_importers import DrugMICUpserter, DrugMetabolismUpserter
+from dataportal.ingest.strain.resolver import StrainResolver
+
 
 class Command(BaseCommand):
     help = "Single entrypoint: optionally import strains/contigs (FTP) and upsert Drug MIC/Metabolism into a concrete ES index."
@@ -29,10 +31,13 @@ class Command(BaseCommand):
         parser.add_argument("--include-metabolism", action="store_true")
         parser.add_argument("--metab-bu-file", type=str)
         parser.add_argument("--metab-pv-file", type=str)
+        parser.add_argument("--gff-server", type=str, help="FTP server for GFFs (optional)")
+        parser.add_argument("--gff-base", type=str, help="Base directory for GFFs on the GFF server (optional)")
 
     def handle(self, *args, **opts):
         es_index = opts["es_index"]
         repo = StrainIndexRepository(concrete_index=es_index)
+
 
         # A) Strains/Contigs (FTP) — only if not skipped
         if not opts["skip_strains"]:
@@ -45,17 +50,25 @@ class Command(BaseCommand):
                 ftp_server=opts["ftp_server"],
                 ftp_directory=opts["ftp_directory"],
                 assembly_to_isolate=mapping,
-                type_strains=type_list,  # None preserves; [] resets all to False; list sets True as given
+                type_strains=type_list,
+                gff_server=opts.get("gff_server"),
+                gff_base=opts.get("gff_base"),
             ).run()
             self.stdout.write(self.style.SUCCESS("Strains/contigs import complete."))
         else:
             self.stdout.write(self.style.WARNING("Skipped strains/contigs (--skip-strains)."))
+
+
+        # 0) Load resolver once per run
+        resolver = StrainResolver(index=es_index)
+        resolver.load()
 
         # B) MIC upsert
         if opts["include_mic"]:
             self.stdout.write(self.style.SUCCESS("Upserting Drug MIC..."))
             DrugMICUpserter(
                 repo=repo,
+                resolver=resolver,
                 bu_csv=opts.get("mic_bu_file"),
                 pv_csv=opts.get("mic_pv_file"),
             ).run()
@@ -68,6 +81,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("Upserting Drug Metabolism..."))
             DrugMetabolismUpserter(
                 repo=repo,
+                resolver=resolver,
                 bu_csv=opts.get("metab_bu_file"),
                 pv_csv=opts.get("metab_pv_file"),
             ).run()

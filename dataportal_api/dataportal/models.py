@@ -54,6 +54,8 @@ class StrainDocument(Document):
         search_analyzer="standard",
         fields={"keyword": Keyword(normalizer=lowercase_normalizer)},
     )
+    isolate_key = Keyword()  # data cleanup resolver attribute
+
     assembly_name = Text(
         analyzer=autocomplete_analyzer,
         search_analyzer="standard",
@@ -133,9 +135,46 @@ class StrainDocument(Document):
         return super().save(**kwargs)
 
 
-class GeneDocument(Document):
-    gene_id = Integer()
+from elasticsearch_dsl import (
+    Document,
+    Text,
+    Keyword,
+    Integer,
+    Boolean,
+    Nested,
+    Float,
+)
+
+# re-use your existing definitions
+# edge_ngram_tokenizer, autocomplete_analyzer, lowercase_normalizer
+
+
+class FeatureDocument(Document):
+    # ---- Identity ----
+    feature_id = Keyword()                                 # gene: locus_tag; IG: "IG-between-...-and-..."
+    feature_type = Keyword(normalizer=lowercase_normalizer) # 'gene' | 'IG' | others
+    element = Keyword(normalizer=lowercase_normalizer)      # gene, intergenic, ncRNA, ...
+
+    # For genes (convenience/compatibility)
+    locus_tag = Text(
+        analyzer=autocomplete_analyzer,
+        search_analyzer="standard",
+        fields={"keyword": Keyword()},
+    )                                 # still stored for genes
     uniprot_id = Keyword()
+
+    # IG context (only meaningful when feature_type == 'IG')
+    ig_locus_tag_a = Keyword()
+    ig_locus_tag_b = Keyword()
+    strand = Keyword()
+
+    # Genomic coordinates (region-level; for genes or IGs)
+    seq_id = Text(analyzer=autocomplete_analyzer,
+                  search_analyzer="standard",
+                  fields={"keyword": Keyword()})
+    start = Integer()
+    end = Integer()
+
     gene_name = Text(
         analyzer=autocomplete_analyzer,
         search_analyzer="standard",
@@ -146,16 +185,7 @@ class GeneDocument(Document):
         search_analyzer="standard",
         fields={"keyword": Keyword()},
     )
-    seq_id = Text(
-        analyzer=autocomplete_analyzer,
-        search_analyzer="standard",
-        fields={"keyword": Keyword()},
-    )
-    locus_tag = Text(
-        analyzer=autocomplete_analyzer,
-        search_analyzer="standard",
-        fields={"keyword": Keyword()},
-    )
+
     product = Text(
         analyzer=autocomplete_analyzer,
         search_analyzer="standard",
@@ -167,9 +197,8 @@ class GeneDocument(Document):
     species_acronym = Keyword(normalizer=lowercase_normalizer)
     isolate_name = Keyword()
 
-    start = Integer()
-    end = Integer()
 
+    # ---- Functional annotations (existing) ----
     cog_id = Keyword(multi=True)
     cog_funcats = Keyword(multi=True)
     kegg = Keyword(multi=True, normalizer=lowercase_normalizer)
@@ -184,7 +213,7 @@ class GeneDocument(Document):
 
     ec_number = Keyword()
 
-    essentiality = Keyword(normalizer=lowercase_normalizer)
+    essentiality = Keyword(normalizer=lowercase_normalizer)  # legacy single-value (kept for backward compatibility)
     inference = Text(fields={"keyword": Keyword()})
 
     ontology_terms = Nested(
@@ -209,20 +238,90 @@ class GeneDocument(Document):
         }
     )
 
-    # Fitness Data - Size: ~140 Conditions * 2 species
-    # (~3800 genes for P. vulgatus, 3300 genes for B. uniformis, without intergenic regions)
-    fitness_data = Nested(
+    # ---- ESSENTIALITY (new, structured) ----
+    # matches your CSV: TnSeq/TAs metrics + call + condition
+    essentiality_data = Nested(
         properties={
-            "contrast": Keyword(),
-            "lfc": Float(),
-            "fdr": Float(),
+            "experimental_condition": Keyword(),       # e.g. mGAM_undefined_rich_media
+            "TAs_in_locus": Integer(),
+            "TAs_hit": Float(),                        # fraction 0..1
+            "essentiality_call": Keyword(              # essential, not_essential, essential_solid, essential_liquid, not_classified, unclear
+                normalizer=lowercase_normalizer
+            ),
         }
     )
 
-    protein_sequence = Text(fields={"keyword": Keyword()})
+    # quick-existence flags
+    has_proteomics = Boolean()
+    has_fitness = Boolean()
+    has_mutant_growth = Boolean()
+    has_reactions = Boolean()
+
+    # ---- PROTEIN ↔ COMPOUND interactions (new) ----
+    protein_compound = Nested(
+        properties={
+            "compound": Keyword(),
+            "ttp_score": Float(),
+            "fdr": Float(),
+            "hit_calling": Boolean(),
+            "experimental_condition": Keyword(),
+        }
+    )
+
+    # ---- GENE FITNESS (new, structured) ----
+    # You already had a simpler fitness_data; we supersede/extend it here
+    fitness = Nested(
+        properties={
+            "experimental_condition": Keyword(),
+            "media": Keyword(),
+            "contrast": Keyword(),
+            "lfc": Float(),
+            "fdr": Float()
+        }
+    )
+
+    # ---- REACTIONS / GPR / METABOLITES (new) ----
+    # 1) direct gene→reaction links (many)
+    reactions = Keyword(multi=True)                    # e.g. ["ASPTA","CPPPGO",...]
+    # 2) per-reaction details + GPR and metabolite edges
+    reaction_details = Nested(
+        properties={
+            "reaction": Keyword(),
+            "gpr": Text(fields={"keyword": Keyword()}),  # e.g. "BU_... or BU_..."
+            # reaction graph edges (optional but useful for UI filters)
+            "substrates": Keyword(multi=True),
+            "products": Keyword(multi=True),
+            # convenience fields for searching metabolite involvement
+            "metabolites": Keyword(multi=True),
+        }
+    )
+
+    # ---- MUTANT GROWTH (new) ----
+    mutant_growth = Nested(
+        properties={
+            "media": Keyword(),
+            "experimental_condition": Keyword(),
+            "replicate": Integer(),
+            "tas_hit": Float(),                         # 0..1
+            "doubling_rate_h": Float(),
+        }
+    )
+
+    # ---- PROTEOMICS (new) ----
+    proteomics = Nested(
+        properties={
+            "coverage": Float(),
+            "unique_peptides": Integer(),
+            "unique_intensity": Float(),
+            "evidence": Boolean(),
+        }
+    )
+
+    # ---- Sequences (existing) ----
+    protein_sequence = Text(fields={"keyword": Keyword()})  # only for 'gene'
 
     class Index:
-        name = "gene_index"
+        name = "feature_index"
         settings = {
             "index": {"max_result_window": 500000},
             "analysis": {
@@ -234,6 +333,9 @@ class GeneDocument(Document):
         dynamic = "true"
 
     def save(self, **kwargs):
-        """set `_id` as `locus_tag`"""
-        self.meta.id = self.locus_tag
+        if not getattr(self, "feature_id", None):
+            # fall back for genes
+            self.feature_id = getattr(self, "locus_tag", None)
+        self.meta.id = self.feature_id
         return super().save(**kwargs)
+

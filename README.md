@@ -62,9 +62,9 @@ $ python manage.py create_es_index
 $ python manage.py create_es_indexes --es-version 2025.09.03
 $ python manage.py create_es_indexes --es-version 2025.09.03 --if-exists recreate
 ```
-#### Import data
+### Import data
 
-##### Species
+#### Species
 ```shell
 $ python manage.py import_strains \
   --es-index strain_index-2025.09.03 \
@@ -74,20 +74,37 @@ $ python manage.py import_strains \
   --set-type-strains BU_ATCC8492 PV_ATCC8482
 ```
 
-##### Strains
+#### Strains
 Strains + contigs only:
 ```shell
 $ python manage.py import_strains \
-  --es-index strain_index-2025.09.03 \
+  --es-index strain_index-2025.09.05 \
   --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
   --set-type-strains BU_ATCC8492 PV_ATCC8482
+```
+Strains - All in one go: 
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index-2025.09.05 \
+  --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
+  --set-type-strains BU_ATCC8492 PV_ATCC8482 \
+  --include-mic \
+  --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
+  --mic-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/PV_growth_inhibition.csv \
+  --include-metabolism \
+  --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv \
+  --gff-server ftp.ebi.ac.uk \
+  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 Add Drug MIC:
 ```shell
 $ python manage.py import_strains \
-  --es-index strain_index-2025.09.03 \
+  --es-index strain_index-2025.09.04 \
   --skip-strains \
   --include-mic \
   --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
@@ -96,13 +113,40 @@ $ python manage.py import_strains \
 Add Drug Metabolism:
 ```shell
 $ python manage.py import_strains \
-  --es-index strain_index-2025.09.03 \
+  --es-index strain_index-2025.09.04 \
   --skip-strains \
   --include-metabolism \
   --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
   --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv
 
 ```
+
+#### Features
+Basic Genes from GFF and Essentiality:
+```shell
+$ python manage.py import_features \
+  --index feature_index_v1 \
+  --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv
+
+
+```
+Process Everything in one go:
+```shell
+$ python manage.py import_features \
+  --index feature_index-2025.09.04 \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
+  --essentiality-dir ../data/essentiality/ \
+  --fitness-dir ../data/fitness/ \
+  --proteomics-dir ../data/proteomics/ \
+  --protein-compound-dir ../data/protein_compound/ \
+  --gene-rx-dir ../data/reactions/gene_rx/ \
+  --met-rx-dir ../data/reactions/met_rx/ \
+  --rx-gpr-dir ../data/reactions/gpr/ \
+  --mutant-growth-dir ../data/mutant_growth/
+```
+
 
 ```shell
 $ python manage.py import_species --csv ../data-generators/data/species.csv
