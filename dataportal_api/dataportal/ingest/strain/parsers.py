@@ -4,6 +4,7 @@ import os
 import pandas as pd
 from Bio import SeqIO
 import ftplib
+import re
 
 def _safe_float(x) -> Optional[float]:
     try:
@@ -79,23 +80,103 @@ def parse_fasta_contigs(local_path: str) -> List[dict]:
             out.append({"seq_id": record.id, "length": len(record.seq)})
     return out
 
-def ftp_list_gff_for_isolate(ftp: ftplib.FTP, gff_base: str, isolate: str) -> List[str]:
+
+def _folder_key(name: str) -> str:
+    """Uppercase and remove underscores/hyphens/spaces for folder matching."""
+    return re.sub(r"[_\-\s]", "", (name or "")).upper()
+
+def ftp_list_children(ftp: ftplib.FTP, base: str) -> List[str]:
     """
-    Returns full remote paths for GFF files under:
-      <gff_base>/<isolate>/functional_annotation/merged_gff/
+    Return list of immediate child *names* (basenames) under base.
+    We use `nlst(base)` and strip to basename.
     """
-    gff_dir = f"{gff_base.rstrip('/')}/{isolate}/functional_annotation/merged_gff"
     try:
-        lst = ftp.nlst(gff_dir)
+        entries = ftp.nlst(base)
     except Exception:
         return []
-    return [p for p in lst if p.endswith(".gff")]
+    # Some FTP servers may return full paths; reduce to basenames
+    out = []
+    for p in entries:
+        # Ignore '.'/'..' if any
+        name = os.path.basename(p.rstrip("/"))
+        if name and name not in (".", ".."):
+            out.append(name)
+    return out
 
-def choose_primary_gff(gff_paths: List[str]) -> str | None:
+def ftp_build_isolate_folder_map(ftp: ftplib.FTP, gff_base: str) -> Dict[str, str]:
     """
-    Choose one GFF per isolate; prefer '*_annotations.gff', else first sorted.
+    Build a map: folder_key -> actual folder name under gff_base.
     """
-    if not gff_paths:
+    children = ftp_list_children(ftp, gff_base.rstrip("/"))
+    mapping: Dict[str, str] = {}
+    for child in children:
+        key = _folder_key(child)
+        # first one wins; if duplicates exist (shouldn't), we keep the first
+        mapping.setdefault(key, child)
+    return mapping
+
+def candidate_isolate_folder_names(isolate: str) -> List[str]:
+    """
+    Generate a few plausible folder name variants for an isolate:
+    - original
+    - replace '-' with '_' after first '_'
+    - replace '_' with '-' after first '_'
+    """
+    if not isolate:
+        return []
+    iso = isolate.strip()
+    variants = {iso}
+    if "_" in iso:
+        head, tail = iso.split("_", 1)
+        variants.add(f"{head}_{tail.replace('-', '_')}")
+        variants.add(f"{head}-{tail}")                  # first '_' -> '-', keep tail
+        variants.add(f"{head}-{tail.replace('_', '-')}") # swap remaining '_' -> '-'
+    # Also try global swaps as a last resort
+    variants.add(iso.replace("-", "_"))
+    variants.add(iso.replace("_", "-"))
+    return list(variants)
+
+def ftp_list_gff_for_isolate(
+    ftp: ftplib.FTP,
+    gff_base: str,
+    isolate: str,
+    folder_map: Optional[Dict[str, str]] = None,
+) -> List[str]:
+    """
+    Return *file names only* for GFFs in the isolate folder under gff_base.
+    Uses folder_map (if provided) to resolve underscore/hyphen variants.
+    """
+    # 1) resolve folder name
+    folder_name: Optional[str] = None
+    if folder_map:
+        folder_name = folder_map.get(_folder_key(isolate))
+
+    # 2) if not found, try variants
+    candidates = []
+    if folder_name:
+        candidates = [folder_name]
+    else:
+        candidates = candidate_isolate_folder_names(isolate)
+
+    # 3) try each candidate until one lists successfully
+    for cand in candidates:
+        gff_dir = f"{gff_base.rstrip('/')}/{cand}/functional_annotation/merged_gff"
+        try:
+            lst = ftp.nlst(gff_dir)
+        except Exception:
+            continue
+        if not lst:
+            continue
+        # Return only filenames
+        files = [os.path.basename(p) for p in lst if p.endswith(".gff")]
+        if files:
+            return files
+
+    return []
+
+def choose_primary_gff(gff_files: List[str]) -> Optional[str]:
+    """Choose one GFF file name; prefer '*_annotations.gff', else first sorted."""
+    if not gff_files:
         return None
-    preferred = [p for p in gff_paths if p.endswith("_annotations.gff")]
-    return sorted(preferred or gff_paths)[0]
+    preferred = [f for f in gff_files if f.endswith("_annotations.gff")]
+    return sorted(preferred or gff_files)[0]
