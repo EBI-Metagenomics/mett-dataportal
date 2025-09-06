@@ -17,7 +17,7 @@ SCROLL_TIMEOUT = "5m"  # Scroll timeout (5 minutes)
 # Indexes
 ES_INDEX_SPECIES = "species_index"
 ES_INDEX_STRAIN = "strain_index"
-ES_INDEX_GENE = "gene_index"
+ES_INDEX_FEATURE = "feature_index"
 
 # Strain-related constants
 STRAIN_FIELD_ISOLATE_NAME = "isolate_name"

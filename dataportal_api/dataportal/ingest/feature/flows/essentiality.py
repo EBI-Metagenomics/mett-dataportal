@@ -1,29 +1,20 @@
 from typing import Any, Dict
-
 import pandas as pd
 
 from dataportal.ingest.constants import VALID_ESSENTIALITY
-from dataportal.ingest.es_repo import bulk_exec, SCRIPT_APPEND_NESTED
+from dataportal.ingest.es_repo import bulk_exec, SCRIPT_UPSERT_ESSENTIALITY
 from dataportal.ingest.feature.flows.base import Flow
 from dataportal.ingest.feature.parsing import parse_ig_neighbors
+from dataportal.ingest.utils import canonical_ig_id_from_neighbors
 
 
 class Essentiality(Flow):
     """
     Upserts essentiality for genes and creates IG documents on the fly.
 
-    CSV expected columns (case-sensitive examples):
-      - locus_tag
-      - element                  (gene, intergenic, ncRNA, tRNA, ...)
-      - TAs_in_locus             (int)
-      - TAs_hit                  (float 0..1)
-      - essentiality_call        (essential, not_essential, essential_solid, essential_liquid, not_classified, unclear)
-      - experimental_condition   (string)
-
-    Robustness:
-      - Silently skips rows without a locus_tag.
-      - Accepts floats/ints/strings for numeric fields and coerces them safely.
-      - If 'element' looks like IG (or locus_tag starts with IG-between-), adds ig_locus_tag_a/b (+ keyword mirrors).
+    Expected columns:
+      locus_tag, element, TAs_in_locus, TAs_hit, essentiality_call, experimental_condition
+      (For IG rows, 'locus_tag' is the legacy label "IG-between-LEFT-and-RIGHT")
     """
 
     def __init__(self, index_name: str = "feature_index"):
@@ -34,40 +25,48 @@ class Essentiality(Flow):
 
         for chunk in pd.read_csv(csv_path, chunksize=chunksize):
             for rec in chunk.to_dict(orient="records"):
-                fid = self._str(rec.get("locus_tag"))
-                if not fid:
+                raw_id = self._str(rec.get("locus_tag"))
+                if not raw_id:
                     continue
 
-                element = self._str(rec.get("element")).lower() or None
-                call = self._str(rec.get("essentiality_call")).lower() or None
+                element = (self._str(rec.get("element")) or "").lower() or None
+                call = (self._str(rec.get("essentiality_call")) or "").lower() or None
                 cond = self._str(rec.get("experimental_condition")) or None
                 tas_in_locus = self._to_int(rec.get("TAs_in_locus"), default=0)
                 tas_hit = self._to_float(rec.get("TAs_hit"), default=0.0)
 
-                # Upsert base doc (created if not present)
+                # feature_id: genes keep locus_tag, IGs become IG:<LEFT>__<RIGHT>
+                if element == "gene":
+                    fid = raw_id
+                else:
+                    left, right = parse_ig_neighbors(raw_id)  # parse legacy text
+                    fid = canonical_ig_id_from_neighbors(left, right) or raw_id
+
+                # Base fields (merged by script only if missing)
                 base = {
                     "feature_id": fid,
                     "feature_type": "gene" if element == "gene" else "IG",
-                    "element": element or ("intergenic" if fid.startswith("IG-between-") else None),
+                    "element": element or ("intergenic" if raw_id.startswith("IG-between-") else None),
                     "essentiality": call if call in VALID_ESSENTIALITY else None,
                 }
-
-                # Populate IG neighbor fields when applicable
                 if base["feature_type"] == "IG":
-                    a, b = parse_ig_neighbors(fid)
-                    if a and b:
+                    left, right = parse_ig_neighbors(raw_id)
+                    if left and right:
                         base.update({
-                            "ig_locus_tag_a": a,
-                            "ig_locus_tag_b": b,
-                            "ig_locus_tag_a_kw": a,  # exact-match mirrors
-                            "ig_locus_tag_b_kw": b,
+                            "ig_locus_tag_a": left,
+                            "ig_locus_tag_b": right,
+                            "ig_locus_tag_a_kw": left,
+                            "ig_locus_tag_b_kw": right,
+                            "legacy_ig_label": raw_id,
                         })
 
+                # Complete nested entry (include element)
                 entry = {
                     "experimental_condition": cond,
                     "TAs_in_locus": tas_in_locus,
                     "TAs_hit": tas_hit,
                     "essentiality_call": call,
+                    "element": element,
                 }
 
                 actions.append({
@@ -75,23 +74,26 @@ class Essentiality(Flow):
                     "_index": self.index,
                     "_id": fid,
                     "script": {
-                        "source": SCRIPT_APPEND_NESTED,
-                        "params": {"field": "essentiality_data", "entry": entry},
+                        "source": SCRIPT_UPSERT_ESSENTIALITY,
+                        "params": {
+                            "base": base,
+                            "field": "essentiality_data",
+                            "entry": entry,
+                            "keys": ["experimental_condition", "TAs_in_locus", "TAs_hit", "essentiality_call", "element"],
+                            "legacy": (call if call in VALID_ESSENTIALITY else None),
+                        },
                     },
-                    "upsert": base,
+                    "upsert": {},
+                    "scripted_upsert": True,
                 })
 
                 if len(actions) >= 500:
-                    bulk_exec(actions)
-                    actions.clear()
+                    bulk_exec(actions); actions.clear()
 
             if actions:
-                bulk_exec(actions)
-                actions.clear()
+                bulk_exec(actions); actions.clear()
 
-    # -----------------------------
-    # Small coercion helpers
-    # -----------------------------
+    # ---------- helpers ----------
     @staticmethod
     def _str(v: Any) -> str:
         if v is None:

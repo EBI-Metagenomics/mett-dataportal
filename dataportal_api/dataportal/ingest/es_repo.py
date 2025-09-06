@@ -126,6 +126,46 @@ for (item in ctx._source[params.field]) {
 if (!exists) { ctx._source[params.field].add(params.entry); }
 """
 
+SCRIPT_UPSERT_ESSENTIALITY = """
+if (ctx._source == null) { ctx._source = [:]; }
+
+// 1) Merge base fields (only if missing to avoid clobbering)
+if (params.base != null) {
+  for (entry in params.base.entrySet()) {
+    def k = entry.getKey();
+    def v = entry.getValue();
+    if (ctx._source[k] == null) { ctx._source[k] = v; }
+  }
+}
+
+// 2) Append to nested array with de-dup
+def field = params.field;
+def ent   = params.entry;
+def keys  = params.keys;
+if (field != null && ent != null) {
+  if (ctx._source[field] == null) { ctx._source[field] = []; }
+  boolean exists = false;
+  if (keys != null) {
+    for (item in ctx._source[field]) {
+      boolean same = true;
+      for (k in keys) {
+        if (item[k] != ent[k]) { same = false; break; }
+      }
+      if (same) { exists = true; break; }
+    }
+  }
+  if (!exists) { ctx._source[field].add(ent); }
+}
+
+// 3) Set legacy flat essentiality if empty
+if (params.legacy != null) {
+  if (ctx._source.essentiality == null || ctx._source.essentiality == '') {
+    ctx._source.essentiality = params.legacy;
+  }
+}
+"""
+
+
 
 # -----------------------------
 # Optional: small helper for batching

@@ -1,10 +1,13 @@
 from __future__ import annotations
+
+import csv
 from typing import Optional
 
 SPECIES_NAME_BY_ACRONYM = {
     "BU": "Bacteroides uniformis",
     "PV": "Phocaeicola vulgatus",
 }
+
 
 def normalize_strain_id(s: str) -> str:
     """Normalize strain ids like BU_H1-6 -> BU_H1_6."""
@@ -16,12 +19,23 @@ def normalize_strain_id(s: str) -> str:
         return f"{head}_{tail.replace('-', '_')}"
     return s.replace("-", "_")
 
+
 def strain_prefix(isolate_name: str) -> Optional[str]:
     return isolate_name.split("_", 1)[0] if "_" in isolate_name else None
+
 
 def species_name_for_isolate(isolate_name: str) -> Optional[str]:
     acr = strain_prefix(isolate_name)
     return SPECIES_NAME_BY_ACRONYM.get(acr)
+
+
+def canonical_ig_id_from_neighbors(left: str | None, right: str | None) -> str | None:
+    left = (left or "").strip()
+    right = (right or "").strip()
+    if not left or not right:
+        return None
+    a, b = sorted([left, right])
+    return f"IG:{a}__{b}"
 
 
 def parse_dbxref(dbxref_string):
@@ -40,6 +54,7 @@ def parse_dbxref(dbxref_string):
             cog_id = ref
     return parsed, uniprot_id, cog_id
 
+
 def parse_ig_neighbors(feature_id: str):
     # Expect: IG-between-<A>-and-<B>
     try:
@@ -48,6 +63,7 @@ def parse_ig_neighbors(feature_id: str):
         return left, right
     except Exception:
         return None, None
+
 
 def read_tsv_mapping(path, key_col, val_col, strip_suffix=".fa"):
     mapping = {}
@@ -59,6 +75,7 @@ def read_tsv_mapping(path, key_col, val_col, strip_suffix=".fa"):
                 v = v[: -len(strip_suffix)]
             mapping[row[key_col]] = v
     return mapping
+
 
 def pick(d: dict, *keys, default=None):
     """Return first non-empty key value from dict."""

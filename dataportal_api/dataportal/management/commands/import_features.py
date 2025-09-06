@@ -7,7 +7,7 @@ from dataportal.ingest.feature.flows.mutant_growth import MutantGrowth
 from dataportal.ingest.feature.flows.protein_compound import ProteinCompound
 from dataportal.ingest.feature.flows.proteomics import Proteomics
 from dataportal.ingest.feature.flows.reactions import Reactions
-from dataportal.ingest.utils import read_tsv_mapping
+from dataportal.ingest.utils import read_tsv_mapping, normalize_strain_id
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s:%(message)s")
@@ -17,14 +17,21 @@ import ftplib
 from pathlib import Path
 
 
-def _list_csvs(maybe_dir: str | None) -> list[str]:
-    """Return all CSV file paths in a directory (non-recursive)."""
-    if not maybe_dir:
+def _list_csvs(pathlike: str | None) -> list[str]:
+    """Return CSVs from a directory (recursive) or a single CSV if a file path is given."""
+    if not pathlike:
         return []
-    p = Path(maybe_dir)
-    if not p.exists() or not p.is_dir():
+    p = Path(pathlike).expanduser().resolve()
+    if not p.exists():
+        print(f"[import_features] Path not found: {p}")
         return []
-    return [str(f) for f in sorted(p.glob("*.csv"))]
+    if p.is_file() and p.suffix.lower() == ".csv":
+        return [str(p)]
+    if p.is_dir():
+        # recursive; change to glob('*.csv') if you prefer non-recursive
+        return [str(f) for f in sorted(p.rglob("*.csv"))]
+    print(f"[import_features] Unsupported path: {p}")
+    return []
 
 
 class Command(BaseCommand):
@@ -43,6 +50,9 @@ class Command(BaseCommand):
             "--mapping-task-file",
             help="Path to gff-assembly-prefixes.tsv mapping file (prefix -> assembly)",
         )
+
+        p.add_argument("--skip-core-genes", action="store_true",
+                       help="Skip importing core gene features from GFFs")
 
         # Switch single-file inputs to directories so we can ingest *all* CSVs found
         p.add_argument("--essentiality-dir", help="Folder containing essentiality CSVs")
@@ -69,20 +79,35 @@ class Command(BaseCommand):
                 strip_suffix=".fa",
             )
 
-        # Isolates
+        # isolates
         isolates = o["isolates"]
         if not isolates:
             ftp = ftplib.FTP(o["ftp_server"]);
             ftp.login()
             ftp.cwd(o["ftp_root"])
-            isolates = [n for n in ftp.nlst() if not n.startswith(".")]
+            # raw names from FTP
+            raw_isolates = [n for n in ftp.nlst() if not n.startswith(".")]
             ftp.quit()
+        else:
+            raw_isolates = isolates
 
-        # 1) GFF → genes
-        GFFGenes(o["ftp_server"], o["ftp_root"], index_name=index_name, mapping=mapping).run(isolates)
+        # normalize for consistent ES linking
+        normalized_isolates = [normalize_strain_id(s) for s in raw_isolates]
+
+        # 1) core genes (GFF) — can be skipped
+        if not o.get("skip_core_genes"):
+            # Pass *both* lists so the flow can use raw names for FTP paths
+            GFFGenes(
+                o["ftp_server"], o["ftp_root"], index_name=index_name, mapping=mapping
+            ).run(raw_isolates=raw_isolates, norm_isolates=normalized_isolates)
+        else:
+            print("[import_features] Skipping core gene (GFF) import as requested.")
 
         # 2) Essentiality (process all CSVs in folder)
-        for csv_path in _list_csvs(o.get("essentiality_dir")):
+        ess_files = _list_csvs(o.get("essentiality_dir"))
+        print(f"[import_features] Essentiality CSVs found: {len(ess_files)}")
+        for csv_path in ess_files:
+            print(f"  - {csv_path}")
             Essentiality(index_name=index_name).run(csv_path)
 
         # 3) Fitness

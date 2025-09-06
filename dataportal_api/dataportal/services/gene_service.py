@@ -39,7 +39,7 @@ from dataportal.utils.constants import (
     ES_FIELD_UNIPROT_ID,
     ES_FIELD_LOCUS_TAG,
     ES_FIELD_SPECIES_ACRONYM,
-    ES_INDEX_GENE,
+    ES_INDEX_FEATURE,
     FACET_FIELDS,
     ES_FIELD_COG_FUNCATS,
     SCROLL_BATCH_SIZE,
@@ -61,7 +61,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     """Service for managing gene data operations in the read-only data portal."""
 
     def __init__(self):
-        super().__init__(ES_INDEX_GENE)
+        super().__init__(ES_INDEX_FEATURE)
 
     async def get_by_id(self, id: str) -> Optional[GeneResponseSchema]:
         """Retrieve a single gene by ID (locus tag)."""

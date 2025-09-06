@@ -125,7 +125,7 @@ $ python manage.py import_strains \
 Basic Genes from GFF and Essentiality:
 ```shell
 $ python manage.py import_features \
-  --index feature_index_v1 \
+  --index feature_index-2026.09.06 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv
 
 
@@ -133,11 +133,11 @@ $ python manage.py import_features \
 Process Everything in one go:
 ```shell
 $ python manage.py import_features \
-  --index feature_index-2025.09.04 \
+  --index feature_index-2025.09.06 \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
-  --essentiality-dir ../data/essentiality/ \
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
   --fitness-dir ../data/fitness/ \
   --proteomics-dir ../data/proteomics/ \
   --protein-compound-dir ../data/protein_compound/ \
@@ -146,6 +146,17 @@ $ python manage.py import_features \
   --rx-gpr-dir ../data/reactions/gpr/ \
   --mutant-growth-dir ../data/mutant_growth/
 ```
+
+Essentiality:
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --skip-core-genes \
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/
+```
+
 
 
 ```shell

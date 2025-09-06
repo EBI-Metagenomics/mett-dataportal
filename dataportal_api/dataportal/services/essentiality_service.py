@@ -11,7 +11,7 @@ from dataportal.utils.constants import (
     ES_FIELD_LOCUS_TAG,
     FIELD_SEQ_ID,
     ES_FIELD_ISOLATE_NAME,
-    ES_INDEX_GENE,
+    ES_INDEX_FEATURE,
 )
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class EssentialityService(CachedService[Dict, str]):
     """Service for managing essentiality data with caching support."""
 
     def __init__(self, limit: int = 10, cache_size: int = 10000):
-        super().__init__(ES_INDEX_GENE, cache_size)
+        super().__init__(ES_INDEX_FEATURE, cache_size)
         self.limit = limit
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
