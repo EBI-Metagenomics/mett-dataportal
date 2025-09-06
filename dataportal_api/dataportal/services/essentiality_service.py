@@ -62,6 +62,7 @@ class EssentialityService(CachedService[Dict, str]):
         try:
             s = (
                 self._create_search()
+                .filter("term", feature_type="gene")
                 .query("exists", field=GENE_ESSENTIALITY)
                 .source(
                     [
