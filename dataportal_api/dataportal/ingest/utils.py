@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import csv
+from pathlib import Path
 from typing import Optional
+
+import pandas as pd
 
 SPECIES_NAME_BY_ACRONYM = {
     "BU": "Bacteroides uniformis",
@@ -83,3 +86,13 @@ def pick(d: dict, *keys, default=None):
         if k in d and d[k] not in (None, "", []):
             return d[k]
     return default
+
+
+def chunks_from_table(path: str, chunksize: int = 10_000):
+    """
+    Yield pandas DataFrame chunks from a CSV/TSV/TAB file.
+    Sep is auto-picked by extension (csv->',', others->'\\t').
+    """
+    suffix = Path(path).suffix.lower()
+    sep = "," if suffix == ".csv" else "\t"
+    return pd.read_csv(path, sep=sep, chunksize=chunksize)

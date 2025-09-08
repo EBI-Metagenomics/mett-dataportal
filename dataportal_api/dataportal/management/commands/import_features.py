@@ -17,22 +17,24 @@ import ftplib
 from pathlib import Path
 
 
-def _list_csvs(pathlike: str | None) -> list[str]:
-    """Return CSVs from a directory (recursive) or a single CSV if a file path is given."""
+def _list_tabular(pathlike: str | None, exts=(".csv", ".tsv", ".tab"), recursive=True) -> list[str]:
+    """
+    Return a list of tabular files from a directory (or a single file if path points to a file).
+    Accepts CSV/TSV/TAB by default. Recurses by default.
+    """
     if not pathlike:
         return []
     p = Path(pathlike).expanduser().resolve()
     if not p.exists():
         print(f"[import_features] Path not found: {p}")
         return []
-    if p.is_file() and p.suffix.lower() == ".csv":
+    if p.is_file() and p.suffix.lower() in exts:
         return [str(p)]
     if p.is_dir():
-        # recursive; change to glob('*.csv') if you prefer non-recursive
-        return [str(f) for f in sorted(p.rglob("*.csv"))]
+        globber = p.rglob if recursive else p.glob
+        return [str(f) for f in sorted(globber("*")) if f.suffix.lower() in exts]
     print(f"[import_features] Unsupported path: {p}")
     return []
-
 
 class Command(BaseCommand):
     help = "Import features (genes + IG + analytics) into a versioned feature_index."
@@ -104,28 +106,31 @@ class Command(BaseCommand):
             print("[import_features] Skipping core gene (GFF) import as requested.")
 
         # 2) Essentiality (process all CSVs in folder)
-        ess_files = _list_csvs(o.get("essentiality_dir"))
-        print(f"[import_features] Essentiality CSVs found: {len(ess_files)}")
+        ess_files = _list_tabular(o.get("essentiality_dir"))
+        # print(f"[import_features] Essentiality CSVs found: {len(ess_files)}")
         for csv_path in ess_files:
             print(f"  - {csv_path}")
             Essentiality(index_name=index_name).run(csv_path)
 
         # 3) Fitness
-        for csv_path in _list_csvs(o.get("fitness_dir")):
+        for csv_path in _list_tabular(o.get("fitness_dir")):
             Fitness(index_name=index_name).run(csv_path)
 
         # 4) Proteomics
-        for csv_path in _list_csvs(o.get("proteomics_dir")):
+        proteomics_files = _list_tabular(o.get("proteomics_dir"))
+        print(f"[import_features] Proteomics files found: {len(proteomics_files)}")
+        for csv_path in proteomics_files:
+            print(f"  - {csv_path}")
             Proteomics(index_name=index_name).run(csv_path)
 
         # 5) Protein–compound
-        for csv_path in _list_csvs(o.get("protein_compound_dir")):
+        for csv_path in _list_tabular(o.get("protein_compound_dir")):
             ProteinCompound(index_name=index_name).run(csv_path)
 
         # 6) Reactions (cross-product of the three folders)
-        gene_rx_files = _list_csvs(o.get("gene_rx_dir"))
-        met_rx_files = _list_csvs(o.get("met_rx_dir"))
-        rx_gpr_files = _list_csvs(o.get("rx_gpr_dir"))
+        gene_rx_files = _list_tabular(o.get("gene_rx_dir"))
+        met_rx_files = _list_tabular(o.get("met_rx_dir"))
+        rx_gpr_files = _list_tabular(o.get("rx_gpr_dir"))
         # run all combinations so you don't depend on strict naming;
         # if you prefer pairing by filename stem, we can add that too.
         for gr in gene_rx_files:
@@ -134,5 +139,5 @@ class Command(BaseCommand):
                     Reactions(index_name=index_name).run(gr, mr, gp)
 
         # 7) Mutant growth
-        for csv_path in _list_csvs(o.get("mutant_growth_dir")):
+        for csv_path in _list_tabular(o.get("mutant_growth_dir")):
             MutantGrowth(index_name=index_name).run(csv_path)

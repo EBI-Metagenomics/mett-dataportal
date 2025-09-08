@@ -5,7 +5,7 @@ from dataportal.ingest.constants import VALID_ESSENTIALITY
 from dataportal.ingest.es_repo import bulk_exec, SCRIPT_UPSERT_ESSENTIALITY
 from dataportal.ingest.feature.flows.base import Flow
 from dataportal.ingest.feature.parsing import parse_ig_neighbors
-from dataportal.ingest.utils import canonical_ig_id_from_neighbors
+from dataportal.ingest.utils import canonical_ig_id_from_neighbors, chunks_from_table
 
 
 class Essentiality(Flow):
@@ -23,7 +23,7 @@ class Essentiality(Flow):
     def run(self, csv_path: str, chunksize: int = 10_000) -> None:
         actions: list[Dict[str, Any]] = []
 
-        for chunk in pd.read_csv(csv_path, chunksize=chunksize):
+        for chunk in chunks_from_table(csv_path, chunksize=chunksize):
             for rec in chunk.to_dict(orient="records"):
                 raw_id = self._str(rec.get("locus_tag"))
                 if not raw_id:

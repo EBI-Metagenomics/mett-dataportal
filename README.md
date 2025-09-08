@@ -133,13 +133,13 @@ $ python manage.py import_features \
 Process Everything in one go:
 ```shell
 $ python manage.py import_features \
-  --index feature_index-2025.09.06 \
+  --index feature_index \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
   --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
+  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
   --fitness-dir ../data/fitness/ \
-  --proteomics-dir ../data/proteomics/ \
   --protein-compound-dir ../data/protein_compound/ \
   --gene-rx-dir ../data/reactions/gene_rx/ \
   --met-rx-dir ../data/reactions/met_rx/ \
@@ -155,6 +155,16 @@ $ python manage.py import_features \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --skip-core-genes \
   --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/
+```
+
+Proteomics Evidence:
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --skip-core-genes \
+  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
 
 
