@@ -138,13 +138,13 @@ $ python manage.py import_features \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
   --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
-  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
-  --fitness-dir ../data/fitness/ \
+  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/ \
+  --gene-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
+  --met-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/met_rx/ \
+  --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/ \
   --protein-compound-dir ../data/protein_compound/ \
-  --gene-rx-dir ../data/reactions/gene_rx/ \
-  --met-rx-dir ../data/reactions/met_rx/ \
-  --rx-gpr-dir ../data/reactions/gpr/ \
-  --mutant-growth-dir ../data/mutant_growth/
+  --mutant-growth-dir ../data/mutant_growth/ \
+  --fitness-dir ../data/fitness/ \
 ```
 
 Essentiality:
@@ -167,6 +167,18 @@ $ python manage.py import_features \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
 
+
+Gene Rx Data:
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --skip-core-genes \
+  --gene-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
+  --met-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/met_rx/ \
+  --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
+```
 
 
 ```shell

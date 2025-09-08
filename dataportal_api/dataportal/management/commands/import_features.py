@@ -22,6 +22,7 @@ def _list_tabular(pathlike: str | None, exts=(".csv", ".tsv", ".tab"), recursive
     Return a list of tabular files from a directory (or a single file if path points to a file).
     Accepts CSV/TSV/TAB by default. Recurses by default.
     """
+    print(f"[import_features] pathlike: {pathlike}")
     if not pathlike:
         return []
     p = Path(pathlike).expanduser().resolve()
@@ -131,6 +132,12 @@ class Command(BaseCommand):
         gene_rx_files = _list_tabular(o.get("gene_rx_dir"))
         met_rx_files = _list_tabular(o.get("met_rx_dir"))
         rx_gpr_files = _list_tabular(o.get("rx_gpr_dir"))
+        print(f"[import_features] gene_rx: {len(gene_rx_files)} files")
+        for f in gene_rx_files: print("  -", f)
+        print(f"[import_features] met_rx:  {len(met_rx_files)} files")
+        for f in met_rx_files: print("  -", f)
+        print(f"[import_features] rx_gpr:  {len(rx_gpr_files)} files")
+        for f in rx_gpr_files: print("  -", f)
         # run all combinations so you don't depend on strict naming;
         # if you prefer pairing by filename stem, we can add that too.
         for gr in gene_rx_files:
