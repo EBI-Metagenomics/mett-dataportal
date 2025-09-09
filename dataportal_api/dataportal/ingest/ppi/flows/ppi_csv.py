@@ -33,25 +33,25 @@ def _flags_and_rollups(src: Dict) -> None:
     src["has_string"] = src.get("string_score") is not None
     src["has_operon"] = src.get("operon_score") is not None
     src["has_ecocyc"] = src.get("ecocyc_score") is not None
-    src["has_experimental"] = any(
-        src.get(k) is not None for k in [
-            "melt_score", "perturbation_score", "abundance_score",
-            "secondary_score", "bayesian_score", "tt_score", "ds_score"
-        ]
-    )
+    # src["has_experimental"] = any(
+    #     src.get(k) is not None for k in [
+    #         "melt_score", "perturbation_score", "abundance_score",
+    #         "secondary_score", "bayesian_score", "tt_score", "ds_score"
+    #     ]
+    # )
     keys = ['ds_score', 'tt_score', 'perturbation_score', 'abundance_score',
             'melt_score', 'secondary_score', 'bayesian_score', 'string_score',
             'operon_score', 'ecocyc_score']
-    cnt = sum(1 for k in keys if src.get(k) is not None)
-    src["evidence_count"] = cnt
+    # cnt = sum(1 for k in keys if src.get(k) is not None)
+    # src["evidence_count"] = cnt
 
-    s = src.get("string_score")
-    if (s is not None and s >= 0.7) or cnt >= 4:
-        src["confidence_bin"] = "high"
-    elif (s is not None and s >= 0.4) or cnt >= 2:
-        src["confidence_bin"] = "medium"
-    else:
-        src["confidence_bin"] = "low"
+    # s = src.get("string_score")
+    # if (s is not None and s >= 0.7) or cnt >= 4:
+    #     src["confidence_bin"] = "high"
+    # elif (s is not None and s >= 0.4) or cnt >= 2:
+    #     src["confidence_bin"] = "medium"
+    # else:
+    #     src["confidence_bin"] = "low"
 
 
 @dataclass
