@@ -89,18 +89,19 @@ class PPIIndexRepository:
     Use with your PPI CSV flow. Accepts raw bulk actions or DSL docs.
     """
     concrete_index: str
-    client: Optional[Elasticsearch] = None  # falls back to default DSL connection
+    client: Optional[Elasticsearch] = None
 
     def _conn(self) -> Elasticsearch:
         return self.client or connections.get_connection()
 
     def ensure_index(self) -> None:
-        """
-        Ensure index exists **with the DSL mapping/settings** from ProteinProteinDocument.
-        Safe to call multiple times.
-        """
-        # Push mapping/settings using DSL. This will create if missing and update mappings when possible.
-        ProteinProteinDocument.init(index=self.concrete_index, using=self._conn())
+        es = self._conn()
+        # If concrete index exists, we're good.
+        if es.indices.exists(index=self.concrete_index):
+            return
+        # If it's an alias, DO NOT create a new index. Just use the alias target(s).
+        if es.indices.exists_alias(name=self.concrete_index):
+            return
 
     def get(self, pair_id: str) -> Optional[ProteinProteinDocument]:
         try:

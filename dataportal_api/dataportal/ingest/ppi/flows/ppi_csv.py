@@ -1,123 +1,193 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
+
+from django.utils.timezone import now
 
 from dataportal.ingest.ppi.parsing import iter_ppi_rows
-from dataportal.models import ProteinProteinDocument
 from dataportal.ingest.es_repo import PPIIndexRepository
 
-# --- helpers (reuse exact logic from your model for determinism) ---
+
+# Keep helpers consistent with your model
 def canonical_pair(a: str, b: str) -> Tuple[str, str]:
     return tuple(sorted([a, b]))
+
 
 def build_pair_id(species_key: str, a: str, b: str) -> str:
     aa, bb = canonical_pair(a, b)
     return f"{species_key}:{aa}__{bb}"
 
+
 def _species_key(species_name: Optional[str], species_map: Dict[str, str]) -> str:
-    # Try configured acronym map, fallback to a slug from the species string.
     if species_name and species_name in species_map:
         return species_map[species_name]
-    # fallback: first letters of genus+species, e.g. "Bacteroides uniformis" -> "BU"
     if species_name:
         parts = species_name.split()
         if len(parts) >= 2:
             return (parts[0][0] + parts[1][0]).upper()
     return "NA"
 
-def _flags_and_rollups(doc: Dict) -> None:
-    # convenience flags
-    doc["has_xlms"] = bool(doc.get("xlms_peptides") or doc.get("xlms_files"))
-    doc["has_string"] = doc.get("string_score") is not None
-    doc["has_operon"] = doc.get("operon_score") is not None
-    doc["has_ecocyc"] = doc.get("ecocyc_score") is not None
-    doc["has_experimental"] = any(
-        doc.get(k) is not None for k in [
-            "melt_score","perturbation_score","abundance_score",
-            "secondary_score","bayesian_score","tt_score","ds_score"
+
+def _flags_and_rollups(src: Dict) -> None:
+    src["has_xlms"] = bool(src.get("xlms_peptides") or src.get("xlms_files"))
+    src["has_string"] = src.get("string_score") is not None
+    src["has_operon"] = src.get("operon_score") is not None
+    src["has_ecocyc"] = src.get("ecocyc_score") is not None
+    src["has_experimental"] = any(
+        src.get(k) is not None for k in [
+            "melt_score", "perturbation_score", "abundance_score",
+            "secondary_score", "bayesian_score", "tt_score", "ds_score"
         ]
     )
-    # evidence count
-    numeric_keys = [
-        "ds_score","tt_score","perturbation_score","abundance_score",
-        "melt_score","secondary_score","bayesian_score",
-        "string_score","operon_score","ecocyc_score",
-    ]
-    doc["evidence_count"] = sum(1 for k in numeric_keys if doc.get(k) is not None)
+    keys = ['ds_score', 'tt_score', 'perturbation_score', 'abundance_score',
+            'melt_score', 'secondary_score', 'bayesian_score', 'string_score',
+            'operon_score', 'ecocyc_score']
+    cnt = sum(1 for k in keys if src.get(k) is not None)
+    src["evidence_count"] = cnt
 
-    # simple binning heuristic (tune later)
-    s = doc.get("string_score")
-    if (s is not None and s >= 0.7) or doc["evidence_count"] >= 4:
-        doc["confidence_bin"] = "high"
-    elif (s is not None and s >= 0.4) or doc["evidence_count"] >= 2:
-        doc["confidence_bin"] = "medium"
+    s = src.get("string_score")
+    if (s is not None and s >= 0.7) or cnt >= 4:
+        src["confidence_bin"] = "high"
+    elif (s is not None and s >= 0.4) or cnt >= 2:
+        src["confidence_bin"] = "medium"
     else:
-        doc["confidence_bin"] = "low"
+        src["confidence_bin"] = "low"
+
 
 @dataclass
 class PPICSVFlow:
     repo: PPIIndexRepository
-    species_map: Dict[str, str]  # {"Bacteroides uniformis": "BU", ...}
+    species_map: Dict[str, str]
 
-    def run(self, folder: str, pattern: str = "*.csv", batch_size: int = 2000) -> int:
+    def _row_to_action(self, row: Dict) -> Optional[Dict]:
+        a, b = row.get("protein_a"), row.get("protein_b")
+        if not a or not b:
+            return None
+
+        sp_name = row.get("species")
+        sp_key = _species_key(sp_name, self.species_map)
+
+        aa, bb = canonical_pair(a, b)
+        pair_id = build_pair_id(sp_key, aa, bb)
+
+        src = {
+            # identity
+            "pair_id": pair_id,
+            "species_scientific_name": sp_name,
+            "species_acronym": sp_key,
+            "protein_a": aa,
+            "protein_b": bb,
+            "participants": [a, b],
+            "participants_sorted": [aa, bb],
+            "is_self_interaction": (aa == bb),
+
+            # scores
+            "ds_score": row.get("ds_score"),
+            "tt_score": row.get("tt_score"),
+            "perturbation_score": row.get("perturbation_score"),
+            "abundance_score": row.get("abundance_score"),
+            "melt_score": row.get("melt_score"),
+            "secondary_score": row.get("secondary_score"),
+            "bayesian_score": row.get("bayesian_score"),
+            "string_score": row.get("string_score"),
+            "operon_score": row.get("operon_score"),
+            "ecocyc_score": row.get("ecocyc_score"),
+
+            # xlms
+            "xlms_peptides": row.get("xlms_peptides"),
+            "xlms_files": row.get("xlms_files"),
+        }
+
+        _flags_and_rollups(src)
+
+        # For a fresh load, 'index' is fine (idempotent). Use 'create' if you want to error on dup IDs.
+        return {
+            "_op_type": "index",
+            "_index": self.repo.concrete_index,
+            "_id": pair_id,
+            "_source": src,
+        }
+
+    def run(
+            self,
+            folder: str,
+            pattern: str = "*.csv",
+            batch_size: int = 5000,
+            refresh: Optional[str | bool] = None,  # set "wait_for" at the end if needed
+            log_every: int = 100_000,
+            optimize_indexing: bool = True,
+            refresh_every_rows: int | None = None,
+            refresh_every_secs: float | None = None,
+    ) -> int:
         """
-        Sweep CSVs and bulk upsert into ppi_index.
-        Returns number of docs indexed.
+        Stream CSVs and bulk-index in chunks. No Painless, no large in-memory merge.
+        Returns number of actions indexed.
         """
-        # Merge rows per canonical pair_id (across files), last-write-wins for numeric ties.
-        merged: Dict[str, Dict] = {}
+        es = self.repo._conn()
+        self.repo.ensure_index()
 
-        for row in iter_ppi_rows(folder, pattern):
-            sp_key = _species_key(row.get("species"), self.species_map)
-            a, b = row["protein_a"], row["protein_b"]
-            if not a or not b:
-                continue
-            aa, bb = canonical_pair(a, b)
-            pair_id = build_pair_id(sp_key, aa, bb)
+        # Optional: speed up big initial loads
+        old_settings = {}
+        if optimize_indexing:
+            try:
+                # capture current settings to restore later
+                old = es.indices.get_settings(index=self.repo.concrete_index)
+                cur = next(iter(old.values()))["settings"]["index"]
+                old_settings["refresh_interval"] = cur.get("refresh_interval", "1s")
+                old_settings["number_of_replicas"] = cur.get("number_of_replicas", "1")
 
-            base = merged.get(pair_id, {
-                "pair_id": pair_id,
-                "species_scientific_name": row.get("species"),
-                "species_acronym": sp_key,
-                "protein_a": aa,
-                "protein_b": bb,
-                "participants": [a, b],
-                "participants_sorted": [aa, bb],
-                "is_self_interaction": (aa == bb),
-                # scores/evidence initialized None
-                "ds_score": None, "tt_score": None, "perturbation_score": None,
-                "abundance_score": None, "melt_score": None, "secondary_score": None,
-                "bayesian_score": None, "string_score": None, "operon_score": None,
-                "ecocyc_score": None, "xlms_peptides": None, "xlms_files": None,
-                # optional experimental fields
-                "experimental_condition_id": None, "experimental_condition": None,
-            })
+                es.indices.put_settings(
+                    index=self.repo.concrete_index,
+                    body={"index": {"refresh_interval": "-1", "number_of_replicas": 0}},
+                )
+            except Exception as e:
+                print(f"[ppi] warn: could not apply fast-index settings: {e}")
 
-            # simple overwrite-if-not-None policy (you can swap to max/mean later)
-            for k in ["ds_score","tt_score","perturbation_score","abundance_score",
-                      "melt_score","secondary_score","bayesian_score",
-                      "string_score","operon_score","ecocyc_score"]:
-                v = row.get(k)
-                if v is not None:
-                    base[k] = v
+        buffer: List[Dict] = []
+        total = 0
 
-            # text/list fields: prefer non-empty
-            if row.get("xlms_peptides"):
-                base["xlms_peptides"] = row["xlms_peptides"]
-            if row.get("xlms_files"):
-                base["xlms_files"] = row["xlms_files"]
+        try:
+            for i, row in enumerate(iter_ppi_rows(folder, pattern), 1):
+                act = self._row_to_action(row)
+                if act is None:
+                    continue
+                buffer.append(act)
 
-            merged[pair_id] = base
+                if len(buffer) >= batch_size:
+                    success, _ = self.repo.bulk_index(buffer, chunk_size=batch_size, refresh=None)
+                    total += success
+                    buffer.clear()
+                    if log_every and (i % log_every == 0):
+                        print(f"[ppi] processed rows: {i:,} | indexed: {total:,}")
 
-        # compute flags/rollups and bulk
-        actions = []
-        for pair_id, doc in merged.items():
-            _flags_and_rollups(doc)
-            actions.append({
-                "_op_type": "index",        # idempotent upsert
-                "_index": self.repo.index_name,
-                "_id": pair_id,
-                "_source": doc,
-            })
+                should_refresh = (
+                        (refresh_every_rows is not None and rows_since_refresh >= refresh_every_rows) or
+                        (refresh_every_secs is not None and now - last_refresh_ts >= refresh_every_secs)
+                )
+                if should_refresh:
+                    self.repo.refresh()  # <- on-demand refresh
+                    rows_since_refresh = 0
+                    last_refresh_ts = now
+                    print(f"[ppi] periodic refresh after {i:,} rows; total indexed: {total:,}")
 
-        return self.repo.bulk_index(actions, chunk_size=batch_size, refresh="wait_for")
+            if buffer:
+                success, _ = self.repo.bulk_index(buffer, chunk_size=batch_size, refresh=refresh)
+                total += success
+        finally:
+            if optimize_indexing and old_settings:
+                try:
+                    es.indices.put_settings(
+                        index=self.repo.concrete_index,
+                        body={
+                            "index": {
+                                "refresh_interval": old_settings["refresh_interval"],
+                                "number_of_replicas": old_settings["number_of_replicas"],
+                            }
+                        },
+                    )
+                    if refresh:
+                        es.indices.refresh(index=self.repo.concrete_index)
+                except Exception as e:
+                    print(f"[ppi] warn: restore index settings failed: {e}")
+
+        return total
