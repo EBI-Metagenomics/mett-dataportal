@@ -96,3 +96,9 @@ def chunks_from_table(path: str, chunksize: int = 10_000):
     suffix = Path(path).suffix.lower()
     sep = "," if suffix == ".csv" else "\t"
     return pd.read_csv(path, sep=sep, chunksize=chunksize)
+
+def canonical_pair_id(a: str, b: str) -> str:
+    """Order-insensitive pair id."""
+    a = (a or "").strip(); b = (b or "").strip()
+    x, y = sorted([a, b])
+    return f"{x}__{y}"

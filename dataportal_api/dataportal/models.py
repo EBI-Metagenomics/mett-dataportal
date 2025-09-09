@@ -441,3 +441,39 @@ class ProteinProteinDocument(Document):
             self.confidence_bin = "low"
 
         return super().save(**kwargs)
+
+
+class OperonDocument(Document):
+    operon_id = Keyword(required=True)
+    isolate_name = Keyword()
+    species_acronym = Keyword()
+    species_scientific_name = Keyword()
+
+    # composition
+    genes = Keyword(multi=True)
+    gene_count = Integer()
+
+    # rollups
+    has_tss = Boolean()
+    has_terminator = Boolean()
+
+    class Index:
+        name = "operon_index"
+        settings = {"index": {"max_result_window": 500_000}}
+
+class OrthologDocument(Document):
+    # identity: order-insensitive pair-id
+    pair_id = Keyword()               # "BU_61_00001__BU_909_00001"
+    doc_type = Keyword()              # 'pair'
+    # genes
+    gene_a = Keyword()
+    gene_b = Keyword()
+    # attrs
+    orthology_type = Keyword()
+    oma_group = Keyword()
+    # convenience members array
+    members = Keyword(multi=True)
+
+    class Index:
+        name = "ortholog_index"
+        settings = {"index": {"max_result_window": 500000}}

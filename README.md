@@ -66,12 +66,7 @@ $ python manage.py create_es_indexes --es-version 2025.09.03 --if-exists recreat
 
 #### Species
 ```shell
-$ python manage.py import_strains \
-  --es-index strain_index-2025.09.03 \
-  --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
-  --ftp-server ftp.ebi.ac.uk \
-  --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
-  --set-type-strains BU_ATCC8492 PV_ATCC8482
+$ python manage.py import_species --index species_index --csv ../data-generators/data/species.csv
 ```
 
 #### Strains
@@ -186,6 +181,15 @@ $ python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-
 $ python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/ --refresh-every-rows 500000   # or --refresh-every-secs 120
 ```
 
+#### Operon Index:
+```shell
+$ python manage.py import_operons --index operon_index --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/
+```
+
+#### Ortholog Pairs Index:
+```shell
+$ python manage.py import_orthologs --index ortholog_index --orthologs-dir ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/
+```
 
 
 #### Pyhmmer Database Migrations

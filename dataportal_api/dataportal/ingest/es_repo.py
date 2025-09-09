@@ -11,7 +11,7 @@ from dataportal.models import (
     StrainDocument,
     FeatureDocument,
     SpeciesDocument,
-    ProteinProteinDocument,
+    ProteinProteinDocument, OperonDocument, OrthologDocument,
 )
 
 
@@ -160,6 +160,27 @@ class PPIIndexRepository:
                 print(f"  -> {f}")
             return 0, errs
 
+@dataclass
+class OperonIndexRepository:
+    concrete_index: str
+    def get(self, doc_id: str) -> Optional[OperonDocument]:
+        try:
+            return OperonDocument.get(id=doc_id, index=self.concrete_index, ignore=404)
+        except NotFoundError:
+            return None
+    def save(self, doc: OperonDocument) -> None:
+        doc.save(index=self.concrete_index)
+
+@dataclass
+class OrthologIndexRepository:
+    concrete_index: str
+    def get(self, pair_id: str) -> Optional[OrthologDocument]:
+        try:
+            return OrthologDocument.get(id=pair_id, index=self.concrete_index, ignore=404)
+        except NotFoundError:
+            return None
+    def save(self, doc: OrthologDocument) -> None:
+        doc.save(index=self.concrete_index)
 
 # -----------------------------
 # Bulk utilities
