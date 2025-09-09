@@ -3,16 +3,39 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Optional, Tuple, List, Dict, Any
 
-from elasticsearch import NotFoundError
-from elasticsearch.helpers import bulk, BulkIndexError
+from elasticsearch import Elasticsearch, NotFoundError
+from elasticsearch.helpers import bulk as es_bulk, BulkIndexError, bulk
 from elasticsearch_dsl import connections
 
-from dataportal.models import StrainDocument, FeatureDocument
+from dataportal.models import (
+    StrainDocument,
+    FeatureDocument,
+    SpeciesDocument,
+    ProteinProteinDocument,
+)
 
 
 # -----------------------------
 # Repositories
 # -----------------------------
+
+@dataclass
+class SpeciesIndexRepository:
+    """
+    Read/write SpeciesDocument to a specific *concrete* ES index
+    (e.g., 'species_index' or versioned).
+    """
+    concrete_index: str
+
+    def get(self, acronym: str) -> Optional[SpeciesDocument]:
+        try:
+            return SpeciesDocument.get(id=acronym, index=self.concrete_index, ignore=404)
+        except NotFoundError:
+            return None
+
+    def save(self, doc: SpeciesDocument) -> None:
+        doc.save(index=self.concrete_index)
+
 
 @dataclass
 class StrainIndexRepository:
@@ -59,6 +82,84 @@ class FeatureIndexRepository:
         doc.save(index=self.concrete_index)
 
 
+@dataclass
+class PPIIndexRepository:
+    """
+    Read/bulk-write ProteinProteinDocument to a specific *concrete* ES index.
+    Use with your PPI CSV flow. Accepts raw bulk actions or DSL docs.
+    """
+    concrete_index: str
+    client: Optional[Elasticsearch] = None  # falls back to default DSL connection
+
+    def _conn(self) -> Elasticsearch:
+        return self.client or connections.get_connection()
+
+    def ensure_index(self) -> None:
+        """
+        Ensure index exists **with the DSL mapping/settings** from ProteinProteinDocument.
+        Safe to call multiple times.
+        """
+        # Push mapping/settings using DSL. This will create if missing and update mappings when possible.
+        ProteinProteinDocument.init(index=self.concrete_index, using=self._conn())
+
+    def get(self, pair_id: str) -> Optional[ProteinProteinDocument]:
+        try:
+            return ProteinProteinDocument.get(id=pair_id, index=self.concrete_index, using=self._conn(), ignore=404)
+        except NotFoundError:
+            return None
+
+    def save(self, doc: ProteinProteinDocument) -> None:
+        # make sure index/mapping exists
+        self.ensure_index()
+        doc.save(index=self.concrete_index, using=self._conn())
+
+    def bulk_index(
+            self,
+            actions: Iterable[Dict[str, Any]],
+            *,
+            chunk_size: int = 2000,
+            refresh: Optional[str | bool] = None,  # e.g. "wait_for"
+            raise_on_error: bool = False,
+    ) -> Tuple[int, List[Dict[str, Any]]]:
+        """
+        Bulk index raw actions. Automatically sets _index if missing and ensures mapping.
+        Returns (success_count, failures).
+        """
+        self.ensure_index()
+
+        # Materialize and enforce _index/_op_type for idempotent upserts
+        acts: List[Dict[str, Any]] = []
+        for a in actions:
+            a = dict(a)
+            a.setdefault("_index", self.concrete_index)
+            a.setdefault("_op_type", "index")
+            acts.append(a)
+
+        if not acts:
+            return 0, []
+
+        try:
+            success, failures = es_bulk(
+                self._conn(),
+                acts,
+                chunk_size=chunk_size,
+                raise_on_error=raise_on_error,
+                refresh=refresh,
+            )
+            if failures:
+                # keep your lightweight logging style
+                print(f"[es_repo] PPI bulk failures: {len(failures)} (first 3 shown)")
+                for f in failures[:3]:
+                    print(f"  -> {f}")
+            return success, failures
+        except BulkIndexError as e:
+            errs = getattr(e, "errors", [])
+            print(f"[es_repo] PPI BulkIndexError with {len(errs)} errors (first 3 shown)")
+            for f in errs[:3]:
+                print(f"  -> {f}")
+            return 0, errs
+
+
 # -----------------------------
 # Bulk utilities
 # -----------------------------
@@ -94,6 +195,21 @@ def bulk_exec(
         for f in errs[:3]:
             print(f"  -> {f}")
         return 0, errs
+
+
+# -----------------------------
+# Optional: small helper for batching
+# -----------------------------
+def iter_batches(iterable: Iterable[Any], size: int):
+    """Yield lists of up to `size` from an iterable."""
+    batch = []
+    for item in iterable:
+        batch.append(item)
+        if len(batch) >= size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
 
 
 # -----------------------------
@@ -164,19 +280,3 @@ if (params.legacy != null) {
   }
 }
 """
-
-
-
-# -----------------------------
-# Optional: small helper for batching
-# -----------------------------
-def iter_batches(iterable: Iterable[Any], size: int):
-    """Yield lists of up to `size` from an iterable."""
-    batch = []
-    for item in iterable:
-        batch.append(item)
-        if len(batch) >= size:
-            yield batch
-            batch = []
-    if batch:
-        yield batch

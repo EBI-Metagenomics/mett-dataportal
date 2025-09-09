@@ -180,16 +180,12 @@ $ python manage.py import_features \
   --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
 ```
 
-
+#### Protein Protein Index (PPI):
 ```shell
-$ python manage.py import_species --csv ../data-generators/data/species.csv
-$ python manage.py import_strains_contigs --csv ../data-generators/data/gff-assembly-prefixes.tsv  --set-type-strains BU_ATCC8492 PV_ATCC8482
-$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv --essentiality-csv ../data-generators/data/essentiality_table_all_libraries_240818_14102024.csv
-
-$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --isolate BU_CCUG35501
-$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --assembly BU_ATCC8492
-
+$ python manage.py import_ppi --dir data-generators/Sub-Projects-Data/SP2/
 ```
+
+
 
 #### Pyhmmer Database Migrations
 ```shell

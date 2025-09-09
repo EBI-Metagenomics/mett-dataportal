@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 
 from dataportal.elasticsearch.indexing import ProjectIndexManager
-from dataportal.models import SpeciesDocument, StrainDocument, FeatureDocument
+from dataportal.models import SpeciesDocument, StrainDocument, FeatureDocument, ProteinProteinDocument
 
 
 class Command(BaseCommand):
@@ -30,7 +30,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Starting Elasticsearch index creation..."))
 
-        pim = ProjectIndexManager([SpeciesDocument, StrainDocument, FeatureDocument])
+        pim = ProjectIndexManager([SpeciesDocument, StrainDocument, FeatureDocument, ProteinProteinDocument])
         created = pim.create_all(version=es_version, if_exists=if_exists)
 
         for base, concrete in created.items():

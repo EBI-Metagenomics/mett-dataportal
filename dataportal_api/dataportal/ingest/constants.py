@@ -9,3 +9,9 @@ SPECIES_BY_ACRONYM = {
     "BU": "Bacteroides uniformis",
     "PV": "Phocaeicola vulgatus",
 }
+
+SPECIES_BY_NAME = {
+    "Bacteroides uniformis": "BU",
+    "Phocaeicola vulgatus": "PV",
+}
+
