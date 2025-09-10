@@ -12,6 +12,17 @@ SPECIES_NAME_BY_ACRONYM = {
 }
 
 
+def list_csv_files(pathlike: str | None, exts=(".csv", ".tsv", ".tab", ".txt"), recursive=True) -> list[str]:
+    if not pathlike: return []
+    p = Path(pathlike).expanduser().resolve()
+    if not p.exists(): print(f"[import_operons] not found: {p}"); return []
+    if p.is_file() and p.suffix.lower() in exts: return [str(p)]
+    if p.is_dir():
+        globber = p.rglob if recursive else p.glob
+        return [str(f) for f in sorted(globber("*")) if f.suffix.lower() in exts]
+    return []
+
+
 def normalize_strain_id(s: str) -> str:
     """Normalize strain ids like BU_H1-6 -> BU_H1_6."""
     if not s:
@@ -89,16 +100,23 @@ def pick(d: dict, *keys, default=None):
 
 
 def chunks_from_table(path: str, chunksize: int = 10_000):
-    """
-    Yield pandas DataFrame chunks from a CSV/TSV/TAB file.
-    Sep is auto-picked by extension (csv->',', others->'\\t').
-    """
     suffix = Path(path).suffix.lower()
     sep = "," if suffix == ".csv" else "\t"
-    return pd.read_csv(path, sep=sep, chunksize=chunksize)
+
+    defaults = dict(
+        sep=sep,
+        chunksize=chunksize,
+        engine="python",
+        on_bad_lines="skip",
+        dtype=str,
+        encoding_errors="replace"
+    )
+    return pd.read_csv(path, **defaults)
+
 
 def canonical_pair_id(a: str, b: str) -> str:
     """Order-insensitive pair id."""
-    a = (a or "").strip(); b = (b or "").strip()
+    a = (a or "").strip();
+    b = (b or "").strip()
     x, y = sorted([a, b])
     return f"{x}__{y}"

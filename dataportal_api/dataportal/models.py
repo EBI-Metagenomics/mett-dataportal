@@ -462,17 +462,16 @@ class OperonDocument(Document):
         settings = {"index": {"max_result_window": 500_000}}
 
 class OrthologDocument(Document):
-    # identity: order-insensitive pair-id
-    pair_id = Keyword()               # "BU_61_00001__BU_909_00001"
-    doc_type = Keyword()              # 'pair'
-    # genes
-    gene_a = Keyword()
-    gene_b = Keyword()
-    # attrs
+    pair_id = Keyword()
+    locus_a = Keyword()
+    locus_b = Keyword()
+    desc_a = Text()
+    desc_b = Text()
+    species_a = Keyword()
+    species_b = Keyword()
     orthology_type = Keyword()
-    oma_group = Keyword()
-    # convenience members array
-    members = Keyword(multi=True)
+    oma_group_id = Integer()
+
 
     class Index:
         name = "ortholog_index"

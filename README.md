@@ -73,7 +73,7 @@ $ python manage.py import_species --index species_index --csv ../data-generators
 Strains + contigs only:
 ```shell
 $ python manage.py import_strains \
-  --es-index strain_index-2025.09.05 \
+  --es-index strain_index \
   --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
@@ -82,7 +82,7 @@ $ python manage.py import_strains \
 Strains - All in one go: 
 ```shell
 $ python manage.py import_strains \
-  --es-index strain_index-2025.09.05 \
+  --es-index strain_index \
   --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
@@ -99,7 +99,7 @@ $ python manage.py import_strains \
 Add Drug MIC:
 ```shell
 $ python manage.py import_strains \
-  --es-index strain_index-2025.09.04 \
+  --es-index strain_index \
   --skip-strains \
   --include-mic \
   --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
@@ -108,7 +108,7 @@ $ python manage.py import_strains \
 Add Drug Metabolism:
 ```shell
 $ python manage.py import_strains \
-  --es-index strain_index-2025.09.04 \
+  --es-index strain_index \
   --skip-strains \
   --include-metabolism \
   --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
@@ -117,10 +117,10 @@ $ python manage.py import_strains \
 ```
 
 #### Features
-Basic Genes from GFF and Essentiality:
+Basic Genes from GFF:
 ```shell
 $ python manage.py import_features \
-  --index feature_index-2026.09.06 \
+  --index feature_index \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv
 
 

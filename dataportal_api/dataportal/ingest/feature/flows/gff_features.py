@@ -58,6 +58,30 @@ class GFFGenes(Flow):
         for remote in gffs:
             self._ingest_gff_file(ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, protein_seqs)
 
+    def parse_amr_attributes(self, attr_dict):
+        """Extract AMR-related fields from GFF attributes dict and return a list of AMR dicts."""
+        element_type = attr_dict.get("element_type", "").upper()
+        if element_type != "AMR":
+            return [], False
+
+        amr_entry = {
+            "gene_symbol": attr_dict.get("amrfinderplus_gene_symbol"),
+            "sequence_name": attr_dict.get("amrfinderplus_sequence_name"),
+            "scope": attr_dict.get("amrfinderplus_scope"),
+            "element_type": attr_dict.get("element_type"),
+            "element_subtype": attr_dict.get("element_subtype"),
+            "drug_class": attr_dict.get("drug_class"),
+            "drug_subclass": attr_dict.get("drug_subclass"),
+            "uf_keyword": [
+                kw.strip()
+                for kw in attr_dict.get("uf_keyword", "").split(",")
+                if kw.strip()
+            ],
+            "uf_ecnumber": attr_dict.get("uf_prot_rec_ecnumber"),
+        }
+
+        return [amr_entry], True
+
     def _ingest_gff_file(self, ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, prot_seqs):
         local = tempfile.NamedTemporaryFile(delete=False)
         try:
@@ -77,7 +101,25 @@ class GFFGenes(Flow):
                     if not locus_tag:
                         continue
 
+                    amr_entries, has_amr_info = self.parse_amr_attributes(attr)
                     dbxref, uniprot_id, cog_id = parse_dbxref(attr.get("Dbxref", ""))
+
+                    ontology_terms = [
+                        {
+                            "ontology_type": "GO",
+                            "ontology_id": term,
+                            "ontology_description": None,
+                        }
+                        for term in attr.get("Ontology_term", "").split(",")
+                        if term
+                    ]
+
+                    uf_ontology_terms = (
+                        attr.get("uf_ontology_term", "").split(",")
+                        if "uf_ontology_term" in attr
+                        else []
+                    )
+                    uf_prot_rec_fullname = attr.get("uf_prot_rec_fullname")
 
                     doc = FeatureDocument(
                         meta={"id": locus_tag},
@@ -102,12 +144,17 @@ class GFFGenes(Flow):
                         kegg=[x for x in attr.get("kegg", "").split(",") if x],
                         pfam=[x for x in attr.get("pfam", "").split(",") if x],
                         interpro=[x for x in attr.get("interpro", "").split(",") if x],
+                        has_amr_info=has_amr_info,
+                        amr=amr_entries,
                         dbxref=dbxref,
                         ec_number=attr.get("eC_number"),
                         cog_id=[cog_id] if cog_id else [],
                         cog_funcats=[x for x in attr.get("cog", "").split(",") if x],
                         protein_sequence=prot_seqs.get(locus_tag, ""),
                         has_reactions=False, has_proteomics=False, has_fitness=False, has_mutant_growth=False,
+                        ontology_terms=ontology_terms,
+                        uf_ontology_terms=uf_ontology_terms,
+                        uf_prot_rec_fullname=uf_prot_rec_fullname,
                     )
                     doc.meta.index = self.index
                     self.add(doc.to_dict(include_meta=True))
