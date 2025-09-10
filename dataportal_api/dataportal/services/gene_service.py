@@ -153,6 +153,8 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         """Internal implementation of gene autocomplete."""
         try:
             s = Search(index=self.index_name)
+            # Always filter for genes only in feature_index
+            s = s.filter("term", feature_type="gene")
             s = s.query(
                 "multi_match",
                 query=query,
@@ -223,7 +225,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
 
     def fetch_gene_by_locus_tag(self, locus_tag: str):
-        s = Search(index=self.index_name).query("match", locus_tag=locus_tag)
+        s = Search(index=self.index_name).filter("term", feature_type="gene").query("match", locus_tag=locus_tag)
         response = s.execute()
 
         if not response.hits:
@@ -630,6 +632,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         try:
             s = (
                 Search(index=self.index_name)
+                .filter("term", feature_type="gene")
                 .query(query)
                 .sort({sort_by: {"order": order_prefix}})[start : start + per_page]
                 .extra(track_total_hits=True)
@@ -669,6 +672,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     ) -> dict:
         """Build a properly structured Elasticsearch query for both full-text search and filters."""
         es_query = {"bool": {"must": []}}
+        
+        # Always filter for genes only in feature_index
+        es_query["bool"]["must"].append({"term": {"feature_type": "gene"}})
 
         # locus_tag parameter with precedence over query
         if params and params.locus_tag:
@@ -883,6 +889,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         """Fetch protein sequence information for a gene by its locus tag."""
         try:
             s = Search(index=self.index_name)
+            s = s.filter("term", feature_type="gene")
             s = s.query("match", locus_tag=locus_tag)
             s = s.source([ES_FIELD_LOCUS_TAG, "protein_sequence"])
 
