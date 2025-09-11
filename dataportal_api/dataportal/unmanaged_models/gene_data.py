@@ -25,6 +25,7 @@ from dataportal.utils.constants import (
     ES_FIELD_EGGNOG,
     ES_FIELD_SPECIES_ACRONYM,
     ES_FIELD_SPECIES_SCIENTIFIC_NAME,
+    ES_FIELD_FEATURE_TYPE,
 )
 
 
@@ -55,6 +56,7 @@ class GeneData(models.Model):
     locals()[ES_FIELD_EGGNOG] = models.CharField(max_length=255, null=True)
     locals()[ES_FIELD_AMR] = models.JSONField(null=True, default=list)
     locals()[ES_FIELD_AMR_INFO] = models.BooleanField(null=True, default=False)
+    locals()[ES_FIELD_FEATURE_TYPE] = models.CharField(max_length=50, null=True, default="gene")
 
     class Meta:
         managed = False
@@ -86,4 +88,5 @@ def gene_from_hit(hit) -> GeneData:
         eggnog=source.get(ES_FIELD_EGGNOG),
         amr=source.get(ES_FIELD_AMR, []),
         has_amr_info=source.get(ES_FIELD_AMR_INFO),
+        feature_type=source.get(ES_FIELD_FEATURE_TYPE, "gene"),
     )

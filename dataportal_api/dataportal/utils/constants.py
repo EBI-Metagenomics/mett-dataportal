@@ -49,6 +49,7 @@ GENE_FIELD_ANNOTATIONS = "annotations"
 GENE_DEFAULT_SORT_FIELD = "gene_name"
 GENE_SORT_FIELD_STRAIN = "strain"
 GENE_ESSENTIALITY = "essentiality"
+ES_FIELD_FEATURE_TYPE = "feature_type"
 
 # Elasticsearch field constants
 ES_FIELD_GENE_NAME = "gene_name"

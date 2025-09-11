@@ -184,6 +184,7 @@ class GeneAutocompleteResponseSchema(BaseModel):
     cog_id: Optional[List[str]] = None
     interpro: Optional[List[str]] = None
     essentiality: Optional[str] = "Unknown"
+    feature_type: Optional[str] = "gene"
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -320,6 +321,7 @@ class GeneResponseSchema(BaseModel):
     eggnog: Optional[str] = None
     amr: Optional[List[AMRSchema]] = None
     has_amr_info: Optional[bool] = None
+    feature_type: Optional[str] = "gene"
     model_config = ConfigDict(from_attributes=True)
 
 

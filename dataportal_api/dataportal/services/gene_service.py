@@ -937,6 +937,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             "cog_funcats",
             "cog_id",
             "amr",
+            "feature_type",
         ]
 
         # Create header row
