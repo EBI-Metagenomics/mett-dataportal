@@ -3,13 +3,13 @@ import tempfile, os
 from dataportal.ingest.feature.flows.base import Flow
 from dataportal.ingest.feature.sources import ftp_connect, load_protein_seqs
 from dataportal.ingest.feature.parsing import parse_dbxref
-from dataportal.ingest.utils import normalize_strain_id, species_name_for_isolate, strain_prefix
+from dataportal.ingest.utils import species_name_for_isolate, strain_prefix
 from dataportal.models import FeatureDocument  # your ES DSL document
 
 class GFFGenes(Flow):
     """
     Builds gene features from GFFs on FTP. IGs are created by Essentiality flow.
-    Uses *raw* isolate names for FTP paths and *normalized* isolate ids in ES docs.
+    Uses raw isolate names for both FTP paths and ES docs.
     """
     def __init__(self, ftp_server, ftp_root, index_name="feature_index", mapping=None):
         super().__init__(index_name)
@@ -20,13 +20,10 @@ class GFFGenes(Flow):
     def run(self, raw_isolates: list[str], norm_isolates: list[str] | None = None):
         """
         raw_isolates: directory names as listed on FTP
-        norm_isolates: normalized ids for ES (if None, we will normalize internally)
+        norm_isolates: not used anymore - we use raw names directly
         """
-        if norm_isolates is None:
-            norm_isolates = [normalize_strain_id(s) for s in raw_isolates]
-
-        # pair raw + normalized in order
-        pairs = list(zip(raw_isolates, norm_isolates))
+        # Use raw isolate names directly
+        pairs = [(raw_isolate, raw_isolate) for raw_isolate in raw_isolates]
 
         ftp = ftp_connect(self.ftp_server)
         try:
@@ -51,9 +48,9 @@ class GFFGenes(Flow):
         except Exception:
             pass
 
-        # taxonomy from normalized isolate id
-        sp_name = species_name_for_isolate(norm_isolate)
-        sp_acronym = strain_prefix(norm_isolate)
+        # taxonomy from raw isolate id
+        sp_name = species_name_for_isolate(raw_isolate)
+        sp_acronym = strain_prefix(raw_isolate)
 
         for remote in gffs:
             self._ingest_gff_file(ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, protein_seqs)
@@ -140,7 +137,7 @@ class GFFGenes(Flow):
                         eggnog=attr.get("eggNOG") or attr.get("eggnog"),
                         species_scientific_name=sp_name,
                         species_acronym=sp_acronym,
-                        isolate_name=norm_isolate,          # <-- normalized for ES linking
+                        isolate_name=raw_isolate,           # <-- use raw isolate name
                         kegg=[x for x in attr.get("kegg", "").split(",") if x],
                         pfam=[x for x in attr.get("pfam", "").split(",") if x],
                         interpro=[x for x in attr.get("interpro", "").split(",") if x],

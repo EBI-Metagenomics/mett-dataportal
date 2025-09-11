@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 from dataportal.models import StrainDocument
 from dataportal.ingest.es_repo import StrainIndexRepository
-from dataportal.ingest.utils import normalize_strain_id, species_name_for_isolate, strain_prefix
+from dataportal.ingest.utils import species_name_for_isolate, strain_prefix
 from dataportal.ingest.strain.resolver import StrainResolver  # ✅ add resolver
 from .parsers import (
     ftp_connect,
@@ -78,18 +78,17 @@ class StrainContigImporter(BaseImporter):
 
         fasta_files = ftp_list_fasta(ftp, self.ftp_directory)
 
-        # Normalize type_strains once so we compare apples-to-apples
+        # Use raw type_strains without normalization
         if self.type_strains is not None:
-            norm_list = [normalize_strain_id(s) for s in (self.type_strains or [])]
-            # If resolver is available, canonicalize them too
+            # If resolver is available, canonicalize them
             if self.resolver:
                 canon_list = []
-                for s in norm_list:
+                for s in self.type_strains:
                     cid, _ = self.resolver.canonicalize(s)
                     canon_list.append(cid)
                 type_set = set(canon_list)
             else:
-                type_set = set(norm_list)
+                type_set = set(self.type_strains)
         else:
             type_set = None  # means "do not modify type_strain"
 
@@ -102,14 +101,14 @@ class StrainContigImporter(BaseImporter):
             if not raw_isolate:
                 continue
 
-            # normalize input isolate
-            iso_norm = normalize_strain_id(raw_isolate)
+            # Use raw isolate name directly
+            isolate_name = raw_isolate
 
             # ✅ resolve canonical id via resolver (prevents variant ids)
             if self.resolver:
-                canonical_id, _ = self.resolver.canonicalize(iso_norm)
+                canonical_id, _ = self.resolver.canonicalize(isolate_name)
             else:
-                canonical_id = iso_norm
+                canonical_id = isolate_name
 
             # species based on canonical id (prefix is the same BU/PV...)
             species_name = species_name_for_isolate(canonical_id)
@@ -140,7 +139,7 @@ class StrainContigImporter(BaseImporter):
 
             # core identity (idempotent) — always canonical
             doc.strain_id = canonical_id
-            doc.isolate_name = canonical_id
+            doc.isolate_name = isolate_name  # Use raw isolate name
             doc.assembly_name = assembly_name
             doc.assembly_accession = f"AA{accession_counter:05d}"
             accession_counter += 1

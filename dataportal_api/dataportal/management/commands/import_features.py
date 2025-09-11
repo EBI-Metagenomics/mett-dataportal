@@ -7,7 +7,7 @@ from dataportal.ingest.feature.flows.mutant_growth import MutantGrowth
 from dataportal.ingest.feature.flows.protein_compound import ProteinCompound
 from dataportal.ingest.feature.flows.proteomics import Proteomics
 from dataportal.ingest.feature.flows.reactions import Reactions
-from dataportal.ingest.utils import read_tsv_mapping, normalize_strain_id, list_csv_files
+from dataportal.ingest.utils import read_tsv_mapping, list_csv_files
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s:%(message)s")
@@ -73,15 +73,13 @@ class Command(BaseCommand):
         else:
             raw_isolates = isolates
 
-        # normalize for consistent ES linking
-        normalized_isolates = [normalize_strain_id(s) for s in raw_isolates]
-
+        # Use raw isolate names directly
         # 1) core genes (GFF) — can be skipped
         if not o.get("skip_core_genes"):
-            # Pass *both* lists so the flow can use raw names for FTP paths
+            # Pass raw names only
             GFFGenes(
                 o["ftp_server"], o["ftp_root"], index_name=index_name, mapping=mapping
-            ).run(raw_isolates=raw_isolates, norm_isolates=normalized_isolates)
+            ).run(raw_isolates=raw_isolates, norm_isolates=None)
         else:
             print("[import_features] Skipping core gene (GFF) import as requested.")
 
