@@ -23,6 +23,9 @@ from dataportal.schema.drug_schemas import (
     DrugMetabolismPaginationSchema,
     DrugSuggestionSchema,
     DrugAutocompleteQuerySchema,
+    PaginatedStrainDrugMICResponseSchema,
+    PaginatedStrainDrugMetabolismResponseSchema,
+    PaginatedStrainDrugDataResponseSchema,
 )
 from dataportal.services.base_service import BaseService
 from dataportal.utils.decorators import log_execution_time
@@ -142,6 +145,165 @@ class DrugService(BaseService[StrainDrugMICResponseSchema, Dict[str, Any]]):
         except Exception as e:
             logger.error(f"Error getting strain drug data for {isolate_name}: {e}")
             raise ServiceError(f"Failed to retrieve drug data: {str(e)}")
+
+    @log_execution_time
+    async def get_strain_drug_mic_paginated(self, isolate_name: str, page: int = 1, per_page: int = 20) -> Optional[PaginatedStrainDrugMICResponseSchema]:
+        """Get paginated drug MIC data for a specific strain."""
+        try:
+            search = self._create_search().query("term", _id=isolate_name)
+            response = await self._execute_search(search)
+            
+            if not response.hits:
+                return None
+                
+            hit = response.hits[0]
+            source = hit.to_dict()
+            
+            # Extract all drug MIC data
+            all_drug_mic_data = []
+            for mic_data in source.get("drug_mic", []):
+                all_drug_mic_data.append(DrugMICDataSchema(**mic_data))
+            
+            # Apply pagination
+            total_results = len(all_drug_mic_data)
+            total_pages = (total_results + per_page - 1) // per_page
+            start_index = (page - 1) * per_page
+            end_index = start_index + per_page
+            paginated_data = all_drug_mic_data[start_index:end_index]
+            
+            from dataportal.schema.response_schemas import PaginationMetadataSchema
+            
+            return PaginatedStrainDrugMICResponseSchema(
+                isolate_name=source.get("isolate_name", isolate_name),
+                species_acronym=source.get("species_acronym"),
+                species_scientific_name=source.get("species_scientific_name"),
+                drug_mic_data=paginated_data,
+                pagination=PaginationMetadataSchema(
+                    page_number=page,
+                    num_pages=total_pages,
+                    has_previous=page > 1,
+                    has_next=page < total_pages,
+                    total_results=total_results,
+                    per_page=per_page
+                )
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting paginated strain drug MIC data for {isolate_name}: {e}")
+            raise ServiceError(f"Failed to retrieve paginated drug MIC data: {str(e)}")
+
+    @log_execution_time
+    async def get_strain_drug_metabolism_paginated(self, isolate_name: str, page: int = 1, per_page: int = 20) -> Optional[PaginatedStrainDrugMetabolismResponseSchema]:
+        """Get paginated drug metabolism data for a specific strain."""
+        try:
+            search = self._create_search().query("term", _id=isolate_name)
+            response = await self._execute_search(search)
+            
+            if not response.hits:
+                return None
+                
+            hit = response.hits[0]
+            source = hit.to_dict()
+            
+            # Extract all drug metabolism data
+            all_drug_metabolism_data = []
+            for metab_data in source.get("drug_metabolism", []):
+                all_drug_metabolism_data.append(DrugMetabolismDataSchema(**metab_data))
+            
+            # Apply pagination
+            total_results = len(all_drug_metabolism_data)
+            total_pages = (total_results + per_page - 1) // per_page
+            start_index = (page - 1) * per_page
+            end_index = start_index + per_page
+            paginated_data = all_drug_metabolism_data[start_index:end_index]
+            
+            from dataportal.schema.response_schemas import PaginationMetadataSchema
+            
+            return PaginatedStrainDrugMetabolismResponseSchema(
+                isolate_name=source.get("isolate_name", isolate_name),
+                species_acronym=source.get("species_acronym"),
+                species_scientific_name=source.get("species_scientific_name"),
+                drug_metabolism_data=paginated_data,
+                pagination=PaginationMetadataSchema(
+                    page_number=page,
+                    num_pages=total_pages,
+                    has_previous=page > 1,
+                    has_next=page < total_pages,
+                    total_results=total_results,
+                    per_page=per_page
+                )
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting paginated strain drug metabolism data for {isolate_name}: {e}")
+            raise ServiceError(f"Failed to retrieve paginated drug metabolism data: {str(e)}")
+
+    @log_execution_time
+    async def get_strain_drug_data_paginated(self, isolate_name: str, page: int = 1, per_page: int = 20) -> Optional[PaginatedStrainDrugDataResponseSchema]:
+        """Get paginated all drug data (MIC + metabolism) for a specific strain."""
+        try:
+            search = self._create_search().query("term", _id=isolate_name)
+            response = await self._execute_search(search)
+            
+            if not response.hits:
+                return None
+                
+            hit = response.hits[0]
+            source = hit.to_dict()
+            
+            # Extract all drug MIC data
+            all_drug_mic_data = []
+            for mic_data in source.get("drug_mic", []):
+                all_drug_mic_data.append(DrugMICDataSchema(**mic_data))
+            
+            # Extract all drug metabolism data
+            all_drug_metabolism_data = []
+            for metab_data in source.get("drug_metabolism", []):
+                all_drug_metabolism_data.append(DrugMetabolismDataSchema(**metab_data))
+            
+            # Apply pagination to both datasets
+            total_mic = len(all_drug_mic_data)
+            total_metab = len(all_drug_metabolism_data)
+            total_results = total_mic + total_metab
+            total_pages = (total_results + per_page - 1) // per_page
+            
+            start_index = (page - 1) * per_page
+            end_index = start_index + per_page
+            
+            # Combine and paginate the data
+            combined_data = []
+            for mic_data in all_drug_mic_data:
+                combined_data.append({"type": "mic", "data": mic_data})
+            for metab_data in all_drug_metabolism_data:
+                combined_data.append({"type": "metabolism", "data": metab_data})
+            
+            paginated_combined = combined_data[start_index:end_index]
+            
+            # Separate back into MIC and metabolism
+            paginated_mic = [item["data"] for item in paginated_combined if item["type"] == "mic"]
+            paginated_metab = [item["data"] for item in paginated_combined if item["type"] == "metabolism"]
+            
+            from dataportal.schema.response_schemas import PaginationMetadataSchema
+            
+            return PaginatedStrainDrugDataResponseSchema(
+                isolate_name=source.get("isolate_name", isolate_name),
+                species_acronym=source.get("species_acronym"),
+                species_scientific_name=source.get("species_scientific_name"),
+                drug_mic_data=paginated_mic,
+                drug_metabolism_data=paginated_metab,
+                pagination=PaginationMetadataSchema(
+                    page_number=page,
+                    num_pages=total_pages,
+                    has_previous=page > 1,
+                    has_next=page < total_pages,
+                    total_results=total_results,
+                    per_page=per_page
+                )
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting paginated strain drug data for {isolate_name}: {e}")
+            raise ServiceError(f"Failed to retrieve paginated drug data: {str(e)}")
 
     @log_execution_time
     async def search_drug_mic(self, query: DrugMICSearchQuerySchema) -> Dict[str, Any]:

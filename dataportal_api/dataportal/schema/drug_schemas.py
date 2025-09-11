@@ -3,53 +3,56 @@ Pydantic schemas for drug MIC and metabolism data endpoints.
 """
 
 from typing import Optional, List
+
 from pydantic import BaseModel, Field, ConfigDict
+
 from dataportal.schema.base_schemas import BasePaginationSchema
+from dataportal.schema.response_schemas import PaginationMetadataSchema
 
 
 class DrugMICDataSchema(BaseModel):
     """Schema for individual drug MIC measurement."""
-    
+
     model_config = ConfigDict(populate_by_name=True)
-    
+
     drug_name: Optional[str] = Field(None, description="Name of the drug")
     drug_class: Optional[str] = Field(None, description="Drug class (e.g., beta_lactam)")
     drug_subclass: Optional[str] = Field(None, description="Drug subclass")
     compound_name: Optional[str] = Field(None, description="Chemical compound name")
     pubchem_id: Optional[str] = Field(None, description="PubChem compound ID")
-    
+
     relation: Optional[str] = Field(None, description="MIC relation (=, >, <=, etc.)")
     mic_value: Optional[float] = Field(None, description="MIC value")
     unit: Optional[str] = Field(None, description="Unit of measurement (uM, mg/L)")
-    
+
     experimental_condition_id: Optional[int] = Field(None, description="Experimental condition ID")
     experimental_condition_name: Optional[str] = Field(None, description="Experimental condition name")
 
 
 class DrugMetabolismDataSchema(BaseModel):
     """Schema for individual drug metabolism measurement."""
-    
+
     model_config = ConfigDict(populate_by_name=True)
-    
+
     drug_name: Optional[str] = Field(None, description="Name of the drug")
     drug_class: Optional[str] = Field(None, description="Drug class (e.g., beta_lactam)")
     drug_subclass: Optional[str] = Field(None, description="Drug subclass")
     compound_name: Optional[str] = Field(None, description="Chemical compound name")
     pubchem_id: Optional[str] = Field(None, description="PubChem compound ID")
-    
+
     degr_percent: Optional[float] = Field(None, description="Degradation percentage")
     pval: Optional[float] = Field(None, description="P-value")
     fdr: Optional[float] = Field(None, description="False Discovery Rate")
     metabolizer_classification: Optional[str] = Field(None, description="Metabolizer classification")
     is_significant: Optional[bool] = Field(None, description="Whether the result is statistically significant")
-    
+
     experimental_condition_id: Optional[int] = Field(None, description="Experimental condition ID")
     experimental_condition_name: Optional[str] = Field(None, description="Experimental condition name")
 
 
 class StrainDrugMICResponseSchema(BaseModel):
     """Response schema for strain drug MIC data."""
-    
+
     isolate_name: str = Field(..., description="Strain isolate name")
     species_acronym: Optional[str] = Field(None, description="Species acronym")
     species_scientific_name: Optional[str] = Field(None, description="Species scientific name")
@@ -58,27 +61,29 @@ class StrainDrugMICResponseSchema(BaseModel):
 
 class StrainDrugMetabolismResponseSchema(BaseModel):
     """Response schema for strain drug metabolism data."""
-    
+
     isolate_name: str = Field(..., description="Strain isolate name")
     species_acronym: Optional[str] = Field(None, description="Species acronym")
     species_scientific_name: Optional[str] = Field(None, description="Species scientific name")
-    drug_metabolism_data: List[DrugMetabolismDataSchema] = Field(default_factory=list, description="List of drug metabolism measurements")
+    drug_metabolism_data: List[DrugMetabolismDataSchema] = Field(default_factory=list,
+                                                                 description="List of drug metabolism measurements")
 
 
 class StrainDrugDataResponseSchema(BaseModel):
     """Response schema for combined strain drug data (MIC + metabolism)."""
-    
+
     isolate_name: str = Field(..., description="Strain isolate name")
     species_acronym: Optional[str] = Field(None, description="Species acronym")
     species_scientific_name: Optional[str] = Field(None, description="Species scientific name")
     drug_mic_data: List[DrugMICDataSchema] = Field(default_factory=list, description="List of drug MIC measurements")
-    drug_metabolism_data: List[DrugMetabolismDataSchema] = Field(default_factory=list, description="List of drug metabolism measurements")
+    drug_metabolism_data: List[DrugMetabolismDataSchema] = Field(default_factory=list,
+                                                                 description="List of drug metabolism measurements")
 
 
 # Drug-centric search schemas
 class DrugMICSearchQuerySchema(BaseModel):
     """Query schema for drug MIC search."""
-    
+
     query: str = Field("", description="Search term for drug name, class, or strain")
     drug_name: Optional[str] = Field(None, description="Filter by specific drug name")
     drug_class: Optional[str] = Field(None, description="Filter by drug class")
@@ -89,13 +94,14 @@ class DrugMICSearchQuerySchema(BaseModel):
     experimental_condition: Optional[str] = Field(None, description="Filter by experimental condition")
     page: int = Field(1, description="Page number")
     per_page: int = Field(20, description="Number of results per page")
-    sort_by: Optional[str] = Field("isolate_name", description="Sort field (isolate_name, species_acronym, species_scientific_name). Uses keyword fields for sorting.")
+    sort_by: Optional[str] = Field("isolate_name",
+                                   description="Sort field (isolate_name, species_acronym, species_scientific_name). Uses keyword fields for sorting.")
     sort_order: Optional[str] = Field("asc", description="Sort order (asc, desc)")
 
 
 class DrugMetabolismSearchQuerySchema(BaseModel):
     """Query schema for drug metabolism search."""
-    
+
     query: str = Field("", description="Search term for drug name, class, or strain")
     drug_name: Optional[str] = Field(None, description="Filter by specific drug name")
     drug_class: Optional[str] = Field(None, description="Filter by drug class")
@@ -107,13 +113,14 @@ class DrugMetabolismSearchQuerySchema(BaseModel):
     experimental_condition: Optional[str] = Field(None, description="Filter by experimental condition")
     page: int = Field(1, description="Page number")
     per_page: int = Field(20, description="Number of results per page")
-    sort_by: Optional[str] = Field("isolate_name", description="Sort field (isolate_name, species_acronym, species_scientific_name). Uses keyword fields for sorting.")
+    sort_by: Optional[str] = Field("isolate_name",
+                                   description="Sort field (isolate_name, species_acronym, species_scientific_name). Uses keyword fields for sorting.")
     sort_order: Optional[str] = Field("asc", description="Sort order (asc, desc)")
 
 
 class DrugMICSearchResultSchema(BaseModel):
     """Individual result schema for drug MIC search."""
-    
+
     isolate_name: str = Field(..., description="Strain isolate name")
     species_acronym: Optional[str] = Field(None, description="Species acronym")
     species_scientific_name: Optional[str] = Field(None, description="Species scientific name")
@@ -127,7 +134,7 @@ class DrugMICSearchResultSchema(BaseModel):
 
 class DrugMetabolismSearchResultSchema(BaseModel):
     """Individual result schema for drug metabolism search."""
-    
+
     isolate_name: str = Field(..., description="Strain isolate name")
     species_acronym: Optional[str] = Field(None, description="Species acronym")
     species_scientific_name: Optional[str] = Field(None, description="Species scientific name")
@@ -166,3 +173,32 @@ class DrugAutocompleteQuerySchema(BaseModel):
     limit: int = Field(10, description="Maximum number of suggestions to return")
     species_acronym: Optional[str] = Field(None, description="Optional species acronym filter (BU, PV)")
     data_type: str = Field("mic", description="Type of data to search (mic, metabolism)")
+
+
+# Paginated response schemas for strain drug endpoints
+class PaginatedStrainDrugMICResponseSchema(BaseModel):
+    """Paginated response schema for strain drug MIC data."""
+    isolate_name: str = Field(..., description="Strain isolate name")
+    species_acronym: Optional[str] = Field(None, description="Species acronym")
+    species_scientific_name: Optional[str] = Field(None, description="Species scientific name")
+    drug_mic_data: List[DrugMICDataSchema] = Field(..., description="List of drug MIC data")
+    pagination: PaginationMetadataSchema = Field(..., description="Pagination metadata")
+
+
+class PaginatedStrainDrugMetabolismResponseSchema(BaseModel):
+    """Paginated response schema for strain drug metabolism data."""
+    isolate_name: str = Field(..., description="Strain isolate name")
+    species_acronym: Optional[str] = Field(None, description="Species acronym")
+    species_scientific_name: Optional[str] = Field(None, description="Species scientific name")
+    drug_metabolism_data: List[DrugMetabolismDataSchema] = Field(..., description="List of drug metabolism data")
+    pagination: PaginationMetadataSchema = Field(..., description="Pagination metadata")
+
+
+class PaginatedStrainDrugDataResponseSchema(BaseModel):
+    """Paginated response schema for strain drug data (MIC + metabolism)."""
+    isolate_name: str = Field(..., description="Strain isolate name")
+    species_acronym: Optional[str] = Field(None, description="Species acronym")
+    species_scientific_name: Optional[str] = Field(None, description="Species scientific name")
+    drug_mic_data: List[DrugMICDataSchema] = Field(..., description="List of drug MIC data")
+    drug_metabolism_data: List[DrugMetabolismDataSchema] = Field(..., description="List of drug metabolism data")
+    pagination: PaginationMetadataSchema = Field(..., description="Pagination metadata")

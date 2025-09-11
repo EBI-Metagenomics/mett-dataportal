@@ -4,6 +4,11 @@ from typing import List, Dict
 from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
+from dataportal.schema.drug_schemas import (
+    PaginatedStrainDrugMICResponseSchema,
+    PaginatedStrainDrugMetabolismResponseSchema,
+    StrainDrugDataResponseSchema,
+)
 from dataportal.schema.gene_schemas import (
     EssentialityByContigSchema,
 )
@@ -17,22 +22,16 @@ from dataportal.schema.genome_schemas import (
     GenesByGenomeQuerySchema,
     GenomeDownloadTSVQuerySchema,
 )
-from dataportal.schema.drug_schemas import (
-    StrainDrugMICResponseSchema,
-    StrainDrugMetabolismResponseSchema,
-    StrainDrugDataResponseSchema,
-)
 from ..schema.response_schemas import PaginatedResponseSchema
+from ..services.drug_service import DrugService
 from ..services.essentiality_service import EssentialityService
 from ..services.gene_service import GeneService
-from ..services.drug_service import DrugService
 from ..services.service_factory import ServiceFactory
 from ..utils.constants import (
     DEFAULT_SORT,
     STRAIN_FIELD_ISOLATE_NAME,
     SCROLL_MAX_RESULTS,
 )
-
 from ..utils.errors import raise_http_error, raise_internal_server_error
 from ..utils.exceptions import (
     ServiceError,
@@ -58,7 +57,7 @@ genome_router = Router(tags=[ROUTER_GENOME])
     include_in_schema=False,
 )
 async def autocomplete_suggestions(
-    request, query: GenomeAutocompleteQuerySchema = Query(...)
+        request, query: GenomeAutocompleteQuerySchema = Query(...)
 ):
     return await genome_service.search_strains(query)
 
@@ -69,9 +68,9 @@ async def autocomplete_suggestions(
     response=List[GenomeResponseSchema],
     summary="Get all type strains",
     description=(
-        "Returns a list of genomes that are designated as type strains. "
-        "Type strains represent reference genomes for a given species and are essential "
-        "for comparative analysis and classification."
+            "Returns a list of genomes that are designated as type strains. "
+            "Type strains represent reference genomes for a given species and are essential "
+            "for comparative analysis and classification."
     ),
 )
 async def get_type_strains(request):
@@ -86,14 +85,14 @@ async def get_type_strains(request):
     response=PaginatedResponseSchema,
     summary="Search genomes by query",
     description=(
-        "Searches genomes using a free-text query string. "
-        "Returns a paginated list of matching genome records. "
-        "Supports optional sorting by 'isolate_name' or 'species'."
+            "Searches genomes using a free-text query string. "
+            "Returns a paginated list of matching genome records. "
+            "Supports optional sorting by 'isolate_name' or 'species'."
     ),
 )
 @wrap_paginated_response
 async def search_genomes_by_string(
-    request, query: GenomeSearchQuerySchema = Query(...)
+        request, query: GenomeSearchQuerySchema = Query(...)
 ):
     try:
         result = await genome_service.search_genomes_by_string(query)
@@ -108,13 +107,13 @@ async def search_genomes_by_string(
     response=List[GenomeResponseSchema],
     summary="Get genomes by isolate names",
     description=(
-        "Retrieves genome records for one or more isolate names. "
-        "Accepts a comma-separated list of isolate names as input. "
-        "Useful for batch lookups when isolate identifiers are known."
+            "Retrieves genome records for one or more isolate names. "
+            "Accepts a comma-separated list of isolate names as input. "
+            "Useful for batch lookups when isolate identifiers are known."
     ),
 )
 async def get_genomes_by_isolate_names(
-    request, query: GenomesByIsolateNamesQuerySchema = Query(...)
+        request, query: GenomesByIsolateNamesQuerySchema = Query(...)
 ):
     try:
         return await genome_service.get_genomes_by_isolate_names(query)
@@ -128,7 +127,7 @@ async def get_genomes_by_isolate_names(
     response=PaginatedResponseSchema,
     summary="Get all genomes",
     description="Retrieves a paginated list of all genomes available in the system. "
-    "Supports optional sorting by 'isolate_name' or 'species'. ",
+                "Supports optional sorting by 'isolate_name' or 'species'. ",
 )
 @wrap_paginated_response
 async def get_all_genomes(request, query: GetAllGenomesQuerySchema = Query(...)):
@@ -149,18 +148,18 @@ async def get_all_genomes(request, query: GetAllGenomesQuerySchema = Query(...))
     response=PaginatedResponseSchema,
     summary="Get genes by genome isolate",
     description=(
-        "Retrieves a paginated list of genes associated with a specific genome isolate. "
-        "Supports optional sorting by 'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
-        "Useful for viewing all genes within a selected genome."
+            "Retrieves a paginated list of genes associated with a specific genome isolate. "
+            "Supports optional sorting by 'isolate_name', 'gene_name', 'alias', 'seq_id', 'locus_tag' and 'product'. "
+            "Useful for viewing all genes within a selected genome."
     ),
 )
 @wrap_paginated_response
 async def get_genes_by_genome(
-    request,
-    isolate_name: str = Path(
-        ..., description="Unique isolate name identifying the genome."
-    ),
-    query: GenesByGenomeQuerySchema = Query(...),
+        request,
+        isolate_name: str = Path(
+            ..., description="Unique isolate name identifying the genome."
+        ),
+        query: GenesByGenomeQuerySchema = Query(...),
 ):
     try:
         result = await gene_service.get_genes_by_genome(
@@ -186,18 +185,18 @@ async def get_genes_by_genome(
     response=Dict[str, EssentialityByContigSchema],
     summary="Get essentiality data by genome and contig",
     description=(
-        "Retrieves cached essentiality data for a given genome isolate and reference name (e.g. contig_1). "
-        "Returns gene essentiality information grouped by contig. "
-        "This data is typically precomputed and used to visualize gene essentiality in genome browsers or analysis tools."
+            "Retrieves cached essentiality data for a given genome isolate and reference name (e.g. contig_1). "
+            "Returns gene essentiality information grouped by contig. "
+            "This data is typically precomputed and used to visualize gene essentiality in genome browsers or analysis tools."
     ),
 )
 async def get_essentiality_data_by_contig(
-    request,
-    isolate_name: str = Path(..., description="Isolate name identifying the genome."),
-    ref_name: str = Path(
-        ...,
-        description="Reference sequence (e.g. contig_1) name to retrieve essentiality data for.",
-    ),
+        request,
+        isolate_name: str = Path(..., description="Isolate name identifying the genome."),
+        ref_name: str = Path(
+            ...,
+            description="Reference sequence (e.g. contig_1) name to retrieve essentiality data for.",
+        ),
 ):
     try:
         essentiality_data = (
@@ -224,14 +223,14 @@ async def get_essentiality_data_by_contig(
     "/download/tsv",
     summary="Download all genomes in TSV format",
     description=(
-        "Downloads all genomes matching the current filters in TSV (Tab-Separated Values) format. "
-        "This endpoint returns all records without pagination, suitable for bulk data export. "
-        "Supports the same filtering options as the search endpoints."
+            "Downloads all genomes matching the current filters in TSV (Tab-Separated Values) format. "
+            "This endpoint returns all records without pagination, suitable for bulk data export. "
+            "Supports the same filtering options as the search endpoints."
     ),
     include_in_schema=False,
 )
 async def download_genomes_tsv(
-    request, query: GenomeDownloadTSVQuerySchema = Query(...)
+        request, query: GenomeDownloadTSVQuerySchema = Query(...)
 ):
     try:
         logger.debug(
@@ -299,17 +298,22 @@ async def download_genomes_tsv(
 # Drug data endpoints for strains
 @genome_router.get(
     "/{isolate_name}/drug-mic",
-    response=StrainDrugMICResponseSchema,
+    response=PaginatedStrainDrugMICResponseSchema,
     summary="Get drug MIC data for a strain",
     description=(
-        "Retrieves drug MIC (Minimum Inhibitory Concentration) data for a specific strain. "
-        "Returns all MIC measurements including drug names, values, units, and experimental conditions."
+            "Retrieves drug MIC (Minimum Inhibitory Concentration) data for a specific strain. "
+            "Returns paginated MIC measurements including drug names, values, units, and experimental conditions."
     ),
 )
-async def get_strain_drug_mic(request, isolate_name: str = Path(..., description="Strain isolate name")):
-    """Get drug MIC data for a specific strain."""
+async def get_strain_drug_mic(
+        request,
+        isolate_name: str = Path(..., description="Strain isolate name"),
+        page: int = Query(1, description="Page number", ge=1),
+        per_page: int = Query(20, description="Number of results per page", ge=1, le=100)
+):
+    """Get paginated drug MIC data for a specific strain."""
     try:
-        result = await drug_service.get_strain_drug_mic(isolate_name)
+        result = await drug_service.get_strain_drug_mic_paginated(isolate_name, page, per_page)
         if not result:
             raise HttpError(404, f"No drug MIC data found for strain: {isolate_name}")
         return result
@@ -323,17 +327,22 @@ async def get_strain_drug_mic(request, isolate_name: str = Path(..., description
 
 @genome_router.get(
     "/{isolate_name}/drug-metabolism",
-    response=StrainDrugMetabolismResponseSchema,
+    response=PaginatedStrainDrugMetabolismResponseSchema,
     summary="Get drug metabolism data for a strain",
     description=(
-        "Retrieves drug metabolism data for a specific strain. "
-        "Returns degradation percentages, statistical significance, and metabolizer classifications."
+            "Retrieves drug metabolism data for a specific strain. "
+            "Returns paginated degradation percentages, statistical significance, and metabolizer classifications."
     ),
 )
-async def get_strain_drug_metabolism(request, isolate_name: str = Path(..., description="Strain isolate name")):
-    """Get drug metabolism data for a specific strain."""
+async def get_strain_drug_metabolism(
+        request,
+        isolate_name: str = Path(..., description="Strain isolate name"),
+        page: int = Query(1, description="Page number", ge=1),
+        per_page: int = Query(20, description="Number of results per page", ge=1, le=100)
+):
+    """Get paginated drug metabolism data for a specific strain."""
     try:
-        result = await drug_service.get_strain_drug_metabolism(isolate_name)
+        result = await drug_service.get_strain_drug_metabolism_paginated(isolate_name, page, per_page)
         if not result:
             raise HttpError(404, f"No drug metabolism data found for strain: {isolate_name}")
         return result
@@ -351,10 +360,14 @@ async def get_strain_drug_metabolism(request, isolate_name: str = Path(..., desc
     summary="Get all drug data for a strain",
     description=(
         "Retrieves both drug MIC and metabolism data for a specific strain. "
-        "Returns comprehensive drug response information including resistance and metabolism patterns."
+        "Returns comprehensive drug response information including resistance and metabolism patterns. "
+        "No pagination is applied as this endpoint returns complete datasets for both MIC and metabolism data."
     ),
 )
-async def get_strain_drug_data(request, isolate_name: str = Path(..., description="Strain isolate name")):
+async def get_strain_drug_data(
+    request,
+    isolate_name: str = Path(..., description="Strain isolate name")
+):
     """Get all drug data (MIC + metabolism) for a specific strain."""
     try:
         result = await drug_service.get_strain_drug_data(isolate_name)

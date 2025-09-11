@@ -3,10 +3,9 @@ Drug-specific API endpoints for MIC and metabolism data.
 """
 
 import logging
-from typing import List, Dict
+from typing import List
 
 from ninja import Router, Query, Path
-from ninja.errors import HttpError
 
 from dataportal.schema.drug_schemas import (
     DrugMICSearchQuerySchema,
@@ -18,7 +17,7 @@ from dataportal.schema.drug_schemas import (
 )
 from dataportal.schema.response_schemas import PaginatedResponseSchema
 from dataportal.services.drug_service import DrugService
-from dataportal.utils.errors import raise_http_error, raise_internal_server_error
+from dataportal.utils.errors import raise_internal_server_error
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.response_wrappers import wrap_paginated_response
 
@@ -36,10 +35,10 @@ drug_router = Router(tags=[ROUTER_DRUG])
     response=PaginatedResponseSchema,
     summary="Search drug MIC data",
     description=(
-        "Search drug MIC (Minimum Inhibitory Concentration) data across all strains. "
-        "Supports filtering by drug name, class, species, MIC values, and experimental conditions. "
-        "Returns paginated results with detailed MIC measurements. "
-        "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
+            "Search drug MIC (Minimum Inhibitory Concentration) data across all strains. "
+            "Supports filtering by drug name, class, species, MIC values, and experimental conditions. "
+            "Returns paginated results with detailed MIC measurements. "
+            "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
     ),
 )
 @wrap_paginated_response
@@ -61,14 +60,14 @@ async def search_drug_mic(request, query: DrugMICSearchQuerySchema = Query(...))
     response=List[DrugMICSearchResultSchema],
     summary="Get MIC data by drug name",
     description=(
-        "Retrieves all MIC data for a specific drug across all strains. "
-        "Optionally filter by species acronym to narrow results to specific species."
+            "Retrieves all MIC data for a specific drug across all strains. "
+            "Optionally filter by species acronym to narrow results to specific species."
     ),
 )
 async def get_drug_mic_by_drug(
-    request, 
-    drug_name: str = Path(..., description="Name of the drug"),
-    species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)")
+        request,
+        drug_name: str = Path(..., description="Name of the drug"),
+        species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)")
 ):
     """Get all MIC data for a specific drug."""
     try:
@@ -87,17 +86,17 @@ async def get_drug_mic_by_drug(
     response=PaginatedResponseSchema,
     summary="Get MIC data by drug class",
     description=(
-        "Retrieves all MIC data for a specific drug class across all strains. "
-        "Supports pagination and optional species filtering."
+            "Retrieves all MIC data for a specific drug class across all strains. "
+            "Supports pagination and optional species filtering."
     ), include_in_schema=False,
 )
 @wrap_paginated_response
 async def get_drug_mic_by_class(
-    request,
-    drug_class: str = Path(..., description="Drug class (e.g., beta_lactam)"),
-    species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)"),
-    page: int = Query(1, description="Page number"),
-    per_page: int = Query(20, description="Number of results per page")
+        request,
+        drug_class: str = Path(..., description="Drug class (e.g., beta_lactam)"),
+        species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)"),
+        page: int = Query(1, description="Page number"),
+        per_page: int = Query(20, description="Number of results per page")
 ):
     """Get all MIC data for a specific drug class."""
     try:
@@ -124,11 +123,11 @@ async def get_drug_mic_by_class(
     response=PaginatedResponseSchema,
     summary="Search drug metabolism data",
     description=(
-        "Search drug metabolism data across all strains. "
-        "Supports filtering by drug name, class, species, statistical significance, "
-        "degradation percentages, and experimental conditions. "
-        "Returns paginated results with detailed metabolism measurements. "
-        "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
+            "Search drug metabolism data across all strains. "
+            "Supports filtering by drug name, class, species, statistical significance, "
+            "degradation percentages, and experimental conditions. "
+            "Returns paginated results with detailed metabolism measurements. "
+            "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
     ),
 )
 @wrap_paginated_response
@@ -150,14 +149,14 @@ async def search_drug_metabolism(request, query: DrugMetabolismSearchQuerySchema
     response=List[DrugMetabolismSearchResultSchema],
     summary="Get metabolism data by drug name",
     description=(
-        "Retrieves all metabolism data for a specific drug across all strains. "
-        "Optionally filter by species acronym to narrow results to specific species."
+            "Retrieves all metabolism data for a specific drug across all strains. "
+            "Optionally filter by species acronym to narrow results to specific species."
     ),
 )
 async def get_drug_metabolism_by_drug(
-    request,
-    drug_name: str = Path(..., description="Name of the drug"),
-    species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)")
+        request,
+        drug_name: str = Path(..., description="Name of the drug"),
+        species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)")
 ):
     """Get all metabolism data for a specific drug."""
     try:
@@ -176,17 +175,17 @@ async def get_drug_metabolism_by_drug(
     response=PaginatedResponseSchema,
     summary="Get metabolism data by drug class",
     description=(
-        "Retrieves all metabolism data for a specific drug class across all strains. "
-        "Supports pagination and optional species filtering."
+            "Retrieves all metabolism data for a specific drug class across all strains. "
+            "Supports pagination and optional species filtering."
     ), include_in_schema=False,
 )
 @wrap_paginated_response
 async def get_drug_metabolism_by_class(
-    request,
-    drug_class: str = Path(..., description="Drug class (e.g., beta_lactam)"),
-    species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)"),
-    page: int = Query(1, description="Page number"),
-    per_page: int = Query(20, description="Number of results per page")
+        request,
+        drug_class: str = Path(..., description="Drug class (e.g., beta_lactam)"),
+        species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)"),
+        page: int = Query(1, description="Page number"),
+        per_page: int = Query(20, description="Number of results per page")
 ):
     """Get all metabolism data for a specific drug class."""
     try:
@@ -213,9 +212,9 @@ async def get_drug_metabolism_by_class(
     response=List[DrugSuggestionSchema],
     summary="Get drug name suggestions",
     description=(
-        "Get drug name suggestions for autocomplete functionality. "
-        "Supports fuzzy matching and partial search. "
-        "Can filter by species and data type (MIC or metabolism)."
+            "Get drug name suggestions for autocomplete functionality. "
+            "Supports fuzzy matching and partial search. "
+            "Can filter by species and data type (MIC or metabolism)."
     ), include_in_schema=False,
 )
 async def get_drug_suggestions(request, query: DrugAutocompleteQuerySchema = Query(...)):
