@@ -17,9 +17,15 @@ from dataportal.schema.genome_schemas import (
     GenesByGenomeQuerySchema,
     GenomeDownloadTSVQuerySchema,
 )
+from dataportal.schema.drug_schemas import (
+    StrainDrugMICResponseSchema,
+    StrainDrugMetabolismResponseSchema,
+    StrainDrugDataResponseSchema,
+)
 from ..schema.response_schemas import PaginatedResponseSchema
 from ..services.essentiality_service import EssentialityService
 from ..services.gene_service import GeneService
+from ..services.drug_service import DrugService
 from ..services.service_factory import ServiceFactory
 from ..utils.constants import (
     DEFAULT_SORT,
@@ -38,6 +44,7 @@ logger = logging.getLogger(__name__)
 genome_service = ServiceFactory.get_genome_service()
 gene_service = GeneService()
 essentiality_service = EssentialityService()
+drug_service = DrugService()
 
 ROUTER_GENOME = "Genomes"
 genome_router = Router(tags=[ROUTER_GENOME])
@@ -287,3 +294,76 @@ async def download_genomes_tsv(
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise HttpError(500, f"Failed to download genomes: {str(e)}")
+
+
+# Drug data endpoints for strains
+@genome_router.get(
+    "/{isolate_name}/drug-mic",
+    response=StrainDrugMICResponseSchema,
+    summary="Get drug MIC data for a strain",
+    description=(
+        "Retrieves drug MIC (Minimum Inhibitory Concentration) data for a specific strain. "
+        "Returns all MIC measurements including drug names, values, units, and experimental conditions."
+    ),
+)
+async def get_strain_drug_mic(request, isolate_name: str = Path(..., description="Strain isolate name")):
+    """Get drug MIC data for a specific strain."""
+    try:
+        result = await drug_service.get_strain_drug_mic(isolate_name)
+        if not result:
+            raise HttpError(404, f"No drug MIC data found for strain: {isolate_name}")
+        return result
+    except ServiceError as e:
+        logger.error(f"Service error getting drug MIC data for {isolate_name}: {e}")
+        raise HttpError(500, f"Failed to retrieve drug MIC data: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error getting drug MIC data for {isolate_name}: {e}")
+        raise HttpError(500, f"Failed to retrieve drug MIC data: {str(e)}")
+
+
+@genome_router.get(
+    "/{isolate_name}/drug-metabolism",
+    response=StrainDrugMetabolismResponseSchema,
+    summary="Get drug metabolism data for a strain",
+    description=(
+        "Retrieves drug metabolism data for a specific strain. "
+        "Returns degradation percentages, statistical significance, and metabolizer classifications."
+    ),
+)
+async def get_strain_drug_metabolism(request, isolate_name: str = Path(..., description="Strain isolate name")):
+    """Get drug metabolism data for a specific strain."""
+    try:
+        result = await drug_service.get_strain_drug_metabolism(isolate_name)
+        if not result:
+            raise HttpError(404, f"No drug metabolism data found for strain: {isolate_name}")
+        return result
+    except ServiceError as e:
+        logger.error(f"Service error getting drug metabolism data for {isolate_name}: {e}")
+        raise HttpError(500, f"Failed to retrieve drug metabolism data: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error getting drug metabolism data for {isolate_name}: {e}")
+        raise HttpError(500, f"Failed to retrieve drug metabolism data: {str(e)}")
+
+
+@genome_router.get(
+    "/{isolate_name}/drug-data",
+    response=StrainDrugDataResponseSchema,
+    summary="Get all drug data for a strain",
+    description=(
+        "Retrieves both drug MIC and metabolism data for a specific strain. "
+        "Returns comprehensive drug response information including resistance and metabolism patterns."
+    ),
+)
+async def get_strain_drug_data(request, isolate_name: str = Path(..., description="Strain isolate name")):
+    """Get all drug data (MIC + metabolism) for a specific strain."""
+    try:
+        result = await drug_service.get_strain_drug_data(isolate_name)
+        if not result:
+            raise HttpError(404, f"No drug data found for strain: {isolate_name}")
+        return result
+    except ServiceError as e:
+        logger.error(f"Service error getting drug data for {isolate_name}: {e}")
+        raise HttpError(500, f"Failed to retrieve drug data: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error getting drug data for {isolate_name}: {e}")
+        raise HttpError(500, f"Failed to retrieve drug data: {str(e)}")
