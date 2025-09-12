@@ -47,7 +47,7 @@ class Essentiality(Flow):
                     "feature_id": fid,
                     "feature_type": "gene" if element == "gene" else "IG",
                     "element": element or ("intergenic" if raw_id.startswith("IG-between-") else None),
-                    "essentiality": call if call in VALID_ESSENTIALITY else None,
+                    "has_essentiality": True,  # Set flag when essentiality data is available
                 }
                 if base["feature_type"] == "IG":
                     left, right = parse_ig_neighbors(raw_id)

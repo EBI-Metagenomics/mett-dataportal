@@ -96,7 +96,7 @@ class Command(BaseCommand):
 
         # 4) Proteomics
         proteomics_files = list_csv_files(o.get("proteomics_dir"))
-        print(f"[import_features] Proteomics files found: {len(proteomics_files)}")
+        # print(f"[import_features] Proteomics files found: {len(proteomics_files)}")
         for csv_path in proteomics_files:
             print(f"  - {csv_path}")
             Proteomics(index_name=index_name).run(csv_path)
@@ -109,11 +109,11 @@ class Command(BaseCommand):
         gene_rx_files = list_csv_files(o.get("gene_rx_dir"))
         met_rx_files = list_csv_files(o.get("met_rx_dir"))
         rx_gpr_files = list_csv_files(o.get("rx_gpr_dir"))
-        print(f"[import_features] gene_rx: {len(gene_rx_files)} files")
+        # print(f"[import_features] gene_rx: {len(gene_rx_files)} files")
         for f in gene_rx_files: print("  -", f)
-        print(f"[import_features] met_rx:  {len(met_rx_files)} files")
+        # print(f"[import_features] met_rx:  {len(met_rx_files)} files")
         for f in met_rx_files: print("  -", f)
-        print(f"[import_features] rx_gpr:  {len(rx_gpr_files)} files")
+        # print(f"[import_features] rx_gpr:  {len(rx_gpr_files)} files")
         for f in rx_gpr_files: print("  -", f)
         # run all combinations so you don't depend on strict naming;
         # if you prefer pairing by filename stem, we can add that too.

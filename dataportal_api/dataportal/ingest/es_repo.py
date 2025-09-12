@@ -293,12 +293,13 @@ if (field != null && ent != null) {
     }
   }
   if (!exists) { ctx._source[field].add(ent); }
+  
+  // Set has_essentiality flag when essentiality data is added
+  ctx._source.has_essentiality = true;
 }
 
-// 3) Set legacy flat essentiality if empty
-if (params.legacy != null) {
-  if (ctx._source.essentiality == null || ctx._source.essentiality == '') {
-    ctx._source.essentiality = params.legacy;
-  }
+// 3) Set legacy flat essentiality for backward compatibility (first available call)
+if (params.legacy != null && ctx._source.essentiality == null) {
+  ctx._source.essentiality = params.legacy;
 }
 """

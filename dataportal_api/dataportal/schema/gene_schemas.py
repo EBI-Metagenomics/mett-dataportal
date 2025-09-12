@@ -84,6 +84,9 @@ class GeneFacetedSearchQuerySchema(BaseModel):
     has_amr_info: Optional[bool] = Field(
         None, description="Filter genes that have associated AMR information."
     )
+    has_essentiality: Optional[bool] = Field(
+        None, description="Filter genes that have essentiality data."
+    )
     pfam_operator: Optional[str] = Field(
         "OR", description="Logical operator ('AND'/'OR') for Pfam filtering."
     )
@@ -245,6 +248,9 @@ class NaturalLanguageGeneQuery(BaseModel):
     has_amr_info: bool | None = Field(
         None, description="Filter genes that have associated AMR information"
     )
+    has_essentiality: bool | None = Field(
+        None, description="Filter genes that have essentiality data"
+    )
 
     # Functional annotation filters
     cog_id: str | None = Field(
@@ -340,12 +346,13 @@ class EssentialityByContigSchema(BaseModel):
     locus_tag: str
     start: Optional[int]
     end: Optional[int]
-    essentiality: str
+    essentiality: Optional[str]
 
 
 __all__ = [
     "GeneAutocompleteResponseSchema",
     "GenePaginationSchema",
     "GeneResponseSchema",
+    "EssentialityByContigSchema",
     "NaturalLanguageGeneQuery",
 ]

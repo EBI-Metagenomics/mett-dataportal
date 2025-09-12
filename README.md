@@ -77,7 +77,9 @@ $ python manage.py import_strains \
   --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
-  --set-type-strains BU_ATCC8492 PV_ATCC8482
+  --set-type-strains BU_ATCC8492 PV_ATCC8482 \
+  --gff-server ftp.ebi.ac.uk \
+  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 Strains - All in one go: 
 ```shell
@@ -117,14 +119,8 @@ $ python manage.py import_strains \
 ```
 
 #### Features
-Basic Genes from GFF:
-```shell
-$ python manage.py import_features \
-  --index feature_index \
-  --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv
 
 
-```
 Process Everything in one go:
 ```shell
 $ python manage.py import_features \
@@ -142,7 +138,19 @@ $ python manage.py import_features \
   --fitness-dir ../data/fitness/ \
 ```
 
-Essentiality:
+BASIC GENES from GFF:
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
+  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
+```
+
+
+Essentiality (optional):
 ```shell
 $ python manage.py import_features \
   --index feature_index \
@@ -152,7 +160,7 @@ $ python manage.py import_features \
   --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/
 ```
 
-Proteomics Evidence:
+Proteomics Evidence (optional):
 ```shell
 $ python manage.py import_features \
   --index feature_index \
@@ -161,7 +169,6 @@ $ python manage.py import_features \
   --skip-core-genes \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
-
 
 Gene Rx Data:
 ```shell

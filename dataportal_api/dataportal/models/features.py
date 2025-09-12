@@ -84,7 +84,7 @@ class FeatureDocument(Document):
 
     ec_number = Keyword()
 
-    essentiality = Keyword(normalizer=lowercase_normalizer)  # legacy single-value (kept for backward compatibility)
+    has_essentiality = Boolean()  # flag indicating if essentiality data is available
     inference = Text(fields={"keyword": Keyword()})
 
     ontology_terms = Nested(
