@@ -89,14 +89,14 @@ $ python manage.py import_strains \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
   --set-type-strains BU_ATCC8492 PV_ATCC8482 \
+  --gff-server ftp.ebi.ac.uk \
+  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/ \
   --include-mic \
   --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
   --mic-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/PV_growth_inhibition.csv \
   --include-metabolism \
   --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
-  --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv \
-  --gff-server ftp.ebi.ac.uk \
-  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/
+  --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv 
 ```
 Add Drug MIC:
 ```shell
