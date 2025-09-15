@@ -143,6 +143,9 @@ class GeneFacetedSearch(FacetedSearch):
             filtered_agg.bucket(facet_field, terms_agg)
             s.aggs.bucket(f"{facet_field}_filtered", filtered_agg)
 
+        # Log the final Elasticsearch query for debugging
+        logger.info(f"DEBUG - Final Elasticsearch Query: {s.to_dict()}")
+
         return s
 
     def _apply_filter(self, search_obj, field_name, values):
