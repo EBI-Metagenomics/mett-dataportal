@@ -35,6 +35,7 @@ from ..utils.constants import (
     ES_FIELD_AMR,
     ES_FIELD_AMR_DRUG_CLASS,
     ES_FIELD_AMR_DRUG_SUBCLASS,
+    ES_FIELD_FEATURE_TYPE,
 )
 from ..utils.errors import (
     raise_not_found_error,
@@ -266,6 +267,7 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
                 ES_FIELD_COG_FUNCATS,
                 ES_FIELD_COG_ID,
                 ES_FIELD_AMR,
+                ES_FIELD_FEATURE_TYPE,
             ]
 
             # Yield header row

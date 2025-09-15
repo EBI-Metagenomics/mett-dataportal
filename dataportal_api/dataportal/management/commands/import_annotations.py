@@ -520,7 +520,7 @@ class Command(BaseCommand):
                         updates.append(
                             {
                                 "_op_type": "update",
-                                "_index": "gene_index",
+                                "_index": "gene_index_v1",
                                 "_id": locus_tag,
                                 "doc": {"essentiality": essentiality_value},
                             }
@@ -560,7 +560,7 @@ class Command(BaseCommand):
         """Validate the total number of records in gene_index."""
         from elasticsearch_dsl import Search
 
-        s = Search(index="gene_index")
+        s = Search(index="gene_index_v1")
         total_docs = s.count()
 
         if total_docs < expected_count:
@@ -601,7 +601,7 @@ class Command(BaseCommand):
                         updates.append(
                             {
                                 "_op_type": "update",
-                                "_index": "gene_index",
+                                "_index": "gene_index_v1",
                                 "_id": locus_tag,
                                 "script": {
                                     "source": "if (ctx._source.fitness_data == null) { ctx._source.fitness_data = [] } ctx._source.fitness_data.add(params.fitness_entry)",

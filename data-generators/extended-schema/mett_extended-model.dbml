@@ -52,25 +52,23 @@ Table genomic_region {
 }
 
 Table gene {
-    locus_tag text [ pk ]
-    gene_id text
-    gene_name text
-    alias text
-    product text
-    product_source text
-    start_pos integer [ not null ]
-    end_pos integer [ not null ]
-    strand char(1)
-    gene_biotype text
-    strain_id integer [ not null ]
-    genomic_region_id integer
-    protein_id integer
+	locus_tag text [ pk, unique ]
+	gene_id text
+	gene_name text
+	alias text
+	product text
+	product_source text
+	start_pos integer [ not null ]
+	end_pos integer [ not null ]
+	strand char(1)
+	gene_biotype text
+	strain_id integer [ not null ]
+	protein_id integer
 
-    indexes {
-        (strain_id, start_pos, end_pos) [ name: 'gene_position_idx' ]
-        (protein_id) [ name: 'gene_protein_idx' ]
-        (genomic_region_id) [ name: 'gene_genomic_region_idx' ]
-    }
+	indexes {
+		(strain_id, start_pos, end_pos) [ name: 'gene_position_idx' ]
+		(protein_id) [ name: 'gene_protein_idx' ]
+	}
 }
 
 Table protein {
@@ -81,28 +79,28 @@ Table protein {
 }
 
 Table gene_dbxref {
-    id serial [ pk, unique ]
-    gene_locus_tag text [ not null ]
-    database_name text [ not null ]
-    accession text [ not null ]
-    description text
+	id serial [ pk, unique ]
+	gene_locus_tag text [ not null ]
+	database_name text [ not null ]
+	accession text [ not null ]
+	description text
 
-    indexes {
-        (gene_locus_tag, database_name, accession) [ name: 'gene_dbxref_unique_idx', unique ]
-        (database_name) [ name: 'gene_dbxref_database_idx' ]
-    }
+	indexes {
+		(gene_locus_tag, database_name, accession) [ name: 'gene_dbxref_unique_idx', unique ]
+		(database_name) [ name: 'gene_dbxref_database_idx' ]
+	}
 }
 
 Table gene_ontology_terms {
-    id serial [ pk, unique ]
-    gene_locus_tag text [ not null ]
-    ontology_type text [ not null ]
-    ontology_id text [ not null ]
-    ontology_description text
+	id serial [ pk, unique ]
+	gene_locus_tag text [ not null ]
+	ontology_type text [ not null ]
+	ontology_id text [ not null ]
+	ontology_description text
 
-    indexes {
-        (gene_locus_tag, ontology_type, ontology_id) [ name: 'gene_ontology_unique_idx', unique ]
-    }
+	indexes {
+		(gene_locus_tag, ontology_type, ontology_id) [ name: 'gene_ontology_unique_idx', unique ]
+	}
 }
 
 Table media {
@@ -125,62 +123,59 @@ Table experimental_condition {
 }
 
 Table SP1_gene_essentiality {
-    id serial [ pk, unique ]
-    gene_locus_tag text [ not null ]
-    genomic_region_id integer [ not null ]
-    experimental_condition_id integer
-    tas_in_locus integer
-    tas_hit double
-    essentiality_call text [ not null ]
+	id serial [ pk, unique ]
+	gene_locus_tag text [ not null ]
+	genomic_region_id integer [ not null ]
+	tas_in_locus integer
+	tas_hit double
+	essentiality_call text [ not null ]
 
-    indexes {
-        (gene_locus_tag, genomic_region_id) [ name: 'SP1_gene_essentiality_unique_idx', unique ]
-    }
+	indexes {
+		(gene_locus_tag, genomic_region_id) [ name: 'SP1_gene_essentiality_unique_idx', unique ]
+	}
 }
 
 Table SP1_gene_fitness_data {
-    id serial [ pk, unique ]
-    gene_locus_tag text [ not null ]
-    genomic_region_id integer [ not null ]
-    experimental_condition_id integer
-    contrast text [ not null ]
-    lfc double [ not null ]
-    fdr double [ not null ]
-    replicate_id text
+	id serial [ pk, unique ]
+	gene_locus_tag text [ not null ]
+	genomic_region_id integer [ not null ]
+	experimental_condition_id integer
+	contrast text [ not null ]
+	lfc double [ not null ]
+	fdr double [ not null ]
+	replicate_id text
 
-    indexes {
-        (gene_locus_tag, genomic_region_id, experimental_condition_id, contrast) [ name: 'SP1_gene_fitness_data_search_idx' ]
-    }
+	indexes {
+		(gene_locus_tag, genomic_region_id, experimental_condition_id, contrast) [ name: 'SP1_gene_fitness_data_search_idx' ]
+	}
 }
 
 Table SP1_gene_fitness_correlation {
-    id serial [ pk, unique ]
-    gene1_locus_tag text [ not null ]
-    gene2_locus_tag text [ not null ]
-    genomic_region_id_1 integer [ not null ]
-    genomic_region_id_2 integer [ not null ]
-    experimental_condition_id integer
-    correlation_value double [ not null ]
-    p_value double
+	id serial [ pk, unique ]
+	gene1_locus_tag text [ not null ]
+	gene2_locus_tag text [ not null ]
+	genomic_region_id_1 integer [ not null ]
+	genomic_region_id_2 integer [ not null ]
+	correlation_value double [ not null ]
+	p_value double
 
-    indexes {
-        (gene1_locus_tag, gene2_locus_tag, genomic_region_id_1, genomic_region_id_2) [ name: 'SP1_gene_fitness_correlation_unique_idx', unique ]
-    }
+	indexes {
+		(gene1_locus_tag, gene2_locus_tag, genomic_region_id_1, genomic_region_id_2) [ name: 'SP1_gene_fitness_correlation_unique_idx', unique ]
+	}
 }
 
 Table SP3_mutant_growth_rate {
-    id serial [ pk, unique ]
-    gene_locus_tag text [ not null ]
-    genomic_region_id integer [ not null ]
-    media_id integer [ not null ]
-    experimental_condition_id integer
-    replicate smallint [ not null ]
-    tas_hit double
-    doubling_rate_h double [ not null ]
+	id serial [ pk, unique ]
+	gene_locus_tag text [ not null ]
+	media_id integer [ not null ]
+	experimental_condition_id integer
+	replicate smallint [ not null ]
+	tas_hit double
+	doubling_rate_h double [ not null ]
 
-    indexes {
-        (gene_locus_tag, genomic_region_id, media_id, replicate) [ name: 'SP3_mutant_growth_unique_idx', unique ]
-    }
+	indexes {
+		(gene_locus_tag, media_id, replicate) [ name: 'SP3_mutant_growth_unique_idx', unique ]
+	}
 }
 
 Table compound {
@@ -231,37 +226,35 @@ Table SP5_drug_bacteria_mic {
 }
 
 Table SP3_operon_prediction {
-    id serial [ pk, unique ]
-    strain_id integer [ not null ]
-    gene_a_locus_tag text [ not null ]
-    gene_b_locus_tag text [ not null ]
-    operon_id text [ not null ]
-    has_tss boolean
-    has_terminator boolean
-    prediction_confidence double
-    prediction_method text
-    experimental_condition_id integer
+	id serial [ pk, unique ]
+	gene_a_locus_tag text [ not null ]
+	gene_b_locus_tag text [ not null ]
+	operon_id text [ not null ]
+	has_tss boolean
+	has_terminator boolean
+	prediction_confidence double
+	prediction_method text
+	experimental_condition_id integer
 
-    indexes {
-        (strain_id, gene_a_locus_tag, gene_b_locus_tag) [ name: 'SP5_operon_prediction_unique_idx', unique ]
-        (operon_id) [ name: 'SP5_operon_id_idx' ]
-    }
+	indexes {
+		(gene_a_locus_tag, gene_b_locus_tag) [ name: 'SP5_operon_prediction_unique_idx', unique ]
+		(operon_id) [ name: 'SP5_operon_id_idx' ]
+	}
 }
 
 Table gene_amr {
-    id serial [ pk, unique ]
-    gene_locus_tag text [ not null ]
-    scope text
-    element_type text
-    element_subtype text
-    drug_id integer
-    uf_keyword text[]
-    uf_ecnumber text
+	id serial [ pk, unique ]
+	gene_locus_tag text [ not null ]
+	scope text
+	element_type text
+	element_subtype text
+	drug_id integer
+	uf_keyword text[]
+	uf_ecnumber text
 
-    indexes {
-        (gene_locus_tag, drug_id) [ name: 'gene_amr_unique_idx', unique ]
-    }
-
+	indexes {
+		(gene_locus_tag, drug_id) [ name: 'gene_amr_unique_idx', unique ]
+	}
 }
 
 Table SP2_protein_compound_interaction {
@@ -390,10 +383,6 @@ Ref fk_gene_strain_id_strain {
 	gene.strain_id > strain.id [ delete: no action, update: no action ]
 }
 
-Ref fk_gene_genomic_region_id_genomic_region {
-	gene.genomic_region_id > genomic_region.id [ delete: no action, update: no action ]
-}
-
 Ref fk_gene_protein_id_protein {
 	gene.protein_id > protein.id [ delete: no action, update: no action ]
 }
@@ -420,10 +409,6 @@ Ref fk_SP1_gene_essentiality_gene_locus_tag_gene {
 
 Ref fk_SP1_gene_essentiality_genomic_region_id_genomic_region {
 	SP1_gene_essentiality.genomic_region_id > genomic_region.id [ delete: no action, update: no action ]
-}
-
-Ref fk_SP1_gene_essentiality_experimental_condition_id_experimental_condition {
-	SP1_gene_essentiality.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
 Ref fk_SP1_gene_fitness_data_gene_locus_tag_gene {
@@ -454,10 +439,6 @@ Ref fk_SP1_gene_fitness_correlation_genomic_region_id_2_genomic_region {
 	SP1_gene_fitness_correlation.genomic_region_id_2 > genomic_region.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP1_gene_fitness_correlation_experimental_condition_id_experimental_condition {
-	SP1_gene_fitness_correlation.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
-}
-
 Ref fk_SP2_protein_compound_interaction_protein_id_protein {
 	SP2_protein_compound_interaction.protein_id > protein.id [ delete: no action, update: no action ]
 }
@@ -484,10 +465,6 @@ Ref fk_SP2_ppi_interaction_experimental_condition_id_experimental_condition {
 
 Ref fk_SP3_mutant_growth_rate_gene_locus_tag_gene {
 	SP3_mutant_growth_rate.gene_locus_tag > gene.locus_tag [ delete: no action, update: no action ]
-}
-
-Ref fk_SP3_mutant_growth_rate_genomic_region_id_genomic_region {
-	SP3_mutant_growth_rate.genomic_region_id > genomic_region.id [ delete: no action, update: no action ]
 }
 
 Ref fk_SP3_mutant_growth_rate_media_id_media {
@@ -522,10 +499,6 @@ Ref fk_SP5_drug_bacteria_mic_experimental_condition_id_experimental_condition {
 	SP5_drug_bacteria_mic.experimental_condition_id > experimental_condition.id [ delete: no action, update: no action ]
 }
 
-Ref fk_SP3_operon_prediction_strain_id_strain {
-	SP3_operon_prediction.strain_id > strain.id [ delete: no action, update: no action ]
-}
-
 Ref fk_SP3_operon_prediction_gene_a_locus_tag_gene {
 	SP3_operon_prediction.gene_a_locus_tag > gene.locus_tag [ delete: no action, update: no action ]
 }
@@ -544,58 +517,4 @@ Ref fk_gene_amr_gene_locus_tag_gene {
 
 Ref fk_gene_amr_drug_id_drug {
 	gene_amr.drug_id > drug.id [ delete: no action, update: no action ]
-}
-
-TableGroup "Taxonomy & Assemblies" {
-  species
-  strain
-  strain_contigs
-  genomic_region
-}
-
-TableGroup "Gene–Protein Annotation" {
-  gene
-  protein
-  gene_dbxref
-  gene_ontology_terms
-}
-
-TableGroup "Experimental Metadata" {
-  media
-  experimental_condition
-}
-
-TableGroup "Essentiality & Fitness Phenotypes" {
-  SP1_gene_essentiality
-  SP1_gene_fitness_data
-  SP1_gene_fitness_correlation
-  SP3_mutant_growth_rate
-}
-
-TableGroup "Operons & Regulatory Structure" {
-  SP3_operon_prediction
-}
-
-TableGroup "Interactions (PPI & Protein–Compound)" {
-  SP2_ppi_interaction
-  SP2_protein_compound_interaction
-}
-
-TableGroup "Compounds, Drugs & AMR" {
-  compound
-  drug
-  gene_amr
-  SP5_drug_bacteria_metabolism
-  SP5_drug_bacteria_mic
-}
-
-TableGroup "Metabolic Network" {
-  reaction
-  metabolite
-  gene_reaction
-  metabolite_reaction
-}
-
-TableGroup "Comparative Genomics" {
-  ortholog_pair
 }

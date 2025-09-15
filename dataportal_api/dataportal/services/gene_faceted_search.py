@@ -80,6 +80,9 @@ class GeneFacetedSearch(FacetedSearch):
         post_filter_clauses = []
 
         # Context filters (always applied)
+        # Always filter for genes only in feature_index
+        must_clauses.append(Q("term", feature_type="gene"))
+        
         if self.species_acronym:
             must_clauses.append(Q("term", species_acronym=self.species_acronym))
         if self.has_amr_info is not None:
@@ -139,6 +142,9 @@ class GeneFacetedSearch(FacetedSearch):
             )
             filtered_agg.bucket(facet_field, terms_agg)
             s.aggs.bucket(f"{facet_field}_filtered", filtered_agg)
+
+        # Log the final Elasticsearch query for debugging
+        logger.info(f"DEBUG - Final Elasticsearch Query: {s.to_dict()}")
 
         return s
 

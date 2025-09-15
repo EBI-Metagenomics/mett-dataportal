@@ -29,7 +29,7 @@ const GeneViewerLegends: React.FC<GeneViewerLegendsProps> = ({showEssentiality})
             icon: getIconForEssentiality('not_essential'),
         },
         {
-            label: 'Unknown',
+            label: 'Unclear',
             color: getColorForEssentiality('unclear'),
             icon: getIconForEssentiality('unclear'),
         },

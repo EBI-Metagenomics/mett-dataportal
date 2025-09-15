@@ -11,7 +11,7 @@ from dataportal.utils.constants import (
     ES_FIELD_LOCUS_TAG,
     FIELD_SEQ_ID,
     ES_FIELD_ISOLATE_NAME,
-    ES_INDEX_GENE,
+    ES_INDEX_FEATURE,
 )
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class EssentialityService(CachedService[Dict, str]):
     """Service for managing essentiality data with caching support."""
 
     def __init__(self, limit: int = 10, cache_size: int = 10000):
-        super().__init__(ES_INDEX_GENE, cache_size)
+        super().__init__(ES_INDEX_FEATURE, cache_size)
         self.limit = limit
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
@@ -52,7 +52,7 @@ class EssentialityService(CachedService[Dict, str]):
 
     async def load_essentiality_data_by_strain(
         self,
-    ) -> Dict[str, Dict[str, Dict[str, List[Dict[str, str]]]]]:
+    ) -> Dict[str, Dict[str, Dict[str, Dict]]]:
         """Load essentiality data into cache from Elasticsearch."""
         if self.essentiality_cache:
             return self.essentiality_cache
@@ -62,7 +62,11 @@ class EssentialityService(CachedService[Dict, str]):
         try:
             s = (
                 self._create_search()
-                .query("exists", field=GENE_ESSENTIALITY)
+                .filter("term", feature_type="gene")
+                .query("bool", should=[
+                    {"term": {"has_essentiality": True}},
+                    {"exists": {"field": GENE_ESSENTIALITY}}
+                ])
                 .source(
                     [
                         ES_FIELD_ISOLATE_NAME,
@@ -71,6 +75,8 @@ class EssentialityService(CachedService[Dict, str]):
                         GENE_FIELD_START,
                         GENE_FIELD_END,
                         GENE_ESSENTIALITY,
+                        "essentiality_data",
+                        "has_essentiality",
                     ]
                 )[:10000]
             )
@@ -84,7 +90,15 @@ class EssentialityService(CachedService[Dict, str]):
                 locus_tag = hit.locus_tag
                 start = hit.start
                 end = hit.end
-                essentiality = hit.essentiality if hit.essentiality else "Unknown"
+                has_essentiality = getattr(hit, "has_essentiality", False)
+                essentiality_data = getattr(hit, "essentiality_data", [])
+                
+                
+                # Get essentiality from essentiality_data or fallback to legacy field
+                if essentiality_data and len(essentiality_data) > 0:
+                    # Use the first essentiality_call from the structured data
+                    first_essentiality = essentiality_data[0]
+                    essentiality_call = getattr(first_essentiality, "essentiality_call", None)
 
                 if isolate_name not in cache_data:
                     cache_data[isolate_name] = {}
@@ -93,10 +107,10 @@ class EssentialityService(CachedService[Dict, str]):
                     cache_data[isolate_name][seq_id] = {}
 
                 cache_data[isolate_name][seq_id][locus_tag] = {
-                    ES_FIELD_LOCUS_TAG: locus_tag,
-                    GENE_FIELD_START: start,
-                    GENE_FIELD_END: end,
-                    GENE_ESSENTIALITY: essentiality,
+                    "locus_tag": locus_tag,
+                    "start": start,
+                    "end": end,
+                    "essentiality": essentiality_call,
                 }
 
             self.essentiality_cache.update(cache_data)
@@ -128,18 +142,12 @@ class EssentialityService(CachedService[Dict, str]):
             return {}
 
         response = {}
-        for gene_data in contig_data.values():
-            # Ensure all required fields exist
-            locus_tag = gene_data.get(ES_FIELD_LOCUS_TAG, "UNKNOWN")
-            start = gene_data.get(GENE_FIELD_START, 0)
-            end = gene_data.get(GENE_FIELD_END, 0)
-            essentiality = gene_data.get(GENE_ESSENTIALITY, "Unknown")
-
+        for locus_tag, gene_data in contig_data.items():
             response[locus_tag] = {
-                ES_FIELD_LOCUS_TAG: locus_tag,
-                GENE_FIELD_START: start,
-                GENE_FIELD_END: end,
-                GENE_ESSENTIALITY: essentiality,
+                "locus_tag": gene_data["locus_tag"],
+                "start": gene_data["start"],
+                "end": gene_data["end"],
+                "essentiality": gene_data["essentiality"],
             }
 
         return response

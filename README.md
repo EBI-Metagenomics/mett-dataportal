@@ -59,14 +59,145 @@ We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config file
 #### Elasticsearch Database setup
 ```shell
 $ python manage.py create_es_index
-$ python manage.py import_species --csv ../data-generators/data/species.csv
-$ python manage.py import_strains_contigs --csv ../data-generators/data/gff-assembly-prefixes.tsv  --set-type-strains BU_ATCC8492 PV_ATCC8482
-$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv --essentiality-csv ../data-generators/data/essentiality_table_all_libraries_240818_14102024.csv
+$ python manage.py create_es_indexes --es-version 2025.09.03
+$ python manage.py create_es_indexes --es-version 2025.09.03 --if-exists recreate
+```
+### Import data
 
-$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --isolate BU_CCUG35501
-$ python manage.py import_annotations --ftp-server ftp.ebi.ac.uk --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/ --assembly BU_ATCC8492
+#### Species
+```shell
+$ python manage.py import_species --index species_index --csv ../data-generators/data/species.csv
+```
+
+#### Strains
+Strains + contigs only:
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index \
+  --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
+  --set-type-strains BU_ATCC8492 PV_ATCC8482 \
+  --gff-server ftp.ebi.ac.uk \
+  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/
+```
+Strains - All in one go: 
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index \
+  --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
+  --set-type-strains BU_ATCC8492 PV_ATCC8482 \
+  --gff-server ftp.ebi.ac.uk \
+  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/ \
+  --include-mic \
+  --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
+  --mic-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/PV_growth_inhibition.csv \
+  --include-metabolism \
+  --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv 
+```
+Add Drug MIC:
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index \
+  --skip-strains \
+  --include-mic \
+  --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
+  --mic-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/PV_growth_inhibition.csv
+```
+Add Drug Metabolism:
+```shell
+$ python manage.py import_strains \
+  --es-index strain_index \
+  --skip-strains \
+  --include-metabolism \
+  --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv
 
 ```
+
+#### Features
+
+
+Process Everything in one go:
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
+  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/ \
+  --gene-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
+  --met-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/met_rx/ \
+  --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/ \
+  --protein-compound-dir ../data/protein_compound/ \
+  --mutant-growth-dir ../data/mutant_growth/ \
+  --fitness-dir ../data/fitness/ \
+```
+
+BASIC GENES from GFF:
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
+  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
+```
+
+
+Essentiality (optional):
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --skip-core-genes \
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/
+```
+
+Proteomics Evidence (optional):
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --skip-core-genes \
+  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
+```
+
+Gene Rx Data:
+```shell
+$ python manage.py import_features \
+  --index feature_index \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+  --skip-core-genes \
+  --gene-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
+  --met-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/met_rx/ \
+  --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
+```
+
+#### Protein Protein Index (PPI):
+```shell
+$ python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/  
+$ python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/ --refresh-every-rows 500000   # or --refresh-every-secs 120
+```
+
+#### Operon Index:
+```shell
+$ python manage.py import_operons --index operon_index --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/
+```
+
+#### Ortholog Pairs Index:
+```shell
+$ python manage.py import_orthologs --index ortholog_index --orthologs-dir ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/
+```
+
 
 #### Pyhmmer Database Migrations
 ```shell

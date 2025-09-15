@@ -17,7 +17,7 @@ SCROLL_TIMEOUT = "5m"  # Scroll timeout (5 minutes)
 # Indexes
 ES_INDEX_SPECIES = "species_index"
 ES_INDEX_STRAIN = "strain_index"
-ES_INDEX_GENE = "gene_index"
+ES_INDEX_FEATURE = "feature_index"
 
 # Strain-related constants
 STRAIN_FIELD_ISOLATE_NAME = "isolate_name"
@@ -49,6 +49,7 @@ GENE_FIELD_ANNOTATIONS = "annotations"
 GENE_DEFAULT_SORT_FIELD = "gene_name"
 GENE_SORT_FIELD_STRAIN = "strain"
 GENE_ESSENTIALITY = "essentiality"
+ES_FIELD_FEATURE_TYPE = "feature_type"
 
 # Elasticsearch field constants
 ES_FIELD_GENE_NAME = "gene_name"
