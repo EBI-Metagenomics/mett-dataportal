@@ -184,7 +184,7 @@ const GeneViewerPage: React.FC = () => {
 
     return (
         <ErrorBoundary onError={handleError}>
-            <div>
+            <div className={styles.geneViewerPage}>
                 {spinner}
 
                 {/* Error display - commented out to hide error messages */}
@@ -201,7 +201,7 @@ const GeneViewerPage: React.FC = () => {
                     <span className={styles.hidden}><p>placeholder</p></span>
                 </div>
 
-                <section>
+                <section className={styles.geneViewerMain}>
                     {/* Header with breadcrumbs and metadata */}
                     <GeneViewerHeader genomeMeta={geneViewerData.genomeMeta}/>
 

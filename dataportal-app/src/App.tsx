@@ -64,24 +64,54 @@ const App: React.FC = () => {
                     <UrlCleanupHandler/>
                     <PageCleanupHandler/>
                     <Header/>
-                    <main
-                        className="vf-body | vf-stack vf-stack--200"
-                        style={{
-                            '--vf-body-width': '80em',
-                            paddingBottom: '200px',
-                        } as React.CSSProperties}
-                    >
-                        <Routes>
-                            <Route path="/" element={<HomePage/>}/>
-                            <Route path="/home" element={<HomePage/>}/>
-                            <Route path="/genome/:strainName" element={
+                    <Routes>
+                        <Route path="/" element={
+                            <main
+                                className="home-page vf-body | vf-stack vf-stack--200"
+                                style={{
+                                    '--vf-body-width': '80%',
+                                    paddingBottom: '200px',
+                                } as React.CSSProperties}
+                            >
+                                <HomePage/>
+                            </main>
+                        }/>
+                        <Route path="/home" element={
+                            <main
+                                className="home-page vf-body | vf-stack vf-stack--200"
+                                style={{
+                                    '--vf-body-width': '80%',
+                                    paddingBottom: '200px',
+                                } as React.CSSProperties}
+                            >
+                                <HomePage/>
+                            </main>
+                        }/>
+                        <Route path="/genome/:strainName" element={
+                            <main
+                                className="gene-viewer-page vf-body | vf-stack vf-stack--200"
+                                style={{
+                                    '--vf-body-width': '80%',
+                                    paddingBottom: '200px',
+                                } as React.CSSProperties}
+                            >
                                 <ErrorBoundary>
                                     <GeneViewerPage/>
                                 </ErrorBoundary>
-                            }/>
-                            <Route path="/natural-query" element={<ConditionalNaturalQueryRoute />} />
-                        </Routes>
-                    </main>
+                            </main>
+                        }/>
+                        <Route path="/natural-query" element={
+                            <main
+                                className="vf-body | vf-stack vf-stack--200"
+                                style={{
+                                    '--vf-body-width': '80em',
+                                    paddingBottom: '200px',
+                                } as React.CSSProperties}
+                            >
+                                <ConditionalNaturalQueryRoute />
+                            </main>
+                        } />
+                    </Routes>
                     <Footer/>
                 </Router>
             </div>

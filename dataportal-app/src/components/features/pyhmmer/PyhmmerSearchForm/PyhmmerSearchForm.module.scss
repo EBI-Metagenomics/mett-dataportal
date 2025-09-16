@@ -1,6 +1,7 @@
 .pyhmmerSection {
   padding: 0.1rem;
   background-color: transparent;
+  width: 80%;
 }
 
 .sectionDivider {
@@ -45,7 +46,7 @@
 }
 
 .leftPane {
-  flex: 1;
+  flex: 0.5;
   padding: 24px 2rem 24px 0;
 
   .formSection {
@@ -70,8 +71,8 @@
 }
 
 .rightPane {
-  flex: 1.2;
-  min-width: 450px;
+  flex: 0.8;
+  min-width: 300px;
   background: #fff;
   padding: 24px;
   border-radius: 8px;
@@ -89,15 +90,15 @@
 }
 
 .historyPane {
-  flex: 0.7;
-  min-width: 220px;
-  max-width: 320px;
+  flex: 1.0;
+  min-width: 200px;
+  max-width: 280px;
   border-right: 1px solid #eee;
   padding-right: 16px;
 }
 
 .resultsPane {
-  flex: 2;
+  flex: 2.5;
   padding-left: 16px;
 }
 

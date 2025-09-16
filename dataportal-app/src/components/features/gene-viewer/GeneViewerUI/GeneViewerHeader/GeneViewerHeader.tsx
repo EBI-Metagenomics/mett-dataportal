@@ -9,7 +9,7 @@ interface GeneViewerHeaderProps {
 
 const GeneViewerHeader: React.FC<GeneViewerHeaderProps> = ({genomeMeta}) => {
     return (
-        <>
+        <div className={styles.geneViewerHeader}>
             {/* Breadcrumb Section */}
             <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
                 <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
@@ -59,7 +59,7 @@ const GeneViewerHeader: React.FC<GeneViewerHeaderProps> = ({genomeMeta}) => {
                     </div>
                 </div>
             </section>
-        </>
+        </div>
     );
 };
 

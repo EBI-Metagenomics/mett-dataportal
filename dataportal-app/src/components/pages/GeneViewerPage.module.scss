@@ -1,9 +1,10 @@
 .vfContent {
   width: 100% !important;
-  min-width: 800px;
+  min-width: 1200px;
   float: left !important;
   padding-right: 20px;
   justify-content: normal;
+  max-width: none;
 }
 
 .infoSection {
@@ -109,19 +110,21 @@
 .jbrowseViewer {
   display: block;
   width: 100%;
-  min-width: 1000px;
+  min-width: 1200px;
+  max-width: none;
 }
 
 /* Let jbrowseContainer grow, and scroll vertically */
 .jbrowseContainer {
   width: 100%;
-  min-width: 800px;
+  min-width: 1200px;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
+  max-width: none;
 }
 
 .sidePanel {
@@ -208,4 +211,20 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
 .vfContent {
   position: relative;
   z-index: 1;
+}
+
+// Gene Viewer Page specific styles for wider layout
+.geneViewerPage {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+// Ensure the main section can expand
+.geneViewerMain {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 20px;
 }

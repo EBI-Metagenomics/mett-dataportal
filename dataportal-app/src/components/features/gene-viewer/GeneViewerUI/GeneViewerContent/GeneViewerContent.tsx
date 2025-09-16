@@ -80,6 +80,8 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
                 maxHeight: `${height}px`,
                 overflowY: 'auto',
                 overflowX: 'auto',
+                width: '100%',
+                maxWidth: 'none',
             }}
         >
             <div className={styles.jbrowseViewer}>

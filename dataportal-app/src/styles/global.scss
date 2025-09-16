@@ -24,6 +24,27 @@ body {
   margin-top: 0;
 }
 
+// Override VF body width constraint for gene viewer and home pages
+.gene-viewer-page.vf-body,
+.home-page.vf-body {
+  max-width: 80% !important;
+  width: 80% !important;
+  --vf-body-width: 80% !important;
+}
+
+// Override VF breadcrumb width constraints
+.gene-viewer-page .vf-breadcrumbs,
+.home-page .vf-breadcrumbs {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+.gene-viewer-page .vf-breadcrumbs__list,
+.home-page .vf-breadcrumbs__list {
+  max-width: none !important;
+  width: 100% !important;
+}
+
 // Table styles - consistent with VF framework
 .vf-table {
   width: 100%;
