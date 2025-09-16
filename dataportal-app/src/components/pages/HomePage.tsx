@@ -52,7 +52,7 @@ const HomePage: React.FC = () => {
     const [geneResults, setGeneResults] = useState<any[]>([]);
     const [geneLoading, setGeneLoading] = useState(false);
     const [genePagination, setGenePagination] = useState<any>(null);
-    const [genePerPage, setGenePerPage] = useState(20); // Default per page count
+    const [genePerPage, setGenePerPage] = useState(10); 
 
     const hasUserSelectedTab = useRef(false);
     const hasLoadedInitialGenes = useRef(false);
