@@ -1,5 +1,6 @@
 import {GeneMeta} from "../../../../interfaces/Gene";
 import {GenomeMeta} from "../../../../interfaces/Genome";
+import {ZOOM_LEVELS} from "../../../../utils/common/constants";
 
 const getDefaultSessionConfig = (
     geneMeta: GeneMeta | null,
@@ -80,7 +81,7 @@ const getDefaultSessionConfig = (
                 showCytobandsSetting: true,
                 showGridlines: true,
                 scale: 1,
-                bpPerPx: 1,
+                bpPerPx: ZOOM_LEVELS.BP_PER_PX,  // Base pairs per pixel for track display
                 offsetPx: 0,
             },
         ],

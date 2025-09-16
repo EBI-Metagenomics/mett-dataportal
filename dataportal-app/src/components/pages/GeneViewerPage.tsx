@@ -34,13 +34,23 @@ const GeneViewerPage: React.FC = () => {
     // Custom hooks for data management
     const geneViewerData = useGeneViewerData();
     
-    // Determine if essentiality should be included based on strain capabilities
-    const includeEssentiality = useMemo(() => {
+    // State for essentiality toggle - only available for type strains
+    const [includeEssentiality, setIncludeEssentiality] = useState(() => {
         if (!geneViewerData.genomeMeta) return false;
-        
-        // Only include essentiality for type strains that likely have this data
         return geneViewerData.genomeMeta.type_strain === true;
+    });
+
+    // Update essentiality state when genome changes
+    useEffect(() => {
+        if (geneViewerData.genomeMeta) {
+            setIncludeEssentiality(geneViewerData.genomeMeta.type_strain === true);
+        }
     }, [geneViewerData.genomeMeta]);
+
+    // Toggle handler for essentiality
+    const handleEssentialityToggle = useCallback((include: boolean) => {
+        setIncludeEssentiality(include);
+    }, []);
     const geneViewerSearch = useGeneViewerSearch({
         genomeMeta: geneViewerData.genomeMeta,
         setLoading: geneViewerData.setLoading,
@@ -199,6 +209,7 @@ const GeneViewerPage: React.FC = () => {
                     <GeneViewerControls
                         genomeMeta={geneViewerData.genomeMeta}
                         includeEssentiality={includeEssentiality}
+                        onEssentialityToggle={handleEssentialityToggle}
                     />
 
                     {/* Main JBrowse content */}

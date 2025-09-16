@@ -163,8 +163,8 @@ export const DISPLAY_SETTINGS = {
 export const ZOOM_LEVELS = {
   MIN: -2,
   MAX: 5,
-  NAV: 0.8,
-  DEFAULT: 3,
+  NAV: 10,  // Navigation zoom level
+  BP_PER_PX: 10,  // Base pairs per pixel for track display
 } as const;
 
 // Essentiality Color and Icon Mapping

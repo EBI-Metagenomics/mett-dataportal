@@ -16,6 +16,7 @@ export default class EnhancedGeneFeatureAdapter extends BaseFeatureDataAdapter {
 
     private cache: Map<string, SimpleFeature[]> = new Map();
     private gffParser: GFFParser;
+    private lastEssentialitySetting: boolean | null = null;
 
     // Generate a cache key
     private getCacheKey(region: any): string {
@@ -50,6 +51,13 @@ export default class EnhancedGeneFeatureAdapter extends BaseFeatureDataAdapter {
 
     getFeatures(region: any): Observable<SimpleFeature> {
         console.log('🔧 EnhancedGeneFeatureAdapter.getFeatures called for region:', region);
+        
+        // Check if essentiality setting has changed and clear cache if needed
+        if (this.lastEssentialitySetting !== null && this.lastEssentialitySetting !== this.includeEssentiality) {
+            console.log('🔧 Essentiality setting changed, clearing cache');
+            this.clearFeatureCache();
+        }
+        this.lastEssentialitySetting = this.includeEssentiality;
         
         const cacheKey = this.getCacheKey(region);
 
@@ -121,5 +129,11 @@ export default class EnhancedGeneFeatureAdapter extends BaseFeatureDataAdapter {
     // Optional method to clear the cache
     clearGFFCache() {
         this.gffParser.clearGFFCache();
+    }
+
+    // Clear the adapter's feature cache
+    clearFeatureCache() {
+        this.cache.clear();
+        console.log('🔧 EnhancedGeneFeatureAdapter: Feature cache cleared');
     }
 }

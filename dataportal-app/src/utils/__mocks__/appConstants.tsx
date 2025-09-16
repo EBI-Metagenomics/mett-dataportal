@@ -1,9 +1,8 @@
-export const ZOOM_LEVELS = {
-    MIN: -2,
-    MAX: 5,
-    NAV: 0.8,
-    DEFAULT: 3,
-};
+// Import ZOOM_LEVELS from main constants to avoid duplication
+import { ZOOM_LEVELS } from '../common/constants';
+
+// Re-export for testing
+export { ZOOM_LEVELS };
 
 export const API_BASE_URL = 'http://localhost:8000/api';
 export const API_GENOMES_BY_ISOLATE_NAMES = `${API_BASE_URL}/genomes/by-isolate-names`;

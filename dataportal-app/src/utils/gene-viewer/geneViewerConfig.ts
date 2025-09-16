@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import getAssembly from '@components/features/gene-viewer/GeneViewer/assembly';
 import getTracks from '@components/features/gene-viewer/GeneViewer/tracks';
 import getDefaultSessionConfig from '@components/features/gene-viewer/GeneViewer/defaultSessionConfig';
-import { getEssentialityDataUrl } from '../common/constants';
+import { getEssentialityDataUrl, ZOOM_LEVELS } from '../common/constants';
 import { GenomeMeta } from '../../interfaces/Genome';
 import { GeneMeta } from '../../interfaces/Gene';
 
@@ -63,7 +63,7 @@ export const useGeneViewerConfig = (
         views: [
           {
             type: "LinearGenomeView",
-            bpPerPx: 2,
+            bpPerPx: ZOOM_LEVELS.BP_PER_PX,  // Base pairs per pixel for track display
             tracks: tracks,
             displayedRegions: [
               {
