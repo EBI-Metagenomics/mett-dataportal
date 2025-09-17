@@ -38,7 +38,7 @@ const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
     // UI state
     const [loading, setLoading] = useState(false);
     const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
-    const [databases, setDatabases] = useState<any[]>(PYHMMER_DATABASES);
+    const [databases, setDatabases] = useState<Array<{id: string; name: string; description: string}>>(PYHMMER_DATABASES);
 
     // Initialize databases from service
     useEffect(() => {
@@ -46,10 +46,16 @@ const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
             try {
                 const dbList = await PyhmmerService.getDatabases();
                 if (dbList && dbList.length > 0) {
-                    setDatabases(dbList);
+                    // Convert PyhmmerDatabase to the format expected by the UI
+                    const convertedDbList = dbList.map(db => ({
+                        id: db.id,
+                        name: db.name,
+                        description: db.type || 'Database'
+                    }));
+                    setDatabases(convertedDbList);
                 }
-            } catch (error) {
-                console.warn('Could not load databases from service, using defaults');
+            } catch {
+                // Could not load databases from service, using defaults
             }
         };
 
@@ -197,6 +203,7 @@ const PyhmmerCompactSearch: React.FC<PyhmmerCompactSearchProps> = ({
                             </span>
                         </div>
                     )}
+                    
                 </div>
 
                 {/* Submit Button */}

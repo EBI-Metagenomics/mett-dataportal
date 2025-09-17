@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: file-copy-pod
+  namespace: mett-dataportal-hl-dev
+spec:
+  securityContext:
+    runAsUser: 7123
+    runAsGroup: 1347
+  containers:
+  - name: file-copier
+    image: registry.k8s.io/e2e-test-images/busybox:1.29
+    command: ["/bin/sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - mountPath: /data/pyhmmer
+      name: pyhmmer-data
+    - mountPath: /mnt/local-data
+      name: local-data
+  volumes:
+  - name: pyhmmer-data
+    persistentVolumeClaim:
+      claimName: mett-pyhmmer-pvc-dev
+  - name: local-data

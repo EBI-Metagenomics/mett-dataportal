@@ -45,6 +45,20 @@ $ cd ./data-generators/faa-generator
 $ python ./run_pipeline.py
 ```
 
+#### Copy deduplicated files on NFS dev
+##### Spwan the test pod
+```bash
+$ cd ./data-generators/faa-generator
+$ kubectl apply -f file-copy-pod.yml
+```
+
+##### Copy the files
+```bash
+$ cd ./data-generators/faa-generator
+$ ./copy-files-to-nfs.sh
+```
+
+
 #### Set up the test environment
 
 ##### local environment

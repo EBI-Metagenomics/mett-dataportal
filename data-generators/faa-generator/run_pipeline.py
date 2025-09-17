@@ -1,4 +1,4 @@
-from fetch_and_consolidate import fetch_all_sequences, consolidate_filtered
+from fetch_and_consolidate import fetch_all_sequences, consolidate_filtered, generate_deduplicated_isolates
 from deduplicate_faa import deduplicate_faa
 
 TYPE_STRAINS = {"BU_ATCC8492", "PV_ATCC8482"}
@@ -7,6 +7,14 @@ TYPE_STRAINS = {"BU_ATCC8492", "PV_ATCC8482"}
 def run_all():
     print("Preloading all sequences...")
     all_entries = fetch_all_sequences(use_sftp=False)  # change to True when needed
+
+    # Generate deduplicated files per isolate
+    print("\n🔄 Generating deduplicated files per isolate...")
+    try:
+        isolate_count = generate_deduplicated_isolates(all_entries)
+        print(f"✅ Generated {isolate_count} deduplicated isolate files in output/isolates-db/")
+    except Exception as e:
+        print(f"✗ Failed to generate isolate files: {e}")
 
     combos = [
         ("bu_typestrains.faa", ["BU_"], True, "bu_typestrains_deduplicated.faa"),
