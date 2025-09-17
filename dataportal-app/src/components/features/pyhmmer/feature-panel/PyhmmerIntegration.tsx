@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {createRoot} from 'react-dom/client';
 import {PyhmmerFeaturePanel} from '@components/features';
 import {PYHMMER_CONSTANTS} from '../../../../utils/pyhmmer';
@@ -7,6 +7,18 @@ import styles from './PyhmmerIntegration.module.scss';
 
 export const PyhmmerIntegration: React.FC = () => {
     console.log('PyhmmerIntegration: Component loaded');
+    
+    // Track current gene context to detect changes
+    const currentGeneContextRef = useRef<string | null>(null);
+
+    // Function to hide PyHMMER panel
+    const hidePyhmmerPanel = () => {
+        const container = document.getElementById('pyhmmer-search-react');
+        if (container) {
+            container.remove();
+            console.log('PyhmmerIntegration: PyHMMER panel hidden');
+        }
+    };
 
     // Function to extract gene information from JBrowse feature panel
     const extractGeneContext = (panel: Element): {
@@ -129,6 +141,24 @@ export const PyhmmerIntegration: React.FC = () => {
         existingButtons.forEach(button => {
             button.classList.remove('pyhmmer-button-styled', styles.pyhmmerButton, styles.buttonHover);
         });
+
+        // Hide PyHMMER panel when gene context changes
+        const checkForGeneContextChange = () => {
+            const panels = document.querySelectorAll('.MuiAccordionDetails-root, [role="region"]');
+            panels.forEach(panel => {
+                const geneContext = extractGeneContext(panel);
+                const newGeneContext = geneContext.locusTag || geneContext.geneId || 'unknown';
+                
+                if (currentGeneContextRef.current && currentGeneContextRef.current !== newGeneContext) {
+                    console.log('PyhmmerIntegration: Gene context changed, hiding PyHMMER panel');
+                    hidePyhmmerPanel();
+                }
+                currentGeneContextRef.current = newGeneContext;
+            });
+        };
+
+        // Check for gene context changes periodically
+        const geneContextInterval = setInterval(checkForGeneContextChange, 1000);
 
         // Function to style the search button
         const styleSearchButton = () => {
@@ -350,6 +380,7 @@ export const PyhmmerIntegration: React.FC = () => {
         // Cleanup function
         return () => {
             observer.disconnect();
+            clearInterval(geneContextInterval);
             
             // Clean up styled elements
             const buttons = document.querySelectorAll('.pyhmmer-button-styled');
@@ -365,15 +396,15 @@ export const PyhmmerIntegration: React.FC = () => {
     const injectPyhmmerSearchIntoFeaturePanel = (proteinSequence: string, tempJobId?: string, isolateName?: string) => {
         console.log('PyhmmerIntegration: injectPyhmmerSearchIntoFeaturePanel called with sequence length:', proteinSequence.length);
 
-        // Find or create container
-        let container = document.getElementById('pyhmmer-search-react');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'pyhmmer-search-react';
+        // Remove existing container if it exists
+        const existingContainer = document.getElementById('pyhmmer-search-react');
+        if (existingContainer) {
+            existingContainer.remove();
         }
 
-        // Clear existing content
-        container.innerHTML = '';
+        // Create fresh container
+        const container = document.createElement('div');
+        container.id = 'pyhmmer-search-react';
 
         // Make the container collapsible
         container.className = styles.searchPanelContainer;
@@ -439,7 +470,13 @@ export const PyhmmerIntegration: React.FC = () => {
                         // Mount React component
                 try {
                     const root = createRoot(content);
-                    root.render(<PyhmmerFeaturePanel proteinSequence={proteinSequence} tempJobId={tempJobId} isolateName={isolateName}/>);
+                    root.render(
+                        <PyhmmerFeaturePanel 
+                            proteinSequence={proteinSequence} 
+                            tempJobId={tempJobId} 
+                            isolateName={isolateName}
+                        />
+                    );
                     console.log('PyhmmerIntegration: PyhmmerFeaturePanel rendered successfully with temp job ID:', tempJobId);
                 } catch (error) {
                     console.error('PyhmmerIntegration: Error rendering PyhmmerFeaturePanel:', error);

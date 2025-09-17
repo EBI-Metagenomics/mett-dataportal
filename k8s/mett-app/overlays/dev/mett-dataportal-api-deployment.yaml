@@ -142,6 +142,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-dev
                   key: PYHMMER_FAA_BASE_PATH
+            - name: PYHMMER_ISOLATES_BASE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-dev
+                  key: PYHMMER_ISOLATES_BASE_PATH
           resources:
             requests:
               memory: "2Gi"

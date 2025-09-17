@@ -58,8 +58,14 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
         setHasSearched(false);
     };
 
-    // Auto-start search when component mounts
+    // Clear results and auto-start search when protein sequence changes (new gene)
     React.useEffect(() => {
+        // Clear previous results when navigating to a new gene
+        setResults([]);
+        setError(null);
+        setHasSearched(false);
+        
+        // Start new search for the new protein sequence
         handleSearch();
     }, [proteinSequence]);
 

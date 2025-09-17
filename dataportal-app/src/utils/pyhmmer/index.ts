@@ -4,7 +4,6 @@
 export * from './pyhmmerConstants';
 export * from './validation';
 export * from './formatting';
-export * from './isolateExtraction';
 
 // Types (exported separately to avoid conflicts)
 export type { ValidationError, PyhmmerCompactSearchRequest } from './types';

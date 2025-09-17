@@ -24,6 +24,7 @@ data:
   VITE_COG_CATEGORY_URL: "https://www.ncbi.nlm.nih.gov/research/cog/cogcategory/"
   VITE_GO_URL: "https://quickgo.org/term/"
   PYHMMER_FAA_BASE_PATH: "/data/pyhmmer/output/"
+  PYHMMER_ISOLATES_BASE_PATH: "/data/pyhmmer/output/isolates-db/"
   ENABLE_PYHMMER_SEARCH: "true"
   ENABLE_FEEDBACK: "true"
   ENABLE_NATURAL_QUERY: "false"
