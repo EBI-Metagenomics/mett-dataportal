@@ -118,7 +118,7 @@ class MessageSchema(Schema):
 
 
 class SearchRequestSchema(ModelSchema):
-    database: Literal[tuple(HmmerJob.DbChoices.values)]
+    database: str = Field(..., description="Database identifier (consolidated or isolate-specific)")
     threshold: Literal["evalue", "bitscore"]
     threshold_value: float
     input: str
@@ -265,6 +265,37 @@ class SearchRequestSchema(ModelSchema):
             )
 
         return value
+
+    @field_validator("database", mode="after")
+    @classmethod
+    def validate_database(cls, value: str):
+        """Validate database identifier"""
+        # Check if it's a valid consolidated database
+        valid_consolidated = [
+            "bu_type_strains", "bu_all", "pv_type_strains", "pv_all", 
+            "bu_pv_type_strains", "bu_pv_all"
+        ]
+        
+        if value in valid_consolidated:
+            return value
+        
+        # Check if it's a valid isolate-specific database
+        if value.startswith('isolate_'):
+            isolate_name = value.replace('isolate_', '')
+            # Basic validation for isolate name format
+            if isolate_name and (isolate_name.startswith('BU_') or isolate_name.startswith('PV_')):
+                return value
+            else:
+                raise PydanticCustomError(
+                    "invalid_database",
+                    "Isolate-specific database must have format 'isolate_BU_XXXXX' or 'isolate_PV_XXXXX'"
+                )
+        
+        # If neither, it's invalid
+        raise PydanticCustomError(
+            "invalid_database",
+            f"Database must be one of: {', '.join(valid_consolidated)} or isolate-specific format 'isolate_BU_XXXXX'/'isolate_PV_XXXXX'"
+        )
 
     class Meta:
         model = HmmerJob

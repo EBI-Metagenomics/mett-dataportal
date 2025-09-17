@@ -31,6 +31,8 @@ class HmmerJob(models.Model):
             "bu_pv_all",
             "Bacteroides uniformis + Phocaeicola vulgatus All Strains",
         )
+        # Dynamic isolate-specific databases (will be validated in tasks.py)
+        ISOLATE_SPECIFIC = "isolate_specific", "Isolate-Specific Database"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     algo = models.CharField(

@@ -279,8 +279,11 @@ export const PyhmmerIntegration: React.FC = () => {
                                         const tempJobId = saveJBrowseSearchToHistory(searchRequest, geneContext);
                                         console.log('PyhmmerIntegration: JBrowse search saved to history with temp ID:', tempJobId);
                                         
+                                        // Extract isolate name from locus tag for isolate-specific search
+                                        const isolateName = geneContext.locusTag || geneContext.geneId;
+                                        
                                         // Inject the search panel with the temporary job ID for tracking
-                                        injectPyhmmerSearchIntoFeaturePanel(sequence, tempJobId);
+                                        injectPyhmmerSearchIntoFeaturePanel(sequence, tempJobId, isolateName);
             } else {
                                         console.log('PyhmmerIntegration: Could not find sequence');
                                     }
@@ -359,7 +362,7 @@ export const PyhmmerIntegration: React.FC = () => {
     }, []);
 
     // Function to inject the PyHMMER search panel
-    const injectPyhmmerSearchIntoFeaturePanel = (proteinSequence: string, tempJobId?: string) => {
+    const injectPyhmmerSearchIntoFeaturePanel = (proteinSequence: string, tempJobId?: string, isolateName?: string) => {
         console.log('PyhmmerIntegration: injectPyhmmerSearchIntoFeaturePanel called with sequence length:', proteinSequence.length);
 
         // Find or create container
@@ -436,7 +439,7 @@ export const PyhmmerIntegration: React.FC = () => {
                         // Mount React component
                 try {
                     const root = createRoot(content);
-                    root.render(<PyhmmerFeaturePanel proteinSequence={proteinSequence} tempJobId={tempJobId}/>);
+                    root.render(<PyhmmerFeaturePanel proteinSequence={proteinSequence} tempJobId={tempJobId} isolateName={isolateName}/>);
                     console.log('PyhmmerIntegration: PyhmmerFeaturePanel rendered successfully with temp job ID:', tempJobId);
                 } catch (error) {
                     console.error('PyhmmerIntegration: Error rendering PyhmmerFeaturePanel:', error);

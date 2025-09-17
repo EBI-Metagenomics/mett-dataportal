@@ -267,6 +267,20 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/output/")
+PYHMMER_ISOLATES_BASE_PATH = os.environ.get("PYHMMER_ISOLATES_BASE_PATH", "/data/pyhmmer/output/isolates-db/")
+
+# Function to get isolate-specific database path
+def get_isolate_database_path(isolate_name: str) -> str:
+    """Get the database path for a specific isolate."""
+    if isolate_name.startswith('BU_'):
+        species_dir = 'BU'
+    elif isolate_name.startswith('PV_'):
+        species_dir = 'PV'
+    else:
+        species_dir = 'BU'  # Default to BU
+    
+    return f"{PYHMMER_ISOLATES_BASE_PATH}{species_dir}/{isolate_name}_deduplicated.faa"
+
 HMMER_DATABASES = {
     "bu_type_strains": PYHMMER_FAA_BASE_PATH + "bu_typestrains_deduplicated.faa",
     "bu_all": PYHMMER_FAA_BASE_PATH + "bu_all_strains_deduplicated.faa",

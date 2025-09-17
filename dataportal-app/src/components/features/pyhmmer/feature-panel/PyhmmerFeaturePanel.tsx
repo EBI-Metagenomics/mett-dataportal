@@ -7,9 +7,10 @@ import styles from './PyhmmerFeaturePanel.module.scss';
 interface PyhmmerFeaturePanelProps {
     proteinSequence: string;
     tempJobId?: string;
+    isolateName?: string;
 }
 
-export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({proteinSequence, tempJobId}) => {
+export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({proteinSequence, tempJobId, isolateName}) => {
     const [isSearching, setIsSearching] = useState(false);
     const [results, setResults] = useState<PyhmmerSearchResult[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -24,7 +25,19 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
         setHasSearched(true);
 
         try {
-            const searchResponse = await PyhmmerService.executeSearch(proteinSequence);
+            // Use isolate-specific database if isolate name is provided
+            let database = 'bu_pv_all'; // Default database
+            if (isolateName) {
+                // Extract isolate name from locus tag (e.g., "BU_ATCC8492_00001" -> "BU_ATCC8492")
+                const isolateMatch = isolateName.match(/^([A-Z]{2}_[A-Z0-9]+)/);
+                if (isolateMatch) {
+                    const extractedIsolate = isolateMatch[1];
+                    // Use a custom database identifier that we'll handle in the backend
+                    database = `isolate_${extractedIsolate}`;
+                }
+            }
+            
+            const searchResponse = await PyhmmerService.executeSearch(proteinSequence, database);
             setResults(searchResponse.results);
             
             // If this was a JBrowse search, update the history with the real job ID

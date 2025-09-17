@@ -197,8 +197,19 @@ def run_search(self, job_id: str):
             logger.info("Database task status updated successfully")
 
         logger.info(f"Getting database path for: {job.database}")
-        db_path = settings.HMMER_DATABASES[job.database]
-        logger.info(f"Database path: {db_path}")
+        logger.info(f"Database starts with 'isolate_': {job.database.startswith('isolate_')}")
+        
+        # Check if this is an isolate-specific database
+        if job.database.startswith('isolate_'):
+            isolate_name = job.database.replace('isolate_', '')
+            logger.info(f"Extracted isolate name: {isolate_name}")
+            db_path = settings.get_isolate_database_path(isolate_name)
+            logger.info(f"Isolate-specific database path: {db_path}")
+        else:
+            logger.info(f"Using consolidated database: {job.database}")
+            db_path = settings.HMMER_DATABASES[job.database]
+            logger.info(f"Consolidated database path: {db_path}")
+        
         if not db_path:
             raise ValueError(f"Invalid database ID '{job.database}'")
 
