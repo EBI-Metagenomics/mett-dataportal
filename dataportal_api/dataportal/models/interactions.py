@@ -34,6 +34,34 @@ class ProteinProteinDocument(Document):
     pair_id = Keyword()                     # "{species}:{min}__{max}" – set as _id
     is_self_interaction = Boolean()         # convenience flag when a == b
 
+    # ---- Gene Information for protein_a ----
+    protein_a_locus_tag = Keyword()
+    protein_a_uniprot_id = Keyword()
+    protein_a_name = Keyword()
+    protein_a_seqid = Keyword()
+    protein_a_source = Keyword()
+    protein_a_type = Keyword()
+    protein_a_start = Integer()
+    protein_a_end = Integer()
+    protein_a_score = ScaledFloat(scaling_factor=1_000_000)
+    protein_a_strand = Keyword()
+    protein_a_phase = Keyword()
+    protein_a_product = Text()
+
+    # ---- Gene Information for protein_b ----
+    protein_b_locus_tag = Keyword()
+    protein_b_uniprot_id = Keyword()
+    protein_b_name = Keyword()
+    protein_b_seqid = Keyword()
+    protein_b_source = Keyword()
+    protein_b_type = Keyword()
+    protein_b_start = Integer()
+    protein_b_end = Integer()
+    protein_b_score = ScaledFloat(scaling_factor=1_000_000)
+    protein_b_strand = Keyword()
+    protein_b_phase = Keyword()
+    protein_b_product = Text()
+
     # ---- Scores / evidence (ScaledFloat keeps storage compact & sortable) ----
     # Use scaling_factor=1e6 to preserve up to ~6 decimal places and allow negatives.
     dl_score             = ScaledFloat(scaling_factor=1_000_000)     # "ds_score" in CSV?

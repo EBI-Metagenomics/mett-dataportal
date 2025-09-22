@@ -1,3 +1,5 @@
+from warnings import deprecated
+
 from django.core.management.base import BaseCommand
 from elasticsearch_dsl import connections
 
@@ -6,7 +8,7 @@ from dataportal.ingest.ppi import PPICSVFlow
 
 SPECIES_MAP = {"Bacteroides uniformis": "BU"}  # extend as needed
 
-
+@deprecated
 class Command(BaseCommand):
     help = "Import PPI CSVs into Elasticsearch"
 

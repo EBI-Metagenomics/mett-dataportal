@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 from django.utils.timezone import now
 
 from dataportal.ingest.ppi.parsing import iter_ppi_rows
+from dataportal.ingest.ppi.gff_parser import GFFParser
 from dataportal.ingest.es_repo import PPIIndexRepository
 
 
@@ -58,6 +59,7 @@ def _flags_and_rollups(src: Dict) -> None:
 class PPICSVFlow:
     repo: PPIIndexRepository
     species_map: Dict[str, str]
+    gff_parser: Optional[GFFParser] = None
 
     def _row_to_action(self, row: Dict) -> Optional[Dict]:
         a, b = row.get("protein_a"), row.get("protein_b")
@@ -96,6 +98,34 @@ class PPICSVFlow:
             # xlms
             "xlms_peptides": row.get("xlms_peptides"),
             "xlms_files": row.get("xlms_files"),
+            
+            # gene information for protein_a
+            "protein_a_locus_tag": row.get("protein_a_locus_tag"),
+            "protein_a_uniprot_id": row.get("protein_a_uniprot_id"),
+            "protein_a_name": row.get("protein_a_name"),
+            "protein_a_seqid": row.get("protein_a_seqid"),
+            "protein_a_source": row.get("protein_a_source"),
+            "protein_a_type": row.get("protein_a_type"),
+            "protein_a_start": row.get("protein_a_start"),
+            "protein_a_end": row.get("protein_a_end"),
+            "protein_a_score": row.get("protein_a_score"),
+            "protein_a_strand": row.get("protein_a_strand"),
+            "protein_a_phase": row.get("protein_a_phase"),
+            "protein_a_product": row.get("protein_a_product"),
+            
+            # gene information for protein_b
+            "protein_b_locus_tag": row.get("protein_b_locus_tag"),
+            "protein_b_uniprot_id": row.get("protein_b_uniprot_id"),
+            "protein_b_name": row.get("protein_b_name"),
+            "protein_b_seqid": row.get("protein_b_seqid"),
+            "protein_b_source": row.get("protein_b_source"),
+            "protein_b_type": row.get("protein_b_type"),
+            "protein_b_start": row.get("protein_b_start"),
+            "protein_b_end": row.get("protein_b_end"),
+            "protein_b_score": row.get("protein_b_score"),
+            "protein_b_strand": row.get("protein_b_strand"),
+            "protein_b_phase": row.get("protein_b_phase"),
+            "protein_b_product": row.get("protein_b_product"),
         }
 
         _flags_and_rollups(src)
@@ -147,7 +177,7 @@ class PPICSVFlow:
         total = 0
 
         try:
-            for i, row in enumerate(iter_ppi_rows(folder, pattern), 1):
+            for i, row in enumerate(iter_ppi_rows(folder, pattern, self.gff_parser), 1):
                 act = self._row_to_action(row)
                 if act is None:
                     continue

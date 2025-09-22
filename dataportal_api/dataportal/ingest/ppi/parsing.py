@@ -1,6 +1,7 @@
 from __future__ import annotations
 import csv, glob, os
-from typing import Dict, Iterable, Iterator, List, Optional
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
+from .gff_parser import GFFParser, GeneInfo
 
 PPI_CSV_COLUMNS = [
     "species","id","protein_a","protein_b","ds_score","tt_score","perturb_score",
@@ -26,8 +27,8 @@ def _split_list(v: Optional[str]) -> Optional[List[str]]:
     parts = [p for p in parts if p]
     return parts or None
 
-def iter_ppi_rows(folder: str, pattern: str = "*.csv") -> Iterator[Dict]:
-    """Yield raw rows from all CSVs in `folder` matching pattern."""
+def iter_ppi_rows(folder: str, pattern: str = "*.csv", gff_parser: Optional[GFFParser] = None) -> Iterator[Dict]:
+    """Yield raw rows from all CSVs in `folder` matching pattern with optional gene information."""
     for path in sorted(glob.glob(os.path.join(folder, pattern))):
         with open(path, "r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -36,7 +37,7 @@ def iter_ppi_rows(folder: str, pattern: str = "*.csv") -> Iterator[Dict]:
             if missing:
                 raise ValueError(f"PPI CSV missing columns {missing} in {path}")
             for row in reader:
-                yield {
+                base_row = {
                     "species": row.get("species"),
                     "csv_id": row.get("id"),  # may be None; not trusted for canonicalization
                     "protein_a": row.get("protein_a"),
@@ -54,3 +55,104 @@ def iter_ppi_rows(folder: str, pattern: str = "*.csv") -> Iterator[Dict]:
                     "xlms_peptides": (row.get("xlms_peptides") or None),
                     "xlms_files": _split_list(row.get("xlms_files")),
                 }
+                
+                # Add gene information if GFF parser is provided
+                if gff_parser:
+                    # Extract isolate from species or use a default mapping
+                    isolate = _extract_isolate_from_species(base_row["species"])
+                    if isolate:
+                        gene_a, gene_b = gff_parser.get_gene_info_for_proteins(
+                            isolate, base_row["protein_a"], base_row["protein_b"]
+                        )
+                        base_row.update(_add_gene_info_to_row(gene_a, gene_b))
+                
+                yield base_row
+
+
+def _extract_isolate_from_species(species: Optional[str]) -> Optional[str]:
+    """Extract isolate name from species information."""
+    if not species:
+        return None
+    
+    # This is a simple mapping - you might need to adjust based on your data
+    # For now, we'll assume the species contains the isolate information
+    # You might need to implement a more sophisticated mapping here
+    species_mapping = {
+        "Bacteroides uniformis": "BU_ATCC8492",  # Example mapping
+        "Phocaeicola vulgatus": "PV_ATCC8482",   # Example mapping
+    }
+    
+    return species_mapping.get(species)
+
+
+def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]) -> Dict:
+    """Add gene information to a PPI row."""
+    gene_info = {}
+    
+    # Add protein_a gene information
+    if gene_a:
+        gene_info.update({
+            "protein_a_locus_tag": gene_a.locus_tag,
+            "protein_a_uniprot_id": gene_a.uniprot_id,
+            "protein_a_name": gene_a.name,
+            "protein_a_seqid": gene_a.seqid,
+            "protein_a_source": gene_a.source,
+            "protein_a_type": gene_a.type,
+            "protein_a_start": gene_a.start,
+            "protein_a_end": gene_a.end,
+            "protein_a_score": gene_a.score,
+            "protein_a_strand": gene_a.strand,
+            "protein_a_phase": gene_a.phase,
+            "protein_a_product": gene_a.product,
+        })
+    else:
+        # Add None values for missing gene information
+        gene_info.update({
+            "protein_a_locus_tag": None,
+            "protein_a_uniprot_id": None,
+            "protein_a_name": None,
+            "protein_a_seqid": None,
+            "protein_a_source": None,
+            "protein_a_type": None,
+            "protein_a_start": None,
+            "protein_a_end": None,
+            "protein_a_score": None,
+            "protein_a_strand": None,
+            "protein_a_phase": None,
+            "protein_a_product": None,
+        })
+    
+    # Add protein_b gene information
+    if gene_b:
+        gene_info.update({
+            "protein_b_locus_tag": gene_b.locus_tag,
+            "protein_b_uniprot_id": gene_b.uniprot_id,
+            "protein_b_name": gene_b.name,
+            "protein_b_seqid": gene_b.seqid,
+            "protein_b_source": gene_b.source,
+            "protein_b_type": gene_b.type,
+            "protein_b_start": gene_b.start,
+            "protein_b_end": gene_b.end,
+            "protein_b_score": gene_b.score,
+            "protein_b_strand": gene_b.strand,
+            "protein_b_phase": gene_b.phase,
+            "protein_b_product": gene_b.product,
+        })
+    else:
+        # Add None values for missing gene information
+        gene_info.update({
+            "protein_b_locus_tag": None,
+            "protein_b_uniprot_id": None,
+            "protein_b_name": None,
+            "protein_b_seqid": None,
+            "protein_b_source": None,
+            "protein_b_type": None,
+            "protein_b_start": None,
+            "protein_b_end": None,
+            "protein_b_score": None,
+            "protein_b_strand": None,
+            "protein_b_phase": None,
+            "protein_b_product": None,
+        })
+    
+    return gene_info

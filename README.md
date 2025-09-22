@@ -184,8 +184,9 @@ $ python manage.py import_features \
 
 #### Protein Protein Index (PPI):
 ```shell
-$ python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/  
-$ python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/ --refresh-every-rows 500000   # or --refresh-every-secs 120
+$ <deprecatd> python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/  
+$ <deprecatd> python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/ --refresh-every-rows 500000   # or --refresh-every-secs 120
+$ python manage.py import_ppi_with_genes --index ppi_index --pattern "*.csv" --csv-folder ../data-generators/Sub-Projects-Data/SP2/  
 ```
 
 #### Operon Index:
