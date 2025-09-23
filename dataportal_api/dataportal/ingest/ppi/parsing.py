@@ -109,7 +109,7 @@ def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]
             "protein_a_product": gene_a.product,
         })
     else:
-        logger.info("No gene_a info, adding None values")
+        # logger.info("No gene_a info, adding None values")
         # Add None values for missing gene information
         gene_info.update({
             "protein_a_locus_tag": None,
@@ -144,7 +144,7 @@ def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]
             "protein_b_product": gene_b.product,
         })
     else:
-        logger.info("No gene_b info, adding None values")
+        # logger.info("No gene_b info, adding None values")
         # Add None values for missing gene information
         gene_info.update({
             "protein_b_locus_tag": None,
