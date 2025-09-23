@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
+import csv
 
 from django.utils.timezone import now
 
@@ -155,6 +156,20 @@ class PPICSVFlow:
         """
         es = self.repo._conn()
         self.repo.ensure_index()
+        
+        # Pre-load GFF files if GFF parser is available
+        if self.gff_parser:
+            print("[ppi] Pre-loading GFF files...")
+            # Set species mapping
+            self.gff_parser.set_species_mapping(self.species_map)
+            
+            # Get unique species from CSV files
+            species_list = self._get_unique_species_from_csvs(folder, pattern)
+            if species_list:
+                self.gff_parser.preload_gff_files(species_list)
+                print(f"[ppi] Pre-loaded GFF files for {len(species_list)} species")
+            else:
+                print("[ppi] No species found in CSV files")
 
         # Optional: speed up big initial loads
         old_settings = {}
@@ -221,3 +236,24 @@ class PPICSVFlow:
                     print(f"[ppi] warn: restore index settings failed: {e}")
 
         return total
+    
+    def _get_unique_species_from_csvs(self, folder: str, pattern: str) -> List[str]:
+        """Get unique species from CSV files to pre-load GFF data."""
+        import glob
+        import os
+        
+        species_set = set()
+        
+        for path in sorted(glob.glob(os.path.join(folder, pattern))):
+            try:
+                with open(path, "r", newline="", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        species = row.get("species")
+                        if species and species.strip():
+                            species_set.add(species.strip())
+            except Exception as e:
+                print(f"[ppi] Warning: Error reading CSV file {path}: {e}")
+                continue
+        
+        return list(species_set)

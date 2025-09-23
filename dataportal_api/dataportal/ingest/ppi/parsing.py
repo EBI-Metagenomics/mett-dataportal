@@ -1,7 +1,10 @@
 from __future__ import annotations
 import csv, glob, os
+import logging
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 from .gff_parser import GFFParser, GeneInfo
+
+logger = logging.getLogger(__name__)
 
 PPI_CSV_COLUMNS = [
     "species","id","protein_a","protein_b","ds_score","tt_score","perturb_score",
@@ -58,39 +61,39 @@ def iter_ppi_rows(folder: str, pattern: str = "*.csv", gff_parser: Optional[GFFP
                 
                 # Add gene information if GFF parser is provided
                 if gff_parser:
-                    # Extract isolate from species or use a default mapping
-                    isolate = _extract_isolate_from_species(base_row["species"])
-                    if isolate:
+                    species = base_row["species"]
+                    protein_a = base_row["protein_a"]
+                    protein_b = base_row["protein_b"]
+                    
+                    # logger.info(f"Looking up gene info for species: {species}, protein_a: {protein_a}, protein_b: {protein_b}")
+                    
+                    if species:
                         gene_a, gene_b = gff_parser.get_gene_info_for_proteins(
-                            isolate, base_row["protein_a"], base_row["protein_b"]
+                            species, protein_a, protein_b
                         )
+                        
+                        # logger.info(f"Gene lookup results - gene_a: {gene_a}, gene_b: {gene_b}")
+                        
                         base_row.update(_add_gene_info_to_row(gene_a, gene_b))
+                    else:
+                        logger.info(f"No species found in row, skipping gene lookup")
+                else:
+                    logger.info(f"No GFF parser provided, skipping gene lookup")
                 
                 yield base_row
 
 
-def _extract_isolate_from_species(species: Optional[str]) -> Optional[str]:
-    """Extract isolate name from species information."""
-    if not species:
-        return None
-    
-    # This is a simple mapping - you might need to adjust based on your data
-    # For now, we'll assume the species contains the isolate information
-    # You might need to implement a more sophisticated mapping here
-    species_mapping = {
-        "Bacteroides uniformis": "BU_ATCC8492",  # Example mapping
-        "Phocaeicola vulgatus": "PV_ATCC8482",   # Example mapping
-    }
-    
-    return species_mapping.get(species)
 
 
 def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]) -> Dict:
     """Add gene information to a PPI row."""
     gene_info = {}
     
+    # logger.info(f"Adding gene info to row - gene_a: {gene_a}, gene_b: {gene_b}")
+    
     # Add protein_a gene information
     if gene_a:
+        # logger.info(f"Adding gene_a info: locus_tag={gene_a.locus_tag}, uniprot_id={gene_a.uniprot_id}, name={gene_a.name}")
         gene_info.update({
             "protein_a_locus_tag": gene_a.locus_tag,
             "protein_a_uniprot_id": gene_a.uniprot_id,
@@ -106,6 +109,7 @@ def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]
             "protein_a_product": gene_a.product,
         })
     else:
+        logger.info("No gene_a info, adding None values")
         # Add None values for missing gene information
         gene_info.update({
             "protein_a_locus_tag": None,
@@ -124,6 +128,7 @@ def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]
     
     # Add protein_b gene information
     if gene_b:
+        # logger.info(f"Adding gene_b info: locus_tag={gene_b.locus_tag}, uniprot_id={gene_b.uniprot_id}, name={gene_b.name}")
         gene_info.update({
             "protein_b_locus_tag": gene_b.locus_tag,
             "protein_b_uniprot_id": gene_b.uniprot_id,
@@ -139,6 +144,7 @@ def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]
             "protein_b_product": gene_b.product,
         })
     else:
+        logger.info("No gene_b info, adding None values")
         # Add None values for missing gene information
         gene_info.update({
             "protein_b_locus_tag": None,
@@ -155,4 +161,5 @@ def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]
             "protein_b_product": None,
         })
     
+    # logger.info(f"Final gene_info dict: {gene_info}")
     return gene_info
