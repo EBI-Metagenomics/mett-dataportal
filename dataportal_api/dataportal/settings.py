@@ -72,16 +72,6 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
-        'dataportal.ingest.ppi.gff_parser': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'dataportal.ingest.ppi.parsing': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
     },
 }
 
