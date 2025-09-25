@@ -30,6 +30,7 @@ const GeneViewerPage: React.FC = () => {
     // Local state
     const [height] = useState(450);
     const [pageSize, setPageSize] = useState(DEFAULT_PER_PAGE_CNT);
+    const [viewType, setViewType] = useState<'linear' | 'circular'>('linear');
 
     // Custom hooks for data management
     const geneViewerData = useGeneViewerData();
@@ -50,6 +51,11 @@ const GeneViewerPage: React.FC = () => {
     // Toggle handler for essentiality
     const handleEssentialityToggle = useCallback((include: boolean) => {
         setIncludeEssentiality(include);
+    }, []);
+
+    // Toggle handler for view type
+    const handleViewTypeChange = useCallback((newViewType: 'linear' | 'circular') => {
+        setViewType(newViewType);
     }, []);
     const geneViewerSearch = useGeneViewerSearch({
         genomeMeta: geneViewerData.genomeMeta,
@@ -209,13 +215,18 @@ const GeneViewerPage: React.FC = () => {
                     <GeneViewerControls
                         genomeMeta={geneViewerData.genomeMeta}
                         includeEssentiality={includeEssentiality}
+                        viewType={viewType}
                         onEssentialityToggle={handleEssentialityToggle}
+                        onViewTypeChange={handleViewTypeChange}
                     />
 
                     {/* Main JBrowse content */}
                     <GeneViewerContent
                         viewState={viewState}
                         height={height}
+                        viewType={viewType}
+                        assembly={geneViewerConfig?.assembly}
+                        tracks={geneViewerConfig?.tracks}
                         onRefreshTracks={handleRefreshTracks}
                         // Feature selection is now handled by JBrowse's built-in feature panel
                     />

@@ -1,10 +1,16 @@
 import React from 'react';
 import {JBrowseApp} from "@jbrowse/react-app2";
+import GeneViewerCircularContent from './GeneViewerCircularContent';
 import styles from './GeneViewerContent.module.scss';
+
+type ViewType = 'linear' | 'circular';
 
 interface GeneViewerContentProps {
     viewState: any;
     height: number;
+    viewType?: ViewType;
+    assembly?: any;
+    tracks?: any[];
     onRefreshTracks?: () => void;
     onFeatureSelect?: (feature: any) => void;
 }
@@ -12,6 +18,9 @@ interface GeneViewerContentProps {
 const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
                                                                  viewState,
                                                                  height,
+                                                                 viewType = 'linear',
+                                                                 assembly,
+                                                                 tracks,
                                                                  onRefreshTracks,
                                                                  onFeatureSelect,
                                                              }) => {
@@ -70,6 +79,24 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
         };
     }, [viewState, onFeatureSelect]);
 
+    // Render circular view if requested
+    if (viewType === 'circular') {
+        if (!assembly) {
+            return <p>Loading Circular Genome Viewer...</p>;
+        }
+        
+        return (
+            <GeneViewerCircularContent
+                assembly={assembly}
+                tracks={tracks || []}
+                height={height}
+                onRefreshTracks={onRefreshTracks}
+                onFeatureSelect={onFeatureSelect}
+            />
+        );
+    }
+
+    // Default linear view
     if (!viewState) {
         return <p>Loading Genome Viewer...</p>;
     }
