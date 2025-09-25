@@ -3,6 +3,7 @@ import {GeneService} from '../services/gene';
 import {GenomeMeta} from '../interfaces/Genome';
 import {APP_CONSTANTS} from '../utils/common/constants';
 import {useFilterStore} from '../stores/filterStore';
+import {GeneMeta} from "../interfaces/Gene";
 
 interface UseGeneViewerSearchProps {
     genomeMeta: GenomeMeta | null;
@@ -38,7 +39,7 @@ export const useGeneViewerSearch = ({
     const setGeneSortOrder = useFilterStore(state => state.setGeneSortOrder);
 
     // Local state
-    const [geneResults, setGeneResults] = useState<any[]>([]);
+    const [geneResults, setGeneResults] = useState<GeneMeta[]>([]);
     const [totalPages, setTotalPages] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
     const [hasPrevious, setHasPrevious] = useState(false);
@@ -58,7 +59,7 @@ export const useGeneViewerSearch = ({
                     10, // pageSize
                     sortField,
                     sortOrder,
-                    [{ isolate_name: genomeMeta.isolate_name, type_strain: genomeMeta.type_strain }], // genomeFilter
+                    [{isolate_name: genomeMeta.isolate_name, type_strain: genomeMeta.type_strain}], // genomeFilter
                     undefined, // speciesFilter
                     {}, // selectedFacetFilters
                     {}, // facetOperators
@@ -68,7 +69,7 @@ export const useGeneViewerSearch = ({
                     dataLength: response.data?.length || 0,
                     pagination: response.pagination
                 });
-                
+
                 setGeneResults(response.data || []);
                 setTotalPages(response.pagination?.num_pages || 1);
                 setCurrentPage(response.pagination?.page_number || 1);

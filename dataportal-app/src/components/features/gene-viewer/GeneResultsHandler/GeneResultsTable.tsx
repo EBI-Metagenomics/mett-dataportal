@@ -82,6 +82,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
             .filter(col => col.defaultVisible !== false)
             .map(col => col.key)
     );
+    
     const [columnLimitError, setColumnLimitError] = useState(false);
 
     useEffect(() => {
@@ -239,8 +240,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 </tbody>
             </table>
         </section>
-    )
-        ;
+    );
 };
 
 export default GeneResultsTable;
