@@ -21,13 +21,27 @@ def build_pair_id(species_key: str, a: str, b: str) -> str:
 
 
 def _species_key(species_name: Optional[str], species_map: Dict[str, str]) -> str:
+    """Extract species acronym from species name or isolate name."""
     if species_name and species_name in species_map:
-        return species_map[species_name]
+        # If we have a mapping, extract acronym from the isolate name
+        isolate_name = species_map[species_name]
+        # Extract species acronym from isolate name (e.g., "BU_ATCC8492" -> "BU")
+        if "_" in isolate_name:
+            return isolate_name.split("_")[0]
+        return isolate_name
     if species_name:
+        # Fallback: generate acronym from species name
         parts = species_name.split()
         if len(parts) >= 2:
             return (parts[0][0] + parts[1][0]).upper()
     return "NA"
+
+
+def _get_isolate_name(species_name: Optional[str], species_map: Dict[str, str]) -> Optional[str]:
+    """Get isolate name from species name using the mapping."""
+    if species_name and species_name in species_map:
+        return species_map[species_name]
+    return None
 
 
 def _flags_and_rollups(src: Dict) -> None:
@@ -69,6 +83,7 @@ class PPICSVFlow:
 
         sp_name = row.get("species")
         sp_key = _species_key(sp_name, self.species_map)
+        isolate_name = _get_isolate_name(sp_name, self.species_map)
 
         aa, bb = canonical_pair(a, b)
         pair_id = build_pair_id(sp_key, aa, bb)
@@ -78,6 +93,7 @@ class PPICSVFlow:
             "pair_id": pair_id,
             "species_scientific_name": sp_name,
             "species_acronym": sp_key,
+            "isolate_name": isolate_name,
             "protein_a": aa,
             "protein_b": bb,
             "participants": [a, b],

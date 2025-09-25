@@ -59,8 +59,8 @@ We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config file
 #### Elasticsearch Database setup
 ```shell
 $ python manage.py create_es_index
-$ python manage.py create_es_indexes --es-version 2025.09.03
-$ python manage.py create_es_indexes --es-version 2025.09.03 --if-exists recreate
+$ python manage.py create_es_index --es-version 2025.09.03
+$ python manage.py create_es_index --es-version 2025.09.03 --if-exists recreate
 ```
 ### Import data
 
