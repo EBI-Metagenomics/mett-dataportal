@@ -54,6 +54,7 @@ const GeneViewerPage: React.FC = () => {
     const geneViewerSearch = useGeneViewerSearch({
         genomeMeta: geneViewerData.genomeMeta,
         setLoading: geneViewerData.setLoading,
+        pageSize: pageSize,
     });
 
     const debouncedLoading = useDebouncedLoading({
@@ -162,7 +163,12 @@ const GeneViewerPage: React.FC = () => {
     const handlePageSizeChange = useCallback((newPageSize: number) => {
         console.log('GeneViewerPage - handlePageSizeChange called with:', newPageSize);
         setPageSize(newPageSize);
-    }, []);
+        // Trigger a new search with the new page size
+        if (geneViewerData.genomeMeta) {
+            geneViewerSearch.handleGeneSearch(newPageSize);
+        }
+    }, [geneViewerData.genomeMeta, geneViewerSearch.handleGeneSearch]);
+
 
     // Memoize the loading spinner to prevent unnecessary re-renders
     const spinner = useMemo(() => {
@@ -249,6 +255,12 @@ const GeneViewerPage: React.FC = () => {
                                 setLoading={geneViewerData.setLoading}
                                 handleRemoveGenome={handleRemoveGenome}
                                 onPageSizeChange={handlePageSizeChange}
+                                onPageChange={geneViewerSearch.handlePageChange}
+                                currentPage={geneViewerSearch.currentPage}
+                                totalPages={geneViewerSearch.totalPages}
+                                hasPrevious={geneViewerSearch.hasPrevious}
+                                hasNext={geneViewerSearch.hasNext}
+                                totalCount={geneViewerSearch.totalCount}
                             />
                         </section>
                     </div>
