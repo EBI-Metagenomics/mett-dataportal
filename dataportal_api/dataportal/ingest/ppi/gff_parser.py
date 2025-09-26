@@ -10,6 +10,7 @@ import os
 import tempfile
 import ftplib
 import logging
+import time
 from typing import Dict, Optional, Tuple, Any, List
 from dataclasses import dataclass
 
@@ -46,8 +47,8 @@ class GFFParser:
         self._loaded_isolates: set = set()  # Track which isolates have been loaded
     
     def _reconnect_ftp(self) -> ftplib.FTP:
-        """Handle FTP connection with retry logic."""
-        retries = 3
+        """Handle FTP connection with retry logic and exponential backoff."""
+        retries = 5  # Increased retries
         for attempt in range(retries):
             try:
                 ftp = ftplib.FTP(self.ftp_server)
@@ -55,9 +56,10 @@ class GFFParser:
                 return ftp
             except ftplib.all_errors as e:
                 if attempt < retries - 1:
-                    logger.warning(f"FTP connection failed, retrying... (attempt {attempt + 1})")
-                    import time
-                    time.sleep(2)
+                    # Exponential backoff: 1s, 2s, 4s, 8s
+                    delay = 2 ** attempt
+                    logger.warning(f"FTP connection failed, retrying in {delay}s... (attempt {attempt + 1}/{retries})")
+                    time.sleep(delay)
                 else:
                     logger.error(f"Failed to connect to FTP after {retries} attempts: {e}")
                     raise
@@ -252,25 +254,41 @@ class GFFParser:
             logger.debug(f"  {species} -> {isolate}")
     
     def preload_gff_files(self, species_list: List[str]) -> None:
-        """Pre-load GFF files for all species in the list."""
-        # logger.info(f"Pre-loading GFF files for {len(species_list)} species...")
+        """Pre-load GFF files for all species in the list with connection throttling."""
+        logger.info(f"Pre-loading GFF files for {len(species_list)} species...")
         
-        for species in species_list:
+        successful_loads = 0
+        failed_loads = 0
+        
+        for i, species in enumerate(species_list, 1):
             isolate = self._species_to_isolate.get(species)
             if not isolate:
                 logger.warning(f"No isolate mapping found for species: {species}")
                 continue
             
             if isolate in self._loaded_isolates:
-                # logger.info(f"GFF data already loaded for isolate: {isolate}")
+                logger.debug(f"GFF data already loaded for isolate: {isolate}")
                 continue
             
             try:
+                logger.info(f"Loading GFF file {i}/{len(species_list)}: {isolate}")
                 self._load_isolate_gff_data(isolate)
                 self._loaded_isolates.add(isolate)
-                # logger.info(f"Successfully loaded GFF data for isolate: {isolate}")
+                successful_loads += 1
+                logger.info(f"Successfully loaded GFF data for isolate: {isolate}")
+                
+                # Add delay between downloads to avoid overwhelming the FTP server
+                if i < len(species_list):  # Don't delay after the last file
+                    time.sleep(0.5)  # 500ms delay between downloads
+                    
             except Exception as e:
+                failed_loads += 1
                 logger.error(f"Failed to load GFF data for isolate {isolate}: {e}")
+                
+                # Add longer delay after failures to give the server time to recover
+                time.sleep(2.0)  # 2 second delay after failures
+        
+        logger.info(f"GFF preload complete: {successful_loads} successful, {failed_loads} failed")
     
     def _load_isolate_gff_data(self, isolate: str) -> None:
         """Load GFF data for a specific isolate."""

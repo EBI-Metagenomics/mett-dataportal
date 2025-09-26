@@ -196,7 +196,11 @@ $ python manage.py import_operons --index operon_index --operons-dir ../data-gen
 
 #### Ortholog Pairs Index:
 ```shell
-$ python manage.py import_orthologs --index ortholog_index --orthologs-dir ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/
+$ <deprecated> python manage.py import_orthologs --index ortholog_index --orthologs-dir ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/
+$ python manage.py import_orthologs_with_genes \
+    --ortholog-directory ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
+    --ftp-server ftp.ebi.ac.uk \
+    --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
 
