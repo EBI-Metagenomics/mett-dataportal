@@ -337,16 +337,52 @@ class GFFParser:
                 os.remove(local_gff_path)
     
     def get_gene_info(self, species: str, locus_tag: str) -> Optional[GeneInfo]:
-        """Get gene information for a specific locus tag from a species."""
-        # logger.info(f"Getting gene info for species: {species}, locus_tag: {locus_tag}")
-        
+        """Get gene information for a specific locus tag from a species.
+
+        Supports both plain species names (e.g., "Bacteroides uniformis") and
+        unique species keys we generate to represent an isolate
+        (e.g., "Bacteroides uniformis_BU_WH712"). If the mapping for a unique
+        key is missing, this method will attempt to lazily load and map the
+        corresponding isolate on-demand.
+        """
+        # Try direct mapping first
         isolate = self._species_to_isolate.get(species)
-        if not isolate:
-            logger.warning(f"No isolate mapping found for species: {species}")
-            logger.info(f"Available species mappings: {self._species_to_isolate}")
-            return None
         
-        # logger.info(f"Species {species} maps to isolate: {isolate}")
+        # If not found, attempt to parse a unique key of the form
+        # "<species_name>_<isolate>" and map lazily
+        if not isolate:
+            # Heuristic: isolate names begin with an acronym like BU_ or PV_
+            # so look for the last occurrence of " BU_" or " PV_" suffixes
+            parsed_isolate: Optional[str] = None
+            if "_BU_" in species:
+                parsed_isolate = species.split("_BU_", 1)[1]
+                parsed_isolate = f"BU_{parsed_isolate}"
+            elif "_PV_" in species:
+                parsed_isolate = species.split("_PV_", 1)[1]
+                parsed_isolate = f"PV_{parsed_isolate}"
+            
+            if parsed_isolate:
+                try:
+                    if parsed_isolate not in self._loaded_isolates:
+                        # Load this isolate's GFF on-demand
+                        self._load_isolate_gff_data(parsed_isolate)
+                        self._loaded_isolates.add(parsed_isolate)
+                    # Map the unique key to this isolate for subsequent calls
+                    self._species_to_isolate[species] = parsed_isolate
+                    isolate = parsed_isolate
+                    logger.info(f"Dynamically mapped '{species}' to isolate '{parsed_isolate}'")
+                except Exception as e:
+                    logger.warning(
+                        f"Unable to dynamically load isolate for species key '{species}': {e}"
+                    )
+                    # Fall through to final warning below if still not mapped
+            
+        if not isolate:
+            logger.warning(
+                f"No isolate mapping found for species key '{species}'. "
+                f"Available species keys: {list(self._species_to_isolate.keys())[:5]}..."
+            )
+            return None
         
         # Load GFF data if not already loaded
         if isolate not in self._loaded_isolates:
@@ -374,16 +410,37 @@ class GFFParser:
             return None
     
     def get_gene_info_by_uniprot(self, species: str, uniprot_id: str) -> Optional[GeneInfo]:
-        """Get gene information for a specific UniProt ID from a species."""
-        # logger.info(f"Getting gene info for species: {species}, uniprot_id: {uniprot_id}")
-        
+        """Get gene information for a specific UniProt ID from a species.
+
+        Mirrors get_gene_info's behavior for dynamically mapping unique species keys.
+        """
         isolate = self._species_to_isolate.get(species)
         if not isolate:
-            logger.warning(f"No isolate mapping found for species: {species}")
-            logger.info(f"Available species mappings: {self._species_to_isolate}")
+            parsed_isolate: Optional[str] = None
+            if "_BU_" in species:
+                parsed_isolate = species.split("_BU_", 1)[1]
+                parsed_isolate = f"BU_{parsed_isolate}"
+            elif "_PV_" in species:
+                parsed_isolate = species.split("_PV_", 1)[1]
+                parsed_isolate = f"PV_{parsed_isolate}"
+            if parsed_isolate:
+                try:
+                    if parsed_isolate not in self._loaded_isolates:
+                        self._load_isolate_gff_data(parsed_isolate)
+                        self._loaded_isolates.add(parsed_isolate)
+                    self._species_to_isolate[species] = parsed_isolate
+                    isolate = parsed_isolate
+                    logger.info(f"Dynamically mapped '{species}' to isolate '{parsed_isolate}'")
+                except Exception as e:
+                    logger.warning(
+                        f"Unable to dynamically load isolate for species key '{species}': {e}"
+                    )
+        if not isolate:
+            logger.warning(
+                f"No isolate mapping found for species key '{species}'. "
+                f"Available species keys: {list(self._species_to_isolate.keys())[:5]}..."
+            )
             return None
-        
-        # logger.info(f"Species {species} maps to isolate: {isolate}")
         
         # Load GFF data if not already loaded
         if isolate not in self._loaded_isolates:
