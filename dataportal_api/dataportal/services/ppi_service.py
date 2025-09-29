@@ -41,56 +41,75 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
     async def search_interactions(self, query: PPISearchQuerySchema) -> PPIPaginationSchema:
         """Search for PPI interactions based on query parameters."""
         try:
-            s = Search(index=self.index_name)
+            def build_search():
+                """Build the search query with all filters."""
+                s = Search(index=self.index_name)
+                
+                # Apply filters
+                if query.species_acronym:
+                    s = s.filter("term", species_acronym=query.species_acronym)
+                
+                if query.isolate_name:
+                    s = s.filter("term", isolate_name=query.isolate_name)
+                
+                if query.protein_id:
+                    s = s.filter("terms", participants=[query.protein_id])
+                
+                if query.has_xlms is not None:
+                    s = s.filter("term", has_xlms=query.has_xlms)
+                
+                if query.has_string is not None:
+                    s = s.filter("term", has_string=query.has_string)
+                
+                if query.has_operon is not None:
+                    s = s.filter("term", has_operon=query.has_operon)
+                
+                if query.has_ecocyc is not None:
+                    s = s.filter("term", has_ecocyc=query.has_ecocyc)
+                
+                if query.has_experimental is not None:
+                    s = s.filter("term", has_experimental=query.has_experimental)
+                
+                if query.confidence_bin:
+                    s = s.filter("term", confidence_bin=query.confidence_bin)
+                
+                # Score filtering
+                if query.score_type and query.score_threshold is not None:
+                    # Handle the case where score_type already includes '_score' suffix
+                    if query.score_type.endswith('_score'):
+                        score_field = query.score_type
+                    else:
+                        score_field = f"{query.score_type}_score"
+                    s = s.filter("range", **{score_field: {"gte": query.score_threshold}})
+                
+                logger.info(f"Final search query: {s.to_dict()}")
+                return s
             
-            # Apply filters
-            if query.species_acronym:
-                s = s.filter("term", species_acronym=query.species_acronym)
+            # Create separate search objects for count and search
+            count_search = build_search()
+            search_query = build_search()
             
-            if query.isolate_name:
-                s = s.filter("term", isolate_name=query.isolate_name)
+            # Get total count
+            from asgiref.sync import sync_to_async
+            total = await sync_to_async(count_search.count)()
             
-            if query.protein_id:
-                s = s.filter("terms", participants=[query.protein_id])
-            
-            if query.has_xlms is not None:
-                s = s.filter("term", has_xlms=query.has_xlms)
-            
-            if query.has_string is not None:
-                s = s.filter("term", has_string=query.has_string)
-            
-            if query.has_operon is not None:
-                s = s.filter("term", has_operon=query.has_operon)
-            
-            if query.has_ecocyc is not None:
-                s = s.filter("term", has_ecocyc=query.has_ecocyc)
-            
-            if query.has_experimental is not None:
-                s = s.filter("term", has_experimental=query.has_experimental)
-            
-            if query.confidence_bin:
-                s = s.filter("term", confidence_bin=query.confidence_bin)
-            
-            # Score filtering
-            if query.score_type and query.score_threshold is not None:
-                score_field = f"{query.score_type}_score"
-                s = s.filter("range", **{score_field: {"gte": query.score_threshold}})
-            
-            # Get total count before pagination
-            total = s.count()
-            
-            # Apply pagination
+            # Apply pagination to search query
             offset = (query.page - 1) * query.per_page
-            s = s[offset:offset + query.per_page]
+            search_query = search_query[offset:offset + query.per_page]
             
             # Execute search
-            response = await self._execute_search(s)
+            response = await self._execute_search(search_query)
             
             # Convert to schema objects
             interactions = []
             for hit in response.hits:
-                interaction_data = self._hit_to_dict(hit)
-                interactions.append(PPIInteractionSchema(**interaction_data))
+                try:
+                    interaction_data = self._hit_to_dict(hit)
+                    interactions.append(PPIInteractionSchema(**interaction_data))
+                except Exception as e:
+                    logger.error(f"Error converting hit to schema: {e}")
+                    logger.error(f"Hit data: {hit.to_dict()}")
+                    raise
             
             # Calculate pagination metadata
             num_pages = (total + query.per_page - 1) // query.per_page
