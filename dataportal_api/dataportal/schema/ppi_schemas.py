@@ -67,7 +67,7 @@ class PPISearchQuerySchema(BaseModel):
     confidence_bin: Optional[str] = Field(None, description="Filter by confidence level (high, medium, low)")
     protein_id: Optional[str] = Field(None, description="Filter interactions involving specific protein")
     page: int = Field(1, ge=1, description="Page number")
-    per_page: int = Field(20, ge=1, le=1000, description="Results per page")
+    per_page: int = Field(20, ge=1, le=100000, description="Results per page")
 
 
 class PPINetworkSchema(BaseModel):

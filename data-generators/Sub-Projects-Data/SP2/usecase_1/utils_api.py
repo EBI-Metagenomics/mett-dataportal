@@ -10,7 +10,7 @@ from adjustText import adjust_text
 from typing import Dict, List, Optional, Tuple
 
 # API Configuration
-API_BASE_URL = "http://localhost:8000/api"  # Update this to your API URL
+API_BASE_URL = "http://localhost:8000/api"  
 
 class PPIDataAPI:
     """API client for PPI data operations."""
@@ -84,17 +84,38 @@ class PPIDataAPI:
         # Get all interactions to extract unique gene information
         interactions_df = self.get_interactions(species_acronym=species_acronym, per_page=10000)
         
+        # Debug: Check what columns are available in interactions_df
+        print(f"Available columns in interactions_df: {interactions_df.columns.tolist()}")
+        print(f"Shape of interactions_df: {interactions_df.shape}")
+        
         # Extract unique gene information
         genes_a = interactions_df[["protein_a", "protein_a_locus_tag", "protein_a_uniprot_id", 
                                   "protein_a_name", "protein_a_product"]].copy()
-        genes_a.columns = ["uniprot_id", "locus_tag", "uniprot_id", "name", "product"]
+        print(f"genes_a columns before rename: {genes_a.columns.tolist()}")
+        print(f"genes_a shape: {genes_a.shape}")
+        genes_a.columns = ["uniprot_id", "locus_tag", "uniprot_id_alt", "name", "product"]
         
         genes_b = interactions_df[["protein_b", "protein_b_locus_tag", "protein_b_uniprot_id", 
                                   "protein_b_name", "protein_b_product"]].copy()
-        genes_b.columns = ["uniprot_id", "locus_tag", "uniprot_id", "name", "product"]
+        print(f"genes_b columns before rename: {genes_b.columns.tolist()}")
+        print(f"genes_b shape: {genes_b.shape}")
+        genes_b.columns = ["uniprot_id", "locus_tag", "uniprot_id_alt", "name", "product"]
         
         # Combine and deduplicate
-        all_genes = pd.concat([genes_a, genes_b]).drop_duplicates(subset=["uniprot_id"])
+        all_genes = pd.concat([genes_a, genes_b], ignore_index=True).drop_duplicates(subset=["uniprot_id"])
+        
+        # Debug: Check if there are duplicate column names
+        if not all_genes.columns.is_unique:
+            print(f"Warning: Duplicate column names detected: {all_genes.columns.tolist()}")
+            # Remove duplicate columns by keeping only the first occurrence
+            all_genes = all_genes.loc[:, ~all_genes.columns.duplicated()]
+        
+        # Debug: Check the structure of all_genes before adding gene_id
+        print(f"all_genes columns: {all_genes.columns.tolist()}")
+        print(f"all_genes shape: {all_genes.shape}")
+        print(f"uniprot_id column type: {type(all_genes['uniprot_id'])}")
+        if hasattr(all_genes['uniprot_id'], 'shape'):
+            print(f"uniprot_id shape: {all_genes['uniprot_id'].shape}")
         
         # Add gene_id (using uniprot_id as gene_id for now)
         all_genes["gene_id"] = all_genes["uniprot_id"]

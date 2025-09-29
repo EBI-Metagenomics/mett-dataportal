@@ -17,7 +17,8 @@ from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_suc
 
 logger = logging.getLogger(__name__)
 
-ppi_router = Router()
+ROUTER_PPI = "Protein-Protein Interactions"
+ppi_router = Router(tags=[ROUTER_PPI])
 
 # Initialize service
 ppi_service = PPIService()
