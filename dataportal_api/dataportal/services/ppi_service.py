@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional, Tuple
 
 import networkx as nx
 from elasticsearch_dsl import Search
+from pandas.core.methods.to_dict import to_dict
 
 from dataportal.models.interactions import ProteinProteinDocument
 from dataportal.schema.ppi_schemas import (
@@ -293,9 +294,51 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             logger.error(f"Error calculating network properties: {e}")
             raise ServiceError(f"Failed to calculate network properties: {str(e)}")
 
+    async def get_protein_interactions(self, protein_id: str, species_acronym: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get all interactions for a specific protein (lightweight API call)."""
+        try:
+            s = Search(index=self.index_name)
+            s = s.filter("terms", participants=[protein_id])
+            
+            if species_acronym:
+                s = s.filter("term", species_acronym=species_acronym)
+            
+            s = s.source([
+                "protein_a", "protein_b", "ds_score", "string_score", "melt_score",
+                "protein_a_locus_tag", "protein_a_name", "protein_a_product",
+                "protein_b_locus_tag", "protein_b_name", "protein_b_product"
+            ])
+            s = s[:10000]
+
+            logger.info(f"search query: {s.to_dict()}")
+
+            response = await self._execute_search(s)
+            
+            interactions = []
+            for hit in response.hits:
+                interactions.append({
+                    "protein_a": hit.protein_a,
+                    "protein_b": hit.protein_b,
+                    "ds_score": hit.ds_score,
+                    "string_score": hit.string_score,
+                    "melt_score": hit.melt_score,
+                    "protein_a_locus_tag": hit.protein_a_locus_tag,
+                    "protein_a_name": hit.protein_a_name,
+                    "protein_a_product": hit.protein_a_product,
+                    "protein_b_locus_tag": hit.protein_b_locus_tag,
+                    "protein_b_name": hit.protein_b_name,
+                    "protein_b_product": hit.protein_b_product,
+                })
+            
+            return interactions
+            
+        except Exception as e:
+            logger.error(f"Error getting protein interactions: {e}")
+            raise ServiceError(f"Failed to get protein interactions: {str(e)}")
+
     async def get_protein_neighborhood(self, protein_id: str, n: int = 5,
                                        species_acronym: Optional[str] = None) -> PPINeighborhoodSchema:
-        """Get neighborhood data for a specific protein."""
+        """Get neighborhood data for a specific protein using Dijkstra's algorithm like the old implementation."""
         try:
             s = Search(index=self.index_name)
 
@@ -315,36 +358,77 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
 
             response = await self._execute_search(s)
 
-            # Build neighborhood data
-            neighbors = set()
-            edges = []
-
+            # Build a NetworkX graph to use Dijkstra's algorithm
+            G = nx.Graph()
+            
+            # Add all interactions to the graph
             for hit in response.hits:
                 protein_a = hit.protein_a
                 protein_b = hit.protein_b
+                weight = hit.ds_score or 0
+                
+                # Add edge with weight (use 1/weight for distance since higher scores = closer)
+                distance = 1.0 / (weight + 0.001) if weight > 0 else 1000
+                G.add_edge(protein_a, protein_b, weight=distance)
 
-                # Determine which is the neighbor
-                if protein_a == protein_id:
-                    neighbor = protein_b
-                else:
-                    neighbor = protein_a
+            # Use Dijkstra's algorithm to find nearest neighbors (like old implementation)
+            if protein_id in G:
+                distances = nx.single_source_dijkstra_path_length(G, protein_id, weight='weight')
+                # Sort by distance and get the n nearest neighbors (excluding the protein itself)
+                nearest_neighbors = sorted(distances, key=distances.get)[1:n + 1]
+            else:
+                nearest_neighbors = []
 
-                neighbors.add(neighbor)
-
-                # Add edge
-                edges.append({
-                    "source": protein_id,
-                    "target": neighbor,
-                    "weight": hit.ds_score or 0
-                })
-
-            # Convert neighbors to list with metadata
+            # Build neighborhood data with gene annotations
             neighbor_list = []
-            for neighbor in list(neighbors)[:n]:  # Limit to n neighbors
+            edges = []
+            
+            # Create mapping for gene annotations
+            gene_mapping = {}
+            for hit in response.hits:
+                if hit.protein_a == protein_id:
+                    gene_mapping[hit.protein_b] = {
+                        'locus_tag': hit.protein_b_locus_tag,
+                        'name': hit.protein_b_name,
+                        'product': hit.protein_b_product
+                    }
+                elif hit.protein_b == protein_id:
+                    gene_mapping[hit.protein_a] = {
+                        'locus_tag': hit.protein_a_locus_tag,
+                        'name': hit.protein_a_name,
+                        'product': hit.protein_a_product
+                    }
+
+            # Add neighbors with gene annotations
+            for neighbor in nearest_neighbors:
+                gene_info = gene_mapping.get(neighbor, {})
+                locus_tag = gene_info.get('locus_tag', neighbor)
+                name = gene_info.get('name', '')
+                
+                # Create label like old implementation: "locus_tag\nname"
+                label = f"{locus_tag}\n{name}" if name else neighbor
+                
                 neighbor_list.append({
                     "id": neighbor,
-                    "label": neighbor
+                    "label": label,
+                    "locus_tag": locus_tag,
+                    "name": name,
+                    "product": gene_info.get('product', '')
                 })
+
+            # Add edges for the neighborhood subgraph (complete subgraph like old implementation)
+            neighborhood_nodes = [protein_id] + nearest_neighbors
+            for hit in response.hits:
+                protein_a = hit.protein_a
+                protein_b = hit.protein_b
+                
+                # Include all edges within the neighborhood subgraph
+                if protein_a in neighborhood_nodes and protein_b in neighborhood_nodes:
+                    edges.append({
+                        "source": protein_a,
+                        "target": protein_b,
+                        "weight": hit.ds_score or 0
+                    })
 
             # Create network data for the neighborhood
             network_data = PPINetworkSchema(

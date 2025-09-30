@@ -9,6 +9,12 @@ import warnings
 from adjustText import adjust_text
 from typing import Dict, List, Optional, Tuple
 
+# Set matplotlib style for better readability
+plt.style.use('default')
+plt.rcParams['figure.facecolor'] = 'white'
+plt.rcParams['axes.facecolor'] = 'white'
+plt.rcParams['savefig.facecolor'] = 'white'
+
 # API Configuration
 API_BASE_URL = "http://localhost:8000/api"  
 
@@ -148,6 +154,21 @@ class PPIDataAPI:
         
         return network_data["nodes"], network_data["edges"]
     
+    def search_interactions(self, params: Dict) -> List[Dict]:
+        """Search for PPI interactions with various filtering options."""
+        response = self._make_request("/ppi/interactions", params)
+        return response["results"]
+
+    def get_protein_interactions(self, protein_id: str, species_acronym: str = "PV") -> List[Dict]:
+        """Get all interactions for a protein from the API."""
+        params = {
+            "species_acronym": species_acronym,
+            "per_page": 10000
+        }
+        
+        response = self._make_request(f"/ppi/interactions/{protein_id}", params)
+        return response["data"]
+
     def get_protein_neighborhood(self, protein_id: str, n: int = 5, 
                                species_acronym: str = "PV") -> Dict:
         """Get protein neighborhood from the API."""
@@ -214,25 +235,55 @@ def plot_network_properties(G):
 def plot_network(G):
     """General network plotting function with label collision avoidance."""
     pos = nx.spring_layout(G, seed=42)
-    fig, ax = plt.subplots(figsize=(8, 6))
-    nx.draw_networkx_nodes(G, pos=pos, ax=ax, node_size=500)
+    fig, ax = plt.subplots(figsize=(12, 10), facecolor='white')
+    
+    # Set background to white
+    ax.set_facecolor('white')
+    
+    # Draw nodes with blue color and white text
+    nx.draw_networkx_nodes(
+        G, 
+        pos=pos, 
+        ax=ax, 
+        node_size=500,
+        node_color='lightblue',
+        edgecolors='black',
+        linewidths=1
+    )
+    
+    # Draw edges with simple black lines
     nx.draw_networkx_edges(
         G,
         pos=pos,
         ax=ax,
-        width=[d['weight'] * 2 for (_, _, d) in G.edges(data=True)]
+        width=1.0,  # Fixed width instead of variable
+        edge_color='black',
+        alpha=1.0,  # No transparency
+        style='solid'  # Solid lines
     )
-    label_artists = nx.draw_networkx_labels(G, pos=pos, ax=ax, font_size=8)
+    
+    # Draw labels with black text (smaller font for longer labels)
+    label_artists = nx.draw_networkx_labels(
+        G, 
+        pos=pos, 
+        ax=ax,
+        font_size=6,  # Smaller font for multi-line labels
+        font_color='black',
+        font_weight='bold',
+        verticalalignment='center',
+        horizontalalignment='center'
+    )
 
-    texts = list(label_artists.values())
-    if texts:
-        adjust_text(
-            texts,
-            ax=ax,
-            expand_text=(1.1, 1.1),
-            expand_points=(1.1, 1.1),
-            arrowprops=dict(arrowstyle='-', color='gray', lw=0.5)
-        )
+    # Simple text positioning without adjust_text to avoid shaded areas
+    # texts = list(label_artists.values())
+    # if texts:
+    #     adjust_text(
+    #         texts,
+    #         ax=ax,
+    #         expand_text=(1.1, 1.1),
+    #         expand_points=(1.1, 1.1),
+    #         arrowprops=dict(arrowstyle='-', color='gray', lw=0.5)
+    #     )
 
     ax.set_axis_off()
     plt.tight_layout()
@@ -280,6 +331,17 @@ def get_node_with_highest_clustering_coefficient(G):
     return top_cc_node
 
 
+def get_available_proteins(species_acronym: str = "PV", limit: int = 20):
+    """Get a list of available proteins from the API data."""
+    try:
+        interactions_df = load_interactions(species_acronym)
+        all_proteins = set(interactions_df['protein_a'].unique()) | set(interactions_df['protein_b'].unique())
+        return list(all_proteins)[:limit]
+    except Exception as e:
+        print(f"Error getting available proteins: {e}")
+        return []
+
+
 def plot_network_properties_from_api(score_type: str, score_threshold: float, 
                                    species_acronym: str = "PV"):
     """Plot network properties using API data."""
@@ -308,43 +370,88 @@ def plot_network_properties_from_api(score_type: str, score_threshold: float,
 
 
 def plot_neighborhood_from_api(protein_id: str, n: int = 5, species_acronym: str = "PV"):
-    """Plot protein neighborhood using API data."""
+    """Plot protein neighborhood using the same approach as old implementation."""
     try:
-        neighborhood = ppi_api.get_protein_neighborhood(protein_id, n, species_acronym)
+        # Build complete graph from all interactions (like old implementation)
+        interactions_df = load_interactions(species_acronym)
+        print(f"Loaded {len(interactions_df)} interactions from API")
         
-        # Create a simple network from the API data
-        nodes = [{"id": protein_id, "label": protein_id}]
-        nodes.extend(neighborhood["neighbors"])
-        edges = neighborhood["network_data"]["edges"]
+        G = interaction_network_from_df(interactions_df, score_col='ds_score', score_threshold=0.1)
+        print(f"Built complete graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
         
-        # Create NetworkX graph
-        G = nx.Graph()
-        for node in nodes:
-            G.add_node(node["id"], label=node["label"])
+        # Check if protein exists in the graph
+        if protein_id not in G:
+            print(f"Protein {protein_id} not found in the complete graph")
+            print(f"Available proteins: {list(G.nodes())[:10]}...")
+            return
         
-        for edge in edges:
-            G.add_edge(edge["source"], edge["target"], weight=edge["weight"])
+        # Use Dijkstra's algorithm to find nearest neighbors (exactly like old implementation)
+        distances = nx.single_source_dijkstra_path_length(G, protein_id, weight='weight')
+        nearest_neighbors = sorted(distances, key=distances.get)[1:n + 1]
         
-        # Plot the network
-        pos = nx.spring_layout(G, seed=42)
-        fig, ax = plt.subplots(figsize=(8, 6))
-        nx.draw_networkx_nodes(G, pos=pos, ax=ax, node_size=500)
-        nx.draw_networkx_edges(
-            G,
-            pos=pos,
-            ax=ax,
-            width=[d.get('weight', 1) * 2 for (_, _, d) in G.edges(data=True)]
-        )
-        nx.draw_networkx_labels(G, pos=pos, ax=ax, font_size=8)
+        # Create neighborhood subgraph exactly like old implementation
+        neighborhood_nodes = [protein_id] + nearest_neighbors
+        subgraph = G.subgraph(neighborhood_nodes)
         
-        ax.set_axis_off()
-        plt.title(f'Neighborhood of {protein_id}', fontsize=14)
-        plt.tight_layout()
+        print(f"Neighborhood subgraph has {subgraph.number_of_nodes()} nodes and {subgraph.number_of_edges()} edges")
+        print(f"Neighborhood nodes: {neighborhood_nodes}")
+        
+        # Check if we have dense connections (neighbors connected to each other)
+        neighbor_connections = 0
+        for neighbor in nearest_neighbors:
+            for other_neighbor in nearest_neighbors:
+                if neighbor != other_neighbor and subgraph.has_edge(neighbor, other_neighbor):
+                    neighbor_connections += 1
+        
+        print(f"Connections between neighbors: {neighbor_connections}")
+        if neighbor_connections == 0:
+            print("Note: Neighbors are not connected to each other - this creates a star-like structure")
+            print("This might be because neighbors don't interact directly in the available data")
+        
+        # Get gene annotations (like old implementation)
+        gff_df = load_gff_annotation(species_acronym)
+        
+        # Create node mapping exactly like old implementation
+        if gff_df is not None:
+            uniprot_to_gene = gff_df.set_index('uniprot_id')['gene_id'].to_dict()
+            uniprot_to_name = gff_df.set_index('uniprot_id')['name'].to_dict()
+            uniprot_to_locus = gff_df.set_index('uniprot_id')['locus_tag'].to_dict()
+            
+            # Format: "protein_id\nlocus_tag\nproduct" (matching user's request)
+            mapping = {}
+            for n in subgraph.nodes():
+                locus_tag = uniprot_to_locus.get(n, n)
+                product = uniprot_to_name.get(n, '')
+                if locus_tag and product:
+                    mapping[n] = f"{n}\n{locus_tag}\n{product}"
+                elif locus_tag:
+                    mapping[n] = f"{n}\n{locus_tag}"
+                else:
+                    mapping[n] = n
+        else:
+            mapping = {n: n for n in subgraph.nodes()}
+        
+        subgraph = nx.relabel_nodes(subgraph, mapping)
+        
+        # Plot using the same function as old implementation
+        fig, ax = plot_network(subgraph)
+        plt.title(f'Neighborhood of {mapping.get(protein_id, protein_id)}', fontsize=14)
         plt.show()
         
     except Exception as e:
         print(f"Error getting neighborhood from API: {e}")
-        # Fallback to local calculation
-        interactions_df = load_interactions(species_acronym)
-        G = interaction_network_from_df(interactions_df)
-        plot_neighborhood(G, protein_id, n)
+        print("Falling back to local calculation...")
+        try:
+            # Fallback to local calculation
+            interactions_df = load_interactions(species_acronym)
+            G = interaction_network_from_df(interactions_df)
+            
+            # Check if protein exists in the graph
+            if protein_id not in G:
+                print(f"Protein {protein_id} not found in local data. Available proteins: {list(G.nodes())[:10]}...")
+                return
+            
+            plot_neighborhood(G, protein_id, n)
+        except Exception as fallback_error:
+            print(f"Fallback also failed: {fallback_error}")
+            print("Please check if the protein ID exists in the data.")

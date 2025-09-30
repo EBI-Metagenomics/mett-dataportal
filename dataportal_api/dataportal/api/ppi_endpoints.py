@@ -25,6 +25,37 @@ ppi_service = PPIService()
 
 
 @ppi_router.get(
+    "/interactions/{protein_id}",
+    summary="Get protein interactions",
+    description="Get all interactions for a specific protein"
+)
+async def get_protein_interactions(
+        request,
+        protein_id: str,
+        species_acronym: Optional[str] = None
+):
+    """Get all interactions for a specific protein."""
+    logger.info(f"Get protein interactions for {protein_id}")
+    logger.info(f"species acronym: {species_acronym}")
+    try:
+        interactions = await ppi_service.get_protein_interactions(
+            protein_id=protein_id,
+            species_acronym=species_acronym
+        )
+
+        return create_success_response(
+            data=interactions,
+            message=f"Interactions for protein {protein_id} retrieved successfully"
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(500, f"Failed to get protein interactions: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise HttpError(500, "Internal server error")
+
+
+@ppi_router.get(
     "/interactions",
     response=PPISearchResponseSchema,
     summary="Search protein-protein interactions",
@@ -55,7 +86,8 @@ async def get_ppi_network(
     request,
     score_type: str,
     score_threshold: float = 0.8,
-    species_acronym: Optional[str] = None
+    species_acronym: Optional[str] = None,
+    include_properties: bool = False
 ):
     """Get PPI network data for a specific score type and threshold."""
     try:
@@ -64,6 +96,15 @@ async def get_ppi_network(
             score_threshold=score_threshold,
             species_acronym=species_acronym
         )
+        
+        # Include properties if requested
+        if include_properties:
+            properties = await ppi_service.get_network_properties(
+                score_type=score_type,
+                score_threshold=score_threshold,
+                species_acronym=species_acronym
+            )
+            network_data.properties = properties
         
         return create_success_response(
             data=network_data,
@@ -141,6 +182,7 @@ async def get_protein_neighborhood(
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise HttpError(500, "Internal server error")
+
 
 
 @ppi_router.get(
