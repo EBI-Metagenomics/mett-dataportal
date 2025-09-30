@@ -1,7 +1,8 @@
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from dataportal.schema.response_schemas import PaginatedResponseSchema, SuccessResponseSchema
 from dataportal.schema.base_schemas import BasePaginationSchema
+from dataportal.utils.constants import PPI_VALID_FILTER_FIELDS
 
 
 class PPIInteractionSchema(BaseModel):
@@ -68,6 +69,16 @@ class PPISearchQuerySchema(BaseModel):
     protein_id: Optional[str] = Field(None, description="Filter interactions involving specific protein")
     page: int = Field(1, ge=1, description="Page number")
     per_page: int = Field(20, ge=1, le=100000, description="Results per page")
+
+    @validator('score_type')
+    def validate_score_type(cls, v):
+        if v is not None and v not in PPI_VALID_FILTER_FIELDS:
+            # Check if it's a base name that can be converted to a score field
+            if not v.endswith('_score'):
+                potential_score = f"{v}_score"
+                if potential_score not in PPI_VALID_FILTER_FIELDS:
+                    raise ValueError(f"Invalid score_type: {v}. Valid options: {PPI_VALID_FILTER_FIELDS}")
+        return v
 
 
 class PPINetworkSchema(BaseModel):

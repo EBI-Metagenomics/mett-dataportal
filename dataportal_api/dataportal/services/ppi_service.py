@@ -1,6 +1,7 @@
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 
+import networkx as nx
 from elasticsearch_dsl import Search
 
 from dataportal.models.interactions import ProteinProteinDocument
@@ -13,8 +14,8 @@ from dataportal.schema.ppi_schemas import (
     PPIPaginationSchema,
 )
 from dataportal.services.base_service import BaseService
-from dataportal.utils.constants import ES_INDEX_PPI
-from dataportal.utils.exceptions import ServiceError
+from dataportal.utils.constants import ES_INDEX_PPI, PPI_VALID_FILTER_FIELDS, PPI_SCORE_FIELDS
+from dataportal.utils.exceptions import ServiceError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,71 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
     def __init__(self):
         super().__init__(ES_INDEX_PPI)
         self.document_class = ProteinProteinDocument
+
+    def _validate_and_normalize_score_field(self, score_type: str) -> str:
+        """
+        Validate and normalize the score field name.
+        
+        Args:
+            score_type: The score type provided by the user
+            
+        Returns:
+            The normalized field name for Elasticsearch
+            
+        Raises:
+            ValidationError: If the score_type is not valid
+        """
+        if not score_type:
+            raise ValidationError("Score type cannot be empty")
+            
+        # If it's already a valid field, use it as-is
+        if score_type in PPI_VALID_FILTER_FIELDS:
+            return score_type
+            
+        # If it ends with _score, check if it's a valid score field
+        if score_type.endswith('_score'):
+            if score_type in PPI_SCORE_FIELDS:
+                return score_type
+            else:
+                raise ValidationError(f"Invalid score field: {score_type}. Valid score fields: {PPI_SCORE_FIELDS}")
+        
+        # Try to construct the score field name
+        constructed_field = f"{score_type}_score"
+        if constructed_field in PPI_SCORE_FIELDS:
+            return constructed_field
+            
+        # If none of the above work, it's invalid
+        raise ValidationError(
+            f"Invalid score type: {score_type}. "
+            f"Valid fields are: {PPI_VALID_FILTER_FIELDS}. "
+            f"For score fields, you can use the base name (e.g., 'ds' for 'ds_score') or the full name."
+        )
+
+    def _build_networkx_graph(self, network_data: PPINetworkSchema) -> nx.Graph:
+        """
+        Build a NetworkX graph from network data.
+        
+        Args:
+            network_data: The network data containing nodes and edges
+            
+        Returns:
+            A NetworkX Graph object
+        """
+        G = nx.Graph()
+        
+        # Add nodes
+        for node in network_data.nodes:
+            G.add_node(node["id"], **{k: v for k, v in node.items() if k != "id"})
+        
+        # Add edges
+        for edge in network_data.edges:
+            G.add_edge(
+                edge["source"], 
+                edge["target"], 
+                weight=edge.get("weight", 1.0)
+            )
+        
+        return G
 
     async def get_by_id(self, id: str) -> Optional[PPIInteractionSchema]:
         """ Not Implemented."""
@@ -75,11 +141,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 
                 # Score filtering
                 if query.score_type and query.score_threshold is not None:
-                    # Handle the case where score_type already includes '_score' suffix
-                    if query.score_type.endswith('_score'):
-                        score_field = query.score_type
-                    else:
-                        score_field = f"{query.score_type}_score"
+                    score_field = self._validate_and_normalize_score_field(query.score_type)
                     s = s.filter("range", **{score_field: {"gte": query.score_threshold}})
                 
                 logger.info(f"Final search query: {s.to_dict()}")
@@ -140,10 +202,16 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 s = s.filter("term", species_acronym=species_acronym)
 
             # Apply score filter
-            score_field = f"{score_type}_score"
+            score_field = self._validate_and_normalize_score_field(score_type)
             s = s.filter("range", **{score_field: {"gte": score_threshold}})
 
             # Get all matching interactions
+            # By default Elasticsearch returns only 10 hits; expand to include all matches
+            from asgiref.sync import sync_to_async
+            total_matches = await sync_to_async(s.count)()
+            # Cap to a safe upper bound within ES max_result_window (typically 10k)
+            max_fetch = min(total_matches, 10000000)
+            s = s[:max_fetch]
             s = s.source([
                 "protein_a", "protein_b", f"{score_field}",
                 "protein_a_locus_tag", "protein_a_name", "protein_a_product",
@@ -197,34 +265,21 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             # Get network data first
             network_data = await self.get_network_data(score_type, score_threshold, species_acronym)
 
-            # Calculate properties
-            num_nodes = len(network_data.nodes)
-            num_edges = len(network_data.edges)
+            # Build NetworkX graph for accurate calculations
+            G = self._build_networkx_graph(network_data)
 
-            # Calculate density (for undirected graph)
-            if num_nodes > 1:
-                max_possible_edges = num_nodes * (num_nodes - 1) / 2
-                density = num_edges / max_possible_edges if max_possible_edges > 0 else 0
-            else:
-                density = 0
+            # Calculate properties using NetworkX
+            num_nodes = G.number_of_nodes()
+            num_edges = G.number_of_edges()
+
+            # Calculate density using NetworkX
+            density = nx.density(G)
 
             # Calculate degree distribution
-            degree_count = {}
-            for edge in network_data.edges:
-                source = edge["source"]
-                target = edge["target"]
-                degree_count[source] = degree_count.get(source, 0) + 1
-                degree_count[target] = degree_count.get(target, 0) + 1
+            degree_distribution = [d for n, d in G.degree()]
 
-            degree_distribution = list(degree_count.values())
-
-            # Calculate average clustering coefficient (simplified)
-            # This is a basic implementation - for production, consider using NetworkX
-            avg_clustering = 0.0
-            if degree_distribution:
-                # Simple approximation based on degree distribution
-                avg_degree = sum(degree_distribution) / len(degree_distribution)
-                avg_clustering = min(avg_degree / (num_nodes - 1), 1.0) if num_nodes > 1 else 0
+            # Calculate average clustering coefficient using NetworkX
+            avg_clustering = nx.average_clustering(G)
 
             return PPINetworkPropertiesSchema(
                 num_nodes=num_nodes,

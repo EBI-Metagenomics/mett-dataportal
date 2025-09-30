@@ -105,4 +105,29 @@ KEYWORD_SORT_FIELDS = {
 # Default values
 UNKNOWN_ESSENTIALITY = "Unknown"
 
+# PPI Score Fields
+# Fields that are actual score fields (end with _score)
+PPI_SCORE_FIELDS = [
+    "ds_score",
+    "comelt_score", 
+    "perturbation_score",
+    "abundance_score",
+    "melt_score",
+    "secondary_score",
+    "bayesian_score",
+    "string_score",
+    "operon_score",
+    "ecocyc_score",
+    "tt_score"
+]
+
+# Fields that are not score fields but can be used for filtering
+PPI_NON_SCORE_FIELDS = [
+    "xlms_peptides",
+    "xlms_files"
+]
+
+# All valid PPI filter fields
+PPI_VALID_FILTER_FIELDS = PPI_SCORE_FIELDS + PPI_NON_SCORE_FIELDS
+
 # Hmmer Constants
