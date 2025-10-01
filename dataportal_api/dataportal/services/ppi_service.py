@@ -418,6 +418,8 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
 
             # Add edges for the neighborhood subgraph (complete subgraph like old implementation)
             neighborhood_nodes = [protein_id] + nearest_neighbors
+            
+            # First, add edges from the original interactions
             for hit in response.hits:
                 protein_a = hit.protein_a
                 protein_b = hit.protein_b
@@ -429,6 +431,56 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         "target": protein_b,
                         "weight": hit.ds_score or 0
                     })
+            
+            # Now, query for additional interactions between neighbor proteins
+            # that might not have been in the original protein's direct interactions
+            if len(nearest_neighbors) > 1:
+                try:
+                    logger.info(f"Searching for neighbor-to-neighbor interactions among: {nearest_neighbors}")
+                    
+                    # Create a search for interactions between neighbor proteins
+                    neighbor_search = Search(index=self.index_name)
+                    neighbor_search = neighbor_search.filter("terms", participants=nearest_neighbors)
+                    
+                    if species_acronym:
+                        neighbor_search = neighbor_search.filter("term", species_acronym=species_acronym)
+                    
+                    # Only get interactions where both proteins are in the neighbor list
+                    # (excluding the central protein to avoid duplicates)
+                    neighbor_search = neighbor_search.source([
+                        "protein_a", "protein_b", "ds_score", "string_score", "melt_score"
+                    ])
+                    
+                    neighbor_response = await self._execute_search(neighbor_search)
+                    logger.info(f"Found {len(neighbor_response.hits)} potential neighbor-to-neighbor interactions")
+                    
+                    # Add any new interactions between neighbors
+                    existing_edges = {(edge["source"], edge["target"]) for edge in edges}
+                    existing_edges.update({(edge["target"], edge["source"]) for edge in edges})  # Add both directions
+                    
+                    new_edges_count = 0
+                    for hit in neighbor_response.hits:
+                        protein_a = hit.protein_a
+                        protein_b = hit.protein_b
+                        
+                        # Only add if both proteins are neighbors and we don't already have this edge
+                        if (protein_a in nearest_neighbors and protein_b in nearest_neighbors and 
+                            (protein_a, protein_b) not in existing_edges and 
+                            (protein_b, protein_a) not in existing_edges):
+                            
+                            edges.append({
+                                "source": protein_a,
+                                "target": protein_b,
+                                "weight": hit.ds_score or 0
+                            })
+                            new_edges_count += 1
+                            logger.info(f"Added neighbor-to-neighbor edge: {protein_a} -> {protein_b}")
+                    
+                    logger.info(f"Added {new_edges_count} new neighbor-to-neighbor edges")
+                            
+                except Exception as e:
+                    logger.warning(f"Could not fetch neighbor-to-neighbor interactions: {e}")
+                    # Continue without the additional edges
 
             # Create network data for the neighborhood
             network_data = PPINetworkSchema(
