@@ -1,5 +1,7 @@
 import logging
 from typing import List, Dict, Any, Optional, Tuple
+from functools import lru_cache
+from cachetools import TTLCache
 
 import networkx as nx
 from elasticsearch_dsl import Search
@@ -27,7 +29,38 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
     def __init__(self):
         super().__init__(ES_INDEX_PPI)
         self.document_class = ProteinProteinDocument
+        # Cache for expensive network calculations
+        self._network_cache = TTLCache(maxsize=100, ttl=300)  # 5 minutes
 
+    def _build_base_search(self, species_acronym: Optional[str] = None, 
+                          score_type: Optional[str] = None, 
+                          score_threshold: Optional[float] = None) -> Search:
+        """Build a base search query with common filters."""
+        s = Search(index=self.index_name)
+        
+        if species_acronym:
+            s = s.filter("term", species_acronym=species_acronym)
+        
+        if score_type and score_threshold is not None:
+            score_field = self._validate_and_normalize_score_field(score_type)
+            s = s.filter("range", **{score_field: {"gte": score_threshold}})
+        
+        return s
+
+    def _get_standard_source_fields(self, include_scores: bool = True) -> List[str]:
+        """Get standard source fields for PPI queries."""
+        base_fields = [
+            "protein_a", "protein_b",
+            "protein_a_locus_tag", "protein_a_name", "protein_a_product",
+            "protein_b_locus_tag", "protein_b_name", "protein_b_product"
+        ]
+        
+        if include_scores:
+            base_fields.extend(["ds_score", "string_score", "melt_score"])
+        
+        return base_fields
+
+    @lru_cache(maxsize=50)
     def _validate_and_normalize_score_field(self, score_type: str) -> str:
         """
         Validate and normalize the score field name.
@@ -93,6 +126,41 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         
         return G
 
+    async def _build_neighborhood_data(self, protein_id: str, nearest_neighbors: List[str], 
+                                     gene_mapping: Dict[str, Dict], 
+                                     species_acronym: Optional[str] = None) -> PPINeighborhoodSchema:
+        """Helper method to build neighborhood data from neighbors and gene mapping."""
+        # Build neighbor list with gene annotations
+        neighbor_list = []
+        for neighbor in nearest_neighbors:
+            gene_info = gene_mapping.get(neighbor, {})
+            locus_tag = gene_info.get('locus_tag', neighbor)
+            name = gene_info.get('name', '')
+            
+            # Create label like old implementation: "locus_tag\nname"
+            label = f"{locus_tag}\n{name}" if name else neighbor
+            
+            neighbor_list.append({
+                "id": neighbor,
+                "label": label,
+                "locus_tag": locus_tag,
+                "name": name,
+                "product": gene_info.get('product', '')
+            })
+
+        # Create network data for the neighborhood
+        network_data = PPINetworkSchema(
+            nodes=[{"id": protein_id, "label": protein_id}] + neighbor_list,
+            edges=[],  # Will be populated by caller
+            properties={}
+        )
+
+        return PPINeighborhoodSchema(
+            protein_id=protein_id,
+            neighbors=neighbor_list,
+            network_data=network_data
+        )
+
     async def get_by_id(self, id: str) -> Optional[PPIInteractionSchema]:
         """ Not Implemented."""
         raise NotImplementedError("get_all not implemented for PPI - use search methods instead")
@@ -134,11 +202,6 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 if query.has_ecocyc is not None:
                     s = s.filter("term", has_ecocyc=query.has_ecocyc)
                 
-                if query.has_experimental is not None:
-                    s = s.filter("term", has_experimental=query.has_experimental)
-                
-                if query.confidence_bin:
-                    s = s.filter("term", confidence_bin=query.confidence_bin)
                 
                 # Score filtering
                 if query.score_type and query.score_threshold is not None:
@@ -194,30 +257,21 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
 
     async def get_network_data(self, score_type: str, score_threshold: float,
                                species_acronym: Optional[str] = None) -> PPINetworkSchema:
-        """Get network data for a specific score type and threshold."""
+        """Get network data for a specific score type and threshold (optimized)."""
         try:
-            s = Search(index=self.index_name)
-
-            # Apply species filter
-            if species_acronym:
-                s = s.filter("term", species_acronym=species_acronym)
-
-            # Apply score filter
-            score_field = self._validate_and_normalize_score_field(score_type)
-            s = s.filter("range", **{score_field: {"gte": score_threshold}})
+            s = self._build_base_search(species_acronym, score_type, score_threshold)
 
             # Get all matching interactions
-            # By default Elasticsearch returns only 10 hits; expand to include all matches
             from asgiref.sync import sync_to_async
             total_matches = await sync_to_async(s.count)()
-            # Cap to a safe upper bound within ES max_result_window (typically 10k)
             max_fetch = min(total_matches, 10000000)
             s = s[:max_fetch]
-            s = s.source([
-                "protein_a", "protein_b", f"{score_field}",
-                "protein_a_locus_tag", "protein_a_name", "protein_a_product",
-                "protein_b_locus_tag", "protein_b_name", "protein_b_product"
-            ])
+            
+            # Use standard source fields
+            score_field = self._validate_and_normalize_score_field(score_type)
+            source_fields = self._get_standard_source_fields(include_scores=False)
+            source_fields.append(score_field)
+            s = s.source(source_fields)
 
             response = await self._execute_search(s)
 
@@ -261,53 +315,60 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
 
     async def get_network_properties(self, score_type: str, score_threshold: float,
                                      species_acronym: Optional[str] = None) -> PPINetworkPropertiesSchema:
-        """Get network properties for a specific score type and threshold."""
+        """Get network properties for a specific score type and threshold (optimized)."""
+        # Check cache first
+        cache_key = f"network_props_{score_type}_{score_threshold}_{species_acronym}"
+        if cache_key in self._network_cache:
+            logger.info(f"Returning cached network properties for {cache_key}")
+            return self._network_cache[cache_key]
+        
         try:
-            # Get network data first
-            network_data = await self.get_network_data(score_type, score_threshold, species_acronym)
-
-            # Build NetworkX graph for accurate calculations
-            G = self._build_networkx_graph(network_data)
-
-            # Calculate properties using NetworkX
-            num_nodes = G.number_of_nodes()
-            num_edges = G.number_of_edges()
-
-            # Calculate density using NetworkX
-            density = nx.density(G)
-
-            # Calculate degree distribution
-            degree_distribution = [d for n, d in G.degree()]
-
-            # Calculate average clustering coefficient using NetworkX
-            avg_clustering = nx.average_clustering(G)
-
-            return PPINetworkPropertiesSchema(
-                num_nodes=num_nodes,
-                num_edges=num_edges,
-                density=density,
-                avg_clustering_coefficient=avg_clustering,
-                degree_distribution=degree_distribution
+            # Build search once
+            s = self._build_base_search(species_acronym, score_type, score_threshold)
+            
+            # Get count efficiently
+            from asgiref.sync import sync_to_async
+            total_matches = await sync_to_async(s.count)()
+            max_fetch = min(total_matches, 10000000)
+            s = s[:max_fetch]
+            
+            # Only fetch what we need for network analysis
+            score_field = self._validate_and_normalize_score_field(score_type)
+            s = s.source(["protein_a", "protein_b", score_field])
+            
+            response = await self._execute_search(s)
+            
+            # Build graph directly from hits (no intermediate data structure)
+            G = nx.Graph()
+            for hit in response.hits:
+                protein_a = hit.protein_a
+                protein_b = hit.protein_b
+                score = getattr(hit, score_field, 0)
+                G.add_edge(protein_a, protein_b, weight=score)
+            
+            # Calculate properties
+            result = PPINetworkPropertiesSchema(
+                num_nodes=G.number_of_nodes(),
+                num_edges=G.number_of_edges(),
+                density=nx.density(G),
+                avg_clustering_coefficient=nx.average_clustering(G),
+                degree_distribution=[d for n, d in G.degree()]
             )
-
+            
+            # Cache the result
+            self._network_cache[cache_key] = result
+            return result
+            
         except Exception as e:
             logger.error(f"Error calculating network properties: {e}")
             raise ServiceError(f"Failed to calculate network properties: {str(e)}")
 
     async def get_protein_interactions(self, protein_id: str, species_acronym: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Get all interactions for a specific protein (lightweight API call)."""
+        """Get all interactions for a specific protein (lightweight)."""
         try:
-            s = Search(index=self.index_name)
+            s = self._build_base_search(species_acronym)
             s = s.filter("terms", participants=[protein_id])
-            
-            if species_acronym:
-                s = s.filter("term", species_acronym=species_acronym)
-            
-            s = s.source([
-                "protein_a", "protein_b", "ds_score", "string_score", "melt_score",
-                "protein_a_locus_tag", "protein_a_name", "protein_a_product",
-                "protein_b_locus_tag", "protein_b_name", "protein_b_product"
-            ])
+            s = s.source(self._get_standard_source_fields())
             s = s[:10000]
 
             logger.info(f"search query: {s.to_dict()}")
@@ -319,15 +380,15 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 interactions.append({
                     "protein_a": hit.protein_a,
                     "protein_b": hit.protein_b,
-                    "ds_score": hit.ds_score,
-                    "string_score": hit.string_score,
-                    "melt_score": hit.melt_score,
-                    "protein_a_locus_tag": hit.protein_a_locus_tag,
-                    "protein_a_name": hit.protein_a_name,
-                    "protein_a_product": hit.protein_a_product,
-                    "protein_b_locus_tag": hit.protein_b_locus_tag,
-                    "protein_b_name": hit.protein_b_name,
-                    "protein_b_product": hit.protein_b_product,
+                    "ds_score": getattr(hit, "ds_score", None),
+                    "string_score": getattr(hit, "string_score", None),
+                    "melt_score": getattr(hit, "melt_score", None),
+                    "protein_a_locus_tag": getattr(hit, "protein_a_locus_tag", None),
+                    "protein_a_name": getattr(hit, "protein_a_name", None),
+                    "protein_a_product": getattr(hit, "protein_a_product", None),
+                    "protein_b_locus_tag": getattr(hit, "protein_b_locus_tag", None),
+                    "protein_b_name": getattr(hit, "protein_b_name", None),
+                    "protein_b_product": getattr(hit, "protein_b_product", None),
                 })
             
             return interactions
@@ -338,30 +399,20 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
 
     async def get_protein_neighborhood(self, protein_id: str, n: int = 5,
                                        species_acronym: Optional[str] = None) -> PPINeighborhoodSchema:
-        """Get neighborhood data for a specific protein using Dijkstra's algorithm like the old implementation."""
+        """Get neighborhood data for a specific protein using Dijkstra's algorithm (optimized)."""
         try:
-            s = Search(index=self.index_name)
-
-            # Filter by protein
+            # Build search for protein interactions
+            s = self._build_base_search(species_acronym)
             s = s.filter("terms", participants=[protein_id])
-
-            # Apply species filter
-            if species_acronym:
-                s = s.filter("term", species_acronym=species_acronym)
-
-            # Get all interactions for this protein
-            s = s.source([
-                "protein_a", "protein_b", "ds_score", "string_score", "melt_score",
-                "protein_a_locus_tag", "protein_a_name", "protein_a_product",
-                "protein_b_locus_tag", "protein_b_name", "protein_b_product"
-            ])
+            s = s.source(self._get_standard_source_fields())
 
             response = await self._execute_search(s)
 
             # Build a NetworkX graph to use Dijkstra's algorithm
             G = nx.Graph()
+            gene_mapping = {}
             
-            # Add all interactions to the graph
+            # Add all interactions to the graph and build gene mapping
             for hit in response.hits:
                 protein_a = hit.protein_a
                 protein_b = hit.protein_b
@@ -370,8 +421,22 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 # Add edge with weight (use 1/weight for distance since higher scores = closer)
                 distance = 1.0 / (weight + 0.001) if weight > 0 else 1000
                 G.add_edge(protein_a, protein_b, weight=distance)
+                
+                # Build gene mapping
+                if protein_a == protein_id:
+                    gene_mapping[protein_b] = {
+                        'locus_tag': hit.protein_b_locus_tag,
+                        'name': hit.protein_b_name,
+                        'product': hit.protein_b_product
+                    }
+                elif protein_b == protein_id:
+                    gene_mapping[protein_a] = {
+                        'locus_tag': hit.protein_a_locus_tag,
+                        'name': hit.protein_a_name,
+                        'product': hit.protein_a_product
+                    }
 
-            # Use Dijkstra's algorithm to find nearest neighbors (like old implementation)
+            # Use Dijkstra's algorithm to find nearest neighbors
             if protein_id in G:
                 distances = nx.single_source_dijkstra_path_length(G, protein_id, weight='weight')
                 # Sort by distance and get the n nearest neighbors (excluding the protein itself)
@@ -379,47 +444,16 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             else:
                 nearest_neighbors = []
 
-            # Build neighborhood data with gene annotations
-            neighbor_list = []
+            # Build neighborhood data
+            neighborhood_data = await self._build_neighborhood_data(
+                protein_id, nearest_neighbors, gene_mapping, species_acronym
+            )
+
+            # Add edges for the neighborhood subgraph
+            neighborhood_nodes = [protein_id] + nearest_neighbors
             edges = []
             
-            # Create mapping for gene annotations
-            gene_mapping = {}
-            for hit in response.hits:
-                if hit.protein_a == protein_id:
-                    gene_mapping[hit.protein_b] = {
-                        'locus_tag': hit.protein_b_locus_tag,
-                        'name': hit.protein_b_name,
-                        'product': hit.protein_b_product
-                    }
-                elif hit.protein_b == protein_id:
-                    gene_mapping[hit.protein_a] = {
-                        'locus_tag': hit.protein_a_locus_tag,
-                        'name': hit.protein_a_name,
-                        'product': hit.protein_a_product
-                    }
-
-            # Add neighbors with gene annotations
-            for neighbor in nearest_neighbors:
-                gene_info = gene_mapping.get(neighbor, {})
-                locus_tag = gene_info.get('locus_tag', neighbor)
-                name = gene_info.get('name', '')
-                
-                # Create label like old implementation: "locus_tag\nname"
-                label = f"{locus_tag}\n{name}" if name else neighbor
-                
-                neighbor_list.append({
-                    "id": neighbor,
-                    "label": label,
-                    "locus_tag": locus_tag,
-                    "name": name,
-                    "product": gene_info.get('product', '')
-                })
-
-            # Add edges for the neighborhood subgraph (complete subgraph like old implementation)
-            neighborhood_nodes = [protein_id] + nearest_neighbors
-            
-            # First, add edges from the original interactions
+            # Add edges from the original interactions
             for hit in response.hits:
                 protein_a = hit.protein_a
                 protein_b = hit.protein_b
@@ -432,31 +466,22 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         "weight": hit.ds_score or 0
                     })
             
-            # Now, query for additional interactions between neighbor proteins
-            # that might not have been in the original protein's direct interactions
+            # Query for additional interactions between neighbor proteins
             if len(nearest_neighbors) > 1:
                 try:
                     logger.info(f"Searching for neighbor-to-neighbor interactions among: {nearest_neighbors}")
                     
-                    # Create a search for interactions between neighbor proteins
-                    neighbor_search = Search(index=self.index_name)
+                    # Use base search builder for neighbor interactions
+                    neighbor_search = self._build_base_search(species_acronym)
                     neighbor_search = neighbor_search.filter("terms", participants=nearest_neighbors)
-                    
-                    if species_acronym:
-                        neighbor_search = neighbor_search.filter("term", species_acronym=species_acronym)
-                    
-                    # Only get interactions where both proteins are in the neighbor list
-                    # (excluding the central protein to avoid duplicates)
-                    neighbor_search = neighbor_search.source([
-                        "protein_a", "protein_b", "ds_score", "string_score", "melt_score"
-                    ])
+                    neighbor_search = neighbor_search.source(["protein_a", "protein_b", "ds_score"])
                     
                     neighbor_response = await self._execute_search(neighbor_search)
                     logger.info(f"Found {len(neighbor_response.hits)} potential neighbor-to-neighbor interactions")
                     
                     # Add any new interactions between neighbors
                     existing_edges = {(edge["source"], edge["target"]) for edge in edges}
-                    existing_edges.update({(edge["target"], edge["source"]) for edge in edges})  # Add both directions
+                    existing_edges.update({(edge["target"], edge["source"]) for edge in edges})
                     
                     new_edges_count = 0
                     for hit in neighbor_response.hits:
@@ -480,20 +505,11 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                             
                 except Exception as e:
                     logger.warning(f"Could not fetch neighbor-to-neighbor interactions: {e}")
-                    # Continue without the additional edges
 
-            # Create network data for the neighborhood
-            network_data = PPINetworkSchema(
-                nodes=[{"id": protein_id, "label": protein_id}] + neighbor_list,
-                edges=edges,
-                properties={}
-            )
+            # Update network data with edges
+            neighborhood_data.network_data.edges = edges
 
-            return PPINeighborhoodSchema(
-                protein_id=protein_id,
-                neighbors=neighbor_list,
-                network_data=network_data
-            )
+            return neighborhood_data
 
         except Exception as e:
             logger.error(f"Error getting protein neighborhood: {e}")
@@ -542,9 +558,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             "has_string": getattr(hit, "has_string", False),
             "has_operon": getattr(hit, "has_operon", False),
             "has_ecocyc": getattr(hit, "has_ecocyc", False),
-            "has_experimental": getattr(hit, "has_experimental", False),
 
             # Metadata
             "evidence_count": getattr(hit, "evidence_count", 0),
-            "confidence_bin": getattr(hit, "confidence_bin", None),
         }

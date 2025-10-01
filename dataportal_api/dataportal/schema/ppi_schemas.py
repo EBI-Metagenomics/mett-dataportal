@@ -47,11 +47,9 @@ class PPIInteractionSchema(BaseModel):
     has_string: bool = False
     has_operon: bool = False
     has_ecocyc: bool = False
-    has_experimental: bool = False
     
     # Metadata
     evidence_count: int = 0
-    confidence_bin: Optional[str] = None
 
 
 class PPISearchQuerySchema(BaseModel):
@@ -64,8 +62,6 @@ class PPISearchQuerySchema(BaseModel):
     has_string: Optional[bool] = Field(None, description="Filter by STRING evidence")
     has_operon: Optional[bool] = Field(None, description="Filter by operon evidence")
     has_ecocyc: Optional[bool] = Field(None, description="Filter by EcoCyc evidence")
-    has_experimental: Optional[bool] = Field(None, description="Filter by experimental evidence")
-    confidence_bin: Optional[str] = Field(None, description="Filter by confidence level (high, medium, low)")
     protein_id: Optional[str] = Field(None, description="Filter interactions involving specific protein")
     page: int = Field(1, ge=1, description="Page number")
     per_page: int = Field(20, ge=1, le=100000, description="Results per page")
