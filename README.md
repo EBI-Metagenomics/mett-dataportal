@@ -170,6 +170,14 @@ $ python manage.py import_features \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
 
+Pooled TTP Dataset:
+```shell
+$ python manage.py ingest_pooled_ttp \
+    --index feature_index \
+    --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_TPP.csv \
+    --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pool_metadata.csv
+```
+
 Gene Rx Data:
 ```shell
 $ python manage.py import_features \

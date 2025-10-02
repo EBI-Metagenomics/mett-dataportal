@@ -137,6 +137,10 @@ class FeatureDocument(Document):
             "fdr": Float(),
             "hit_calling": Boolean(),
             "experimental_condition": Keyword(),
+            "notes": Text(fields={"keyword": Keyword()}),
+            "assay": Keyword(),
+            "poolA": Keyword(),
+            "poolB": Keyword(),
         }
     )
 
