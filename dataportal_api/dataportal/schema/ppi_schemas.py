@@ -144,3 +144,54 @@ class PPIAllNeighborsSchema(BaseModel):
 class PPIAllNeighborsResponseSchema(SuccessResponseSchema):
     """Response schema for all protein neighbors data."""
     data: PPIAllNeighborsSchema
+
+
+# Request Schemas
+class PPINeighborhoodQuerySchema(BaseModel):
+    """Schema for protein neighborhood query parameters."""
+    protein_id: Optional[str] = Field(None, description="UniProt ID of the protein")
+    locus_tag: Optional[str] = Field(None, description="Locus tag of the protein")
+    n: int = Field(5, ge=1, le=50, description="Number of neighbors to retrieve")
+    species_acronym: Optional[str] = Field(None, description="Species acronym filter")
+
+    @validator('locus_tag')
+    def validate_protein_identifier(cls, v, values):
+        """Validate that only one of protein_id or locus_tag is provided."""
+        protein_id = values.get('protein_id')
+        if v is not None and protein_id is not None:
+            raise ValueError("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+        return v
+
+
+class PPINeighborsQuerySchema(BaseModel):
+    """Schema for protein neighbors query parameters."""
+    protein_id: Optional[str] = Field(None, description="UniProt ID of the protein")
+    locus_tag: Optional[str] = Field(None, description="Locus tag of the protein")
+    species_acronym: Optional[str] = Field(None, description="Species acronym filter")
+
+    @validator('locus_tag')
+    def validate_protein_identifier(cls, v, values):
+        """Validate that only one of protein_id or locus_tag is provided."""
+        protein_id = values.get('protein_id')
+        if v is not None and protein_id is not None:
+            raise ValueError("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+        return v
+
+
+class PPINetworkQuerySchema(BaseModel):
+    """Schema for PPI network query parameters."""
+    score_threshold: float = Field(0.8, ge=0.0, le=1.0, description="Score threshold for network construction")
+    species_acronym: Optional[str] = Field(None, description="Species acronym filter")
+    include_properties: bool = Field(False, description="Whether to include network properties")
+
+
+class PPINetworkPropertiesQuerySchema(BaseModel):
+    """Schema for PPI network properties query parameters."""
+    score_type: str = Field(..., description="Score type for network construction")
+    score_threshold: float = Field(0.8, ge=0.0, le=1.0, description="Score threshold for network construction")
+    species_acronym: Optional[str] = Field(None, description="Species acronym filter")
+
+
+class PPIScoreTypesResponseSchema(SuccessResponseSchema):
+    """Response schema for available score types."""
+    data: Dict[str, List[str]] = Field(..., description="Available score types")
