@@ -160,27 +160,29 @@ class PPIDataAPI:
     def search_interactions(self, params: Dict) -> List[Dict]:
         """Search for PPI interactions with various filtering options."""
         response = self._make_request("/ppi/interactions", params)
-        return response["results"]
+        return response["data"]
 
     def get_protein_interactions(self, protein_id: str, species_acronym: str = "PV") -> List[Dict]:
         """Get all interactions for a protein from the API."""
         params = {
+            "protein_id": protein_id,
             "species_acronym": species_acronym,
             "per_page": 10000
         }
         
-        response = self._make_request(f"/ppi/interactions/{protein_id}", params)
+        response = self._make_request("/ppi/interactions", params)
         return response["data"]
 
     def get_protein_neighborhood(self, protein_id: str, n: int = 5, 
                                species_acronym: str = "PV") -> Dict:
         """Get protein neighborhood from the API."""
         params = {
+            "protein_id" : protein_id,
             "n": n,
             "species_acronym": species_acronym
         }
         
-        response = self._make_request(f"/ppi/neighborhood/{protein_id}", params)
+        response = self._make_request(f"/ppi/neighborhood", params)
         return response["data"]
 
 
@@ -399,7 +401,6 @@ def plot_network_properties_from_api(score_type: str, score_threshold: float,
 def plot_neighborhood_from_api(protein_id: str, n: int = 5, species_acronym: str = "PV"):
     """Plot protein neighborhood using the dedicated API endpoint."""
     try:
-        print(f"Calling API for protein: {protein_id}")
         # Use the dedicated neighborhood API endpoint
         neighborhood_data = ppi_api.get_protein_neighborhood(protein_id, n, species_acronym)
         
@@ -410,8 +411,6 @@ def plot_neighborhood_from_api(protein_id: str, n: int = 5, species_acronym: str
         network_data = neighborhood_data.get('network_data', {})
         nodes = network_data.get('nodes', [])
         edges = network_data.get('edges', [])
-        
-        print(f"Network data - nodes: {len(nodes)}, edges: {len(edges)}")
         
         if not nodes or not edges:
             print("No network data returned from API")
