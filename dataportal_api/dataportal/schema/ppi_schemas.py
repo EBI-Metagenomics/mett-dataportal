@@ -63,6 +63,7 @@ class PPISearchQuerySchema(BaseModel):
     has_operon: Optional[bool] = Field(None, description="Filter by operon evidence")
     has_ecocyc: Optional[bool] = Field(None, description="Filter by EcoCyc evidence")
     protein_id: Optional[str] = Field(None, description="Filter interactions involving specific protein")
+    locus_tag: Optional[str] = Field(None, description="Filter interactions involving specific locus tag")
     page: int = Field(1, ge=1, description="Page number")
     per_page: int = Field(20, ge=1, le=100000, description="Results per page")
 
@@ -74,6 +75,14 @@ class PPISearchQuerySchema(BaseModel):
                 potential_score = f"{v}_score"
                 if potential_score not in PPI_VALID_FILTER_FIELDS:
                     raise ValueError(f"Invalid score_type: {v}. Valid options: {PPI_VALID_FILTER_FIELDS}")
+        return v
+
+    @validator('locus_tag')
+    def validate_protein_identifier(cls, v, values):
+        """Validate that only one of protein_id or locus_tag is provided."""
+        protein_id = values.get('protein_id')
+        if v is not None and protein_id is not None:
+            raise ValueError("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
         return v
 
 

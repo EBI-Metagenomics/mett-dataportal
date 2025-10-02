@@ -236,6 +236,19 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
     async def search_interactions(self, query: PPISearchQuerySchema) -> PPIPaginationSchema:
         """Search for PPI interactions based on query parameters."""
         try:
+            # Resolve locus_tag to protein_id if needed
+            actual_protein_id = query.protein_id
+            if query.locus_tag:
+                try:
+                    actual_protein_id = await self.resolve_locus_tag_to_protein_id(
+                        locus_tag=query.locus_tag,
+                        species_acronym=query.species_acronym
+                    )
+                    logger.info(f"Resolved locus tag '{query.locus_tag}' to protein_id '{actual_protein_id}'")
+                except ServiceError as e:
+                    logger.error(f"Locus tag resolution error: {e}")
+                    raise ServiceError(f"Failed to resolve locus tag '{query.locus_tag}': {str(e)}")
+            
             def build_search():
                 """Build the search query with all filters."""
                 s = Search(index=self.index_name)
@@ -247,8 +260,8 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 if query.isolate_name:
                     s = s.filter("term", isolate_name=query.isolate_name)
                 
-                if query.protein_id:
-                    s = s.filter("terms", participants=[query.protein_id])
+                if actual_protein_id:
+                    s = s.filter("terms", participants=[actual_protein_id])
                 
                 if query.has_xlms is not None:
                     s = s.filter("term", has_xlms=query.has_xlms)
