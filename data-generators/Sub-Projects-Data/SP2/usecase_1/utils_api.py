@@ -173,16 +173,15 @@ class PPIDataAPI:
         response = self._make_request("/ppi/interactions", params)
         return response["data"]
 
-    def get_protein_neighborhood(self, protein_id: str, n: int = 5, 
-                               species_acronym: str = "PV") -> Dict:
-        """Get protein neighborhood from the API."""
+
+    def get_protein_neighbors(self, protein_id: str, species_acronym: str = "PV") -> Dict:
+        """Get all protein neighbors (raw data) from the API."""
         params = {
-            "protein_id" : protein_id,
-            "n": n,
+            "protein_id": protein_id,
             "species_acronym": species_acronym
         }
         
-        response = self._make_request(f"/ppi/neighborhood", params)
+        response = self._make_request("/ppi/neighbors", params)
         return response["data"]
 
 
@@ -312,63 +311,11 @@ def plot_neighborhood(G, node, n=5, gff_df=None):
     plt.show()
 
 
-def plot_connected_hits(G, nodes, gff_df=None):
-    """Plot subgraph induced by a set of nodes with label collision avoidance."""
-    subg = G.subgraph(nodes)
-    # remove disconnected nodes
-    subg = subg.subgraph([n for n in subg.nodes() if subg.degree(n) > 0])
-
-    if gff_df is not None:
-        uniprot_to_gene = gff_df.set_index('uniprot_id')['gene_id'].to_dict()
-        uniprot_to_name = gff_df.set_index('uniprot_id')['name'].to_dict()
-        mapping = {n: f"{uniprot_to_gene.get(n, n)}\n{uniprot_to_name.get(n, '')}" for n in subg.nodes()}
-        subg = nx.relabel_nodes(subg, mapping)
-
-    fig, ax = plot_network(subg)
-    plt.title('Subgraph of Hit nodes', fontsize=14)
-    plt.show()
-
-
 def get_node_with_highest_clustering_coefficient(G):
     """Retrieve the node with the highest clustering coefficient."""
     clustering_coeffs = nx.clustering(G)
     top_cc_node = max(clustering_coeffs, key=clustering_coeffs.get)
     return top_cc_node
-
-
-def get_available_proteins(species_acronym: str = "PV", limit: int = 20):
-    """Get a list of available proteins from the API data."""
-    try:
-        interactions_df = load_interactions(species_acronym)
-        all_proteins = set(interactions_df['protein_a'].unique()) | set(interactions_df['protein_b'].unique())
-        return list(all_proteins)[:limit]
-    except Exception as e:
-        print(f"Error getting available proteins: {e}")
-        return []
-
-
-def test_neighborhood_api(protein_id: str, species_acronym: str = "PV"):
-    """Test function to debug neighborhood API response."""
-    try:
-        print(f"Testing neighborhood API for protein: {protein_id}")
-        neighborhood_data = ppi_api.get_protein_neighborhood(protein_id, n=5, species_acronym=species_acronym)
-        print(f"API Response keys: {neighborhood_data.keys()}")
-        print(f"Neighbors: {neighborhood_data.get('neighbors', [])}")
-        
-        network_data = neighborhood_data.get('network_data', {})
-        print(f"Network data keys: {network_data.keys()}")
-        print(f"Number of nodes: {len(network_data.get('nodes', []))}")
-        print(f"Number of edges: {len(network_data.get('edges', []))}")
-        
-        if network_data.get('nodes'):
-            print(f"First node: {network_data['nodes'][0]}")
-        if network_data.get('edges'):
-            print(f"First edge: {network_data['edges'][0]}")
-            
-        return neighborhood_data
-    except Exception as e:
-        print(f"Error testing neighborhood API: {e}")
-        return None
 
 
 def plot_network_properties_from_api(score_type: str, score_threshold: float, 
@@ -398,36 +345,113 @@ def plot_network_properties_from_api(score_type: str, score_threshold: float,
         plot_network_properties(G)
 
 
-def plot_neighborhood_from_api(protein_id: str, n: int = 5, species_acronym: str = "PV"):
-    """Plot protein neighborhood using the dedicated API endpoint."""
+def compute_neighborhood_from_neighbors(neighbors_data: Dict, protein_id: str, n: int = 5, 
+                                       score_col: str = 'ds_score', score_threshold: float = 0.1) -> nx.Graph:
+    """Compute neighborhood from raw neighbors data using custom algorithm."""
+    interactions = neighbors_data.get('interactions', [])
+    
+    if not interactions:
+        print("No interactions found in neighbors data")
+        return nx.Graph()
+    
+    # Convert interactions to DataFrame for easier processing
+    interactions_df = pd.DataFrame(interactions)
+    
+    # Filter by score threshold
+    if score_col in interactions_df.columns:
+        interactions_df = interactions_df[interactions_df[score_col] >= score_threshold]
+    
+    # Get all neighbors of the target protein from the filtered interactions
+    protein_a_neighbors = set(interactions_df[interactions_df['protein_a'] == protein_id]['protein_b'].unique())
+    protein_b_neighbors = set(interactions_df[interactions_df['protein_b'] == protein_id]['protein_a'].unique())
+    all_neighbors = protein_a_neighbors | protein_b_neighbors
+    
+    if len(all_neighbors) == 0:
+        print(f"No neighbors found for protein {protein_id}")
+        return nx.Graph()
+    
+    # Sort neighbors by interaction strength
+    neighbor_weights = []
+    for neighbor in all_neighbors:
+        # Find the interaction strength with this neighbor
+        interaction = interactions_df[
+            ((interactions_df['protein_a'] == protein_id) & (interactions_df['protein_b'] == neighbor)) |
+            ((interactions_df['protein_b'] == protein_id) & (interactions_df['protein_a'] == neighbor))
+        ]
+        if not interaction.empty:
+            weight = interaction.iloc[0][score_col]
+            neighbor_weights.append((neighbor, weight))
+    
+    neighbor_weights.sort(key=lambda x: x[1], reverse=True)
+    
+    # Take the top n neighbors
+    top_neighbors = [neighbor for neighbor, _ in neighbor_weights[:n]]
+    
+    # Now we need to search for interactions between the neighbors
+    # We'll use the search_interactions API to find interactions between neighbors
+    from utils_api import ppi_api
+    
+    # Create a graph with the target protein and its top neighbors
+    G = nx.Graph()
+    G.add_node(protein_id)
+    
+    # Add edges from target protein to its neighbors
+    for neighbor, weight in neighbor_weights[:n]:
+        G.add_node(neighbor)
+        G.add_edge(protein_id, neighbor, weight=weight)
+    
+    # Search for interactions between neighbors
+    neighbor_interactions = []
+    for i, neighbor1 in enumerate(top_neighbors):
+        for neighbor2 in top_neighbors[i+1:]:
+            # Search for interactions between these two neighbors
+            try:
+                search_params = {
+                    'protein_id': neighbor1,
+                    'species_acronym': 'PV',  # Assuming PV for now
+                    'per_page': 1000
+                }
+                neighbor_interactions_data = ppi_api.search_interactions(search_params)
+                
+                # Check if neighbor2 is in the results
+                for interaction in neighbor_interactions_data:
+                    if (interaction['protein_a'] == neighbor2 or interaction['protein_b'] == neighbor2):
+                        neighbor_interactions.append((neighbor1, neighbor2, interaction.get(score_col, 0)))
+                        print(f"Found neighbor-to-neighbor connection: {neighbor1} ↔ {neighbor2} (score: {interaction.get(score_col, 0):.4f})")
+                        break
+            except Exception as e:
+                print(f"Error searching for interaction between {neighbor1} and {neighbor2}: {e}")
+                continue
+    
+    # Add neighbor-to-neighbor edges to the graph
+    for neighbor1, neighbor2, weight in neighbor_interactions:
+        G.add_edge(neighbor1, neighbor2, weight=weight)
+    
+    print(f"Computed neighborhood with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
+    print(f"Top neighbors: {top_neighbors}")
+    print(f"Neighbor-to-neighbor interactions: {len(neighbor_interactions)}")
+    
+    return G
+
+
+def plot_neighborhood_from_neighbors(protein_id: str, n: int = 5, species_acronym: str = "PV",
+                                   score_col: str = 'ds_score', score_threshold: float = 0.1):
+    """Plot protein neighborhood using raw neighbors data and custom algorithm."""
     try:
-        # Use the dedicated neighborhood API endpoint
-        neighborhood_data = ppi_api.get_protein_neighborhood(protein_id, n, species_acronym)
+        print(f"Calling API for protein: {protein_id}")
         
-        print(f"Retrieved neighborhood data for protein: {protein_id}")
-        print(f"Number of neighbors: {len(neighborhood_data.get('neighbors', []))}")
+        # Get raw neighbors data from API
+        neighbors_data = ppi_api.get_protein_neighbors(protein_id, species_acronym)
         
-        # Extract network data from the API response
-        network_data = neighborhood_data.get('network_data', {})
-        nodes = network_data.get('nodes', [])
-        edges = network_data.get('edges', [])
+        print(f"Retrieved neighbors data for protein: {protein_id}")
+        print(f"Total interactions: {neighbors_data.get('total_interactions', 0)}")
         
-        if not nodes or not edges:
-            print("No network data returned from API")
+        # Compute neighborhood using custom algorithm
+        G = compute_neighborhood_from_neighbors(neighbors_data, protein_id, n, score_col, score_threshold)
+        
+        if G.number_of_nodes() == 0:
+            print("No neighborhood data computed")
             return
-        
-        # Create NetworkX graph from the API data
-        G = nx.Graph()
-        
-        # Add nodes
-        for node in nodes:
-            G.add_node(node['id'], **{k: v for k, v in node.items() if k != 'id'})
-        
-        # Add edges
-        for edge in edges:
-            G.add_edge(edge['source'], edge['target'], **{k: v for k, v in edge.items() if k not in ['source', 'target']})
-        
-        print(f"Created graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
         
         # Get gene annotations for better labeling
         gff_df = load_gff_annotation(species_acronym)
@@ -440,33 +464,50 @@ def plot_neighborhood_from_api(protein_id: str, n: int = 5, species_acronym: str
             
             # Format: "protein_id\nlocus_tag\nproduct"
             mapping = {}
-            for n in G.nodes():
-                locus_tag = uniprot_to_locus.get(n, n)
-                product = uniprot_to_name.get(n, '')
+            for node in G.nodes():
+                locus_tag = uniprot_to_locus.get(node, node)
+                product = uniprot_to_name.get(node, '')
                 if locus_tag and product:
-                    mapping[n] = f"{n}\n{locus_tag}\n{product}"
+                    mapping[node] = f"{node}\n{locus_tag}\n{product}"
                 elif locus_tag:
-                    mapping[n] = f"{n}\n{locus_tag}"
+                    mapping[node] = f"{node}\n{locus_tag}"
                 else:
-                    mapping[n] = n
+                    mapping[node] = node
         else:
-            mapping = {n: n for n in G.nodes()}
+            mapping = {node: node for node in G.nodes()}
         
         # Relabel nodes with gene information
         G = nx.relabel_nodes(G, mapping)
         
         # Plot the network
         fig, ax = plot_network(G)
-        plt.title(f'Neighborhood of {mapping.get(protein_id, protein_id)}', fontsize=14)
+        plt.title(f'Neighborhood of {mapping.get(protein_id, protein_id)} (n={n}, {score_col}≥{score_threshold})', fontsize=14)
         plt.show()
         
+        # Print some statistics
+        central_edges = [e for e in G.edges() if protein_id in e]
+        neighbor_edges = [e for e in G.edges() if protein_id not in e]
+        
+        print(f"Neighborhood statistics:")
+        print(f"  Total edges: {G.number_of_edges()}")
+        print(f"  Central protein edges: {len(central_edges)}")
+        print(f"  Neighbor-to-neighbor edges: {len(neighbor_edges)}")
+        
+        if neighbor_edges:
+            print(f"  ✅ Complete network with neighbor interactions!")
+            for edge in neighbor_edges:
+                weight = G[edge[0]][edge[1]].get('weight', 'N/A')
+                print(f"    {edge[0]} ↔ {edge[1]} (weight: {weight})")
+        else:
+            print(f"  ⚠️  Star pattern (no neighbor-to-neighbor interactions)")
+        
     except Exception as e:
-        print(f"Error getting neighborhood from API: {e}")
+        print(f"Error getting neighborhood from neighbors API: {e}")
         print("Falling back to local calculation...")
         try:
             # Fallback to local calculation
             interactions_df = load_interactions(species_acronym)
-            G = interaction_network_from_df(interactions_df, score_col='ds_score', score_threshold=0.1)
+            G = interaction_network_from_df(interactions_df, score_col=score_col, score_threshold=score_threshold)
             
             # Check if protein exists in the graph
             if protein_id not in G:
@@ -477,3 +518,5 @@ def plot_neighborhood_from_api(protein_id: str, n: int = 5, species_acronym: str
         except Exception as fallback_error:
             print(f"Fallback also failed: {fallback_error}")
             print("Please check if the protein ID exists in the data.")
+
+
