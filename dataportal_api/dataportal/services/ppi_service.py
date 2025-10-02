@@ -15,6 +15,7 @@ from dataportal.schema.ppi_schemas import (
     PPINetworkPropertiesSchema,
     PPINeighborhoodSchema,
     PPIPaginationSchema,
+    PPIAllNeighborsSchema,
 )
 from dataportal.services.base_service import BaseService
 from dataportal.utils.constants import ES_INDEX_PPI, PPI_VALID_FILTER_FIELDS, PPI_SCORE_FIELDS
@@ -50,13 +51,21 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
     def _get_standard_source_fields(self, include_scores: bool = True) -> List[str]:
         """Get standard source fields for PPI queries."""
         base_fields = [
-            "protein_a", "protein_b",
+            "pair_id", "protein_a", "protein_b",
             "protein_a_locus_tag", "protein_a_name", "protein_a_product",
-            "protein_b_locus_tag", "protein_b_name", "protein_b_product"
+            "protein_b_locus_tag", "protein_b_name", "protein_b_product",
+            "participants", "is_self_interaction", "species_scientific_name", 
+            "species_acronym", "isolate_name"
         ]
         
         if include_scores:
-            base_fields.extend(["ds_score", "string_score", "melt_score"])
+            base_fields.extend([
+                "ds_score", "string_score", "melt_score", "dl_score", 
+                "comelt_score", "perturbation_score", "abundance_score",
+                "secondary_score", "bayesian_score", "operon_score", 
+                "ecocyc_score", "tt_score", "has_xlms", "has_string", 
+                "has_operon", "has_ecocyc", "evidence_count"
+            ])
         
         return base_fields
 
@@ -514,6 +523,78 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         except Exception as e:
             logger.error(f"Error getting protein neighborhood: {e}")
             raise ServiceError(f"Failed to get protein neighborhood: {str(e)}")
+
+    async def get_all_protein_neighbors(self, protein_id: str, species_acronym: Optional[str] = None) -> PPIAllNeighborsSchema:
+        """Get all neighbors for a specific protein without algorithm processing (raw data)."""
+        try:
+            # Build search for protein interactions
+            s = self._build_base_search(species_acronym)
+            s = s.filter("terms", participants=[protein_id])
+            s = s.source(self._get_standard_source_fields(include_scores=True))
+            s = s[:50000]  # Reasonable limit for raw data
+
+            response = await self._execute_search(s)
+            
+            # Convert to schema objects
+            interactions = []
+            unique_neighbors = set()
+            neighbor_metadata = {}
+            
+            for hit in response.hits:
+                try:
+                    interaction_data = self._hit_to_dict(hit)
+                    interactions.append(PPIInteractionSchema(**interaction_data))
+                    
+                    # Track unique neighbors and their metadata
+                    protein_a = hit.protein_a
+                    protein_b = hit.protein_b
+                    
+                    if protein_a == protein_id and protein_b != protein_id:
+                        unique_neighbors.add(protein_b)
+                        neighbor_metadata[protein_b] = {
+                            "protein_id": protein_b,
+                            "locus_tag": getattr(hit, "protein_b_locus_tag", None),
+                            "name": getattr(hit, "protein_b_name", None),
+                            "product": getattr(hit, "protein_b_product", None),
+                            "uniprot_id": getattr(hit, "protein_b_uniprot_id", None)
+                        }
+                    elif protein_b == protein_id and protein_a != protein_id:
+                        unique_neighbors.add(protein_a)
+                        neighbor_metadata[protein_a] = {
+                            "protein_id": protein_a,
+                            "locus_tag": getattr(hit, "protein_a_locus_tag", None),
+                            "name": getattr(hit, "protein_a_name", None),
+                            "product": getattr(hit, "protein_a_product", None),
+                            "uniprot_id": getattr(hit, "protein_a_uniprot_id", None)
+                        }
+                        
+                except Exception as e:
+                    logger.error(f"Error converting hit to schema: {e}")
+                    logger.error(f"Hit data: {hit.to_dict()}")
+                    continue
+            
+            # Build unique neighbors list with metadata
+            unique_neighbors_list = []
+            for neighbor_id in sorted(unique_neighbors):
+                metadata = neighbor_metadata.get(neighbor_id, {})
+                unique_neighbors_list.append({
+                    "protein_id": neighbor_id,
+                    "locus_tag": metadata.get("locus_tag"),
+                    "name": metadata.get("name"),
+                    "product": metadata.get("product"),
+                    "uniprot_id": metadata.get("uniprot_id")
+                })
+
+            return PPIAllNeighborsSchema(
+                protein_id=protein_id,
+                total_interactions=len(interactions),
+                interactions=interactions,
+                unique_neighbors=unique_neighbors_list
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting all protein neighbors: {e}")
+            raise ServiceError(f"Failed to get all protein neighbors: {str(e)}")
 
     def _hit_to_dict(self, hit) -> Dict[str, Any]:
         """Convert Elasticsearch hit to dictionary."""

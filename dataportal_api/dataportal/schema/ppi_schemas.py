@@ -122,3 +122,16 @@ class PPINetworkPropertiesResponseSchema(SuccessResponseSchema):
 class PPINeighborhoodResponseSchema(SuccessResponseSchema):
     """Response schema for protein neighborhood data."""
     data: PPINeighborhoodSchema
+
+
+class PPIAllNeighborsSchema(BaseModel):
+    """Schema for all protein neighbors (raw data without algorithm processing)."""
+    protein_id: str
+    total_interactions: int
+    interactions: List[PPIInteractionSchema]
+    unique_neighbors: List[Dict[str, Any]]  # List of unique neighbor proteins with metadata
+
+
+class PPIAllNeighborsResponseSchema(SuccessResponseSchema):
+    """Response schema for all protein neighbors data."""
+    data: PPIAllNeighborsSchema

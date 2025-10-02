@@ -9,6 +9,7 @@ from dataportal.schema.ppi_schemas import (
     PPINetworkResponseSchema,
     PPINetworkPropertiesResponseSchema,
     PPINeighborhoodResponseSchema,
+    PPIAllNeighborsResponseSchema,
 )
 from dataportal.services.ppi_service import PPIService
 from dataportal.schema.response_schemas import create_success_response, create_error_response, SuccessResponseSchema
@@ -183,6 +184,36 @@ async def get_protein_neighborhood(
         logger.error(f"Unexpected error: {e}")
         raise HttpError(500, "Internal server error")
 
+
+@ppi_router.get(
+    "/neighbors/{protein_id}",
+    response=PPIAllNeighborsResponseSchema,
+    summary="Get all protein neighbors (raw data)",
+    description="Get all neighbors for a specific protein without algorithm processing. Returns raw interaction data for custom analysis in Jupyter notebooks."
+)
+@wrap_success_response
+async def get_all_protein_neighbors(
+    request,
+    protein_id: str,
+    species_acronym: Optional[str] = None
+):
+    """Get all neighbors for a specific protein without algorithm processing."""
+    try:
+        neighbors_data = await ppi_service.get_all_protein_neighbors(
+            protein_id=protein_id,
+            species_acronym=species_acronym
+        )
+        
+        return create_success_response(
+            data=neighbors_data,
+            message=f"All neighbors for protein {protein_id} retrieved successfully"
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(500, f"Failed to get all protein neighbors: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise HttpError(500, "Internal server error")
 
 
 @ppi_router.get(
