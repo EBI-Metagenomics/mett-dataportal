@@ -26,27 +26,49 @@ ppi_service = PPIService()
 
 
 @ppi_router.get(
-    "/interactions/{protein_id}",
+    "/interactions/by-protein",
     summary="Get protein interactions",
-    description="Get all interactions for a specific protein"
+    description="Get all interactions for a specific protein. Can search by protein_id (UniProt ID) or locus_tag."
 )
 async def get_protein_interactions(
         request,
-        protein_id: str,
+        protein_id: Optional[str] = None,
+        locus_tag: Optional[str] = None,
         species_acronym: Optional[str] = None
 ):
-    """Get all interactions for a specific protein."""
-    logger.info(f"Get protein interactions for {protein_id}")
+    """Get all interactions for a specific protein by protein_id or locus_tag."""
+    # Validation: exactly one of protein_id or locus_tag must be provided
+    if not protein_id and not locus_tag:
+        raise HttpError(400, "Either 'protein_id' or 'locus_tag' must be provided")
+    if protein_id and locus_tag:
+        raise HttpError(400, "Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+    
+    # Resolve locus_tag to protein_id if needed
+    actual_protein_id = protein_id
+    if locus_tag:
+        try:
+            actual_protein_id = await ppi_service.resolve_locus_tag_to_protein_id(
+                locus_tag=locus_tag,
+                species_acronym=species_acronym
+            )
+            logger.info(f"Resolved locus tag '{locus_tag}' to protein_id '{actual_protein_id}'")
+        except ServiceError as e:
+            logger.error(f"Locus tag resolution error: {e}")
+            raise HttpError(404, str(e))
+    
+    logger.info(f"Get protein interactions for {actual_protein_id}")
     logger.info(f"species acronym: {species_acronym}")
+    
     try:
         interactions = await ppi_service.get_protein_interactions(
-            protein_id=protein_id,
+            protein_id=actual_protein_id,
             species_acronym=species_acronym
         )
 
+        search_identifier = locus_tag if locus_tag else actual_protein_id
         return create_success_response(
             data=interactions,
-            message=f"Interactions for protein {protein_id} retrieved successfully"
+            message=f"Interactions for {search_identifier} retrieved successfully"
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
@@ -153,29 +175,50 @@ async def get_ppi_network_properties(
 
 
 @ppi_router.get(
-    "/neighborhood/{protein_id}",
+    "/neighborhood",
     response=PPINeighborhoodResponseSchema,
     summary="Get protein neighborhood",
-    description="Get neighborhood data for a specific protein"
+    description="Get neighborhood data for a specific protein. Can search by protein_id (UniProt ID) or locus_tag."
 )
 @wrap_success_response
 async def get_protein_neighborhood(
     request,
-    protein_id: str,
+    protein_id: Optional[str] = None,
+    locus_tag: Optional[str] = None,
     n: int = 5,
     species_acronym: Optional[str] = None
 ):
-    """Get neighborhood data for a specific protein."""
+    """Get neighborhood data for a specific protein by protein_id or locus_tag."""
+    # Validation: exactly one of protein_id or locus_tag must be provided
+    if not protein_id and not locus_tag:
+        raise HttpError(400, "Either 'protein_id' or 'locus_tag' must be provided")
+    if protein_id and locus_tag:
+        raise HttpError(400, "Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+    
+    # Resolve locus_tag to protein_id if needed
+    actual_protein_id = protein_id
+    if locus_tag:
+        try:
+            actual_protein_id = await ppi_service.resolve_locus_tag_to_protein_id(
+                locus_tag=locus_tag,
+                species_acronym=species_acronym
+            )
+            logger.info(f"Resolved locus tag '{locus_tag}' to protein_id '{actual_protein_id}'")
+        except ServiceError as e:
+            logger.error(f"Locus tag resolution error: {e}")
+            raise HttpError(404, str(e))
+    
     try:
         neighborhood = await ppi_service.get_protein_neighborhood(
-            protein_id=protein_id,
+            protein_id=actual_protein_id,
             n=n,
             species_acronym=species_acronym
         )
         
+        search_identifier = locus_tag if locus_tag else actual_protein_id
         return create_success_response(
             data=neighborhood,
-            message=f"Neighborhood data for protein {protein_id} retrieved successfully"
+            message=f"Neighborhood data for {search_identifier} retrieved successfully"
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
@@ -186,27 +229,48 @@ async def get_protein_neighborhood(
 
 
 @ppi_router.get(
-    "/neighbors/{protein_id}",
+    "/neighbors",
     response=PPIAllNeighborsResponseSchema,
     summary="Get all protein neighbors (raw data)",
-    description="Get all neighbors for a specific protein without algorithm processing. Returns raw interaction data for custom analysis in Jupyter notebooks."
+    description="Get all neighbors for a specific protein without algorithm processing. Returns raw interaction data for custom analysis in Jupyter notebooks. Can search by protein_id (UniProt ID) or locus_tag."
 )
 @wrap_success_response
 async def get_all_protein_neighbors(
     request,
-    protein_id: str,
+    protein_id: Optional[str] = None,
+    locus_tag: Optional[str] = None,
     species_acronym: Optional[str] = None
 ):
     """Get all neighbors for a specific protein without algorithm processing."""
+    # Validation: exactly one of protein_id or locus_tag must be provided
+    if not protein_id and not locus_tag:
+        raise HttpError(400, "Either 'protein_id' or 'locus_tag' must be provided")
+    if protein_id and locus_tag:
+        raise HttpError(400, "Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+    
+    # Resolve locus_tag to protein_id if needed
+    actual_protein_id = protein_id
+    if locus_tag:
+        try:
+            actual_protein_id = await ppi_service.resolve_locus_tag_to_protein_id(
+                locus_tag=locus_tag,
+                species_acronym=species_acronym
+            )
+            logger.info(f"Resolved locus tag '{locus_tag}' to protein_id '{actual_protein_id}'")
+        except ServiceError as e:
+            logger.error(f"Locus tag resolution error: {e}")
+            raise HttpError(404, str(e))
+    
     try:
         neighbors_data = await ppi_service.get_all_protein_neighbors(
-            protein_id=protein_id,
+            protein_id=actual_protein_id,
             species_acronym=species_acronym
         )
         
+        search_identifier = locus_tag if locus_tag else actual_protein_id
         return create_success_response(
             data=neighbors_data,
-            message=f"All neighbors for protein {protein_id} retrieved successfully"
+            message=f"All neighbors for {search_identifier} retrieved successfully"
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")

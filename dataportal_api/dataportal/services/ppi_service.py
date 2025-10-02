@@ -48,6 +48,57 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         
         return s
 
+    async def resolve_locus_tag_to_protein_id(self, locus_tag: str, species_acronym: Optional[str] = None) -> str:
+        """
+        Resolve a locus tag to its corresponding protein_id (UniProt ID).
+        
+        Args:
+            locus_tag: The locus tag to resolve (e.g., 'BU_ATCC8492_01788')
+            species_acronym: Optional species filter for faster resolution
+            
+        Returns:
+            The corresponding protein_id (UniProt ID)
+            
+        Raises:
+            ServiceError: If locus tag is not found or multiple matches exist
+        """
+        try:
+            s = Search(index=self.index_name)
+            
+            # Filter by locus tag in either protein_a or protein_b
+            s = s.filter("bool", should=[
+                {"term": {"protein_a_locus_tag": locus_tag}},
+                {"term": {"protein_b_locus_tag": locus_tag}}
+            ])
+            
+            if species_acronym:
+                s = s.filter("term", species_acronym=species_acronym)
+            
+            # Only fetch the protein_id fields we need
+            s = s.source(["protein_a", "protein_b", "protein_a_locus_tag", "protein_b_locus_tag"])
+            s = s[:1]  # We only need one hit to get the protein_id
+            
+            response = await self._execute_search(s)
+            
+            if not response.hits:
+                raise ServiceError(f"Locus tag '{locus_tag}' not found" + 
+                                 (f" for species '{species_acronym}'" if species_acronym else ""))
+            
+            # Get the protein_id from the first hit
+            hit = response.hits[0]
+            if hit.protein_a_locus_tag == locus_tag:
+                return hit.protein_a
+            elif hit.protein_b_locus_tag == locus_tag:
+                return hit.protein_b
+            else:
+                raise ServiceError(f"Unexpected error resolving locus tag '{locus_tag}'")
+                
+        except ServiceError:
+            raise
+        except Exception as e:
+            logger.error(f"Error resolving locus tag '{locus_tag}': {e}")
+            raise ServiceError(f"Failed to resolve locus tag '{locus_tag}': {str(e)}")
+
     def _get_standard_source_fields(self, include_scores: bool = True) -> List[str]:
         """Get standard source fields for PPI queries."""
         base_fields = [
