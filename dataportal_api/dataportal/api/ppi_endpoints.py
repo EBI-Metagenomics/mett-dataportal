@@ -26,6 +26,34 @@ ppi_service = PPIService()
 
 
 @ppi_router.get(
+    "/scores/available",
+    summary="Get available score types",
+    description="Get list of available score types for PPI filtering"
+)
+async def get_available_score_types(request):
+    """Get list of available score types for PPI filtering."""
+    try:
+        score_types = [
+            "ds_score",
+            "comelt_score",
+            "perturbation_score",
+            "abundance_score",
+            "melt_score",
+            "secondary_score",
+            "bayesian_score",
+            "string_score",
+            "operon_score",
+            "ecocyc_score",
+            "tt_score"
+        ]
+
+        return {"score_types": score_types}
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise HttpError(500, "Internal server error")
+
+
+@ppi_router.get(
     "/interactions",
     response=PPISearchResponseSchema,
     summary="Search protein-protein interactions",
@@ -55,86 +83,11 @@ async def search_ppi_interactions(request, query: PPISearchQuerySchema = Query(.
 
 
 @ppi_router.get(
-    "/network/{score_type}",
-    response=PPINetworkResponseSchema,
-    summary="Get PPI network data",
-    description="Get network data for a specific score type and threshold"
-)
-@wrap_success_response
-async def get_ppi_network(
-    request,
-    score_type: str,
-    score_threshold: float = 0.8,
-    species_acronym: Optional[str] = None,
-    include_properties: bool = False
-):
-    """Get PPI network data for a specific score type and threshold."""
-    try:
-        network_data = await ppi_service.get_network_data(
-            score_type=score_type,
-            score_threshold=score_threshold,
-            species_acronym=species_acronym
-        )
-        
-        # Include properties if requested
-        if include_properties:
-            properties = await ppi_service.get_network_properties(
-                score_type=score_type,
-                score_threshold=score_threshold,
-                species_acronym=species_acronym
-            )
-            network_data.properties = properties
-        
-        return create_success_response(
-            data=network_data,
-            message=f"Network data for {score_type} (threshold: {score_threshold}) retrieved successfully"
-        )
-    except ServiceError as e:
-        logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get network data: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
-
-
-@ppi_router.get(
-    "/network-properties",
-    response=PPINetworkPropertiesResponseSchema,
-    summary="Get PPI network properties",
-    description="Get network properties (nodes, edges, density, clustering) for a specific score type and threshold"
-)
-@wrap_success_response
-async def get_ppi_network_properties(
-    request,
-    score_type: str,
-    score_threshold: float = 0.8,
-    species_acronym: Optional[str] = None
-):
-    """Get PPI network properties for a specific score type and threshold."""
-    try:
-        properties = await ppi_service.get_network_properties(
-            score_type=score_type,
-            score_threshold=score_threshold,
-            species_acronym=species_acronym
-        )
-        
-        return create_success_response(
-            data=properties,
-            message=f"Network properties for {score_type} (threshold: {score_threshold}) retrieved successfully"
-        )
-    except ServiceError as e:
-        logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get network properties: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
-
-
-@ppi_router.get(
     "/neighborhood",
     response=PPINeighborhoodResponseSchema,
     summary="Get protein neighborhood",
-    description="Get neighborhood data for a specific protein. Can search by protein_id (UniProt ID) or locus_tag."
+    description="Get neighborhood data for a specific protein. Can search by protein_id (UniProt ID) or locus_tag.",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_protein_neighborhood(
@@ -236,29 +189,78 @@ async def get_all_protein_neighbors(
         raise HttpError(500, "Internal server error")
 
 
+
 @ppi_router.get(
-    "/scores/available",
-    summary="Get available score types",
-    description="Get list of available score types for PPI filtering"
+    "/network/{score_type}",
+    response=PPINetworkResponseSchema,
+    summary="Get PPI network data",
+    description="Get network data for a specific score type and threshold"
 )
-async def get_available_score_types(request):
-    """Get list of available score types for PPI filtering."""
+@wrap_success_response
+async def get_ppi_network(
+        request,
+        score_type: str,
+        score_threshold: float = 0.8,
+        species_acronym: Optional[str] = None,
+        include_properties: bool = False
+):
+    """Get PPI network data for a specific score type and threshold."""
     try:
-        score_types = [
-            "ds_score",
-            "comelt_score", 
-            "perturbation_score",
-            "abundance_score",
-            "melt_score",
-            "secondary_score",
-            "bayesian_score",
-            "string_score",
-            "operon_score",
-            "ecocyc_score",
-            "tt_score"
-        ]
-        
-        return {"score_types": score_types}
+        network_data = await ppi_service.get_network_data(
+            score_type=score_type,
+            score_threshold=score_threshold,
+            species_acronym=species_acronym
+        )
+
+        # Include properties if requested
+        if include_properties:
+            properties = await ppi_service.get_network_properties(
+                score_type=score_type,
+                score_threshold=score_threshold,
+                species_acronym=species_acronym
+            )
+            network_data.properties = properties
+
+        return create_success_response(
+            data=network_data,
+            message=f"Network data for {score_type} (threshold: {score_threshold}) retrieved successfully"
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(500, f"Failed to get network data: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise HttpError(500, "Internal server error")
+
+
+@ppi_router.get(
+    "/network-properties",
+    response=PPINetworkPropertiesResponseSchema,
+    summary="Get PPI network properties",
+    description="Get network properties (nodes, edges, density, clustering) for a specific score type and threshold"
+)
+@wrap_success_response
+async def get_ppi_network_properties(
+        request,
+        score_type: str,
+        score_threshold: float = 0.8,
+        species_acronym: Optional[str] = None
+):
+    """Get PPI network properties for a specific score type and threshold."""
+    try:
+        properties = await ppi_service.get_network_properties(
+            score_type=score_type,
+            score_threshold=score_threshold,
+            species_acronym=species_acronym
+        )
+
+        return create_success_response(
+            data=properties,
+            message=f"Network properties for {score_type} (threshold: {score_threshold}) retrieved successfully"
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(500, f"Failed to get network properties: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise HttpError(500, "Internal server error")

@@ -3981,6 +3981,21 @@
 									"item": [
 										{
 											"name": "Drug-MIC-BU-for-Isolate",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 200\", function () {",
+															"    pm.response.to.have.status(200);",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
 											"request": {
 												"method": "GET",
 												"header": [],
@@ -4001,6 +4016,21 @@
 										},
 										{
 											"name": "Drug-MIC-PV-for-Isolate",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 200\", function () {",
+															"    pm.response.to.have.status(200);",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
 											"request": {
 												"method": "GET",
 												"header": [],
@@ -4026,6 +4056,21 @@
 									"item": [
 										{
 											"name": "Drug-MIC-By-Drug-Name",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 200\", function () {",
+															"    pm.response.to.have.status(200);",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
 											"request": {
 												"method": "GET",
 												"header": [],
@@ -4325,6 +4370,21 @@
 								},
 								{
 									"name": "Drug-MIC-All",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {},
+												"requests": {}
+											}
+										}
+									],
 									"request": {
 										"method": "GET",
 										"header": [],
@@ -4763,6 +4823,21 @@
 								},
 								{
 									"name": "Drug-Metabolism-All",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {},
+												"requests": {}
+											}
+										}
+									],
 									"request": {
 										"method": "GET",
 										"header": [],
@@ -4876,6 +4951,21 @@
 					"item": [
 						{
 							"name": "PPI-Available Score Types",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
 							"request": {
 								"method": "GET",
 								"header": [],
@@ -4895,51 +4985,22 @@
 							"response": []
 						},
 						{
-							"name": "PPI-Basic PPI Interactions (Default)",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/ppi/interactions",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"ppi",
-										"interactions"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "PPI-Interactions - PV Species",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"ppi",
-										"interactions"
-									],
-									"query": [
-										{
-											"key": "species_acronym",
-											"value": "PV"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
 							"name": "PPI-Interactions - PV Species - Paginated",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
 							"request": {
 								"method": "GET",
 								"header": [],
@@ -4965,6 +5026,434 @@
 										{
 											"key": "per_page",
 											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions -  BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU&per_page=5",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "per_page",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions with score Filters -  BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU&score_type=ds_score&score_threshold=0.1&per_page=3",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "score_type",
+											"value": "ds_score"
+										},
+										{
+											"key": "score_threshold",
+											"value": "0.1"
+										},
+										{
+											"key": "per_page",
+											"value": "3"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - A6KXK8",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?protein_id=A6KXK8&species_acronym=PV",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "protein_id",
+											"value": "A6KXK8"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighbors - A6KXK8",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/neighbors?protein_id=A6KXK8&n=5&species_acronym=PV",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"neighbors"
+									],
+									"query": [
+										{
+											"key": "protein_id",
+											"value": "A6KXK8"
+										},
+										{
+											"key": "n",
+											"value": "5"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighbors - BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/neighbors?locus_tag=BU_ATCC8492_01788&species_acronym=BU",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"neighbors"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighborhood - A6KXK8",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/neighborhood?protein_id=A6KXK8&species_acronym=PV&n=5",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"neighborhood"
+									],
+									"query": [
+										{
+											"key": "protein_id",
+											"value": "A6KXK8"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "n",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighborhood - BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/neighborhood?locus_tag=BU_ATCC8492_01788&species_acronym=BU&n=3",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"neighborhood"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "n",
+											"value": "3"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighborhood - A6L7C0",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?protein_id=A6L7C0&species_acronym=PV&per_page=10000",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "protein_id",
+											"value": "A6L7C0"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "per_page",
+											"value": "10000"
 										}
 									]
 								}
@@ -5204,92 +5693,6 @@
 										{
 											"key": "per_page",
 											"value": "5"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "PPI-Interactions - Neighborhood - A6KXK8",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/ppi/neighborhood/A6KXK8?n=5&species_acronym=PV",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"ppi",
-										"neighborhood",
-										"A6KXK8"
-									],
-									"query": [
-										{
-											"key": "n",
-											"value": "5"
-										},
-										{
-											"key": "species_acronym",
-											"value": "PV"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "PPI-Interactions - A6KXK8 Copy",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/ppi/interactions/A6KXK8?species_acronym=PV",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"ppi",
-										"interactions",
-										"A6KXK8"
-									],
-									"query": [
-										{
-											"key": "species_acronym",
-											"value": "PV"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "PPI-Interactions - Neighborhood - A6L7C0",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/ppi/interactions/A6L7C0?species_acronym=PV&per_page=10000",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"ppi",
-										"interactions",
-										"A6L7C0"
-									],
-									"query": [
-										{
-											"key": "species_acronym",
-											"value": "PV"
-										},
-										{
-											"key": "per_page",
-											"value": "10000"
 										}
 									]
 								}
