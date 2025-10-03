@@ -270,8 +270,35 @@ class TTPDownloadQuerySchema(BaseModel):
 
 # ===== RESPONSE SCHEMAS =====
 
+class TTPCompoundInteractionSchema(BaseModel):
+    """Schema for individual compound interaction within a gene."""
+    
+    compound: str = Field(..., description="Compound name")
+    ttp_score: Optional[float] = Field(None, description="TTP score")
+    fdr: Optional[float] = Field(None, description="False discovery rate")
+    hit_calling: bool = Field(..., description="Hit calling status")
+    notes: Optional[str] = Field(None, description="Additional notes")
+    assay: Optional[str] = Field(None, description="Assay type")
+    poolA: Optional[str] = Field(None, description="Pool A")
+    poolB: Optional[str] = Field(None, description="Pool B")
+    experimental_condition: Optional[str] = Field(None, description="Experimental condition")
+
+
+class TTPGeneInteractionSchema(BaseModel):
+    """Schema for gene with its compound interactions grouped together."""
+    
+    locus_tag: str = Field(..., description="Gene locus tag")
+    gene_name: Optional[str] = Field(None, description="Gene name")
+    product: Optional[str] = Field(None, description="Gene product")
+    uniprot_id: Optional[str] = Field(None, description="UniProt ID")
+    species_acronym: Optional[str] = Field(None, description="Species acronym")
+    isolate_name: Optional[str] = Field(None, description="Isolate name")
+    compounds: List[TTPCompoundInteractionSchema] = Field(..., description="List of compound interactions for this gene")
+
+
+# Keep the old schema for backward compatibility if needed
 class TTPInteractionSchema(BaseModel):
-    """Schema for individual TTP interaction."""
+    """Schema for individual TTP interaction (legacy - use TTPGeneInteractionSchema instead)."""
     
     locus_tag: str = Field(..., description="Gene locus tag")
     gene_name: Optional[str] = Field(None, description="Gene name")
@@ -291,9 +318,9 @@ class TTPInteractionSchema(BaseModel):
 
 
 class TTPInteractionResponseSchema(BasePaginationSchema):
-    """Schema for paginated TTP interaction response."""
+    """Schema for paginated TTP interaction response with grouped interactions."""
     
-    results: List[TTPInteractionSchema] = Field(..., description="List of TTP interactions")
+    results: List[TTPGeneInteractionSchema] = Field(..., description="List of genes with their compound interactions")
 
 
 class TTPHitSummarySchema(BaseModel):

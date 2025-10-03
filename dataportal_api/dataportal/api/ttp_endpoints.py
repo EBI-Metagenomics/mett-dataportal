@@ -16,6 +16,8 @@ from dataportal.schema.ttp_schemas import (
     TTPPoolAnalysisQuerySchema,
     TTPDownloadQuerySchema,
     TTPInteractionSchema,
+    TTPGeneInteractionSchema,
+    TTPCompoundInteractionSchema,
     TTPInteractionResponseSchema,
     TTPHitSummarySchema,
     TTPPoolSummarySchema,
@@ -144,7 +146,7 @@ async def get_hit_analysis(
     try:
         interactions, summary = await ttp_service.get_hit_analysis(query)
         return create_success_response({
-            "interactions": interactions,
+            "genes": interactions,
             "summary": summary
         })
     except ServiceError as e:

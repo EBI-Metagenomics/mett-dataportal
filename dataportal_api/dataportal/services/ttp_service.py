@@ -16,6 +16,8 @@ from dataportal.schema.ttp_schemas import (
     TTPPoolAnalysisQuerySchema,
     TTPDownloadQuerySchema,
     TTPInteractionSchema,
+    TTPGeneInteractionSchema,
+    TTPCompoundInteractionSchema,
     TTPInteractionResponseSchema,
     TTPHitSummarySchema,
     TTPPoolSummarySchema,
@@ -44,6 +46,18 @@ class TTPService:
     def _build_base_search(self) -> Search:
         """Build base search query for TTP interactions."""
         search = Search(using=self.es_client, index=self.index_name)
+        
+        # Only return core fields we need for TTP interactions
+        search = search.source([
+            "locus_tag",
+            "gene_name", 
+            "product",
+            "uniprot_id",
+            "species_acronym",
+            "isolate_name",
+            "protein_compound"
+        ])
+        
         logger.debug(f"Built base search for index: {self.index_name}")
         return search
 
@@ -55,12 +69,21 @@ class TTPService:
 
         # Free text search
         if query_params.get("query"):
-            query.must.append(
+            search_query = query_params["query"]
+            
+            # Use should clauses for flexible search - either gene fields OR compound field
+            search_should = Q("bool", should=[
                 Q("multi_match",
-                  query=query_params["query"],
-                  fields=["locus_tag^2", "gene_name^2", "product", "protein_compound.compound^2"])
-            )
-            logger.debug("Added free text search filter")
+                  query=search_query,
+                  fields=["locus_tag^2", "gene_name^2", "product"]),
+                Q("nested",
+                  path="protein_compound",
+                  query=Q("term", protein_compound__compound=search_query))
+            ], minimum_should_match=1)
+            
+            query.must.append(search_should)
+            
+            logger.debug(f"Added free text search filter for: {search_query}")
 
         # Locus tag filter
         if query_params.get("locus_tag"):
@@ -170,7 +193,12 @@ class TTPService:
             search = self._build_base_search()
             
             # For search, always filter for documents that have protein_compound interactions
-            search = search.filter("exists", field="protein_compound")
+            search = search.filter(
+                Q("nested",
+                  path="protein_compound",
+                  query=Q("exists", field="protein_compound.compound"),
+                  score_mode="none")
+            )
 
             # Build query
             query_params = query_schema.dict()
@@ -198,21 +226,34 @@ class TTPService:
                     # For non-nested fields, use regular sort
                     search = search.sort({query_schema.sort_field: {"order": query_schema.sort_order}})
 
+            # Log the final Elasticsearch query
+            logger.info(f"TTP Search ES Query: {search.to_dict()}")
+            
             # Execute search
             response = search.execute()
+            
+            logger.info(f"TTP Search Response: {response.hits.total} total hits, {len(response)} returned")
 
-            # Process results
-            interactions = []
+            # Process results and group by locus_tag
+            gene_interactions = {}
             for hit in response:
-                # Extract protein compound interactions
+                locus_tag = hit.locus_tag
+                
+                # Initialize gene data if not seen before
+                if locus_tag not in gene_interactions:
+                    gene_interactions[locus_tag] = {
+                        'locus_tag': locus_tag,
+                        'gene_name': getattr(hit, 'gene_name', None),
+                        'product': getattr(hit, 'product', None),
+                        'uniprot_id': getattr(hit, 'uniprot_id', None),
+                        'species_acronym': getattr(hit, 'species_acronym', None),
+                        'isolate_name': getattr(hit, 'isolate_name', None),
+                        'compounds': []
+                    }
+                
+                # Add compound interactions
                 for pc in hit.protein_compound:
-                    interaction = TTPInteractionSchema(
-                        locus_tag=hit.locus_tag,
-                        gene_name=getattr(hit, 'gene_name', None),
-                        product=getattr(hit, 'product', None),
-                        uniprot_id=getattr(hit, 'uniprot_id', None),
-                        species_acronym=getattr(hit, 'species_acronym', None),
-                        isolate_name=getattr(hit, 'isolate_name', None),
+                    compound_interaction = TTPCompoundInteractionSchema(
                         compound=getattr(pc, 'compound', None),
                         ttp_score=getattr(pc, 'ttp_score', None),
                         fdr=getattr(pc, 'fdr', None),
@@ -223,7 +264,13 @@ class TTPService:
                         poolB=getattr(pc, 'poolB', None),
                         experimental_condition=getattr(pc, 'experimental_condition', None)
                     )
-                    interactions.append(interaction)
+                    gene_interactions[locus_tag]['compounds'].append(compound_interaction)
+            
+            # Convert to list of TTPGeneInteractionSchema
+            interactions = [
+                TTPGeneInteractionSchema(**gene_data) 
+                for gene_data in gene_interactions.values()
+            ]
 
             total_hits = response.hits.total.value if hasattr(response.hits.total, 'value') else response.hits.total
             total_pages = (total_hits + per_page - 1) // per_page
@@ -245,7 +292,7 @@ class TTPService:
         """Advanced faceted search for TTP interactions."""
         return await self.search_interactions(query_schema)
 
-    async def get_gene_interactions(self, query_schema: TTPGeneInteractionsQuerySchema) -> List[TTPInteractionSchema]:
+    async def get_gene_interactions(self, query_schema: TTPGeneInteractionsQuerySchema) -> TTPGeneInteractionSchema:
         """Get all interactions for a specific gene."""
         try:
             search = self._build_base_search()
@@ -293,19 +340,28 @@ class TTPService:
             locus_response = locus_search.execute()
             logger.info(f"Debug - Total docs with locus_tag=PV_ATCC8482_00051: {locus_response.hits.total}")
 
-            # Process results
-            interactions = []
+            # Process results - group by locus_tag (should be only one gene)
+            gene_interactions = {}
             for hit in response:
+                locus_tag = hit.locus_tag
                 logger.debug(
-                    f"Processing hit: locus_tag={hit.locus_tag}, protein_compound_count={len(hit.protein_compound) if hasattr(hit, 'protein_compound') else 0}")
+                    f"Processing hit: locus_tag={locus_tag}, protein_compound_count={len(hit.protein_compound) if hasattr(hit, 'protein_compound') else 0}")
+                
+                # Initialize gene data if not seen before
+                if locus_tag not in gene_interactions:
+                    gene_interactions[locus_tag] = {
+                        'locus_tag': locus_tag,
+                        'gene_name': getattr(hit, 'gene_name', None),
+                        'product': getattr(hit, 'product', None),
+                        'uniprot_id': getattr(hit, 'uniprot_id', None),
+                        'species_acronym': getattr(hit, 'species_acronym', None),
+                        'isolate_name': getattr(hit, 'isolate_name', None),
+                        'compounds': []
+                    }
+                
+                # Add compound interactions
                 for pc in hit.protein_compound:
-                    interaction = TTPInteractionSchema(
-                        locus_tag=hit.locus_tag,
-                        gene_name=getattr(hit, 'gene_name', None),
-                        product=getattr(hit, 'product', None),
-                        uniprot_id=getattr(hit, 'uniprot_id', None),
-                        species_acronym=getattr(hit, 'species_acronym', None),
-                        isolate_name=getattr(hit, 'isolate_name', None),
+                    compound_interaction = TTPCompoundInteractionSchema(
                         compound=getattr(pc, 'compound', None),
                         ttp_score=getattr(pc, 'ttp_score', None),
                         fdr=getattr(pc, 'fdr', None),
@@ -316,19 +372,32 @@ class TTPService:
                         poolB=getattr(pc, 'poolB', None),
                         experimental_condition=getattr(pc, 'experimental_condition', None)
                     )
-                    interactions.append(interaction)
+                    gene_interactions[locus_tag]['compounds'].append(compound_interaction)
                     logger.debug(
-                        f"Created interaction: compound={interaction.compound}, hit_calling={interaction.hit_calling}")
+                        f"Created interaction: compound={compound_interaction.compound}, hit_calling={compound_interaction.hit_calling}")
 
-            logger.info(f"TTP Gene Interactions Final Result: {len(interactions)} interactions returned")
-            return interactions
+            # Return the gene interaction (should be only one)
+            if gene_interactions:
+                gene_data = list(gene_interactions.values())[0]
+                logger.info(f"TTP Gene Interactions Final Result: {len(gene_data['compounds'])} compounds returned")
+                return TTPGeneInteractionSchema(**gene_data)
+            else:
+                # Return empty gene interaction if no results
+                return TTPGeneInteractionSchema(
+                    locus_tag=query_schema.locus_tag,
+                    gene_name=None,
+                    product=None,
+                    uniprot_id=None,
+                    species_acronym=None,
+                    isolate_name=None,
+                    compounds=[]
+                )
 
         except Exception as e:
             logger.error(f"Error getting gene interactions: {str(e)}")
             raise ServiceError(f"Failed to get gene interactions: {str(e)}")
 
-    async def get_compound_interactions(self, query_schema: TTPCompoundInteractionsQuerySchema) -> List[
-        TTPInteractionSchema]:
+    async def get_compound_interactions(self, query_schema: TTPCompoundInteractionsQuerySchema) -> List[TTPGeneInteractionSchema]:
         """Get all interactions for a specific compound."""
         try:
             search = self._build_base_search()
@@ -354,20 +423,34 @@ class TTPService:
                     # For non-nested fields, use regular sort
                     search = search.sort({query_schema.sort_field: {"order": query_schema.sort_order}})
 
+            # Log the final Elasticsearch query
+            logger.info(f"TTP Compound Interactions ES Query: {search.to_dict()}")
+            
             # Execute search
             response = search.execute()
+            
+            logger.info(f"TTP Compound Interactions Response: {response.hits.total} total hits, {len(response)} returned")
 
-            # Process results
-            interactions = []
+            # Process results and group by locus_tag
+            gene_interactions = {}
             for hit in response:
+                locus_tag = hit.locus_tag
+                
+                # Initialize gene data if not seen before
+                if locus_tag not in gene_interactions:
+                    gene_interactions[locus_tag] = {
+                        'locus_tag': locus_tag,
+                        'gene_name': getattr(hit, 'gene_name', None),
+                        'product': getattr(hit, 'product', None),
+                        'uniprot_id': getattr(hit, 'uniprot_id', None),
+                        'species_acronym': getattr(hit, 'species_acronym', None),
+                        'isolate_name': getattr(hit, 'isolate_name', None),
+                        'compounds': []
+                    }
+                
+                # Add compound interactions
                 for pc in hit.protein_compound:
-                    interaction = TTPInteractionSchema(
-                        locus_tag=hit.locus_tag,
-                        gene_name=getattr(hit, 'gene_name', None),
-                        product=getattr(hit, 'product', None),
-                        uniprot_id=getattr(hit, 'uniprot_id', None),
-                        species_acronym=getattr(hit, 'species_acronym', None),
-                        isolate_name=getattr(hit, 'isolate_name', None),
+                    compound_interaction = TTPCompoundInteractionSchema(
                         compound=getattr(pc, 'compound', None),
                         ttp_score=getattr(pc, 'ttp_score', None),
                         fdr=getattr(pc, 'fdr', None),
@@ -378,8 +461,14 @@ class TTPService:
                         poolB=getattr(pc, 'poolB', None),
                         experimental_condition=getattr(pc, 'experimental_condition', None)
                     )
-                    interactions.append(interaction)
+                    gene_interactions[locus_tag]['compounds'].append(compound_interaction)
 
+            # Convert to list of TTPGeneInteractionSchema
+            interactions = [
+                TTPGeneInteractionSchema(**gene_data) 
+                for gene_data in gene_interactions.values()
+            ]
+            
             return interactions
 
         except Exception as e:
@@ -387,7 +476,7 @@ class TTPService:
             raise ServiceError(f"Failed to get compound interactions: {str(e)}")
 
     async def get_hit_analysis(self, query_schema: TTPHitAnalysisQuerySchema) -> Tuple[
-        List[TTPInteractionSchema], TTPHitSummarySchema]:
+        List[TTPGeneInteractionSchema], TTPHitSummarySchema]:
         """Get hit analysis - significant interactions."""
         try:
             search = self._build_base_search()
@@ -405,13 +494,28 @@ class TTPService:
             # Execute search
             response = search.execute()
 
-            # Process results
-            interactions = []
+            # Process results and group by locus_tag
+            gene_interactions = {}
             total_interactions = 0
             total_hits = 0
             ttp_scores = []
 
             for hit in response:
+                locus_tag = hit.locus_tag
+                
+                # Initialize gene data if not seen before
+                if locus_tag not in gene_interactions:
+                    gene_interactions[locus_tag] = {
+                        'locus_tag': locus_tag,
+                        'gene_name': getattr(hit, 'gene_name', None),
+                        'product': getattr(hit, 'product', None),
+                        'uniprot_id': getattr(hit, 'uniprot_id', None),
+                        'species_acronym': getattr(hit, 'species_acronym', None),
+                        'isolate_name': getattr(hit, 'isolate_name', None),
+                        'compounds': []
+                    }
+                
+                # Add compound interactions
                 for pc in hit.protein_compound:
                     if getattr(pc, 'hit_calling', False):
                         total_hits += 1
@@ -421,13 +525,7 @@ class TTPService:
 
                     total_interactions += 1
 
-                    interaction = TTPInteractionSchema(
-                        locus_tag=hit.locus_tag,
-                        gene_name=getattr(hit, 'gene_name', None),
-                        product=getattr(hit, 'product', None),
-                        uniprot_id=getattr(hit, 'uniprot_id', None),
-                        species_acronym=getattr(hit, 'species_acronym', None),
-                        isolate_name=getattr(hit, 'isolate_name', None),
+                    compound_interaction = TTPCompoundInteractionSchema(
                         compound=getattr(pc, 'compound', None),
                         ttp_score=getattr(pc, 'ttp_score', None),
                         fdr=getattr(pc, 'fdr', None),
@@ -438,7 +536,13 @@ class TTPService:
                         poolB=getattr(pc, 'poolB', None),
                         experimental_condition=getattr(pc, 'experimental_condition', None)
                     )
-                    interactions.append(interaction)
+                    gene_interactions[locus_tag]['compounds'].append(compound_interaction)
+
+            # Convert to list of TTPGeneInteractionSchema
+            interactions = [
+                TTPGeneInteractionSchema(**gene_data) 
+                for gene_data in gene_interactions.values()
+            ]
 
             # Calculate summary statistics
             hit_rate = total_hits / total_interactions if total_interactions > 0 else 0
@@ -471,8 +575,13 @@ class TTPService:
             query = self._build_interaction_query(query_params)
             search = search.query(query)
 
+            # Log the final Elasticsearch query
+            logger.info(f"TTP Pool Analysis ES Query: {search.to_dict()}")
+            
             # Execute search
             response = search.execute()
+            
+            logger.info(f"TTP Pool Analysis Response: {response.hits.total} total hits, {len(response)} returned")
 
             # Process results
             total_interactions = 0
