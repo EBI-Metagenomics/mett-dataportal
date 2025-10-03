@@ -9,21 +9,17 @@ from ninja.errors import HttpError
 
 from dataportal.schema.ttp_schemas import (
     TTPInteractionQuerySchema,
-    TTPFacetedSearchQuerySchema,
     TTPGeneInteractionsQuerySchema,
     TTPCompoundInteractionsQuerySchema,
     TTPHitAnalysisQuerySchema,
     TTPPoolAnalysisQuerySchema,
     TTPDownloadQuerySchema,
-    TTPInteractionSchema,
     TTPGeneInteractionSchema,
     TTPCompoundInteractionSchema,
     TTPInteractionResponseSchema,
     TTPHitSummarySchema,
     TTPPoolSummarySchema,
     TTPMetadataSchema,
-    TTPAutocompleteSchema,
-    TTPFacetSchema,
 )
 from dataportal.schema.response_schemas import SuccessResponseSchema, create_success_response, PaginatedResponseSchema
 from dataportal.services.ttp_service import TTPService
@@ -57,27 +53,6 @@ async def search_interactions(
         raise HttpError(400, str(e))
     except Exception as e:
         logger.error(f"Error in search_interactions: {str(e)}")
-        raise HttpError(500, "Internal server error")
-
-
-@ttp_router.get(
-    "/search/advanced",
-    response=TTPInteractionResponseSchema,
-    summary="Advanced TTP search",
-    description="Advanced search with multiple filters including pools, scores, and hit calling."
-)
-@wrap_paginated_response
-async def advanced_search_interactions(
-    request,
-    query: TTPFacetedSearchQuerySchema = Query(...)
-):
-    """Advanced search for TTP interactions with multiple filters."""
-    try:
-        return await ttp_service.faceted_search(query)
-    except ServiceError as e:
-        raise HttpError(400, str(e))
-    except Exception as e:
-        logger.error(f"Error in advanced_search_interactions: {str(e)}")
         raise HttpError(500, "Internal server error")
 
 
@@ -198,35 +173,10 @@ async def get_ttp_metadata(request):
 
 
 @ttp_router.get(
-    "/autocomplete/{field}",
-    response=SuccessResponseSchema,
-    summary="Autocomplete suggestions",
-    description="Get autocomplete suggestions for compounds or genes."
-)
-@wrap_success_response
-async def get_autocomplete_suggestions(
-    request,
-    field: str = Path(..., description="Field to get suggestions for: 'compound' or 'gene'"),
-    query: str = Query(..., description="Query string for autocomplete")
-):
-    """Get autocomplete suggestions for compounds or genes."""
-    try:
-        if field not in ["compound", "gene"]:
-            raise HttpError(400, "Field must be 'compound' or 'gene'")
-        
-        suggestions = await ttp_service.autocomplete(query, field)
-        return create_success_response(suggestions)
-    except ServiceError as e:
-        raise HttpError(400, str(e))
-    except Exception as e:
-        logger.error(f"Error in get_autocomplete_suggestions: {str(e)}")
-        raise HttpError(500, "Internal server error")
-
-
-@ttp_router.get(
     "/download",
     summary="Download TTP data",
-    description="Download TTP interaction data in CSV or TSV format with filtering."
+    description="Download TTP interaction data in CSV or TSV format with filtering.",
+    include_in_schema=False,
 )
 async def download_ttp_data(
     request,
@@ -252,67 +202,3 @@ async def download_ttp_data(
         raise HttpError(500, "Internal server error")
 
 
-@ttp_router.get(
-    "/compounds",
-    response=SuccessResponseSchema,
-    summary="List available compounds",
-    description="Get list of all available compounds in the TTP dataset."
-)
-@wrap_success_response
-async def get_available_compounds(request):
-    """Get list of all available compounds."""
-    try:
-        metadata = await ttp_service.get_metadata()
-        return create_success_response(metadata.available_compounds)
-    except ServiceError as e:
-        raise HttpError(400, str(e))
-    except Exception as e:
-        logger.error(f"Error in get_available_compounds: {str(e)}")
-        raise HttpError(500, "Internal server error")
-
-
-@ttp_router.get(
-    "/pools",
-    response=SuccessResponseSchema,
-    summary="List available pools",
-    description="Get list of all available experimental pools in the TTP dataset."
-)
-@wrap_success_response
-async def get_available_pools(request):
-    """Get list of all available pools."""
-    try:
-        metadata = await ttp_service.get_metadata()
-        return create_success_response(metadata.available_pools)
-    except ServiceError as e:
-        raise HttpError(400, str(e))
-    except Exception as e:
-        logger.error(f"Error in get_available_pools: {str(e)}")
-        raise HttpError(500, "Internal server error")
-
-
-@ttp_router.get(
-    "/stats/summary",
-    response=SuccessResponseSchema,
-    summary="Get summary statistics",
-    description="Get comprehensive summary statistics for the TTP dataset."
-)
-@wrap_success_response
-async def get_summary_statistics(request):
-    """Get comprehensive summary statistics."""
-    try:
-        metadata = await ttp_service.get_metadata()
-        return create_success_response({
-            "total_interactions": metadata.total_interactions,
-            "total_genes": metadata.total_genes,
-            "total_compounds": metadata.total_compounds,
-            "total_hits": metadata.total_hits,
-            "hit_rate": metadata.hit_rate,
-            "score_range": metadata.score_range,
-            "available_pools": metadata.available_pools,
-            "available_compounds_count": len(metadata.available_compounds)
-        })
-    except ServiceError as e:
-        raise HttpError(400, str(e))
-    except Exception as e:
-        logger.error(f"Error in get_summary_statistics: {str(e)}")
-        raise HttpError(500, "Internal server error")

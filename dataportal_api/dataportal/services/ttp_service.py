@@ -9,7 +9,6 @@ from elasticsearch_dsl import Search, Q, connections
 
 from dataportal.schema.ttp_schemas import (
     TTPInteractionQuerySchema,
-    TTPFacetedSearchQuerySchema,
     TTPGeneInteractionsQuerySchema,
     TTPCompoundInteractionsQuerySchema,
     TTPHitAnalysisQuerySchema,
@@ -22,7 +21,6 @@ from dataportal.schema.ttp_schemas import (
     TTPHitSummarySchema,
     TTPPoolSummarySchema,
     TTPMetadataSchema,
-    TTPAutocompleteSchema,
 )
 from dataportal.utils.exceptions import ServiceError
 
@@ -288,9 +286,6 @@ class TTPService:
             logger.error(f"Error searching TTP interactions: {str(e)}")
             raise ServiceError(f"Failed to search TTP interactions: {str(e)}")
 
-    async def faceted_search(self, query_schema: TTPFacetedSearchQuerySchema) -> TTPInteractionResponseSchema:
-        """Advanced faceted search for TTP interactions."""
-        return await self.search_interactions(query_schema)
 
     async def get_gene_interactions(self, query_schema: TTPGeneInteractionsQuerySchema) -> TTPGeneInteractionSchema:
         """Get all interactions for a specific gene."""
@@ -713,51 +708,6 @@ class TTPService:
             logger.error(f"Error getting TTP metadata: {str(e)}")
             raise ServiceError(f"Failed to get TTP metadata: {str(e)}")
 
-    async def autocomplete(self, query: str, field: str = "compound") -> TTPAutocompleteSchema:
-        """Get autocomplete suggestions."""
-        try:
-            search = self._build_base_search()
-
-            # Build autocomplete query
-            if field == "compound":
-                search = search.source(["protein_compound.compound"])
-                search = search.query(
-                    Q("nested",
-                      path="protein_compound",
-                      query=Q("wildcard", protein_compound__compound=f"*{query}*"))
-                )
-            elif field == "gene":
-                search = search.source(["locus_tag", "gene_name"])
-                search = search.query(
-                    Q("multi_match",
-                      query=query,
-                      fields=["locus_tag^2", "gene_name^2"])
-                )
-
-            # Execute search
-            response = search.execute()
-
-            # Extract suggestions
-            suggestions = set()
-            for hit in response:
-                if field == "compound":
-                    for pc in hit.protein_compound:
-                        if getattr(pc, 'compound', None):
-                            suggestions.add(pc['compound'])
-                elif field == "gene":
-                    if hit.locus_tag:
-                        suggestions.add(hit.locus_tag)
-                    if getattr(hit, 'gene_name', None):
-                        suggestions.add(hit.gene_name)
-
-            return TTPAutocompleteSchema(
-                suggestions=sorted(list(suggestions))[:20],  # Limit to 20 suggestions
-                total=len(suggestions)
-            )
-
-        except Exception as e:
-            logger.error(f"Error getting autocomplete suggestions: {str(e)}")
-            raise ServiceError(f"Failed to get autocomplete suggestions: {str(e)}")
 
     async def download_data(self, query_schema: TTPDownloadQuerySchema) -> str:
         """Download TTP data in CSV/TSV format."""
