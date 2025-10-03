@@ -648,7 +648,19 @@ class TTPService:
     async def get_metadata(self) -> TTPMetadataSchema:
         """Get TTP dataset metadata."""
         try:
-            search = self._build_base_search()
+            # For metadata, we need all fields, not just the selected ones
+            search = Search(using=self.es_client, index=self.index_name)
+            
+            # Filter for documents that have protein_compound interactions
+            search = search.filter(
+                Q("nested",
+                  path="protein_compound",
+                  query=Q("exists", field="protein_compound.compound"),
+                  score_mode="none")
+            )
+            
+            # large size to get all results for metadata calculation
+            search = search[0:100000]  # Get up to 100k documents
 
             # Get total counts
             total_response = search.execute()
@@ -660,11 +672,15 @@ class TTPService:
             pools = set()
 
             for hit in total_response:
-                total_genes.add(hit.locus_tag)
-                for pc in hit.protein_compound:
+                locus_tag = getattr(hit, 'locus_tag', None)
+                if locus_tag:
+                    total_genes.add(locus_tag)
+                protein_compound = getattr(hit, 'protein_compound', [])
+                for pc in protein_compound:
                     total_interactions += 1
-                    if getattr(pc, 'compound', None):
-                        total_compounds.add(getattr(pc, 'compound', ''))
+                    compound = getattr(pc, 'compound', None)
+                    if compound:
+                        total_compounds.add(compound)
                     if getattr(pc, 'hit_calling', False):
                         total_hits += 1
                     if getattr(pc, 'ttp_score', None) is not None:
