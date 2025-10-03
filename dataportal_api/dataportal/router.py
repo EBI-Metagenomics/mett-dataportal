@@ -12,6 +12,7 @@ from dataportal.api.metadata_endpoints import metadata_router
 from dataportal.api.species_endpoints import species_router
 from dataportal.api.drug_endpoints import drug_router
 from dataportal.api.ppi_endpoints import ppi_router
+from dataportal.api.ttp_endpoints import ttp_router
 
 from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
@@ -58,6 +59,7 @@ URL_PREFIX_GENES = "/genes"
 URL_PREFIX_METADATA = "/metadata"
 URL_PREFIX_DRUGS = "/drugs"
 URL_PREFIX_PPI = "/ppi"
+URL_PREFIX_TTP = "/ttp"
 URL_PREFIX_PYHMMER_SEARCH = "/pyhmmer/search"
 URL_PREFIX_PYHMMER_RESULT = "/pyhmmer/result"
 
@@ -212,6 +214,7 @@ api.add_router(URL_PREFIX_GENES, gene_router)
 api.add_router(URL_PREFIX_METADATA, metadata_router)
 api.add_router(URL_PREFIX_DRUGS, drug_router)
 api.add_router(URL_PREFIX_PPI, ppi_router)
+api.add_router(URL_PREFIX_TTP, ttp_router)
 
 if getattr(settings, "ENABLE_PYHMMER_SEARCH", False):
     api.add_router(URL_PREFIX_PYHMMER_SEARCH, pyhmmer_router_search)
