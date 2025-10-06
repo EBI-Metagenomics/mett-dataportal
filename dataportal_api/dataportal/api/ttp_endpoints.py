@@ -110,7 +110,8 @@ async def get_compound_interactions(
     "/hits",
     response=SuccessResponseSchema,
     summary="Hit analysis",
-    description="Get significant protein-compound interactions (hits) with summary statistics."
+    description="Get significant protein-compound interactions (hits) with summary statistics.",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_hit_analysis(
