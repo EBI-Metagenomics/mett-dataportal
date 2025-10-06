@@ -796,7 +796,22 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 operators=operators,
             )
 
+            # logger.info(
+            #     "Faceted search request - query=%s species=%s isolates=%s essentiality=%s operators=%s",
+            #     query,
+            #     species_acronym,
+            #     isolates,
+            #     essentiality,
+            #     operators,
+            # )
+
             response = gs.execute()
+
+            try:
+                total_hits = response.hits.total.value if hasattr(response.hits.total, 'value') else response.hits.total
+                logger.info("Faceted search response - total_hits=%s", total_hits)
+            except Exception:
+                logger.exception("Failed to log total hits for faceted search")
 
             facet_results = {}
             for field in FACET_FIELDS:
@@ -805,9 +820,15 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                         field
                     ]
                     buckets = filtered_agg_result["buckets"]
-                    aggregation_dict = {
-                        bucket["key"]: bucket["doc_count"] for bucket in buckets
-                    }
+                    # Prefer unique gene counts if present; fallback to doc_count
+                    aggregation_dict = {}
+                    for bucket in buckets:
+                        key = bucket["key"]
+                        uniq = getattr(bucket, "unique_genes", None)
+                        if uniq is not None and hasattr(uniq, "value"):
+                            aggregation_dict[key] = uniq.value
+                        else:
+                            aggregation_dict[key] = bucket["doc_count"]
 
                     selected_map = {
                         GENE_ESSENTIALITY: essentiality,
@@ -825,6 +846,23 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                         ),
                         facet_group=field,
                     )
+
+                    try:
+                        selected_vals = selected_map.get(field)
+                        sum_bucket_docs = sum(
+                            (getattr(getattr(b, "unique_genes", None), "value", None) if hasattr(b, "unique_genes") else None)
+                            or getattr(b, "doc_count", 0)
+                            for b in buckets
+                        )
+                        # logger.info(
+                        #     "Facet '%s' debug - buckets=%s sum_doc_counts=%s selected=%s",
+                        #     field,
+                        #     len(buckets),
+                        #     sum_bucket_docs,
+                        #     selected_vals,
+                        # )
+                    except Exception:
+                        logger.exception("Failed logging facet '%s' debug info", field)
                 except KeyError:
                     logger.warning(f"Facet {field} missing in aggregation response.")
                     facet_results[field] = []

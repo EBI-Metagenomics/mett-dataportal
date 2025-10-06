@@ -1,4 +1,5 @@
 import logging
+import json
 
 from elasticsearch_dsl import A, FacetedSearch, TermsFacet, Q
 
@@ -14,6 +15,7 @@ from dataportal.utils.constants import (
     ES_FIELD_COG_FUNCATS,
     ES_FIELD_AMR_INFO,
     ES_FIELD_GO_TERM,
+    ES_FIELD_LOCUS_TAG,
     GENE_SEARCH_FIELDS,
 )
 
@@ -123,6 +125,8 @@ class GeneFacetedSearch(FacetedSearch):
         for facet_field, facet_def in self.facets.items():
             field_name = facet_def._params["field"]
             terms_agg = A("terms", field=field_name, size=facet_def._params["size"])
+            # Count unique genes per bucket to avoid double counting when a doc has multiple values
+            terms_agg.metric("unique_genes", "cardinality", field=f"{ES_FIELD_LOCUS_TAG}.keyword")
 
             agg_must_clauses = must_clauses.copy()
             for other_field, (values, operator) in active_filters.items():
