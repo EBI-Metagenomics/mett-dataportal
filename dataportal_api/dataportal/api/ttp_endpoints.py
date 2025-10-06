@@ -3,10 +3,11 @@ API endpoints for Pooled TTP (Thermal Proteome Profiling) data.
 """
 
 import logging
-from typing import List, Tuple
+
 from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
+from dataportal.schema.response_schemas import SuccessResponseSchema, create_success_response, PaginatedResponseSchema
 from dataportal.schema.ttp_schemas import (
     TTPInteractionQuerySchema,
     TTPGeneInteractionsQuerySchema,
@@ -14,14 +15,7 @@ from dataportal.schema.ttp_schemas import (
     TTPHitAnalysisQuerySchema,
     TTPPoolAnalysisQuerySchema,
     TTPDownloadQuerySchema,
-    TTPGeneInteractionSchema,
-    TTPCompoundInteractionSchema,
-    TTPInteractionResponseSchema,
-    TTPHitSummarySchema,
-    TTPPoolSummarySchema,
-    TTPMetadataSchema,
 )
-from dataportal.schema.response_schemas import SuccessResponseSchema, create_success_response, PaginatedResponseSchema
 from dataportal.services.ttp_service import TTPService
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.response_wrappers import wrap_success_response, wrap_paginated_response
@@ -36,6 +30,25 @@ ttp_router = Router(tags=[ROUTER_TTP])
 
 
 @ttp_router.get(
+    "/metadata",
+    response=SuccessResponseSchema,
+    summary="Get TTP metadata",
+    description="Get metadata about the TTP dataset including counts, available compounds, and score ranges."
+)
+@wrap_success_response
+async def get_ttp_metadata(request):
+    """Get TTP dataset metadata."""
+    try:
+        metadata = await ttp_service.get_metadata()
+        return create_success_response(metadata)
+    except ServiceError as e:
+        raise HttpError(400, str(e))
+    except Exception as e:
+        logger.error(f"Error in get_ttp_metadata: {str(e)}")
+        raise HttpError(500, "Internal server error")
+
+
+@ttp_router.get(
     "/search",
     response=PaginatedResponseSchema,
     summary="Search TTP interactions",
@@ -43,8 +56,8 @@ ttp_router = Router(tags=[ROUTER_TTP])
 )
 @wrap_paginated_response
 async def search_interactions(
-    request,
-    query: TTPInteractionQuerySchema = Query(...)
+        request,
+        query: TTPInteractionQuerySchema = Query(...)
 ):
     """Search TTP interactions with basic query parameters."""
     try:
@@ -64,9 +77,9 @@ async def search_interactions(
 )
 @wrap_success_response
 async def get_gene_interactions(
-    request,
-    locus_tag: str = Path(..., description="Locus tag of the gene"),
-    query: TTPGeneInteractionsQuerySchema = Query(...)
+        request,
+        locus_tag: str = Path(..., description="Locus tag of the gene"),
+        query: TTPGeneInteractionsQuerySchema = Query(...)
 ):
     """Get all interactions for a specific gene."""
     try:
@@ -89,9 +102,9 @@ async def get_gene_interactions(
 )
 @wrap_success_response
 async def get_compound_interactions(
-    request,
-    compound: str = Path(..., description="Name of the compound"),
-    query: TTPCompoundInteractionsQuerySchema = Query(...)
+        request,
+        compound: str = Path(..., description="Name of the compound"),
+        query: TTPCompoundInteractionsQuerySchema = Query(...)
 ):
     """Get all interactions for a specific compound."""
     try:
@@ -115,8 +128,8 @@ async def get_compound_interactions(
 )
 @wrap_success_response
 async def get_hit_analysis(
-    request,
-    query: TTPHitAnalysisQuerySchema = Query(...)
+        request,
+        query: TTPHitAnalysisQuerySchema = Query(...)
 ):
     """Get hit analysis - significant interactions with summary statistics."""
     try:
@@ -140,8 +153,8 @@ async def get_hit_analysis(
 )
 @wrap_success_response
 async def get_pool_analysis(
-    request,
-    query: TTPPoolAnalysisQuerySchema = Query(...)
+        request,
+        query: TTPPoolAnalysisQuerySchema = Query(...)
 ):
     """Get pool-based analysis summary."""
     try:
@@ -155,51 +168,30 @@ async def get_pool_analysis(
 
 
 @ttp_router.get(
-    "/metadata",
-    response=SuccessResponseSchema,
-    summary="Get TTP metadata",
-    description="Get metadata about the TTP dataset including counts, available compounds, and score ranges."
-)
-@wrap_success_response
-async def get_ttp_metadata(request):
-    """Get TTP dataset metadata."""
-    try:
-        metadata = await ttp_service.get_metadata()
-        return create_success_response(metadata)
-    except ServiceError as e:
-        raise HttpError(400, str(e))
-    except Exception as e:
-        logger.error(f"Error in get_ttp_metadata: {str(e)}")
-        raise HttpError(500, "Internal server error")
-
-
-@ttp_router.get(
     "/download",
     summary="Download TTP data",
     description="Download TTP interaction data in CSV or TSV format with filtering.",
     include_in_schema=False,
 )
 async def download_ttp_data(
-    request,
-    query: TTPDownloadQuerySchema = Query(...)
+        request,
+        query: TTPDownloadQuerySchema = Query(...)
 ):
     """Download TTP data in CSV/TSV format."""
     try:
         data = await ttp_service.download_data(query)
-        
+
         # Set appropriate content type
         content_type = "text/csv" if query.format == "csv" else "text/tab-separated-values"
         filename = f"ttp_interactions.{query.format}"
-        
+
         from django.http import HttpResponse
         response = HttpResponse(data, content_type=content_type)
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
-        
+
     except ServiceError as e:
         raise HttpError(400, str(e))
     except Exception as e:
         logger.error(f"Error in download_ttp_data: {str(e)}")
         raise HttpError(500, "Internal server error")
-
-

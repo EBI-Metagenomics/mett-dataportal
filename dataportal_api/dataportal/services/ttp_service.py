@@ -234,6 +234,8 @@ class TTPService:
 
             # Process results and group by locus_tag
             gene_interactions = {}
+            search_query = query_params.get("query", "").lower()
+            
             for hit in response:
                 locus_tag = hit.locus_tag
                 
@@ -249,10 +251,19 @@ class TTPService:
                         'compounds': []
                     }
                 
-                # Add compound interactions
+                # Add compound interactions - filter by search query if it's a compound search
                 for pc in hit.protein_compound:
+                    compound_name = getattr(pc, 'compound', None)
+                    
+                    # If we have a search query, only include compounds that match it
+                    # This handles the case where the search is for a specific compound
+                    if search_query and compound_name:
+                        # Check if the search query matches the compound name (case-insensitive)
+                        if search_query not in compound_name.lower():
+                            continue
+                    
                     compound_interaction = TTPCompoundInteractionSchema(
-                        compound=getattr(pc, 'compound', None),
+                        compound=compound_name,
                         ttp_score=getattr(pc, 'ttp_score', None),
                         fdr=getattr(pc, 'fdr', None),
                         hit_calling=getattr(pc, 'hit_calling', False),
@@ -428,6 +439,8 @@ class TTPService:
 
             # Process results and group by locus_tag
             gene_interactions = {}
+            target_compound = query_schema.compound.lower() if query_schema.compound else None
+            
             for hit in response:
                 locus_tag = hit.locus_tag
                 
@@ -443,10 +456,17 @@ class TTPService:
                         'compounds': []
                     }
                 
-                # Add compound interactions
+                # Add compound interactions - only include the target compound
                 for pc in hit.protein_compound:
+                    compound_name = getattr(pc, 'compound', None)
+                    
+                    # Only include interactions with the specified compound
+                    if target_compound and compound_name:
+                        if target_compound not in compound_name.lower():
+                            continue
+                    
                     compound_interaction = TTPCompoundInteractionSchema(
-                        compound=getattr(pc, 'compound', None),
+                        compound=compound_name,
                         ttp_score=getattr(pc, 'ttp_score', None),
                         fdr=getattr(pc, 'fdr', None),
                         hit_calling=getattr(pc, 'hit_calling', False),
