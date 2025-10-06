@@ -5,7 +5,7 @@ This module defines the OperonDocument class for indexing operon information
 and gene composition.
 """
 
-from elasticsearch_dsl import Document, Keyword, Integer, Boolean
+from elasticsearch_dsl import Document, Keyword, Integer, Boolean, Text
 
 
 class OperonDocument(Document):
@@ -19,6 +19,20 @@ class OperonDocument(Document):
     # composition
     genes = Keyword(multi=True)
     gene_count = Integer()
+
+    # gene A details
+    gene_a_locus_tag = Keyword()
+    gene_a_uniprot_id = Keyword()
+    gene_a_name = Keyword()
+    gene_a_product = Text()
+    gene_a_isolate_name = Keyword()
+
+    # gene B details
+    gene_b_locus_tag = Keyword()
+    gene_b_uniprot_id = Keyword()
+    gene_b_name = Keyword()
+    gene_b_product = Text()
+    gene_b_isolate_name = Keyword()
 
     # rollups
     has_tss = Boolean()

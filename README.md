@@ -200,6 +200,14 @@ $ python manage.py import_ppi_with_genes --index ppi_index --pattern "*.csv" --c
 #### Operon Index:
 ```shell
 $ python manage.py import_operons --index operon_index --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/
+
+$ python manage.py import_operons \
+  --index operon_index \
+  --operons-dir "../data-generators/Sub-Projects-Data/SP3/Operons/" \
+  --preload-gff \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory "/pub/databases/mett/annotations/v1_2024-04-15/"
+
 ```
 
 #### Ortholog Pairs Index:

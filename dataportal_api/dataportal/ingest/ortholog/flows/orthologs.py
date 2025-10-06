@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from dataportal.ingest.feature.flows.base import Flow
 from dataportal.ingest.es_repo import bulk_exec
 from dataportal.ingest.utils import canonical_pair_id
-from dataportal.ingest.ppi.gff_parser import GFFParser
+from dataportal.ingest.gff.parser import GFFParser
 
 import pandas as pd
 
