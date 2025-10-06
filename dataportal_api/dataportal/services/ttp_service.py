@@ -251,29 +251,33 @@ class TTPService:
                         'compounds': []
                     }
                 
-                # Add compound interactions - filter by search query if it's a compound search
+                # Gather interactions, optionally filter by compound if query matches compounds
+                compound_interactions_for_hit = []
+                matching_compound_found = False
                 for pc in hit.protein_compound:
                     compound_name = getattr(pc, 'compound', None)
-                    
-                    # If we have a search query, only include compounds that match it
-                    # This handles the case where the search is for a specific compound
-                    if search_query and compound_name:
-                        # Check if the search query matches the compound name (case-insensitive)
-                        if search_query not in compound_name.lower():
-                            continue
-                    
-                    compound_interaction = TTPCompoundInteractionSchema(
-                        compound=compound_name,
-                        ttp_score=getattr(pc, 'ttp_score', None),
-                        fdr=getattr(pc, 'fdr', None),
-                        hit_calling=getattr(pc, 'hit_calling', False),
-                        notes=getattr(pc, 'notes', None),
-                        assay=getattr(pc, 'assay', None),
-                        poolA=getattr(pc, 'poolA', None),
-                        poolB=getattr(pc, 'poolB', None),
-                        experimental_condition=getattr(pc, 'experimental_condition', None)
+                    if search_query and compound_name and search_query in compound_name.lower():
+                        matching_compound_found = True
+                    compound_interactions_for_hit.append(
+                        TTPCompoundInteractionSchema(
+                            compound=compound_name,
+                            ttp_score=getattr(pc, 'ttp_score', None),
+                            fdr=getattr(pc, 'fdr', None),
+                            hit_calling=getattr(pc, 'hit_calling', False),
+                            notes=getattr(pc, 'notes', None),
+                            assay=getattr(pc, 'assay', None),
+                            poolA=getattr(pc, 'poolA', None),
+                            poolB=getattr(pc, 'poolB', None),
+                            experimental_condition=getattr(pc, 'experimental_condition', None)
+                        )
                     )
-                    gene_interactions[locus_tag]['compounds'].append(compound_interaction)
+
+                # If query matched any compound names, include only those; otherwise include all
+                if search_query and matching_compound_found:
+                    filtered = [ci for ci in compound_interactions_for_hit if ci.compound and search_query in ci.compound.lower()]
+                    gene_interactions[locus_tag]['compounds'].extend(filtered)
+                else:
+                    gene_interactions[locus_tag]['compounds'].extend(compound_interactions_for_hit)
             
             # Convert to list of TTPGeneInteractionSchema
             interactions = [
@@ -605,10 +609,13 @@ class TTPService:
             compound_hits = {}
 
             for hit in response:
+                logger.debug(f"Processing hit: {hit.locus_tag}, protein_compound count: {len(hit.protein_compound) if hasattr(hit, 'protein_compound') else 0}")
                 for pc in hit.protein_compound:
                     # Only count interactions that match the specific pool combination
                     pc_poolA = getattr(pc, 'poolA', None)
                     pc_poolB = getattr(pc, 'poolB', None)
+                    
+                    logger.debug(f"  Compound: {getattr(pc, 'compound', None)}, poolA: {pc_poolA}, poolB: {pc_poolB}")
                     
                     # Check if this interaction matches the requested pool combination
                     if (query_schema.poolA and query_schema.poolB and 
@@ -620,6 +627,7 @@ class TTPService:
                             if getattr(pc, 'hit_calling', False):
                                 total_hits += 1
                                 compound_hits[compound] = compound_hits.get(compound, 0) + 1
+                        logger.debug(f"    -> MATCH: Added interaction (total now: {total_interactions})")
                     elif (query_schema.poolA and not query_schema.poolB and pc_poolA == query_schema.poolA):
                         # Only poolA specified
                         total_interactions += 1
@@ -629,6 +637,7 @@ class TTPService:
                             if getattr(pc, 'hit_calling', False):
                                 total_hits += 1
                                 compound_hits[compound] = compound_hits.get(compound, 0) + 1
+                        logger.debug(f"    -> MATCH (poolA only): Added interaction (total now: {total_interactions})")
                     elif (query_schema.poolB and not query_schema.poolA and pc_poolB == query_schema.poolB):
                         # Only poolB specified
                         total_interactions += 1
@@ -638,6 +647,11 @@ class TTPService:
                             if getattr(pc, 'hit_calling', False):
                                 total_hits += 1
                                 compound_hits[compound] = compound_hits.get(compound, 0) + 1
+                        logger.debug(f"    -> MATCH (poolB only): Added interaction (total now: {total_interactions})")
+                    else:
+                        logger.debug(f"    -> NO MATCH: poolA={pc_poolA}, poolB={pc_poolB} vs requested poolA={query_schema.poolA}, poolB={query_schema.poolB}")
+
+            logger.info(f"Pool Analysis: Found {total_interactions} interactions, {total_hits} hits, {len(compounds)} unique compounds")
 
             # Calculate hit rate
             hit_rate = total_hits / total_interactions if total_interactions > 0 else 0

@@ -1475,6 +1475,51 @@
 							"response": []
 						},
 						{
+							"name": "Gene-Autocomplete-UniprotId",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json().data;",
+											"    pm.expect(jsonData.length).to.eql(1); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?query=A7V2E8",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "A7V2E8"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Gene-Autocomplete-LocusTag-02",
 							"event": [
 								{
@@ -1981,7 +2026,8 @@
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -2587,6 +2633,52 @@
 										{
 											"key": "locus_tag",
 											"value": "BU_H1-6_01257"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genes-by-LocusTag-EXACT Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Results array contains exactly 5 records\", function () {",
+											"    const jsonData = pm.response.json(); ",
+											"    pm.expect(jsonData.data).to.be.an('array').with.lengthOf(1);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/search/advanced?locus_tag=BU_JCM13286_03494",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"search",
+										"advanced"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_JCM13286_03494"
 										}
 									]
 								}
@@ -5225,6 +5317,46 @@
 							"response": []
 						},
 						{
+							"name": "PPI-Interactions - TEST - PV_CLA-AA-H208_00538",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=PV_CLA-AA-H208_00538",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "PV_CLA-AA-H208_00538"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "PPI-Interactions - Neighbors - A6KXK8",
 							"event": [
 								{
@@ -5760,6 +5892,373 @@
 										{
 											"key": "include_properties",
 											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Pooled_TTP",
+					"item": [
+						{
+							"name": "TTP - Meta",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/metadata",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"metadata"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Search based on Strain",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/search?query=BU_ATCC8492",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"search"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "BU_ATCC8492"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Search based on Compound",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/search?query=myo-inositol",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"search"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "myo-inositol"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - gene interactions",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/gene/PV_ATCC8482_00051/interactions",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"gene",
+										"PV_ATCC8482_00051",
+										"interactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - gene interactions with Hit Call True",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/gene/PV_ATCC8482_00051/interactions?hit_calling=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"gene",
+										"PV_ATCC8482_00051",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "hit_calling",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Compound Interactions",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/compound/myo-inositol/interactions",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"compound",
+										"myo-inositol",
+										"interactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Analyze specific pools",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/pools/analysis?poolA=pool1&poolB=pool8",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"pools",
+										"analysis"
+									],
+									"query": [
+										{
+											"key": "poolA",
+											"value": "pool1"
+										},
+										{
+											"key": "poolB",
+											"value": "pool8"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Analyze specific pools 2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/pools/analysis?poolA=pool3&poolB=pool10",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"pools",
+										"analysis"
+									],
+									"query": [
+										{
+											"key": "poolA",
+											"value": "pool3"
+										},
+										{
+											"key": "poolB",
+											"value": "pool10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - significant interactions",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/hits?max_fdr=0.05&min_ttp_score=1.0",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"hits"
+									],
+									"query": [
+										{
+											"key": "max_fdr",
+											"value": "0.05"
+										},
+										{
+											"key": "min_ttp_score",
+											"value": "1.0"
 										}
 									]
 								}

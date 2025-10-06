@@ -149,7 +149,8 @@ async def get_hit_analysis(
     "/pools/analysis",
     response=SuccessResponseSchema,
     summary="Pool analysis",
-    description="Get analysis summary for specific experimental pools."
+    description="Get analysis summary for specific experimental pools.",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_pool_analysis(
