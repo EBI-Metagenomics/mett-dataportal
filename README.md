@@ -216,6 +216,15 @@ $ python manage.py import_fitness_lfc \
     --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
 ```
 
+
+Mutant Growth Dataset:
+
+```shell
+$ python manage.py import_mutant_growth \
+    --index feature_index \
+    --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal
+```
+
 #### Protein Protein Index (PPI):
 
 ```shell
