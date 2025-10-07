@@ -228,9 +228,8 @@ $ python manage.py import_mutant_growth \
 #### Protein Protein Index (PPI):
 
 ```shell
-$ <deprecatd> python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/  
-$ <deprecatd> python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/ --refresh-every-rows 500000   # or --refresh-every-secs 120
 $ python manage.py import_ppi_with_genes --index ppi_index --pattern "*.csv" --csv-folder ../data-generators/Sub-Projects-Data/SP2/  
+$ python manage.py import_ppi_with_genes --index ppi_index --pattern "*.csv" --csv-folder ../data-generators/Sub-Projects-Data/SP2/ --refresh-every-rows 500000   # or --refresh-every-secs 120  
 ```
 
 #### Operon Index:
@@ -250,7 +249,6 @@ $ python manage.py import_operons \
 #### Ortholog Pairs Index:
 
 ```shell
-$ <deprecated> python manage.py import_orthologs --index ortholog_index --orthologs-dir ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/
 $ python manage.py import_orthologs_with_genes \
     --ortholog-directory ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
     --ftp-server ftp.ebi.ac.uk \
