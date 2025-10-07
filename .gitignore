@@ -1,59 +1,289 @@
-# compiled output
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ===========================
+# Django
+# ===========================
+*.log
+*.pot
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+local_settings.py
+*.mo
+
+# ===========================
+# Environment Variables
+# ===========================
+.env
+.env.local
+.env.*.local
+*.env
+!env.template
+
+# ===========================
+# Testing
+# ===========================
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+test-results/
+.cache/
+nosetests.xml
+
+# ===========================
+# Node / NPM
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+
+# ===========================
+# React / Frontend Build
+# ===========================
+/build
 /dist
 /tmp
+/.parcel-cache
+*.local
 
-# dependencies
-/node_modules
-
-# generated files
-staticfiles
-static/scss/*.css
-__pycache__/
-.venv/
-*.pyc
-
-# Testing
-.coverage
-.pytest_cache
-test-results
-
-# database file
-*.sqlite3
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-
-# IDE - VSCode
+# ===========================
+# IDEs and Editors
+# ===========================
+# VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+*.code-workspace
 
-# misc
+# IntelliJ / PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Eclipse
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+.pydevproject
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ===========================
+# Docker
+# ===========================
+*.dockerignore
+docker-compose.override.yml
+
+# ===========================
+# Logs
+# ===========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ===========================
+# Misc
+# ===========================
 /.sass-cache
 /connect.lock
 /coverage/*
 /libpeerconnection.log
-npm-debug.log
 testem.log
 /typings
 
-# e2e
+# ===========================
+# E2E Testing
+# ===========================
 /e2e/*.js
 /e2e/*.map
 
-#System Files
-.DS_Store
-Thumbs.db
+# ===========================
+# Celery
+# ===========================
+celerybeat-schedule
+celerybeat.pid
 
+# ===========================
+# Jupyter Notebook
+# ===========================
+.ipynb_checkpoints
+*.ipynb
 
-.idea/
-ena-browser.iml
-node_modules/
+# ===========================
+# mypy
+# ===========================
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
+# ===========================
+# Pyre type checker
+# ===========================
+.pyre/
+
+# ===========================
+# pytype static type analyzer
+# ===========================
+.pytype/
+
+# ===========================
+# Ruff
+# ===========================
+.ruff_cache/
+
+# ===========================
+# Data Files (project-specific)
+# ===========================
+# Large data files should not be committed
+*.csv.gz
+*.tsv.gz
+*.faa.gz
+*.fa.gz
+*.gff.gz
+*.gff3.gz
+*.fasta.gz
+
+# But keep smaller reference files
+!data-generators/data/*.csv
+!data-generators/data/*.tsv
+
+# Exclude large output directories
+data-generators/faa-generator/output/
+data-generators/faa-generator/old-output/
+data-generators/index-scripts/gff3_files/
+data-generators/strain_duplicates/output/
+
+# Exclude sub-projects data (too large)
+data-generators/Sub-Projects-Data/SP1/
+data-generators/Sub-Projects-Data/SP2/*.csv
+!data-generators/Sub-Projects-Data/SP2/pool_metadata.csv
+data-generators/Sub-Projects-Data/SP3/
+data-generators/Sub-Projects-Data/SP4/
+data-generators/Sub-Projects-Data/SP5/
+data-generators/Sub-Projects-Data/proteomics_evidence/
+
+# ===========================
+# Frontend Public Assets
+# ===========================
+dataportal-app/public/fasta_files/
+dataportal-app/public/gff3_files/
+dataportal-app/public/*.gz
+dataportal-app/build/
+dataportal-app/dist/
+
+# ===========================
+# Kubernetes Secrets
+# ===========================
+k8s/**/secrets.yaml
+k8s/**/*-secret.yaml
+
+# ===========================
+# Backup Files
+# ===========================
+*.bak
+*.backup
+*.old
+*.orig
+*~
+
+# ===========================
+# Temporary Files
+# ===========================
+tmp/
+temp/
+*.tmp
+
+# ===========================
+# Development/Debug Files
+# ===========================
+debug_*.py
+test_*.py
+!dataportal_api/dataportal/tests/test_*.py
+!dataportal_api/pyhmmer_search/tests/test_*.py
+.junie/
+
+# ===========================
+# Documentation Build
+# ===========================
+docs/_build/
+docs/_static/
+docs/_templates/
+site/
+
+# ===========================
+# Lock Files (optional - depends on team preference)
+# ===========================
+# Some teams commit lock files, others don't
+# Uncomment to ignore:
+# package-lock.json
+# yarn.lock
+# uv.lock
