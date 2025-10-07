@@ -14,6 +14,7 @@ from dataportal.api.drug_endpoints import drug_router
 from dataportal.api.ppi_endpoints import ppi_router
 from dataportal.api.ttp_endpoints import ttp_router
 from dataportal.api.fitness_correlation_endpoints import fitness_correlation_router
+from dataportal.api.proteomics_endpoints import proteomics_router
 
 from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
@@ -62,6 +63,7 @@ URL_PREFIX_DRUGS = "/drugs"
 URL_PREFIX_PPI = "/ppi"
 URL_PREFIX_TTP = "/ttp"
 URL_PREFIX_FITNESS_CORRELATION = "/fitness-correlations"
+URL_PREFIX_PROTEOMICS = "/proteomics"
 URL_PREFIX_PYHMMER_SEARCH = "/pyhmmer/search"
 URL_PREFIX_PYHMMER_RESULT = "/pyhmmer/result"
 
@@ -218,6 +220,7 @@ api.add_router(URL_PREFIX_DRUGS, drug_router)
 api.add_router(URL_PREFIX_PPI, ppi_router)
 api.add_router(URL_PREFIX_TTP, ttp_router)
 api.add_router(URL_PREFIX_FITNESS_CORRELATION, fitness_correlation_router)
+api.add_router(URL_PREFIX_PROTEOMICS, proteomics_router)
 
 if getattr(settings, "ENABLE_PYHMMER_SEARCH", False):
     api.add_router(URL_PREFIX_PYHMMER_SEARCH, pyhmmer_router_search)

@@ -56,6 +56,10 @@ class GeneData(models.Model):
     locals()[ES_FIELD_EGGNOG] = models.CharField(max_length=255, null=True)
     locals()[ES_FIELD_AMR] = models.JSONField(null=True, default=list)
     locals()[ES_FIELD_AMR_INFO] = models.BooleanField(null=True, default=False)
+    has_proteomics = models.BooleanField(null=True, default=False)
+    has_fitness = models.BooleanField(null=True, default=False)
+    has_mutant_growth = models.BooleanField(null=True, default=False)
+    has_reactions = models.BooleanField(null=True, default=False)
     locals()[ES_FIELD_FEATURE_TYPE] = models.CharField(max_length=50, null=True, default="gene")
 
     class Meta:
@@ -88,5 +92,9 @@ def gene_from_hit(hit) -> GeneData:
         eggnog=source.get(ES_FIELD_EGGNOG),
         amr=source.get(ES_FIELD_AMR, []),
         has_amr_info=source.get(ES_FIELD_AMR_INFO),
+        has_proteomics=source.get("has_proteomics", False),
+        has_fitness=source.get("has_fitness", False),
+        has_mutant_growth=source.get("has_mutant_growth", False),
+        has_reactions=source.get("has_reactions", False),
         feature_type=source.get(ES_FIELD_FEATURE_TYPE, "gene"),
     )

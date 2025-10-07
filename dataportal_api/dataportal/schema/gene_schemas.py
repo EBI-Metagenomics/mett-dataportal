@@ -327,6 +327,10 @@ class GeneResponseSchema(BaseModel):
     eggnog: Optional[str] = None
     amr: Optional[List[AMRSchema]] = None
     has_amr_info: Optional[bool] = None
+    has_proteomics: Optional[bool] = None
+    has_fitness: Optional[bool] = None
+    has_mutant_growth: Optional[bool] = None
+    has_reactions: Optional[bool] = None
     feature_type: Optional[str] = "gene"
     model_config = ConfigDict(from_attributes=True)
 

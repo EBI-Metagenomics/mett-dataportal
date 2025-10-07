@@ -1689,7 +1689,8 @@
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -1697,7 +1698,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&isolates=BU_3537,BU_AN67,BU_C7_17,BU_CCUG49527&query=dnaA",
+									"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&isolates=BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527&query=dnaA",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -1713,7 +1714,7 @@
 										},
 										{
 											"key": "isolates",
-											"value": "BU_3537,BU_AN67,BU_C7_17,BU_CCUG49527"
+											"value": "BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527"
 										},
 										{
 											"key": "query",
@@ -5317,7 +5318,7 @@
 							"response": []
 						},
 						{
-							"name": "PPI-Interactions - TEST - PV_CLA-AA-H208_00538",
+							"name": "PPI-Interactions - BU_ATCC8492_02176",
 							"event": [
 								{
 									"listen": "test",
@@ -5337,7 +5338,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=PV_CLA-AA-H208_00538",
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_02176",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -5349,7 +5350,7 @@
 									"query": [
 										{
 											"key": "locus_tag",
-											"value": "PV_CLA-AA-H208_00538"
+											"value": "BU_ATCC8492_02176"
 										}
 									]
 								}
@@ -6259,6 +6260,229 @@
 										{
 											"key": "min_ttp_score",
 											"value": "1.0"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Proteomics",
+					"item": [
+						{
+							"name": "Proteomics - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00002/proteomics",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00002",
+										"proteomics"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Proteomics - By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/PV_ATCC8482_02186/proteomics",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"PV_ATCC8482_02186",
+										"proteomics"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Proteomics - Search",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/proteomics/search?locus_tags=BU_ATCC8492_00002&uniprot_ids=A7V2F0,A6L272",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"proteomics",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										},
+										{
+											"key": "uniprot_ids",
+											"value": "A7V2F0,A6L272"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Proteomics - Search with Quality",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/proteomics/search?locus_tags=BU_ATCC8492_00002&uniprot_ids=A7V2F0,A6L272&min_coverage=50&min_unique_peptides=10&has_evidence=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"proteomics",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										},
+										{
+											"key": "uniprot_ids",
+											"value": "A7V2F0,A6L272"
+										},
+										{
+											"key": "min_coverage",
+											"value": "50"
+										},
+										{
+											"key": "min_unique_peptides",
+											"value": "10"
+										},
+										{
+											"key": "has_evidence",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Proteomics - Search with Quality Only",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/proteomics/search?min_coverage=75&min_unique_peptides=15&has_evidence=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"proteomics",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_coverage",
+											"value": "75"
+										},
+										{
+											"key": "min_unique_peptides",
+											"value": "15"
+										},
+										{
+											"key": "has_evidence",
+											"value": "true"
 										}
 									]
 								}
