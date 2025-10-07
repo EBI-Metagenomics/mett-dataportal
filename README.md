@@ -32,7 +32,8 @@ $ uv pip install -r uv.lock  --no-dev (for production)
 $ pre-commit install
 ```
 
-#### Local Docker container 
+#### Local Docker container
+
 ```shell
 $ docker build -t mett-dataportal:dev-test -f dataportal_api/Dockerfile .
 $ docker run --rm -it -p 8000:8000 mett-dataportal:dev
@@ -57,20 +58,26 @@ We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config file
 ### Import Species, Strains and Annotations
 
 #### Elasticsearch Database setup
+
 ```shell
 $ python manage.py create_es_index
 $ python manage.py create_es_index --es-version 2025.09.03
+$ python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 2025.09.03
 $ python manage.py create_es_index --es-version 2025.09.03 --if-exists recreate
 ```
+
 ### Import data
 
 #### Species
+
 ```shell
 $ python manage.py import_species --index species_index --csv ../data-generators/data/species.csv
 ```
 
 #### Strains
+
 Strains + contigs only:
+
 ```shell
 $ python manage.py import_strains \
   --es-index strain_index \
@@ -81,7 +88,9 @@ $ python manage.py import_strains \
   --gff-server ftp.ebi.ac.uk \
   --gff-base /pub/databases/mett/annotations/v1_2024-04-15/
 ```
-Strains - All in one go: 
+
+Strains - All in one go:
+
 ```shell
 $ python manage.py import_strains \
   --es-index strain_index \
@@ -98,7 +107,9 @@ $ python manage.py import_strains \
   --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
   --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv 
 ```
+
 Add Drug MIC:
+
 ```shell
 $ python manage.py import_strains \
   --es-index strain_index \
@@ -107,7 +118,9 @@ $ python manage.py import_strains \
   --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
   --mic-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/PV_growth_inhibition.csv
 ```
+
 Add Drug Metabolism:
+
 ```shell
 $ python manage.py import_strains \
   --es-index strain_index \
@@ -120,8 +133,8 @@ $ python manage.py import_strains \
 
 #### Features
 
-
 Process Everything in one go:
+
 ```shell
 $ python manage.py import_features \
   --index feature_index \
@@ -139,9 +152,10 @@ $ python manage.py import_features \
 ```
 
 BASIC GENES from GFF:
+
 ```shell
 $ python manage.py import_features \
-  --index feature_index \
+  --index feature_index-v4 \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
@@ -149,8 +163,8 @@ $ python manage.py import_features \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
 
-
 Essentiality (optional):
+
 ```shell
 $ python manage.py import_features \
   --index feature_index \
@@ -161,6 +175,7 @@ $ python manage.py import_features \
 ```
 
 Proteomics Evidence (optional):
+
 ```shell
 $ python manage.py import_features \
   --index feature_index \
@@ -170,15 +185,8 @@ $ python manage.py import_features \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
 
-Pooled TTP Dataset:
-```shell
-$ python manage.py ingest_pooled_ttp \
-    --index feature_index \
-    --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_TPP.csv \
-    --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pool_metadata.csv
-```
-
 Gene Rx Data:
+
 ```shell
 $ python manage.py import_features \
   --index feature_index \
@@ -190,7 +198,26 @@ $ python manage.py import_features \
   --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
 ```
 
+Pooled TTP Dataset:
+
+```shell
+$ python manage.py ingest_pooled_ttp \
+    --index feature_index \
+    --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_TPP.csv \
+    --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pool_metadata.csv
+```
+
+
+Fitness Dataset:
+
+```shell
+$ python manage.py import_fitness_lfc \
+    --index feature_index \
+    --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
+```
+
 #### Protein Protein Index (PPI):
+
 ```shell
 $ <deprecatd> python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/  
 $ <deprecatd> python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/ --refresh-every-rows 500000   # or --refresh-every-secs 120
@@ -198,6 +225,7 @@ $ python manage.py import_ppi_with_genes --index ppi_index --pattern "*.csv" --c
 ```
 
 #### Operon Index:
+
 ```shell
 $ python manage.py import_operons --index operon_index --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/
 
@@ -211,6 +239,7 @@ $ python manage.py import_operons \
 ```
 
 #### Ortholog Pairs Index:
+
 ```shell
 $ <deprecated> python manage.py import_orthologs --index ortholog_index --orthologs-dir ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/
 $ python manage.py import_orthologs_with_genes \
@@ -219,18 +248,29 @@ $ python manage.py import_orthologs_with_genes \
     --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
+#### Fitness Correlation Index:
+
+```shell
+$ python manage.py import_fitness_correlations \
+    --index fitness_correlation_index \
+    --correlation-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_corr_data \
+    --preload-gff \
+    --ftp-server ftp.ebi.ac.uk \
+    --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
+```
+
 
 #### Pyhmmer Database Migrations
+
 ```shell
 $ python manage.py migrate pyhmmer_search
 ```
 
-
 #### Celery Beat Migrations
+
 ```shell
 $ python manage.py migrate django_celery_beat
 ```
-
 
 #### Code style
 
@@ -254,7 +294,8 @@ pytest dataportal/tests/services/ -v
 pytest dataportal/tests/services/ --cov=dataportal.services --cov-report=html
 ```
 
-### Kubernetes Node Affinity 
+### Kubernetes Node Affinity
+
 ```bash
 $ kubectl label node hh-rke-wp-webadmin-52-worker-1.caas.ebi.ac.uk mett-pyhmmer-data=true
 $ kubectl get nodes -l mett-pyhmmer-data=true

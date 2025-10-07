@@ -12,6 +12,7 @@ from dataportal.models import (
     FeatureDocument,
     SpeciesDocument,
     ProteinProteinDocument, OperonDocument, OrthologDocument,
+    GeneFitnessCorrelationDocument,
 )
 
 
@@ -181,6 +182,81 @@ class OrthologIndexRepository:
             return None
     def save(self, doc: OrthologDocument) -> None:
         doc.save(index=self.concrete_index)
+
+@dataclass
+class GeneFitnessCorrelationIndexRepository:
+    """
+    Read/bulk-write GeneFitnessCorrelationDocument to a specific *concrete* ES index.
+    Similar to PPIIndexRepository but for gene fitness correlations.
+    """
+    concrete_index: str
+    client: Optional[Elasticsearch] = None
+
+    def _conn(self) -> Elasticsearch:
+        return self.client or connections.get_connection()
+
+    def ensure_index(self) -> None:
+        es = self._conn()
+        if es.indices.exists(index=self.concrete_index):
+            return
+        if es.indices.exists_alias(name=self.concrete_index):
+            return
+
+    def get(self, pair_id: str) -> Optional[GeneFitnessCorrelationDocument]:
+        try:
+            return GeneFitnessCorrelationDocument.get(
+                id=pair_id, index=self.concrete_index, using=self._conn(), ignore=404
+            )
+        except NotFoundError:
+            return None
+
+    def save(self, doc: GeneFitnessCorrelationDocument) -> None:
+        self.ensure_index()
+        doc.save(index=self.concrete_index, using=self._conn())
+
+    def bulk_index(
+            self,
+            actions: Iterable[Dict[str, Any]],
+            *,
+            chunk_size: int = 2000,
+            refresh: Optional[str | bool] = None,
+            raise_on_error: bool = False,
+    ) -> Tuple[int, List[Dict[str, Any]]]:
+        """
+        Bulk index raw actions for gene fitness correlations.
+        Returns (success_count, failures).
+        """
+        self.ensure_index()
+
+        acts: List[Dict[str, Any]] = []
+        for a in actions:
+            a = dict(a)
+            a.setdefault("_index", self.concrete_index)
+            a.setdefault("_op_type", "index")
+            acts.append(a)
+
+        if not acts:
+            return 0, []
+
+        try:
+            success, failures = es_bulk(
+                self._conn(),
+                acts,
+                chunk_size=chunk_size,
+                raise_on_error=raise_on_error,
+                refresh=refresh,
+            )
+            if failures:
+                print(f"[es_repo] GeneFitnessCorrelation bulk failures: {len(failures)} (first 3 shown)")
+                for f in failures[:3]:
+                    print(f"  -> {f}")
+            return success, failures
+        except BulkIndexError as e:
+            errs = getattr(e, "errors", [])
+            print(f"[es_repo] GeneFitnessCorrelation BulkIndexError with {len(errs)} errors (first 3 shown)")
+            for f in errs[:3]:
+                print(f"  -> {f}")
+            return 0, errs
 
 # -----------------------------
 # Bulk utilities

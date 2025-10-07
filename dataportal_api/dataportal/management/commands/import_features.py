@@ -3,7 +3,7 @@ import logging
 from dataportal.ingest.feature.flows.essentiality import Essentiality
 from dataportal.ingest.feature.flows.fitness import Fitness
 from dataportal.ingest.feature.flows.gff_features import GFFGenes
-from dataportal.ingest.feature.flows.mutant_growth import MutantGrowth
+from dataportal.ingest.feature.flows.mutant_growth import MutantGrowthFlow
 from dataportal.ingest.feature.flows.pooled_ttp import PooledTTP
 from dataportal.ingest.feature.flows.protein_compound import ProteinCompound
 from dataportal.ingest.feature.flows.proteomics import Proteomics
@@ -132,4 +132,4 @@ class Command(BaseCommand):
 
         # 8) Mutant growth
         for csv_path in list_csv_files(o.get("mutant_growth_dir")):
-            MutantGrowth(index_name=index_name).run(csv_path)
+            MutantGrowthFlow(index_name=index_name).run(csv_path)
