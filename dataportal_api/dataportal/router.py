@@ -5,16 +5,31 @@ from django.http import JsonResponse
 from ninja import NinjaAPI
 from ninja.errors import HttpError
 
-from dataportal.api.gene_endpoints import gene_router
-from dataportal.api.genome_endpoints import genome_router
-from dataportal.api.health_endpoints import health_router
-from dataportal.api.metadata_endpoints import metadata_router
-from dataportal.api.species_endpoints import species_router
-from dataportal.api.drug_endpoints import drug_router
-from dataportal.api.ppi_endpoints import ppi_router
-from dataportal.api.ttp_endpoints import ttp_router
-from dataportal.api.fitness_correlation_endpoints import fitness_correlation_router
-from dataportal.api.proteomics_endpoints import proteomics_router
+# Core API endpoints
+from dataportal.api.core import (
+    gene_router,
+    genome_router,
+    species_router,
+    metadata_router,
+    health_router,
+)
+
+# Experimental data API endpoints
+from dataportal.api.experimental import (
+    proteomics_router,
+    essentiality_router,
+    fitness_router,
+    mutant_growth_router,
+    reactions_router,
+    drug_router,
+)
+
+# Interaction API endpoints
+from dataportal.api.interactions import (
+    ppi_router,
+    ttp_router,
+    fitness_correlation_router,
+)
 
 from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
@@ -64,6 +79,10 @@ URL_PREFIX_PPI = "/ppi"
 URL_PREFIX_TTP = "/ttp"
 URL_PREFIX_FITNESS_CORRELATION = "/fitness-correlations"
 URL_PREFIX_PROTEOMICS = "/proteomics"
+URL_PREFIX_ESSENTIALITY = "/essentiality"
+URL_PREFIX_FITNESS = "/fitness"
+URL_PREFIX_MUTANT_GROWTH = "/mutant-growth"
+URL_PREFIX_REACTIONS = "/reactions"
 URL_PREFIX_PYHMMER_SEARCH = "/pyhmmer/search"
 URL_PREFIX_PYHMMER_RESULT = "/pyhmmer/result"
 
@@ -221,6 +240,10 @@ api.add_router(URL_PREFIX_PPI, ppi_router)
 api.add_router(URL_PREFIX_TTP, ttp_router)
 api.add_router(URL_PREFIX_FITNESS_CORRELATION, fitness_correlation_router)
 api.add_router(URL_PREFIX_PROTEOMICS, proteomics_router)
+api.add_router(URL_PREFIX_ESSENTIALITY, essentiality_router)
+api.add_router(URL_PREFIX_FITNESS, fitness_router)
+api.add_router(URL_PREFIX_MUTANT_GROWTH, mutant_growth_router)
+api.add_router(URL_PREFIX_REACTIONS, reactions_router)
 
 if getattr(settings, "ENABLE_PYHMMER_SEARCH", False):
     api.add_router(URL_PREFIX_PYHMMER_SEARCH, pyhmmer_router_search)

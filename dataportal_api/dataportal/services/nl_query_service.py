@@ -10,14 +10,12 @@ except ImportError:
     OpenAI = None
 
 from dataportal.schema.nl_schemas import METT_GENE_QUERY_SCHEMA
-from dataportal.schema.gene_schemas import (
+from dataportal.schema.core.gene_schemas import (
     NaturalLanguageGeneQuery,
-)
-from dataportal.services.gene_service import GeneService
-from dataportal.schema.gene_schemas import (
     GeneAdvancedSearchQuerySchema,
     GeneSearchQuerySchema,
 )
+from dataportal.services.core.gene_service import GeneService
 
 SYSTEM_PROMPT = """
 You are an intelligent bioinformatics data portal assistant that converts natural language queries into structured API requests.

@@ -1,10 +1,10 @@
 from typing import Dict
 from dataportal.services.base_service import BaseService
-from dataportal.services.species_service import SpeciesService
-from dataportal.services.essentiality_service import EssentialityService
-from dataportal.services.app_health_service import AppHealthService
-from dataportal.services.genome_service import GenomeService
-from dataportal.services.gene_service import GeneService
+from dataportal.services.core.species_service import SpeciesService
+from dataportal.services.experimental.essentiality_service import EssentialityService
+from dataportal.services.experimental.app_health_service import AppHealthService
+from dataportal.services.core.genome_service import GenomeService
+from dataportal.services.core.gene_service import GeneService
 
 
 class ServiceFactory:

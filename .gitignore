@@ -223,13 +223,7 @@ data-generators/index-scripts/gff3_files/
 data-generators/strain_duplicates/output/
 
 # Exclude sub-projects data (too large)
-data-generators/Sub-Projects-Data/SP1/
-data-generators/Sub-Projects-Data/SP2/*.csv
-!data-generators/Sub-Projects-Data/SP2/pool_metadata.csv
-data-generators/Sub-Projects-Data/SP3/
-data-generators/Sub-Projects-Data/SP4/
-data-generators/Sub-Projects-Data/SP5/
-data-generators/Sub-Projects-Data/proteomics_evidence/
+data-generators/Sub-Projects-Data/*
 
 # ===========================
 # Frontend Public Assets
@@ -287,3 +281,5 @@ site/
 # package-lock.json
 # yarn.lock
 # uv.lock
+/data-generators/Sub-Projects-Data/
+/.vscode/
