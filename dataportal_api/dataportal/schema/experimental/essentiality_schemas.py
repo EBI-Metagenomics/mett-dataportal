@@ -8,13 +8,21 @@ from dataportal.schema.base_schemas import BasePaginationSchema
 class EssentialityDataSchema(BaseModel):
     """Schema for individual essentiality data entry."""
     
-    TAs_in_locus: Optional[int] = Field(None, description="Number of transposon insertion sites in locus")
-    TAs_hit: Optional[float] = Field(None, description="Fraction of transposon sites hit (0-1)")
+    tas_in_locus: Optional[int] = Field(
+        None, 
+        alias="TAs_in_locus",
+        description="Number of transposon insertion sites in locus"
+    )
+    tas_hit: Optional[float] = Field(
+        None, 
+        alias="TAs_hit",
+        description="Fraction of transposon sites hit (0-1)"
+    )
     essentiality_call: Optional[str] = Field(None, description="Essentiality call (essential, not_essential, essential_solid, essential_liquid, unclear)")
     experimental_condition: Optional[str] = Field(None, description="Experimental condition/media")
     element: Optional[str] = Field(None, description="Element type (gene, intergenic, etc.)")
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class BasicGeneInfoSchema(BaseModel):
@@ -73,12 +81,12 @@ class EssentialitySearchQuerySchema(BaseModel):
         None,
         description="Filter by experimental condition/media"
     )
-    min_TAs_in_locus: Optional[int] = Field(
+    min_tas_in_locus: Optional[int] = Field(
         None,
         description="Minimum number of transposon insertion sites",
         ge=0
     )
-    min_TAs_hit: Optional[float] = Field(
+    min_tas_hit: Optional[float] = Field(
         None,
         description="Minimum fraction of transposon sites hit (0-1)",
         ge=0,

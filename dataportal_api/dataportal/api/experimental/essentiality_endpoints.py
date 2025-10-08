@@ -83,8 +83,8 @@ async def search_essentiality(
         has_filters = any([
             query.essentiality_call,
             query.experimental_condition,
-            query.min_TAs_in_locus,
-            query.min_TAs_hit,
+            query.min_tas_in_locus,
+            query.min_tas_hit,
             query.element
         ])
         
@@ -103,8 +103,8 @@ async def search_essentiality(
             uniprot_ids=uniprot_ids,
             essentiality_call=query.essentiality_call,
             experimental_condition=query.experimental_condition,
-            min_TAs_in_locus=query.min_TAs_in_locus,
-            min_TAs_hit=query.min_TAs_hit,
+            min_tas_in_locus=query.min_tas_in_locus,
+            min_tas_hit=query.min_tas_hit,
             element=query.element,
         )
         

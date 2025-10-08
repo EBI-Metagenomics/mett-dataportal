@@ -63,8 +63,8 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
         uniprot_ids: Optional[List[str]] = None,
         essentiality_call: Optional[str] = None,
         experimental_condition: Optional[str] = None,
-        min_TAs_in_locus: Optional[int] = None,
-        min_TAs_hit: Optional[float] = None,
+        min_tas_in_locus: Optional[int] = None,
+        min_tas_hit: Optional[float] = None,
         element: Optional[str] = None,
     ) -> List[EssentialityWithGeneSchema]:
         """Search for essentiality data with filters."""
@@ -74,8 +74,8 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
                 uniprot_ids=uniprot_ids or [],
                 essentiality_call=essentiality_call,
                 experimental_condition=experimental_condition,
-                min_TAs_in_locus=min_TAs_in_locus,
-                min_TAs_hit=min_TAs_hit,
+                min_tas_in_locus=min_tas_in_locus,
+                min_tas_hit=min_tas_hit,
                 element=element,
             )
             return results
@@ -110,8 +110,8 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
         uniprot_ids: Optional[List[str]] = None,
         essentiality_call: Optional[str] = None,
         experimental_condition: Optional[str] = None,
-        min_TAs_in_locus: Optional[int] = None,
-        min_TAs_hit: Optional[float] = None,
+        min_tas_in_locus: Optional[int] = None,
+        min_tas_hit: Optional[float] = None,
         element: Optional[str] = None,
     ) -> List[EssentialityWithGeneSchema]:
         """Fetch essentiality data for multiple identifiers."""
@@ -134,17 +134,19 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
             s = s.query("bool", should=should_conditions, minimum_should_match=1)
         
         # Apply nested filters for essentiality_data
-        if any([essentiality_call, experimental_condition, min_TAs_in_locus, min_TAs_hit, element]):
+        if any([essentiality_call, experimental_condition, min_tas_in_locus, min_tas_hit, element]):
             nested_conditions = []
             
             if essentiality_call:
                 nested_conditions.append({"term": {"essentiality_data.essentiality_call": essentiality_call}})
             if experimental_condition:
-                nested_conditions.append({"term": {"essentiality_data.experimental_condition.keyword": experimental_condition}})
-            if min_TAs_in_locus is not None:
-                nested_conditions.append({"range": {"essentiality_data.TAs_in_locus": {"gte": min_TAs_in_locus}}})
-            if min_TAs_hit is not None:
-                nested_conditions.append({"range": {"essentiality_data.TAs_hit": {"gte": min_TAs_hit}}})
+                nested_conditions.append({"term": {"essentiality_data.experimental_condition": experimental_condition}})
+            if min_tas_in_locus is not None:
+                # Map API param (lowercase) to ES field (camelCase)
+                nested_conditions.append({"range": {"essentiality_data.TAs_in_locus": {"gte": min_tas_in_locus}}})
+            if min_tas_hit is not None:
+                # Map API param (lowercase) to ES field (camelCase)
+                nested_conditions.append({"range": {"essentiality_data.TAs_hit": {"gte": min_tas_hit}}})
             if element:
                 nested_conditions.append({"term": {"essentiality_data.element": element}})
             
@@ -195,8 +197,8 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
         if essentiality_raw:
             for entry in essentiality_raw:
                 essentiality_data.append(EssentialityDataSchema(
-                    TAs_in_locus=entry.get("TAs_in_locus"),
-                    TAs_hit=entry.get("TAs_hit"),
+                    tas_in_locus=entry.get("TAs_in_locus"),  # ES uses TAs_in_locus
+                    tas_hit=entry.get("TAs_hit"),  # ES uses TAs_hit
                     essentiality_call=entry.get("essentiality_call"),
                     experimental_condition=entry.get("experimental_condition"),
                     element=entry.get("element"),
