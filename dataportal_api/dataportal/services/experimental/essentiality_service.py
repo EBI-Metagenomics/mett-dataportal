@@ -167,8 +167,29 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
         for hit in response.hits:
             try:
                 schema = self._convert_hit_to_essentiality_schema(hit)
+                
+                # Post-filter the essentiality_data array to only include entries matching the search criteria
                 if schema.essentiality_data and len(schema.essentiality_data) > 0:
-                    results.append(schema)
+                    filtered_data = []
+                    for entry in schema.essentiality_data:
+                        # Apply the same filters used in the nested query
+                        if essentiality_call and entry.essentiality_call != essentiality_call:
+                            continue
+                        if experimental_condition and entry.experimental_condition != experimental_condition:
+                            continue
+                        if min_tas_in_locus is not None and (entry.tas_in_locus is None or entry.tas_in_locus < min_tas_in_locus):
+                            continue
+                        if min_tas_hit is not None and (entry.tas_hit is None or entry.tas_hit < min_tas_hit):
+                            continue
+                        if element and entry.element != element:
+                            continue
+                        
+                        filtered_data.append(entry)
+                    
+                    # Only include genes that have at least one matching essentiality entry after filtering
+                    if filtered_data:
+                        schema.essentiality_data = filtered_data
+                        results.append(schema)
                 else:
                     logger.warning(f"Gene {schema.locus_tag} has has_essentiality=True but empty essentiality_data array")
             except Exception as e:

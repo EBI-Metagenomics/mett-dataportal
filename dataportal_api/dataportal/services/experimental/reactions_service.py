@@ -145,10 +145,27 @@ class ReactionsService(BaseService[ReactionsWithGeneSchema, str]):
         for hit in response.hits:
             try:
                 schema = self._convert_hit_to_reactions_schema(hit)
-                if schema.reactions and len(schema.reactions) > 0:
-                    results.append(schema)
+                
+                # Post-filter the reaction_details array to only include entries matching the search criteria
+                if schema.reaction_details and len(schema.reaction_details) > 0:
+                    filtered_data = []
+                    for entry in schema.reaction_details:
+                        # Apply the same filters used in the nested query
+                        if reaction_id and entry.reaction != reaction_id:
+                            continue
+                        if substrate and (not entry.substrates or substrate not in entry.substrates):
+                            continue
+                        if product and (not entry.products or product not in entry.products):
+                            continue
+                        
+                        filtered_data.append(entry)
+                    
+                    # Only include genes that have at least one matching reaction entry after filtering
+                    if filtered_data:
+                        schema.reaction_details = filtered_data
+                        results.append(schema)
                 else:
-                    logger.warning(f"Gene {schema.locus_tag} has has_reactions=True but empty reactions array")
+                    logger.warning(f"Gene {schema.locus_tag} has has_reactions=True but empty reaction_details array")
             except Exception as e:
                 logger.warning(f"Error converting hit to schema: {e}")
                 continue

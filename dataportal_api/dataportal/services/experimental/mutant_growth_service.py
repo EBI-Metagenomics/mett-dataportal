@@ -148,8 +148,29 @@ class MutantGrowthService(BaseService[MutantGrowthWithGeneSchema, str]):
         for hit in response.hits:
             try:
                 schema = self._convert_hit_to_mutant_growth_schema(hit)
+                
+                # Post-filter the mutant_growth array to only include entries matching the search criteria
                 if schema.mutant_growth and len(schema.mutant_growth) > 0:
-                    results.append(schema)
+                    filtered_data = []
+                    for entry in schema.mutant_growth:
+                        # Apply the same filters used in the nested query
+                        if experimental_condition and entry.experimental_condition != experimental_condition:
+                            continue
+                        if media and entry.media != media:
+                            continue
+                        if min_doubling_time is not None and (entry.doubling_time is None or entry.doubling_time < min_doubling_time):
+                            continue
+                        if max_doubling_time is not None and (entry.doubling_time is None or entry.doubling_time > max_doubling_time):
+                            continue
+                        if exclude_double_picked and entry.isdoublepicked:
+                            continue
+                        
+                        filtered_data.append(entry)
+                    
+                    # Only include genes that have at least one matching mutant_growth entry after filtering
+                    if filtered_data:
+                        schema.mutant_growth = filtered_data
+                        results.append(schema)
                 else:
                     logger.warning(f"Gene {schema.locus_tag} has has_mutant_growth=True but empty mutant_growth array")
             except Exception as e:

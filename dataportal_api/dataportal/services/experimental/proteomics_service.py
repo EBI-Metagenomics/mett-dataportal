@@ -191,9 +191,25 @@ class ProteomicsService(BaseService[ProteomicsWithGeneSchema, str]):
         for hit in response.hits:
             try:
                 schema = self._convert_hit_to_proteomics_schema(hit)
-                # Extra safeguard: only include genes that actually have proteomics data
+                
+                # Post-filter the proteomics array to only include entries matching the search criteria
                 if schema.proteomics and len(schema.proteomics) > 0:
-                    results.append(schema)
+                    filtered_data = []
+                    for entry in schema.proteomics:
+                        # Apply the same filters used in the nested query
+                        if min_coverage is not None and (entry.coverage is None or entry.coverage < min_coverage):
+                            continue
+                        if min_unique_peptides is not None and (entry.unique_peptides is None or entry.unique_peptides < min_unique_peptides):
+                            continue
+                        if has_evidence is not None and entry.evidence != has_evidence:
+                            continue
+                        
+                        filtered_data.append(entry)
+                    
+                    # Only include genes that have at least one matching proteomics entry after filtering
+                    if filtered_data:
+                        schema.proteomics = filtered_data
+                        results.append(schema)
                 else:
                     logger.warning(f"Gene {schema.locus_tag} has has_proteomics=True but empty proteomics array")
             except Exception as e:

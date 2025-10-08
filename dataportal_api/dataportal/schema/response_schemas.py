@@ -63,7 +63,6 @@ class SuccessResponseSchema(BaseResponseSchema):
         ResponseStatus.SUCCESS, description="Response status"
     )
     data: Any = Field(..., description="Response data")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
 
 
 class ErrorDetailSchema(BaseModel):
@@ -113,7 +112,6 @@ class PaginatedResponseSchema(BaseResponseSchema):
     )
     data: List[Any] = Field(..., description="List of response items")
     pagination: PaginationMetadataSchema = Field(..., description="Pagination metadata")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
 
 
 class HealthResponseSchema(BaseResponseSchema):
@@ -132,14 +130,16 @@ class HealthResponseSchema(BaseResponseSchema):
 def create_success_response(
     data: Any, message: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None
 ) -> SuccessResponseSchema:
-    """Create a standardized success response."""
+    """Create a standardized success response.
+    
+    Note: metadata parameter is kept for backward compatibility but not used in schema.
+    """
     from datetime import datetime
 
     return SuccessResponseSchema(
         status=ResponseStatus.SUCCESS,
         message=message,
         data=data,
-        metadata=metadata,
         timestamp=datetime.utcnow().isoformat() + "Z",
     )
 
@@ -168,14 +168,16 @@ def create_paginated_response(
     pagination: PaginationMetadataSchema,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> PaginatedResponseSchema:
-    """Create a standardized paginated response."""
+    """Create a standardized paginated response.
+    
+    Note: metadata parameter is kept for backward compatibility but not used in schema.
+    """
     from datetime import datetime
 
     return PaginatedResponseSchema(
         status=ResponseStatus.SUCCESS,
         data=data,
         pagination=pagination,
-        metadata=metadata,
         timestamp=datetime.utcnow().isoformat() + "Z",
     )
 

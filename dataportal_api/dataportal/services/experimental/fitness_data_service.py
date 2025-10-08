@@ -149,8 +149,33 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
         for hit in response.hits:
             try:
                 schema = self._convert_hit_to_fitness_schema(hit)
+                
+                # Post-filter the fitness array to only include entries matching the search criteria
                 if schema.fitness and len(schema.fitness) > 0:
-                    results.append(schema)
+                    filtered_fitness = []
+                    for entry in schema.fitness:
+                        # Apply the same filters used in the nested query
+                        if experimental_condition and entry.experimental_condition != experimental_condition:
+                            continue
+                        if media and entry.media != media:
+                            continue
+                        if contrast and entry.contrast != contrast:
+                            continue
+                        if min_lfc is not None and (entry.lfc is None or entry.lfc < min_lfc):
+                            continue
+                        if max_lfc is not None and (entry.lfc is None or entry.lfc > max_lfc):
+                            continue
+                        if max_fdr is not None and (entry.fdr is None or entry.fdr > max_fdr):
+                            continue
+                        if min_barcodes is not None and (entry.number_of_barcodes is None or entry.number_of_barcodes < min_barcodes):
+                            continue
+                        
+                        filtered_fitness.append(entry)
+                    
+                    # Only include genes that have at least one matching fitness entry after filtering
+                    if filtered_fitness:
+                        schema.fitness = filtered_fitness
+                        results.append(schema)
                 else:
                     logger.warning(f"Gene {schema.locus_tag} has has_fitness=True but empty fitness array")
             except Exception as e:
