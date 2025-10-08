@@ -18,14 +18,14 @@ from dataportal.utils.exceptions import ServiceError
 logger = logging.getLogger(__name__)
 
 # Constants
-ES_INDEX_FITNESS_CORRELATION = "fitness_correlation_index"
+INDEX_FITNESS_CORRELATION = "fitness_correlation_index"
 
 
 class FitnessCorrelationService(BaseService):
     """Service for gene fitness correlation data operations."""
 
     def __init__(self):
-        super().__init__(ES_INDEX_FITNESS_CORRELATION)
+        super().__init__(INDEX_FITNESS_CORRELATION)
         self.document_class = GeneFitnessCorrelationDocument
 
     def _build_base_search(

@@ -18,7 +18,7 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPIAllNeighborsSchema,
 )
 from dataportal.services.base_service import BaseService
-from dataportal.utils.constants import ES_INDEX_PPI, PPI_VALID_FILTER_FIELDS, PPI_SCORE_FIELDS
+from dataportal.utils.constants import INDEX_PPI, PPI_VALID_FILTER_FIELDS, PPI_SCORE_FIELDS
 from dataportal.utils.exceptions import ServiceError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
     """Service for protein-protein interaction data operations."""
 
     def __init__(self):
-        super().__init__(ES_INDEX_PPI)
+        super().__init__(INDEX_PPI)
         self.document_class = ProteinProteinDocument
         # Cache for expensive network calculations
         self._network_cache = TTLCache(maxsize=100, ttl=300)  # 5 minutes

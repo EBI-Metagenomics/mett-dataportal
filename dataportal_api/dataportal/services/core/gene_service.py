@@ -19,32 +19,32 @@ from dataportal.services.base_service import BaseService
 from dataportal.services.core.gene_faceted_search import GeneFacetedSearch
 from dataportal.utils.constants import (
     GENE_DEFAULT_SORT_FIELD,
-    DEFAULT_SORT,
-    DEFAULT_PER_PAGE_CNT,
-    SORT_DESC,
-    SORT_ASC,
-    GENE_ESSENTIALITY,
+    DEFAULT_SORT_DIRECTION,
+    DEFAULT_PAGE_SIZE,
+    SORT_DIRECTION_DESC,
+    SORT_DIRECTION_ASC,
+    GENE_FIELD_ESSENTIALITY,
     DEFAULT_FACET_LIMIT,
-    ES_FIELD_PFAM,
-    ES_FIELD_INTERPRO,
-    ES_FIELD_KEGG,
-    ES_FIELD_COG_ID,
-    ES_FIELD_GENE_NAME,
-    ES_FIELD_ALIAS,
-    ES_FIELD_PRODUCT,
-    ES_FIELD_ISOLATE_NAME,
+    GENE_FIELD_PFAM,
+    GENE_FIELD_INTERPRO,
+    GENE_FIELD_KEGG,
+    GENE_FIELD_COG_ID,
+    GENE_FIELD_NAME,
+    GENE_FIELD_ALIAS,
+    GENE_FIELD_PRODUCT,
+    GENOME_FIELD_ISOLATE_NAME,
     GENE_SORT_FIELD_STRAIN,
     FIELD_SEQ_ID,
-    ES_FIELD_UNIPROT_ID,
-    ES_FIELD_LOCUS_TAG,
-    ES_FIELD_SPECIES_ACRONYM,
-    ES_INDEX_FEATURE,
+    GENE_FIELD_UNIPROT_ID,
+    GENE_FIELD_LOCUS_TAG,
+    SPECIES_FIELD_ACRONYM_SHORT,
+    INDEX_FEATURES,
     FACET_FIELDS,
-    ES_FIELD_COG_FUNCATS,
+    GENE_FIELD_COG_FUNCATS,
     SCROLL_BATCH_SIZE,
     SCROLL_MAX_RESULTS,
     SCROLL_TIMEOUT,
-    ES_FIELD_GO_TERM,
+    GENE_FIELD_GO_TERM,
 )
 from dataportal.utils.exceptions import (
     GeneNotFoundError,
@@ -60,7 +60,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     """Service for managing gene data operations in the read-only data portal."""
 
     def __init__(self):
-        super().__init__(ES_INDEX_FEATURE)
+        super().__init__(INDEX_FEATURES)
 
     async def get_by_id(self, id: str) -> Optional[GeneResponseSchema]:
         """Retrieve a single gene by ID (locus tag)."""
@@ -75,9 +75,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         """Retrieve all genes with optional filtering."""
         try:
             page = kwargs.get("page", 1)
-            per_page = kwargs.get("per_page", DEFAULT_PER_PAGE_CNT)
+            per_page = kwargs.get("per_page", DEFAULT_PAGE_SIZE)
             sort_field = kwargs.get("sort_field")
-            sort_order = kwargs.get("sort_order", DEFAULT_SORT)
+            sort_order = kwargs.get("sort_order", DEFAULT_SORT_DIRECTION)
 
             pagination_result = await self.get_all_genes(
                 page=page,
@@ -97,9 +97,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             search_params = GeneSearchQuerySchema(
                 query=query.get("query", ""),
                 page=query.get("page", 1),
-                per_page=query.get("per_page", DEFAULT_PER_PAGE_CNT),
+                per_page=query.get("per_page", DEFAULT_PAGE_SIZE),
                 sort_field=query.get("sort_field"),
-                sort_order=query.get("sort_order", DEFAULT_SORT),
+                sort_order=query.get("sort_order", DEFAULT_SORT_DIRECTION),
             )
 
             pagination_result = await self.search_genes(search_params)
@@ -190,32 +190,32 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 "multi_match",
                 query=query,
                 fields=[
-                    f"{ES_FIELD_ALIAS}^3",
-                    f"{ES_FIELD_ALIAS}.keyword^5",
-                    f"{ES_FIELD_GENE_NAME}^2",
-                    ES_FIELD_LOCUS_TAG,
-                    f"{ES_FIELD_LOCUS_TAG}.keyword^6",
-                    ES_FIELD_PRODUCT,
-                    ES_FIELD_KEGG,
-                    ES_FIELD_UNIPROT_ID,
-                    ES_FIELD_PFAM,
-                    ES_FIELD_COG_ID,
-                    ES_FIELD_INTERPRO,
+                    f"{GENE_FIELD_ALIAS}^3",
+                    f"{GENE_FIELD_ALIAS}.keyword^5",
+                    f"{GENE_FIELD_NAME}^2",
+                    GENE_FIELD_LOCUS_TAG,
+                    f"{GENE_FIELD_LOCUS_TAG}.keyword^6",
+                    GENE_FIELD_PRODUCT,
+                    GENE_FIELD_KEGG,
+                    GENE_FIELD_UNIPROT_ID,
+                    GENE_FIELD_PFAM,
+                    GENE_FIELD_COG_ID,
+                    GENE_FIELD_INTERPRO,
                 ],
                 type="best_fields",
             )
 
             if species_acronym:
-                s = s.filter("term", **{ES_FIELD_SPECIES_ACRONYM: species_acronym})
+                s = s.filter("term", **{SPECIES_FIELD_ACRONYM_SHORT: species_acronym})
 
             if isolates:
-                s = s.filter("terms", **{ES_FIELD_ISOLATE_NAME: isolates})
+                s = s.filter("terms", **{GENOME_FIELD_ISOLATE_NAME: isolates})
 
             parsed_filters = self._parse_filters(filter)
             for key, values in parsed_filters.items():
-                if key == GENE_ESSENTIALITY:
+                if key == GENE_FIELD_ESSENTIALITY:
                     normalized_values = [v.lower() for v in values]
-                    s = s.filter("terms", **{GENE_ESSENTIALITY: normalized_values})
+                    s = s.filter("terms", **{GENE_FIELD_ESSENTIALITY: normalized_values})
                 else:
                     s = s.filter("terms", **{key: values})
 
@@ -264,9 +264,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def get_all_genes(
         self,
         page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
+        per_page: int = DEFAULT_PAGE_SIZE,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+        sort_order: Optional[str] = DEFAULT_SORT_DIRECTION,
     ) -> GenePaginationSchema:
         try:
             es_query = {"match_all": {}}
@@ -313,9 +313,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         filter: Optional[str] = None,
         filter_operators: Optional[str] = None,
         page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
+        per_page: int = DEFAULT_PAGE_SIZE,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = SORT_ASC,
+        sort_order: Optional[str] = SORT_DIRECTION_ASC,
     ) -> GenePaginationSchema:
         try:
             filter_criteria = {"isolate_name": isolate_name}
@@ -368,14 +368,14 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             # Filters for genome IDs and species ID
             if isolate_names_list:
                 filter_criteria["bool"]["must"].append(
-                    {"terms": {ES_FIELD_ISOLATE_NAME: isolate_names_list}}
+                    {"terms": {GENOME_FIELD_ISOLATE_NAME: isolate_names_list}}
                 )
                 logger.info(
                     f"DEBUG - Added isolate filter: {filter_criteria['bool']['must']}"
                 )
             if params.species_acronym:
                 filter_criteria["bool"]["must"].append(
-                    {"term": {ES_FIELD_SPECIES_ACRONYM: params.species_acronym}}
+                    {"term": {SPECIES_FIELD_ACRONYM_SHORT: params.species_acronym}}
                 )
 
             # Apply additional filters
@@ -435,24 +435,24 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         self,
         query: dict,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+        sort_order: Optional[str] = DEFAULT_SORT_DIRECTION,
     ) -> Tuple[List[GeneResponseSchema], int]:
         """Fetch all genes using Elasticsearch scroll API for large downloads."""
-        order_prefix = "desc" if sort_order == SORT_DESC else "asc"
+        order_prefix = "desc" if sort_order == SORT_DIRECTION_DESC else "asc"
 
         if sort_field == GENE_SORT_FIELD_STRAIN:
-            sort_field = ES_FIELD_ISOLATE_NAME
+            sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
             in [
-                ES_FIELD_GENE_NAME,
-                ES_FIELD_ALIAS,
+                GENE_FIELD_NAME,
+                GENE_FIELD_ALIAS,
                 FIELD_SEQ_ID,
-                ES_FIELD_LOCUS_TAG,
-                ES_FIELD_PRODUCT,
+                GENE_FIELD_LOCUS_TAG,
+                GENE_FIELD_PRODUCT,
             ]
             else sort_by
         )
@@ -583,7 +583,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         if "bool" not in query:
             query["bool"] = {"must": []}
 
-        query["bool"]["must"].append({"terms": {GENE_ESSENTIALITY: values}})
+        query["bool"]["must"].append({"terms": {GENE_FIELD_ESSENTIALITY: values}})
 
         return query
 
@@ -631,26 +631,26 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         self,
         query: dict,
         page: int = 1,
-        per_page: int = DEFAULT_PER_PAGE_CNT,
+        per_page: int = DEFAULT_PAGE_SIZE,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = DEFAULT_SORT,
+        sort_order: Optional[str] = DEFAULT_SORT_DIRECTION,
     ) -> Tuple[List[GeneResponseSchema], int]:
         start = (page - 1) * per_page
-        order_prefix = "desc" if sort_order == SORT_DESC else "asc"
+        order_prefix = "desc" if sort_order == SORT_DIRECTION_DESC else "asc"
 
         if sort_field == GENE_SORT_FIELD_STRAIN:
-            sort_field = ES_FIELD_ISOLATE_NAME
+            sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
             in [
-                ES_FIELD_GENE_NAME,
-                ES_FIELD_ALIAS,
+                GENE_FIELD_NAME,
+                GENE_FIELD_ALIAS,
                 FIELD_SEQ_ID,
-                ES_FIELD_LOCUS_TAG,
-                ES_FIELD_PRODUCT,
+                GENE_FIELD_LOCUS_TAG,
+                GENE_FIELD_PRODUCT,
             ]
             else sort_by
         )
@@ -704,7 +704,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         if params and params.locus_tag:
             # Exact match
             es_query["bool"]["must"].append(
-                {"term": {f"{ES_FIELD_LOCUS_TAG}.keyword": params.locus_tag}}
+                {"term": {f"{GENE_FIELD_LOCUS_TAG}.keyword": params.locus_tag}}
             )
         elif query:
             # Regular text search
@@ -713,12 +713,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     "multi_match": {
                         "query": query,
                         "fields": [
-                            ES_FIELD_GENE_NAME,
-                            ES_FIELD_ALIAS,
-                            ES_FIELD_LOCUS_TAG,
-                            ES_FIELD_PRODUCT,
-                            ES_FIELD_PFAM,
-                            ES_FIELD_INTERPRO,
+                            GENE_FIELD_NAME,
+                            GENE_FIELD_ALIAS,
+                            GENE_FIELD_LOCUS_TAG,
+                            GENE_FIELD_PRODUCT,
+                            GENE_FIELD_PFAM,
+                            GENE_FIELD_INTERPRO,
                         ],
                     }
                 }
@@ -726,7 +726,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
         if isolate_name:
             es_query["bool"]["must"].append(
-                {"term": {ES_FIELD_ISOLATE_NAME: isolate_name}}
+                {"term": {GENOME_FIELD_ISOLATE_NAME: isolate_name}}
             )
 
         if filter_criteria:
@@ -756,12 +756,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             )
 
             operators = {
-                ES_FIELD_PFAM: params.pfam_operator,
-                ES_FIELD_INTERPRO: params.interpro_operator,
-                ES_FIELD_COG_ID: params.cog_id_operator,
-                ES_FIELD_COG_FUNCATS: params.cog_funcats_operator,
-                ES_FIELD_KEGG: params.kegg_operator,
-                ES_FIELD_GO_TERM: params.go_term_operator,
+                GENE_FIELD_PFAM: params.pfam_operator,
+                GENE_FIELD_INTERPRO: params.interpro_operator,
+                GENE_FIELD_COG_ID: params.cog_id_operator,
+                GENE_FIELD_COG_FUNCATS: params.cog_funcats_operator,
+                GENE_FIELD_KEGG: params.kegg_operator,
+                GENE_FIELD_GO_TERM: params.go_term_operator,
             }
 
             result = await self._faceted_search_impl(
@@ -855,12 +855,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                             aggregation_dict[key] = bucket["doc_count"]
 
                     selected_map = {
-                        GENE_ESSENTIALITY: essentiality,
-                        ES_FIELD_PFAM: pfam,
-                        ES_FIELD_INTERPRO: interpro,
-                        ES_FIELD_KEGG: kegg,
-                        ES_FIELD_COG_ID: cog_id,
-                        ES_FIELD_COG_FUNCATS: cog_funcats,
+                        GENE_FIELD_ESSENTIALITY: essentiality,
+                        GENE_FIELD_PFAM: pfam,
+                        GENE_FIELD_INTERPRO: interpro,
+                        GENE_FIELD_KEGG: kegg,
+                        GENE_FIELD_COG_ID: cog_id,
+                        GENE_FIELD_COG_FUNCATS: cog_funcats,
                     }
 
                     facet_results[field] = self.process_aggregation_results(
@@ -893,12 +893,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
             facet_results["total_hits"] = response.hits.total.value
             facet_results["operators"] = {
-                ES_FIELD_PFAM: operators.get(ES_FIELD_PFAM, "OR"),
-                ES_FIELD_INTERPRO: operators.get(ES_FIELD_INTERPRO, "OR"),
-                ES_FIELD_COG_ID: operators.get(ES_FIELD_COG_ID, "OR"),
-                ES_FIELD_COG_FUNCATS: operators.get(ES_FIELD_COG_FUNCATS, "OR"),
-                ES_FIELD_KEGG: operators.get(ES_FIELD_KEGG, "OR"),
-                ES_FIELD_GO_TERM: operators.get(ES_FIELD_GO_TERM, "OR"),
+                GENE_FIELD_PFAM: operators.get(GENE_FIELD_PFAM, "OR"),
+                GENE_FIELD_INTERPRO: operators.get(GENE_FIELD_INTERPRO, "OR"),
+                GENE_FIELD_COG_ID: operators.get(GENE_FIELD_COG_ID, "OR"),
+                GENE_FIELD_COG_FUNCATS: operators.get(GENE_FIELD_COG_FUNCATS, "OR"),
+                GENE_FIELD_KEGG: operators.get(GENE_FIELD_KEGG, "OR"),
+                GENE_FIELD_GO_TERM: operators.get(GENE_FIELD_GO_TERM, "OR"),
             }
 
             return facet_results
@@ -953,7 +953,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             s = Search(index=self.index_name)
             s = s.filter("term", feature_type="gene")
             s = s.query("match", locus_tag=locus_tag)
-            s = s.source([ES_FIELD_LOCUS_TAG, "protein_sequence"])
+            s = s.source([GENE_FIELD_LOCUS_TAG, "protein_sequence"])
 
             response = await sync_to_async(s.execute)()
 
@@ -1051,7 +1051,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         filter: Optional[str] = None,
         filter_operators: Optional[str] = None,
         sort_field: Optional[str] = None,
-        sort_order: Optional[str] = SORT_ASC,
+        sort_order: Optional[str] = SORT_DIRECTION_ASC,
     ):
         """Stream genes directly from Elasticsearch scroll API without loading all into memory."""
         isolate_names_list = (
@@ -1062,11 +1062,11 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         # Filters for genome IDs and species ID
         if isolate_names_list:
             filter_criteria["bool"]["must"].append(
-                {"terms": {ES_FIELD_ISOLATE_NAME: isolate_names_list}}
+                {"terms": {GENOME_FIELD_ISOLATE_NAME: isolate_names_list}}
             )
         if species_acronym:
             filter_criteria["bool"]["must"].append(
-                {"term": {ES_FIELD_SPECIES_ACRONYM: species_acronym}}
+                {"term": {SPECIES_FIELD_ACRONYM_SHORT: species_acronym}}
             )
 
         # Apply additional filters
@@ -1087,20 +1087,20 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         )
 
         # Sort configuration
-        order_prefix = "desc" if sort_order == SORT_DESC else "asc"
+        order_prefix = "desc" if sort_order == SORT_DIRECTION_DESC else "asc"
         if sort_field == GENE_SORT_FIELD_STRAIN:
-            sort_field = ES_FIELD_ISOLATE_NAME
+            sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
             in [
-                ES_FIELD_GENE_NAME,
-                ES_FIELD_ALIAS,
+                GENE_FIELD_NAME,
+                GENE_FIELD_ALIAS,
                 FIELD_SEQ_ID,
-                ES_FIELD_LOCUS_TAG,
-                ES_FIELD_PRODUCT,
+                GENE_FIELD_LOCUS_TAG,
+                GENE_FIELD_PRODUCT,
             ]
             else sort_by
         )

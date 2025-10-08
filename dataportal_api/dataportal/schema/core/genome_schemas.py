@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field
 
 from dataportal.schema.base_schemas import BasePaginationSchema
 from dataportal.utils.constants import (
-    DEFAULT_PER_PAGE_CNT,
-    DEFAULT_SORT,
-    STRAIN_FIELD_ISOLATE_NAME,
+    DEFAULT_PAGE_SIZE,
+    DEFAULT_SORT_DIRECTION,
+    GENOME_FIELD_ISOLATE_NAME,
 )
 
 
@@ -19,7 +19,7 @@ class GenomeAutocompleteQuerySchema(BaseModel):
         ..., description="Search term for isolate/genome name autocomplete."
     )
     limit: int = Field(
-        DEFAULT_PER_PAGE_CNT, description="Maximum number of suggestions to return."
+        DEFAULT_PAGE_SIZE, description="Maximum number of suggestions to return."
     )
     species_acronym: Optional[str] = Field(
         None, description="Optional species acronym (BU or PV) to filter suggestions."
@@ -34,13 +34,13 @@ class GenomeSearchQuerySchema(BaseModel):
     )
     page: int = Field(1, description="Page number to retrieve.")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT, description="Number of genomes to return per page."
+        DEFAULT_PAGE_SIZE, description="Number of genomes to return per page."
     )
     sortField: Optional[str] = Field(
-        STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."
+        GENOME_FIELD_ISOLATE_NAME, description="Field to sort results by."
     )
     sortOrder: Optional[str] = Field(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
     isolates: Optional[List[str]] = Field(
         None, description="Optional list of isolate names to filter."
@@ -63,12 +63,12 @@ class GetAllGenomesQuerySchema(BaseModel):
     """Schema for retrieving all genomes with optional pagination and sorting."""
 
     page: int = Field(1, description="Page number to retrieve.")
-    per_page: int = Field(DEFAULT_PER_PAGE_CNT, description="Number of items per page.")
+    per_page: int = Field(DEFAULT_PAGE_SIZE, description="Number of items per page.")
     sortField: Optional[str] = Field(
-        STRAIN_FIELD_ISOLATE_NAME, description="Field to sort by."
+        GENOME_FIELD_ISOLATE_NAME, description="Field to sort by."
     )
     sortOrder: Optional[str] = Field(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
 
 
@@ -85,11 +85,11 @@ class GenesByGenomeQuerySchema(BaseModel):
     )
     page: int = Field(1, description="Page number to retrieve.")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
+        DEFAULT_PAGE_SIZE, description="Number of genes to return per page."
     )
     sort_field: Optional[str] = Field(None, description="Field to sort results by.")
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
 
 
@@ -100,10 +100,10 @@ class GenomeDownloadTSVQuerySchema(BaseModel):
         "", description="Search term to match against genome names or metadata."
     )
     sortField: Optional[str] = Field(
-        STRAIN_FIELD_ISOLATE_NAME, description="Field to sort results by."
+        GENOME_FIELD_ISOLATE_NAME, description="Field to sort results by."
     )
     sortOrder: Optional[str] = Field(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
     isolates: Optional[List[str]] = Field(
         None, description="List of isolate names to filter."

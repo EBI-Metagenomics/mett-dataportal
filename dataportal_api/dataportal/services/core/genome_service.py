@@ -21,11 +21,11 @@ from dataportal.services.base_service import BaseService
 from dataportal.utils.decorators import log_execution_time
 from django.conf import settings
 from dataportal.utils.constants import (
-    STRAIN_FIELD_ISOLATE_NAME,
-    STRAIN_FIELD_SPECIES,
-    SORT_ASC,
-    ES_FIELD_SPECIES_ACRONYM,
-    ES_INDEX_STRAIN,
+    GENOME_FIELD_ISOLATE_NAME,
+    GENOME_FIELD_SPECIES,
+    SORT_DIRECTION_ASC,
+    SPECIES_FIELD_ACRONYM_SHORT,
+    INDEX_STRAINS,
     SCROLL_BATCH_SIZE,
     SCROLL_MAX_RESULTS,
     SCROLL_TIMEOUT,
@@ -39,7 +39,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     """Service for managing genome data operations in the read-only data portal."""
 
     def __init__(self, limit: int = 10):
-        super().__init__(ES_INDEX_STRAIN)
+        super().__init__(INDEX_STRAINS)
         self.limit = limit
     
     def _convert_hit_to_genome_schema(self, hit) -> GenomeResponseSchema:
@@ -170,11 +170,11 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         filter_criteria = {}
 
         if params.query:
-            filter_criteria[STRAIN_FIELD_ISOLATE_NAME] = params.query
+            filter_criteria[GENOME_FIELD_ISOLATE_NAME] = params.query
         if params.isolates:
             filter_criteria["isolate_name.keyword"] = params.isolates
         if params.species_acronym:
-            filter_criteria[ES_FIELD_SPECIES_ACRONYM] = params.species_acronym
+            filter_criteria[SPECIES_FIELD_ACRONYM_SHORT] = params.species_acronym
 
         if use_scroll:
             # Use scroll API for large downloads
@@ -203,14 +203,14 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         params: GenomeAutocompleteQuerySchema,
     ) -> List[StrainSuggestionSchema]:
         try:
-            search = Search(index=ES_INDEX_STRAIN)
+            search = Search(index=INDEX_STRAINS)
             search = search.query(
-                "wildcard", **{STRAIN_FIELD_ISOLATE_NAME: f"*{params.query.lower()}*"}
+                "wildcard", **{GENOME_FIELD_ISOLATE_NAME: f"*{params.query.lower()}*"}
             )
 
             if params.species_acronym:
                 search = search.filter(
-                    "term", **{ES_FIELD_SPECIES_ACRONYM: params.species_acronym}
+                    "term", **{SPECIES_FIELD_ACRONYM_SHORT: params.species_acronym}
                 )
 
             search = search[: params.limit]
@@ -246,7 +246,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
 
     async def get_genome_by_strain_name(self, isolate_name: str):
         return await self._fetch_single_genome(
-            filter_criteria={STRAIN_FIELD_ISOLATE_NAME: isolate_name},
+            filter_criteria={GENOME_FIELD_ISOLATE_NAME: isolate_name},
             error_message=f"Error fetching genome by strain name {isolate_name}",
         )
 
@@ -264,7 +264,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         """Fetch and validate strains from Elasticsearch and compute additional fields."""
         try:
-            search = Search(index=ES_INDEX_STRAIN)
+            search = Search(index=INDEX_STRAINS)
 
             for field, value in filter_criteria.items():
                 if isinstance(value, list):
@@ -315,7 +315,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
 
             # Fetch ORM strain with related species
             strain = await sync_to_async(
-                lambda: StrainDocument.objects.select_related(STRAIN_FIELD_SPECIES).get(
+                lambda: StrainDocument.objects.select_related(GENOME_FIELD_SPECIES).get(
                     **filter_kwargs
                 )
             )()
@@ -330,12 +330,12 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     ):
         """Fetch paginated strains from Elasticsearch with optimized searching."""
         try:
-            search = Search(index=ES_INDEX_STRAIN)
+            search = Search(index=INDEX_STRAINS)
 
             # Dynamically apply filters
             for field, value in filter_criteria.items():
                 if isinstance(value, str):
-                    if field == STRAIN_FIELD_ISOLATE_NAME:
+                    if field == GENOME_FIELD_ISOLATE_NAME:
                         search = search.query(
                             "bool",
                             should=[
@@ -357,7 +357,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
 
             # Map "species" to its actual field
             sortField = self._resolve_sort_field(sortField)
-            sort_order = "asc" if sortOrder == SORT_ASC else "desc"
+            sort_order = "asc" if sortOrder == SORT_DIRECTION_ASC else "desc"
             search = search.sort({sortField: {"order": sort_order}})
 
             # Apply pagination
@@ -396,11 +396,11 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     def _resolve_sort_field(self, field: str) -> str:
         # Map invalid sort fields to valid ones
         field_mapping = {
-            "species": ES_FIELD_SPECIES_ACRONYM,
-            "isolate_name": f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",
-            "genome": f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'genome' to 'isolate_name.keyword'
-            "strain": f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'strain' to 'isolate_name.keyword'
-            "name": f"{STRAIN_FIELD_ISOLATE_NAME}.keyword",  # Map 'name' to 'isolate_name.keyword'
+            "species": SPECIES_FIELD_ACRONYM_SHORT,
+            "isolate_name": f"{GENOME_FIELD_ISOLATE_NAME}.keyword",
+            "genome": f"{GENOME_FIELD_ISOLATE_NAME}.keyword",  # Map 'genome' to 'isolate_name.keyword'
+            "strain": f"{GENOME_FIELD_ISOLATE_NAME}.keyword",  # Map 'strain' to 'isolate_name.keyword'
+            "name": f"{GENOME_FIELD_ISOLATE_NAME}.keyword",  # Map 'name' to 'isolate_name.keyword'
         }
 
         # Return mapped field if it exists, otherwise return the original field
@@ -451,7 +451,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             # Dynamically apply filters
             for field, value in filter_criteria.items():
                 if isinstance(value, str):
-                    if field == STRAIN_FIELD_ISOLATE_NAME:
+                    if field == GENOME_FIELD_ISOLATE_NAME:
                         search_body["query"]["bool"]["must"].append(
                             {
                                 "bool": {
@@ -482,7 +482,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
 
             # Map "species" to its actual field
             sortField = self._resolve_sort_field(sortField)
-            sort_order = "asc" if sortOrder == SORT_ASC else "desc"
+            sort_order = "asc" if sortOrder == SORT_DIRECTION_ASC else "desc"
             search_body["sort"] = [{sortField: {"order": sort_order}}]
 
             logger.info(
@@ -492,7 +492,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             # Execute initial search
             response = await sync_to_async(
                 lambda: es_client.search(
-                    index=ES_INDEX_STRAIN, body=search_body, scroll=SCROLL_TIMEOUT
+                    index=INDEX_STRAINS, body=search_body, scroll=SCROLL_TIMEOUT
                 )
             )()
 

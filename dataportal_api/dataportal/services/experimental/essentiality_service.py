@@ -11,13 +11,13 @@ from dataportal.schema.experimental.essentiality_schemas import (
 )
 from dataportal.services.base_service import BaseService
 from dataportal.utils.constants import (
-    ES_INDEX_FEATURE,
-    GENE_ESSENTIALITY,
+    INDEX_FEATURES,
+    GENE_FIELD_ESSENTIALITY,
     GENE_FIELD_START,
     GENE_FIELD_END,
-    ES_FIELD_LOCUS_TAG,
+    GENE_FIELD_LOCUS_TAG,
     FIELD_SEQ_ID,
-    ES_FIELD_ISOLATE_NAME,
+    GENOME_FIELD_ISOLATE_NAME,
 )
 from dataportal.utils.exceptions import ServiceError, GeneNotFoundError
 
@@ -34,7 +34,7 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
     """
 
     def __init__(self, limit: int = 10, cache_size: int = 10000):
-        super().__init__(ES_INDEX_FEATURE)
+        super().__init__(INDEX_FEATURES)
         self.limit = limit
         self.essentiality_cache = LRUCache(maxsize=cache_size)
 
@@ -224,15 +224,15 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
                 .filter("term", feature_type="gene")
                 .query("bool", should=[
                     {"term": {"has_essentiality": True}},
-                    {"exists": {"field": GENE_ESSENTIALITY}}
+                    {"exists": {"field": GENE_FIELD_ESSENTIALITY}}
                 ])
                 .source([
-                    ES_FIELD_ISOLATE_NAME,
+                    GENOME_FIELD_ISOLATE_NAME,
                     FIELD_SEQ_ID,
-                    ES_FIELD_LOCUS_TAG,
+                    GENE_FIELD_LOCUS_TAG,
                     GENE_FIELD_START,
                     GENE_FIELD_END,
-                    GENE_ESSENTIALITY,
+                    GENE_FIELD_ESSENTIALITY,
                     "essentiality_data",
                     "has_essentiality",
                 ])[:10000]

@@ -17,25 +17,25 @@ from dataportal.schema.response_schemas import (
 )
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.utils.constants import (
-    DEFAULT_PER_PAGE_CNT,
-    DEFAULT_SORT,
-    ES_FIELD_PFAM,
-    ES_FIELD_INTERPRO,
-    ES_FIELD_COG_ID,
-    ES_FIELD_COG_FUNCATS,
-    ES_FIELD_KEGG,
-    ES_FIELD_ISOLATE_NAME,
-    ES_FIELD_GENE_NAME,
-    ES_FIELD_ALIAS,
-    STRAIN_FIELD_CONTIG_SEQ_ID,
-    ES_FIELD_LOCUS_TAG,
-    ES_FIELD_PRODUCT,
-    ES_FIELD_UNIPROT_ID,
-    GENE_ESSENTIALITY,
-    ES_FIELD_AMR,
-    ES_FIELD_AMR_DRUG_CLASS,
-    ES_FIELD_AMR_DRUG_SUBCLASS,
-    ES_FIELD_FEATURE_TYPE,
+    DEFAULT_PAGE_SIZE,
+    DEFAULT_SORT_DIRECTION,
+    GENE_FIELD_PFAM,
+    GENE_FIELD_INTERPRO,
+    GENE_FIELD_COG_ID,
+    GENE_FIELD_COG_FUNCATS,
+    GENE_FIELD_KEGG,
+    GENOME_FIELD_ISOLATE_NAME,
+    GENE_FIELD_NAME,
+    GENE_FIELD_ALIAS,
+    GENOME_CONTIG_FIELD_SEQ_ID,
+    GENE_FIELD_LOCUS_TAG,
+    GENE_FIELD_PRODUCT,
+    GENE_FIELD_UNIPROT_ID,
+    GENE_FIELD_ESSENTIALITY,
+    GENE_FIELD_AMR,
+    GENE_FIELD_AMR_DRUG_CLASS,
+    GENE_FIELD_AMR_DRUG_SUBCLASS,
+    GENE_FIELD_FEATURE_TYPE,
 )
 from dataportal.utils.errors import (
     raise_not_found_error,
@@ -162,11 +162,11 @@ async def get_all_genes(
     request,
     page: int = Query(1, description="Page number to retrieve."),
     per_page: int = Query(
-        DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
+        DEFAULT_PAGE_SIZE, description="Number of genes to return per page."
     ),
     sort_field: Optional[str] = Query(None, description="Field to sort results by."),
     sort_order: Optional[str] = Query(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     ),
 ):
     try:
@@ -253,21 +253,21 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
         def generate_tsv():
             # Define the columns to include in the TSV export
             columns = [
-                ES_FIELD_ISOLATE_NAME,
-                ES_FIELD_GENE_NAME,
-                ES_FIELD_ALIAS,
-                STRAIN_FIELD_CONTIG_SEQ_ID,
-                ES_FIELD_LOCUS_TAG,
-                ES_FIELD_PRODUCT,
-                ES_FIELD_UNIPROT_ID,
-                GENE_ESSENTIALITY,
-                ES_FIELD_PFAM,
-                ES_FIELD_INTERPRO,
-                ES_FIELD_KEGG,
-                ES_FIELD_COG_FUNCATS,
-                ES_FIELD_COG_ID,
-                ES_FIELD_AMR,
-                ES_FIELD_FEATURE_TYPE,
+                GENOME_FIELD_ISOLATE_NAME,
+                GENE_FIELD_NAME,
+                GENE_FIELD_ALIAS,
+                GENOME_CONTIG_FIELD_SEQ_ID,
+                GENE_FIELD_LOCUS_TAG,
+                GENE_FIELD_PRODUCT,
+                GENE_FIELD_UNIPROT_ID,
+                GENE_FIELD_ESSENTIALITY,
+                GENE_FIELD_PFAM,
+                GENE_FIELD_INTERPRO,
+                GENE_FIELD_KEGG,
+                GENE_FIELD_COG_FUNCATS,
+                GENE_FIELD_COG_ID,
+                GENE_FIELD_AMR,
+                GENE_FIELD_FEATURE_TYPE,
             ]
 
             # Yield header row
@@ -291,56 +291,56 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
                         value = getattr(gene, col, "")
 
                         # Handle special cases
-                        if col == ES_FIELD_ALIAS and value:
+                        if col == GENE_FIELD_ALIAS and value:
                             value = (
                                 "; ".join(value)
                                 if isinstance(value, list)
                                 else str(value)
                             )
-                        elif col == ES_FIELD_PFAM and value:
+                        elif col == GENE_FIELD_PFAM and value:
                             value = (
                                 "; ".join(value)
                                 if isinstance(value, list)
                                 else str(value)
                             )
-                        elif col == ES_FIELD_INTERPRO and value:
+                        elif col == GENE_FIELD_INTERPRO and value:
                             value = (
                                 "; ".join(value)
                                 if isinstance(value, list)
                                 else str(value)
                             )
-                        elif col == ES_FIELD_KEGG and value:
+                        elif col == GENE_FIELD_KEGG and value:
                             value = (
                                 "; ".join(value)
                                 if isinstance(value, list)
                                 else str(value)
                             )
-                        elif col == ES_FIELD_COG_ID and value:
+                        elif col == GENE_FIELD_COG_ID and value:
                             value = (
                                 "; ".join(value)
                                 if isinstance(value, list)
                                 else str(value)
                             )
-                        elif col == ES_FIELD_AMR and value:
+                        elif col == GENE_FIELD_AMR and value:
                             # Format AMR data
                             amr_parts = []
                             for amr_item in value:
                                 # Handle both dictionary and Pydantic model cases
                                 if (
-                                    hasattr(amr_item, ES_FIELD_AMR_DRUG_CLASS)
+                                    hasattr(amr_item, GENE_FIELD_AMR_DRUG_CLASS)
                                     and amr_item.drug_class
                                 ):
                                     drug_class = amr_item.drug_class
                                     drug_subclass = getattr(
-                                        amr_item, ES_FIELD_AMR_DRUG_SUBCLASS, ""
+                                        amr_item, GENE_FIELD_AMR_DRUG_SUBCLASS, ""
                                     )
                                     amr_parts.append(f"{drug_class}({drug_subclass})")
                                 elif isinstance(amr_item, dict) and amr_item.get(
-                                    ES_FIELD_AMR_DRUG_CLASS
+                                    GENE_FIELD_AMR_DRUG_CLASS
                                 ):
-                                    drug_class = amr_item[ES_FIELD_AMR_DRUG_CLASS]
+                                    drug_class = amr_item[GENE_FIELD_AMR_DRUG_CLASS]
                                     drug_subclass = amr_item.get(
-                                        ES_FIELD_AMR_DRUG_SUBCLASS, ""
+                                        GENE_FIELD_AMR_DRUG_SUBCLASS, ""
                                     )
                                     amr_parts.append(f"{drug_class}({drug_subclass})")
                             value = "; ".join(amr_parts) if amr_parts else ""

@@ -29,7 +29,7 @@ from dataportal.schema.experimental.drug_schemas import (
 )
 from dataportal.services.base_service import BaseService
 from dataportal.utils.decorators import log_execution_time
-from dataportal.utils.constants import ES_INDEX_STRAIN
+from dataportal.utils.constants import INDEX_STRAINS
 from dataportal.utils.exceptions import ServiceError
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class DrugService(BaseService[StrainDrugMICResponseSchema, Dict[str, Any]]):
     """Service for managing drug data operations."""
 
     def __init__(self):
-        super().__init__(ES_INDEX_STRAIN)
+        super().__init__(INDEX_STRAINS)
 
     async def get_by_id(self, id: str) -> Optional[StrainDrugMICResponseSchema]:
         """Retrieve drug data for a specific strain by isolate name."""

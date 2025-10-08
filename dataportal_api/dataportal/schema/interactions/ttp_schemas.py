@@ -5,7 +5,7 @@ Schemas for Pooled TTP (Thermal Proteome Profiling) API endpoints.
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from dataportal.schema.base_schemas import BasePaginationSchema
-from dataportal.utils.constants import DEFAULT_PER_PAGE_CNT, DEFAULT_SORT
+from dataportal.utils.constants import DEFAULT_PAGE_SIZE, DEFAULT_SORT_DIRECTION
 
 
 # ===== REQUEST SCHEMAS =====
@@ -19,7 +19,7 @@ class TTPInteractionQuerySchema(BaseModel):
     )
     page: int = Field(1, description="Page number for pagination (1-based).")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT, 
+        DEFAULT_PAGE_SIZE, 
         description="Number of interactions to return per page."
     )
     sort_field: Optional[str] = Field(
@@ -27,7 +27,7 @@ class TTPInteractionQuerySchema(BaseModel):
         description="Field to sort results by (e.g., 'ttp_score', 'fdr', 'compound')."
     )
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT, 
+        "asc",  # DEFAULT_SORT_DIRECTION value 
         description="Sort order: 'asc' or 'desc'."
     )
 
@@ -89,15 +89,15 @@ class TTPFacetedSearchQuerySchema(BaseModel):
     )
     page: int = Field(1, description="Page number for pagination (1-based).")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT,
+        DEFAULT_PAGE_SIZE, 
         description="Number of interactions to return per page."
     )
     sort_field: Optional[str] = Field(
-        None,
+        None, 
         description="Field to sort results by."
     )
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT,
+        DEFAULT_SORT_DIRECTION, 
         description="Sort order: 'asc' or 'desc'."
     )
 
@@ -197,7 +197,7 @@ class TTPHitAnalysisQuerySchema(BaseModel):
     )
     page: int = Field(1, description="Page number for pagination.")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT,
+        DEFAULT_PAGE_SIZE,
         description="Number of hits to return per page."
     )
 

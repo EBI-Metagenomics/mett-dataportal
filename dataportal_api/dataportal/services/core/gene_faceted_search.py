@@ -4,18 +4,18 @@ import json
 from elasticsearch_dsl import A, FacetedSearch, TermsFacet, Q
 
 from dataportal.utils.constants import (
-    GENE_ESSENTIALITY,
+    GENE_FIELD_ESSENTIALITY,
     DEFAULT_FACET_LIMIT,
-    ES_FIELD_PFAM,
-    ES_FIELD_INTERPRO,
-    ES_FIELD_KEGG,
-    ES_FIELD_COG_ID,
-    ES_FIELD_ISOLATE_NAME,
-    ES_FIELD_SPECIES_ACRONYM,
-    ES_FIELD_COG_FUNCATS,
-    ES_FIELD_AMR_INFO,
-    ES_FIELD_GO_TERM,
-    ES_FIELD_LOCUS_TAG,
+    GENE_FIELD_PFAM,
+    GENE_FIELD_INTERPRO,
+    GENE_FIELD_KEGG,
+    GENE_FIELD_COG_ID,
+    GENOME_FIELD_ISOLATE_NAME,
+    SPECIES_FIELD_ACRONYM_SHORT,
+    GENE_FIELD_COG_FUNCATS,
+    FLAG_HAS_AMR_INFO,
+    GENE_FIELD_GO_TERM,
+    GENE_FIELD_LOCUS_TAG,
     GENE_SEARCH_FIELDS,
 )
 
@@ -24,14 +24,14 @@ logger = logging.getLogger(__name__)
 
 class GeneFacetedSearch(FacetedSearch):
     fields = GENE_SEARCH_FIELDS + [
-        ES_FIELD_SPECIES_ACRONYM,
-        GENE_ESSENTIALITY,
-        ES_FIELD_COG_ID,
-        ES_FIELD_KEGG,
-        ES_FIELD_GO_TERM,
-        ES_FIELD_INTERPRO,
-        ES_FIELD_ISOLATE_NAME,
-        ES_FIELD_COG_FUNCATS,
+        SPECIES_FIELD_ACRONYM_SHORT,
+        GENE_FIELD_ESSENTIALITY,
+        GENE_FIELD_COG_ID,
+        GENE_FIELD_KEGG,
+        GENE_FIELD_GO_TERM,
+        GENE_FIELD_INTERPRO,
+        GENOME_FIELD_ISOLATE_NAME,
+        GENE_FIELD_COG_FUNCATS,
     ]
 
     def __init__(
@@ -64,13 +64,13 @@ class GeneFacetedSearch(FacetedSearch):
         self.operators = operators or {}
 
         self.facets = {
-            GENE_ESSENTIALITY: TermsFacet(field=GENE_ESSENTIALITY, size=limit),
-            ES_FIELD_PFAM: TermsFacet(field=ES_FIELD_PFAM, size=limit),
-            ES_FIELD_INTERPRO: TermsFacet(field=ES_FIELD_INTERPRO, size=limit),
-            ES_FIELD_KEGG: TermsFacet(field=ES_FIELD_KEGG, size=limit),
-            ES_FIELD_COG_ID: TermsFacet(field=ES_FIELD_COG_ID, size=limit),
-            ES_FIELD_COG_FUNCATS: TermsFacet(field=ES_FIELD_COG_FUNCATS, size=limit),
-            ES_FIELD_AMR_INFO: TermsFacet(field=ES_FIELD_AMR_INFO, size=2),
+            GENE_FIELD_ESSENTIALITY: TermsFacet(field=GENE_FIELD_ESSENTIALITY, size=limit),
+            GENE_FIELD_PFAM: TermsFacet(field=GENE_FIELD_PFAM, size=limit),
+            GENE_FIELD_INTERPRO: TermsFacet(field=GENE_FIELD_INTERPRO, size=limit),
+            GENE_FIELD_KEGG: TermsFacet(field=GENE_FIELD_KEGG, size=limit),
+            GENE_FIELD_COG_ID: TermsFacet(field=GENE_FIELD_COG_ID, size=limit),
+            GENE_FIELD_COG_FUNCATS: TermsFacet(field=GENE_FIELD_COG_FUNCATS, size=limit),
+            FLAG_HAS_AMR_INFO: TermsFacet(field=FLAG_HAS_AMR_INFO, size=2),
         }
 
         super().__init__(query=query, filters=filters or {})
@@ -96,12 +96,12 @@ class GeneFacetedSearch(FacetedSearch):
 
         # Facet filters: split AND (query) vs OR (post_filter)
         facet_fields = [
-            ES_FIELD_PFAM,
-            ES_FIELD_INTERPRO,
-            ES_FIELD_COG_ID,
-            ES_FIELD_COG_FUNCATS,
-            ES_FIELD_KEGG,
-            ES_FIELD_GO_TERM,
+            GENE_FIELD_PFAM,
+            GENE_FIELD_INTERPRO,
+            GENE_FIELD_COG_ID,
+            GENE_FIELD_COG_FUNCATS,
+            GENE_FIELD_KEGG,
+            GENE_FIELD_GO_TERM,
         ]
         active_filters = {}
         for field in facet_fields:
@@ -126,7 +126,7 @@ class GeneFacetedSearch(FacetedSearch):
             field_name = facet_def._params["field"]
             terms_agg = A("terms", field=field_name, size=facet_def._params["size"])
             # Count unique genes per bucket to avoid double counting when a doc has multiple values
-            terms_agg.metric("unique_genes", "cardinality", field=f"{ES_FIELD_LOCUS_TAG}.keyword")
+            terms_agg.metric("unique_genes", "cardinality", field=f"{GENE_FIELD_LOCUS_TAG}.keyword")
 
             agg_must_clauses = must_clauses.copy()
             for other_field, (values, operator) in active_filters.items():

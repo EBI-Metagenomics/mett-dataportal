@@ -5,8 +5,8 @@ from pydantic import Field
 
 from dataportal.schema.base_schemas import BasePaginationSchema
 from dataportal.utils.constants import (
-    DEFAULT_PER_PAGE_CNT,
-    DEFAULT_SORT,
+    DEFAULT_PAGE_SIZE,
+    DEFAULT_SORT_DIRECTION,
     DEFAULT_FACET_LIMIT,
 )
 
@@ -23,7 +23,7 @@ class GeneAutocompleteQuerySchema(BaseModel):
         description="Optional semicolon-separated gene filters, e.g., 'essentiality:essential_liquid;interpro:IPR035952'.",
     )
     limit: int = Field(
-        DEFAULT_PER_PAGE_CNT,
+        DEFAULT_PAGE_SIZE,
         description="Maximum number of gene suggestions to return.",
     )
     species_acronym: Optional[str] = Field(
@@ -44,14 +44,14 @@ class GeneSearchQuerySchema(BaseModel):
     )
     page: int = Field(1, description="Page number for pagination (1-based).")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
+        DEFAULT_PAGE_SIZE, description="Number of genes to return per page."
     )
     sort_field: Optional[str] = Field(
         None,
         description="Field to sort results by (e.g., 'gene_name', 'isolate_name').",
     )
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
 
 
@@ -137,13 +137,13 @@ class GeneAdvancedSearchQuerySchema(BaseModel):
     )
     page: int = Field(1, description="Page number for pagination (1-based).")
     per_page: int = Field(
-        DEFAULT_PER_PAGE_CNT, description="Number of genes to return per page."
+        DEFAULT_PAGE_SIZE, description="Number of genes to return per page."
     )
     sort_field: Optional[str] = Field(
         None, description="Field to sort results by, e.g., 'gene_name', 'isolate_name'."
     )
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
 
 
@@ -169,7 +169,7 @@ class GeneDownloadTSVQuerySchema(BaseModel):
     )
     sort_field: Optional[str] = Field(None, description="Field to sort results by.")
     sort_order: Optional[str] = Field(
-        DEFAULT_SORT, description="Sort order: 'asc' or 'desc'."
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
 
 

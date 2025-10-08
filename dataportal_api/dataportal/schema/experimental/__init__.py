@@ -26,11 +26,12 @@ from dataportal.schema.experimental.reactions_schemas import (
     ReactionsSearchQuerySchema,
 )
 from dataportal.schema.experimental.drug_schemas import (
-    StrainDrugMICSchema,
-    StrainDrugMetabolismSchema,
+    StrainDrugMICResponseSchema,
+    StrainDrugMetabolismResponseSchema,
     StrainDrugDataResponseSchema,
     PaginatedStrainDrugMICResponseSchema,
     PaginatedStrainDrugMetabolismResponseSchema,
+    PaginatedStrainDrugDataResponseSchema,
 )
 
 __all__ = [
@@ -55,10 +56,11 @@ __all__ = [
     "ReactionsWithGeneSchema",
     "ReactionsSearchQuerySchema",
     # Drugs
-    "StrainDrugMICSchema",
-    "StrainDrugMetabolismSchema",
+    "StrainDrugMICResponseSchema",
+    "StrainDrugMetabolismResponseSchema",
     "StrainDrugDataResponseSchema",
     "PaginatedStrainDrugMICResponseSchema",
     "PaginatedStrainDrugMetabolismResponseSchema",
+    "PaginatedStrainDrugDataResponseSchema",
 ]
 

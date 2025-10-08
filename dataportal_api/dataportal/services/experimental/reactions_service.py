@@ -9,7 +9,7 @@ from dataportal.schema.experimental.reactions_schemas import (
     ReactionDetailSchema,
 )
 from dataportal.services.base_service import BaseService
-from dataportal.utils.constants import ES_INDEX_FEATURE
+from dataportal.utils.constants import INDEX_FEATURES
 from dataportal.utils.exceptions import ServiceError, GeneNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class ReactionsService(BaseService[ReactionsWithGeneSchema, str]):
     """Service for retrieving reactions data."""
 
     def __init__(self):
-        super().__init__(ES_INDEX_FEATURE)
+        super().__init__(INDEX_FEATURES)
 
     async def get_by_id(self, locus_tag: str) -> Optional[ReactionsWithGeneSchema]:
         """Retrieve reactions data for a gene by locus tag."""

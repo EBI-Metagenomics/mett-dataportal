@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from dataportal.schema.core.species_schemas import SpeciesSchema
 from dataportal.services.base_service import BaseService
-from dataportal.utils.constants import ES_INDEX_SPECIES
+from dataportal.utils.constants import INDEX_SPECIES
 from dataportal.utils.errors import raise_exception
 
 
@@ -11,7 +11,7 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
     """Service for managing species data operations."""
 
     def __init__(self):
-        super().__init__(ES_INDEX_SPECIES)
+        super().__init__(INDEX_SPECIES)
 
     async def get_by_id(self, id: str) -> Optional[SpeciesSchema]:
         """Retrieve a single species by ID (acronym)."""
