@@ -530,7 +530,7 @@ $ python manage.py import_operons \
 #### Ortholog Pairs
 
 ```bash
-python manage.py import_orthologs_with_genes \
+$ python manage.py import_orthologs_with_genes \
   --ortholog-directory ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/

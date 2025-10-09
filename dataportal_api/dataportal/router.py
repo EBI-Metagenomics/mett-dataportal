@@ -29,6 +29,8 @@ from dataportal.api.interactions import (
     ppi_router,
     ttp_router,
     fitness_correlation_router,
+    ortholog_router,
+    operon_router,
 )
 
 from pyhmmer_search.results.api import pyhmmer_router_result
@@ -78,6 +80,8 @@ URL_PREFIX_DRUGS = "/drugs"
 URL_PREFIX_PPI = "/ppi"
 URL_PREFIX_TTP = "/ttp"
 URL_PREFIX_FITNESS_CORRELATION = "/fitness-correlations"
+URL_PREFIX_ORTHOLOGS = "/orthologs"
+URL_PREFIX_OPERONS = "/operons"
 URL_PREFIX_PROTEOMICS = "/proteomics"
 URL_PREFIX_ESSENTIALITY = "/essentiality"
 URL_PREFIX_FITNESS = "/fitness"
@@ -239,6 +243,8 @@ api.add_router(URL_PREFIX_DRUGS, drug_router)
 api.add_router(URL_PREFIX_PPI, ppi_router)
 api.add_router(URL_PREFIX_TTP, ttp_router)
 api.add_router(URL_PREFIX_FITNESS_CORRELATION, fitness_correlation_router)
+api.add_router(URL_PREFIX_ORTHOLOGS, ortholog_router)
+api.add_router(URL_PREFIX_OPERONS, operon_router)
 api.add_router(URL_PREFIX_PROTEOMICS, proteomics_router)
 api.add_router(URL_PREFIX_ESSENTIALITY, essentiality_router)
 api.add_router(URL_PREFIX_FITNESS, fitness_router)

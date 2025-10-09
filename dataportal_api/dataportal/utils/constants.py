@@ -45,6 +45,8 @@ INDEX_FEATURES = "feature_index"
 INDEX_STRAINS = "strain_index"
 INDEX_SPECIES = "species_index"
 INDEX_PPI = "ppi_index"
+INDEX_ORTHOLOGS = "ortholog_index"
+INDEX_OPERONS = "operon_index"
 
 # ============================================================================
 # 3. FIELD NAMES - CORE ENTITIES

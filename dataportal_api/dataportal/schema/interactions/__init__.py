@@ -23,6 +23,20 @@ from dataportal.schema.interactions.fitness_correlation_schemas import (
     TopCorrelationsQuerySchema,
     CorrelationSearchQuerySchema,
 )
+from dataportal.schema.interactions.ortholog_schemas import (
+    OrthologSearchQuerySchema,
+    OrthologPairQuerySchema,
+    OrthologGeneInfoSchema,
+    OrthologPairSchema,
+    OrthologsByGeneSchema,
+)
+from dataportal.schema.interactions.operon_schemas import (
+    OperonSearchQuerySchema,
+    OperonGeneQuerySchema,
+    OperonGeneInfoSchema,
+    OperonSchema,
+    OperonDetailSchema,
+)
 
 __all__ = [
     # PPI schemas
@@ -45,4 +59,16 @@ __all__ = [
     "GenePairCorrelationQuerySchema",
     "TopCorrelationsQuerySchema",
     "CorrelationSearchQuerySchema",
+    # Ortholog schemas
+    "OrthologSearchQuerySchema",
+    "OrthologPairQuerySchema",
+    "OrthologGeneInfoSchema",
+    "OrthologPairSchema",
+    "OrthologsByGeneSchema",
+    # Operon schemas
+    "OperonSearchQuerySchema",
+    "OperonGeneQuerySchema",
+    "OperonGeneInfoSchema",
+    "OperonSchema",
+    "OperonDetailSchema",
 ]

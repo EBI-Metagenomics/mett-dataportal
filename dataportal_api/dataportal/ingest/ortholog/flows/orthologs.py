@@ -269,6 +269,7 @@ class Orthologs(Flow):
                             "orthology_type": None,
                             "oma_group_id": None,
                             "members": [a_id, b_id],
+                            "is_one_to_one": False,  # Initialize to False, will be updated if orthology_type is 1:1
                             
                             # Species information
                             "species_a_acronym": species_a_acronym,

@@ -7626,6 +7626,230 @@
 							"response": []
 						}
 					]
+				},
+				{
+					"name": "Orthologs",
+					"item": [
+						{
+							"name": "Orthologs- one-to-one for a gene",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00001/orthologs?one_to_one_only=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00001",
+										"orthologs"
+									],
+									"query": [
+										{
+											"key": "one_to_one_only",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Orthologs- all for the gene",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_WH4_00023/orthologs?one_to_one_only=false",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_WH4_00023",
+										"orthologs"
+									],
+									"query": [
+										{
+											"key": "one_to_one_only",
+											"value": "false"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Orthologs - if two genes are orthologs",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/orthologs/pair?locus_tag_a=BU_ATCC8492_00001&locus_tag_b=PV_ATCC8482_00001",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"orthologs",
+										"pair"
+									],
+									"query": [
+										{
+											"key": "locus_tag_a",
+											"value": "BU_ATCC8492_00001"
+										},
+										{
+											"key": "locus_tag_b",
+											"value": "PV_ATCC8482_00001"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Operons",
+					"item": [
+						{
+							"name": "Operons- with at least 5 genes and regulatory elements",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/operons/search?min_gene_count=2&has_tss=true&has_terminator=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"operons",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_gene_count",
+											"value": "2"
+										},
+										{
+											"key": "has_tss",
+											"value": "true"
+										},
+										{
+											"key": "has_terminator",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Operons- statistics for a species",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/operons/statistics?species_acronym=BU",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"operons",
+										"statistics"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
 				}
 			]
 		},
