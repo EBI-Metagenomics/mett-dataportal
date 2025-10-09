@@ -6,13 +6,19 @@ correlations, finding correlated genes, and analyzing correlation networks.
 """
 
 import logging
-from typing import Optional, List
-from ninja import Router, Query, Schema
+from typing import Optional
+from ninja import Router, Query
 from ninja.errors import HttpError
 
 from dataportal.api.core import gene_router
 from dataportal.services.interactions.fitness_correlation_service import FitnessCorrelationService
-from dataportal.schema.response_schemas import create_success_response, create_error_response
+from dataportal.schema.interactions.fitness_correlation_schemas import (
+    GeneCorrelationQuerySchema,
+    GenePairCorrelationQuerySchema,
+    TopCorrelationsQuerySchema,
+    CorrelationSearchQuerySchema,
+)
+from dataportal.schema.response_schemas import create_success_response
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.response_wrappers import wrap_success_response
 
@@ -25,49 +31,17 @@ fitness_correlation_router = Router(tags=[ROUTER_FITNESS_CORRELATION])
 fitness_correlation_service = FitnessCorrelationService()
 
 
-# ---- Request/Response Schemas ----
-
-class GeneCorrelationQuerySchema(Schema):
-    """Schema for gene correlation query parameters."""
-    gene_id: str
-    species_acronym: Optional[str] = None
-    min_correlation: Optional[float] = None
-    max_results: int = 100
-
-
-class GenePairQuerySchema(Schema):
-    """Schema for querying correlation between two genes."""
-    gene_a: str
-    gene_b: str
-    species_acronym: Optional[str] = None
-
-
-class TopCorrelationsQuerySchema(Schema):
-    """Schema for top correlations query."""
-    species_acronym: Optional[str] = None
-    correlation_strength: Optional[str] = None
-    limit: int = 100
-
-
-class CorrelationSearchQuerySchema(Schema):
-    """Schema for correlation search."""
-    query: str
-    species_acronym: Optional[str] = None
-    page: int = 1
-    per_page: int = 20
-
-
 # ---- API Endpoints ----
 
 @gene_router.get(
-    "/gene/{gene_id}/correlations",
+    "/{locus_tag}/correlations",
     summary="Get correlations for a gene",
     description="Get all genes correlated with a specific gene, ordered by correlation strength",
 )
 @wrap_success_response
 async def get_gene_correlations(
     request,
-    gene_id: str,
+    locus_tag: str,
     species_acronym: Optional[str] = Query(None),
     min_correlation: Optional[float] = Query(None, description="Minimum absolute correlation value"),
     max_results: int = Query(100, description="Maximum number of results to return")
@@ -75,15 +49,15 @@ async def get_gene_correlations(
     """Get all correlations for a specific gene."""
     try:
         correlations = await fitness_correlation_service.get_correlations_for_gene(
-            gene_id=gene_id,
+            locus_tag=locus_tag,
             species_acronym=species_acronym,
             min_correlation=min_correlation,
             max_results=max_results
         )
 
         return create_success_response(
-            data={"correlations": correlations, "gene_id": gene_id, "count": len(correlations)},
-            message=f"Found {len(correlations)} correlations for gene {gene_id}"
+            data={"correlations": correlations, "locus_tag": locus_tag, "count": len(correlations)},
+            message=f"Found {len(correlations)} correlations for gene {locus_tag}"
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
@@ -101,24 +75,24 @@ async def get_gene_correlations(
 @wrap_success_response
 async def get_gene_pair_correlation(
     request,
-    gene_a: str = Query(..., description="First gene locus tag"),
-    gene_b: str = Query(..., description="Second gene locus tag"),
+    locus_tag_a: str = Query(..., description="First gene locus tag"),
+    locus_tag_b: str = Query(..., description="Second gene locus tag"),
     species_acronym: Optional[str] = Query(None)
 ):
     """Get correlation between two specific genes."""
     try:
         correlation = await fitness_correlation_service.get_correlation_between_genes(
-            gene_a=gene_a,
-            gene_b=gene_b,
+            locus_tag_a=locus_tag_a,
+            locus_tag_b=locus_tag_b,
             species_acronym=species_acronym
         )
 
         if correlation is None:
-            raise HttpError(404, f"No correlation found between {gene_a} and {gene_b}")
+            raise HttpError(404, f"No correlation found between {locus_tag_a} and {locus_tag_b}")
 
         return create_success_response(
             data=correlation,
-            message=f"Correlation between {gene_a} and {gene_b} retrieved successfully"
+            message=f"Correlation between {locus_tag_a} and {locus_tag_b} retrieved successfully"
         )
     except HttpError:
         raise

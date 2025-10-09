@@ -59,7 +59,7 @@ class FitnessCorrelationService(BaseService):
 
     async def get_correlations_for_gene(
             self,
-            gene_id: str,
+            locus_tag: str,
             species_acronym: Optional[str] = None,
             min_correlation: Optional[float] = None,
             max_results: int = 100,
@@ -68,7 +68,7 @@ class FitnessCorrelationService(BaseService):
         Get all correlations for a specific gene.
 
         Args:
-            gene_id: Locus tag of the gene
+            locus_tag: Locus tag of the gene
             species_acronym: Optional species filter
             min_correlation: Minimum absolute correlation value
             max_results: Maximum number of results to return
@@ -78,7 +78,7 @@ class FitnessCorrelationService(BaseService):
         """
         try:
             s = self._build_base_search(species_acronym)
-            s = s.filter("terms", genes=[gene_id])
+            s = s.filter("terms", genes=[locus_tag])
 
             if min_correlation is not None:
                 s = s.filter("range", abs_correlation={"gte": abs(min_correlation)})
@@ -92,11 +92,11 @@ class FitnessCorrelationService(BaseService):
             correlations = []
             for hit in response.hits:
                 # Determine which gene is the partner
-                partner_gene = hit.gene_b if hit.gene_a == gene_id else hit.gene_a
-                partner_prefix = "gene_b" if hit.gene_a == gene_id else "gene_a"
+                partner_gene = hit.gene_b if hit.gene_a == locus_tag else hit.gene_a
+                partner_prefix = "gene_b" if hit.gene_a == locus_tag else "gene_a"
 
                 correlations.append({
-                    "gene_id": gene_id,
+                    "locus_tag": locus_tag,
                     "partner_gene": partner_gene,
                     "partner_locus_tag": getattr(hit, f"{partner_prefix}_locus_tag", partner_gene),
                     "partner_name": getattr(hit, f"{partner_prefix}_name", None),
@@ -111,21 +111,21 @@ class FitnessCorrelationService(BaseService):
             return correlations
 
         except Exception as e:
-            logger.error(f"Error getting correlations for gene {gene_id}: {e}")
+            logger.error(f"Error getting correlations for gene {locus_tag}: {e}")
             raise ServiceError(f"Failed to get correlations: {str(e)}")
 
     async def get_correlation_between_genes(
             self,
-            gene_a: str,
-            gene_b: str,
+            locus_tag_a: str,
+            locus_tag_b: str,
             species_acronym: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Get the correlation value between two specific genes.
 
         Args:
-            gene_a: First gene locus tag
-            gene_b: Second gene locus tag
+            locus_tag_a: First gene locus tag
+            locus_tag_b: Second gene locus tag
             species_acronym: Optional species filter
 
         Returns:
@@ -136,14 +136,14 @@ class FitnessCorrelationService(BaseService):
             from dataportal.models.base import canonical_pair, build_pair_id
 
             if not species_acronym:
-                # Try to extract from gene_a
-                if "_" in gene_a:
-                    species_acronym = gene_a.split("_")[0]
+                # Try to extract from locus_tag_a
+                if "_" in locus_tag_a:
+                    species_acronym = locus_tag_a.split("_")[0]
 
             if not species_acronym:
                 raise ServiceError("Species acronym required or cannot be inferred")
 
-            aa, bb = canonical_pair(gene_a, gene_b)
+            aa, bb = canonical_pair(locus_tag_a, locus_tag_b)
             pair_id = build_pair_id(species_acronym, aa, bb)
 
             # Try to fetch by document ID
@@ -154,8 +154,8 @@ class FitnessCorrelationService(BaseService):
 
                 return {
                     "pair_id": doc.pair_id,
-                    "gene_a": doc.gene_a,
-                    "gene_b": doc.gene_b,
+                    "locus_tag_a": doc.gene_a,
+                    "locus_tag_b": doc.gene_b,
                     "correlation_value": doc.correlation_value,
                     "abs_correlation": doc.abs_correlation,
                     "correlation_strength": doc.correlation_strength,
@@ -170,7 +170,7 @@ class FitnessCorrelationService(BaseService):
                 return None
 
         except Exception as e:
-            logger.error(f"Error getting correlation between {gene_a} and {gene_b}: {e}")
+            logger.error(f"Error getting correlation between {locus_tag_a} and {locus_tag_b}: {e}")
             raise ServiceError(f"Failed to get correlation: {str(e)}")
 
     async def get_top_correlations(

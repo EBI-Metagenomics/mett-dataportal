@@ -17,6 +17,12 @@ from dataportal.schema.interactions.ttp_schemas import (
     TTPPoolAnalysisQuerySchema,
     TTPDownloadQuerySchema,
 )
+from dataportal.schema.interactions.fitness_correlation_schemas import (
+    GeneCorrelationQuerySchema,
+    GenePairCorrelationQuerySchema,
+    TopCorrelationsQuerySchema,
+    CorrelationSearchQuerySchema,
+)
 
 __all__ = [
     # PPI schemas
@@ -34,4 +40,9 @@ __all__ = [
     "TTPHitAnalysisQuerySchema",
     "TTPPoolAnalysisQuerySchema",
     "TTPDownloadQuerySchema",
+    # Fitness correlation schemas
+    "GeneCorrelationQuerySchema",
+    "GenePairCorrelationQuerySchema",
+    "TopCorrelationsQuerySchema",
+    "CorrelationSearchQuerySchema",
 ]
