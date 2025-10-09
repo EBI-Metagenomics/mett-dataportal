@@ -7492,14 +7492,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00002/correlations",
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_02530/correlations",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genes",
-										"BU_ATCC8492_00002",
+										"BU_ATCC8492_02530",
 										"correlations"
 									]
 								}
@@ -7527,7 +7527,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/fitness",
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/correlations",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -7535,14 +7535,14 @@
 										"api",
 										"genes",
 										"BU_H5-2_00005",
-										"fitness"
+										"correlations"
 									]
 								}
 							},
 							"response": []
 						},
 						{
-							"name": "Fitness-Correlation - in caecal media",
+							"name": "Fitness-Correlation - two locus tags",
 							"event": [
 								{
 									"listen": "test",
@@ -7562,64 +7562,23 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/fitness/search?contrast=comm20_day7",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"",
-										"api",
-										"fitness",
-										"search"
-									],
-									"query": [
-										{
-											"key": "contrast",
-											"value": "comm20_day7"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Fitness-Correlation - with significant fitness defects",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});"
-										],
-										"type": "text/javascript",
-										"packages": {},
-										"requests": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/fitness/search?max_fdr=0.05&min_lfc=2.0",
+									"raw": "{{mett-current}}/api/fitness-correlations/correlation?locus_tag_a=BU_ATCC8492_02530&locus_tag_b=BU_ATCC8492_02762",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
-										"fitness",
-										"search"
+										"fitness-correlations",
+										"correlation"
 									],
 									"query": [
 										{
-											"key": "max_fdr",
-											"value": "0.05"
+											"key": "locus_tag_a",
+											"value": "BU_ATCC8492_02530"
 										},
 										{
-											"key": "min_lfc",
-											"value": "2.0"
+											"key": "locus_tag_b",
+											"value": "BU_ATCC8492_02762"
 										}
 									]
 								}
@@ -7627,7 +7586,7 @@
 							"response": []
 						},
 						{
-							"name": "Fitness-Correlation - by Locus Tag",
+							"name": "Fitness-Correlation - search",
 							"event": [
 								{
 									"listen": "test",
@@ -7647,63 +7606,19 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/fitness/search?locus_tags=BU_ATCC8492_00002",
+									"raw": "{{mett-current}}/api/fitness-correlations/search?query=Vitamin B12",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
-										"fitness",
+										"fitness-correlations",
 										"search"
 									],
 									"query": [
 										{
-											"key": "locus_tags",
-											"value": "BU_ATCC8492_00002"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Fitness-Correlation - high-confidence fitness data",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});"
-										],
-										"type": "text/javascript",
-										"packages": {},
-										"requests": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{mett-current}}/api/fitness/search?min_barcodes=25&max_fdr=0.01",
-									"host": [
-										"{{mett-current}}"
-									],
-									"path": [
-										"api",
-										"fitness",
-										"search"
-									],
-									"query": [
-										{
-											"key": "min_barcodes",
-											"value": "25"
-										},
-										{
-											"key": "max_fdr",
-											"value": "0.01"
+											"key": "query",
+											"value": "Vitamin B12"
 										}
 									]
 								}

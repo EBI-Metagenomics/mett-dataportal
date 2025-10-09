@@ -2,7 +2,7 @@ from typing import Dict
 from dataportal.services.base_service import BaseService
 from dataportal.services.core.species_service import SpeciesService
 from dataportal.services.experimental.essentiality_service import EssentialityService
-from dataportal.services.experimental.app_health_service import AppHealthService
+from dataportal.services.app_health_service import AppHealthService
 from dataportal.services.core.genome_service import GenomeService
 from dataportal.services.core.gene_service import GeneService
 
