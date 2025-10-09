@@ -12,17 +12,22 @@ import pandas as pd
 
 from dataportal.ingest.feature.flows.base import Flow
 from dataportal.ingest.es_repo import bulk_exec
+from dataportal.ingest.utils import extract_isolate_from_locus_tag, get_species_metadata_from_isolate
 
 
-# Script to append to nested field and set flag
-SCRIPT_APPEND_AND_SET_FLAG = """
-if (ctx._source[params.flag_field] == null) {
-    ctx._source[params.flag_field] = false;
+# Script to append with deduplication and set flag
+SCRIPT_DEDUP_AND_FLAG = """
+if (ctx._source[params.field] == null) { ctx._source[params.field] = []; }
+boolean exists = false;
+for (item in ctx._source[params.field]) {
+  boolean same = true;
+  for (k in params.keys) {
+    if (item[k] == null && params.entry[k] == null) { continue; }
+    if (item[k] != params.entry[k]) { same = false; break; }
+  }
+  if (same) { exists = true; break; }
 }
-if (ctx._source[params.field] == null) {
-    ctx._source[params.field] = [];
-}
-ctx._source[params.field].add(params.entry);
+if (!exists) { ctx._source[params.field].add(params.entry); }
 ctx._source[params.flag_field] = true;
 """
 
@@ -45,7 +50,7 @@ class MutantGrowthFlow(Flow):
     def __init__(
         self,
         index_name: str = "feature_index",
-        media: str = "caecal",
+        media: Optional[str] = None,
         experimental_condition: Optional[str] = None,
     ):
         """
@@ -53,12 +58,13 @@ class MutantGrowthFlow(Flow):
         
         Args:
             index_name: Elasticsearch index name (default: feature_index)
-            media: Media type for the experiment (default: caecal)
-            experimental_condition: Experimental condition context
+            media: Media type for the experiment (optional)
+            experimental_condition: Experimental condition context (optional)
         """
         super().__init__(index_name)
         self.media = media
-        self.experimental_condition = experimental_condition or f"{media}_growth"
+        self.experimental_condition = experimental_condition
+        self._species_cache = {}  # Cache for species lookups
 
     def run(self, csv_path: str) -> None:
         """
@@ -74,6 +80,9 @@ class MutantGrowthFlow(Flow):
                 locus_tag = str(rec.get("locus_tag", "")).strip()
                 if not locus_tag:
                     continue
+
+                # Determine feature type
+                feature_type = "IG" if locus_tag.startswith("IG:") or locus_tag.startswith("IG-") else "gene"
 
                 # Extract and validate doubling_time
                 doubling_time = rec.get("doubling_time")
@@ -124,9 +133,13 @@ class MutantGrowthFlow(Flow):
                     "doubling_time": doubling_time,
                     "isdoublepicked": isdoublepicked,
                     "brep": brep,
-                    "media": self.media,
-                    "experimental_condition": self.experimental_condition,
                 }
+                
+                # Add media and experimental_condition if provided
+                if self.media is not None:
+                    entry["media"] = self.media
+                if self.experimental_condition is not None:
+                    entry["experimental_condition"] = self.experimental_condition
                 
                 # Add optional fields if available
                 if plate_number is not None:
@@ -136,25 +149,44 @@ class MutantGrowthFlow(Flow):
                 if percent_from_start is not None:
                     entry["percent_from_start"] = percent_from_start
 
-                # Create bulk action
+                # Build upsert data
+                upsert_data = {
+                    "feature_id": locus_tag,
+                    "feature_type": feature_type,
+                    "mutant_growth": [entry],
+                    "has_mutant_growth": True,
+                }
+                
+                # Add genome/species metadata for IG features
+                if feature_type == "IG":
+                    isolate_name = extract_isolate_from_locus_tag(locus_tag)
+                    if isolate_name:
+                        species_metadata = get_species_metadata_from_isolate(isolate_name, self._species_cache)
+                        upsert_data.update(species_metadata)
+
+                # Define dedup keys: media + experimental_condition + brep uniquely identify an entry
+                dedup_keys = ["brep"]
+                if self.media is not None:
+                    dedup_keys.append("media")
+                if self.experimental_condition is not None:
+                    dedup_keys.append("experimental_condition")
+
+                # Create bulk action with deduplication and flag setting
                 actions.append({
                     "_op_type": "update",
                     "_index": self.index,
                     "_id": locus_tag,
                     "script": {
-                        "source": SCRIPT_APPEND_AND_SET_FLAG,
+                        "source": SCRIPT_DEDUP_AND_FLAG,
                         "params": {
                             "field": "mutant_growth",
                             "entry": entry,
-                            "flag_field": "has_mutant_growth"
+                            "keys": dedup_keys,
+                            "flag_field": "has_mutant_growth",
                         },
                     },
-                    "upsert": {
-                        "feature_id": locus_tag,
-                        "feature_type": "gene",
-                        "mutant_growth": [entry],
-                        "has_mutant_growth": True,
-                    },
+                    "scripted_upsert": True,
+                    "upsert": upsert_data,
                 })
 
                 # Bulk index when batch is ready
@@ -164,4 +196,5 @@ class MutantGrowthFlow(Flow):
 
         # Process remaining actions
         if actions:
+            bulk_exec(actions)
             bulk_exec(actions)

@@ -463,7 +463,7 @@ $ python manage.py import_features \
 
 ```bash
 $ python manage.py import_fitness_lfc \
-  --index feature_index-v5 \
+  --index feature_index \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
 ```
 

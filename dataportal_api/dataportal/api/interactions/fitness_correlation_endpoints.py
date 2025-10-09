@@ -10,6 +10,7 @@ from typing import Optional, List
 from ninja import Router, Query, Schema
 from ninja.errors import HttpError
 
+from dataportal.api.core import gene_router
 from dataportal.services.interactions.fitness_correlation_service import FitnessCorrelationService
 from dataportal.schema.response_schemas import create_success_response, create_error_response
 from dataportal.utils.exceptions import ServiceError
@@ -58,11 +59,10 @@ class CorrelationSearchQuerySchema(Schema):
 
 # ---- API Endpoints ----
 
-@fitness_correlation_router.get(
+@gene_router.get(
     "/gene/{gene_id}/correlations",
     summary="Get correlations for a gene",
     description="Get all genes correlated with a specific gene, ordered by correlation strength",
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_correlations(
@@ -97,7 +97,6 @@ async def get_gene_correlations(
     "/correlation",
     summary="Get correlation between two genes",
     description="Get the correlation value between two specific genes",
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_pair_correlation(
@@ -200,7 +199,6 @@ async def get_correlation_statistics(
     "/search",
     summary="Search correlations",
     description="Search correlations by gene name or product description",
-    include_in_schema=False,
 )
 @wrap_success_response
 async def search_correlations(

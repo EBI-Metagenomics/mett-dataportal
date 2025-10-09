@@ -5905,7 +5905,7 @@
 					"name": "Pooled_TTP",
 					"item": [
 						{
-							"name": "TTP - Meta",
+							"name": "TTP - Metadata",
 							"event": [
 								{
 									"listen": "test",
@@ -6483,6 +6483,1227 @@
 										{
 											"key": "has_evidence",
 											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Essentiality",
+					"item": [
+						{
+							"name": "Essentiality - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00002/essentiality",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00002",
+										"essentiality"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/essentiality",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"essentiality"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - Search by Call",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/essentiality/search?essentiality_call=essential",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"essentiality",
+										"search"
+									],
+									"query": [
+										{
+											"key": "essentiality_call",
+											"value": "essential"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - Search",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/essentiality/search?locus_tags=BU_ATCC8492_00002&uniprot_ids=A7V2F0,A6L272",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"essentiality",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										},
+										{
+											"key": "uniprot_ids",
+											"value": "A7V2F0,A6L272"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - Search for specific media",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/essentiality/search?essentiality_call=essential&experimental_condition=mGAM_undefined_rich_media",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"essentiality",
+										"search"
+									],
+									"query": [
+										{
+											"key": "essentiality_call",
+											"value": "essential"
+										},
+										{
+											"key": "experimental_condition",
+											"value": "mGAM_undefined_rich_media"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - Search with Quality Only",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/essentiality/search?min_tas_in_locus=25&min_tas_hit=0.8",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"essentiality",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_tas_in_locus",
+											"value": "25"
+										},
+										{
+											"key": "min_tas_hit",
+											"value": "0.8"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Fitness-Data",
+					"item": [
+						{
+							"name": "FitnessData - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00002/fitness",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00002",
+										"fitness"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/fitness",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"fitness"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - in caecal media",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?contrast=comm20_day7",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"",
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "contrast",
+											"value": "comm20_day7"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - with significant fitness defects",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?max_fdr=0.05&min_lfc=2.0",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "max_fdr",
+											"value": "0.05"
+										},
+										{
+											"key": "min_lfc",
+											"value": "2.0"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - by Locus Tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?locus_tags=BU_ATCC8492_00002",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - high-confidence fitness data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?min_barcodes=25&max_fdr=0.01",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_barcodes",
+											"value": "25"
+										},
+										{
+											"key": "max_fdr",
+											"value": "0.01"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Reactions",
+					"item": [
+						{
+							"name": "Reactions - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_02615/reactions",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_02615",
+										"reactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions- By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/reactions",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"reactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by Specific reaction",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?reaction_id=ASPTA",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "reaction_id",
+											"value": "ASPTA"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search for consuming specific metabolite",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?product=glu__L_c",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "product",
+											"value": "glu__L_c"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by Locus Tags",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?locus_tags=BU_ATCC8492_02615,BU_ATCC8492_02516",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_02615,BU_ATCC8492_02516"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by UniprotIds",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?uniprot_ids=A7UXT0,A7V3S8",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "uniprot_ids",
+											"value": "A7UXT0,A7V3S8"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by multiple filters",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?locus_tags=BU_ATCC8492_02615&substrate=akg_c&product=oaa_c",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_02615"
+										},
+										{
+											"key": "substrate",
+											"value": "akg_c"
+										},
+										{
+											"key": "product",
+											"value": "oaa_c"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by multiple filters 2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?substrate=akg_c&product=oaa_c",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "substrate",
+											"value": "akg_c"
+										},
+										{
+											"key": "product",
+											"value": "oaa_c"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Mutant-Growth",
+					"item": [
+						{
+							"name": "MutantGrowth - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/PV_ATCC8482_01384/mutant-growth",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"PV_ATCC8482_01384",
+										"mutant-growth"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "MutantGrowth- By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/mutant-growth",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"mutant-growth"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "MutantGrowth - fast-growing mutants",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/mutant-growth/search?max_doubling_time=2.0",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"mutant-growth",
+										"search"
+									],
+									"query": [
+										{
+											"key": "max_doubling_time",
+											"value": "2.0"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "MutantGrowth - Search for high-quality growth data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/mutant-growth/search?exclude_double_picked=true&media=caecal",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"mutant-growth",
+										"search"
+									],
+									"query": [
+										{
+											"key": "exclude_double_picked",
+											"value": "true"
+										},
+										{
+											"key": "media",
+											"value": "caecal"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Fitness-Correlation",
+					"item": [
+						{
+							"name": "Fitness-Correlation - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00002/correlations",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00002",
+										"correlations"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Fitness-Correlation - By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/fitness",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"fitness"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Fitness-Correlation - in caecal media",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?contrast=comm20_day7",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"",
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "contrast",
+											"value": "comm20_day7"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Fitness-Correlation - with significant fitness defects",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?max_fdr=0.05&min_lfc=2.0",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "max_fdr",
+											"value": "0.05"
+										},
+										{
+											"key": "min_lfc",
+											"value": "2.0"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Fitness-Correlation - by Locus Tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?locus_tags=BU_ATCC8492_00002",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Fitness-Correlation - high-confidence fitness data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?min_barcodes=25&max_fdr=0.01",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_barcodes",
+											"value": "25"
+										},
+										{
+											"key": "max_fdr",
+											"value": "0.01"
 										}
 									]
 								}
