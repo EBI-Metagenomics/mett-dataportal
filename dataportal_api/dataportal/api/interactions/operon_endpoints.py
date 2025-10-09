@@ -63,38 +63,6 @@ async def get_gene_operons(
 
 
 @operon_router.get(
-    "/{operon_id}",
-    response=SuccessResponseSchema,
-    summary="Get operon by ID",
-    description="Get detailed information about a specific operon",
-)
-@wrap_success_response
-async def get_operon_by_id(
-    request,
-    operon_id: str,
-):
-    """Get operon by ID."""
-    try:
-        operon = await operon_service.get_by_id(operon_id)
-
-        if operon is None:
-            raise HttpError(404, f"Operon {operon_id} not found")
-
-        return create_success_response(
-            data=operon,
-            message=f"Operon {operon_id} retrieved successfully"
-        )
-    except HttpError:
-        raise
-    except ServiceError as e:
-        logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get operon: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
-
-
-@operon_router.get(
     "/search",
     response=SuccessResponseSchema,
     summary="Search operons with filters",
@@ -111,7 +79,7 @@ async def search_operons(
     has_terminator: Optional[bool] = Query(None, description="Filter by presence of terminator"),
     min_gene_count: Optional[int] = Query(None, ge=2, description="Minimum number of genes"),
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(20, ge=1, le=100, description="Results per page")
+    per_page: int = Query(20, ge=1, le=10000, description="Results per page")
 ):
     """Search operons with filters."""
     try:
@@ -168,3 +136,34 @@ async def get_operon_statistics(
         logger.error(f"Unexpected error: {e}")
         raise HttpError(500, "Internal server error")
 
+
+@operon_router.get(
+    "/{operon_id}",
+    response=SuccessResponseSchema,
+    summary="Get operon by ID",
+    description="Get detailed information about a specific operon",
+)
+@wrap_success_response
+async def get_operon_by_id(
+    request,
+    operon_id: str,
+):
+    """Get operon by ID."""
+    try:
+        operon = await operon_service.get_by_id(operon_id)
+
+        if operon is None:
+            raise HttpError(404, f"Operon {operon_id} not found")
+
+        return create_success_response(
+            data=operon,
+            message=f"Operon {operon_id} retrieved successfully"
+        )
+    except HttpError:
+        raise
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise HttpError(500, f"Failed to get operon: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise HttpError(500, "Internal server error")

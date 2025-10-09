@@ -40,6 +40,8 @@ class OperonService(BaseService):
         if isolate_name:
             s = s.filter("term", isolate_name=isolate_name)
 
+        # logger.info(f'Build base search query: {s.to_dict()}')
+        
         return s
 
     async def get_by_id(self, operon_id: str) -> Optional[Dict[str, Any]]:
@@ -232,12 +234,17 @@ class OperonService(BaseService):
 
     def _convert_doc_to_dict(self, doc) -> Dict[str, Any]:
         """Convert Elasticsearch document to dictionary."""
+        # Convert genes from AttrList to regular Python list
+        genes = getattr(doc, "genes", [])
+        if genes and not isinstance(genes, list):
+            genes = list(genes)  # Convert AttrList to list
+        
         result = {
             "operon_id": doc.operon_id,
             "isolate_name": getattr(doc, "isolate_name", None),
             "species_acronym": getattr(doc, "species_acronym", None),
             "species_scientific_name": getattr(doc, "species_scientific_name", None),
-            "genes": getattr(doc, "genes", []),
+            "genes": genes,
             "gene_count": getattr(doc, "gene_count", 0),
             "has_tss": getattr(doc, "has_tss", False),
             "has_terminator": getattr(doc, "has_terminator", False),
