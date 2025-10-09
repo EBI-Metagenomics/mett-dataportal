@@ -81,8 +81,7 @@ async def search_fitness(
         
         has_identifiers = locus_tags or uniprot_ids
         has_filters = any([
-            query.media,
-            query.experimental_condition,
+            query.contrast,
             query.min_lfc,
             query.max_fdr,
             query.min_barcodes
@@ -101,8 +100,7 @@ async def search_fitness(
         results = await fitness_service.search_with_filters(
             locus_tags=locus_tags,
             uniprot_ids=uniprot_ids,
-            media=query.media,
-            experimental_condition=query.experimental_condition,
+            contrast=query.contrast,
             min_lfc=query.min_lfc,
             max_fdr=query.max_fdr,
             min_barcodes=query.min_barcodes,

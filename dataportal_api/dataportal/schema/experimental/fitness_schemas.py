@@ -9,7 +9,7 @@ class FitnessDataSchema(BaseModel):
     """Schema for individual fitness data entry."""
     
     experimental_condition: Optional[str] = Field(None, description="Experimental condition")
-    media: Optional[str] = Field(None, description="Growth media")
+    # media: Optional[str] = Field(None, description="Growth media")
     contrast: Optional[str] = Field(None, description="Contrast/comparison")
     lfc: Optional[float] = Field(None, description="Log fold change")
     fdr: Optional[float] = Field(None, description="False discovery rate")
@@ -19,9 +19,13 @@ class FitnessDataSchema(BaseModel):
 
 
 class FitnessWithGeneSchema(BaseModel):
-    """Schema combining fitness data with basic gene information."""
+    """Schema combining fitness data with basic gene/feature information."""
     
-    # Basic gene info
+    # Feature identification (required for both genes and intergenic)
+    feature_id: Optional[str] = Field(None, description="Unique feature identifier (ES document ID)")
+    feature_type: Optional[str] = Field(None, description="Feature type (gene or IG)")
+    
+    # Basic gene info (may be null for intergenic features)
     locus_tag: Optional[str] = None
     gene_name: Optional[str] = None
     uniprot_id: Optional[str] = None
@@ -50,13 +54,13 @@ class FitnessSearchQuerySchema(BaseModel):
         None,
         description="Comma-separated list of UniProt IDs to search for"
     )
-    media: Optional[str] = Field(
+    # media: Optional[str] = Field(
+    #     None,
+    #     description="Filter by growth media"
+    # )
+    contrast: Optional[str] = Field(
         None,
-        description="Filter by growth media"
-    )
-    experimental_condition: Optional[str] = Field(
-        None,
-        description="Filter by experimental condition"
+        description="Filter by contrast"
     )
     min_lfc: Optional[float] = Field(
         None,

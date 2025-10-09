@@ -120,8 +120,7 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
         
         s = (
             Search(index=self.index_name)
-            .filter("term", feature_type="gene")
-            .filter("term", has_essentiality=True)
+            .filter("term", has_essentiality=True)  # Fast boolean filter
         )
         
         should_conditions = []
@@ -134,7 +133,7 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
             s = s.query("bool", should=should_conditions, minimum_should_match=1)
         
         # Apply nested filters for essentiality_data
-        if any([essentiality_call, experimental_condition, min_tas_in_locus, min_tas_hit, element]):
+        if any([essentiality_call, experimental_condition, min_tas_in_locus is not None, min_tas_hit is not None, element]):
             nested_conditions = []
             
             if essentiality_call:
@@ -203,6 +202,8 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
         hit_dict = hit.to_dict()
         
         gene_data = {
+            "feature_id": hit.meta.id if hasattr(hit, 'meta') else None,
+            "feature_type": hit_dict.get("feature_type"),
             "locus_tag": hit_dict.get("locus_tag"),
             "gene_name": hit_dict.get("gene_name"),
             "uniprot_id": hit_dict.get("uniprot_id"),

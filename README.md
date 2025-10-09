@@ -323,16 +323,16 @@ python manage.py migrate django_celery_beat
 
 ```bash
 # Create all indices with default version
-python manage.py create_es_index
+$ python manage.py create_es_index
 
 # Create indices with specific version
-python manage.py create_es_index --es-version 2025.09.03
+$ python manage.py create_es_index --es-version 2025.09.03
 
 # Create specific model index
-python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 2025.09.03
+$ python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 2025.09.03
 
 # Recreate indices (delete and create)
-python manage.py create_es_index --es-version 2025.09.03 --if-exists recreate
+$ python manage.py create_es_index --es-version 2025.09.03 --if-exists recreate
 ```
 
 #### Index Naming Convention
@@ -419,7 +419,7 @@ $ python manage.py import_features \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
-  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/ \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
 
@@ -432,10 +432,10 @@ $ python manage.py import_features \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --skip-core-genes \
-  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/
 ```
 
-**Proteomics Evidence** (in case skipped in above step):
+**Proteomics Evidence (in case skipped in above step)**:
 ```bash
 $ python manage.py import_features \
   --index feature_index \
@@ -463,19 +463,8 @@ $ python manage.py import_features \
 
 ```bash
 $ python manage.py import_fitness_lfc \
-  --index feature_index \
+  --index feature_index-v5 \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
-```
-
-#### Fitness Correlation Data
-
-```bash
-$ python manage.py import_fitness_correlations \
-  --index fitness_correlation_index \
-  --correlation-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_corr_data \
-  --preload-gff \
-  --ftp-server ftp.ebi.ac.uk \
-  --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
 #### Mutant Growth Data
@@ -494,6 +483,18 @@ $ python manage.py ingest_pooled_ttp \
   --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_TPP.csv \
   --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pool_metadata.csv
 ```
+
+#### Fitness Correlation Data
+
+```bash
+$ python manage.py import_fitness_correlations \
+  --index fitness_correlation_index \
+  --correlation-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_corr_data \
+  --preload-gff \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
+```
+
 
 ### Network Data
 

@@ -133,8 +133,7 @@ class ProteomicsService(BaseService[ProteomicsWithGeneSchema, str]):
         # Build the search query - only return genes with proteomics data
         s = (
             Search(index=self.index_name)
-            .filter("term", feature_type="gene")
-            .filter("term", has_proteomics=True)  # Only genes with proteomics evidence
+            .filter("term", has_proteomics=True)  # Fast boolean filter
         )
         
         # Build the query conditions based on provided identifiers (if any)
@@ -222,8 +221,10 @@ class ProteomicsService(BaseService[ProteomicsWithGeneSchema, str]):
         """Convert Elasticsearch hit to ProteomicsWithGeneSchema."""
         hit_dict = hit.to_dict()
         
-        # Extract basic gene information
+        # Extract basic gene/feature information
         gene_data = {
+            "feature_id": hit.meta.id if hasattr(hit, 'meta') else None,
+            "feature_type": hit_dict.get("feature_type"),
             "locus_tag": hit_dict.get("locus_tag"),
             "gene_name": hit_dict.get("gene_name"),
             "uniprot_id": hit_dict.get("uniprot_id"),

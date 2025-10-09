@@ -100,8 +100,7 @@ class ReactionsService(BaseService[ReactionsWithGeneSchema, str]):
         
         s = (
             Search(index=self.index_name)
-            .filter("term", feature_type="gene")
-            .filter("term", has_reactions=True)
+            .filter("term", has_reactions=True)  # Fast boolean filter
         )
         
         should_conditions = []
@@ -118,7 +117,7 @@ class ReactionsService(BaseService[ReactionsWithGeneSchema, str]):
             s = s.filter("term", reactions=reaction_id)
         
         # Apply nested filters for reaction_details
-        if any([metabolite, substrate, product]):
+        if any([reaction_id, substrate, product]):
             nested_conditions = []
             
             if metabolite:
@@ -177,6 +176,8 @@ class ReactionsService(BaseService[ReactionsWithGeneSchema, str]):
         hit_dict = hit.to_dict()
         
         gene_data = {
+            "feature_id": hit.meta.id if hasattr(hit, 'meta') else None,
+            "feature_type": hit_dict.get("feature_type"),
             "locus_tag": hit_dict.get("locus_tag"),
             "gene_name": hit_dict.get("gene_name"),
             "uniprot_id": hit_dict.get("uniprot_id"),

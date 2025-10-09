@@ -103,8 +103,7 @@ class MutantGrowthService(BaseService[MutantGrowthWithGeneSchema, str]):
         
         s = (
             Search(index=self.index_name)
-            .filter("term", feature_type="gene")
-            .filter("term", has_mutant_growth=True)
+            .filter("term", has_mutant_growth=True)  # Fast boolean filter
         )
         
         should_conditions = []
@@ -117,13 +116,13 @@ class MutantGrowthService(BaseService[MutantGrowthWithGeneSchema, str]):
             s = s.query("bool", should=should_conditions, minimum_should_match=1)
         
         # Apply nested filters for mutant_growth
-        if any([media, experimental_condition, min_doubling_time, max_doubling_time, exclude_double_picked]):
+        if any([media, experimental_condition, min_doubling_time is not None, max_doubling_time is not None, exclude_double_picked is not None]):
             nested_conditions = []
             
             if media:
-                nested_conditions.append({"term": {"mutant_growth.media.keyword": media}})
+                nested_conditions.append({"term": {"mutant_growth.media": media}})
             if experimental_condition:
-                nested_conditions.append({"term": {"mutant_growth.experimental_condition.keyword": experimental_condition}})
+                nested_conditions.append({"term": {"mutant_growth.experimental_condition": experimental_condition}})
             if min_doubling_time is not None:
                 nested_conditions.append({"range": {"mutant_growth.doubling_time": {"gte": min_doubling_time}}})
             if max_doubling_time is not None:
@@ -184,6 +183,8 @@ class MutantGrowthService(BaseService[MutantGrowthWithGeneSchema, str]):
         hit_dict = hit.to_dict()
         
         gene_data = {
+            "feature_id": hit.meta.id if hasattr(hit, 'meta') else None,
+            "feature_type": hit_dict.get("feature_type"),
             "locus_tag": hit_dict.get("locus_tag"),
             "gene_name": hit_dict.get("gene_name"),
             "uniprot_id": hit_dict.get("uniprot_id"),

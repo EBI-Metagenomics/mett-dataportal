@@ -18,9 +18,13 @@ class ReactionDetailSchema(BaseModel):
 
 
 class ReactionsWithGeneSchema(BaseModel):
-    """Schema combining reaction data with basic gene information."""
+    """Schema combining reaction data with basic gene/feature information."""
     
-    # Basic gene info
+    # Feature identification (required for both genes and intergenic)
+    feature_id: Optional[str] = Field(None, description="Unique feature identifier (ES document ID)")
+    feature_type: Optional[str] = Field(None, description="Feature type (gene or IG)")
+    
+    # Basic gene info (may be null for intergenic features)
     locus_tag: Optional[str] = None
     gene_name: Optional[str] = None
     uniprot_id: Optional[str] = None

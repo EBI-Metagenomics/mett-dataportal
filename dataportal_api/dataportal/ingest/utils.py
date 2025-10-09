@@ -79,6 +79,89 @@ def parse_ig_neighbors(feature_id: str):
         return None, None
 
 
+def extract_isolate_from_locus_tag(locus_tag: str):
+    """
+    Extract isolate name from locus tag.
+    
+    Examples:
+        BU_ATCC8492_00001 → BU_ATCC8492
+        PV_H4-2_00001 → PV_H4-2
+        IG:BU_ATCC8492_01301__BU_ATCC8492_01302 → BU_ATCC8492
+    
+    Returns:
+        str or None: Isolate name if extractable, None otherwise
+    """
+    if not locus_tag:
+        return None
+    
+    # Remove IG: prefix if present
+    tag = locus_tag.replace("IG:", "").split("__")[0]
+    
+    # Split by underscore and take all but last part (which is the gene number)
+    parts = tag.split("_")
+    if len(parts) >= 2:
+        # Join all parts except the last one (gene number)
+        return "_".join(parts[:-1])
+    
+    return None
+
+
+def get_species_metadata_from_isolate(isolate_name: str, species_cache: dict = None):
+    """
+    Look up species metadata from isolate name.
+    
+    Uses a multi-tier approach:
+    1. Check cache
+    2. Try Elasticsearch strain_index lookup
+    3. Fallback to simple acronym-based mapping
+    
+    Args:
+        isolate_name: The isolate name to look up (e.g., "BU_ATCC8492")
+        species_cache: Optional cache dict to avoid repeated lookups
+    
+    Returns:
+        dict: Contains isolate_name, species_scientific_name, species_acronym
+    """
+    # Check cache first
+    if species_cache is not None and isolate_name in species_cache:
+        return species_cache[isolate_name]
+    
+    # Extract species acronym from isolate name (e.g., "BU_ATCC8492" → "BU")
+    species_acronym = strain_prefix(isolate_name) if isolate_name else None
+    
+    result = {
+        "isolate_name": isolate_name,
+        "species_scientific_name": SPECIES_NAME_BY_ACRONYM.get(species_acronym) if species_acronym else None,
+        "species_acronym": species_acronym,
+    }
+    
+    # Try to get more accurate data from Elasticsearch if available
+    try:
+        from elasticsearch_dsl import Search
+        from elasticsearch_dsl.connections import connections
+        
+        client = connections.get_connection()
+        s = Search(using=client, index="strain_index").filter("term", isolate_name=isolate_name).extra(size=1)
+        response = s.execute()
+        
+        if response.hits:
+            hit = response.hits[0].to_dict()
+            # Update with actual ES data if available
+            if hit.get("species_scientific_name"):
+                result["species_scientific_name"] = hit.get("species_scientific_name")
+            if hit.get("species_acronym"):
+                result["species_acronym"] = hit.get("species_acronym")
+    except Exception as e:
+        # Fallback to simple mapping is already set above
+        print(f"Warning: Could not lookup species from ES for {isolate_name}, using fallback mapping: {e}")
+    
+    # Cache the result
+    if species_cache is not None:
+        species_cache[isolate_name] = result
+    
+    return result
+
+
 def read_tsv_mapping(path, key_col, val_col, strip_suffix=".fa"):
     mapping = {}
     with open(path, "r") as f:

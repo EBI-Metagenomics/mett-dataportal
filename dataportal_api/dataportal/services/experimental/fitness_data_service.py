@@ -44,8 +44,7 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
         self,
         locus_tags: Optional[List[str]] = None,
         uniprot_ids: Optional[List[str]] = None,
-        media: Optional[str] = None,
-        experimental_condition: Optional[str] = None,
+        contrast: Optional[str] = None,
         min_lfc: Optional[float] = None,
         max_fdr: Optional[float] = None,
         min_barcodes: Optional[int] = None,
@@ -55,8 +54,7 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
             results = await sync_to_async(self._fetch_fitness_by_identifiers)(
                 locus_tags=locus_tags or [],
                 uniprot_ids=uniprot_ids or [],
-                media=media,
-                experimental_condition=experimental_condition,
+                contrast=contrast,
                 min_lfc=min_lfc,
                 max_fdr=max_fdr,
                 min_barcodes=min_barcodes,
@@ -91,8 +89,7 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
         self,
         locus_tags: Optional[List[str]] = None,
         uniprot_ids: Optional[List[str]] = None,
-        media: Optional[str] = None,
-        experimental_condition: Optional[str] = None,
+        contrast: Optional[str] = None,
         min_lfc: Optional[float] = None,
         max_fdr: Optional[float] = None,
         min_barcodes: Optional[int] = None,
@@ -103,8 +100,7 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
         
         s = (
             Search(index=self.index_name)
-            .filter("term", feature_type="gene")
-            .filter("term", has_fitness=True)
+            .filter("term", has_fitness=True)  # Fast boolean filter
         )
         
         should_conditions = []
@@ -117,13 +113,11 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
             s = s.query("bool", should=should_conditions, minimum_should_match=1)
         
         # Apply nested filters for fitness
-        if any([media, experimental_condition, min_lfc, max_fdr, min_barcodes]):
+        if any([contrast, min_lfc is not None, max_fdr is not None, min_barcodes is not None]):
             nested_conditions = []
-            
-            if media:
-                nested_conditions.append({"term": {"fitness.media.keyword": media}})
-            if experimental_condition:
-                nested_conditions.append({"term": {"fitness.experimental_condition.keyword": experimental_condition}})
+
+            if contrast:
+                nested_conditions.append({"term": {"fitness.contrast": contrast}})
             if min_lfc is not None:
                 # Use absolute value for LFC
                 nested_conditions.append({"range": {"fitness.lfc": {"gte": min_lfc}}})
@@ -142,7 +136,9 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
             s = s.extra(size=min(total_identifiers, 1000))
         else:
             s = s.extra(size=100000)
-        
+
+        logger.info(f'Final Query: {s.to_dict()}')
+
         response = s.execute()
         
         results = []
@@ -155,15 +151,9 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
                     filtered_fitness = []
                     for entry in schema.fitness:
                         # Apply the same filters used in the nested query
-                        if experimental_condition and entry.experimental_condition != experimental_condition:
-                            continue
-                        if media and entry.media != media:
-                            continue
                         if contrast and entry.contrast != contrast:
                             continue
                         if min_lfc is not None and (entry.lfc is None or entry.lfc < min_lfc):
-                            continue
-                        if max_lfc is not None and (entry.lfc is None or entry.lfc > max_lfc):
                             continue
                         if max_fdr is not None and (entry.fdr is None or entry.fdr > max_fdr):
                             continue
@@ -189,6 +179,8 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
         hit_dict = hit.to_dict()
         
         gene_data = {
+            "feature_id": hit.meta.id if hasattr(hit, 'meta') else None,
+            "feature_type": hit_dict.get("feature_type"),
             "locus_tag": hit_dict.get("locus_tag"),
             "gene_name": hit_dict.get("gene_name"),
             "uniprot_id": hit_dict.get("uniprot_id"),
@@ -205,7 +197,6 @@ class FitnessDataService(BaseService[FitnessWithGeneSchema, str]):
             for entry in fitness_raw:
                 fitness_data.append(FitnessDataSchema(
                     experimental_condition=entry.get("experimental_condition"),
-                    media=entry.get("media"),
                     contrast=entry.get("contrast"),
                     lfc=entry.get("lfc"),
                     fdr=entry.get("fdr"),

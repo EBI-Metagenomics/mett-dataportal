@@ -2,7 +2,11 @@ from typing import Any, Dict
 
 from dataportal.ingest.es_repo import bulk_exec
 from dataportal.ingest.feature.flows.base import Flow
-from dataportal.ingest.utils import chunks_from_table
+from dataportal.ingest.utils import (
+    chunks_from_table,
+    extract_isolate_from_locus_tag,
+    get_species_metadata_from_isolate,
+)
 
 
 class Proteomics(Flow):
@@ -15,6 +19,7 @@ class Proteomics(Flow):
 
     def __init__(self, index_name: str = "feature_index"):
         super().__init__(index_name=index_name)
+        self._species_cache = {}  # Cache for species lookups
 
     def run(self, tsv_or_csv_path: str, chunksize: int = 10_000) -> None:
         actions: list[Dict[str, Any]] = []
@@ -32,6 +37,25 @@ class Proteomics(Flow):
                     "unique_intensity": unique_intensity,
                     "evidence": evidence,
                 }
+                
+                # Determine feature type
+                feature_type = "IG" if fid.startswith("IG:") or fid.startswith("IG-between-") else "gene"
+                
+                # Build upsert data
+                upsert_data = {
+                    "feature_id": fid,
+                    "feature_type": feature_type,
+                    "proteomics": [entry],
+                    "has_proteomics": True,
+                }
+                
+                # Add genome/species metadata for IG features
+                if feature_type == "IG":
+                    isolate_name = extract_isolate_from_locus_tag(fid)
+                    if isolate_name:
+                        species_metadata = get_species_metadata_from_isolate(isolate_name, self._species_cache)
+                        upsert_data.update(species_metadata)
+                
                 actions.append({
                     "_op_type": "update",
                     "_index": self.index,
@@ -44,12 +68,7 @@ class Proteomics(Flow):
     """,
                         "params": {"entry": entry},
                     },
-                    "upsert": {
-                        "feature_id": fid,
-                        "feature_type": "gene",
-                        "proteomics": [entry],
-                        "has_proteomics": True,
-                    },
+                    "upsert": upsert_data,
                     "scripted_upsert": True,
                 })
                 if len(actions) >= 500:
