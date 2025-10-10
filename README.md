@@ -531,6 +531,7 @@ $ python manage.py import_operons \
 
 ```bash
 $ python manage.py import_orthologs_with_genes \
+  --index ortholog_index \
   --ortholog-directory ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
