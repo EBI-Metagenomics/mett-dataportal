@@ -10,6 +10,7 @@ import os
 import tempfile
 import ftplib
 import logging
+import time
 from typing import Dict, Optional, Tuple, Any, List
 from dataclasses import dataclass
 
@@ -46,8 +47,8 @@ class GFFParser:
         self._loaded_isolates: set = set()  # Track which isolates have been loaded
     
     def _reconnect_ftp(self) -> ftplib.FTP:
-        """Handle FTP connection with retry logic."""
-        retries = 3
+        """Handle FTP connection with retry logic and exponential backoff."""
+        retries = 5  # Increased retries
         for attempt in range(retries):
             try:
                 ftp = ftplib.FTP(self.ftp_server)
@@ -55,9 +56,10 @@ class GFFParser:
                 return ftp
             except ftplib.all_errors as e:
                 if attempt < retries - 1:
-                    logger.warning(f"FTP connection failed, retrying... (attempt {attempt + 1})")
-                    import time
-                    time.sleep(2)
+                    # Exponential backoff: 1s, 2s, 4s, 8s
+                    delay = 2 ** attempt
+                    logger.warning(f"FTP connection failed, retrying in {delay}s... (attempt {attempt + 1}/{retries})")
+                    time.sleep(delay)
                 else:
                     logger.error(f"Failed to connect to FTP after {retries} attempts: {e}")
                     raise
@@ -252,25 +254,41 @@ class GFFParser:
             logger.debug(f"  {species} -> {isolate}")
     
     def preload_gff_files(self, species_list: List[str]) -> None:
-        """Pre-load GFF files for all species in the list."""
-        # logger.info(f"Pre-loading GFF files for {len(species_list)} species...")
+        """Pre-load GFF files for all species in the list with connection throttling."""
+        logger.info(f"Pre-loading GFF files for {len(species_list)} species...")
         
-        for species in species_list:
+        successful_loads = 0
+        failed_loads = 0
+        
+        for i, species in enumerate(species_list, 1):
             isolate = self._species_to_isolate.get(species)
             if not isolate:
                 logger.warning(f"No isolate mapping found for species: {species}")
                 continue
             
             if isolate in self._loaded_isolates:
-                # logger.info(f"GFF data already loaded for isolate: {isolate}")
+                logger.debug(f"GFF data already loaded for isolate: {isolate}")
                 continue
             
             try:
+                logger.info(f"Loading GFF file {i}/{len(species_list)}: {isolate}")
                 self._load_isolate_gff_data(isolate)
                 self._loaded_isolates.add(isolate)
-                # logger.info(f"Successfully loaded GFF data for isolate: {isolate}")
+                successful_loads += 1
+                logger.info(f"Successfully loaded GFF data for isolate: {isolate}")
+                
+                # Add delay between downloads to avoid overwhelming the FTP server
+                if i < len(species_list):  # Don't delay after the last file
+                    time.sleep(0.5)  # 500ms delay between downloads
+                    
             except Exception as e:
+                failed_loads += 1
                 logger.error(f"Failed to load GFF data for isolate {isolate}: {e}")
+                
+                # Add longer delay after failures to give the server time to recover
+                time.sleep(2.0)  # 2 second delay after failures
+        
+        logger.info(f"GFF preload complete: {successful_loads} successful, {failed_loads} failed")
     
     def _load_isolate_gff_data(self, isolate: str) -> None:
         """Load GFF data for a specific isolate."""
@@ -319,16 +337,52 @@ class GFFParser:
                 os.remove(local_gff_path)
     
     def get_gene_info(self, species: str, locus_tag: str) -> Optional[GeneInfo]:
-        """Get gene information for a specific locus tag from a species."""
-        # logger.info(f"Getting gene info for species: {species}, locus_tag: {locus_tag}")
-        
+        """Get gene information for a specific locus tag from a species.
+
+        Supports both plain species names (e.g., "Bacteroides uniformis") and
+        unique species keys we generate to represent an isolate
+        (e.g., "Bacteroides uniformis_BU_WH712"). If the mapping for a unique
+        key is missing, this method will attempt to lazily load and map the
+        corresponding isolate on-demand.
+        """
+        # Try direct mapping first
         isolate = self._species_to_isolate.get(species)
-        if not isolate:
-            logger.warning(f"No isolate mapping found for species: {species}")
-            logger.info(f"Available species mappings: {self._species_to_isolate}")
-            return None
         
-        # logger.info(f"Species {species} maps to isolate: {isolate}")
+        # If not found, attempt to parse a unique key of the form
+        # "<species_name>_<isolate>" and map lazily
+        if not isolate:
+            # Heuristic: isolate names begin with an acronym like BU_ or PV_
+            # so look for the last occurrence of " BU_" or " PV_" suffixes
+            parsed_isolate: Optional[str] = None
+            if "_BU_" in species:
+                parsed_isolate = species.split("_BU_", 1)[1]
+                parsed_isolate = f"BU_{parsed_isolate}"
+            elif "_PV_" in species:
+                parsed_isolate = species.split("_PV_", 1)[1]
+                parsed_isolate = f"PV_{parsed_isolate}"
+            
+            if parsed_isolate:
+                try:
+                    if parsed_isolate not in self._loaded_isolates:
+                        # Load this isolate's GFF on-demand
+                        self._load_isolate_gff_data(parsed_isolate)
+                        self._loaded_isolates.add(parsed_isolate)
+                    # Map the unique key to this isolate for subsequent calls
+                    self._species_to_isolate[species] = parsed_isolate
+                    isolate = parsed_isolate
+                    logger.info(f"Dynamically mapped '{species}' to isolate '{parsed_isolate}'")
+                except Exception as e:
+                    logger.warning(
+                        f"Unable to dynamically load isolate for species key '{species}': {e}"
+                    )
+                    # Fall through to final warning below if still not mapped
+            
+        if not isolate:
+            logger.warning(
+                f"No isolate mapping found for species key '{species}'. "
+                f"Available species keys: {list(self._species_to_isolate.keys())[:5]}..."
+            )
+            return None
         
         # Load GFF data if not already loaded
         if isolate not in self._loaded_isolates:
@@ -356,16 +410,37 @@ class GFFParser:
             return None
     
     def get_gene_info_by_uniprot(self, species: str, uniprot_id: str) -> Optional[GeneInfo]:
-        """Get gene information for a specific UniProt ID from a species."""
-        # logger.info(f"Getting gene info for species: {species}, uniprot_id: {uniprot_id}")
-        
+        """Get gene information for a specific UniProt ID from a species.
+
+        Mirrors get_gene_info's behavior for dynamically mapping unique species keys.
+        """
         isolate = self._species_to_isolate.get(species)
         if not isolate:
-            logger.warning(f"No isolate mapping found for species: {species}")
-            logger.info(f"Available species mappings: {self._species_to_isolate}")
+            parsed_isolate: Optional[str] = None
+            if "_BU_" in species:
+                parsed_isolate = species.split("_BU_", 1)[1]
+                parsed_isolate = f"BU_{parsed_isolate}"
+            elif "_PV_" in species:
+                parsed_isolate = species.split("_PV_", 1)[1]
+                parsed_isolate = f"PV_{parsed_isolate}"
+            if parsed_isolate:
+                try:
+                    if parsed_isolate not in self._loaded_isolates:
+                        self._load_isolate_gff_data(parsed_isolate)
+                        self._loaded_isolates.add(parsed_isolate)
+                    self._species_to_isolate[species] = parsed_isolate
+                    isolate = parsed_isolate
+                    logger.info(f"Dynamically mapped '{species}' to isolate '{parsed_isolate}'")
+                except Exception as e:
+                    logger.warning(
+                        f"Unable to dynamically load isolate for species key '{species}': {e}"
+                    )
+        if not isolate:
+            logger.warning(
+                f"No isolate mapping found for species key '{species}'. "
+                f"Available species keys: {list(self._species_to_isolate.keys())[:5]}..."
+            )
             return None
-        
-        # logger.info(f"Species {species} maps to isolate: {isolate}")
         
         # Load GFF data if not already loaded
         if isolate not in self._loaded_isolates:

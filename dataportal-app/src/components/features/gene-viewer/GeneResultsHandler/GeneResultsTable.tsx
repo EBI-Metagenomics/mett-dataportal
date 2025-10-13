@@ -19,6 +19,8 @@ interface GeneResultsTableProps {
     isTypeStrainAvailable: boolean;
     onDownloadTSV?: () => void;
     isLoading?: boolean;
+    sortField?: string;
+    sortOrder?: 'asc' | 'desc';
 }
 
 const generateLink = (template: string, result: any) => {
@@ -70,9 +72,15 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                                isTypeStrainAvailable,
                                                                onDownloadTSV,
                                                                isLoading,
+                                                               sortField: propSortField,
+                                                               sortOrder: propSortOrder,
                                                            }) => {
-    const [sortField, setSortField] = useState<string | null>(null);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    // Use props if provided, otherwise fall back to local state
+    const [localSortField, setLocalSortField] = useState<string | null>(null);
+    const [localSortOrder, setLocalSortOrder] = useState<'asc' | 'desc'>('asc');
+    
+    const sortField = propSortField || localSortField;
+    const sortOrder = propSortOrder || localSortOrder;
 
     const availableColumns = GENE_TABLE_COLUMNS.filter(col =>
         isTypeStrainAvailable || !col.onlyForTypeStrain
@@ -82,6 +90,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
             .filter(col => col.defaultVisible !== false)
             .map(col => col.key)
     );
+    
     const [columnLimitError, setColumnLimitError] = useState(false);
 
     useEffect(() => {
@@ -92,8 +101,15 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
 
     const handleSort = (field: string) => {
         const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
-        setSortField(field);
-        setSortOrder(newSortOrder);
+        
+        // Only update local state if props are not provided
+        if (!propSortField) {
+            setLocalSortField(field);
+        }
+        if (!propSortOrder) {
+            setLocalSortOrder(newSortOrder);
+        }
+        
         onSortClick(field, newSortOrder);
     };
 
@@ -239,8 +255,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 </tbody>
             </table>
         </section>
-    )
-        ;
+    );
 };
 
 export default GeneResultsTable;

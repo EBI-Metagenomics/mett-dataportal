@@ -18,6 +18,7 @@ from .features import FeatureDocument
 from .interactions import ProteinProteinDocument
 from .operons import OperonDocument
 from .orthologs import OrthologDocument
+from .fitness_correlation import GeneFitnessCorrelationDocument
 
 __all__ = [
     # Base utilities
@@ -33,4 +34,5 @@ __all__ = [
     "ProteinProteinDocument",
     "OperonDocument",
     "OrthologDocument",
+    "GeneFitnessCorrelationDocument",
 ]

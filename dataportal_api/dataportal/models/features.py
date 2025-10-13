@@ -137,6 +137,10 @@ class FeatureDocument(Document):
             "fdr": Float(),
             "hit_calling": Boolean(),
             "experimental_condition": Keyword(),
+            "notes": Text(fields={"keyword": Keyword()}),
+            "assay": Keyword(),
+            "poolA": Keyword(),
+            "poolB": Keyword(),
         }
     )
 
@@ -148,7 +152,8 @@ class FeatureDocument(Document):
             "media": Keyword(),
             "contrast": Keyword(),
             "lfc": Float(),
-            "fdr": Float()
+            "fdr": Float(),
+            "number_of_barcodes": Integer()  # TnSeq barcode count (reliability indicator)
         }
     )
 
@@ -171,11 +176,14 @@ class FeatureDocument(Document):
     # ---- MUTANT GROWTH (new) ----
     mutant_growth = Nested(
         properties={
-            "media": Keyword(),
-            "experimental_condition": Keyword(),
-            "replicate": Integer(),
-            "tas_hit": Float(),                         # 0..1
-            "doubling_rate_h": Float(),
+            "doubling_time": Float(),                   # Core numeric readout (hours)
+            "isdoublepicked": Boolean(),                # TRUE if mutant was picked twice (not truly independent replicates)
+            "brep": Keyword(),                          # Biological replicate identifier (brep_1, brep_2, etc.)
+            "plate384": Integer(),                      # Position in 384-well arrayed library
+            "well384": Keyword(),                       # Well position (A17, C16, etc.)
+            "percent_from_start": Float(),              # Transposon insertion position in gene (0-1)
+            "media": Keyword(),                         # Experimental media/condition (e.g., "caecal")
+            "experimental_condition": Keyword(),        # Overall experimental context
         }
     )
 

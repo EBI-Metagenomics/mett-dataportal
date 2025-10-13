@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from dataportal.ingest.constants import SPECIES_BY_ACRONYM
 from dataportal.ingest.es_repo import bulk_exec
 from dataportal.ingest.feature.flows.base import Flow
+from dataportal.ingest.gff.parser import GFFParser
 from dataportal.ingest.utils import canonical_pair_id
 from dataportal.ingest.utils import chunks_from_table
 
@@ -64,11 +65,12 @@ class Operons(Flow):
     No edge storage; we just aggregate per-operon rollups and taxonomy.
     """
 
-    def __init__(self, index_name: str = "operon_index"):
+    def __init__(self, index_name: str = "operon_index", gff_parser: Optional[GFFParser] = None):
         super().__init__(index_name=index_name)
         self._docs: Dict[str, Dict[str, Any]] = {}
         # scratch collectors for resolving taxonomy per operon
         self._scratch: Dict[str, Dict[str, Counter]] = {}  # oid -> {"acronyms": Counter(), "isolates": Counter()}
+        self.gff_parser = gff_parser
 
     def run(self, path: str, chunksize: int = 5_000) -> None:
         rows = 0
@@ -84,6 +86,19 @@ class Operons(Flow):
                 gb = _get(rec, km, "gene_b_locus_tag", "gene2", "gene_b", "right", "locus_b")
                 ga = str(ga).strip() if ga else None
                 gb = str(gb).strip() if gb else None
+
+                # gene A/B details (optional columns)
+                ga_name = _get(rec, km, "gene_a_name", "gene_a_gene_name", "gene_a_symbol", "name_a", "gene1_name")
+                gb_name = _get(rec, km, "gene_b_name", "gene_b_gene_name", "gene_b_symbol", "name_b", "gene2_name")
+
+                ga_uniprot = _get(rec, km, "gene_a_uniprot_id", "uniprot_a", "uniprot_id_a", "gene1_uniprot")
+                gb_uniprot = _get(rec, km, "gene_b_uniprot_id", "uniprot_b", "uniprot_id_b", "gene2_uniprot")
+
+                ga_product = _get(rec, km, "gene_a_product", "product_a", "gene1_product", "product_left")
+                gb_product = _get(rec, km, "gene_b_product", "product_b", "gene2_product", "product_right")
+
+                ga_isolate = _get(rec, km, "gene_a_isolate_name", "isolate_a", "isolate_left")
+                gb_isolate = _get(rec, km, "gene_b_isolate_name", "isolate_b", "isolate_right")
 
                 operon_id = _get(rec, km, "operon_id", "operon")
                 if operon_id in (None, "", "nan", "NaN"):
@@ -107,6 +122,18 @@ class Operons(Flow):
                         "species_acronym": None,
                         "species_scientific_name": None,
                         "genes": [],
+                        # gene A
+                        "gene_a_locus_tag": None,
+                        "gene_a_uniprot_id": None,
+                        "gene_a_name": None,
+                        "gene_a_product": None,
+                        "gene_a_isolate_name": None,
+                        # gene B
+                        "gene_b_locus_tag": None,
+                        "gene_b_uniprot_id": None,
+                        "gene_b_name": None,
+                        "gene_b_product": None,
+                        "gene_b_isolate_name": None,
                         "has_tss": False,
                         "has_terminator": False,
                     }
@@ -129,6 +156,37 @@ class Operons(Flow):
                     if iso:
                         self._scratch[oid]["isolates"][iso] += 1
 
+                # set per-gene details without overwriting once present
+                if ga and not doc["gene_a_locus_tag"]:
+                    doc["gene_a_locus_tag"] = ga
+                if gb and not doc["gene_b_locus_tag"]:
+                    doc["gene_b_locus_tag"] = gb
+
+                if ga_name and not doc["gene_a_name"]:
+                    doc["gene_a_name"] = str(ga_name).strip()
+                if gb_name and not doc["gene_b_name"]:
+                    doc["gene_b_name"] = str(gb_name).strip()
+
+                if ga_uniprot and not doc["gene_a_uniprot_id"]:
+                    doc["gene_a_uniprot_id"] = str(ga_uniprot).strip()
+                if gb_uniprot and not doc["gene_b_uniprot_id"]:
+                    doc["gene_b_uniprot_id"] = str(gb_uniprot).strip()
+
+                if ga_product and not doc["gene_a_product"]:
+                    doc["gene_a_product"] = str(ga_product).strip()
+                if gb_product and not doc["gene_b_product"]:
+                    doc["gene_b_product"] = str(gb_product).strip()
+
+                # infer isolates per gene from explicit columns or locus tag
+                if not doc["gene_a_isolate_name"]:
+                    inferred_ga_iso = ga_isolate or parse_isolate_name(ga) if ga else None
+                    if inferred_ga_iso:
+                        doc["gene_a_isolate_name"] = str(inferred_ga_iso).strip()
+                if not doc["gene_b_isolate_name"]:
+                    inferred_gb_iso = gb_isolate or parse_isolate_name(gb) if gb else None
+                    if inferred_gb_iso:
+                        doc["gene_b_isolate_name"] = str(inferred_gb_iso).strip()
+
                 # set rollups
                 if has_tss is True:
                     doc["has_tss"] = True
@@ -142,6 +200,44 @@ class Operons(Flow):
                     doc["species_acronym"] = str(explicit_acr).strip()
                 if explicit_sci and not doc["species_scientific_name"]:
                     doc["species_scientific_name"] = str(explicit_sci).strip()
+
+                # Enrich per-gene details from preloaded GFF if available
+                if self.gff_parser:
+                    # Gene A
+                    if ga and (not doc["gene_a_name"] or not doc["gene_a_product"] or not doc["gene_a_uniprot_id"]):
+                        acr_a = parse_species_acronym(ga)
+                        iso_a = parse_isolate_name(ga)
+                        species_name_a = species_name_from_acronym(acr_a) if acr_a else None
+                        if species_name_a and iso_a:
+                            unique_species_a = f"{species_name_a}_{iso_a}"
+                            gi_a = self.gff_parser.get_gene_info(unique_species_a, ga)
+                            if gi_a:
+                                if not doc["gene_a_name"] and gi_a.name:
+                                    doc["gene_a_name"] = gi_a.name
+                                if not doc["gene_a_product"] and gi_a.product:
+                                    doc["gene_a_product"] = gi_a.product
+                                if not doc["gene_a_uniprot_id"] and gi_a.uniprot_id:
+                                    doc["gene_a_uniprot_id"] = gi_a.uniprot_id
+                                if not doc["gene_a_isolate_name"] and iso_a:
+                                    doc["gene_a_isolate_name"] = iso_a
+
+                    # Gene B
+                    if gb and (not doc["gene_b_name"] or not doc["gene_b_product"] or not doc["gene_b_uniprot_id"]):
+                        acr_b = parse_species_acronym(gb)
+                        iso_b = parse_isolate_name(gb)
+                        species_name_b = species_name_from_acronym(acr_b) if acr_b else None
+                        if species_name_b and iso_b:
+                            unique_species_b = f"{species_name_b}_{iso_b}"
+                            gi_b = self.gff_parser.get_gene_info(unique_species_b, gb)
+                            if gi_b:
+                                if not doc["gene_b_name"] and gi_b.name:
+                                    doc["gene_b_name"] = gi_b.name
+                                if not doc["gene_b_product"] and gi_b.product:
+                                    doc["gene_b_product"] = gi_b.product
+                                if not doc["gene_b_uniprot_id"] and gi_b.uniprot_id:
+                                    doc["gene_b_uniprot_id"] = gi_b.uniprot_id
+                                if not doc["gene_b_isolate_name"] and iso_b:
+                                    doc["gene_b_isolate_name"] = iso_b
 
         # finalize per-operon taxonomy after reading all rows
         for oid, doc in self._docs.items():

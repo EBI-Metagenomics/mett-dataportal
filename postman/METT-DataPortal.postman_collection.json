@@ -1344,6 +1344,41 @@
 							"response": []
 						},
 						{
+							"name": "Gene-Faceted-Search-test Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-prod}}/api/genes/faceted-search",
+									"host": [
+										"{{mett-prod}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"faceted-search"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Gene-Autocomplete-01",
 							"event": [
 								{
@@ -1433,6 +1468,51 @@
 										{
 											"key": "query",
 											"value": "PV_ATCC8482_03700"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Gene-Autocomplete-UniprotId",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json().data;",
+											"    pm.expect(jsonData.length).to.eql(1); ",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/autocomplete?query=A7V2E8",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"autocomplete"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "A7V2E8"
 										}
 									]
 								}
@@ -1609,7 +1689,8 @@
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -1713,7 +1794,7 @@
 											"",
 											"pm.test(\"Number of pages matches expected value\", function () {",
 											"    const jsonData = pm.response.json().data;",
-											"    pm.expect(jsonData.length).to.eql(8); ",
+											"    pm.expect(jsonData.length).to.eql(3); ",
 											"});"
 										],
 										"type": "text/javascript",
@@ -1769,7 +1850,7 @@
 											"",
 											"pm.test(\"Json data length matches expected value\", function () {",
 											"    const jsonData = pm.response.json().data;",
-											"    pm.expect(jsonData.length).to.eql(10); ",
+											"    pm.expect(jsonData.length).to.eql(20); ",
 											"});"
 										],
 										"type": "text/javascript",
@@ -1946,7 +2027,8 @@
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -1974,7 +2056,7 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"pm.test(\"Status code is 404\", function () {",
+											"pm.test(\"Status code is 500\", function () {",
 											"    pm.response.to.have.status(404);",
 											"});"
 										],
@@ -2522,7 +2604,115 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genes/search/advanced?query=BU_H1-6_01257&page=1&per_page=10&sort_field=locus_tag&sort_order=asc",
+									"raw": "{{mett-current}}/api/genes/search/advanced?page=1&per_page=10&sort_field=locus_tag&sort_order=asc&locus_tag=BU_H1-6_01257",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"search",
+										"advanced"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "per_page",
+											"value": "10"
+										},
+										{
+											"key": "sort_field",
+											"value": "locus_tag"
+										},
+										{
+											"key": "sort_order",
+											"value": "asc"
+										},
+										{
+											"key": "locus_tag",
+											"value": "BU_H1-6_01257"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genes-by-LocusTag-EXACT Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Results array contains exactly 5 records\", function () {",
+											"    const jsonData = pm.response.json(); ",
+											"    pm.expect(jsonData.data).to.be.an('array').with.lengthOf(1);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/search/advanced?locus_tag=BU_JCM13286_03494",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"search",
+										"advanced"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_JCM13286_03494"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Genes-by-GENOME_EXACT",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Number of pages matches expected value\", function () {",
+											"    const jsonData = pm.response.json().pagination;",
+											"    pm.expect(jsonData.num_pages).to.be.eq(390);",
+											"});",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/search/advanced?query=bu_909&page=1&per_page=10&sort_field=locus_tag&sort_order=asc",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -2535,7 +2725,7 @@
 									"query": [
 										{
 											"key": "query",
-											"value": "BU_H1-6_01257"
+											"value": "bu_909"
 										},
 										{
 											"key": "page",
@@ -3008,7 +3198,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{mett-current}}/api/pyhmmer/search/mxchoices",
+											"raw": "{{mett-current}}/api/pyhmmer/search/mx-choices",
 											"host": [
 												"{{mett-current}}"
 											],
@@ -3016,7 +3206,7 @@
 												"api",
 												"pyhmmer",
 												"search",
-												"mxchoices"
+												"mx-choices"
 											]
 										},
 										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
@@ -3028,6 +3218,55 @@
 						{
 							"name": "Search",
 							"item": [
+								{
+									"name": "pyhmmer-search-req Copy",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let json = pm.response.json();",
+													"if (json.id) {",
+													"    pm.globals.set(\"hmmer_job_id\", json.id);",
+													"}"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{mett-current}}/api/pyhmmer/search",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"pyhmmer",
+												"search"
+											]
+										},
+										"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+									},
+									"response": []
+								},
 								{
 									"name": "pyhmmer-search-req",
 									"event": [
@@ -3618,12 +3857,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/result/{{hmmer_job_id}}/download?format=tab",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=tab",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3665,12 +3902,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/result/{{hmmer_job_id}}/download?format=fasta",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=fasta",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3712,12 +3947,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/result/{{hmmer_job_id}}/download?format=aligned_fasta",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=aligned_fasta",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3759,12 +3992,10 @@
 											}
 										},
 										"url": {
-											"raw": "http://localhost:8000/api/pyhmmer/result/{{hmmer_job_id}}/download?format=csv",
-											"protocol": "http",
+											"raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=csv",
 											"host": [
-												"localhost"
+												"{{mett-current}}"
 											],
-											"port": "8000",
 											"path": [
 												"api",
 												"pyhmmer",
@@ -3784,6 +4015,3908 @@
 									"response": []
 								}
 							]
+						}
+					]
+				},
+				{
+					"name": "Drug",
+					"item": [
+						{
+							"name": "Drug-Data",
+							"item": [
+								{
+									"name": "Drug-Data-BU-By-IsolateName",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/genomes/BU_ATCC8492/drug-data",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"genomes",
+												"BU_ATCC8492",
+												"drug-data"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-Data-PV-By-IsolateName",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/genomes/PV_ATCC8482/drug-data",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"genomes",
+												"PV_ATCC8482",
+												"drug-data"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "MIC",
+							"item": [
+								{
+									"name": "by-isolate",
+									"item": [
+										{
+											"name": "Drug-MIC-BU-for-Isolate",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 200\", function () {",
+															"    pm.response.to.have.status(200);",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/genomes/BU_ATCC8492/drug-mic",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"genomes",
+														"BU_ATCC8492",
+														"drug-mic"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-PV-for-Isolate",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 200\", function () {",
+															"    pm.response.to.have.status(200);",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/genomes/PV_ATCC8482/drug-mic",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"genomes",
+														"PV_ATCC8482",
+														"drug-mic"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "by-drug",
+									"item": [
+										{
+											"name": "Drug-MIC-By-Drug-Name",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 200\", function () {",
+															"    pm.response.to.have.status(200);",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/by-drug/azithromycin",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"by-drug",
+														"azithromycin"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-By-Drug-Name-Fuzzy",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/by-drug/actinomycin",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"by-drug",
+														"actinomycin"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-By-Drug-Name&Species",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/by-drug/azithromycin?species_acronym=BU",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"by-drug",
+														"azithromycin"
+													],
+													"query": [
+														{
+															"key": "species_acronym",
+															"value": "BU"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-By-Drug-Name-Paginated",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/search?drug_name=amoxicillin&species_acronym=BU&page=1&per_page=10",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"search"
+													],
+													"query": [
+														{
+															"key": "drug_name",
+															"value": "amoxicillin"
+														},
+														{
+															"key": "species_acronym",
+															"value": "BU"
+														},
+														{
+															"key": "page",
+															"value": "1"
+														},
+														{
+															"key": "per_page",
+															"value": "10"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-By-Filters-MIC_Values",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/search?drug_name=amoxicillin&species_acronym=BU&min_mic_value=35.0&max_mic_value=45.0",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"search"
+													],
+													"query": [
+														{
+															"key": "drug_name",
+															"value": "amoxicillin"
+														},
+														{
+															"key": "species_acronym",
+															"value": "BU"
+														},
+														{
+															"key": "min_mic_value",
+															"value": "35.0"
+														},
+														{
+															"key": "max_mic_value",
+															"value": "45.0"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-By-Filters-Higher-MIC_Value",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/search?drug_name=amoxicillin&species_acronym=BU&min_mic_value=150.0&max_mic_value=160.0",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"search"
+													],
+													"query": [
+														{
+															"key": "drug_name",
+															"value": "amoxicillin"
+														},
+														{
+															"key": "species_acronym",
+															"value": "BU"
+														},
+														{
+															"key": "min_mic_value",
+															"value": "150.0"
+														},
+														{
+															"key": "max_mic_value",
+															"value": "160.0"
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "by-class",
+									"item": [
+										{
+											"name": "Drug-MIC-By-Drug-Class",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/by-class/beta_lactam",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"by-class",
+														"beta_lactam"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-By-Drug-Class-Filterby-Species",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/by-class/beta_lactam?species_acronym=BU",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"by-class",
+														"beta_lactam"
+													],
+													"query": [
+														{
+															"key": "species_acronym",
+															"value": "BU"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-By-Drug-Class-Paginated",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/by-class/beta_lactam?page=1&per_page=5",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"by-class",
+														"beta_lactam"
+													],
+													"query": [
+														{
+															"key": "page",
+															"value": "1"
+														},
+														{
+															"key": "per_page",
+															"value": "5"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-Filter-Drug-Class&Species",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/mic/search?drug_class=beta_lactam&species_acronym=BU",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"mic",
+														"search"
+													],
+													"query": [
+														{
+															"key": "drug_class",
+															"value": "beta_lactam"
+														},
+														{
+															"key": "species_acronym",
+															"value": "BU"
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Drug-MIC-All",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {},
+												"requests": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/mic/search",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"mic",
+												"search"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-MIC-By-Query",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/mic/search?query=azithromycin",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"mic",
+												"search"
+											],
+											"query": [
+												{
+													"key": "query",
+													"value": "azithromycin"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-MIC-By-Filters-MIC_Values",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/mic/search?species_acronym=BU&min_mic_value=35.0&max_mic_value=45.0",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"mic",
+												"search"
+											],
+											"query": [
+												{
+													"key": "species_acronym",
+													"value": "BU"
+												},
+												{
+													"key": "min_mic_value",
+													"value": "35.0"
+												},
+												{
+													"key": "max_mic_value",
+													"value": "45.0"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-MIC-By-Filters-Higher-MIC_Values",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/mic/search?species_acronym=BU&min_mic_value=150.0&max_mic_value=160.0",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"mic",
+												"search"
+											],
+											"query": [
+												{
+													"key": "species_acronym",
+													"value": "BU"
+												},
+												{
+													"key": "min_mic_value",
+													"value": "150.0"
+												},
+												{
+													"key": "max_mic_value",
+													"value": "160.0"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-MIC-Paginated",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/mic/search?page=1&per_page=10&sort_by=mic_value&sort_order=asc",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"mic",
+												"search"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "per_page",
+													"value": "10"
+												},
+												{
+													"key": "sort_by",
+													"value": "mic_value"
+												},
+												{
+													"key": "sort_order",
+													"value": "asc"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-high-MIC-values",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/mic/search?min_mic_value=10.0",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"mic",
+												"search"
+											],
+											"query": [
+												{
+													"key": "min_mic_value",
+													"value": "10.0"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-low-MIC-values",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/mic/search?max_mic_value=1.0",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"mic",
+												"search"
+											],
+											"query": [
+												{
+													"key": "max_mic_value",
+													"value": "1.0"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Metabolism",
+							"item": [
+								{
+									"name": "by-isolate",
+									"item": [
+										{
+											"name": "Drug-Metabolism-BU-By-IsolateName",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/genomes/BU_ATCC8492/drug-metabolism",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"genomes",
+														"BU_ATCC8492",
+														"drug-metabolism"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-Metabolism-PV-By-IsolateName",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/genomes/PV_ATCC8482/drug-metabolism",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"genomes",
+														"PV_ATCC8482",
+														"drug-metabolism"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "by-class",
+									"item": [
+										{
+											"name": "Drug-Metabolism-Search-by-class",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/metabolism/search?drug_class=beta_lactam",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"metabolism",
+														"search"
+													],
+													"query": [
+														{
+															"key": "drug_class",
+															"value": "beta_lactam"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-Metabolism-by-drugClass",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/metabolism/by-class/beta_lactam",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"metabolism",
+														"by-class",
+														"beta_lactam"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-Metabolism-by-drugClass&Species",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/metabolism/by-class/beta_lactam?species_acronym=BU",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"metabolism",
+														"by-class",
+														"beta_lactam"
+													],
+													"query": [
+														{
+															"key": "species_acronym",
+															"value": "BU"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-Metabolism-by-drugClass-Paginated",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/metabolism/by-class/beta_lactam?page=1&per_page=5",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"metabolism",
+														"by-class",
+														"beta_lactam"
+													],
+													"query": [
+														{
+															"key": "page",
+															"value": "1"
+														},
+														{
+															"key": "per_page",
+															"value": "5"
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "by-drug",
+									"item": [
+										{
+											"name": "Drug-Metabolism-by-drugName",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/metabolism/by-drug/amoxapine",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"metabolism",
+														"by-drug",
+														"amoxapine"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-Metabolism-by-drugName-Fuzzy",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/metabolism/by-drug/huperzine",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"metabolism",
+														"by-drug",
+														"huperzine"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-Metabolism-by-drugName&Species",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/drugs/metabolism/by-drug/amoxapine?species_acronym=BU",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"drugs",
+														"metabolism",
+														"by-drug",
+														"amoxapine"
+													],
+													"query": [
+														{
+															"key": "species_acronym",
+															"value": "BU"
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Drug-Metabolism-All",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {},
+												"requests": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/metabolism/search",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"metabolism",
+												"search"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-Metabolism-Search-Name",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/metabolism/search?query=amoxapine",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"metabolism",
+												"search"
+											],
+											"query": [
+												{
+													"key": "query",
+													"value": "amoxapine"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-Metabolism-Search-degradation-threshold",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/metabolism/search?min_degr_percent=50.0&species_acronym=BU",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"metabolism",
+												"search"
+											],
+											"query": [
+												{
+													"key": "min_degr_percent",
+													"value": "50.0"
+												},
+												{
+													"key": "species_acronym",
+													"value": "BU"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Drug-Metabolism-By-SignificantEvents",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/drugs/metabolism/search?is_significant=true&min_degr_percent=75.0",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"drugs",
+												"metabolism",
+												"search"
+											],
+											"query": [
+												{
+													"key": "is_significant",
+													"value": "true"
+												},
+												{
+													"key": "min_degr_percent",
+													"value": "75.0"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "PPI Interactions",
+					"item": [
+						{
+							"name": "PPI-Available Score Types",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/scores/available",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"scores",
+										"available"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - PV Species - Paginated",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&page=1&per_page=10",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "per_page",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions -  BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU&per_page=5",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "per_page",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions with score Filters -  BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU&score_type=ds_score&score_threshold=0.1&per_page=3",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "score_type",
+											"value": "ds_score"
+										},
+										{
+											"key": "score_threshold",
+											"value": "0.1"
+										},
+										{
+											"key": "per_page",
+											"value": "3"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - A6KXK8",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?protein_id=A6KXK8&species_acronym=PV",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "protein_id",
+											"value": "A6KXK8"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - BU_ATCC8492_02176",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_02176",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_02176"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighbors - A6KXK8",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/neighbors?protein_id=A6KXK8&n=5&species_acronym=PV",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"neighbors"
+									],
+									"query": [
+										{
+											"key": "protein_id",
+											"value": "A6KXK8"
+										},
+										{
+											"key": "n",
+											"value": "5"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighbors - BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/neighbors?locus_tag=BU_ATCC8492_01788&species_acronym=BU",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"neighbors"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighborhood - A6KXK8",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/neighborhood?protein_id=A6KXK8&species_acronym=PV&n=5",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"neighborhood"
+									],
+									"query": [
+										{
+											"key": "protein_id",
+											"value": "A6KXK8"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "n",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighborhood - BU_ATCC8492_01788",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/neighborhood?locus_tag=BU_ATCC8492_01788&species_acronym=BU&n=3",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"neighborhood"
+									],
+									"query": [
+										{
+											"key": "locus_tag",
+											"value": "BU_ATCC8492_01788"
+										},
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "n",
+											"value": "3"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Neighborhood - A6L7C0",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?protein_id=A6L7C0&species_acronym=PV&per_page=10000",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "protein_id",
+											"value": "A6L7C0"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "per_page",
+											"value": "10000"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - DS score",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?species_acronym=BU&score_type=ds_score&score_threshold=0.8&per_page=10",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										},
+										{
+											"key": "score_type",
+											"value": "ds_score"
+										},
+										{
+											"key": "score_threshold",
+											"value": "0.8"
+										},
+										{
+											"key": "per_page",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Melt Score",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&score_type=melt_score&score_threshold=0.9",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "score_type",
+											"value": "melt_score"
+										},
+										{
+											"key": "score_threshold",
+											"value": "0.9"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Abundance Score",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/network-properties?score_type=abundance_score&score_threshold=0.95&species_acronym=PV",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"network-properties"
+									],
+									"query": [
+										{
+											"key": "score_type",
+											"value": "abundance_score"
+										},
+										{
+											"key": "score_threshold",
+											"value": "0.95"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - XLMS Peptides",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/network-properties?score_type=xlms_peptides&score_threshold=2&species_acronym=PV",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"network-properties"
+									],
+									"query": [
+										{
+											"key": "score_type",
+											"value": "xlms_peptides"
+										},
+										{
+											"key": "score_threshold",
+											"value": "2"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - String Score",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&score_type=string_score&score_threshold=0.7&per_page=5",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "score_type",
+											"value": "string_score"
+										},
+										{
+											"key": "score_threshold",
+											"value": "0.7"
+										},
+										{
+											"key": "per_page",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - XL-MS evidence",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&has_xlms=true&per_page=5",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "has_xlms",
+											"value": "true"
+										},
+										{
+											"key": "per_page",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - STRING evidence",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&has_string=true&per_page=5",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "has_string",
+											"value": "true"
+										},
+										{
+											"key": "per_page",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Network properties",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/network-properties?score_type=ds_score&score_threshold=0.8&species_acronym=PV",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"network-properties"
+									],
+									"query": [
+										{
+											"key": "score_type",
+											"value": "ds_score"
+										},
+										{
+											"key": "score_threshold",
+											"value": "0.8"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PPI-Interactions - Network data",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ppi/network/ds_score?score_threshold=0.8&species_acronym=PV&include_properties=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ppi",
+										"network",
+										"ds_score"
+									],
+									"query": [
+										{
+											"key": "score_threshold",
+											"value": "0.8"
+										},
+										{
+											"key": "species_acronym",
+											"value": "PV"
+										},
+										{
+											"key": "include_properties",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Pooled_TTP",
+					"item": [
+						{
+							"name": "TTP - Metadata",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/metadata",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"metadata"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Search based on Strain",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/search?query=BU_ATCC8492",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"search"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "BU_ATCC8492"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Search based on Compound",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/search?query=myo-inositol",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"search"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "myo-inositol"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - gene interactions",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/gene/PV_ATCC8482_00051/interactions",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"gene",
+										"PV_ATCC8482_00051",
+										"interactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - gene interactions with Hit Call True",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/gene/PV_ATCC8482_00051/interactions?hit_calling=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"gene",
+										"PV_ATCC8482_00051",
+										"interactions"
+									],
+									"query": [
+										{
+											"key": "hit_calling",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Compound Interactions",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/compound/myo-inositol/interactions",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"compound",
+										"myo-inositol",
+										"interactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Analyze specific pools",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/pools/analysis?poolA=pool1&poolB=pool8",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"pools",
+										"analysis"
+									],
+									"query": [
+										{
+											"key": "poolA",
+											"value": "pool1"
+										},
+										{
+											"key": "poolB",
+											"value": "pool8"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - Analyze specific pools 2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/pools/analysis?poolA=pool3&poolB=pool10",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"pools",
+										"analysis"
+									],
+									"query": [
+										{
+											"key": "poolA",
+											"value": "pool3"
+										},
+										{
+											"key": "poolB",
+											"value": "pool10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "TTP - significant interactions",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/ttp/hits?max_fdr=0.05&min_ttp_score=1.0",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"ttp",
+										"hits"
+									],
+									"query": [
+										{
+											"key": "max_fdr",
+											"value": "0.05"
+										},
+										{
+											"key": "min_ttp_score",
+											"value": "1.0"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Proteomics",
+					"item": [
+						{
+							"name": "Proteomics - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00002/proteomics",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00002",
+										"proteomics"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Proteomics - By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/PV_ATCC8482_02186/proteomics",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"PV_ATCC8482_02186",
+										"proteomics"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Proteomics - Search",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/proteomics/search?locus_tags=BU_ATCC8492_00002&uniprot_ids=A7V2F0,A6L272",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"proteomics",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										},
+										{
+											"key": "uniprot_ids",
+											"value": "A7V2F0,A6L272"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Proteomics - Search with Quality",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/proteomics/search?locus_tags=BU_ATCC8492_00002&uniprot_ids=A7V2F0,A6L272&min_coverage=50&min_unique_peptides=10&has_evidence=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"proteomics",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										},
+										{
+											"key": "uniprot_ids",
+											"value": "A7V2F0,A6L272"
+										},
+										{
+											"key": "min_coverage",
+											"value": "50"
+										},
+										{
+											"key": "min_unique_peptides",
+											"value": "10"
+										},
+										{
+											"key": "has_evidence",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Proteomics - Search with Quality Only",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/proteomics/search?min_coverage=75&min_unique_peptides=15&has_evidence=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"proteomics",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_coverage",
+											"value": "75"
+										},
+										{
+											"key": "min_unique_peptides",
+											"value": "15"
+										},
+										{
+											"key": "has_evidence",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Essentiality",
+					"item": [
+						{
+							"name": "Essentiality - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00002/essentiality",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00002",
+										"essentiality"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/essentiality",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"essentiality"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - Search by Call",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/essentiality/search?essentiality_call=essential",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"essentiality",
+										"search"
+									],
+									"query": [
+										{
+											"key": "essentiality_call",
+											"value": "essential"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - Search",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/essentiality/search?locus_tags=BU_ATCC8492_00002&uniprot_ids=A7V2F0,A6L272",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"essentiality",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										},
+										{
+											"key": "uniprot_ids",
+											"value": "A7V2F0,A6L272"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - Search for specific media",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/essentiality/search?essentiality_call=essential&experimental_condition=mGAM_undefined_rich_media",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"essentiality",
+										"search"
+									],
+									"query": [
+										{
+											"key": "essentiality_call",
+											"value": "essential"
+										},
+										{
+											"key": "experimental_condition",
+											"value": "mGAM_undefined_rich_media"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Essentiality - Search with Quality Only",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/essentiality/search?min_tas_in_locus=25&min_tas_hit=0.8",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"essentiality",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_tas_in_locus",
+											"value": "25"
+										},
+										{
+											"key": "min_tas_hit",
+											"value": "0.8"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Fitness-Data",
+					"item": [
+						{
+							"name": "FitnessData - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00002/fitness",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00002",
+										"fitness"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/fitness",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"fitness"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - in caecal media",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?contrast=comm20_day7",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"",
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "contrast",
+											"value": "comm20_day7"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - with significant fitness defects",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?max_fdr=0.05&min_lfc=2.0",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "max_fdr",
+											"value": "0.05"
+										},
+										{
+											"key": "min_lfc",
+											"value": "2.0"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - by Locus Tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?locus_tags=BU_ATCC8492_00002",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_00002"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "FitnessData - high-confidence fitness data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness/search?min_barcodes=25&max_fdr=0.01",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_barcodes",
+											"value": "25"
+										},
+										{
+											"key": "max_fdr",
+											"value": "0.01"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Reactions",
+					"item": [
+						{
+							"name": "Reactions - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_02615/reactions",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_02615",
+										"reactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions- By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/reactions",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"reactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by Specific reaction",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?reaction_id=ASPTA",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "reaction_id",
+											"value": "ASPTA"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search for consuming specific metabolite",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?product=glu__L_c",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "product",
+											"value": "glu__L_c"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by Locus Tags",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?locus_tags=BU_ATCC8492_02615,BU_ATCC8492_02516",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_02615,BU_ATCC8492_02516"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by UniprotIds",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?uniprot_ids=A7UXT0,A7V3S8",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "uniprot_ids",
+											"value": "A7UXT0,A7V3S8"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by multiple filters",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?locus_tags=BU_ATCC8492_02615&substrate=akg_c&product=oaa_c",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "locus_tags",
+											"value": "BU_ATCC8492_02615"
+										},
+										{
+											"key": "substrate",
+											"value": "akg_c"
+										},
+										{
+											"key": "product",
+											"value": "oaa_c"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reactions - Search by multiple filters 2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/reactions/search?substrate=akg_c&product=oaa_c",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"reactions",
+										"search"
+									],
+									"query": [
+										{
+											"key": "substrate",
+											"value": "akg_c"
+										},
+										{
+											"key": "product",
+											"value": "oaa_c"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Mutant-Growth",
+					"item": [
+						{
+							"name": "MutantGrowth - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/PV_ATCC8482_01384/mutant-growth",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"PV_ATCC8482_01384",
+										"mutant-growth"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "MutantGrowth- By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/mutant-growth",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"mutant-growth"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "MutantGrowth - fast-growing mutants",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/mutant-growth/search?max_doubling_time=2.0",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"mutant-growth",
+										"search"
+									],
+									"query": [
+										{
+											"key": "max_doubling_time",
+											"value": "2.0"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "MutantGrowth - Search for high-quality growth data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/mutant-growth/search?exclude_double_picked=true&media=caecal",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"mutant-growth",
+										"search"
+									],
+									"query": [
+										{
+											"key": "exclude_double_picked",
+											"value": "true"
+										},
+										{
+											"key": "media",
+											"value": "caecal"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Fitness-Correlation",
+					"item": [
+						{
+							"name": "Fitness-Correlation - By Locus tag",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_02530/correlations",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_02530",
+										"correlations"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Fitness-Correlation - By Locus tag - Negative",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 404\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_H5-2_00005/correlations",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_H5-2_00005",
+										"correlations"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Fitness-Correlation - two locus tags",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness-correlations/correlation?locus_tag_a=BU_ATCC8492_02530&locus_tag_b=BU_ATCC8492_02762",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness-correlations",
+										"correlation"
+									],
+									"query": [
+										{
+											"key": "locus_tag_a",
+											"value": "BU_ATCC8492_02530"
+										},
+										{
+											"key": "locus_tag_b",
+											"value": "BU_ATCC8492_02762"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Fitness-Correlation - search",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/fitness-correlations/search?query=Vitamin B12",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"fitness-correlations",
+										"search"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "Vitamin B12"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Orthologs",
+					"item": [
+						{
+							"name": "Orthologs- one-to-one for a gene",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00001/orthologs?one_to_one_only=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00001",
+										"orthologs"
+									],
+									"query": [
+										{
+											"key": "one_to_one_only",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Orthologs- all for the gene",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_WH4_00023/orthologs?one_to_one_only=false",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_WH4_00023",
+										"orthologs"
+									],
+									"query": [
+										{
+											"key": "one_to_one_only",
+											"value": "false"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Orthologs - if two genes are orthologs",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/orthologs/pair?locus_tag_a=BU_ATCC8492_00001&locus_tag_b=PV_ATCC8482_00001",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"orthologs",
+										"pair"
+									],
+									"query": [
+										{
+											"key": "locus_tag_a",
+											"value": "BU_ATCC8492_00001"
+										},
+										{
+											"key": "locus_tag_b",
+											"value": "PV_ATCC8482_00001"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Operons",
+					"item": [
+						{
+							"name": "Operons- with at least 5 genes and regulatory elements",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/operons/search?min_gene_count=2&has_tss=true&has_terminator=true",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"operons",
+										"search"
+									],
+									"query": [
+										{
+											"key": "min_gene_count",
+											"value": "2"
+										},
+										{
+											"key": "has_tss",
+											"value": "true"
+										},
+										{
+											"key": "has_terminator",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Operons- statistics for a species",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/operons/statistics?species_acronym=BU",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"operons",
+										"statistics"
+									],
+									"query": [
+										{
+											"key": "species_acronym",
+											"value": "BU"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Operons- by Operon Id",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/operons/BU_ATCC8492_00003__BU_ATCC8492_00004",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"operons",
+										"BU_ATCC8492_00003__BU_ATCC8492_00004"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Operons- get operons for a gene",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/BU_ATCC8492_00077/operons",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"BU_ATCC8492_00077",
+										"operons"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				}
@@ -3927,6 +8060,96 @@
 							"response": []
 						}
 					]
+				}
+			]
+		},
+		{
+			"name": "Pyhmmer-Management-Requests",
+			"item": [
+				{
+					"name": "Tasks-Status",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{mett-current}}/api/pyhmmer/search/tasks-status?threshold_days=1",
+							"host": [
+								"{{mett-current}}"
+							],
+							"path": [
+								"api",
+								"pyhmmer",
+								"search",
+								"tasks-status"
+							],
+							"query": [
+								{
+									"key": "threshold_days",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+					},
+					"response": []
+				},
+				{
+					"name": "Cleanup-Old-Tasks",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{mett-current}}/api/pyhmmer/search/cleanup-tasks?threshold_days=1",
+							"host": [
+								"{{mett-current}}"
+							],
+							"path": [
+								"api",
+								"pyhmmer",
+								"search",
+								"cleanup-tasks"
+							],
+							"query": [
+								{
+									"key": "threshold_days",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+					},
+					"response": []
 				}
 			]
 		}

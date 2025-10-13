@@ -4,8 +4,13 @@ import pandas as pd
 from dataportal.ingest.constants import VALID_ESSENTIALITY
 from dataportal.ingest.es_repo import bulk_exec, SCRIPT_UPSERT_ESSENTIALITY
 from dataportal.ingest.feature.flows.base import Flow
-from dataportal.ingest.feature.parsing import parse_ig_neighbors
-from dataportal.ingest.utils import canonical_ig_id_from_neighbors, chunks_from_table
+from dataportal.ingest.utils import (
+    canonical_ig_id_from_neighbors, 
+    chunks_from_table,
+    parse_ig_neighbors,
+    extract_isolate_from_locus_tag,
+    get_species_metadata_from_isolate,
+)
 
 
 class Essentiality(Flow):
@@ -19,6 +24,7 @@ class Essentiality(Flow):
 
     def __init__(self, index_name: str = "feature_index"):
         super().__init__(index_name=index_name)
+        self._species_cache = {}  # Cache for species lookups
 
     def run(self, csv_path: str, chunksize: int = 10_000) -> None:
         actions: list[Dict[str, Any]] = []
@@ -52,6 +58,12 @@ class Essentiality(Flow):
                 if base["feature_type"] == "IG":
                     left, right = parse_ig_neighbors(raw_id)
                     if left and right:
+                        # Extract and add species metadata for IG features
+                        isolate_name = extract_isolate_from_locus_tag(left)
+                        if isolate_name:
+                            species_metadata = get_species_metadata_from_isolate(isolate_name, self._species_cache)
+                            base.update(species_metadata)
+                        
                         base.update({
                             "ig_locus_tag_a": left,
                             "ig_locus_tag_b": right,

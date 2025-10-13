@@ -44,6 +44,7 @@ interface GeneSearchFormProps {
     totalCount?: number;
     onResultsUpdate?: (results: any[], pagination: any) => void;
     onPageSizeChange?: (newPageSize: number) => void;
+    onPageChange?: (page: number) => void;
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -65,6 +66,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            totalCount: totalCountProp,
                                                            onResultsUpdate,
                                                            onPageSizeChange,
+                                                           onPageChange,
                                                        }) => {
 
     const renderCount = useRef(0);
@@ -827,6 +829,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         isTypeStrainAvailable={selectedGenomes.length ? selectedGenomes.some(genome => genome.type_strain) : true}
                         onDownloadTSV={handleDownloadTSV}
                         isLoading={isDownloading}
+                        sortField={sortField}
+                        sortOrder={sortOrder}
                     />
                     {/* Page size dropdown and pagination */}
                     <div className={styles.paginationContainer}>
@@ -912,7 +916,11 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                 }
                                             };
                                             searchWithPage();
+                                        } else if (onPageChange) {
+                                            // Use the provided page change handler (for GeneViewerPage)
+                                            onPageChange(page);
                                         } else {
+                                            // Fallback to internal handling
                                             setCurrentPage(page);
                                             fetchSearchResults(page, sortField, sortOrder, getLegacyFilters(), getLegacyOperators());
                                         }

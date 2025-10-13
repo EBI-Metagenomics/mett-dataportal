@@ -1,4 +1,44 @@
-# ME TT Data Portal
+# METT Data Portal
+
+> A comprehensive web-based genomic annotation platform for exploring and analyzing the genomes of _Phocaeicola vulgatus_ and _Bacteroides uniformis_
+
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+[![Django](https://img.shields.io/badge/django-latest-green.svg)](https://www.djangoproject.com/)
+[![React](https://img.shields.io/badge/react-latest-blue.svg)](https://reactjs.org/)
+
+---
+
+## Table of Contents
+
+- [About](#about)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+  - [Backend Setup](#backend-setup)
+  - [Frontend Setup](#frontend-setup)
+  - [Docker Setup](#docker-setup)
+- [Configuration](#configuration)
+- [Database Setup](#database-setup)
+  - [PostgreSQL Migrations](#postgresql-migrations)
+  - [Elasticsearch Indices](#elasticsearch-indices)
+- [Data Import](#data-import)
+  - [Core Data Import](#core-data-import)
+  - [Feature Annotations](#feature-annotations)
+  - [Experimental Data](#experimental-data)
+  - [Network Data](#network-data)
+- [Development](#development)
+  - [Code Style](#code-style)
+  - [Local Development Workflow](#local-development-workflow)
+- [Deployment](#deployment)
+  - [Kubernetes Deployment](#kubernetes-deployment)
+- [API Documentation](#api-documentation)
+- [License](#license)
+
+---
+
+## About
 
 The transversal theme aims at mechanistically understanding the complex role that human-associated microbiomes play in
 human health and disease. Our current knowledge of bacterial gene functions come primarily from very few model bacteria,
@@ -13,65 +53,311 @@ organised on an FTP directory hosted at EBI and contains structural annotations 
 predictions, etc.) as well as functional annotations (including biosynthetic gene clusters, carbohydrate active enzymes,
 etc.) .
 
-## Data Portal API
+**Type Strains:**
+- _B. uniformis_ (ATCC8492)
+- _P. vulgatus_ (ATCC8482)
 
-### Requirements
+---
 
-- **Python Version**: This project requires **Python 3.13**. Please ensure that you have this version installed to avoid
-  compatibility issues.
-- You can download the latest version [here](https://www.python.org/downloads/).
+## Features
 
-### Development Environment
+- **Comprehensive Genome Browser**: Interactive visualization of genome annotations
+- **Multi-strain Analysis**: Compare annotations across multiple bacterial strains
+- **Functional Annotations**: 
+  - Gene essentiality data
+  - Proteomics evidence
+  - Metabolic pathway information
+  - Gene-reaction associations
+- **Experimental Data Integration**:
+  - Fitness correlation analysis
+  - Mutant growth data
+  - Thermal proteome profiling (TPP)
+  - Protein-protein interaction networks
+- **Advanced Search**: Elasticsearch-powered search across all annotations
+- **Sequence Analysis**: PyHMMER integration for homology searches
+- **RESTful API**: Comprehensive API for programmatic access
+- **Docker & Kubernetes Ready**: Production-ready containerization
+- **Real-time Updates**: Celery-based async task processing
 
-#### Dependencies installation -
+---
 
-```shell
-$ uv pip compile pyproject.toml --group dev --generate-hashes > uv.lock
-$ uv pip install -r uv.lock
-$ uv pip install -r uv.lock  --no-dev (for production)
-$ pre-commit install
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     METT Data Portal                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────────┐         ┌──────────────────────────┐      │
+│  │   React UI   │ ◄─────► │   Django REST API        │      │
+│  │  (Frontend)  │         │   (Backend)              │      │
+│  └──────────────┘         └──────────────────────────┘      │
+│                                    │                        │
+│                           ┌────────┴────────┐               │
+│                           │                 │               │
+│                  ┌────────▼────────┐  ┌────▼─────────┐      │
+│                  │   PostgreSQL    │  │ Elasticsearch│      │
+│                  │   (Relational)  │  │   (Search)   │      │
+│                  └─────────────────┘  └──────────────┘      │
+│                                                             │
+│                  ┌─────────────────┐                        │
+│                  │     Celery      │                        │
+│                  │  (Task Queue)   │                        │
+│                  └─────────────────┘                        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-#### Local Docker container 
-```shell
-$ docker build -t mett-dataportal:dev-test -f dataportal_api/Dockerfile .
-$ docker run --rm -it -p 8000:8000 mett-dataportal:dev
+**Technology Stack:**
+- **Backend**: Django 5.x, Django Ninja (API), Celery
+- **Frontend**: React, TypeScript, SCSS
+- **Database**: PostgreSQL 13+, Elasticsearch 8+
+- **Task Queue**: Celery with Redis/RabbitMQ
+- **Containerization**: Docker, Kubernetes
+- **Package Management**: uv (Python), npm (JavaScript)
+
+---
+
+## Prerequisites
+
+### Required Software
+
+- **Python**: 3.13+ ([Download](https://www.python.org/downloads/))
+- **Node.js**: 18+ ([Download](https://nodejs.org/))
+- **PostgreSQL**: 13+ ([Download](https://www.postgresql.org/download/))
+- **Elasticsearch**: 8+ ([Download](https://www.elastic.co/downloads/elasticsearch))
+- **Docker**: (Optional, for containerized deployment) ([Download](https://www.docker.com/))
+- **uv**: Python package manager ([Install](https://github.com/astral-sh/uv))
+
+### System Requirements
+
+- **RAM**: 16GB minimum, 32GB recommended
+- **Storage**: 20GB+ for full dataset
+- **OS**: Linux, macOS, or Windows (WSL2)
+
+---
+
+## Quick Start
+
+### Development Setup (Minimal)
+
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd mett-dataportal
+
+# 2. Set up Python environment
+cd dataportal_api
+uv pip install -r uv.lock
+python manage.py migrate
+
+# 3. Set up Elasticsearch
+python manage.py create_es_index
+
+# 4. Set up Frontend
+cd ../dataportal-app
+npm install
+
+# 5. Run development servers
+# Terminal 1 - Backend
+cd dataportal_api
+python manage.py runserver
+
+# Terminal 2 - Frontend
+cd dataportal-app
+npm start
 ```
 
-### Steps to bring up the local environment
+---
 
-- [X] Migration files are in repo. use ```python manage.py migrate``` to setup the tables
-- [X] Use import scripts to import the data from FTP server.
-  Ref: [How to import](data-generators/import-scripts/README.md)
-- [X] Create indexes for Fasta and GFF files.
-  Ref: [How to generate indexes](data-generators/index-scripts/README.md)
-- [X] Run djando sever ```python manage.py runserver```
-- [X] Run react **./dataportal-app** app using ```npm start```
+## Installation
 
-### Configuration
+### Backend Setup
 
-We use [Pydantic](https://pydantic-docs.helpmanual.io/) to formalise Config files.
+#### 1. Install Python Dependencies
 
-- `config/local.env` as a convenience for env vars.
+```bash
+cd dataportal_api
 
-### Import Species, Strains and Annotations
+# Generate lock file (if needed)
+uv pip compile pyproject.toml --group dev --generate-hashes > uv.lock
 
-#### Elasticsearch Database setup
-```shell
+# Install dependencies (development)
+uv pip install -r uv.lock
+
+# Install dependencies (production)
+uv pip install -r uv.lock --no-dev
+
+# Install pre-commit hooks
+pre-commit install
+```
+
+#### 2. Environment Variables
+
+Create a `.env` file in `dataportal_api/`:
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/mett_db
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=mett_db
+POSTGRES_USER=user
+POSTGRES_PASSWORD=password
+
+# Elasticsearch
+ELASTICSEARCH_HOST=localhost
+ELASTICSEARCH_PORT=9200
+ELASTICSEARCH_SCHEME=http
+ES_INDEX_VERSION=2025.09.03
+
+# Django
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Celery
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+
+# FTP Configuration
+FTP_SERVER=ftp.ebi.ac.uk
+FTP_BASE_PATH=/pub/databases/mett/annotations/v1_2024-04-15
+```
+
+Alternatively, use the provided environment setup scripts:
+
+```bash
+# Development
+source set-env-dev.sh
+
+# Production
+source set-env-prod.sh
+```
+
+### Frontend Setup
+
+```bash
+cd dataportal-app
+
+# Install dependencies
+npm install
+
+# Development server
+npm start
+
+# Production build
+npm run build
+```
+
+### Docker Setup
+
+#### Build Docker Image
+
+```bash
+# Backend
+docker build -t mett-dataportal:latest -f dataportal_api/Dockerfile .
+
+# Frontend
+docker build -t mett-dataportal-app:latest -f dataportal-app/Dockerfile .
+```
+
+#### Run with Docker
+
+```bash
+# Backend
+docker run --rm -it -p 8000:8000 mett-dataportal:latest
+
+# Frontend
+docker run --rm -it -p 3000:80 mett-dataportal-app:latest
+```
+
+#### Docker Compose (Recommended)
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+```
+
+---
+
+## Configuration
+
+### Pydantic Configuration
+
+The project uses [Pydantic](https://pydantic-docs.helpmanual.io/) for configuration management. Configuration files can be found in `dataportal_api/dataportal/settings.py`.
+
+### Environment Files
+
+- **Development**: `config/local.env`
+- **Production**: Environment variables should be set via Kubernetes secrets or Docker environment
+
+---
+
+## Database Setup
+
+### PostgreSQL Migrations
+
+```bash
+cd dataportal_api
+
+# Run all migrations
+python manage.py migrate
+
+# PyHMMER specific migrations
+python manage.py migrate pyhmmer_search
+
+# Celery Beat migrations (for scheduled tasks)
+python manage.py migrate django_celery_beat
+```
+
+### Elasticsearch Indices
+
+#### Create Indices
+
+```bash
+# Create all indices with default version
 $ python manage.py create_es_index
-$ python manage.py create_es_indexes --es-version 2025.09.03
-$ python manage.py create_es_indexes --es-version 2025.09.03 --if-exists recreate
-```
-### Import data
 
-#### Species
-```shell
-$ python manage.py import_species --index species_index --csv ../data-generators/data/species.csv
+# Create indices with specific version
+$ python manage.py create_es_index --es-version 2025.09.03
+
+# Create specific model index
+$ python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 2025.09.03
+
+# Recreate indices (delete and create)
+$ python manage.py create_es_index --es-version 2025.09.03 --if-exists recreate
 ```
 
-#### Strains
-Strains + contigs only:
-```shell
+#### Index Naming Convention
+
+Indices use the pattern: `{index_name}_{version}` (e.g., `feature_index_2025.09.03`)
+
+---
+
+## Data Import
+
+### Core Data Import
+
+#### 1. Species Data
+
+```bash
+python manage.py import_species \
+  --index species_index \
+  --csv ../data-generators/data/species.csv
+```
+
+#### 2. Strain Data
+
+**Basic Strains (Contigs Only)**:
+
+```bash
 $ python manage.py import_strains \
   --es-index strain_index \
   --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
@@ -81,8 +367,10 @@ $ python manage.py import_strains \
   --gff-server ftp.ebi.ac.uk \
   --gff-base /pub/databases/mett/annotations/v1_2024-04-15/
 ```
-Strains - All in one go: 
-```shell
+
+**Complete Import (Strains + Drug Data)**:
+
+```bash
 $ python manage.py import_strains \
   --es-index strain_index \
   --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
@@ -92,76 +380,63 @@ $ python manage.py import_strains \
   --gff-server ftp.ebi.ac.uk \
   --gff-base /pub/databases/mett/annotations/v1_2024-04-15/ \
   --include-mic \
-  --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
-  --mic-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/PV_growth_inhibition.csv \
+  --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
+  --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/PV_growth_inhibition.csv \
   --include-metabolism \
-  --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
-  --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv 
+  --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv
 ```
-Add Drug MIC:
-```shell
+
+**Incremental Updates**:
+
+Add Drug MIC data only:
+```bash
 $ python manage.py import_strains \
   --es-index strain_index \
   --skip-strains \
   --include-mic \
-  --mic-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
-  --mic-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/PV_growth_inhibition.csv
+  --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
+  --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/PV_growth_inhibition.csv
 ```
-Add Drug Metabolism:
-```shell
+
+Add Drug Metabolism data only:
+```bash
 $ python manage.py import_strains \
   --es-index strain_index \
   --skip-strains \
   --include-metabolism \
-  --metab-bu-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
-  --metab-pv-file /Users/vikasg/Documents/METT/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv
-
+  --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv
 ```
 
-#### Features
+### Feature Annotations
 
+#### Core Genes Features Import
 
-Process Everything in one go:
-```shell
+```bash
 $ python manage.py import_features \
   --index feature_index \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
-  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
-  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/ \
-  --gene-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
-  --met-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/met_rx/ \
-  --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/ \
-  --protein-compound-dir ../data/protein_compound/ \
-  --mutant-growth-dir ../data/mutant_growth/ \
-  --fitness-dir ../data/fitness/ \
-```
-
-BASIC GENES from GFF:
-```shell
-$ python manage.py import_features \
-  --index feature_index \
-  --ftp-server ftp.ebi.ac.uk \
-  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
-  --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
-  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/ \
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/ \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
 
+#### Incremental Feature Updates
 
-Essentiality (optional):
-```shell
+**Essentiality Data (in case skipped in above step)**:
+```bash
 $ python manage.py import_features \
   --index feature_index \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --skip-core-genes \
-  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/
+  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/
 ```
 
-Proteomics Evidence (optional):
-```shell
+**Proteomics Evidence (in case skipped in above step)**:
+```bash
 $ python manage.py import_features \
   --index feature_index \
   --ftp-server ftp.ebi.ac.uk \
@@ -170,8 +445,8 @@ $ python manage.py import_features \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
 ```
 
-Gene Rx Data:
-```shell
+**Metabolic Gene-Reaction Data**:
+```bash
 $ python manage.py import_features \
   --index feature_index \
   --ftp-server ftp.ebi.ac.uk \
@@ -182,60 +457,264 @@ $ python manage.py import_features \
   --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
 ```
 
-#### Protein Protein Index (PPI):
-```shell
-$ <deprecatd> python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/  
-$ <deprecatd> python manage.py import_ppi --index ppi_index --pattern "*.csv" --dir ../data-generators/Sub-Projects-Data/SP2/ --refresh-every-rows 500000   # or --refresh-every-secs 120
-$ python manage.py import_ppi_with_genes --index ppi_index --pattern "*.csv" --csv-folder ../data-generators/Sub-Projects-Data/SP2/  
+### Experimental Data
+
+#### Fitness Data
+
+```bash
+$ python manage.py import_fitness_lfc \
+  --index feature_index \
+  --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
 ```
 
-#### Operon Index:
-```shell
-$ python manage.py import_operons --index operon_index --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/
+#### Mutant Growth Data
+
+```bash
+$ python manage.py import_mutant_growth \
+  --index feature_index \
+  --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal
 ```
 
-#### Ortholog Pairs Index:
-```shell
-$ python manage.py import_orthologs --index ortholog_index --orthologs-dir ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/
+#### Thermal Proteome Profiling (TPP)
+
+```bash
+$ python manage.py ingest_pooled_ttp \
+  --index feature_index \
+  --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_TPP.csv \
+  --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pool_metadata.csv
+```
+
+#### Fitness Correlation Data
+
+```bash
+$ python manage.py import_fitness_correlations \
+  --index fitness_correlation_index \
+  --correlation-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_corr_data \
+  --preload-gff \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
 
-#### Pyhmmer Database Migrations
-```shell
-$ python manage.py migrate pyhmmer_search
+### Network Data
+
+#### Protein-Protein Interactions (PPI)
+
+```bash
+# Basic import
+$ python manage.py import_ppi_with_genes \
+  --index ppi_index \
+  --pattern "*.csv" \
+  --csv-folder ../data-generators/Sub-Projects-Data/SP2/
+
+# With refresh optimization (recommended for large datasets)
+$ python manage.py import_ppi_with_genes \
+  --index ppi_index \
+  --pattern "*.csv" \
+  --csv-folder ../data-generators/Sub-Projects-Data/SP2/ \
+  --refresh-every-rows 500000
+  # Alternative: --refresh-every-secs 120
 ```
 
+#### Operons
 
-#### Celery Beat Migrations
-```shell
-$ python manage.py migrate django_celery_beat
+```bash
+$ python manage.py import_operons \
+  --index operon_index \
+  --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/ \
+  --preload-gff \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
+#### Ortholog Pairs
 
-#### Code style
+```bash
+$ python manage.py import_orthologs_with_genes \
+  --index ortholog_index \
+  --ortholog-directory ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
+```
 
-Use [Black](https://black.readthedocs.io/en/stable/).
-Use [Ruff](https://docs.astral.sh/ruff/installation/).
-These are both configured if you install the pre-commit tools as above.
+### Index File Generation
 
-To manually run them:
-`black .` and `ruff check --fix`.
+Generate index files for FASTA and GFF3 files:
 
-#### Testing
+```bash
+cd data-generators/index-scripts
 
-```shell
-$ uv lock
-$ pytest
+# Process FASTA files
+./process_fasta.sh
 
-# Run all service tests
+# Process GFF3 files
+./process_gff3.sh
+```
+
+See [Index Scripts README](data-generators/index-scripts/README.md) for details.
+
+---
+
+## Development
+
+### Code Style
+
+This project uses automated code formatting and linting:
+
+- **[Black](https://black.readthedocs.io/)**: Python code formatting
+- **[Ruff](https://docs.astral.sh/ruff/)**: Python linting
+
+#### Pre-commit Hooks
+
+Pre-commit hooks are configured to run automatically:
+
+```bash
+# Install hooks
+pre-commit install
+
+# Run manually on all files
+pre-commit run --all-files
+```
+
+#### Manual Formatting
+
+```bash
+# Format code with Black
+black .
+
+# Lint and fix with Ruff
+ruff check --fix .
+```
+
+### Testing
+
+#### Backend Tests
+
+```bash
+cd dataportal_api
+
+# Run all tests
+pytest
+
+# Run specific test directory
 pytest dataportal/tests/services/ -v
 
 # Run with coverage
+pytest --cov=dataportal --cov-report=html
 pytest dataportal/tests/services/ --cov=dataportal.services --cov-report=html
+
+# Run specific test modules
+pytest dataportal/tests/test_api.py -v
+
+# Run PyHMMER integration tests
+python pyhmmer_search/run_integration_tests.py
 ```
 
-### Kubernetes Node Affinity 
+#### Frontend Tests
+
 ```bash
-$ kubectl label node hh-rke-wp-webadmin-52-worker-1.caas.ebi.ac.uk mett-pyhmmer-data=true
-$ kubectl get nodes -l mett-pyhmmer-data=true
+cd dataportal-app
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run in watch mode
+npm test -- --watch
 ```
+
+### Local Development Workflow
+
+```bash
+# 1. Start Redis (for Celery)
+docker run -d -p 6379:6379 redis:7
+
+# 2. Start Django development server
+cd dataportal_api
+python manage.py runserver
+
+# 3. Start Celery worker (in another terminal)
+cd dataportal_api
+celery -A dataportal worker -l info
+
+# 4. Start Celery beat (for scheduled tasks, in another terminal)
+cd dataportal_api
+celery -A dataportal beat -l info
+
+# 5. Start React development server (in another terminal)
+cd dataportal-app
+npm run dev
+```
+
+---
+
+## Deployment
+
+### Kubernetes Deployment
+
+#### Prerequisites
+
+```bash
+# Label nodes for PyHMMER data affinity
+kubectl label node <node-name> mett-pyhmmer-data=true
+
+# Verify labels
+kubectl get nodes -l mett-pyhmmer-data=true
+```
+
+#### Deploy Resources
+
+```bash
+# Deploy PostgreSQL
+kubectl apply -f k8s/postgres/production/
+
+# Deploy Elasticsearch
+kubectl apply -f k8s/elasticsearch/production/
+
+# Deploy Application
+kubectl apply -f k8s/mett-app/overlays/production/
+```
+
+#### Configuration
+
+Kubernetes configurations are organized by environment:
+- **Development**: `k8s/*/dev/`
+- **Production**: `k8s/*/production/`
+
+See individual README files in each directory for details.
+
+---
+
+## API Documentation
+
+### Endpoints Overview
+
+The API is built with Django Ninja and provides comprehensive endpoints for:
+
+- **Species**: `/api/species/`
+- **Strains**: `/api/strains/`
+- **Features/Genes**: `/api/features/`
+- **Protein-Protein Interactions**: `/api/ppi/`
+- **Operons**: `/api/operons/`
+- **Orthologs**: `/api/orthologs/`
+- **Fitness Data**: `/api/fitness/`
+- **PyHMMER Search**: `/api/pyhmmer/`
+
+### Interactive API Documentation
+
+When running the development server:
+
+- **Swagger UI (Dev)**: `http://localhost:8000/api/docs`
+- **Swagger UI (Production)**: `http://www.gut-microbes.org/api/docs`
+
+---
+
+## License
+
+This project is part of the METT (Microbiome Engineering Transversal Theme) initiative.
+
+For licensing information, please contact the project maintainers.
+
+---

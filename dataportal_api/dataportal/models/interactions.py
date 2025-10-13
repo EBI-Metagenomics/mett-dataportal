@@ -90,11 +90,9 @@ class ProteinProteinDocument(Document):
     has_string    = Boolean()
     has_operon    = Boolean()
     has_ecocyc    = Boolean()
-    has_experimental = Boolean()                # e.g., co-melt/perturb present
 
     # Optional rollups for UI
     evidence_count = Integer()                  # how many sources contributed (non-null scores)
-    confidence_bin = Keyword(normalizer=lowercase_normalizer)  # "high" | "medium" | "low" (set at ingest)
 
     class Index:
         name = "ppi_index"
@@ -125,27 +123,13 @@ class ProteinProteinDocument(Document):
         self.has_string = self.string_score is not None
         self.has_operon = self.operon_score is not None
         self.has_ecocyc = self.ecocyc_score is not None
-        self.has_experimental = any(
-            s is not None for s in [
-                self.comelt_score, self.perturbation_score, self.abundance_score, self.melt_score,
-                self.secondary_score, self.bayesian_score, self.tt_score, self.ds_score
-            ]
-        )
 
-        # Rollup counts & bins
+        # Rollup counts
         numeric_scores = [
             self.dl_score, self.comelt_score, self.perturbation_score, self.abundance_score,
             self.melt_score, self.secondary_score, self.bayesian_score, self.string_score,
             self.operon_score, self.ecocyc_score, self.tt_score, self.ds_score
         ]
         self.evidence_count = sum(1 for v in numeric_scores if v is not None)
-
-        # Example binning heuristic (adjust during ingest as you learn ranges)
-        if (self.string_score and self.string_score >= 0.7) or self.evidence_count >= 4:
-            self.confidence_bin = "high"
-        elif (self.string_score and self.string_score >= 0.4) or self.evidence_count >= 2:
-            self.confidence_bin = "medium"
-        else:
-            self.confidence_bin = "low"
 
         return super().save(**kwargs)

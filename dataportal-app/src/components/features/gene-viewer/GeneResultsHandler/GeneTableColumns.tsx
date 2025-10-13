@@ -13,6 +13,20 @@ export interface ColumnDefinition {
 
 export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
     {
+        key: 'locus_tag',
+        label: 'Locus Tag',
+        sortable: true,
+        defaultVisible: true,
+        render: gene => gene.locus_tag || 'Unknown Locus Tag',
+    },
+    {
+        key: 'alias',
+        label: 'Alias',
+        sortable: true,
+        defaultVisible: true,
+        render: gene => gene.alias?.join(', ') || '---',
+    },
+    {
         key: 'isolate_name',
         label: 'Strain',
         sortable: true,
@@ -27,26 +41,11 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
         render: gene => gene.gene_name || '---',
     },
     {
-        key: 'alias',
-        label: 'Alias',
-        sortable: true,
-        defaultVisible: true,
-        onlyForTypeStrain: true,
-        render: gene => gene.alias?.join(', ') || '---',
-    },
-    {
         key: 'seq_id',
         label: 'SeqId',
         sortable: true,
         defaultVisible: true,
         render: gene => gene.seq_id || '---',
-    },
-    {
-        key: 'locus_tag',
-        label: 'Locus Tag',
-        sortable: true,
-        defaultVisible: true,
-        render: gene => gene.locus_tag || 'Unknown Locus Tag',
     },
     {
         key: 'product',

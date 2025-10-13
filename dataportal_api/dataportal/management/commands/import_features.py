@@ -3,7 +3,8 @@ import logging
 from dataportal.ingest.feature.flows.essentiality import Essentiality
 from dataportal.ingest.feature.flows.fitness import Fitness
 from dataportal.ingest.feature.flows.gff_features import GFFGenes
-from dataportal.ingest.feature.flows.mutant_growth import MutantGrowth
+from dataportal.ingest.feature.flows.mutant_growth import MutantGrowthFlow
+from dataportal.ingest.feature.flows.pooled_ttp import PooledTTP
 from dataportal.ingest.feature.flows.protein_compound import ProteinCompound
 from dataportal.ingest.feature.flows.proteomics import Proteomics
 from dataportal.ingest.feature.flows.reactions import Reactions
@@ -41,6 +42,8 @@ class Command(BaseCommand):
         p.add_argument("--fitness-dir", help="Folder containing fitness CSVs")
         p.add_argument("--proteomics-dir", help="Folder containing proteomics CSVs")
         p.add_argument("--protein-compound-dir", help="Folder with protein-compound CSVs")
+        p.add_argument("--pooled-ttp-dir", help="Folder with pooled TTP CSVs")
+        p.add_argument("--pool-metadata", help="Path to pool metadata CSV file")
         p.add_argument("--mutant-growth-dir", help="Folder with mutant growth CSVs")
 
         # Reactions need 3 sources; pass folders and we’ll iterate all CSVs in each
@@ -105,7 +108,12 @@ class Command(BaseCommand):
         for csv_path in list_csv_files(o.get("protein_compound_dir")):
             ProteinCompound(index_name=index_name).run(csv_path)
 
-        # 6) Reactions (cross-product of the three folders)
+        # 6) Pooled TTP
+        for csv_path in list_csv_files(o.get("pooled_ttp_dir")):
+            print(f"  - {csv_path}")
+            PooledTTP(index_name=index_name, pool_metadata_path=o.get("pool_metadata")).run(csv_path)
+
+        # 7) Reactions (cross-product of the three folders)
         gene_rx_files = list_csv_files(o.get("gene_rx_dir"))
         met_rx_files = list_csv_files(o.get("met_rx_dir"))
         rx_gpr_files = list_csv_files(o.get("rx_gpr_dir"))
@@ -122,6 +130,6 @@ class Command(BaseCommand):
                 for gp in rx_gpr_files:
                     Reactions(index_name=index_name).run(gr, mr, gp)
 
-        # 7) Mutant growth
+        # 8) Mutant growth
         for csv_path in list_csv_files(o.get("mutant_growth_dir")):
-            MutantGrowth(index_name=index_name).run(csv_path)
+            MutantGrowthFlow(index_name=index_name).run(csv_path)
