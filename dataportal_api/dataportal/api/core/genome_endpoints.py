@@ -4,11 +4,6 @@ from typing import List, Dict
 from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
-from dataportal.schema.experimental.drug_schemas import (
-    PaginatedStrainDrugMICResponseSchema,
-    PaginatedStrainDrugMetabolismResponseSchema,
-    StrainDrugDataResponseSchema,
-)
 from dataportal.schema.core.gene_schemas import (
     EssentialityByContigSchema,
 )
@@ -23,9 +18,9 @@ from dataportal.schema.core.genome_schemas import (
     GenomeDownloadTSVQuerySchema,
 )
 from dataportal.schema.response_schemas import PaginatedResponseSchema
+from dataportal.services.core.gene_service import GeneService
 from dataportal.services.experimental.drug_service import DrugService
 from dataportal.services.experimental.essentiality_service import EssentialityService
-from dataportal.services.core.gene_service import GeneService
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.utils.constants import (
     DEFAULT_SORT_DIRECTION,
@@ -293,90 +288,3 @@ async def download_genomes_tsv(
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise HttpError(500, f"Failed to download genomes: {str(e)}")
-
-
-# Drug data endpoints for strains
-@genome_router.get(
-    "/{isolate_name}/drug-mic",
-    response=PaginatedStrainDrugMICResponseSchema,
-    summary="Get drug MIC data for a strain",
-    description=(
-            "Retrieves drug MIC (Minimum Inhibitory Concentration) data for a specific strain. "
-            "Returns paginated MIC measurements including drug names, values, units, and experimental conditions."
-    ),
-)
-async def get_strain_drug_mic(
-        request,
-        isolate_name: str = Path(..., description="Strain isolate name"),
-        page: int = Query(1, description="Page number", ge=1),
-        per_page: int = Query(20, description="Number of results per page", ge=1, le=100)
-):
-    """Get paginated drug MIC data for a specific strain."""
-    try:
-        result = await drug_service.get_strain_drug_mic_paginated(isolate_name, page, per_page)
-        if not result:
-            raise HttpError(404, f"No drug MIC data found for strain: {isolate_name}")
-        return result
-    except ServiceError as e:
-        logger.error(f"Service error getting drug MIC data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug MIC data: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error getting drug MIC data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug MIC data: {str(e)}")
-
-
-@genome_router.get(
-    "/{isolate_name}/drug-metabolism",
-    response=PaginatedStrainDrugMetabolismResponseSchema,
-    summary="Get drug metabolism data for a strain",
-    description=(
-            "Retrieves drug metabolism data for a specific strain. "
-            "Returns paginated degradation percentages, statistical significance, and metabolizer classifications."
-    ),
-)
-async def get_strain_drug_metabolism(
-        request,
-        isolate_name: str = Path(..., description="Strain isolate name"),
-        page: int = Query(1, description="Page number", ge=1),
-        per_page: int = Query(20, description="Number of results per page", ge=1, le=100)
-):
-    """Get paginated drug metabolism data for a specific strain."""
-    try:
-        result = await drug_service.get_strain_drug_metabolism_paginated(isolate_name, page, per_page)
-        if not result:
-            raise HttpError(404, f"No drug metabolism data found for strain: {isolate_name}")
-        return result
-    except ServiceError as e:
-        logger.error(f"Service error getting drug metabolism data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug metabolism data: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error getting drug metabolism data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug metabolism data: {str(e)}")
-
-
-@genome_router.get(
-    "/{isolate_name}/drug-data",
-    response=StrainDrugDataResponseSchema,
-    summary="Get all drug data for a strain",
-    description=(
-        "Retrieves both drug MIC and metabolism data for a specific strain. "
-        "Returns comprehensive drug response information including resistance and metabolism patterns. "
-        "No pagination is applied as this endpoint returns complete datasets for both MIC and metabolism data."
-    ),
-)
-async def get_strain_drug_data(
-    request,
-    isolate_name: str = Path(..., description="Strain isolate name")
-):
-    """Get all drug data (MIC + metabolism) for a specific strain."""
-    try:
-        result = await drug_service.get_strain_drug_data(isolate_name)
-        if not result:
-            raise HttpError(404, f"No drug data found for strain: {isolate_name}")
-        return result
-    except ServiceError as e:
-        logger.error(f"Service error getting drug data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug data: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error getting drug data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug data: {str(e)}")

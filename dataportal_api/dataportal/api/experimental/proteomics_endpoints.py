@@ -42,6 +42,7 @@ proteomics_router = Router(tags=[ROUTER_PROTEOMICS])
         "Returns basic gene information along with all proteomics evidence entries including "
         "coverage, unique peptides, unique intensity, and evidence flag."
     ),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_proteomics_by_gene(
@@ -88,6 +89,7 @@ async def get_proteomics_by_gene(
         "Supports filtering by minimum coverage, minimum unique peptides, and evidence flag. "
         "Returns an array of genes with their proteomics evidence data."
     ),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def search_proteomics(

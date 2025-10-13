@@ -36,6 +36,7 @@ ortholog_service = OrthologService()
     response=SuccessResponseSchema,
     summary="Get orthologs for a gene",
     description="Get all orthologous genes for a specific gene across species",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_orthologs(
@@ -75,6 +76,7 @@ async def get_gene_orthologs(
     response=SuccessResponseSchema,
     summary="Get ortholog relationship between two genes",
     description="Check if two genes are orthologs and get their relationship details",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_ortholog_pair(
@@ -111,6 +113,7 @@ async def get_ortholog_pair(
     response=SuccessResponseSchema,
     summary="Search orthologs with filters",
     description="Search for ortholog pairs with various filters and pagination",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def search_orthologs(

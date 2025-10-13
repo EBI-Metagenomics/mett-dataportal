@@ -29,6 +29,7 @@ mutant_growth_router = Router(tags=[ROUTER_MUTANT_GROWTH])
         "Returns basic gene information along with mutant growth data including doubling times, "
         "biological replicates, and experimental conditions."
     ),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_mutant_growth_by_gene(
@@ -68,6 +69,7 @@ async def get_mutant_growth_by_gene(
         "Search for mutant growth data across genes with optional filters. "
         "Supports identifier-based search and discovery mode (filter-only queries)."
     ),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def search_mutant_growth(
