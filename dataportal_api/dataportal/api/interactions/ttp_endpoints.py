@@ -33,7 +33,8 @@ ttp_router = Router(tags=[ROUTER_TTP])
     "/metadata",
     response=SuccessResponseSchema,
     summary="Get TTP metadata",
-    description="Get metadata about the TTP dataset including counts, available compounds, and score ranges."
+    description="Get metadata about the TTP dataset including counts, available compounds, and score ranges.",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_ttp_metadata(request):
@@ -52,7 +53,8 @@ async def get_ttp_metadata(request):
     "/search",
     response=PaginatedResponseSchema,
     summary="Search TTP interactions",
-    description="Search for protein-compound interactions with basic filtering and pagination."
+    description="Search for protein-compound interactions with basic filtering and pagination.",
+    include_in_schema=False,
 )
 @wrap_paginated_response
 async def search_interactions(
@@ -73,7 +75,8 @@ async def search_interactions(
     "/gene/{locus_tag}/interactions",
     response=SuccessResponseSchema,
     summary="Get gene interactions",
-    description="Get all protein-compound interactions for a specific gene."
+    description="Get all protein-compound interactions for a specific gene.",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_interactions(
@@ -98,7 +101,8 @@ async def get_gene_interactions(
     "/compound/{compound}/interactions",
     response=SuccessResponseSchema,
     summary="Get compound interactions",
-    description="Get all protein-compound interactions for a specific compound."
+    description="Get all protein-compound interactions for a specific compound.",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_compound_interactions(
