@@ -5,6 +5,7 @@ import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
 import EnhancedGeneFeaturePlugin from "../../../../../plugins/EnhancedGeneFeaturePlugin";
 import LinearGenomeViewPlugin from '@jbrowse/plugin-linear-genome-view';
+import CircularViewPlugin from '@jbrowse/plugin-circular-view';
 import styles from './GeneViewerContent.module.scss';
 
 interface GeneViewerCircularContentProps {
@@ -42,38 +43,91 @@ const GeneViewerCircularContent: React.FC<GeneViewerCircularContentProps> = ({
         const plugins: PluginConstructor[] = [
             EnhancedGeneFeaturePlugin, 
             LinearGenomeViewPlugin,
+            CircularViewPlugin,
             ...corePluginConstructors
         ];
 
-        // Configure tracks for circular view using available display types
-        const circularTracks = tracks.map((track) => ({
-            type: track.type,
-            trackId: track.trackId,
-            name: track.name,
-            assemblyNames: track.assemblyNames,
-            adapter: track.adapter,
+        // Create comprehensive tracks for circular view
+        const circularTracks = [];
+
+        // Add reference sequence track
+        circularTracks.push({
+            type: 'ReferenceSequenceTrack',
+            trackId: 'reference',
+            name: 'Reference Sequence',
+            assemblyNames: [assembly.name],
+            adapter: assembly.sequence.adapter,
             visible: true,
             displays: [
                 {
-                    displayId: `${track.trackId}-circular-display`,
-                    type: 'ChordVariantDisplay', // Use circular-specific display type
-                    renderer: {
-                        color1: '#0000ff',
-                        labels: {
-                            name: `jexl:get(feature, 'locus_tag') || get(feature, 'gene') || get(feature, 'id')`
-                        },
-                        showLabels: true,
-                        height: 20,
-                    }
+                    displayId: 'reference-circular-display',
+                    type: 'LinearReferenceSequenceDisplay',
+                    showForward: true,
+                    showReverse: true,
+                    showLabels: true,
+                    showTranslation: false,
                 }
             ]
-        }));
+        });
+
+        // Add gene annotation tracks with proper circular configuration
+        tracks.forEach((track) => {
+            if (track.type === 'FeatureTrack') {
+                // Create a track that will work with circular view
+                circularTracks.push({
+                    type: 'FeatureTrack',
+                    trackId: track.trackId,
+                    name: track.name,
+                    assemblyNames: track.assemblyNames,
+                    adapter: track.adapter,
+                    visible: true,
+                    displays: [
+                        {
+                            displayId: `${track.trackId}-circular-display`,
+                            type: 'LinearBasicDisplay',
+                            renderer: {
+                                type: 'SvgFeatureRenderer',
+                                color1: `jexl:getColorForEssentiality(get(feature, 'Essentiality'))`,
+                                labels: {
+                                    name: `jexl:get(feature, 'locus_tag') || get(feature, 'gene') || get(feature, 'id')`
+                                },
+                                showLabels: true,
+                                height: 20,
+                                showForward: true,
+                                showReverse: true,
+                            }
+                        }
+                    ]
+                });
+            }
+        });
 
         const config = {
             assembly: assembly,
             tracks: circularTracks,
-            plugins: plugins
-            // Let the circular view handle multiple contigs automatically
+            plugins: plugins,
+            defaultSession: {
+                name: 'Circular Genome View',
+                views: [
+                    {
+                        id: 'circularGenomeView',
+                        type: 'CircularGenomeView',
+                        displayedRegions: assembly.sequence.adapter.sequences.map((seq: any) => ({
+                            refName: seq.name,
+                            start: 0,
+                            end: seq.length,
+                            assemblyName: assembly.name,
+                        })),
+                        tracks: circularTracks.map(track => ({
+                            id: track.trackId,
+                            type: track.type,
+                            configuration: track.trackId,
+                            visible: track.visible,
+                            displays: track.displays,
+                        })),
+                    }
+                ]
+            }
         };
 
         console.log('🔧 Circular view config:', config);
