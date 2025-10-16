@@ -6,7 +6,7 @@ import styles from "./GenomeSearchForm.module.scss";
 import {GenomeService} from "../../../../services/genome";
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {AutocompleteResponse, BaseGenome, GenomeMeta} from "../../../../interfaces/Genome";
-import {DEFAULT_PER_PAGE_CNT} from "../../../../utils/common/constants";
+import {DEFAULT_PER_PAGE_CNT, API_BASE_URL} from "../../../../utils/common/constants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/api/apiHelpers";
 import TypeStrainsFilter from "@components/Filters/TypeStrainsFilter";
 import SelectedGenomes from "@components/Filters/SelectedGenomes";
@@ -64,6 +64,9 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         body?: any
     } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
+    
+    // Track if initial search has run
+    const hasInitialSearchRun = React.useRef(false);
 
     const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newSize = parseInt(event.target.value, DEFAULT_PER_PAGE_CNT);
@@ -144,7 +147,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     ? `/species/${selectedSpecies[0]}/genomes/search`
                     : `/genomes/search`;
 
-                apiDetails.url = endpoint;
+                apiDetails.url = `${API_BASE_URL}${endpoint}`;
                 apiDetails.params = Object.fromEntries(params.entries());
 
                 const response = await GenomeService.fetchGenomeSearchResults(
@@ -195,7 +198,8 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
     useEffect(() => {
         setCurrentPage(1);
         fetchSearchResults(1, sortField, sortOrder);
-    }, [selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize]);
+        hasInitialSearchRun.current = true;
+    }, [searchQuery, selectedSpecies, selectedTypeStrains, sortField, sortOrder, pageSize]);
 
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,7 +254,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                 selectedTypeStrains
             );
             // Show success message
-            alert('Download completed successfully!');
+            // alert('Download completed successfully!');
         } catch (error) {
             console.error('Error downloading TSV:', error);
             alert('Failed to download TSV file. Please try again or contact support if the problem persists.');
