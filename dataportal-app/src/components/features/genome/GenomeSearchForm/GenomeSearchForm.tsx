@@ -239,8 +239,11 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             // Show initial message for large downloads
             alert('Starting download... This may take a while for large datasets.');
 
+            // Use the same query logic as fetchSearchResults
+            const qry = isolateName.trim() || searchQuery.trim();
+            
             await GenomeService.downloadGenomesTSV(
-                searchQuery,
+                qry,  // Use the combined query (same as search)
                 sortField,
                 sortOrder,
                 selectedSpecies,

@@ -163,13 +163,14 @@ export class GenomeService extends BaseService {
             // Map sort field to valid backend field
             const mappedSortField = mapSortField(sortField);
             
-            const params = this.buildParams({
+            // Build params object - createDownloadUrl will convert to URLSearchParams
+            const params = {
                 query,
                 sortField: mappedSortField,
                 sortOrder,
                 isolates: selectedTypeStrains?.join(','),
                 species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined
-            });
+            };
 
             const url = this.createDownloadUrl(`${API_BASE_URL}/genomes/download/tsv`, params);
             this.triggerDownload(url, 'genomes_export.tsv');
