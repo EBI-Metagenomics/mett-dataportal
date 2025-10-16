@@ -244,7 +244,7 @@ async def get_gene_protein_seq(
 async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(...)):
     try:
         logger.debug(
-            f"Download TSV request received with params: query={query}, filter={filter}, sortField={query.sort_field}, sortOrder={query.sort_order}"
+            f"Download TSV request received with params: query={query.query}, filter={query.filter}, sortField={query.sort_field}, sortOrder={query.sort_order}"
         )
 
         # Use streaming response for large datasets
@@ -281,7 +281,7 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
                     isolates=query.isolates,
                     species_acronym=query.species_acronym,
                     query=query.query,
-                    filter=filter,
+                    filter=query.filter,
                     filter_operators=query.filter_operators,
                     sort_field=query.sort_field,
                     sort_order=query.sort_order,

@@ -234,17 +234,8 @@ export class GeneService extends BaseService {
         facetOperators?: Record<string, 'AND' | 'OR'>
     ): Promise<void> {
         try {
-            const params = this.buildParams({
-                query,
-                page: 1,
-                per_page: 1000000,
-                sort_field: sortField,
-                sort_order: sortOrder,
-                isolates: selectedGenomes?.map(g => g.isolate_name).join(","),
-                species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined
-            });
-
-            // Add filters and operators
+            // Build filter string
+            let filterString = '';
             if (selectedFacets) {
                 const filterParts: string[] = [];
                 for (const [key, rawValue] of Object.entries(selectedFacets)) {
@@ -259,10 +250,12 @@ export class GeneService extends BaseService {
                     }
                 }
                 if (filterParts.length > 0) {
-                    params.append("filter", filterParts.join(";"));
+                    filterString = filterParts.join(";");
                 }
             }
 
+            // Build filter operators string
+            let filterOperatorsString = '';
             if (facetOperators) {
                 const filterOpParts: string[] = [];
                 for (const [key, value] of Object.entries(facetOperators)) {
@@ -271,9 +264,20 @@ export class GeneService extends BaseService {
                     }
                 }
                 if (filterOpParts.length > 0) {
-                    params.append("filter_operators", filterOpParts.join(";"));
+                    filterOperatorsString = filterOpParts.join(";");
                 }
             }
+
+            // Build params object (not URLSearchParams) for createDownloadUrl
+            const params = {
+                query,
+                sort_field: sortField,
+                sort_order: sortOrder,
+                isolates: selectedGenomes?.map(g => g.isolate_name).join(","),
+                species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined,
+                filter: filterString || undefined,
+                filter_operators: filterOperatorsString || undefined
+            };
 
             const url = this.createDownloadUrl(`${API_BASE_URL}/genes/download/tsv`, params);
             this.triggerDownload(url, 'genes_export.tsv');
