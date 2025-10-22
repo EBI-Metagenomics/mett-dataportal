@@ -9,7 +9,7 @@ except ImportError:
     OPENAI_AVAILABLE = False
     OpenAI = None
 
-from dataportal.schema.nl_schemas import METT_GENE_QUERY_SCHEMA
+from dataportal.schema.core.nl_schemas import METT_GENE_QUERY_SCHEMA
 from dataportal.schema.core.gene_schemas import (
     NaturalLanguageGeneQuery,
     GeneAdvancedSearchQuerySchema,
