@@ -41,7 +41,6 @@ drug_router = Router(tags=[ROUTER_DRUG])
             "Retrieves drug MIC (Minimum Inhibitory Concentration) data for a specific strain. "
             "Returns paginated MIC measurements including drug names, values, units, and experimental conditions."
     ),
-    include_in_schema=False,
 )
 async def get_strain_drug_mic(
         request,
@@ -71,7 +70,6 @@ async def get_strain_drug_mic(
             "Retrieves drug metabolism data for a specific strain. "
             "Returns paginated degradation percentages, statistical significance, and metabolizer classifications."
     ),
-    include_in_schema=False,
 )
 async def get_strain_drug_metabolism(
         request,
@@ -102,7 +100,6 @@ async def get_strain_drug_metabolism(
             "Returns comprehensive drug response information including resistance and metabolism patterns. "
             "No pagination is applied as this endpoint returns complete datasets for both MIC and metabolism data."
     ),
-    include_in_schema=False,
 )
 async def get_strain_drug_data(
         request,
@@ -133,7 +130,6 @@ async def get_strain_drug_data(
             "Returns paginated results with detailed MIC measurements. "
             "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
     ),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def search_drug_mic(request, query: DrugMICSearchQuerySchema = Query(...)):
@@ -157,7 +153,6 @@ async def search_drug_mic(request, query: DrugMICSearchQuerySchema = Query(...))
             "Retrieves all MIC data for a specific drug across all strains. "
             "Optionally filter by species acronym to narrow results to specific species."
     ),
-    include_in_schema=False,
 )
 async def get_drug_mic_by_drug(
         request,
@@ -224,7 +219,6 @@ async def get_drug_mic_by_class(
             "Returns paginated results with detailed metabolism measurements. "
             "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
     ),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def search_drug_metabolism(request, query: DrugMetabolismSearchQuerySchema = Query(...)):
@@ -248,7 +242,6 @@ async def search_drug_metabolism(request, query: DrugMetabolismSearchQuerySchema
             "Retrieves all metabolism data for a specific drug across all strains. "
             "Optionally filter by species acronym to narrow results to specific species."
     ),
-    include_in_schema=False,
 )
 async def get_drug_metabolism_by_drug(
         request,
@@ -274,8 +267,7 @@ async def get_drug_metabolism_by_drug(
     description=(
             "Retrieves all metabolism data for a specific drug class across all strains. "
             "Supports pagination and optional species filtering."
-    ),
-    include_in_schema=False,
+    ), include_in_schema=False,
 )
 @wrap_paginated_response
 async def get_drug_metabolism_by_class(

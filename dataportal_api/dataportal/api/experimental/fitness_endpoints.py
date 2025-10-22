@@ -29,7 +29,6 @@ fitness_router = Router(tags=[ROUTER_FITNESS])
         "Returns basic gene information along with fitness data including log fold change, "
         "FDR, and experimental conditions."
     ),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_fitness_by_gene(
@@ -69,7 +68,6 @@ async def get_fitness_by_gene(
         "Search for fitness data across genes with optional filters. "
         "Supports identifier-based search and discovery mode (filter-only queries)."
     ),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def search_fitness(
