@@ -216,6 +216,12 @@ WHITENOISE_MAX_AGE = 31536000  # 1 year
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# JWT Authentication Settings
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", SECRET_KEY)
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRY_DAYS = None  # None = tokens never expire (suitable for stakeholder testing)
+# To enable expiration, set JWT_EXPIRY_DAYS to a number like 365 for 1 year
+
 if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
