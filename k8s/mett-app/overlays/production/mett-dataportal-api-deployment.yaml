@@ -92,6 +92,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-prod
                   key: DJANGO_DEBUG
+            - name: DATAPORTAL_JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mett-jwt-secret-prod
+                  key: DATAPORTAL_JWT_SECRET_KEY
             - name: TIME_ZONE
               valueFrom:
                 configMapKeyRef:

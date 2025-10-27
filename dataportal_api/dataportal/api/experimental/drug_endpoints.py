@@ -9,6 +9,7 @@ from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
 from dataportal.api.core import genome_router
+from dataportal.authentication import jwt_auth
 from dataportal.schema.experimental.drug_schemas import (
     DrugMICSearchQuerySchema,
     DrugMetabolismSearchQuerySchema,
@@ -41,7 +42,7 @@ drug_router = Router(tags=[ROUTER_DRUG])
             "Retrieves drug MIC (Minimum Inhibitory Concentration) data for a specific strain. "
             "Returns paginated MIC measurements including drug names, values, units, and experimental conditions."
     ),
-    include_in_schema=False,
+    auth=jwt_auth,
 )
 async def get_strain_drug_mic(
         request,
