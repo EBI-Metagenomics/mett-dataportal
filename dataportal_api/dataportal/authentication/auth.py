@@ -9,10 +9,15 @@ from typing import Optional, Any, List
 from ninja.security import HttpBearer
 from django.http import HttpRequest
 from functools import wraps
+import logging
+import django.utils.timezone
+from asgiref.sync import sync_to_async
 
 from dataportal.models import APIToken
 from dataportal.authentication.utils import decode_jwt_token, extract_token_from_header
 from dataportal.authentication.roles import APIRoles
+
+logger = logging.getLogger(__name__)
 
 
 class AuthenticatedUser:
@@ -74,7 +79,7 @@ class JWTAuth(HttpBearer):
             return {"message": f"Hello {user.name}!", "roles": user.roles}
     """
     
-    def authenticate(self, request: HttpRequest, token: str) -> Optional[AuthenticatedUser]:
+    async def authenticate(self, request: HttpRequest, token: str) -> Optional[AuthenticatedUser]:
         """
         Authenticate the request using JWT token.
         
@@ -85,48 +90,105 @@ class JWTAuth(HttpBearer):
         Returns:
             AuthenticatedUser object if authenticated, None otherwise
         """
+        logger.debug(f"[JWT Auth] Starting authentication")
+        logger.debug(f"[JWT Auth] Token preview: {token[:20]}...{token[-20:] if len(token) > 40 else ''}")
+        
         # Decode and validate JWT token
         payload = decode_jwt_token(token)
         if not payload:
+            logger.warning("[JWT Auth] Failed to decode JWT token - invalid signature or format")
             return None
+        
+        logger.debug(f"[JWT Auth] Token decoded successfully. Subject: {payload.get('sub')}")
         
         # Validate issuer and audience (prevent token misuse)
         if payload.get("iss") and payload.get("iss") != "mett-dataportal":
+            logger.warning(f"[JWT Auth] Invalid issuer: {payload.get('iss')} (expected: mett-dataportal)")
             return None  # Wrong issuer
         
         if payload.get("aud") and payload.get("aud") != "mett-dataportal-api":
+            logger.warning(f"[JWT Auth] Invalid audience: {payload.get('aud')} (expected: mett-dataportal-api)")
             return None  # Wrong audience
         
         # Extract user name from token
         name = payload.get("sub")
         if not name:
+            logger.warning("[JWT Auth] No subject (sub) found in token payload")
             return None
         
+        logger.debug(f"[JWT Auth] Token validation passed. Looking up token in database for user: {name}")
+        
         # Extract roles from token (if present)
-        roles = payload.get("roles", [])
+        roles_from_jwt = payload.get("roles", [])
+        logger.debug(f"[JWT Auth] Roles in JWT payload: {roles_from_jwt}")
         
         # Check if token exists in database and is valid
+        # Use sync_to_async for all database operations
         try:
-            api_token = APIToken.objects.get(token=token)
+            # Database query - wrapped with sync_to_async
+            @sync_to_async
+            def get_token():
+                return APIToken.objects.select_related().prefetch_related('roles').get(token=token)
             
-            if not api_token.is_valid():
+            api_token = await get_token()
+            logger.debug(f"[JWT Auth] Token found in database (ID: {api_token.pk}, Name: {api_token.name})")
+            
+            @sync_to_async
+            def check_token_valid():
+                return api_token.is_valid()
+            
+            if not await check_token_valid():
                 # Token is inactive or expired
+                @sync_to_async
+                def get_token_status():
+                    return api_token.is_active, api_token.is_expired()
+                
+                is_active, is_expired = await get_token_status()
+                logger.warning(
+                    f"[JWT Auth] Token is invalid - "
+                    f"Active: {is_active}, "
+                    f"Expired: {is_expired}"
+                )
                 return None
             
-            # Update last used timestamp (async to avoid blocking)
-            api_token.mark_as_used()
+            logger.debug(f"[JWT Auth] Token is valid and active")
             
             # Get roles from database (many-to-many relationship)
-            roles = api_token.get_role_codes()
+            @sync_to_async
+            def get_roles():
+                return list(api_token.roles.filter(is_active=True).values_list('code', flat=True))
+            
+            roles = await get_roles()
+            logger.debug(f"[JWT Auth] Roles from database M2M: {roles}")
+            
+            if not roles and roles_from_jwt:
+                logger.warning(
+                    f"[JWT Auth] Token has roles in JWT ({roles_from_jwt}) but none in database M2M. "
+                    f"M2M relationship may not be set up correctly."
+                )
+            
+            # Update last used timestamp in a non-blocking way
+            @sync_to_async
+            def update_last_used():
+                APIToken.objects.filter(pk=api_token.pk).update(last_used_at=django.utils.timezone.now())
+            
+            await update_last_used()
             
             # Return AuthenticatedUser object
-            return AuthenticatedUser(name=name, roles=roles)
+            user = AuthenticatedUser(name=name, roles=roles)
+            logger.info(
+                f"[JWT Auth] ✅ Authentication successful for '{name}' "
+                f"(token_id={api_token.pk}, roles={len(roles)})"
+            )
+            return user
             
         except APIToken.DoesNotExist:
             # Token not found in database
+            logger.warning(f"[JWT Auth] Token not found in database for user: {name}")
             return None
-        except Exception:
+        except Exception as e:
             # Any other error
+            logger.error(f"[JWT Auth] Unexpected error during authentication: {type(e).__name__}: {str(e)}", exc_info=True)
             return None
 
 
@@ -162,7 +224,7 @@ class RoleBasedJWTAuth(JWTAuth):
         self.required_roles = required_roles or []
         self.require_all = require_all
     
-    def authenticate(self, request: HttpRequest, token: str) -> Optional[AuthenticatedUser]:
+    async def authenticate(self, request: HttpRequest, token: str) -> Optional[AuthenticatedUser]:
         """
         Authenticate and check roles.
         
@@ -174,7 +236,7 @@ class RoleBasedJWTAuth(JWTAuth):
             AuthenticatedUser if authenticated and has required roles, None otherwise
         """
         # First, perform standard authentication
-        user = super().authenticate(request, token)
+        user = await super().authenticate(request, token)
         
         if not user:
             return None
@@ -219,7 +281,7 @@ class OptionalJWTAuth(JWTAuth):
                 return {"message": "Hello, anonymous!"}
     """
     
-    def authenticate(self, request: HttpRequest, token: str) -> Optional[Any]:
+    async def authenticate(self, request: HttpRequest, token: str) -> Optional[Any]:
         """
         Authenticate if token is provided, otherwise allow anonymous access.
         
@@ -233,7 +295,7 @@ class OptionalJWTAuth(JWTAuth):
         if not token:
             return None  # Allow anonymous access
         
-        result = super().authenticate(request, token)
+        result = await super().authenticate(request, token)
         return result if result else None  # Allow anonymous if token invalid
 
 

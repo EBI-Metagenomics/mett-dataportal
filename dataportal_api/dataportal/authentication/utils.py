@@ -7,6 +7,7 @@ using PyJWT library.
 
 import jwt
 import secrets
+import time
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from django.conf import settings
@@ -65,13 +66,14 @@ def generate_jwt_token(
     if expiry_days is None:
         expiry_days = get_jwt_expiry_days()
     
-    now = datetime.utcnow()
+    # Use Unix timestamp (int) instead of datetime to avoid timezone issues
+    now = int(time.time())
     
     # Base payload with standard JWT claims
     payload = {
         # Standard JWT claims (https://www.rfc-editor.org/rfc/rfc7519#section-4.1)
         "sub": name,  # Subject - who this token is for
-        "iat": now,  # Issued at
+        "iat": now,  # Issued at (Unix timestamp)
         "jti": secrets.token_urlsafe(16),  # JWT ID - unique identifier for this token
         "iss": "mett-dataportal",  # Issuer - identifies the system that issued the token
         "aud": "mett-dataportal-api",  # Audience - identifies the intended recipient
@@ -111,7 +113,7 @@ def generate_jwt_token(
     
     # Add expiration if specified
     if expiry_days is not None:
-        payload["exp"] = now + timedelta(days=expiry_days)
+        payload["exp"] = now + (expiry_days * 24 * 60 * 60)  # Convert days to seconds
         payload["nbf"] = now  # Not before - token valid from now
     
     # Add any additional custom claims
@@ -144,16 +146,29 @@ def decode_jwt_token(token: str) -> Optional[Dict[str, Any]]:
         ...     user_name = payload.get("sub")
     """
     try:
-        # Decode token
+        # Decode token with audience and issuer validation
         payload = jwt.decode(
             token,
             get_jwt_secret_key(),
             algorithms=[get_jwt_algorithm()],
-            options={"verify_exp": True}  # Verify expiration if present
+            audience="mett-dataportal-api",  # Must match token's aud claim
+            issuer="mett-dataportal",  # Must match token's iss claim
+            options={
+                "verify_signature": True,
+                "verify_exp": True,  # Verify expiration if present
+                "verify_aud": True,  # Verify audience
+                "verify_iss": True,  # Verify issuer
+            }
         )
         return payload
     except jwt.ExpiredSignatureError:
         # Token has expired
+        return None
+    except jwt.InvalidAudienceError:
+        # Wrong audience
+        return None
+    except jwt.InvalidIssuerError:
+        # Wrong issuer
         return None
     except jwt.InvalidTokenError:
         # Token is invalid (malformed, wrong signature, etc.)
