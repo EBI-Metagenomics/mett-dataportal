@@ -4,6 +4,7 @@ from typing import Optional
 from ninja import Router, Query, Path
 
 from dataportal.api.core.gene_endpoints import gene_router
+from dataportal.authentication import RoleBasedJWTAuth, APIRoles
 from dataportal.schema.experimental.mutant_growth_schemas import MutantGrowthSearchQuerySchema
 from dataportal.schema.response_schemas import SuccessResponseSchema, create_success_response
 from dataportal.services.experimental.mutant_growth_service import MutantGrowthService
@@ -29,7 +30,7 @@ mutant_growth_router = Router(tags=[ROUTER_MUTANT_GROWTH])
         "Returns basic gene information along with mutant growth data including doubling times, "
         "biological replicates, and experimental conditions."
     ),
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.MUTANT_GROWTH]),
 )
 @wrap_success_response
 async def get_mutant_growth_by_gene(
@@ -69,7 +70,7 @@ async def get_mutant_growth_by_gene(
         "Search for mutant growth data across genes with optional filters. "
         "Supports identifier-based search and discovery mode (filter-only queries)."
     ),
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.MUTANT_GROWTH]),
 )
 @wrap_success_response
 async def search_mutant_growth(

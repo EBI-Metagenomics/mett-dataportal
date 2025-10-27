@@ -7,6 +7,7 @@ import logging
 from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
+from dataportal.authentication import APIRoles, RoleBasedJWTAuth
 from dataportal.schema.response_schemas import SuccessResponseSchema, create_success_response, PaginatedResponseSchema
 from dataportal.schema.interactions.ttp_schemas import (
     TTPInteractionQuerySchema,
@@ -34,7 +35,7 @@ ttp_router = Router(tags=[ROUTER_TTP])
     response=SuccessResponseSchema,
     summary="Get TTP metadata",
     description="Get metadata about the TTP dataset including counts, available compounds, and score ranges.",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
 )
 @wrap_success_response
 async def get_ttp_metadata(request):
@@ -54,7 +55,7 @@ async def get_ttp_metadata(request):
     response=PaginatedResponseSchema,
     summary="Search TTP interactions",
     description="Search for protein-compound interactions with basic filtering and pagination.",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
 )
 @wrap_paginated_response
 async def search_interactions(
@@ -76,7 +77,7 @@ async def search_interactions(
     response=SuccessResponseSchema,
     summary="Get gene interactions",
     description="Get all protein-compound interactions for a specific gene.",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
 )
 @wrap_success_response
 async def get_gene_interactions(
@@ -102,7 +103,7 @@ async def get_gene_interactions(
     response=SuccessResponseSchema,
     summary="Get compound interactions",
     description="Get all protein-compound interactions for a specific compound.",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
 )
 @wrap_success_response
 async def get_compound_interactions(
@@ -128,6 +129,7 @@ async def get_compound_interactions(
     response=SuccessResponseSchema,
     summary="Hit analysis",
     description="Get significant protein-compound interactions (hits) with summary statistics.",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
     include_in_schema=False,
 )
 @wrap_success_response
@@ -154,6 +156,7 @@ async def get_hit_analysis(
     response=SuccessResponseSchema,
     summary="Pool analysis",
     description="Get analysis summary for specific experimental pools.",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
     include_in_schema=False,
 )
 @wrap_success_response
@@ -176,6 +179,7 @@ async def get_pool_analysis(
     "/download",
     summary="Download TTP data",
     description="Download TTP interaction data in CSV or TSV format with filtering.",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
     include_in_schema=False,
 )
 async def download_ttp_data(

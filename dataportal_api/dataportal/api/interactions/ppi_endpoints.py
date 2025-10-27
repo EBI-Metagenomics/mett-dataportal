@@ -3,6 +3,7 @@ import logging
 from ninja import Router, Query
 from ninja.errors import HttpError
 
+from dataportal.authentication import RoleBasedJWTAuth, APIRoles
 from dataportal.schema.interactions.ppi_schemas import (
     PPISearchQuerySchema,
     PPISearchResponseSchema,
@@ -35,7 +36,7 @@ ppi_service = PPIService()
     response=PPIScoreTypesResponseSchema,
     summary="Get available score types",
     description="Get list of available score types for PPI filtering",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
 )
 @wrap_success_response
 async def get_available_score_types(request):
@@ -69,7 +70,7 @@ async def get_available_score_types(request):
     response=PPISearchResponseSchema,
     summary="Search protein-protein interactions",
     description="Search for protein-protein interactions with various filtering options. Can search by protein_id (UniProt ID) or locus_tag.",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
 )
 @wrap_paginated_response
 async def search_ppi_interactions(request, query: PPISearchQuerySchema = Query(...)):
@@ -100,6 +101,7 @@ async def search_ppi_interactions(request, query: PPISearchQuerySchema = Query(.
     response=PPINeighborhoodResponseSchema,
     summary="Get protein neighborhood",
     description="Get neighborhood data for a specific protein. Can search by protein_id (UniProt ID) or locus_tag.",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
     include_in_schema=False,
 )
 @wrap_success_response
@@ -152,7 +154,7 @@ async def get_protein_neighborhood(
     response=PPIAllNeighborsResponseSchema,
     summary="Get all protein neighbors (raw data)",
     description="Get all neighbors for a specific protein without algorithm processing. Returns raw interaction data for custom analysis in Jupyter notebooks. Can search by protein_id (UniProt ID) or locus_tag.",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
 )
 @wrap_success_response
 async def get_all_protein_neighbors(
@@ -203,7 +205,7 @@ async def get_all_protein_neighbors(
     response=PPINetworkResponseSchema,
     summary="Get PPI network data",
     description="Get network data for a specific score type and threshold",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
 )
 @wrap_success_response
 async def get_ppi_network(
@@ -245,7 +247,7 @@ async def get_ppi_network(
     response=PPINetworkPropertiesResponseSchema,
     summary="Get PPI network properties",
     description="Get network properties (nodes, edges, density, clustering) for a specific score type and threshold",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
 )
 @wrap_success_response
 async def get_ppi_network_properties(

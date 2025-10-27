@@ -11,6 +11,7 @@ from ninja import Router, Query
 from ninja.errors import HttpError
 
 from dataportal.api.core import gene_router
+from dataportal.authentication import APIRoles, RoleBasedJWTAuth
 from dataportal.services.interactions.operon_service import OperonService
 from dataportal.schema.interactions.operon_schemas import (
     OperonSearchQuerySchema,
@@ -36,7 +37,7 @@ operon_service = OperonService()
     response=SuccessResponseSchema,
     summary="Get operons containing a gene",
     description="Get all operons that contain a specific gene",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.OPERONS]),
 )
 @wrap_success_response
 async def get_gene_operons(
@@ -68,7 +69,7 @@ async def get_gene_operons(
     response=SuccessResponseSchema,
     summary="Search operons with filters",
     description="Search for operons with various filters and pagination",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.OPERONS]),
 )
 @wrap_success_response
 async def search_operons(
@@ -114,6 +115,7 @@ async def search_operons(
     response=SuccessResponseSchema,
     summary="Get operon statistics",
     description="Get statistics about operons in the dataset",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.OPERONS]),
     include_in_schema=False,
 )
 @wrap_success_response
@@ -144,7 +146,7 @@ async def get_operon_statistics(
     response=SuccessResponseSchema,
     summary="Get operon by ID",
     description="Get detailed information about a specific operon",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.OPERONS]),
 )
 @wrap_success_response
 async def get_operon_by_id(

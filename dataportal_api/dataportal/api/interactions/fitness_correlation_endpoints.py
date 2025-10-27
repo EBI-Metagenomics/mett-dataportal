@@ -11,6 +11,7 @@ from ninja import Router, Query
 from ninja.errors import HttpError
 
 from dataportal.api.core import gene_router
+from dataportal.authentication import RoleBasedJWTAuth, APIRoles
 from dataportal.services.interactions.fitness_correlation_service import FitnessCorrelationService
 from dataportal.schema.interactions.fitness_correlation_schemas import (
     GeneCorrelationQuerySchema,
@@ -37,7 +38,7 @@ fitness_correlation_service = FitnessCorrelationService()
     "/{locus_tag}/correlations",
     summary="Get correlations for a gene",
     description="Get all genes correlated with a specific gene, ordered by correlation strength",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
 )
 @wrap_success_response
 async def get_gene_correlations(
@@ -72,7 +73,7 @@ async def get_gene_correlations(
     "/correlation",
     summary="Get correlation between two genes",
     description="Get the correlation value between two specific genes",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
 )
 @wrap_success_response
 async def get_gene_pair_correlation(
@@ -110,6 +111,7 @@ async def get_gene_pair_correlation(
     "/top",
     summary="Get top correlations",
     description="Get the strongest correlations in the dataset",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
     include_in_schema=False,
 )
 @wrap_success_response
@@ -146,6 +148,7 @@ async def get_top_correlations(
     "/statistics",
     summary="Get correlation statistics",
     description="Get statistics about correlations in the dataset",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
     include_in_schema=False,
 )
 @wrap_success_response
@@ -175,7 +178,7 @@ async def get_correlation_statistics(
     "/search",
     summary="Search correlations",
     description="Search correlations by gene name or product description",
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
 )
 @wrap_success_response
 async def search_correlations(
@@ -210,6 +213,7 @@ async def search_correlations(
     "/strength-categories",
     summary="Get available correlation strength categories",
     description="Get list of available correlation strength categories for filtering",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
     include_in_schema=False,
 )
 @wrap_success_response

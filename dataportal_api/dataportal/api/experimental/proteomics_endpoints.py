@@ -4,6 +4,7 @@ from typing import List, Optional
 from ninja import Router, Query, Path
 
 from dataportal.api.core.gene_endpoints import gene_router
+from dataportal.authentication import APIRoles, RoleBasedJWTAuth
 from dataportal.schema.experimental.proteomics_schemas import (
     ProteomicsWithGeneSchema,
     ProteomicsSearchQuerySchema,
@@ -42,7 +43,7 @@ proteomics_router = Router(tags=[ROUTER_PROTEOMICS])
         "Returns basic gene information along with all proteomics evidence entries including "
         "coverage, unique peptides, unique intensity, and evidence flag."
     ),
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PROTEOMICS]),
 )
 @wrap_success_response
 async def get_proteomics_by_gene(
@@ -89,7 +90,7 @@ async def get_proteomics_by_gene(
         "Supports filtering by minimum coverage, minimum unique peptides, and evidence flag. "
         "Returns an array of genes with their proteomics evidence data."
     ),
-    include_in_schema=False,
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PROTEOMICS]),
 )
 @wrap_success_response
 async def search_proteomics(
