@@ -1083,6 +1083,42 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Genome-Download",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genomes/download/tsv",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genomes",
+										"download",
+										"tsv"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				},
@@ -3064,6 +3100,46 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Genes-Download",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Results array contains the protein sequence\", function () {",
+											"    const jsonData = pm.response.json().data; ",
+											"    jsonData.protein_sequen",
+											"    pm.expect(jsonData.protein_sequence).that.is.not.empty;",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{mett-current}}/api/genes/protein/BU_2243B_00003",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"genes",
+										"protein",
+										"BU_2243B_00003"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				},
@@ -4027,6 +4103,16 @@
 								{
 									"name": "Drug-Data-BU-By-IsolateName",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4047,6 +4133,16 @@
 								{
 									"name": "Drug-Data-PV-By-IsolateName",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4073,7 +4169,7 @@
 									"name": "by-isolate",
 									"item": [
 										{
-											"name": "Drug-MIC-BU-for-Isolate",
+											"name": "Drug-MIC-BU-for-Isolate-token-valid",
 											"event": [
 												{
 													"listen": "test",
@@ -4090,6 +4186,99 @@
 												}
 											],
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp-dev}}",
+															"type": "string"
+														}
+													]
+												},
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/genomes/BU_ATCC8492/drug-mic",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"genomes",
+														"BU_ATCC8492",
+														"drug-mic"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-BU-for-Isolate-token-invalid",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 401\", function () {",
+															"    pm.response.to.have.status(401);",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
+											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-int-dev}}",
+															"type": "string"
+														}
+													]
+												},
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{mett-current}}/api/genomes/BU_ATCC8492/drug-mic",
+													"host": [
+														"{{mett-current}}"
+													],
+													"path": [
+														"api",
+														"genomes",
+														"BU_ATCC8492",
+														"drug-mic"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Drug-MIC-BU-for-Isolate-token-missing",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 401\", function () {",
+															"    pm.response.to.have.status(401);",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {},
+														"requests": {}
+													}
+												}
+											],
+											"request": {
+												"auth": {
+													"type": "noauth"
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4125,6 +4314,16 @@
 												}
 											],
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4165,6 +4364,16 @@
 												}
 											],
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4186,6 +4395,16 @@
 										{
 											"name": "Drug-MIC-By-Drug-Name-Fuzzy",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4207,6 +4426,16 @@
 										{
 											"name": "Drug-MIC-By-Drug-Name&Species",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4234,6 +4463,16 @@
 										{
 											"name": "Drug-MIC-By-Drug-Name-Paginated",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4272,6 +4511,16 @@
 										{
 											"name": "Drug-MIC-By-Filters-MIC_Values",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4310,6 +4559,16 @@
 										{
 											"name": "Drug-MIC-By-Filters-Higher-MIC_Value",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4353,6 +4612,16 @@
 										{
 											"name": "Drug-MIC-By-Drug-Class",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4374,6 +4643,16 @@
 										{
 											"name": "Drug-MIC-By-Drug-Class-Filterby-Species",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4401,6 +4680,16 @@
 										{
 											"name": "Drug-MIC-By-Drug-Class-Paginated",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4432,6 +4721,16 @@
 										{
 											"name": "Drug-MIC-Filter-Drug-Class&Species",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4479,6 +4778,16 @@
 										}
 									],
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4499,6 +4808,16 @@
 								{
 									"name": "Drug-MIC-By-Query",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4525,6 +4844,16 @@
 								{
 									"name": "Drug-MIC-By-Filters-MIC_Values",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4559,6 +4888,16 @@
 								{
 									"name": "Drug-MIC-By-Filters-Higher-MIC_Values",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4593,6 +4932,16 @@
 								{
 									"name": "Drug-MIC-Paginated",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4631,6 +4980,16 @@
 								{
 									"name": "Drug-high-MIC-values",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4657,6 +5016,16 @@
 								{
 									"name": "Drug-low-MIC-values",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4691,6 +5060,16 @@
 										{
 											"name": "Drug-Metabolism-BU-By-IsolateName",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4711,6 +5090,16 @@
 										{
 											"name": "Drug-Metabolism-PV-By-IsolateName",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4736,6 +5125,16 @@
 										{
 											"name": "Drug-Metabolism-Search-by-class",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4762,6 +5161,16 @@
 										{
 											"name": "Drug-Metabolism-by-drugClass",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4783,6 +5192,16 @@
 										{
 											"name": "Drug-Metabolism-by-drugClass&Species",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4810,6 +5229,16 @@
 										{
 											"name": "Drug-Metabolism-by-drugClass-Paginated",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4846,6 +5275,16 @@
 										{
 											"name": "Drug-Metabolism-by-drugName",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4867,6 +5306,16 @@
 										{
 											"name": "Drug-Metabolism-by-drugName-Fuzzy",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4888,6 +5337,16 @@
 										{
 											"name": "Drug-Metabolism-by-drugName&Species",
 											"request": {
+												"auth": {
+													"type": "bearer",
+													"bearer": [
+														{
+															"key": "token",
+															"value": "{{bearer-token-exp+int-dev}}",
+															"type": "string"
+														}
+													]
+												},
 												"method": "GET",
 												"header": [],
 												"url": {
@@ -4932,6 +5391,16 @@
 										}
 									],
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4952,6 +5421,16 @@
 								{
 									"name": "Drug-Metabolism-Search-Name",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -4978,6 +5457,16 @@
 								{
 									"name": "Drug-Metabolism-Search-degradation-threshold",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -5008,6 +5497,16 @@
 								{
 									"name": "Drug-Metabolism-By-SignificantEvents",
 									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{bearer-token-exp+int-dev}}",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -5060,6 +5559,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5095,6 +5604,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5143,6 +5662,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5191,6 +5720,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5247,6 +5786,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5291,6 +5840,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5335,6 +5894,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5375,6 +5944,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5423,6 +6002,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5467,6 +6056,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5515,6 +6114,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5563,6 +6172,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5596,6 +6215,16 @@
 						{
 							"name": "PPI-Interactions - DS score",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5633,6 +6262,16 @@
 						{
 							"name": "PPI-Interactions - Melt Score",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5666,6 +6305,16 @@
 						{
 							"name": "PPI-Interactions - Abundance Score",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5699,10 +6348,20 @@
 						{
 							"name": "PPI-Interactions - XLMS Peptides",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/ppi/network-properties?score_type=xlms_peptides&score_threshold=2&species_acronym=PV",
+									"raw": "{{mett-current}}/api/ppi/network-properties?score_type=xlms_peptides&score_threshold=1&species_acronym=PV",
 									"host": [
 										"{{mett-current}}"
 									],
@@ -5718,7 +6377,7 @@
 										},
 										{
 											"key": "score_threshold",
-											"value": "2"
+											"value": "1"
 										},
 										{
 											"key": "species_acronym",
@@ -5732,6 +6391,16 @@
 						{
 							"name": "PPI-Interactions - String Score",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5769,6 +6438,16 @@
 						{
 							"name": "PPI-Interactions - XL-MS evidence",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5802,6 +6481,16 @@
 						{
 							"name": "PPI-Interactions - STRING evidence",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5835,6 +6524,16 @@
 						{
 							"name": "PPI-Interactions - Network properties",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5868,6 +6567,16 @@
 						{
 							"name": "PPI-Interactions - Network data",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5922,6 +6631,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5956,6 +6675,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -5996,6 +6725,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6036,6 +6775,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6072,6 +6821,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6114,6 +6873,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6150,6 +6919,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6195,6 +6974,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6240,6 +7029,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6289,6 +7088,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6324,6 +7133,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6359,6 +7178,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6403,6 +7232,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6459,6 +7298,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6512,6 +7361,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6547,6 +7406,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6582,6 +7451,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6622,6 +7501,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6666,6 +7555,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6710,6 +7609,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6759,6 +7668,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6794,6 +7713,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6829,6 +7758,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6870,6 +7809,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6914,6 +7863,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -6954,6 +7913,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7003,6 +7972,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7038,6 +8017,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7073,6 +8062,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7113,6 +8112,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7153,6 +8162,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7193,6 +8212,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7233,6 +8262,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7281,6 +8320,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7330,6 +8379,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7365,6 +8424,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7400,6 +8469,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7440,6 +8519,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7489,6 +8578,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7513,8 +8612,8 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"pm.test(\"Status code is 404\", function () {",
-											"    pm.response.to.have.status(404);",
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
 											"});"
 										],
 										"type": "text/javascript",
@@ -7524,6 +8623,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7559,6 +8668,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7603,6 +8722,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7648,6 +8777,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7689,6 +8828,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7730,6 +8879,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7779,6 +8938,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7827,6 +8996,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7867,6 +9046,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7901,6 +9090,16 @@
 								}
 							],
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer-token-exp+int-dev}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -7968,7 +9167,7 @@
 					"name": "NaturalSearchQuery",
 					"item": [
 						{
-							"name": "simple-query",
+							"name": "NL-Squery-to-backend",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -8045,14 +9244,111 @@
 									}
 								},
 								"url": {
-									"raw": "{{mett-current}}/api/query/interpret",
+									"raw": "{{mett-current}}/api/nq/query?query=Show%20essential%20genes%20in%20Bacteroides%20uniformis",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
-										"query",
+										"nq",
+										"query"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "Show%20essential%20genes%20in%20Bacteroides%20uniformis"
+										}
+									]
+								},
+								"description": "Generated from cURL: curl 'http://localhost:3000/api/query/interpret' \\\n  -H 'Accept: application/json, text/plain, */*' \\\n  -H 'Accept-Language: en-GB,en;q=0.9' \\\n  -H 'Cache-Control: no-cache' \\\n  -H 'Connection: keep-alive' \\\n  -H 'Content-Type: application/json' \\\n  -b 'csrftoken=nmo9n6vCxtn6hRlS95Cg0KzKt6KKgiUH' \\\n  -H 'Origin: http://localhost:3000' \\\n  -H 'Pragma: no-cache' \\\n  -H 'Referer: http://localhost:3000/natural-query' \\\n  -H 'Sec-Fetch-Dest: empty' \\\n  -H 'Sec-Fetch-Mode: cors' \\\n  -H 'Sec-Fetch-Site: same-origin' \\\n  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36' \\\n  -H 'sec-ch-ua: \"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"macOS\"' \\\n  --data-raw '{\"query\":\"Show essential genes in PV involved in AMR\"}'"
+							},
+							"response": []
+						},
+						{
+							"name": "interpret-query",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json, text/plain, */*"
+									},
+									{
+										"key": "Accept-Language",
+										"value": "en-GB,en;q=0.9"
+									},
+									{
+										"key": "Cache-Control",
+										"value": "no-cache"
+									},
+									{
+										"key": "Connection",
+										"value": "keep-alive"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Origin",
+										"value": "http://localhost:3000"
+									},
+									{
+										"key": "Pragma",
+										"value": "no-cache"
+									},
+									{
+										"key": "Referer",
+										"value": "http://localhost:3000/natural-query"
+									},
+									{
+										"key": "Sec-Fetch-Dest",
+										"value": "empty"
+									},
+									{
+										"key": "Sec-Fetch-Mode",
+										"value": "cors"
+									},
+									{
+										"key": "Sec-Fetch-Site",
+										"value": "same-origin"
+									},
+									{
+										"key": "User-Agent",
+										"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+									},
+									{
+										"key": "sec-ch-ua",
+										"value": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\""
+									},
+									{
+										"key": "sec-ch-ua-mobile",
+										"value": "?0"
+									},
+									{
+										"key": "sec-ch-ua-platform",
+										"value": "\"macOS\""
+									},
+									{
+										"key": "Cookie",
+										"value": "csrftoken=nmo9n6vCxtn6hRlS95Cg0KzKt6KKgiUH"
+									}
+								],
+								"url": {
+									"raw": "{{mett-current}}/api/nq/interpret?query=Show%20essential%20genes%20in%20Bacteroides%20uniformis",
+									"host": [
+										"{{mett-current}}"
+									],
+									"path": [
+										"api",
+										"nq",
 										"interpret"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "Show%20essential%20genes%20in%20Bacteroides%20uniformis"
+										}
 									]
 								},
 								"description": "Generated from cURL: curl 'http://localhost:3000/api/query/interpret' \\\n  -H 'Accept: application/json, text/plain, */*' \\\n  -H 'Accept-Language: en-GB,en;q=0.9' \\\n  -H 'Cache-Control: no-cache' \\\n  -H 'Connection: keep-alive' \\\n  -H 'Content-Type: application/json' \\\n  -b 'csrftoken=nmo9n6vCxtn6hRlS95Cg0KzKt6KKgiUH' \\\n  -H 'Origin: http://localhost:3000' \\\n  -H 'Pragma: no-cache' \\\n  -H 'Referer: http://localhost:3000/natural-query' \\\n  -H 'Sec-Fetch-Dest: empty' \\\n  -H 'Sec-Fetch-Mode: cors' \\\n  -H 'Sec-Fetch-Site: same-origin' \\\n  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36' \\\n  -H 'sec-ch-ua: \"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"macOS\"' \\\n  --data-raw '{\"query\":\"Show essential genes in PV involved in AMR\"}'"
