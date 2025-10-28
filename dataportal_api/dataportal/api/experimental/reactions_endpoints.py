@@ -30,6 +30,7 @@ reactions_router = Router(tags=[ROUTER_REACTIONS])
         "Returns basic gene information along with reaction identifiers, GPR rules, and metabolites."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.REACTIONS]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_reactions_by_gene(
@@ -70,6 +71,7 @@ async def get_reactions_by_gene(
         "Supports identifier-based search and discovery mode (filter-only queries)."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.REACTIONS]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def search_reactions(

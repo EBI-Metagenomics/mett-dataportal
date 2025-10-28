@@ -44,6 +44,7 @@ proteomics_router = Router(tags=[ROUTER_PROTEOMICS])
         "coverage, unique peptides, unique intensity, and evidence flag."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.PROTEOMICS]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_proteomics_by_gene(
@@ -91,6 +92,7 @@ async def get_proteomics_by_gene(
         "Returns an array of genes with their proteomics evidence data."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.PROTEOMICS]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def search_proteomics(

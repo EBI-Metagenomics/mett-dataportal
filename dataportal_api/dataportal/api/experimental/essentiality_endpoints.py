@@ -31,6 +31,7 @@ essentiality_router = Router(tags=[ROUTER_ESSENTIALITY])
         "essentiality calls, and experimental conditions."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ESSENTIALITY]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_essentiality_by_gene(
@@ -71,6 +72,7 @@ async def get_essentiality_by_gene(
         "Supports identifier-based search and discovery mode (filter-only queries)."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ESSENTIALITY]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def search_essentiality(

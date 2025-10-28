@@ -39,6 +39,7 @@ fitness_correlation_service = FitnessCorrelationService()
     summary="Get correlations for a gene",
     description="Get all genes correlated with a specific gene, ordered by correlation strength",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_correlations(
@@ -74,6 +75,7 @@ async def get_gene_correlations(
     summary="Get correlation between two genes",
     description="Get the correlation value between two specific genes",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_pair_correlation(
@@ -179,6 +181,7 @@ async def get_correlation_statistics(
     summary="Search correlations",
     description="Search correlations by gene name or product description",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def search_correlations(

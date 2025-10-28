@@ -31,6 +31,7 @@ mutant_growth_router = Router(tags=[ROUTER_MUTANT_GROWTH])
         "biological replicates, and experimental conditions."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.MUTANT_GROWTH]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def get_mutant_growth_by_gene(
@@ -71,6 +72,7 @@ async def get_mutant_growth_by_gene(
         "Supports identifier-based search and discovery mode (filter-only queries)."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.MUTANT_GROWTH]),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def search_mutant_growth(
