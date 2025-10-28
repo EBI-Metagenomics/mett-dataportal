@@ -159,6 +159,12 @@ cd ../dataportal-app
 npm install
 
 # 5. Run development servers
+
+# 5a. Setup auth mechanism (temporary)
+cd dataportal_api
+python manage.py migrate
+python manage.py seed_roles
+
 # Terminal 1 - Backend
 cd dataportal_api
 python manage.py runserver

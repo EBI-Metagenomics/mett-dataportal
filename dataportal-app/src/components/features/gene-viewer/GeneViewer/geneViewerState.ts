@@ -67,6 +67,22 @@ const useGeneViewerState = (
                             // TODO: Re-enable once plugin system is working
                         }
                     })),
+                    configuration: {
+                        disableAnalytics: true,
+                        rpc: {
+                            defaultDriver: 'MainThreadRpcDriver',
+                        },
+                        theme: {
+                            palette: {
+                                primary: {
+                                    main: '#0D233F',
+                                },
+                                secondary: {
+                                    main: '#721E63',
+                                },
+                            },
+                        },
+                    },
                     defaultSession: defaultSession ? {...defaultSession, name: 'defaultSession'} : undefined
                 };
 

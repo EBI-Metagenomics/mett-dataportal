@@ -32,7 +32,8 @@ dependencies = [
     "django-celery-beat==2.8.1",
     "biopython==1.85",
     "openai==1.98.0",
-    "networkx==3.5"
+    "networkx==3.5",
+    "pyjwt==2.10.1"
 ]
 
 [dependency-groups]

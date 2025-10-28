@@ -229,18 +229,23 @@ async def download_genomes_tsv(
 ):
     try:
         logger.debug(
-            f"Download TSV request received with params: query={query}, sortField={query.sortField}, sortOrder={query.sortOrder}"
+            f"Download TSV request received with params: query={query.query}, sortField={query.sortField}, sortOrder={query.sortOrder}, isolates={query.isolates}, species_acronym={query.species_acronym}"
         )
 
-        # Get all records without pagination using the existing service method
-        data_response = await genome_service.search_genomes_by_string(
-            query=query.query,
+        # Create a GenomeSearchQuerySchema object from the download query params
+        search_params = GenomeSearchQuerySchema(
+            query=query.query or "",  # Ensure empty string if None
             page=1,
             per_page=SCROLL_MAX_RESULTS,  # Use constant for large downloads
             sortField=query.sortField or GENOME_FIELD_ISOLATE_NAME,
             sortOrder=query.sortOrder or DEFAULT_SORT_DIRECTION,
             isolates=query.isolates,
             species_acronym=query.species_acronym,
+        )
+
+        # Get all records without pagination using the existing service method
+        data_response = await genome_service.search_genomes_by_string(
+            params=search_params,
             use_scroll=True,  # Use scroll API for large downloads
         )
 

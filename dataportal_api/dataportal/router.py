@@ -261,9 +261,10 @@ api.add_exception_handler(HttpError, custom_error_handler)
 api.add_exception_handler(Exception, custom_error_handler)
 
 # Conditionally register natural query router based on feature flag and availability
-if getattr(settings, "ENABLE_NATURAL_QUERY", False) and NATURAL_QUERY_AVAILABLE:
-    api.add_router("/query", natural_query_router)
+if getattr(settings, "ENABLE_NATURAL_QUERY", True) and NATURAL_QUERY_AVAILABLE:
+    logger.info("NATURAL QUERY AVAILABLE AND ENABLED")
+    api.add_router("/nq", natural_query_router)
 elif getattr(settings, "ENABLE_NATURAL_QUERY", False) and not NATURAL_QUERY_AVAILABLE:
-    logger.warning(
+    logger.info(
         "Natural query feature flag is enabled but router is not available due to missing dependencies"
     )

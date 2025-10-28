@@ -1,20 +1,48 @@
-import {useEffect} from 'react'
+import {useEffect, useRef} from 'react'
+import {useLocation} from 'react-router-dom'
 import {useUrlState} from './useUrlState'
 import {useFilterStore} from '../stores/filterStore'
 import {GENE_TAB_URL_CONFIG, GENOME_TAB_URL_CONFIG, syncStoreToUrl, syncUrlToStore} from '../utils/common/urlSync'
 
 export const useTabAwareUrlSync = (activeTab: string) => {
+    const location = useLocation()
     const {searchParams, updateUrl} = useUrlState()
     const filterStore = useFilterStore()
+    const hasInitializedFromUrl = useRef(false)
 
-    useEffect(() => {
+    // Sync URL to store IMMEDIATELY on first render (not in useEffect)
+    // This ensures store is updated before child components read from it
+    if (!hasInitializedFromUrl.current) {
+        const urlSearchParams = new URLSearchParams(location.search)
+        console.log('useTabAwareUrlSync: IMMEDIATE sync on first render', {
+            activeTab,
+            urlParams: Object.fromEntries(urlSearchParams.entries())
+        })
+        
         if (activeTab === 'genomes') {
-            syncUrlToStore(searchParams, filterStore, GENOME_TAB_URL_CONFIG)
+            syncUrlToStore(urlSearchParams, filterStore, GENOME_TAB_URL_CONFIG)
         } else if (activeTab === 'genes') {
-            syncUrlToStore(searchParams, filterStore, GENE_TAB_URL_CONFIG)
+            syncUrlToStore(urlSearchParams, filterStore, GENE_TAB_URL_CONFIG)
+        }
+        hasInitializedFromUrl.current = true
+    }
+
+    // Also sync when URL params change after mount
+    useEffect(() => {
+        const urlSearchParams = new URLSearchParams(location.search)
+        
+        console.log('useTabAwareUrlSync: URL sync effect running', {
+            activeTab,
+            urlParams: Object.fromEntries(urlSearchParams.entries())
+        })
+        
+        if (activeTab === 'genomes') {
+            syncUrlToStore(urlSearchParams, filterStore, GENOME_TAB_URL_CONFIG)
+        } else if (activeTab === 'genes') {
+            syncUrlToStore(urlSearchParams, filterStore, GENE_TAB_URL_CONFIG)
         }
 
-    }, [activeTab])
+    }, [activeTab, location.search])
 
 
     useEffect(() => {
@@ -36,7 +64,7 @@ export const useTabAwareUrlSync = (activeTab: string) => {
             genomeUpdates.tab = 'genomes'
 
             replaceUrlParams(genomeUpdates)
-        } else if (activeTab === 'genes') {
+        } else if (activeTab === 'genes') { 
             const updates = syncStoreToUrl(filterStore, GENE_TAB_URL_CONFIG)
 
             const geneUpdates: Record<string, string | string[] | null> = {}

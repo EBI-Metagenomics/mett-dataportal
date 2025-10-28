@@ -24,6 +24,65 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
                                                                  onRefreshTracks,
                                                                  onFeatureSelect,
                                                              }) => {
+    // Hide the main JBrowse menu bar (FILE, ADD, TOOLS, HELP)
+    React.useEffect(() => {
+        const hideMenuBar = () => {
+            // Find the "File" button which is part of the main menu bar
+            const buttons = Array.from(document.querySelectorAll('button[data-testid="dropDownMenuButton"]'));
+            const fileButton = buttons.find(btn => btn.textContent?.includes('File'));
+            
+            if (fileButton) {
+                // Find the parent toolbar
+                let parent = fileButton.parentElement;
+                while (parent) {
+                    // Look for the MuiToolbar that contains the menu buttons
+                    if (parent.classList.contains('MuiToolbar-root')) {
+                        // Verify this is the main menu by checking for the JBrowse logo
+                        const hasSvgLogo = parent.querySelector('svg[viewBox="0 0 641 175"]');
+                        if (hasSvgLogo) {
+                            // Find and hide the parent AppBar
+                            let appBarParent = parent.parentElement;
+                            while (appBarParent) {
+                                if (appBarParent.classList.contains('MuiAppBar-root')) {
+                                    (appBarParent as HTMLElement).style.display = 'none';
+                                    return;
+                                }
+                                appBarParent = appBarParent.parentElement;
+                            }
+                        }
+                    }
+                    parent = parent.parentElement;
+                }
+            }
+        };
+
+        // Run immediately
+        hideMenuBar();
+
+        // Set up a MutationObserver to watch for the menu bar being added to the DOM
+        const observer = new MutationObserver(() => {
+            hideMenuBar();
+        });
+
+        // Observe the entire document for added nodes
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+        });
+
+        // Also run after delays to catch late-rendered elements
+        const timeout1 = setTimeout(hideMenuBar, 100);
+        const timeout2 = setTimeout(hideMenuBar, 500);
+        const timeout3 = setTimeout(hideMenuBar, 1000);
+
+        return () => {
+            observer.disconnect();
+            clearTimeout(timeout1);
+            clearTimeout(timeout2);
+            clearTimeout(timeout3);
+        };
+    }, [viewState]);
+
     // Refresh tracks when viewState changes
     React.useEffect(() => {
         if (viewState && onRefreshTracks) {

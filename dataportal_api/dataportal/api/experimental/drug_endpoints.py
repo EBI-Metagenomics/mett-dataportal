@@ -9,6 +9,7 @@ from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
 from dataportal.api.core import genome_router
+from dataportal.authentication import APIRoles, RoleBasedJWTAuth, jwt_auth
 from dataportal.schema.experimental.drug_schemas import (
     DrugMICSearchQuerySchema,
     DrugMetabolismSearchQuerySchema,
@@ -41,6 +42,7 @@ drug_router = Router(tags=[ROUTER_DRUG])
             "Retrieves drug MIC (Minimum Inhibitory Concentration) data for a specific strain. "
             "Returns paginated MIC measurements including drug names, values, units, and experimental conditions."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
 async def get_strain_drug_mic(
@@ -71,6 +73,7 @@ async def get_strain_drug_mic(
             "Retrieves drug metabolism data for a specific strain. "
             "Returns paginated degradation percentages, statistical significance, and metabolizer classifications."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
 async def get_strain_drug_metabolism(
@@ -102,6 +105,7 @@ async def get_strain_drug_metabolism(
             "Returns comprehensive drug response information including resistance and metabolism patterns. "
             "No pagination is applied as this endpoint returns complete datasets for both MIC and metabolism data."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
 async def get_strain_drug_data(
@@ -133,6 +137,7 @@ async def get_strain_drug_data(
             "Returns paginated results with detailed MIC measurements. "
             "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
 @wrap_paginated_response
@@ -157,6 +162,7 @@ async def search_drug_mic(request, query: DrugMICSearchQuerySchema = Query(...))
             "Retrieves all MIC data for a specific drug across all strains. "
             "Optionally filter by species acronym to narrow results to specific species."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
 async def get_drug_mic_by_drug(
@@ -183,7 +189,9 @@ async def get_drug_mic_by_drug(
     description=(
             "Retrieves all MIC data for a specific drug class across all strains. "
             "Supports pagination and optional species filtering."
-    ), include_in_schema=False,
+    ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
+    include_in_schema=False,
 )
 @wrap_paginated_response
 async def get_drug_mic_by_class(
@@ -224,6 +232,7 @@ async def get_drug_mic_by_class(
             "Returns paginated results with detailed metabolism measurements. "
             "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
 @wrap_paginated_response
@@ -248,6 +257,7 @@ async def search_drug_metabolism(request, query: DrugMetabolismSearchQuerySchema
             "Retrieves all metabolism data for a specific drug across all strains. "
             "Optionally filter by species acronym to narrow results to specific species."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
 async def get_drug_metabolism_by_drug(
@@ -275,6 +285,7 @@ async def get_drug_metabolism_by_drug(
             "Retrieves all metabolism data for a specific drug class across all strains. "
             "Supports pagination and optional species filtering."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
 @wrap_paginated_response
@@ -313,7 +324,9 @@ async def get_drug_metabolism_by_class(
             "Get drug name suggestions for autocomplete functionality. "
             "Supports fuzzy matching and partial search. "
             "Can filter by species and data type (MIC or metabolism)."
-    ), include_in_schema=False,
+    ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
+    include_in_schema=False,
 )
 async def get_drug_suggestions(request, query: DrugAutocompleteQuerySchema = Query(...)):
     """Get drug name suggestions for autocomplete."""

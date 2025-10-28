@@ -4,6 +4,7 @@ from typing import Optional
 from ninja import Router, Query, Path
 
 from dataportal.api.core.gene_endpoints import gene_router
+from dataportal.authentication import APIRoles, RoleBasedJWTAuth
 from dataportal.schema.experimental.reactions_schemas import ReactionsSearchQuerySchema
 from dataportal.schema.response_schemas import SuccessResponseSchema, create_success_response
 from dataportal.services.experimental.reactions_service import ReactionsService
@@ -28,6 +29,7 @@ reactions_router = Router(tags=[ROUTER_REACTIONS])
         "Retrieves metabolic reactions data for a specific gene using its locus tag or UniProt ID. "
         "Returns basic gene information along with reaction identifiers, GPR rules, and metabolites."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.REACTIONS]),
     include_in_schema=False,
 )
 @wrap_success_response
@@ -68,6 +70,7 @@ async def get_reactions_by_gene(
         "Search for reactions data across genes with optional filters. "
         "Supports identifier-based search and discovery mode (filter-only queries)."
     ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.REACTIONS]),
     include_in_schema=False,
 )
 @wrap_success_response
