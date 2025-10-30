@@ -255,10 +255,16 @@
 											"pm.test(\"Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
 											"    pm.expect(jsonData[0].species_scientific_name).contain(\"Bacteroides\");",
+											"});",
+											"",
+											"pm.test(\"Isolate Name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData[0].isolate_name).contain(\"BU_909\");",
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -292,12 +298,19 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"pm.test(\"Status code is 404\", function () {",
-											"    pm.response.to.have.status(404);",
-											"});"
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Array length is equal to 0\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(0); ",
+											"});",
+											""
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -305,15 +318,20 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{mett-current}}/api/genomes/strain/CU_909",
+									"raw": "{{mett-current}}/api/genomes/by-isolate-names?isolates=CU_909",
 									"host": [
 										"{{mett-current}}"
 									],
 									"path": [
 										"api",
 										"genomes",
-										"strain",
-										"CU_909"
+										"by-isolate-names"
+									],
+									"query": [
+										{
+											"key": "isolates",
+											"value": "CU_909"
+										}
 									]
 								}
 							},
@@ -330,13 +348,35 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Name matches expected value\", function () {",
+											"pm.test(\"Species Name matches expected value (first or second element)\", function () {",
 											"    const jsonData = pm.response.json();",
-											"    pm.expect(jsonData[0].species_scientific_name).contain(\"Bacteroides\");",
-											"});"
+											"    pm.expect(jsonData.length).to.be.above(0);",
+											"",
+											"    const first = jsonData[0]?.species_scientific_name || \"\";",
+											"    const second = jsonData[1]?.species_scientific_name || \"\";",
+											"",
+											"    pm.expect(first.includes(\"Bacteroides\") || second.includes(\"Bacteroides\")).to.be.true;",
+											"});",
+											"",
+											"pm.test(\"Isolate Name matches expected value (first or second element)\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.be.above(0);",
+											"",
+											"    const first = jsonData[0]?.isolate_name || \"\";",
+											"    const second = jsonData[1]?.isolate_name || \"\";",
+											"",
+											"    pm.expect(first.includes(\"PV_ATCC8482\") || second.includes(\"PV_ATCC8482\")).to.be.true;",
+											"});",
+											"",
+											"pm.test(\"Array length is equal to 2\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(2); ",
+											"});",
+											""
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -386,13 +426,20 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Name matches expected value\", function () {",
+											"pm.test(\"Species Name matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
 											"    pm.expect(jsonData[0].species_scientific_name).contain(\"Bacteroides\");",
+											"});",
+											"",
+											"",
+											"pm.test(\"Isolate Name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData[0].isolate_name).contain(\"BU_ATCC8492\");",
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -442,13 +489,19 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
+											"pm.test(\"Total number of results matches expected value\", function () {",
+											"    const jsonData = pm.response.json().pagination;",
+											"    pm.expect(jsonData.total_results).to.be.at.least(107);",
+											"});",
+											"",
 											"pm.test(\"Number of pages matches expected value\", function () {",
 											"    const jsonData = pm.response.json().pagination;",
-											"    pm.expect(jsonData.num_pages).to.be.at.least(10);",
+											"    pm.expect(jsonData.num_pages).to.be.at.least(22);",
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -490,14 +543,24 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"const response = pm.response.json();",
+											"pm.test(\"Array length is equal to 2\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.eql(2); ",
+											"});",
 											"",
-											"pm.test(\"At least one type strain is returned\", function () {",
-											"    pm.expect(response).to.be.an(\"array\").that.is.not.empty;",
+											"pm.test(\"Isolate Name matches expected value (first or second element)\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.length).to.be.above(0);",
+											"",
+											"    const first = jsonData[0]?.isolate_name || \"\";",
+											"    const second = jsonData[1]?.isolate_name || \"\";",
+											"",
+											"    pm.expect(first.includes(\"PV_ATCC8482\") || second.includes(\"PV_ATCC8482\")).to.be.true;",
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -580,10 +643,16 @@
 											"pm.test(\"Number of pages matches expected value\", function () {",
 											"    const jsonData = pm.response.json();",
 											"    pm.expect(jsonData.data).to.be.an('array').length(1)",
+											"});",
+											"",
+											"pm.test(\"Isolate Name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.data[0].isolate_name).contain(\"PV_H4-2\");",
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -2626,13 +2695,19 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Results array contains exactly 5 records\", function () {",
+											"pm.test(\"Results array contains exactly 1 record\", function () {",
 											"    const jsonData = pm.response.json(); ",
 											"    pm.expect(jsonData.data).to.be.an('array').with.lengthOf(1);",
+											"});",
+											"",
+											"pm.test(\"Locus Tag matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.data[0].locus_tag).contain(\"BU_H1-6_01257\");",
 											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
@@ -2687,9 +2762,14 @@
 											"    pm.response.to.have.status(200);",
 											"});",
 											"",
-											"pm.test(\"Results array contains exactly 5 records\", function () {",
+											"pm.test(\"Results array contains exactly 1 record\", function () {",
 											"    const jsonData = pm.response.json(); ",
 											"    pm.expect(jsonData.data).to.be.an('array').with.lengthOf(1);",
+											"});",
+											"",
+											"pm.test(\"Locus Tag matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.data[0].locus_tag).contain(\"BU_JCM13286_03494\");",
 											"});"
 										],
 										"type": "text/javascript",
@@ -2737,10 +2817,16 @@
 											"    const jsonData = pm.response.json().pagination;",
 											"    pm.expect(jsonData.num_pages).to.be.eq(390);",
 											"});",
-											""
+											"",
+											"",
+											"pm.test(\"Isolate name matches expected value\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.data[0].isolate_name).contain(\"BU_909\");",
+											"});"
 										],
 										"type": "text/javascript",
-										"packages": {}
+										"packages": {},
+										"requests": {}
 									}
 								}
 							],
