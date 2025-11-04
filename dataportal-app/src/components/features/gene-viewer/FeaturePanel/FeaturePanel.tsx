@@ -122,28 +122,35 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
             </div>
 
             <div className={styles.content}>
+                {/* Core Details Section */}
                 <div className={styles.section}>
-                    <h4>Basic Information</h4>
+                    <h4>Core Details</h4>
                     <div className={styles.field}>
                         <label>Locus Tag:</label>
                         <span>{featureData.locusTag}</span>
                     </div>
                     {featureData.gene && (
                         <div className={styles.field}>
-                            <label>Gene:</label>
+                            <label>Name:</label>
                             <span>{featureData.gene}</span>
                         </div>
                     )}
-                    <div className={styles.field}>
-                        <label>Product:</label>
-                        <span>{featureData.product}</span>
-                    </div>
                     {featureData.alias && featureData.alias.length > 0 && (
                         <div className={styles.field}>
                             <label>Alias:</label>
                             <span>{featureData.alias.join(', ')}</span>
                         </div>
                     )}
+                    {featureData.uniprotId && (
+                        <div className={styles.field}>
+                            <label>UniProt ID:</label>
+                            {renderExternalLink('UNIPROT', featureData.uniprotId)}
+                        </div>
+                    )}
+                    <div className={styles.field}>
+                        <label>Product:</label>
+                        <span>{featureData.product}</span>
+                    </div>
                     {featureData.productSource && (
                         <div className={styles.field}>
                             <label>Product Source:</label>
@@ -174,27 +181,18 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                     </div>
                 </div>
 
-                {featureData.essentiality && (
-                    <div className={styles.section}>
-                        <h4>Essentiality</h4>
-                        <div className={styles.field}>
-                            <label>Status:</label>
-                            <span className={styles.essentiality}>
-                                {getIconForEssentiality(featureData.essentiality)} {featureData.essentiality}
-                            </span>
-                        </div>
-                    </div>
-                )}
-
-                {(featureData.uniprotId || featureData.pfam.length > 0 || featureData.interpro.length > 0 || 
+                {/* Annotations Section */}
+                {(featureData.essentiality || featureData.pfam.length > 0 || featureData.interpro.length > 0 || 
                   featureData.kegg.length > 0 || featureData.cog.length > 0 || featureData.cogCategories.length > 0 ||
-                  featureData.eggnog || featureData.ecNumber) && (
+                  featureData.eggnog) && (
                     <div className={styles.section}>
                         <h4>Annotations</h4>
-                        {featureData.uniprotId && (
+                        {featureData.essentiality && (
                             <div className={styles.field}>
-                                <label>UniProt ID:</label>
-                                {renderExternalLink('UNIPROT', featureData.uniprotId)}
+                                <label>Essentiality Status:</label>
+                                <span className={styles.essentiality}>
+                                    {getIconForEssentiality(featureData.essentiality)} {featureData.essentiality}
+                                </span>
                             </div>
                         )}
                         {featureData.pfam.length > 0 && (
@@ -235,15 +233,10 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                                 <span>{featureData.eggnog}</span>
                             </div>
                         )}
-                        {featureData.ecNumber && (
-                            <div className={styles.field}>
-                                <label>EC Number:</label>
-                                <span>{featureData.ecNumber}</span>
-                            </div>
-                        )}
                     </div>
                 )}
 
+                {/* Ontology Terms Section */}
                 {featureData.ontologyTerms && featureData.ontologyTerms.length > 0 && (
                     <div className={styles.section}>
                         <h4>Ontology Terms</h4>
@@ -272,50 +265,14 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                     </div>
                 )}
 
-                {featureData.hasAmr && featureData.amr && (
-                    <div className={styles.section}>
-                        <h4>Antimicrobial Resistance (AMR)</h4>
-                        {Array.isArray(featureData.amr) ? (
-                            featureData.amr.map((amrItem: any, idx: number) => (
-                                <div key={idx} className={styles.field}>
-                                    <label>Gene Symbol:</label>
-                                    <span>{amrItem.gene_symbol || 'N/A'}</span>
-                                    {amrItem.drug_class && (
-                                        <>
-                                            <label>Drug Class:</label>
-                                            <span>{amrItem.drug_class}</span>
-                                        </>
-                                    )}
-                                </div>
-                            ))
-                        ) : (
-                            <div className={styles.field}>
-                                <span>AMR data available</span>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {(featureData.ufGeneName || featureData.ufProtRecFullname || 
-                  featureData.ufKeyword.length > 0 || featureData.ufOntologyTerms.length > 0) && (
+                {/* UniFire Annotations Section */}
+                {(featureData.ufProtRecFullname || featureData.ufOntologyTerms.length > 0) && (
                     <div className={styles.section}>
                         <h4>UniFire Annotations</h4>
-                        {featureData.ufGeneName && (
-                            <div className={styles.field}>
-                                <label>Gene Name:</label>
-                                <span>{featureData.ufGeneName}</span>
-                            </div>
-                        )}
                         {featureData.ufProtRecFullname && (
                             <div className={styles.field}>
                                 <label>Protein Name:</label>
                                 <span>{featureData.ufProtRecFullname}</span>
-                            </div>
-                        )}
-                        {featureData.ufKeyword.length > 0 && (
-                            <div className={styles.field}>
-                                <label>Keywords:</label>
-                                <span>{featureData.ufKeyword.join(', ')}</span>
                             </div>
                         )}
                         {featureData.ufOntologyTerms.length > 0 && (
@@ -327,6 +284,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                     </div>
                 )}
 
+                {/* Database Cross-References Section */}
                 {featureData.dbxref && Array.isArray(featureData.dbxref) && featureData.dbxref.length > 0 && (
                     <div className={styles.section}>
                         <h4>Database Cross-References</h4>
@@ -340,6 +298,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                     </div>
                 )}
 
+                {/* Protein Sequence Section */}
                 {featureData.proteinSequence && (
                     <div className={styles.section}>
                         <h4>Protein Sequence</h4>
