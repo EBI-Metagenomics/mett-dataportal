@@ -1,6 +1,7 @@
 .geneViewerHeader {
   width: 100%;
   max-width: none;
+  padding: 0 20px;
 }
 
 .breadcrumbsItem {
@@ -20,13 +21,18 @@
 }
 
 .infoGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
+  display: flex;
+  flex-direction: row;
   gap: 2rem;
   align-items: start;
+  text-align: left;
+  flex-wrap: wrap;
 }
 
 .leftPane {
+  flex: 2;
+  min-width: 500px;
+  
   .genome-meta-info {
     h2 {
       margin-bottom: 1rem;
@@ -54,8 +60,10 @@
 }
 
 .rightPane {
+  flex: 1;
+  min-width: 300px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .iconBlack {

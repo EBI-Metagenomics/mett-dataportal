@@ -30,6 +30,14 @@ const getDefaultSessionConfig = (
             },
         },
         margin: 0,
+        // Disable all widgets at session level
+        widgets: {
+            // Explicitly disable the BaseFeatureWidget
+            BaseFeatureWidget: {
+                type: 'BaseFeatureWidget',
+                disabled: true,
+            }
+        },
         views: [
             {
                 id: 'linearGenomeView',
@@ -37,13 +45,16 @@ const getDefaultSessionConfig = (
                 type: 'LinearGenomeView',
                 hideHeader: true,
                 configuration: {
-                    // Add an extra configuration to hide header
+                    // Disable header and feature details
                     header: {
                         hidden: true,
                         disable: true
-                    }
+                    },
+                    // Disable feature click to open drawer
+                    onFeatureClick: null,
                 },
                 hideTrackSelector: true,
+                hideVerticalResizeHandle: true,
                 displayedRegions: displayedRegions,
                 tracks: [
                     {

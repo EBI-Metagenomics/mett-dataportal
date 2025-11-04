@@ -55,6 +55,9 @@ const getTracks
                 {
                     displayId: `structural_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
                     type: 'LinearBasicDisplay',
+                    // Disable the default onClick handler that opens feature details
+                    onClick: null,
+                    onFeatureClick: null,
                     renderer: {
                         type: 'SvgFeatureRenderer',
                         color1: `jexl:getColorForEssentiality(get(feature, 'Essentiality'))`,
@@ -67,7 +70,7 @@ const getTracks
                             ' ' + (get(feature, 'EssentialityVisual') || '')
                           `,
                         },
-                        height: 20,
+                        height: 50,
                         showForward: true,
                         showReverse: true,
                         showTranslation: true,

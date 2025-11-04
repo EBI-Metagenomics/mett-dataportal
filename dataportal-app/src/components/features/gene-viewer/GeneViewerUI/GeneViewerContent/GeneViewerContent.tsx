@@ -1,6 +1,7 @@
 import React from 'react';
 import {JBrowseApp} from "@jbrowse/react-app2";
 import styles from './GeneViewerContent.module.scss';
+import {GeneService} from '../../../../../services/gene';
 
 interface GeneViewerContentProps {
     viewState: any;
@@ -15,9 +16,9 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
                                                                  onRefreshTracks,
                                                                  onFeatureSelect,
                                                              }) => {
-    // Hide the main JBrowse menu bar (FILE, ADD, TOOLS, HELP)
+    // Hide the main JBrowse menu bar (FILE, ADD, TOOLS, HELP) and feature panel
     React.useEffect(() => {
-        const hideMenuBar = () => {
+        const hideMenuBarAndFeaturePanel = () => {
             // Find the "File" button which is part of the main menu bar
             const buttons = Array.from(document.querySelectorAll('button[data-testid="dropDownMenuButton"]'));
             const fileButton = buttons.find(btn => btn.textContent?.includes('File'));
@@ -45,14 +46,54 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
                     parent = parent.parentElement;
                 }
             }
+
+            // NUCLEAR OPTION: Hide ALL possible JBrowse drawer elements
+            const selectorsToHide = [
+                '.MuiDrawer-root', '.MuiDrawer-modal', '.MuiDrawer-paper', '.MuiDrawer-docked',
+                '[class*="MuiDrawer"]', 'div[class^="MuiDrawer"]', 'aside[class*="MuiDrawer"]',
+                '[class*="BaseFeatureDetail"]', '[class*="FeatureDetails"]', '[class*="featureDetails"]',
+                '[class*="DrawerWidget"]', '[class*="FeatureWidget"]',
+                '.MuiBackdrop-root', '[class*="MuiBackdrop"]',
+                '[role="presentation"]',
+                // Target by aria labels
+                '[aria-label*="drawer"]', '[aria-label*="Drawer"]',
+                // Target Paper components that might contain feature details
+                '[class*="MuiPaper-root"]:has([class*="BaseFeature"])',
+            ];
+            
+            selectorsToHide.forEach(selector => {
+                try {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach((el) => {
+                        const element = el as HTMLElement;
+                        // Use inline styles with !important to override everything
+                        element.style.cssText = `
+                            display: none !important;
+                            visibility: hidden !important;
+                            opacity: 0 !important;
+                            pointer-events: none !important;
+                            width: 0px !important;
+                            height: 0px !important;
+                            overflow: hidden !important;
+                            position: fixed !important;
+                            top: -9999px !important;
+                            left: -9999px !important;
+                        `;
+                        // Also remove from DOM flow
+                        element.setAttribute('aria-hidden', 'true');
+                    });
+                } catch (e) {
+                    // Selector might not be valid, skip
+                }
+            });
         };
 
         // Run immediately
-        hideMenuBar();
+        hideMenuBarAndFeaturePanel();
 
         // Set up a MutationObserver to watch for the menu bar being added to the DOM
         const observer = new MutationObserver(() => {
-            hideMenuBar();
+            hideMenuBarAndFeaturePanel();
         });
 
         // Observe the entire document for added nodes
@@ -62,9 +103,9 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
         });
 
         // Also run after delays to catch late-rendered elements
-        const timeout1 = setTimeout(hideMenuBar, 100);
-        const timeout2 = setTimeout(hideMenuBar, 500);
-        const timeout3 = setTimeout(hideMenuBar, 1000);
+        const timeout1 = setTimeout(hideMenuBarAndFeaturePanel, 100);
+        const timeout2 = setTimeout(hideMenuBarAndFeaturePanel, 500);
+        const timeout3 = setTimeout(hideMenuBarAndFeaturePanel, 1000);
 
         return () => {
             observer.disconnect();
@@ -81,51 +122,60 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
         }
     }, [viewState, onRefreshTracks]);
 
-    // Listen for feature selection events
+    // Listen for feature clicks and fetch data from API
     React.useEffect(() => {
         if (!viewState || !onFeatureSelect) return;
-
-        const session = viewState.session;
-        if (!session) return;
-
-        // Listen for feature selection changes
-        const handleFeatureSelect = (event: any) => {
-            if (event.feature) {
-                console.log('Feature selected in JBrowse:', event.feature);
-                onFeatureSelect(event.feature);
+        
+        let lastClickedFeatureId: string | null = null;
+        
+        const handleFeatureClick = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            const featureElement = target.closest('[data-testid]') as HTMLElement;
+            
+            if (featureElement) {
+                const featureId = featureElement.getAttribute('data-testid');
+                
+                // Only process gene features (starting with locus tag pattern)
+                if (featureId && featureId.startsWith('BU_ATCC')) {
+                    // Prevent duplicate processing
+                    if (featureId === lastClickedFeatureId) {
+                        return;
+                    }
+                    lastClickedFeatureId = featureId;
+                    
+                    // Prevent JBrowse's default drawer behavior
+                    event.stopPropagation();
+                    event.preventDefault();
+                    
+                    // Fetch complete gene data from API
+                    Promise.all([
+                        GeneService.fetchGeneByLocusTag(featureId),
+                        GeneService.fetchGeneProteinSeq(featureId).catch(() => ({ protein_sequence: '' }))
+                    ])
+                        .then(([geneData, proteinData]) => {
+                            const completeData = {
+                                ...geneData,
+                                protein_sequence: proteinData.protein_sequence || ''
+                            };
+                            onFeatureSelect(completeData);
+                        })
+                        .catch((err: any) => {
+                            console.warn('Failed to fetch gene data:', err);
+                            // Fallback to minimal data
+                            onFeatureSelect({ 
+                                locus_tag: featureId,
+                                id: featureId 
+                            });
+                        });
+                }
             }
         };
 
-        // Try to find the linear genome view and listen for feature selection
-        const views = session.views;
-        if (views && views.length > 0) {
-            const view = views[0];
-            
-            // Listen for feature selection events
-            if (view.on) {
-                view.on('featureSelect', handleFeatureSelect);
-            }
-            
-            // Also try to listen for click events on features
-            if (view.on) {
-                view.on('click', (event: any) => {
-                    if (event.feature) {
-                        console.log('Feature clicked in JBrowse:', event.feature);
-                        onFeatureSelect(event.feature);
-                    }
-                });
-            }
-        }
+        // Add click listener with capture phase to intercept before JBrowse
+        document.addEventListener('click', handleFeatureClick, true);
 
         return () => {
-            // Cleanup listeners
-            if (views && views.length > 0) {
-                const view = views[0];
-                if (view.off) {
-                    view.off('featureSelect', handleFeatureSelect);
-                    view.off('click', handleFeatureSelect);
-                }
-            }
+            document.removeEventListener('click', handleFeatureClick, true);
         };
     }, [viewState, onFeatureSelect]);
 
@@ -136,7 +186,7 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
     return (
         <div
             style={{
-                maxHeight: `${height}px`,
+                height: `${height}px`,
                 overflowY: 'auto',
                 overflowX: 'auto',
                 width: '100%',

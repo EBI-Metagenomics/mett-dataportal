@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field
@@ -309,6 +309,7 @@ class GeneResponseSchema(BaseModel):
     gene_name: Optional[str] = None
     alias: Optional[List[str]] = None
     product: Optional[str] = None
+    product_source: Optional[str] = None 
     start_position: Optional[int] = None
     end_position: Optional[int] = None
     seq_id: Optional[str] = None
@@ -325,6 +326,12 @@ class GeneResponseSchema(BaseModel):
     ec_number: Optional[str] = None
     dbxref: Optional[List[DBXRefSchema]] = None
     eggnog: Optional[str] = None
+    inference: Optional[str] = None
+    ontology_terms: Optional[List[Dict[str, Any]]] = None 
+    uf_ontology_terms: Optional[List[str]] = None  
+    uf_prot_rec_fullname: Optional[str] = None  
+    uf_keyword: Optional[List[str]] = None  
+    uf_gene_name: Optional[str] = None  
     amr: Optional[List[AMRSchema]] = None
     has_amr_info: Optional[bool] = None
     has_proteomics: Optional[bool] = None
