@@ -25,7 +25,12 @@ body {
 }
 
 // Override VF body width constraint for gene viewer and home pages
-.gene-viewer-page.vf-body,
+.gene-viewer-page.vf-body {
+  max-width: 95% !important;
+  width: 95% !important;
+  --vf-body-width: 95% !important;
+}
+
 .home-page.vf-body {
   max-width: 80% !important;
   width: 80% !important;
