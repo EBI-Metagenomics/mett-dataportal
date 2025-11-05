@@ -5,17 +5,15 @@ import {GeneService} from '../../../../../services/gene';
 
 interface GeneViewerContentProps {
     viewState: any;
-    height: number;
     onRefreshTracks?: () => void;
     onFeatureSelect?: (feature: any) => void;
 }
 
 const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
-                                                                 viewState,
-                                                                 height,
-                                                                 onRefreshTracks,
-                                                                 onFeatureSelect,
-                                                             }) => {
+    viewState,
+    onRefreshTracks,
+    onFeatureSelect,
+}) => {
     // Hide the main JBrowse menu bar (FILE, ADD, TOOLS, HELP) and feature panel
     React.useEffect(() => {
         const hideMenuBarAndFeaturePanel = () => {
@@ -184,19 +182,9 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
     }
 
     return (
-        <div
-            style={{
-                height: `${height}px`,
-                overflowY: 'auto',
-                overflowX: 'auto',
-                width: '100%',
-                maxWidth: 'none',
-            }}
-        >
-            <div className={styles.jbrowseViewer}>
-                <div className={styles.jbrowseContainer}>
-                    <JBrowseApp viewState={viewState}/>
-                </div>
+        <div className={styles.jbrowseViewer}>
+            <div className={styles.jbrowseContainer}>
+                <JBrowseApp viewState={viewState}/>
             </div>
         </div>
     );

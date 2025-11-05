@@ -28,7 +28,6 @@ const GeneViewerPage: React.FC = () => {
     useGeneViewerUrlSync();
 
     // Local state
-    const [height] = useState(600);
     const [pageSize, setPageSize] = useState(DEFAULT_PER_PAGE_CNT);
     const [selectedFeature, setSelectedFeature] = useState<any | null>(null);
 
@@ -213,7 +212,6 @@ const GeneViewerPage: React.FC = () => {
                             <div className={styles.jbrowseSection}>
                                 <GeneViewerContent
                                     viewState={viewState}
-                                    height={height}
                                     onRefreshTracks={handleRefreshTracks}
                                     onFeatureSelect={handleFeatureSelect}
                                 />

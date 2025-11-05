@@ -167,6 +167,25 @@ export const ZOOM_LEVELS = {
   BP_PER_PX: 10,  // Base pairs per pixel for track display
 } as const;
 
+// JBrowse Track Height Configuration
+export const JBROWSE_TRACK_HEIGHTS = {
+  // Reference sequence track (assembly/DNA sequence)
+  REFERENCE_SEQUENCE: 40,
+  REFERENCE_SEQUENCE_MIN: 30,
+  REFERENCE_SEQUENCE_MAX: 50,
+  
+  // Structural annotation track (genes)
+  STRUCTURAL_ANNOTATION: 250,
+  STRUCTURAL_ANNOTATION_MIN: 250,
+  STRUCTURAL_ANNOTATION_MAX: 400,
+  
+  // Individual gene feature height
+  GENE_FEATURE_HEIGHT: 15,
+  
+  // Default track rendering container
+  DEFAULT_MIN_HEIGHT: 200,
+} as const;
+
 // Essentiality Color and Icon Mapping
 export const getColorForEssentiality = (essentiality: string): string => {
   switch (essentiality) {

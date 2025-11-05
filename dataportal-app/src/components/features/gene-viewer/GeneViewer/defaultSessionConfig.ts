@@ -1,6 +1,6 @@
 import {GeneMeta} from "../../../../interfaces/Gene";
 import {GenomeMeta} from "../../../../interfaces/Genome";
-import {ZOOM_LEVELS} from "../../../../utils/common/constants";
+import {ZOOM_LEVELS, JBROWSE_TRACK_HEIGHTS} from "../../../../utils/common/constants";
 
 const getDefaultSessionConfig = (
     geneMeta: GeneMeta | null,
@@ -62,10 +62,12 @@ const getDefaultSessionConfig = (
                         type: assembly.sequence.type,
                         configuration: 'reference',
                         minimized: false,
+                        height: JBROWSE_TRACK_HEIGHTS.REFERENCE_SEQUENCE,
                         displays: [
                             {
                                 id: assembly.sequence.trackId,
                                 type: 'LinearReferenceSequenceDisplay',
+                                height: JBROWSE_TRACK_HEIGHTS.REFERENCE_SEQUENCE,
                                 showForward: true,
                                 showReverse: true,
                                 showLabels: true,

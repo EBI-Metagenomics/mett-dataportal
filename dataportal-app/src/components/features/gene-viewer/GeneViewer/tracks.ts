@@ -1,15 +1,8 @@
 import {GenomeMeta} from "../../../../interfaces/Genome";
+import {JBROWSE_TRACK_HEIGHTS} from "../../../../utils/common/constants";
 
 const getTracks
         = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string, includeEssentiality: boolean) => {
-        console.log('🔧 getTracks called with:', {
-            genomeMeta: genomeMeta?.isolate_name,
-            type_strain: genomeMeta?.type_strain,
-            includeEssentiality,
-            gffBaseUrl,
-            apiUrl
-        });
-        
         const tracks = [];
 
         // Structural Annotation Track
@@ -19,6 +12,7 @@ const getTracks
             name: 'Structural Annotation',
             assemblyNames: [genomeMeta.assembly_name],
             category: ['Annotations'],
+            height: JBROWSE_TRACK_HEIGHTS.STRUCTURAL_ANNOTATION,
             adapter: {
                 type: 'EnhancedGeneFeatureAdapter',
                 gffGzLocation: {
@@ -55,6 +49,7 @@ const getTracks
                 {
                     displayId: `structural_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
                     type: 'LinearBasicDisplay',
+                    height: JBROWSE_TRACK_HEIGHTS.STRUCTURAL_ANNOTATION,
                     // Disable the default onClick handler that opens feature details
                     onClick: null,
                     onFeatureClick: null,
@@ -70,7 +65,7 @@ const getTracks
                             ' ' + (get(feature, 'EssentialityVisual') || '')
                           `,
                         },
-                        height: 50,
+                        height: JBROWSE_TRACK_HEIGHTS.GENE_FEATURE_HEIGHT,
                         showForward: true,
                         showReverse: true,
                         showTranslation: true,
