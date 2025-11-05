@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import styles from './FeaturePanel.module.scss';
 import {PyhmmerFeaturePanel} from '../../pyhmmer/feature-panel/PyhmmerFeaturePanel';
-import {generateExternalDbLink, getIconForEssentiality} from '../../../../utils/common/constants';
+import {generateExternalDbLink, getIconForEssentiality, getBacinteractomeUniprotUrl} from '../../../../utils/common/constants';
 
 interface FeaturePanelProps {
     feature: any | null;
@@ -86,7 +86,10 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
 
     // Helper to generate external link
     const renderExternalLink = (database: 'PFAM' | 'INTERPRO' | 'KEGG' | 'COG' | 'COG_CATEGORY' | 'GO' | 'UNIPROT', id: string, label?: string) => {
-        const url = generateExternalDbLink(database, id);
+        // Use special URL generator for UniProt that links to Bacinteractome
+        const url = database === 'UNIPROT' 
+            ? getBacinteractomeUniprotUrl(id, featureData.speciesName)
+            : generateExternalDbLink(database, id);
         return (
             <a href={url} target="_blank" rel="noopener noreferrer" className={styles.externalLink}>
                 {label || id}
@@ -222,9 +225,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                         {featureData.cogCategories.length > 0 && (
                             <div className={styles.field}>
                                 <label>COG Categories:</label>
-                                <span>{featureData.cogCategories.map((cat: string) => (
-                                    <span key={cat} className={styles.cogCategory}>{cat}</span>
-                                ))}</span>
+                                {renderExternalLinks('COG_CATEGORY', featureData.cogCategories)}
                             </div>
                         )}
                         {featureData.eggnog && (
@@ -245,14 +246,14 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                             <div className={styles.linkList}>
                                 {featureData.ontologyTerms.slice(0, 10).map((term: any, idx: number) => {
                                     const ontologyId = term.ontology_id || '';
-                                    const goMatch = ontologyId.match(/GO:(\d+)/);
+                                    // const goMatch = ontologyId.match(/GO:(\d+)/);
                                     return (
                                         <span key={idx}>
-                                            {goMatch ? (
-                                                renderExternalLink('GO', goMatch[1], ontologyId)
-                                            ) : (
+                                            {/*{goMatch ? (*/}
+                                            {/*    renderExternalLink('GO', goMatch[1], ontologyId)*/}
+                                            {/*) : (*/}
                                                 <span title={term.ontology_description}>{ontologyId}</span>
-                                            )}
+                                            {/*)}*/}
                                             {idx < Math.min(featureData.ontologyTerms.length - 1, 9) && ', '}
                                         </span>
                                     );
@@ -322,6 +323,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                                     <PyhmmerFeaturePanel 
                                         proteinSequence={featureData.proteinSequence}
                                         isolateName={featureData.locusTag}
+                                        product={featureData.product}
                                     />
                                 </div>
                             )}

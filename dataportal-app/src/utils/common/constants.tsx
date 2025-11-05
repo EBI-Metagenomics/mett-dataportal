@@ -70,7 +70,7 @@ export const EXTERNAL_DB_URLS = {
   COG: import.meta.env.VITE_COG_URL || 'https://www.ncbi.nlm.nih.gov/research/cog/protein/',
   COG_CATEGORY: import.meta.env.VITE_COG_CATEGORY_URL || 'https://www.ncbi.nlm.nih.gov/research/cog/cogcategory/',
   GO: import.meta.env.VITE_GO_URL || 'https://quickgo.org/term/',
-  UNIPROT: import.meta.env.VITE_UNIPROT_URL || 'https://www.uniprot.org/uniprot/',
+  UNIPROT: import.meta.env.VITE_BACINTERACTOME_SHINY_APP_URL || 'https://www.uniprot.org/uniprot/',
 } as const;
 
 // External Database Link Generation
