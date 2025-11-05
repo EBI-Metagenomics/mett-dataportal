@@ -1,6 +1,6 @@
 .vfContent {
   width: 100% !important;
-  min-width: 1200px;
+  min-width: 800px;
   float: left !important;
   padding-right: 20px;
   justify-content: normal;
@@ -147,11 +147,13 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
 .mainContentGrid {
   display: grid;
   grid-template-columns: 1fr 320px;
+  grid-auto-rows: 1fr;
   gap: 0;
   width: 100%;
   min-height: 600px;
   margin: 0;
   padding: 0 20px;
+  align-items: start;
 }
 
 // Left column: Contains JBrowse viewer and search/facets
@@ -162,14 +164,12 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   padding-right: 20px;
 }
 
-// Right column: Feature panel - spans full height
+// Right column: Feature panel - aligns with left column
 .rightColumn {
-  position: sticky;
-  top: 0;
-  height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
   min-height: 600px;
-  max-height: 1200px;
-  overflow: hidden;
+  height: 100%;
 }
 
 // JBrowse viewer section
@@ -180,4 +180,32 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   flex-direction: column;
   margin-bottom: 1rem;
   overflow: hidden;
+}
+
+// Responsive adjustments
+@media (max-width: 1400px) {
+  .mainContentGrid {
+    grid-template-columns: 1fr 280px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .mainContentGrid {
+    grid-template-columns: 1fr 260px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .mainContentGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .rightColumn {
+    max-height: 800px;
+  }
+  
+  .leftColumn {
+    padding-right: 0;
+  }
 }
