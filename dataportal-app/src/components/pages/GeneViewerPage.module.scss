@@ -146,7 +146,7 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
 // Main content grid: Left column (JBrowse + Search) and Right column (Feature Panel)
 .mainContentGrid {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 1fr 320px;
   gap: 0;
   width: 100%;
   min-height: 600px;
@@ -179,5 +179,5 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   height: 600px;
   flex-direction: column;
   margin-bottom: 1rem;
-  overflow: hidden; // Prevent JBrowse's internal 100vh container from creating empty space
+  overflow: hidden;
 }
