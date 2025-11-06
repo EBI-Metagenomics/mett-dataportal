@@ -133,8 +133,10 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
             if (featureElement) {
                 const featureId = featureElement.getAttribute('data-testid');
                 
-                // Only process gene features (starting with locus tag pattern)
-                if (featureId && featureId.startsWith('BU_ATCC')) {
+                // Only process gene features (match locus tag pattern: XX_YYYY...)
+                // Matches: BU_ATCC8492_00001, PV_ATCC8482_00001, etc.
+                const locusTagPattern = /^[A-Z]{2,3}_[A-Z0-9]+_\d+$/;
+                if (featureId && locusTagPattern.test(featureId)) {
                     // Prevent duplicate processing
                     if (featureId === lastClickedFeatureId) {
                         return;
