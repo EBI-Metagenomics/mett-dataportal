@@ -98,6 +98,16 @@
   }
 }
 
+.selectedRow {
+  background-color: #d4e6f1 !important; // light blue highlight for selected row
+  border-left: 4px solid #3498db; // blue left border indicator
+  font-weight: 500; // slightly bolder text
+  
+  &:hover {
+    background-color: #c3d9e8 !important; // slightly darker on hover
+  }
+}
+
 
 .vfTableCell {
   font-size: 14px !important;

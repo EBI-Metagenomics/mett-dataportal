@@ -78,6 +78,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
     // Use props if provided, otherwise fall back to local state
     const [localSortField, setLocalSortField] = useState<string | null>(null);
     const [localSortOrder, setLocalSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [selectedRow, setSelectedRow] = useState<string | null>(null);
     
     const sortField = propSortField || localSortField;
     const sortOrder = propSortOrder || localSortOrder;
@@ -216,7 +217,12 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 </thead>
                 <tbody className="vf-table__body">
                 {results.map((geneMeta, index) => (
-                    <tr key={index} className={`vf-table__row ${styles.vfTableRow}`}>
+                    <tr 
+                        key={index} 
+                        className={`vf-table__row ${styles.vfTableRow} ${selectedRow === geneMeta.locus_tag ? styles.selectedRow : ''}`}
+                        onClick={() => setSelectedRow(geneMeta.locus_tag || null)}
+                        style={{ cursor: 'pointer' }}
+                    >
                         {GENE_TABLE_COLUMNS.filter(col => visibleColumns.includes(col.key)).map(col => (
                             <td key={col.key} className={`vf-table__cell ${styles.vfTableCell}`}>
                                 {col.render(geneMeta)}
