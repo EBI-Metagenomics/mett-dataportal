@@ -73,11 +73,14 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   [class*="DrawerWidget"],
   [class*="FeatureWidget"],
   [class*="BaseFeatureWidget"],
-  // Hide backdrops
-  .MuiBackdrop-root,
-  [class*="MuiBackdrop"],
-  // Hide by role and aria
-  [role="presentation"],
+  // Hide backdrops (but not Autocomplete popper)
+  .MuiBackdrop-root:not([aria-hidden="true"]),
+  [class*="MuiBackdrop"]:not([class*="MuiAutocomplete"]),
+  // Hide by role and aria - only JBrowse specific elements
+  aside[role="presentation"],
+  div[class*="Drawer"][role="presentation"],
+  [role="presentation"][class*="Drawer"],
+  [role="presentation"][class*="Feature"],
   [aria-label*="drawer"],
   [aria-label*="Drawer"],
   [aria-label*="feature"],
