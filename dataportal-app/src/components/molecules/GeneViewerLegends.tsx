@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './GeneViewerLegends.module.scss';
-import {getColorForEssentiality, getIconForEssentiality} from "../../utils/common/constants";
+import {getColorForEssentiality, getIconForEssentiality} from "../../utils/common/geneUtils";
 
 interface GeneViewerLegendsProps {
     showEssentiality: boolean;

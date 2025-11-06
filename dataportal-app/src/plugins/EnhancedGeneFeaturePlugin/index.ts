@@ -2,7 +2,7 @@ import Plugin from '@jbrowse/core/Plugin';
 import PluginManager from '@jbrowse/core/PluginManager';
 import AdapterType from '@jbrowse/core/pluggableElementTypes/AdapterType';
 import configSchema from "./configSchema";
-import {getColorForEssentiality} from '../../utils/common/constants';
+import {getColorForEssentiality} from '../../utils/common/geneUtils';
 
 export default class EnhancedGeneFeaturePlugin extends Plugin {
     name = 'EnhancedGeneFeaturePlugin';

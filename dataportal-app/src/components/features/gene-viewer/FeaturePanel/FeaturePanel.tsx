@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import styles from './FeaturePanel.module.scss';
 import {PyhmmerFeaturePanel} from '../../pyhmmer/feature-panel/PyhmmerFeaturePanel';
-import {generateExternalDbLink, getIconForEssentiality, getBacinteractomeUniprotUrl} from '../../../../utils/common/constants';
+import {generateExternalDbLink, getIconForEssentiality, getBacinteractomeUniprotUrl} from '../../../../utils/common/geneUtils';
 
 interface FeaturePanelProps {
     feature: any | null;
