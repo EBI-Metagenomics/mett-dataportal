@@ -225,11 +225,10 @@ export const updateJBrowseSearchWithRealJobId = (tempJobId: string, realJobId: s
                 jbrowseItem.jobId = realJobId;
                 jbrowseItem.isJBrowseSearch = false; // No longer a temporary JBrowse search
                 jbrowseItem.hasResults = true;
-                jbrowseItem.source = 'main'; // Change source to main since it now has real results
+                // Keep source as 'jbrowse' to preserve the display format with locus tag
                 
                 // Save updated history
                 localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-                console.log('Updated JBrowse search with real job ID:', tempJobId, '->', realJobId);
             }
         }
     } catch (error) {

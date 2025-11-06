@@ -49,12 +49,14 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
                     input: proteinSequence
                 };
                 
-                historyTempJobId = saveJBrowseSearchToHistory(searchRequest, {
-                    source: 'jbrowse',
+                const historyContext = {
+                    source: 'jbrowse' as const,
                     locusTag: isolateName || 'Unknown',
                     product: product || '',
                     featureType: 'protein'
-                });
+                };
+                console.log('Saving to history with context:', historyContext);
+                historyTempJobId = saveJBrowseSearchToHistory(searchRequest, historyContext);
             }
             
             // Execute the search and get real backend job ID
