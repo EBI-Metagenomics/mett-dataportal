@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import styles from './FeaturePanel.module.scss';
 import {PyhmmerFeaturePanel} from '../../pyhmmer/feature-panel/PyhmmerFeaturePanel';
 import {generateExternalDbLink, getIconForEssentiality, getBacinteractomeUniprotUrl} from '../../../../utils/common/constants';
@@ -11,6 +11,11 @@ interface FeaturePanelProps {
 const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
     // Must call hooks before any early returns
     const [showPyhmmer, setShowPyhmmer] = useState(false);
+    
+    // Reset PyHMMER section when feature changes
+    useEffect(() => {
+        setShowPyhmmer(false);
+    }, [feature?.locus_tag, feature?.id]);
     
     if (!feature) {
         return (
@@ -311,19 +316,20 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                         
                         {/* PyHMMER Search Integration */}
                         <div className={styles.pyhmmerSection}>
-                            <button 
-                                className={styles.pyhmmerButton}
-                                onClick={() => setShowPyhmmer(!showPyhmmer)}
-                            >
-                                {showPyhmmer ? '▼ Hide PyHMMER Search' : '▶ Search Protein Domains'}
-                            </button>
-                            
-                            {showPyhmmer && (
+                            {!showPyhmmer ? (
+                                <button
+                                    className={styles.pyhmmerButton}
+                                    onClick={() => setShowPyhmmer(true)}
+                                >
+                                    🔍 Search Similar Proteins
+                                </button>
+                            ) : (
                                 <div className={styles.pyhmmerContainer}>
                                     <PyhmmerFeaturePanel 
                                         proteinSequence={featureData.proteinSequence}
                                         isolateName={featureData.locusTag}
                                         product={featureData.product}
+                                        onClearResults={() => setShowPyhmmer(false)}
                                     />
                                 </div>
                             )}

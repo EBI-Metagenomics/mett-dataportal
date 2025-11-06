@@ -1,16 +1,18 @@
 import React, {useState} from 'react';
 import {PyhmmerSearchResult, PyhmmerService} from '../../../../services/pyhmmer';
 import {PyhmmerResultsDisplay} from '@components/features';
-import {updateJBrowseSearchWithRealJobId} from '../../../../services/pyhmmer/pyhmmerHistoryService';
+import {saveJBrowseSearchToHistory, updateJBrowseSearchWithRealJobId} from '../../../../services/pyhmmer/pyhmmerHistoryService';
 import styles from './PyhmmerFeaturePanel.module.scss';
 
 interface PyhmmerFeaturePanelProps {
     proteinSequence: string;
     tempJobId?: string;
     isolateName?: string;
+    product?: string;
+    onClearResults?: () => void;
 }
 
-export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({proteinSequence, tempJobId, isolateName}) => {
+export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({proteinSequence, tempJobId, isolateName, product, onClearResults}) => {
     const [isSearching, setIsSearching] = useState(false);
     const [results, setResults] = useState<PyhmmerSearchResult[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -37,13 +39,31 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
                 }
             }
             
+            // Save to history BEFORE executing search
+            let historyTempJobId = tempJobId;
+            if (!tempJobId) {
+                const searchRequest = {
+                    database: database,
+                    threshold: 'E-value',
+                    threshold_value: '0.01',
+                    input: proteinSequence
+                };
+                
+                historyTempJobId = saveJBrowseSearchToHistory(searchRequest, {
+                    source: 'jbrowse',
+                    locusTag: isolateName || 'Unknown',
+                    product: product || '',
+                    featureType: 'protein'
+                });
+            }
+            
+            // Execute the search and get real backend job ID
             const searchResponse = await PyhmmerService.executeSearch(proteinSequence, database);
             setResults(searchResponse.results);
             
-            // If this was a JBrowse search, update the history with the real job ID
-            if (tempJobId && searchResponse.jobId) {
-                updateJBrowseSearchWithRealJobId(tempJobId, searchResponse.jobId);
-                console.log('Updated JBrowse search history with real job ID:', searchResponse.jobId);
+            // Update the history with the real job ID from backend
+            if (historyTempJobId && searchResponse.jobId) {
+                updateJBrowseSearchWithRealJobId(historyTempJobId, searchResponse.jobId);
             }
         } catch (error: any) {
             setError(error.message || 'Search failed');
@@ -56,18 +76,20 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
         setResults([]);
         setError(null);
         setHasSearched(false);
+        // Notify parent to hide the panel
+        if (onClearResults) {
+            onClearResults();
+        }
     };
 
-    // Clear results and auto-start search when protein sequence changes (new gene)
+    // Auto-start search when component mounts (panel is opened)
     React.useEffect(() => {
-        // Clear previous results when navigating to a new gene
-        setResults([]);
-        setError(null);
-        setHasSearched(false);
-        
-        // Start new search for the new protein sequence
-        handleSearch();
-    }, [proteinSequence]);
+        // Trigger search automatically when PyHMMER panel opens
+        if (proteinSequence && proteinSequence.length > 0) {
+            handleSearch();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run on mount
 
     return (
         <div className={styles.featurePanel}>

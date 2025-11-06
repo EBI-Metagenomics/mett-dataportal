@@ -39,7 +39,7 @@
     transition: background-color 0.2s ease;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
 
     &:hover {
@@ -47,28 +47,35 @@
     }
 
     &.selected {
-        background-color: #e3f2fd;
-        border-left: 3px solid #2196f3;
+        background-color: #f0f0f0;
+        border-left: 2px solid #333;
     }
 
     &.jbrowseItem {
-        background-color: #faf5ff;
-        border-left: 3px solid #7c3aed;
-        
+        // Remove special JBrowse styling - treat all items the same
         &:hover {
-            background-color: #f3e8ff;
+            background-color: #f8f9fa;
         }
         
         &.selected {
-            background-color: #ede9fe;
-            border-left: 3px solid #7c3aed;
+            background-color: #f0f0f0;
+            border-left: 2px solid #333;
         }
     }
 
     .itemContent {
         flex: 1;
-        min-width: 0; // Allow text to truncate
+        min-width: 0;
     }
+
+    .queryHeader {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.85rem;
+        color: #333;
+        margin-bottom: 4px;
+        word-break: break-word;
+    }
+
 
     .queryText {
         font-size: 0.9rem;
@@ -81,82 +88,11 @@
     }
 
     .dateText {
-        font-size: 0.8rem;
-        color: #666;
-    }
-
-    // JBrowse context styling
-    .jbrowseContext {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 4px 0;
-        flex-wrap: wrap;
-    }
-
-    .jbrowseBadge {
-        background-color: #7c3aed;
-        color: white;
-        padding: 2px 6px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .locusTag {
-        font-size: 0.8rem;
-        color: #1e40af;
-        background-color: #dbeafe;
-        padding: 3px 8px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-family: 'IBM Plex Mono', Monaco, Consolas, monospace;
-        letter-spacing: 0.5px;
-    }
-
-    .locusTagDescription {
-        font-family: 'IBM Plex Mono', Monaco, Consolas, monospace;
-        font-weight: 600;
-        color: #1e40af;
-        background-color: #dbeafe;
-        padding: 4px 8px;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        letter-spacing: 0.5px;
-    }
-
-    .geneName {
         font-size: 0.75rem;
-        color: #059669;
-        background-color: #d1fae5;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 500;
+        color: #999;
+        margin-top: 4px;
     }
 
-    .genomeInfo {
-        font-size: 0.75rem;
-        color: #7c3aed;
-        background-color: #ede9fe;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 500;
-    }
-
-    .productInfo {
-        font-size: 0.75rem;
-        color: #dc2626;
-        background-color: #fee2e2;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 500;
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
 
     .deleteButton {
         background: none;
