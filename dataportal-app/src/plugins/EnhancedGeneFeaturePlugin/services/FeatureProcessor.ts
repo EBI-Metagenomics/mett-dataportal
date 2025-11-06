@@ -1,5 +1,5 @@
 import SimpleFeature from '@jbrowse/core/util/simpleFeature';
-import {getIconForEssentiality} from "../../../utils/common/constants";
+import {getIconForEssentiality} from "../../../utils/common/geneUtils";
 
 
 export class FeatureProcessor {
