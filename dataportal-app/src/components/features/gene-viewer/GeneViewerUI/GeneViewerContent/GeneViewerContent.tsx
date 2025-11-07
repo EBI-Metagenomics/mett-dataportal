@@ -216,11 +216,75 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
             }
         };
 
+        // Handle double-click to prevent JBrowse's default feature drawer
+        const handleDoubleClick = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            const featureElement = target.closest('[data-testid]') as HTMLElement;
+            
+            if (featureElement) {
+                const featureId = featureElement.getAttribute('data-testid');
+                const locusTagPattern = /^[A-Z]{2,3}_[A-Z0-9]+_\d+$/;
+                
+                // If it's a gene feature, prevent JBrowse's default drawer
+                if (featureId && locusTagPattern.test(featureId)) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    
+                    // Close drawers immediately and after a short delay (in case they open asynchronously)
+                    const closeDrawers = () => {
+                        if (viewState?.session) {
+                            try {
+                                // Hide any active feature widgets
+                                if (viewState.session.widgets?.has('baseFeature')) {
+                                    const widget = viewState.session.activeWidgets.get('baseFeature');
+                                    if (widget) {
+                                        viewState.session.hideWidget(widget);
+                                    }
+                                }
+                                
+                                // Close any drawers by hiding all active widgets
+                                if (viewState.session.activeWidgets) {
+                                    const widgetsToHide: any[] = [];
+                                    viewState.session.activeWidgets.forEach((widget: any) => {
+                                        if (widget && typeof widget.hide === 'function') {
+                                            widgetsToHide.push(widget);
+                                        }
+                                    });
+                                    // Hide widgets outside the forEach to avoid iteration issues
+                                    widgetsToHide.forEach((widget: any) => {
+                                        try {
+                                            widget.hide();
+                                        } catch {
+                                            // Ignore individual widget errors
+                                        }
+                                    });
+                                }
+                            } catch (err) {
+                                // Ignore errors
+                            }
+                        }
+                    };
+                    
+                    // Close immediately
+                    closeDrawers();
+                    
+                    // Also close after a short delay in case drawer opens asynchronously
+                    setTimeout(closeDrawers, 10);
+                    setTimeout(closeDrawers, 50);
+                    setTimeout(closeDrawers, 100);
+                }
+            }
+        };
+
         // Add click listener with capture phase to intercept before JBrowse
         document.addEventListener('click', handleFeatureClick, true);
+        
+        // Add double-click listener to prevent JBrowse's default feature drawer
+        document.addEventListener('dblclick', handleDoubleClick, true);
 
         return () => {
             document.removeEventListener('click', handleFeatureClick, true);
+            document.removeEventListener('dblclick', handleDoubleClick, true);
         };
     }, [viewState, onFeatureSelect]);
     

@@ -50,9 +50,10 @@ const getTracks
                     displayId: `structural_annotation-${genomeMeta.assembly_name}-LinearBasicDisplay`,
                     type: 'LinearBasicDisplay',
                     height: JBROWSE_TRACK_HEIGHTS.STRUCTURAL_ANNOTATION,
-                    // Disable the default onClick handler that opens feature details
+                    // Disable the default click handlers that open feature details
                     onClick: null,
                     onFeatureClick: null,
+                    onDoubleClick: null,
                     renderer: {
                         type: 'SvgFeatureRenderer',
                         color1: `jexl:getGeneColor(feature)`,
