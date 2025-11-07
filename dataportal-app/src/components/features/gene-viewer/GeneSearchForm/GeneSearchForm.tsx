@@ -45,6 +45,7 @@ interface GeneSearchFormProps {
     onResultsUpdate?: (results: any[], pagination: any) => void;
     onPageSizeChange?: (newPageSize: number) => void;
     onPageChange?: (page: number) => void;
+    onFeatureSelect?: (feature: any) => void;
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -67,6 +68,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            onResultsUpdate,
                                                            onPageSizeChange,
                                                            onPageChange,
+                                                           onFeatureSelect,
                                                        }) => {
 
     const renderCount = useRef(0);
@@ -831,6 +833,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         isLoading={isDownloading}
                         sortField={sortField}
                         sortOrder={sortOrder}
+                        onFeatureSelect={onFeatureSelect}
                     />
                     {/* Page size dropdown and pagination */}
                     <div className={styles.paginationContainer}>

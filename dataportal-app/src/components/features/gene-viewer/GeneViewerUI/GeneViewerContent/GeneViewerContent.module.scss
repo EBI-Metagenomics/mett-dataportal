@@ -8,4 +8,6 @@
   width: 100%;
   max-width: none;
   // Let JBrowse determine its own height based on track configurations
-} 
+}
+
+// Gene highlighting is now handled by JBrowse's JEXL expressions in tracks.ts 

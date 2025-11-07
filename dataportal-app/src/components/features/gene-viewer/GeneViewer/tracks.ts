@@ -55,7 +55,7 @@ const getTracks
                     onFeatureClick: null,
                     renderer: {
                         type: 'SvgFeatureRenderer',
-                        color1: `jexl:getColorForEssentiality(get(feature, 'Essentiality'))`,
+                        color1: `jexl:getGeneColor(feature)`,
                         labels: {
                             name: `jexl:
                             (

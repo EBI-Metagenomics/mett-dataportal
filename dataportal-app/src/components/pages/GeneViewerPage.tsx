@@ -244,6 +244,7 @@ const GeneViewerPage: React.FC = () => {
                                         hasPrevious={geneViewerSearch.hasPrevious}
                                         hasNext={geneViewerSearch.hasNext}
                                         totalCount={geneViewerSearch.totalCount}
+                                        onFeatureSelect={handleFeatureSelect}
                                     />
                                 </section>
                             </div>

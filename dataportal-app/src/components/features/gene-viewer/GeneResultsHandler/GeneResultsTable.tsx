@@ -5,8 +5,15 @@ import {LinkData} from '../../../../interfaces/Auxiliary';
 import {GeneMeta} from '../../../../interfaces/Gene';
 import {TABLE_MAX_COLUMNS, ZOOM_LEVELS} from '../../../../utils/common';
 import {GENE_TABLE_COLUMNS} from "./GeneTableColumns";
+import {GeneService} from '../../../../services/gene';
 import * as Dialog from '@radix-ui/react-dialog';
 
+// Extend Window interface for selectedGeneId
+declare global {
+    interface Window {
+        selectedGeneId?: string;
+    }
+}
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -21,6 +28,7 @@ interface GeneResultsTableProps {
     isLoading?: boolean;
     sortField?: string;
     sortOrder?: 'asc' | 'desc';
+    onFeatureSelect?: (feature: any) => void;
 }
 
 const generateLink = (template: string, result: any) => {
@@ -34,16 +42,61 @@ const handleNavigation = (
     contig: string,
     start: number,
     end: number,
-    setLoading: React.Dispatch<React.SetStateAction<boolean>>
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
+    locusTag?: string,
+    onFeatureSelect?: (feature: any) => void,
+    geneMeta?: GeneMeta
 ) => {
     const view = viewState?.session?.views?.[0];
     if (view && typeof view.navToLocString === 'function') {
         setLoading(true);
         try {
+            // Set selected gene for highlighting
+            if (locusTag) {
+                window.selectedGeneId = locusTag;
+            }
+            
             view.navToLocString(`${contig}:${start}..${end}`);
             setTimeout(() => {
                 view.zoomTo(ZOOM_LEVELS.NAV);
                 setLoading(false);
+                
+                // Force track re-render to apply highlighting
+                if (locusTag && view.tracks) {
+                    view.tracks.forEach((track: any) => {
+                        if (track.displays) {
+                            track.displays.forEach((display: any) => {
+                                try {
+                                    if (display.reload) {
+                                        display.reload();
+                                    }
+                                } catch {
+                                    // Ignore errors
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                // Update feature panel with gene data
+                if (onFeatureSelect && locusTag && geneMeta) {
+                    // Fetch complete gene data including protein sequence
+                    Promise.all([
+                        Promise.resolve(geneMeta), // Use existing gene data from table
+                        GeneService.fetchGeneProteinSeq(locusTag).catch(() => ({ protein_sequence: '' }))
+                    ])
+                    .then(([geneData, proteinData]) => {
+                        const completeData = {
+                            ...geneData,
+                            protein_sequence: proteinData.protein_sequence || ''
+                        };
+                        onFeatureSelect(completeData);
+                    })
+                    .catch((err) => {
+                        console.warn('Failed to fetch complete gene data:', err);
+                        onFeatureSelect(geneMeta);
+                    });
+                }
             }, 200);
 
             // Close the feature panel if open
@@ -74,6 +127,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                                isLoading,
                                                                sortField: propSortField,
                                                                sortOrder: propSortOrder,
+                                                               onFeatureSelect,
                                                            }) => {
     // Use props if provided, otherwise fall back to local state
     const [localSortField, setLocalSortField] = useState<string | null>(null);
@@ -242,7 +296,10 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                             geneMeta.seq_id,
                                             geneMeta.start_position ? geneMeta.start_position : 0,
                                             geneMeta.end_position ? geneMeta.end_position : 1000,
-                                            setLoading
+                                            setLoading,
+                                            geneMeta.locus_tag,
+                                            onFeatureSelect,
+                                            geneMeta
                                         );
                                     }}
                                 >

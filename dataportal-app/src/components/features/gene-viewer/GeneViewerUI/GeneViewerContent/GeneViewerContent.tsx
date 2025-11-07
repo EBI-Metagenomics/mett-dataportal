@@ -3,6 +3,13 @@ import {JBrowseApp} from "@jbrowse/react-app2";
 import styles from './GeneViewerContent.module.scss';
 import {GeneService} from '../../../../../services/gene';
 
+// Extend Window interface for selectedGeneId
+declare global {
+    interface Window {
+        selectedGeneId?: string;
+    }
+}
+
 interface GeneViewerContentProps {
     viewState: any;
     onRefreshTracks?: () => void;
@@ -147,6 +154,44 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
                     event.stopPropagation();
                     event.preventDefault();
                     
+                    // Store the selected gene ID globally for JBrowse JEXL expressions
+                    window.selectedGeneId = featureId;
+                    
+                    // Force JBrowse to re-render the track to apply highlighting
+                    if (viewState) {
+                        try {
+                            const view = viewState.session?.views?.[0];
+                            if (view && view.tracks) {
+                                // Force all tracks to reload/re-render
+                                view.tracks.forEach((track: any) => {
+                                    if (track.displays) {
+                                        track.displays.forEach((display: any) => {
+                                            try {
+                                                // Trigger display re-render by reloading
+                                                if (display.reload) {
+                                                    display.reload();
+                                                } else if (display.setError) {
+                                                    // Alternative: clear and refresh
+                                                    display.setError(undefined);
+                                                }
+                                            } catch (e) {
+                                                // Ignore individual display errors
+                                            }
+                                        });
+                                    }
+                                });
+                                
+                                // Also try to refresh the view itself
+                                if (view.setWidth) {
+                                    view.setWidth(view.width + 0.001);
+                                    setTimeout(() => view.setWidth(view.width - 0.001), 10);
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('Could not trigger JBrowse re-render:', err);
+                        }
+                    }
+                    
                     // Fetch complete gene data from API
                     Promise.all([
                         GeneService.fetchGeneByLocusTag(featureId),
@@ -178,6 +223,7 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
             document.removeEventListener('click', handleFeatureClick, true);
         };
     }, [viewState, onFeatureSelect]);
+    
 
     if (!viewState) {
         return <p>Loading Genome Viewer...</p>;
