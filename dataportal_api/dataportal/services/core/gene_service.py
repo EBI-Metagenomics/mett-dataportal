@@ -451,6 +451,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        # Map frontend field names to Elasticsearch field names
+        if sort_by == "start_position":
+            sort_by = "start"
+        elif sort_by == "end_position":
+            sort_by = "end"
+        
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
@@ -649,6 +655,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        # Map frontend field names to Elasticsearch field names
+        if sort_by == "start_position":
+            sort_by = "start"
+        elif sort_by == "end_position":
+            sort_by = "end"
+        
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
@@ -745,6 +757,28 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                         es_query["bool"]["must"].append({"terms": {field: value}})
                     else:
                         es_query["bool"]["must"].append({"term": {field: value}})
+
+        # Coordinate range filtering for viewport sync
+        # Filter genes that overlap with the viewport range
+        if params and params.seq_id and params.start_position is not None and params.end_position is not None:
+            # Ensure start < end (handle swapped values)
+            viewport_start = min(params.start_position, params.end_position)
+            viewport_end = max(params.start_position, params.end_position)
+            
+            # Filter by seq_id
+            es_query["bool"]["must"].append({"term": {FIELD_SEQ_ID: params.seq_id}})
+            
+            # Filter genes that overlap with viewport range
+            # A gene overlaps if: gene_start <= viewport_end AND gene_end >= viewport_start
+            # Elasticsearch uses "start" and "end" fields, not "start_position" and "end_position"
+            es_query["bool"]["must"].append({
+                "bool": {
+                    "must": [
+                        {"range": {"start": {"lte": viewport_end}}},
+                        {"range": {"end": {"gte": viewport_start}}}
+                    ]
+                }
+            })
 
         logger.info(
             f"DEBUG - Final Elasticsearch Query: {json.dumps(es_query, indent=2)}"
@@ -1099,6 +1133,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        # Map frontend field names to Elasticsearch field names
+        if sort_by == "start_position":
+            sort_by = "start"
+        elif sort_by == "end_position":
+            sort_by = "end"
+        
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by

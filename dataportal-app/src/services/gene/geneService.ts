@@ -55,11 +55,14 @@ export class GeneService extends BaseService {
         selectedSpecies?: string[],
         selectedFacets?: Record<string, string[]>,
         facetOperators?: Record<string, 'AND' | 'OR'>,
-        locusTag?: string
+        locusTag?: string,
+        seqId?: string | null,
+        startPosition?: number | null,
+        endPosition?: number | null
     ): Promise<PaginatedApiResponse<GeneMeta>> {
         try {
             console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
-                query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators, locusTag
+                query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators, locusTag, seqId, startPosition, endPosition
             });
             
             // Use the same parameter construction logic as buildParamsFetchGeneSearchResults
@@ -73,7 +76,10 @@ export class GeneService extends BaseService {
                 selectedSpecies,
                 selectedFacets,
                 facetOperators,
-                locusTag
+                locusTag,
+                seqId,
+                startPosition,
+                endPosition
             );
 
             const response = await BaseService.getRawResponse<GeneMeta[]>("/genes/search/advanced", params);
@@ -298,7 +304,10 @@ export class GeneService extends BaseService {
         selectedSpecies?: string[],
         selectedFacets?: Record<string, string[]>,
         facetOperators?: Record<string, 'AND' | 'OR'>,
-        locusTag?: string
+        locusTag?: string,
+        seqId?: string | null,
+        startPosition?: number | null,
+        endPosition?: number | null
     ): URLSearchParams {
         const params = this.buildParams({
             query,
@@ -343,6 +352,13 @@ export class GeneService extends BaseService {
             if (filterOpParts.length > 0) {
                 params.append("filter_operators", filterOpParts.join(";"));
             }
+        }
+
+        // Add coordinate range parameters for viewport sync
+        if (seqId && startPosition !== null && startPosition !== undefined && endPosition !== null && endPosition !== undefined) {
+            params.append("seq_id", seqId);
+            params.append("start_position", startPosition.toString());
+            params.append("end_position", endPosition.toString());
         }
 
         return params;

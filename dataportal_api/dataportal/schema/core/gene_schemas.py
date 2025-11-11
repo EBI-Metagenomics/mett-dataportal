@@ -145,6 +145,16 @@ class GeneAdvancedSearchQuerySchema(BaseModel):
     sort_order: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
+    # Coordinate range filtering for viewport sync
+    seq_id: Optional[str] = Field(
+        None, description="Sequence ID (contig/chromosome) to filter genes by coordinate range."
+    )
+    start_position: Optional[int] = Field(
+        None, description="Start position for coordinate range filtering."
+    )
+    end_position: Optional[int] = Field(
+        None, description="End position for coordinate range filtering."
+    )
 
 
 class GeneDownloadTSVQuerySchema(BaseModel):

@@ -16,6 +16,10 @@ import {DEFAULT_PER_PAGE_CNT} from '../../utils/common/constants';
 
 // Import custom feature panel
 import FeaturePanel from '../features/gene-viewer/FeaturePanel/FeaturePanel';
+import SyncView from '../features/gene-viewer/SyncView';
+import TabNavigation from '../molecules/TabNavigation';
+import { useJBrowseViewportSync } from '../../hooks/useJBrowseViewportSync';
+import { useViewportSyncStore } from '../../stores/viewportSyncStore';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -23,6 +27,12 @@ const GeneViewerPage: React.FC = () => {
 
     // Get state from Zustand stores
     const filterStore = useFilterStore();
+    const { viewportChanged, setViewportChanged } = useViewportSyncStore();
+    
+    // Tab state for Search View / Sync View
+    const [activeTab, setActiveTab] = useState<'search' | 'sync'>('search');
+    const [showAutoSwitchNotification, setShowAutoSwitchNotification] = useState(false);
+    const [wasAutoSwitched, setWasAutoSwitched] = useState(false);
 
     // URL synchronization for gene viewer
     useGeneViewerUrlSync();
@@ -78,6 +88,8 @@ const GeneViewerPage: React.FC = () => {
         if (geneViewerData.genomeMeta?.isolate_name !== lastGenomeRef.current) {
             lastGenomeRef.current = geneViewerData.genomeMeta?.isolate_name || null;
             setJbrowseInitKey((k) => k + 1); // force re-init
+            // Reset viewport initialization when genome changes (prevents notification on new genome load)
+            useViewportSyncStore.getState().setViewportInitialized(false);
         }
     }, [geneViewerData.genomeMeta?.isolate_name]);
 
@@ -88,6 +100,47 @@ const GeneViewerPage: React.FC = () => {
         geneViewerData.genomeMeta?.isolate_name || '',
         jbrowseInitKey
     );
+
+    // Monitor JBrowse viewport changes for sync view
+    // Always monitor, but only update store when sync tab is active or viewport changes
+    useJBrowseViewportSync({
+        viewState,
+        isolateName: geneViewerData.genomeMeta?.isolate_name || null,
+        debounceMs: 1500, // Reduced debounce for more responsive updates
+        enabled: true, // Always monitor to detect scroll changes
+    });
+
+    // Auto-switch to sync view when viewport changes (if user is on search tab and viewport was initialized)
+    useEffect(() => {
+        if (viewportChanged && activeTab === 'search') {
+            // Check if we're in cooldown period after table navigation
+            // Don't auto-switch if we just navigated from a table click
+            const { lastTableNavigationTime } = useViewportSyncStore.getState();
+            const TABLE_NAVIGATION_COOLDOWN_MS = 5000; // 5 seconds cooldown
+            const isInCooldown = lastTableNavigationTime !== null &&
+                (Date.now() - lastTableNavigationTime) < TABLE_NAVIGATION_COOLDOWN_MS;
+            
+            if (!isInCooldown) {
+                // Auto-switch to sync view
+                setActiveTab('sync');
+                setWasAutoSwitched(true);
+                setShowAutoSwitchNotification(true);
+            }
+            setViewportChanged(false);
+        }
+    }, [viewportChanged, activeTab, setViewportChanged]);
+
+    // Handle switching back to search view from notification
+    const handleSwitchToSearch = useCallback(() => {
+        setActiveTab('search');
+        setShowAutoSwitchNotification(false);
+        setWasAutoSwitched(false);
+    }, []);
+
+    // Handle dismissing notification
+    const handleDismissNotification = useCallback(() => {
+        setShowAutoSwitchNotification(false);
+    }, []);
 
     const handleTrackRefresh = useCallback(() => {
         if (!viewState) return;
@@ -216,36 +269,92 @@ const GeneViewerPage: React.FC = () => {
                                     onFeatureSelect={handleFeatureSelect}
                                 />
                             </div>
+                            
+                            {/* Auto-Switch Notification Bar - positioned below JBrowse */}
+                            {showAutoSwitchNotification && activeTab === 'sync' && wasAutoSwitched && (
+                                <div className={styles.syncNotificationBar}>
+                                    <div className={styles.syncNotificationContent}>
+                                        <span className={styles.syncNotificationIcon}>🔄</span>
+                                        <span className={styles.syncNotificationText}>
+                                            View automatically switched to <strong>Sync View</strong> to show genes in the current viewport.
+                                        </span>
+                                        <div className={styles.syncNotificationActions}>
+                                            <button 
+                                                className={styles.syncNotificationButton}
+                                                onClick={handleSwitchToSearch}
+                                            >
+                                                Switch back to Search View
+                                            </button>
+                                            <button 
+                                                className={styles.syncNotificationDismiss}
+                                                onClick={handleDismissNotification}
+                                                aria-label="Dismiss notification"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Gene Search Section - Below the JBrowse viewer */}
                             <div className={styles.geneSearchContainer}>
                                 <section>
-                                    <GeneSearchForm
-                                        searchQuery={filterStore.geneSearchQuery}
-                                        onSearchQueryChange={() => {
+                                    {/* Tab Navigation */}
+                                    <TabNavigation
+                                        tabs={[
+                                            { id: 'search', label: 'Search View' },
+                                            { id: 'sync', label: 'Sync View' },
+                                        ]}
+                                        activeTab={activeTab}
+                                        onTabClick={(tabId) => {
+                                            const newTab = tabId as 'search' | 'sync';
+                                            setActiveTab(newTab);
+                                            // Reset notification when manually switching tabs
+                                            if (newTab === 'search') {
+                                                setShowAutoSwitchNotification(false);
+                                                setWasAutoSwitched(false);
+                                            }
                                         }}
-                                        onSearchSubmit={() => {
-                                            // GeneSearchForm handles search internally
-                                        }}
-                                        selectedSpecies={[]}
-                                        selectedGenomes={selectedGenomes}
-                                        results={geneViewerSearch.geneResults}
-                                        onSortClick={geneViewerSearch.handleGeneSortClick}
-                                        sortField={filterStore.geneSortField}
-                                        sortOrder={filterStore.geneSortOrder}
-                                        linkData={linkData}
-                                        viewState={viewState || undefined}
-                                        setLoading={geneViewerData.setLoading}
-                                        handleRemoveGenome={handleRemoveGenome}
-                                        onPageSizeChange={handlePageSizeChange}
-                                        onPageChange={geneViewerSearch.handlePageChange}
-                                        currentPage={geneViewerSearch.currentPage}
-                                        totalPages={geneViewerSearch.totalPages}
-                                        hasPrevious={geneViewerSearch.hasPrevious}
-                                        hasNext={geneViewerSearch.hasNext}
-                                        totalCount={geneViewerSearch.totalCount}
-                                        onFeatureSelect={handleFeatureSelect}
                                     />
+                                    
+                                    {/* Tab Content */}
+                                    {activeTab === 'search' ? (
+                                        <GeneSearchForm
+                                            searchQuery={filterStore.geneSearchQuery}
+                                            onSearchQueryChange={() => {
+                                            }}
+                                            onSearchSubmit={() => {
+                                                // GeneSearchForm handles search internally
+                                            }}
+                                            selectedSpecies={[]}
+                                            selectedGenomes={selectedGenomes}
+                                            results={geneViewerSearch.geneResults}
+                                            onSortClick={geneViewerSearch.handleGeneSortClick}
+                                            sortField={filterStore.geneSortField}
+                                            sortOrder={filterStore.geneSortOrder}
+                                            linkData={linkData}
+                                            viewState={viewState || undefined}
+                                            setLoading={geneViewerData.setLoading}
+                                            handleRemoveGenome={handleRemoveGenome}
+                                            onPageSizeChange={handlePageSizeChange}
+                                            onPageChange={geneViewerSearch.handlePageChange}
+                                            currentPage={geneViewerSearch.currentPage}
+                                            totalPages={geneViewerSearch.totalPages}
+                                            hasPrevious={geneViewerSearch.hasPrevious}
+                                            hasNext={geneViewerSearch.hasNext}
+                                            totalCount={geneViewerSearch.totalCount}
+                                            onFeatureSelect={handleFeatureSelect}
+                                        />
+                                    ) : (
+                                        <SyncView
+                                            viewState={viewState || undefined}
+                                            selectedGenomes={selectedGenomes}
+                                            setLoading={geneViewerData.setLoading}
+                                            onFeatureSelect={handleFeatureSelect}
+                                            linkData={linkData}
+                                        />
+                                    )}
                                 </section>
                             </div>
                         </div>

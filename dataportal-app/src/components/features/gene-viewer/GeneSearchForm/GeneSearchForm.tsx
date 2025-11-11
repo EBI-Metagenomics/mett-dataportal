@@ -834,6 +834,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         sortField={sortField}
                         sortOrder={sortOrder}
                         onFeatureSelect={onFeatureSelect}
+                        tableSource="search-table"
                     />
                     {/* Page size dropdown and pagination */}
                     <div className={styles.paginationContainer}>

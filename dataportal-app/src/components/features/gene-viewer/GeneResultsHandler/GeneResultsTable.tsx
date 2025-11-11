@@ -7,6 +7,7 @@ import {TABLE_MAX_COLUMNS, ZOOM_LEVELS} from '../../../../utils/common';
 import {GENE_TABLE_COLUMNS} from "./GeneTableColumns";
 import {GeneService} from '../../../../services/gene';
 import * as Dialog from '@radix-ui/react-dialog';
+import {useViewportSyncStore} from '../../../../stores/viewportSyncStore';
 
 // Extend Window interface for selectedGeneId
 declare global {
@@ -28,7 +29,10 @@ interface GeneResultsTableProps {
     isLoading?: boolean;
     sortField?: string;
     sortOrder?: 'asc' | 'desc';
-    onFeatureSelect?: (feature: any) => void;
+    onFeatureSelect?: (feature: any) => void;    
+    geneMeta?: GeneMeta;
+    highlightedLocusTag?: string;
+    tableSource?: 'sync-table' | 'search-table'; // Identify which table this is
 }
 
 const generateLink = (template: string, result: any) => {
@@ -45,33 +49,68 @@ const handleNavigation = (
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
     locusTag?: string,
     onFeatureSelect?: (feature: any) => void,
-    geneMeta?: GeneMeta
+    geneMeta?: GeneMeta,
+    tableSource?: 'sync-table' | 'search-table'
 ) => {
     const view = viewState?.session?.views?.[0];
     if (view && typeof view.navToLocString === 'function') {
         setLoading(true);
         try {
-            // Set selected gene for highlighting
+            // Record the navigation time to prevent sync updates for a period after table navigation
+            const navigationTime = Date.now();
+            useViewportSyncStore.getState().setLastTableNavigationTime(navigationTime);
+            
+            // Set change source to prevent sync table refresh during and after navigation
+            // This tells the system that the viewport change came from a table click, not JBrowse scrolling
+            const changeSource = tableSource || 'search-table';
+            useViewportSyncStore.getState().setChangeSource(changeSource);
+            
+            // IMPORTANT: Do NOT update viewport coordinates in the store when clicking Browse
+            // This prevents the sync table from refreshing. The viewport coordinates will be
+            // updated naturally by JBrowse's navigation, but we'll ignore those updates during cooldown.
+            
+            // Set selected locus tag for highlighting in the table
+            useViewportSyncStore.getState().setSelectedLocusTag(locusTag || null);
+            
+            // Set selected gene for highlighting in JBrowse
             if (locusTag) {
                 window.selectedGeneId = locusTag;
             }
             
+            // Navigate JBrowse to the gene location
+            // JBrowse will update its viewport, but we'll ignore those updates during cooldown period
             view.navToLocString(`${contig}:${start}..${end}`);
+            
             setTimeout(() => {
                 view.zoomTo(ZOOM_LEVELS.NAV);
                 setLoading(false);
                 
-                // Force track re-render to apply highlighting
-                if (locusTag && view.tracks) {
-                    view.tracks.forEach((track: any) => {
+                // Keep change source and navigation time set for full cooldown period
+                // This prevents sync table from refreshing when JBrowse viewport changes after navigation
+                // Total cooldown: 5 seconds (allows JBrowse to fully navigate and settle)
+                setTimeout(() => {
+                    // Only reset if this was the last table navigation (prevents race conditions)
+                    const currentNavTime = useViewportSyncStore.getState().lastTableNavigationTime;
+                    if (currentNavTime === navigationTime) {
+                        // Reset both change source and navigation time together after full cooldown
+                        useViewportSyncStore.getState().setChangeSource(null);
+                        useViewportSyncStore.getState().setLastTableNavigationTime(null);
+                    }
+                }, 5000); // 5 seconds delay to ensure JBrowse has fully navigated and settled
+                
+                // Force JBrowse to re-render tracks to apply highlighting
+                if (viewState?.session?.views?.[0]?.tracks) {
+                    viewState.session.views[0].tracks.forEach((track: any) => {
                         if (track.displays) {
                             track.displays.forEach((display: any) => {
                                 try {
                                     if (display.reload) {
                                         display.reload();
+                                    } else if (display.setError) {
+                                        display.setError(undefined);
                                     }
-                                } catch {
-                                    // Ignore errors
+                                } catch (e) {
+                                    // Ignore individual display errors
                                 }
                             });
                         }
@@ -99,11 +138,9 @@ const handleNavigation = (
                 }
             }, 200);
 
-            // Close the feature panel if open
-            // console.log("***widgets: ", viewState.session.widgets)
+            // Close the feature panel if open (JBrowse's default drawer)
             if (viewState?.session?.widgets?.has('baseFeature')) {
                 const w = viewState.session.activeWidgets.get('baseFeature')
-                // console.log("*****##########", w)
                 viewState.session.hideWidget(w)
             }
 
@@ -128,11 +165,16 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                                sortField: propSortField,
                                                                sortOrder: propSortOrder,
                                                                onFeatureSelect,
+                                                               highlightedLocusTag,
+                                                               tableSource,
                                                            }) => {
     // Use props if provided, otherwise fall back to local state
     const [localSortField, setLocalSortField] = useState<string | null>(null);
     const [localSortOrder, setLocalSortOrder] = useState<'asc' | 'desc'>('asc');
     const [selectedRow, setSelectedRow] = useState<string | null>(null);
+    
+    // Use highlightedLocusTag from props if provided, otherwise use local selectedRow
+    const effectiveHighlightedLocusTag = highlightedLocusTag || selectedRow
     
     const sortField = propSortField || localSortField;
     const sortOrder = propSortOrder || localSortOrder;
@@ -273,7 +315,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                 {results.map((geneMeta, index) => (
                     <tr 
                         key={index} 
-                        className={`vf-table__row ${styles.vfTableRow} ${selectedRow === geneMeta.locus_tag ? styles.selectedRow : ''}`}
+                        className={`vf-table__row ${styles.vfTableRow} ${effectiveHighlightedLocusTag === geneMeta.locus_tag ? styles.selectedRow : ''}`}
                         onClick={() => setSelectedRow(geneMeta.locus_tag || null)}
                         style={{ cursor: 'pointer' }}
                     >
@@ -299,7 +341,8 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                             setLoading,
                                             geneMeta.locus_tag,
                                             onFeatureSelect,
-                                            geneMeta
+                                            geneMeta,
+                                            tableSource // Pass table source to identify which table initiated navigation
                                         );
                                     }}
                                 >

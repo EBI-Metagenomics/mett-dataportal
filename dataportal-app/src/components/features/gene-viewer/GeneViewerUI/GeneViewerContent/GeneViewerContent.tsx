@@ -2,6 +2,7 @@ import React from 'react';
 import {JBrowseApp} from "@jbrowse/react-app2";
 import styles from './GeneViewerContent.module.scss';
 import {GeneService} from '../../../../../services/gene';
+import {useViewportSyncStore} from '../../../../../stores/viewportSyncStore';
 
 // Extend Window interface for selectedGeneId
 declare global {
@@ -191,6 +192,9 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
                             console.warn('Could not trigger JBrowse re-render:', err);
                         }
                     }
+                    
+                    // Update viewport sync store with selected locus tag
+                    useViewportSyncStore.getState().setSelectedLocusTag(featureId);
                     
                     // Fetch complete gene data from API
                     Promise.all([
