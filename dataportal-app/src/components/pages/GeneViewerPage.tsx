@@ -20,6 +20,7 @@ import SyncView from '../features/gene-viewer/SyncView';
 import TabNavigation from '../molecules/TabNavigation';
 import { useJBrowseViewportSync } from '../../hooks/useJBrowseViewportSync';
 import { useViewportSyncStore } from '../../stores/viewportSyncStore';
+import { VIEWPORT_SYNC_CONSTANTS } from '../../utils/gene-viewer';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -80,15 +81,13 @@ const GeneViewerPage: React.FC = () => {
         includeEssentiality
     );
 
-    // Only re-initialize JBrowse view state when genome changes
     const lastGenomeRef = React.useRef<string | null>(null);
     const [jbrowseInitKey, setJbrowseInitKey] = useState(0);
 
     useEffect(() => {
         if (geneViewerData.genomeMeta?.isolate_name !== lastGenomeRef.current) {
             lastGenomeRef.current = geneViewerData.genomeMeta?.isolate_name || null;
-            setJbrowseInitKey((k) => k + 1); // force re-init
-            // Reset viewport initialization when genome changes (prevents notification on new genome load)
+            setJbrowseInitKey((k) => k + 1);
             useViewportSyncStore.getState().setViewportInitialized(false);
         }
     }, [geneViewerData.genomeMeta?.isolate_name]);
@@ -101,27 +100,20 @@ const GeneViewerPage: React.FC = () => {
         jbrowseInitKey
     );
 
-    // Monitor JBrowse viewport changes for sync view
-    // Always monitor, but only update store when sync tab is active or viewport changes
     useJBrowseViewportSync({
         viewState,
         isolateName: geneViewerData.genomeMeta?.isolate_name || null,
-        debounceMs: 1500, // Reduced debounce for more responsive updates
-        enabled: true, // Always monitor to detect scroll changes
+        debounceMs: VIEWPORT_SYNC_CONSTANTS.VIEWPORT_DEBOUNCE_MS,
+        enabled: true,
     });
 
-    // Auto-switch to sync view when viewport changes (if user is on search tab and viewport was initialized)
     useEffect(() => {
         if (viewportChanged && activeTab === 'search') {
-            // Check if we're in cooldown period after table navigation
-            // Don't auto-switch if we just navigated from a table click
             const { lastTableNavigationTime } = useViewportSyncStore.getState();
-            const TABLE_NAVIGATION_COOLDOWN_MS = 5000; // 5 seconds cooldown
             const isInCooldown = lastTableNavigationTime !== null &&
-                (Date.now() - lastTableNavigationTime) < TABLE_NAVIGATION_COOLDOWN_MS;
+                (Date.now() - lastTableNavigationTime) < VIEWPORT_SYNC_CONSTANTS.TABLE_NAVIGATION_COOLDOWN_MS;
             
             if (!isInCooldown) {
-                // Auto-switch to sync view
                 setActiveTab('sync');
                 setWasAutoSwitched(true);
                 setShowAutoSwitchNotification(true);
@@ -130,14 +122,12 @@ const GeneViewerPage: React.FC = () => {
         }
     }, [viewportChanged, activeTab, setViewportChanged]);
 
-    // Handle switching back to search view from notification
     const handleSwitchToSearch = useCallback(() => {
         setActiveTab('search');
         setShowAutoSwitchNotification(false);
         setWasAutoSwitched(false);
     }, []);
 
-    // Handle dismissing notification
     const handleDismissNotification = useCallback(() => {
         setShowAutoSwitchNotification(false);
     }, []);

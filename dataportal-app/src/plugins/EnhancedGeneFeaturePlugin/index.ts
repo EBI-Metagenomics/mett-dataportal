@@ -3,6 +3,7 @@ import PluginManager from '@jbrowse/core/PluginManager';
 import AdapterType from '@jbrowse/core/pluggableElementTypes/AdapterType';
 import configSchema from "./configSchema";
 import {getColorForEssentiality} from '../../utils/common/geneUtils';
+import {VIEWPORT_SYNC_CONSTANTS} from '../../utils/gene-viewer';
 
 export default class EnhancedGeneFeaturePlugin extends Plugin {
     name = 'EnhancedGeneFeaturePlugin';
@@ -23,7 +24,7 @@ export default class EnhancedGeneFeaturePlugin extends Plugin {
             const selectedId = (typeof window !== 'undefined' && (window as typeof window & { selectedGeneId?: string }).selectedGeneId) || null;
             
             if (selectedId && locusTag === selectedId) {
-                return '#aef861'; // Orange for selected gene
+                return VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR; // Unified blue color for selected gene
             }
             
             const essentiality = feature?.Essentiality || feature?.get?.('Essentiality');

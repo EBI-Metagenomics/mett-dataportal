@@ -8,6 +8,24 @@ import {GENE_TABLE_COLUMNS} from "./GeneTableColumns";
 import {GeneService} from '../../../../services/gene';
 import * as Dialog from '@radix-ui/react-dialog';
 import {useViewportSyncStore} from '../../../../stores/viewportSyncStore';
+import {VIEWPORT_SYNC_CONSTANTS} from '../../../../utils/gene-viewer';
+
+// Inject CSS variables for highlight colors
+if (typeof document !== 'undefined') {
+  const styleId = 'gene-highlight-styles';
+  if (!document.getElementById(styleId)) {
+    const styleElement = document.createElement('style');
+    styleElement.id = styleId;
+    styleElement.textContent = `
+      :root {
+        --gene-highlight-background: ${VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_BACKGROUND};
+        --gene-highlight-border: ${VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_BORDER};
+        --gene-highlight-background-hover: ${VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_BACKGROUND_HOVER};
+      }
+    `;
+    document.head.appendChild(styleElement);
+  }
+}
 
 // Extend Window interface for selectedGeneId
 declare global {
@@ -52,51 +70,94 @@ const handleNavigation = (
     geneMeta?: GeneMeta,
     tableSource?: 'sync-table' | 'search-table'
 ) => {
+    // For sync table: only highlight the gene, don't navigate (prevents auto-scrolling and refresh)
+    if (tableSource === 'sync-table') {
+        // Set changeSource to prevent viewport sync from processing any changes
+        // (track reload might trigger viewport changes)
+        useViewportSyncStore.getState().setChangeSource('sync-table');
+        useViewportSyncStore.getState().setSelectedLocusTag(locusTag || null);
+        
+        if (locusTag) {
+            window.selectedGeneId = locusTag;
+        }
+        
+        // Update feature panel
+        if (onFeatureSelect && locusTag && geneMeta) {
+            Promise.all([
+                Promise.resolve(geneMeta),
+                GeneService.fetchGeneProteinSeq(locusTag).catch(() => ({ protein_sequence: '' }))
+            ])
+            .then(([geneData, proteinData]) => {
+                const completeData = {
+                    ...geneData,
+                    protein_sequence: proteinData.protein_sequence || ''
+                };
+                onFeatureSelect(completeData);
+            })
+            .catch(() => {
+                onFeatureSelect(geneMeta);
+            });
+        }
+        
+        // Force JBrowse to re-render tracks to apply highlighting
+        if (viewState?.session?.views?.[0]?.tracks) {
+            setTimeout(() => {
+                viewState.session.views[0].tracks.forEach((track: any) => {
+                    if (track.displays) {
+                        track.displays.forEach((display: any) => {
+                            try {
+                                if (display.reload) {
+                                    display.reload();
+                                } else if (display.setError) {
+                                    display.setError(undefined);
+                                }
+                            } catch {
+                                // Ignore display errors
+                            }
+                        });
+                    }
+                });
+            }, 100);
+        }
+        
+        // Reset changeSource after enough time to prevent viewport sync from processing any changes
+        // Track reload might trigger viewport changes, so we need to block sync updates for a bit
+        setTimeout(() => {
+            useViewportSyncStore.getState().setChangeSource(null);
+        }, 2000); // 2 seconds should be enough to prevent any viewport changes from triggering refresh
+        
+        return;
+    }
+    
+    // For search table: navigate and zoom to bring gene into view
     const view = viewState?.session?.views?.[0];
     if (view && typeof view.navToLocString === 'function') {
         setLoading(true);
         try {
-            // Record the navigation time to prevent sync updates for a period after table navigation
             const navigationTime = Date.now();
             useViewportSyncStore.getState().setLastTableNavigationTime(navigationTime);
             
-            // Set change source to prevent sync table refresh during and after navigation
-            // This tells the system that the viewport change came from a table click, not JBrowse scrolling
             const changeSource = tableSource || 'search-table';
             useViewportSyncStore.getState().setChangeSource(changeSource);
-            
-            // IMPORTANT: Do NOT update viewport coordinates in the store when clicking Browse
-            // This prevents the sync table from refreshing. The viewport coordinates will be
-            // updated naturally by JBrowse's navigation, but we'll ignore those updates during cooldown.
-            
-            // Set selected locus tag for highlighting in the table
             useViewportSyncStore.getState().setSelectedLocusTag(locusTag || null);
             
-            // Set selected gene for highlighting in JBrowse
             if (locusTag) {
                 window.selectedGeneId = locusTag;
             }
             
-            // Navigate JBrowse to the gene location
-            // JBrowse will update its viewport, but we'll ignore those updates during cooldown period
             view.navToLocString(`${contig}:${start}..${end}`);
             
             setTimeout(() => {
                 view.zoomTo(ZOOM_LEVELS.NAV);
                 setLoading(false);
                 
-                // Keep change source and navigation time set for full cooldown period
-                // This prevents sync table from refreshing when JBrowse viewport changes after navigation
-                // Total cooldown: 5 seconds (allows JBrowse to fully navigate and settle)
                 setTimeout(() => {
-                    // Only reset if this was the last table navigation (prevents race conditions)
                     const currentNavTime = useViewportSyncStore.getState().lastTableNavigationTime;
                     if (currentNavTime === navigationTime) {
-                        // Reset both change source and navigation time together after full cooldown
                         useViewportSyncStore.getState().setChangeSource(null);
                         useViewportSyncStore.getState().setLastTableNavigationTime(null);
                     }
-                }, 5000); // 5 seconds delay to ensure JBrowse has fully navigated and settled
+                }, VIEWPORT_SYNC_CONSTANTS.TABLE_NAVIGATION_COOLDOWN_MS);
                 
                 // Force JBrowse to re-render tracks to apply highlighting
                 if (viewState?.session?.views?.[0]?.tracks) {
@@ -109,8 +170,8 @@ const handleNavigation = (
                                     } else if (display.setError) {
                                         display.setError(undefined);
                                     }
-                                } catch (e) {
-                                    // Ignore individual display errors
+                                } catch {
+                                    // Ignore display errors
                                 }
                             });
                         }
@@ -119,9 +180,8 @@ const handleNavigation = (
                 
                 // Update feature panel with gene data
                 if (onFeatureSelect && locusTag && geneMeta) {
-                    // Fetch complete gene data including protein sequence
                     Promise.all([
-                        Promise.resolve(geneMeta), // Use existing gene data from table
+                        Promise.resolve(geneMeta),
                         GeneService.fetchGeneProteinSeq(locusTag).catch(() => ({ protein_sequence: '' }))
                     ])
                     .then(([geneData, proteinData]) => {
@@ -131,8 +191,7 @@ const handleNavigation = (
                         };
                         onFeatureSelect(completeData);
                     })
-                    .catch((err) => {
-                        console.warn('Failed to fetch complete gene data:', err);
+                    .catch(() => {
                         onFeatureSelect(geneMeta);
                     });
                 }

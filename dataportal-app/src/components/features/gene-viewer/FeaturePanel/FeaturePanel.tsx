@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react';
 import styles from './FeaturePanel.module.scss';
 import {PyhmmerFeaturePanel} from '../../pyhmmer/feature-panel/PyhmmerFeaturePanel';
 import {generateExternalDbLink, getIconForEssentiality, getBacinteractomeUniprotUrl} from '../../../../utils/common/geneUtils';
+import {useViewportSyncStore} from '../../../../stores/viewportSyncStore';
 
 interface FeaturePanelProps {
     feature: any | null;
@@ -11,6 +12,7 @@ interface FeaturePanelProps {
 const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
     // Must call hooks before any early returns
     const [showPyhmmer, setShowPyhmmer] = useState(false);
+    const { selectedLocusTag } = useViewportSyncStore();
     
     // Reset PyHMMER section when feature changes
     useEffect(() => {
@@ -135,7 +137,11 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose }) => {
                     <h4>Core Details</h4>
                     <div className={styles.field}>
                         <label>Locus Tag:</label>
-                        <span>{featureData.locusTag}</span>
+                        <span 
+                            className={selectedLocusTag === featureData.locusTag ? styles.highlightedLocusTag : ''}
+                        >
+                            {featureData.locusTag}
+                        </span>
                     </div>
                     {featureData.gene && (
                         <div className={styles.field}>

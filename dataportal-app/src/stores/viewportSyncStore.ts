@@ -11,23 +11,15 @@ export interface ViewMeta {
 }
 
 export interface ViewportSyncState {
-  // Locus coordinates: chrom:start..end format
   locus: string | null
-  // Selected locus tag
   selectedLocusTag: string | null
-  // View metadata for debugging/derived logic
   viewMeta: ViewMeta | null
-  // Change source to avoid feedback loops
   changeSource: ChangeSource
-  // Viewport coordinates
   seqId: string | null
   start: number | null
   end: number | null
-  // Flag to indicate viewport has changed (for auto-switching to sync tab)
   viewportChanged: boolean
-  // Flag to track if viewport has been initialized (prevents notification on initial load)
   viewportInitialized: boolean
-  // Timestamp of last table navigation (to prevent sync updates for a period after table navigation)
   lastTableNavigationTime: number | null
   
   setLocus: (locus: string | null) => void
