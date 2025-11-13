@@ -43,7 +43,7 @@ const GeneViewerLegends: React.FC<GeneViewerLegendsProps> = ({showEssentiality})
     ];
 
     const userActionsLegend = [
-        {label: 'Selected gene highlight', color: VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR},
+        {label: 'Selected Gene', color: VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR},
     ];
 
     const renderLegendItems = (
