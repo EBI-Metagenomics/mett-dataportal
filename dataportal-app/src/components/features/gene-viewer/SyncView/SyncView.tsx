@@ -171,6 +171,7 @@ const SyncView: React.FC<SyncViewProps> = ({
             onFeatureSelect={onFeatureSelect}
             highlightedLocusTag={selectedLocusTag || undefined}
             tableSource="sync-table"
+            hideActionsColumn={true}
           />
         </div>
       ) : (

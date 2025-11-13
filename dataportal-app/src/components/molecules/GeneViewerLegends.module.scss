@@ -2,7 +2,8 @@
   margin-bottom: 1rem;
   font-size: 0.9rem;
   margin-left: auto;
-  max-width: 400px;
+  max-width: 700px;
+  min-width: 600px;
 }
 
 .legendHeader {
@@ -15,9 +16,16 @@
 
 .legendColumns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   column-gap: 2.2rem;
   row-gap: 0.3rem;
+}
+
+.threeColumns {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.twoColumns {
+  grid-template-columns: 1fr 1fr;
 }
 
 .legendItem {

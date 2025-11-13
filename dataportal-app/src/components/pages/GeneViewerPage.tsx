@@ -18,10 +18,35 @@ import {useFacetedFilters} from '../../hooks/useFacetedFilters';
 // Import custom feature panel
 import FeaturePanel from '../features/gene-viewer/FeaturePanel/FeaturePanel';
 import SyncView from '../features/gene-viewer/SyncView';
-import TabNavigation from '../molecules/TabNavigation';
 import { useJBrowseViewportSync } from '../../hooks/useJBrowseViewportSync';
 import { useViewportSyncStore } from '../../stores/viewportSyncStore';
 import { VIEWPORT_SYNC_CONSTANTS } from '../../utils/gene-viewer';
+
+// Tab Navigation Component
+interface Tab {
+    id: string;
+    label: string;
+}
+
+interface TabNavigationProps {
+    tabs: Tab[];
+    activeTab: string;
+    onTabClick: (tabId: string) => void;
+}
+
+const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClick}) => (
+    <div className={styles["tabs-container"]}>
+        {tabs.map((tab) => (
+            <button
+                key={tab.id}
+                onClick={() => onTabClick(tab.id)}
+                className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
+            >
+                {tab.label}
+            </button>
+        ))}
+    </div>
+);
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
