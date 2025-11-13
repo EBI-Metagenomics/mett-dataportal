@@ -354,6 +354,9 @@ const GeneViewerPage: React.FC = () => {
                             <FeaturePanel 
                                 feature={selectedFeature}
                                 onClose={handleCloseFeaturePanel}
+                                viewState={viewState || undefined}
+                                setLoading={geneViewerData.setLoading}
+                                activeTab={activeTab}
                             />
                         </div>
                     </div>

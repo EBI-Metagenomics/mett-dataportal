@@ -230,3 +230,39 @@
   border: 2px solid #2563eb !important;
 }
 
+.navigationBanner {
+  padding: 0.75rem;
+  background: transparent;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scrollToGeneButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #1e40af;
+  }
+  
+  &:active {
+    background: #1e3a8a;
+  }
+}
+
+.scrollToGeneIcon {
+  font-size: 16px;
+}
+
