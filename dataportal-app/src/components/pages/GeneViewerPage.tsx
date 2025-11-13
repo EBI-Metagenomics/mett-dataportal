@@ -30,7 +30,7 @@ const GeneViewerPage: React.FC = () => {
     const filterStore = useFilterStore();
     const { viewportChanged, setViewportChanged } = useViewportSyncStore();
     
-    // Tab state for Search View / Sync View
+    // Tab state for Search View / Genomic Context
     const [activeTab, setActiveTab] = useState<'search' | 'sync'>('search');
     const [showAutoSwitchNotification, setShowAutoSwitchNotification] = useState(false);
     const [wasAutoSwitched, setWasAutoSwitched] = useState(false);
@@ -266,7 +266,7 @@ const GeneViewerPage: React.FC = () => {
                                     <div className={styles.syncNotificationContent}>
                                         <span className={styles.syncNotificationIcon}>🔄</span>
                                         <span className={styles.syncNotificationText}>
-                                            View automatically switched to <strong>Sync View</strong> to show genes in the current viewport.
+                                            View automatically switched to <strong>Genomic Context</strong> to show genes in the current viewport.
                                         </span>
                                         <div className={styles.syncNotificationActions}>
                                             <button 
@@ -294,7 +294,7 @@ const GeneViewerPage: React.FC = () => {
                                     <TabNavigation
                                         tabs={[
                                             { id: 'search', label: 'Search View' },
-                                            { id: 'sync', label: 'Sync View' },
+                                            { id: 'sync', label: 'Genomic Context' },
                                         ]}
                                         activeTab={activeTab}
                                         onTabClick={(tabId) => {

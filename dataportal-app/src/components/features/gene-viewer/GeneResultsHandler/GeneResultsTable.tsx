@@ -348,23 +348,28 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
 
             </div>
 
-            <table className="vf-table vf-table--sortable">
+            <table className={`vf-table ${tableSource !== 'sync-table' ? 'vf-table--sortable' : ''}`}>
                 <thead className="vf-table__header">
                 <tr className="vf-table__row">
                     {availableColumns.filter(col => visibleColumns.includes(col.key)).map(col => (
                         <th
                             key={col.key}
                             onClick={() => col.sortable && handleSort(col.key)}
-                            className={`vf-table__heading ${styles.vfTableHeading} ${col.sortable ? styles.clickableHeader : ''}`}
+                            className={`vf-table__heading ${styles.vfTableHeading} ${col.sortable && tableSource !== 'sync-table' ? styles.clickableHeader : ''}`}
                         >
                             {col.label}
-                            {sortField === col.key ? (
-                                <span
-                                    className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
-                                    style={{paddingLeft: '5px'}}/>
-                            ) : col.sortable ? (
-                                <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}/>
-                            ) : null}
+                            {/* Hide sorting icons in Genomic Context view (sync-table) */}
+                            {tableSource !== 'sync-table' && (
+                                <>
+                                    {sortField === col.key ? (
+                                        <span
+                                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                                            style={{paddingLeft: '5px'}}/>
+                                    ) : col.sortable ? (
+                                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}/>
+                                    ) : null}
+                                </>
+                            )}
                         </th>
                     ))}
                     <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
