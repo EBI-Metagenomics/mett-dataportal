@@ -345,6 +345,7 @@ const GeneViewerPage: React.FC = () => {
                                             hasNext={geneViewerSearch.hasNext}
                                             totalCount={geneViewerSearch.totalCount}
                                             onFeatureSelect={handleFeatureSelect}
+                                            hideActionsColumn={true}
                                         />
                                     ) : (
                                         <SyncView

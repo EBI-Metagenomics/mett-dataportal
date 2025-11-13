@@ -51,6 +51,7 @@ interface GeneResultsTableProps {
     geneMeta?: GeneMeta;
     highlightedLocusTag?: string;
     tableSource?: 'sync-table' | 'search-table'; // Identify which table this is
+    hideActionsColumn?: boolean; // If true, hide Actions column and make rows clickable
 }
 
 const generateLink = (template: string, result: any) => {
@@ -226,6 +227,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                                                onFeatureSelect,
                                                                highlightedLocusTag,
                                                                tableSource,
+                                                               hideActionsColumn = false,
                                                            }) => {
     // Use props if provided, otherwise fall back to local state
     const [localSortField, setLocalSortField] = useState<string | null>(null);
@@ -372,56 +374,88 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                             )}
                         </th>
                     ))}
-                    <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
+                    {!hideActionsColumn && (
+                        <th className={`vf-table__heading ${styles.vfTableHeading}`} scope="col">Actions</th>
+                    )}
                 </tr>
                 </thead>
                 <tbody className="vf-table__body">
-                {results.map((geneMeta, index) => (
-                    <tr 
-                        key={index} 
-                        className={`vf-table__row ${styles.vfTableRow} ${effectiveHighlightedLocusTag === geneMeta.locus_tag ? styles.selectedRow : ''}`}
-                        onClick={() => setSelectedRow(geneMeta.locus_tag || null)}
-                        style={{ cursor: 'pointer' }}
-                    >
-                        {GENE_TABLE_COLUMNS.filter(col => visibleColumns.includes(col.key)).map(col => (
-                            <td key={col.key} className={`vf-table__cell ${styles.vfTableCell}`}>
-                                {col.render(geneMeta)}
-                            </td>
-                        ))}
+                {results.map((geneMeta, index) => {
+                    // Handler for row click (used when Actions column is hidden)
+                    const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+                        // Don't trigger navigation if clicking on a link or other interactive element
+                        const target = e.target as HTMLElement;
+                        if (target.closest('a') || target.closest('button') || target.closest('input')) {
+                            return;
+                        }
+                        
+                        // Always update selected row for highlighting
+                        setSelectedRow(geneMeta.locus_tag || null);
+                        
+                        // Navigate if Actions column is hidden and viewState exists (gene viewer page)
+                        if (hideActionsColumn && viewState) {
+                            handleNavigation(
+                                viewState,
+                                geneMeta.seq_id,
+                                geneMeta.start_position ? geneMeta.start_position : 0,
+                                geneMeta.end_position ? geneMeta.end_position : 1000,
+                                setLoading,
+                                geneMeta.locus_tag,
+                                onFeatureSelect,
+                                geneMeta,
+                                tableSource
+                            );
+                        }
+                    };
+                    
+                    return (
+                        <tr 
+                            key={index} 
+                            className={`vf-table__row ${styles.vfTableRow} ${effectiveHighlightedLocusTag === geneMeta.locus_tag ? styles.selectedRow : ''}`}
+                            onClick={handleRowClick}
+                            style={{ cursor: hideActionsColumn && viewState ? 'pointer' : 'default' }}
+                        >
+                            {GENE_TABLE_COLUMNS.filter(col => visibleColumns.includes(col.key)).map(col => (
+                                <td key={col.key} className={`vf-table__cell ${styles.vfTableCell}`}>
+                                    {col.render(geneMeta)}
+                                </td>
+                            ))}
 
-
-                        <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                            {viewState ? (
-                                <a
-                                    href="#"
-                                    className="vf-link"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleNavigation(
-                                            viewState,
-                                            geneMeta.seq_id,
-                                            geneMeta.start_position ? geneMeta.start_position : 0,
-                                            geneMeta.end_position ? geneMeta.end_position : 1000,
-                                            setLoading,
-                                            geneMeta.locus_tag,
-                                            onFeatureSelect,
-                                            geneMeta,
-                                            tableSource // Pass table source to identify which table initiated navigation
-                                        );
-                                    }}
-                                >
-                                    {linkData.alias}
-                                </a>
-                            ) : (
-                                <a href={generateLink(linkData.template, geneMeta)} target="_blank" rel="noreferrer">
-                                    {linkData.alias}
-                                    <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
-                                          style={{paddingLeft: '5px'}}></span>
-                                </a>
+                            {!hideActionsColumn && (
+                                <td className={`vf-table__cell ${styles.vfTableCell}`}>
+                                    {viewState ? (
+                                        <a
+                                            href="#"
+                                            className="vf-link"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleNavigation(
+                                                    viewState,
+                                                    geneMeta.seq_id,
+                                                    geneMeta.start_position ? geneMeta.start_position : 0,
+                                                    geneMeta.end_position ? geneMeta.end_position : 1000,
+                                                    setLoading,
+                                                    geneMeta.locus_tag,
+                                                    onFeatureSelect,
+                                                    geneMeta,
+                                                    tableSource // Pass table source to identify which table initiated navigation
+                                                );
+                                            }}
+                                        >
+                                            {linkData.alias}
+                                        </a>
+                                    ) : (
+                                        <a href={generateLink(linkData.template, geneMeta)} target="_blank" rel="noopener noreferrer">
+                                            {linkData.alias}
+                                            <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
+                                                  style={{paddingLeft: '5px'}}></span>
+                                        </a>
+                                    )}
+                                </td>
                             )}
-                        </td>
-                    </tr>
-                ))}
+                        </tr>
+                    );
+                })}
                 </tbody>
             </table>
         </section>
