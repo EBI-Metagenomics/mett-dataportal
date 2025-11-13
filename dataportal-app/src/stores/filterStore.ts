@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { BaseGenome } from '../interfaces/Genome'
+import { normalizeFilterValues } from '../utils/common/filterUtils'
 
 // Valid sort fields for genomes
 const VALID_GENOME_SORT_FIELDS = {
@@ -118,9 +119,11 @@ export const useFilterStore = create<FilterState>()(
       setFacetedFilters: (filters) => set({ facetedFilters: filters }),
       updateFacetedFilter: (filterType, values) => {
         const current = get().facetedFilters;
+        // Normalize all values before storing to ensure consistency and remove duplicates
+        const normalizedValues = normalizeFilterValues(values);
         const newFilters = {
           ...current,
-          [filterType]: values.length > 0 ? values : undefined
+          [filterType]: normalizedValues.length > 0 ? normalizedValues : undefined
         };
         set({ facetedFilters: newFilters });
       },

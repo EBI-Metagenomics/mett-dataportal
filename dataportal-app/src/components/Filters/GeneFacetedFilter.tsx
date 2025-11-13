@@ -13,6 +13,7 @@ import {
 import * as Popover from '@radix-ui/react-popover';
 import {MetadataService} from "../../services/common/metadataService";
 import {useFilterStore} from '../../stores/filterStore';
+import {normalizeFilterValue} from '../../utils/common/filterUtils';
 
 interface GeneFacetedFilterProps {
     facets: GeneFacetResponse;
@@ -147,12 +148,12 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                     facetGroup === 'has_amr_info' ||
                     filterStore.facetOperators[facetGroup as keyof typeof filterStore.facetOperators] === 'OR';
 
-                // Deduplicate by value
+                // Deduplicate by normalized value (handles whitespace/case differences)
                 const dedupedFiltered: FacetItem[] = [];
-                const seen = new Set();
+                const seen = new Set<string | boolean>();
                 for (const facet of filtered) {
-                    const key = String(facet.value);
-                    if (!seen.has(key)) {
+                    const normalizedKey = normalizeFilterValue(facet.value);
+                    if (!seen.has(normalizedKey)) {
                         // OR mode: show all values (even if count 0 and unselected)
                         // AND mode: only show if count > 0 or selected
                         if (
@@ -162,7 +163,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                         ) {
                             dedupedFiltered.push(facet);
                         }
-                        seen.add(key);
+                        seen.add(normalizedKey);
                     }
                 }
 

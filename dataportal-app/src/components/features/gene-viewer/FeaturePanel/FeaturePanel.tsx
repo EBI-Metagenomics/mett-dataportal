@@ -1,11 +1,14 @@
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useState, useEffect, useMemo, useCallback} from 'react';
 import styles from './FeaturePanel.module.scss';
 import {PyhmmerFeaturePanel} from '../../pyhmmer/feature-panel/PyhmmerFeaturePanel';
 import {generateExternalDbLink, getIconForEssentiality, getBacinteractomeUniprotUrl} from '../../../../utils/common/geneUtils';
 import {useViewportSyncStore} from '../../../../stores/viewportSyncStore';
+import {useFilterStore} from '../../../../stores/filterStore';
 import {createViewState} from '@jbrowse/react-app2';
 import {ZOOM_LEVELS} from '../../../../utils/common/constants';
 import {VIEWPORT_SYNC_CONSTANTS} from '../../../../utils/gene-viewer';
+import {GeneFacetResponse} from '../../../../interfaces/Gene';
+import {compareFilterValues, normalizeFilterValue, normalizeFilterValues} from '../../../../utils/common/filterUtils';
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -15,12 +18,17 @@ interface FeaturePanelProps {
     viewState?: ViewModel;
     setLoading?: React.Dispatch<React.SetStateAction<boolean>>;
     activeTab?: 'search' | 'sync';
+    onSwitchToSearch?: () => void;
+    onToggleFacet?: (facetGroup: string, value: string | boolean) => void;
+    facets?: GeneFacetResponse;
 }
 
-const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState, setLoading, activeTab }) => {
+const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState, setLoading, activeTab, onSwitchToSearch, onToggleFacet, facets }) => {
     // Must call hooks before any early returns
     const [showPyhmmer, setShowPyhmmer] = useState(false);
     const { selectedLocusTag, seqId: viewportSeqId, start: viewportStart, end: viewportEnd } = useViewportSyncStore();
+    // Subscribe to facetedFilters to ensure reactivity
+    const facetedFilters = useFilterStore(state => state.facetedFilters);
     
     // Extract feature data - handle GeneMeta API response structure (must be before early return)
     const getFeatureData = (featureData: any) => {
@@ -78,12 +86,12 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
             essentiality: data?.essentiality || '',
             uniprotId: data?.uniprot_id || '',
             
-            // Arrays - keep as arrays for link generation
-            pfam: Array.isArray(data?.pfam) ? data.pfam : (data?.pfam ? [data.pfam] : []),
-            interpro: Array.isArray(data?.interpro) ? data.interpro : (data?.interpro ? [data.interpro] : []),
-            kegg: Array.isArray(data?.kegg) ? data.kegg : (data?.kegg ? [data.kegg] : []),
-            cog: Array.isArray(data?.cog_id) ? data.cog_id : (data?.cog_id ? [data.cog_id] : []),
-            cogCategories: Array.isArray(data?.cog_funcats) ? data.cog_funcats : (data?.cog_funcats ? [data.cog_funcats] : []),
+            // Arrays - keep as arrays for link generation, normalize and deduplicate values
+            pfam: Array.isArray(data?.pfam) ? normalizeFilterValues(data.pfam) as string[] : (data?.pfam ? normalizeFilterValues([data.pfam]) as string[] : []),
+            interpro: Array.isArray(data?.interpro) ? normalizeFilterValues(data.interpro) as string[] : (data?.interpro ? normalizeFilterValues([data.interpro]) as string[] : []),
+            kegg: Array.isArray(data?.kegg) ? normalizeFilterValues(data.kegg) as string[] : (data?.kegg ? normalizeFilterValues([data.kegg]) as string[] : []),
+            cog: Array.isArray(data?.cog_id) ? normalizeFilterValues(data.cog_id) as string[] : (data?.cog_id ? normalizeFilterValues([data.cog_id]) as string[] : []),
+            cogCategories: Array.isArray(data?.cog_funcats) ? normalizeFilterValues(data.cog_funcats) as string[] : (data?.cog_funcats ? normalizeFilterValues([data.cog_funcats]) as string[] : []),
             
             // AMR info
             amr: data?.amr || null,
@@ -154,6 +162,23 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
     useEffect(() => {
         setShowPyhmmer(false);
     }, [feature?.locus_tag, feature?.id]);
+    
+
+    // Helper to toggle value in faceted filter
+    // Single source of truth: useFacetedFilters.handleToggleFacet handles all logic including deduplication
+    const handleToggleFilter = useCallback((filterType: keyof typeof facetedFilters, value: string | boolean) => {
+        if (!onToggleFacet) {
+            return;
+        }
+
+        // Simply call the shared toggle handler - it handles all validation and deduplication
+        onToggleFacet(filterType, value);
+
+        // Switch to search view if sync view is active
+        if (activeTab === 'sync' && onSwitchToSearch) {
+            onSwitchToSearch();
+        }
+    }, [onToggleFacet, activeTab, onSwitchToSearch]);
     
     if (!feature) {
         return (
@@ -352,6 +377,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
         }
     };
 
+
     // Helper to generate external link
     const renderExternalLink = (database: 'PFAM' | 'INTERPRO' | 'KEGG' | 'COG' | 'COG_CATEGORY' | 'GO' | 'UNIPROT', id: string, label?: string) => {
         // Use special URL generator for UniProt that links to Bacinteractome
@@ -365,18 +391,118 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
         );
     };
 
-    // Helper to render array of IDs with links
-    const renderExternalLinks = (database: 'PFAM' | 'INTERPRO' | 'KEGG' | 'COG' | 'COG_CATEGORY' | 'GO' | 'UNIPROT', ids: string[]) => {
+    // Helper to render filter button (toggles between add/remove based on current state)
+    // Single source of truth: facetedFilters store determines selection state
+    // Always show button for values that exist in the feature (since they're valid filter values)
+    const renderFilterButton = (filterType: keyof typeof facetedFilters, value: string | boolean) => {
+        // Check selection state from store (single source of truth)
+        const currentValues = facetedFilters[filterType] || [];
+        const isSelected = currentValues.some(v => compareFilterValues(v, value));
+        
+        // Debug logging for pfam, interpro, kegg
+        if (filterType === 'pfam' || filterType === 'interpro' || filterType === 'kegg') {
+            console.log(`[FeaturePanel] renderFilterButton - ${filterType}:`, {
+                'filterType': filterType,
+                'value (passed in)': value,
+                'value type': typeof value,
+                'value length': typeof value === 'string' ? value.length : 'N/A',
+                'value JSON': JSON.stringify(value),
+                'currentValues from store': currentValues,
+                'currentValues details': currentValues.map(v => ({
+                    value: v,
+                    type: typeof v,
+                    length: typeof v === 'string' ? v.length : 'N/A',
+                    json: JSON.stringify(v),
+                    normalized: normalizeFilterValue(v),
+                })),
+                'value normalized': normalizeFilterValue(value),
+                'isSelected': isSelected,
+                'comparison details': currentValues.map(v => ({
+                    v1: v,
+                    v2: value,
+                    normalized_v1: normalizeFilterValue(v),
+                    normalized_v2: normalizeFilterValue(value),
+                    compareResult: compareFilterValues(v, value),
+                })),
+            });
+        }
+        
+        // Always show button if value exists in the feature panel (it's a valid filter value)
+        // The store state determines if it's "Add" or "Remove"
+        const buttonTitle = isSelected ? "Remove from faceted filter" : "Add to faceted filter";
+        const buttonIconClass = isSelected ? "icon-minus-circle" : "icon-plus-circle";
+        const buttonClassName = isSelected ? `${styles.filterButton} ${styles.filterButtonSelected}` : styles.filterButton;
+
+        return (
+            <button
+                className={buttonClassName}
+                onClick={() => handleToggleFilter(filterType, value)}
+                title={buttonTitle}
+                aria-label={buttonTitle}
+            >
+                <i className={`icon icon-common ${buttonIconClass} ${styles.filterIcon}`} aria-hidden="true"></i>
+            </button>
+        );
+    };
+
+    // Helper to render array of IDs with links and filter buttons (one per line)
+    const renderExternalLinks = (
+        database: 'PFAM' | 'INTERPRO' | 'KEGG' | 'COG' | 'COG_CATEGORY' | 'GO' | 'UNIPROT',
+        ids: string[],
+        filterType?: keyof typeof facetedFilters
+    ) => {
         if (!ids || ids.length === 0) return null;
         
+        // Normalize and deduplicate IDs to prevent duplicate buttons
+        const normalizedIds = normalizeFilterValues(ids) as string[];
+        
+        // Debug logging for pfam, interpro, kegg
+        if (filterType === 'pfam' || filterType === 'interpro' || filterType === 'kegg') {
+            console.log(`[FeaturePanel] renderExternalLinks - ${filterType}:`, {
+                'database': database,
+                'filterType': filterType,
+                'original ids': ids,
+                'original ids details': ids.map(id => ({
+                    value: id,
+                    length: id.length,
+                    json: JSON.stringify(id),
+                    normalized: normalizeFilterValue(id),
+                })),
+                'normalizedIds': normalizedIds,
+                'normalizedIds details': normalizedIds.map(id => ({
+                    value: id,
+                    length: id.length,
+                    json: JSON.stringify(id),
+                })),
+            });
+        }
+        
         return (
-            <div className={styles.linkList}>
-                {ids.map((id, idx) => (
-                    <span key={idx}>
-                        {renderExternalLink(database, id)}
-                        {idx < ids.length - 1 && ', '}
-                    </span>
-                ))}
+            <div className={styles.linkListVertical}>
+                {normalizedIds.map((id, idx) => {
+                    // For KEGG, remove 'ko:' prefix if present (normalize already handles trimming)
+                    const displayId = database === 'KEGG' && id.startsWith('ko:') ? id.replace('ko:', '') : id;
+                    const filterValue = normalizeFilterValue(database === 'KEGG' && id.startsWith('ko:') ? id.replace('ko:', '') : id);
+                    
+                    // Debug logging for each individual value
+                    if (filterType === 'pfam' || filterType === 'interpro' || filterType === 'kegg') {
+                        console.log(`[FeaturePanel] renderExternalLinks - processing ${filterType} item ${idx}:`, {
+                            'id (from normalizedIds)': id,
+                            'displayId': displayId,
+                            'filterValue (passed to renderFilterButton)': filterValue,
+                            'filterValue type': typeof filterValue,
+                            'filterValue length': typeof filterValue === 'string' ? filterValue.length : 'N/A',
+                            'filterValue JSON': JSON.stringify(filterValue),
+                        });
+                    }
+                    
+                    return (
+                        <div key={idx} className={styles.filterValueRow}>
+                            {renderExternalLink(database, id, displayId)}
+                            {filterType && renderFilterButton(filterType, filterValue)}
+                        </div>
+                    );
+                })}
             </div>
         );
     };
@@ -479,39 +605,51 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                         {featureData.essentiality && (
                             <div className={styles.field}>
                                 <label>Essentiality Status:</label>
-                                <span className={styles.essentiality}>
-                                    {getIconForEssentiality(featureData.essentiality)} {featureData.essentiality}
-                                </span>
+                                <div className={styles.filterValueRow}>
+                                    <span className={styles.essentiality}>
+                                        {getIconForEssentiality(featureData.essentiality)} {featureData.essentiality}
+                                    </span>
+                                    {renderFilterButton('essentiality', featureData.essentiality)}
+                                </div>
+                            </div>
+                        )}
+                        {featureData.hasAmr && (
+                            <div className={styles.field}>
+                                <label>AMR:</label>
+                                <div className={styles.filterValueRow}>
+                                    <span>Has AMR information</span>
+                                    {renderFilterButton('has_amr_info', true)}
+                                </div>
                             </div>
                         )}
                         {featureData.pfam.length > 0 && (
                             <div className={styles.field}>
                                 <label>PFAM:</label>
-                                {renderExternalLinks('PFAM', featureData.pfam)}
+                                {renderExternalLinks('PFAM', featureData.pfam, 'pfam')}
                             </div>
                         )}
                         {featureData.interpro.length > 0 && (
                             <div className={styles.field}>
                                 <label>InterPro:</label>
-                                {renderExternalLinks('INTERPRO', featureData.interpro)}
+                                {renderExternalLinks('INTERPRO', featureData.interpro, 'interpro')}
                             </div>
                         )}
                         {featureData.kegg.length > 0 && (
                             <div className={styles.field}>
                                 <label>KEGG:</label>
-                                {renderExternalLinks('KEGG', featureData.kegg.map((k: string) => k.replace('ko:', '')))}
+                                {renderExternalLinks('KEGG', featureData.kegg, 'kegg')}
                             </div>
                         )}
                         {featureData.cog.length > 0 && (
                             <div className={styles.field}>
                                 <label>COG ID:</label>
-                                {renderExternalLinks('COG', featureData.cog)}
+                                {renderExternalLinks('COG', featureData.cog, 'cog_id')}
                             </div>
                         )}
                         {featureData.cogCategories.length > 0 && (
                             <div className={styles.field}>
                                 <label>COG Categories:</label>
-                                {renderExternalLinks('COG_CATEGORY', featureData.cogCategories)}
+                                {renderExternalLinks('COG_CATEGORY', featureData.cogCategories, 'cog_funcats')}
                             </div>
                         )}
                         {featureData.eggnog && (

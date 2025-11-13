@@ -10,7 +10,7 @@ export const getColorForEssentiality = (essentiality: string): string => {
     case 'essential':
       return '#FF0000'; // Red (critical importance)
     case 'essential_liquid':
-      return '#1E90FF'; // Dodger Blue (fluid and vibrant for liquid)
+      return 'rgb(8,188,152)'; // Deep sea Blue (fluid and vibrant for liquid)
     case 'essential_solid':
       return '#8B4513'; // Saddle Brown (earthy, solid representation)
     case 'not_essential':

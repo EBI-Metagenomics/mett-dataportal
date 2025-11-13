@@ -3,6 +3,7 @@ import {useLocation} from 'react-router-dom';
 import {useFilterStore, FacetedFilters, FacetOperators} from '../stores/filterStore';
 import {GeneService} from '../services/gene';
 import {GeneFacetResponse} from '../interfaces/Gene';
+import {normalizeFilterValue, compareFilterValues} from '../utils/common/filterUtils';
 
 interface UseFacetedFiltersProps {
     selectedSpecies: string[];
@@ -47,12 +48,22 @@ export const useFacetedFilters = ({
     // Memoize the API filters to prevent unnecessary recalculations
     const getApiFilters = useCallback(() => {
         const filters = filterStore.facetedFilters;
+        // For KEGG: add 'ko:' prefix back for API queries (Elasticsearch stores with prefix)
+        const keggValues = filters.kegg?.map(v => {
+            const value = String(v);
+            // If value doesn't already start with 'ko:', add it
+            if (!value.toLowerCase().startsWith('ko:')) {
+                return `ko:${value}`;
+            }
+            return value;
+        });
+        
         return {
             essentiality: filters.essentiality?.join(','),
             has_amr_info: filters.has_amr_info?.map(v => String(v)).join(','),
             pfam: filters.pfam?.join(','),
             interpro: filters.interpro?.join(','),
-            kegg: filters.kegg?.join(','),
+            kegg: keggValues?.join(','),
             cog_funcats: filters.cog_funcats?.join(','),
             cog_id: filters.cog_id?.join(','),
             go_term: filters.go_term?.join(','),
@@ -74,10 +85,14 @@ export const useFacetedFilters = ({
 
                 const selectedValues = filterStore.facetedFilters[facetGroup as keyof FacetedFilters] || [];
                 
+                // Normalize values for comparison using utility function
+                const normalizedSelectedValues = selectedValues.map(v => normalizeFilterValue(v));
+                
                 // Update the selected state for each item
                 items.forEach(item => {
                     const wasSelected = item.selected;
-                    const isSelected = selectedValues.some(v => String(v) === String(item.value));
+                    const normalizedItemValue = normalizeFilterValue(item.value);
+                    const isSelected = normalizedSelectedValues.some(v => compareFilterValues(v, normalizedItemValue));
                     
                     if (wasSelected !== isSelected) {
                         item.selected = isSelected;
@@ -173,20 +188,102 @@ export const useFacetedFilters = ({
 
                 const selectedValues = filterStore.facetedFilters[facetGroup as keyof FacetedFilters] || [];
 
-                const responseMap = new Map(items.map(item => [item.value, {
-                    ...item,
-                    selected: selectedValues.some(v => String(v) === String(item.value)),
-                }]));
+                // Normalize values for comparison using utility function
+                // For KEGG: also normalize 'ko:' prefix (remove if present) for consistent matching
+                let normalizedSelectedValues = selectedValues.map(v => normalizeFilterValue(v));
+                if (facetGroup === 'kegg') {
+                    normalizedSelectedValues = normalizedSelectedValues.map(v => {
+                        if (typeof v === 'string' && v.toLowerCase().startsWith('ko:')) {
+                            return v.substring(3); // Remove 'ko:' prefix (case-insensitive)
+                        }
+                        return v;
+                    });
+                }
 
-                // Add selected values that might not be in the response
+                // Build a Map, handling duplicates by normalizing values (case-insensitive key)
+                // Use lowercase key for case-insensitive matching, but preserve original case in value
+                // For KEGG: also normalize 'ko:' prefix (remove if present) for consistent matching
+                // If multiple items normalize to the same value (case-insensitive), merge intelligently:
+                // - Keep the one with highest count
+                // - Preserve selected status (if either is selected, the merged item should be selected)
+                const responseMap = new Map<string | boolean, any>();
+                
+                // Helper to normalize KEGG values by removing 'ko:' prefix
+                const normalizeKeggValue = (value: string): string => {
+                    if (facetGroup === 'kegg' && typeof value === 'string' && value.toLowerCase().startsWith('ko:')) {
+                        return value.substring(3); // Remove 'ko:' prefix (case-insensitive)
+                    }
+                    return value;
+                };
+                
+                items.forEach(item => {
+                    let normalizedItemValue = normalizeFilterValue(item.value);
+                    // For KEGG, remove 'ko:' prefix if present (matching FeaturePanel normalization)
+                    if (facetGroup === 'kegg' && typeof normalizedItemValue === 'string') {
+                        normalizedItemValue = normalizeKeggValue(normalizedItemValue);
+                    }
+                    
+                    // Use lowercase key for case-insensitive Map lookup
+                    const mapKey = typeof normalizedItemValue === 'string' 
+                        ? normalizedItemValue.toLowerCase() 
+                        : normalizedItemValue;
+                    const isSelected = normalizedSelectedValues.some(v => compareFilterValues(v, normalizedItemValue));
+                    
+                    const existingItem = responseMap.get(mapKey);
+                    if (!existingItem) {
+                        // First time seeing this normalized value (case-insensitive)
+                        responseMap.set(mapKey, {
+                            ...item,
+                            value: normalizedItemValue, // Store normalized value (preserves case, without ko: for KEGG)
+                            selected: isSelected,
+                        });
+                    } else {
+                        // Duplicate normalized value (case-insensitive) - merge intelligently
+                        // Keep the one with highest count, but preserve selected status from either
+                        const mergedSelected = existingItem.selected || isSelected;
+                        const mergedCount = Math.max(existingItem.count, item.count);
+                        
+                        // Use the item with the higher count (or the one that's selected if counts are equal)
+                        const preferredItem = 
+                            item.count > existingItem.count ? item :
+                            (item.count === existingItem.count && isSelected && !existingItem.selected) ? item :
+                            existingItem;
+                        
+                        responseMap.set(mapKey, {
+                            ...preferredItem,
+                            value: normalizedItemValue, // Store normalized value (preserves case, without ko: for KEGG)
+                            count: mergedCount, // Use the max count
+                            selected: mergedSelected, // Preserve selection if either is selected
+                        });
+                    }
+                });
+
+                // Add selected values that might not be in the response (but only if they're truly missing)
+                // Use case-insensitive key to check if value exists (prevents duplicates with different case)
+                // For KEGG: also normalize 'ko:' prefix (remove if present) for consistent matching
                 selectedValues.forEach(sel => {
-                    const selStr = String(sel);
-                    if (!responseMap.has(selStr)) {
-                        responseMap.set(selStr, {
-                            value: selStr,
+                    let normalizedSel = normalizeFilterValue(sel);
+                    // For KEGG, remove 'ko:' prefix if present (matching FeaturePanel normalization)
+                    if (facetGroup === 'kegg' && typeof normalizedSel === 'string') {
+                        normalizedSel = normalizeKeggValue(normalizedSel);
+                    }
+                    
+                    // Use lowercase key for case-insensitive Map lookup
+                    const mapKey = typeof normalizedSel === 'string' 
+                        ? normalizedSel.toLowerCase() 
+                        : normalizedSel;
+                    if (!responseMap.has(mapKey)) {
+                        responseMap.set(mapKey, {
+                            value: normalizedSel, // Preserve original case from store (without ko: for KEGG)
                             count: 0,
                             selected: true,
                         });
+                    } else {
+                        // Value exists in response, just ensure it's marked as selected
+                        const existingItem = responseMap.get(mapKey);
+                        if (existingItem && !existingItem.selected) {
+                            existingItem.selected = true;
+                        }
                     }
                 });
 
@@ -216,31 +313,95 @@ export const useFacetedFilters = ({
     }, [loadFacets]);
 
     // Handle facet toggle - this should NOT trigger immediate API calls
+    // Single source of truth: filterStore.facetedFilters
+    // All comparisons use compareFilterValues for consistency
     const handleToggleFacet = useCallback((facetGroup: string, value: string | boolean) => {
-        console.log('handleToggleFacet called:', { facetGroup, value });
-        
         const currentFilters = filterStore.facetedFilters;
         const currentValues = currentFilters[facetGroup as keyof FacetedFilters] || [];
 
-        console.log('Current filter state:', { currentFilters, currentValues });
+        // Normalize the incoming value FIRST to ensure consistency
+        const normalizedValue = normalizeFilterValue(value);
+
+        // Debug logging for pfam, interpro, kegg
+        if (facetGroup === 'pfam' || facetGroup === 'interpro' || facetGroup === 'kegg') {
+            console.log(`[useFacetedFilters] handleToggleFacet - ${facetGroup}:`, {
+                'facetGroup': facetGroup,
+                'value (passed in)': value,
+                'value type': typeof value,
+                'value length': typeof value === 'string' ? value.length : 'N/A',
+                'value JSON': JSON.stringify(value),
+                'normalizedValue': normalizedValue,
+                'normalizedValue type': typeof normalizedValue,
+                'normalizedValue length': typeof normalizedValue === 'string' ? normalizedValue.length : 'N/A',
+                'normalizedValue JSON': JSON.stringify(normalizedValue),
+                'currentValues (from store)': currentValues,
+                'currentValues details': currentValues.map(v => ({
+                    value: v,
+                    type: typeof v,
+                    length: typeof v === 'string' ? v.length : 'N/A',
+                    json: JSON.stringify(v),
+                    normalized: normalizeFilterValue(v),
+                })),
+            });
+        }
 
         // Handle different filter types
         if (facetGroup === 'has_amr_info') {
             const boolValues = currentValues as boolean[];
-            const boolValue = value as boolean;
-            const newValues = boolValues.includes(boolValue)
-                ? boolValues.filter(v => v !== boolValue)
+            const boolValue = normalizedValue as boolean;
+            // Use compareFilterValues for consistent comparison
+            const isSelected = boolValues.some(v => compareFilterValues(v, boolValue));
+            const newValues = isSelected
+                ? boolValues.filter(v => !compareFilterValues(v, boolValue))
                 : [...boolValues, boolValue];
-            console.log('Updating has_amr_info filter:', { boolValues, boolValue, newValues });
+            
+            // updateFacetedFilter will normalize and deduplicate
             filterStore.updateFacetedFilter('has_amr_info', newValues);
         } else {
             const stringValues = currentValues as string[];
-            const stringValue = String(value);
-            const newValues = stringValues.includes(stringValue)
-                ? stringValues.filter(v => v !== stringValue)
-                : [...stringValues, stringValue];
-            console.log('Updating filter:', { facetGroup, stringValues, stringValue, newValues });
+            // Values in store are already normalized, so compare directly with normalized value
+            // Use compareFilterValues for consistent comparison (handles normalization internally)
+            const isSelected = stringValues.some(v => compareFilterValues(v, normalizedValue));
+            const newValues = isSelected
+                ? stringValues.filter(v => !compareFilterValues(v, normalizedValue))
+                : [...stringValues, normalizedValue]; // Add normalized value directly
+            
+            // Debug logging for pfam, interpro, kegg
+            if (facetGroup === 'pfam' || facetGroup === 'interpro' || facetGroup === 'kegg' || facetGroup === 'has_amr_info') {
+                console.log(`[useFacetedFilters] handleToggleFacet - ${facetGroup} (string):`, {
+                    'isSelected': isSelected,
+                    'action': isSelected ? 'REMOVING' : 'ADDING',
+                    'newValues (before updateFacetedFilter)': newValues,
+                    'newValues details': newValues.map(v => ({
+                        value: v,
+                        type: typeof v,
+                        length: typeof v === 'string' ? v.length : 'N/A',
+                        json: JSON.stringify(v),
+                        normalized: normalizeFilterValue(v),
+                    })),
+                });
+            }
+            
+            // updateFacetedFilter will normalize and deduplicate (but values should already be normalized)
             filterStore.updateFacetedFilter(facetGroup as keyof FacetedFilters, newValues);
+            
+            // Debug logging after update
+            if (facetGroup === 'pfam' || facetGroup === 'interpro' || facetGroup === 'kegg' || facetGroup === 'has_amr_info') {
+                setTimeout(() => {
+                    const updatedFilters = filterStore.facetedFilters;
+                    const updatedValues = updatedFilters[facetGroup as keyof FacetedFilters] || [];
+                    console.log(`[useFacetedFilters] handleToggleFacet - ${facetGroup} (after updateFacetedFilter):`, {
+                        'updatedValues (from store)': updatedValues,
+                        'updatedValues details': updatedValues.map(v => ({
+                            value: v,
+                            type: typeof v,
+                            length: typeof v === 'string' ? v.length : 'N/A',
+                            json: JSON.stringify(v),
+                            normalized: normalizeFilterValue(v),
+                        })),
+                    });
+                }, 0);
+            }
         }
 
         // The main useEffect will handle the API call for filter changes

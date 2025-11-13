@@ -1,6 +1,81 @@
 import {FacetedFilters, FacetOperators} from '../../stores/filterStore';
 
 /**
+ * Normalize a filter value for consistent comparison and storage.
+ * Rules:
+ * - Boolean values: returned as-is
+ * - String values: trimmed of whitespace (preserves original case)
+ * 
+ * Note: Case-insensitive comparison is handled in compareFilterValues() to match
+ * Elasticsearch's lowercase_normalizer for pfam, interpro, kegg, while preserving
+ * the original case in the UI.
+ * 
+ * @param value - The filter value to normalize
+ * @returns The normalized value (preserving case)
+ */
+export const normalizeFilterValue = (value: string | boolean): string | boolean => {
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    return String(value).trim(); // Trim whitespace only, preserve case
+};
+
+/**
+ * Compare two filter values for equality using normalized comparison.
+ * 
+ * Rules:
+ * - Boolean values: compared directly
+ * - String values: trimmed and compared case-insensitively
+ *   (to match Elasticsearch lowercase_normalizer for pfam, interpro, kegg)
+ * 
+ * Note: This enables case-insensitive matching while preserving original case in the UI.
+ * 
+ * @param a - First value to compare
+ * @param b - Second value to compare
+ * @returns True if values are equal after normalization (case-insensitive for strings)
+ */
+export const compareFilterValues = (a: string | boolean, b: string | boolean): boolean => {
+    // Handle boolean values
+    if (typeof a === 'boolean' && typeof b === 'boolean') {
+        return a === b;
+    }
+    if (typeof a === 'boolean' || typeof b === 'boolean') {
+        return false; // Different types
+    }
+    
+    // For strings: trim and compare case-insensitively
+    // We know they're strings at this point after the boolean checks above
+    const normalizedA = normalizeFilterValue(a);
+    const normalizedB = normalizeFilterValue(b);
+    if (typeof normalizedA === 'string' && typeof normalizedB === 'string') {
+        return normalizedA.toLowerCase() === normalizedB.toLowerCase();
+    }
+    return normalizedA === normalizedB;
+};
+
+/**
+ * Normalize an array of filter values, removing duplicates.
+ * 
+ * @param values - Array of filter values to normalize
+ * @returns Array of unique normalized values
+ */
+export const normalizeFilterValues = (values: (string | boolean)[]): (string | boolean)[] => {
+    const normalized = values.map(v => normalizeFilterValue(v));
+    // Use Map to preserve order while removing duplicates
+    const seen = new Map<string | boolean, boolean>();
+    const unique: (string | boolean)[] = [];
+    
+    for (const val of normalized) {
+        if (!seen.has(val)) {
+            seen.set(val, true);
+            unique.push(val);
+        }
+    }
+    
+    return unique;
+};
+
+/**
  * Convert FacetedFilters to the legacy Record<string, string[]> format
  * used by the API for backward compatibility
  */
@@ -20,7 +95,16 @@ export const convertFacetedFiltersToLegacy = (filters: FacetedFilters): Record<s
         result.interpro = filters.interpro;
     }
     if (filters.kegg) {
-        result.kegg = filters.kegg;
+        // For KEGG: add 'ko:' prefix back for API queries (Elasticsearch stores with prefix)
+        // Frontend stores without prefix (removed in FeaturePanel), but API needs with prefix
+        result.kegg = filters.kegg.map(v => {
+            const value = String(v);
+            // If value doesn't already start with 'ko:', add it
+            if (!value.toLowerCase().startsWith('ko:')) {
+                return `ko:${value}`;
+            }
+            return value;
+        });
     }
     if (filters.cog_funcats) {
         result.cog_funcats = filters.cog_funcats;

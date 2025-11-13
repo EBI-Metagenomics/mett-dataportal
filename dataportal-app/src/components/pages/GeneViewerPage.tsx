@@ -13,6 +13,7 @@ import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../featur
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {useFilterStore} from '../../stores/filterStore';
 import {DEFAULT_PER_PAGE_CNT} from '../../utils/common/constants';
+import {useFacetedFilters} from '../../hooks/useFacetedFilters';
 
 // Import custom feature panel
 import FeaturePanel from '../features/gene-viewer/FeaturePanel/FeaturePanel';
@@ -189,6 +190,15 @@ const GeneViewerPage: React.FC = () => {
         type_strain: geneViewerData.genomeMeta.type_strain || false
     }] : [], [geneViewerData.genomeMeta]);
 
+    // Create shared handleToggleFacet for FeaturePanel to use the same mechanism as facet checkboxes
+    const selectedSpeciesFromStore = useFilterStore(state => state.selectedSpecies);
+    const geneSearchQuery = useFilterStore(state => state.geneSearchQuery);
+    const { handleToggleFacet, facets } = useFacetedFilters({
+        selectedSpecies: selectedSpeciesFromStore,
+        selectedGenomes,
+        searchQuery: geneSearchQuery,
+    });
+
     const linkData = useMemo(() => ({
         template: '/genome/${strain_name}?locus_tag=${locus_tag}',
         alias: 'Browse'
@@ -357,6 +367,9 @@ const GeneViewerPage: React.FC = () => {
                                 viewState={viewState || undefined}
                                 setLoading={geneViewerData.setLoading}
                                 activeTab={activeTab}
+                                onSwitchToSearch={() => setActiveTab('search')}
+                                onToggleFacet={handleToggleFacet}
+                                facets={facets}
                             />
                         </div>
                     </div>
