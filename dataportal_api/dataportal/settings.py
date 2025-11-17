@@ -24,9 +24,7 @@ ES_TIMEOUT = int(os.getenv("ES_TIMEOUT", 30))
 ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 
 # Feature flags
-ENABLE_PYHMMER_SEARCH = (
-    os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
-)
+ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
@@ -119,7 +117,10 @@ MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
-MIDDLEWARE += ["dataportal.middleware.RemoveCOOPHeaderMiddleware"]
+MIDDLEWARE += [
+    "dataportal.middleware.SwaggerHeaderFooterMiddleware",
+    "dataportal.middleware.RemoveCOOPHeaderMiddleware",
+]
 
 if DEBUG:
     MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
@@ -273,19 +274,23 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/output/")
-PYHMMER_ISOLATES_BASE_PATH = os.environ.get("PYHMMER_ISOLATES_BASE_PATH", "/data/pyhmmer/output/isolates-db/")
+PYHMMER_ISOLATES_BASE_PATH = os.environ.get(
+    "PYHMMER_ISOLATES_BASE_PATH", "/data/pyhmmer/output/isolates-db/"
+)
+
 
 # Function to get isolate-specific database path
 def get_isolate_database_path(isolate_name: str) -> str:
     """Get the database path for a specific isolate."""
-    if isolate_name.startswith('BU_'):
-        species_dir = 'BU'
-    elif isolate_name.startswith('PV_'):
-        species_dir = 'PV'
+    if isolate_name.startswith("BU_"):
+        species_dir = "BU"
+    elif isolate_name.startswith("PV_"):
+        species_dir = "PV"
     else:
-        species_dir = 'BU'  # Default to BU
-    
+        species_dir = "BU"  # Default to BU
+
     return f"{PYHMMER_ISOLATES_BASE_PATH}{species_dir}/{isolate_name}_deduplicated.faa"
+
 
 HMMER_DATABASES = {
     "bu_type_strains": PYHMMER_FAA_BASE_PATH + "bu_typestrains_deduplicated.faa",

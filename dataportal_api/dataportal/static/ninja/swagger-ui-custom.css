@@ -1,0 +1,415 @@
+/* Custom Swagger UI Theme for METT Data Portal */
+/* Matches Data Portal theme: IBM Plex Sans, #3b6fb6 primary color */
+
+/* Import IBM Plex Sans font */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* Global Swagger UI overrides */
+.swagger-ui {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif !important;
+  color: #1a1c1a !important;
+}
+
+/* Top bar styling */
+.swagger-ui .topbar {
+  background-color: #3b6fb6 !important;
+  padding: 12px 24px !important;
+  border-bottom: 2px solid #193f90 !important;
+}
+
+.swagger-ui .topbar .download-url-wrapper {
+  display: none !important;
+}
+
+.swagger-ui .topbar .topbar-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.swagger-ui .topbar .topbar-wrapper .link {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  font-size: 18px !important;
+  text-decoration: none !important;
+}
+
+.swagger-ui .topbar .topbar-wrapper .link:hover {
+  color: #e3f2fd !important;
+}
+
+/* Info section */
+.swagger-ui .info {
+  margin: 24px 0 !important;
+  padding: 24px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px !important;
+}
+
+.swagger-ui .info .title {
+  color: #3b6fb6 !important;
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 28px !important;
+  margin-bottom: 8px !important;
+}
+
+.swagger-ui .info .description {
+  color: #1a1c1a !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+  margin-top: 16px !important;
+}
+
+/* Main content area */
+.swagger-ui .wrapper {
+  max-width: 95% !important;
+  margin: 0 auto !important;
+  padding: 24px !important;
+}
+
+/* Scheme container */
+.swagger-ui .scheme-container {
+  background-color: #f8f9fa !important;
+  padding: 16px !important;
+  border-radius: 4px !important;
+  margin: 16px 0 !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+/* Operation/Endpoint cards */
+.swagger-ui .opblock {
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px !important;
+  margin-bottom: 16px !important;
+  background-color: #ffffff !important;
+}
+
+.swagger-ui .opblock.opblock-post {
+  border-left: 4px solid #3b6fb6 !important;
+}
+
+.swagger-ui .opblock.opblock-get {
+  border-left: 4px solid #3b6fb6 !important;
+}
+
+.swagger-ui .opblock.opblock-put {
+  border-left: 4px solid #3b6fb6 !important;
+}
+
+.swagger-ui .opblock.opblock-delete {
+  border-left: 4px solid #dc004e !important;
+}
+
+.swagger-ui .opblock.opblock-patch {
+  border-left: 4px solid #3b6fb6 !important;
+}
+
+.swagger-ui .opblock-tag {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: #1a1c1a !important;
+  padding: 16px 0 !important;
+  margin: 24px 0 16px 0 !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+}
+
+.swagger-ui .opblock-tag small {
+  font-size: 14px !important;
+  color: #666666 !important;
+  font-weight: 400 !important;
+}
+
+/* Operation summary */
+.swagger-ui .opblock .opblock-summary {
+  padding: 16px !important;
+  cursor: pointer !important;
+  background-color: #ffffff !important;
+}
+
+.swagger-ui .opblock .opblock-summary:hover {
+  background-color: #f8f9fa !important;
+}
+
+.swagger-ui .opblock .opblock-summary-method {
+  font-family: 'IBM Plex Mono', Monaco, Consolas, monospace !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 4px 12px !important;
+  border-radius: 4px !important;
+  min-width: 80px !important;
+  text-align: center !important;
+}
+
+.swagger-ui .opblock.opblock-post .opblock-summary-method {
+  background-color: #3b6fb6 !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock.opblock-get .opblock-summary-method {
+  background-color: #3b6fb6 !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock.opblock-put .opblock-summary-method {
+  background-color: #3b6fb6 !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock.opblock-delete .opblock-summary-method {
+  background-color: #dc004e !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock.opblock-patch .opblock-summary-method {
+  background-color: #3b6fb6 !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock .opblock-summary-path {
+  font-family: 'IBM Plex Mono', Monaco, Consolas, monospace !important;
+  font-size: 16px !important;
+  color: #1a1c1a !important;
+  font-weight: 500 !important;
+  margin-left: 12px !important;
+}
+
+.swagger-ui .opblock .opblock-summary-description {
+  font-size: 14px !important;
+  color: #666666 !important;
+  margin-left: 12px !important;
+}
+
+/* Operation details */
+.swagger-ui .opblock-body {
+  padding: 24px !important;
+  background-color: #ffffff !important;
+}
+
+.swagger-ui .opblock-description-wrapper {
+  margin-bottom: 24px !important;
+}
+
+.swagger-ui .opblock-description-wrapper p {
+  color: #1a1c1a !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+
+/* Parameters section */
+.swagger-ui .parameters-container {
+  margin: 24px 0 !important;
+}
+
+.swagger-ui .parameters-col_description {
+  font-size: 14px !important;
+  color: #666666 !important;
+}
+
+.swagger-ui .parameter__name {
+  font-family: 'IBM Plex Mono', Monaco, Consolas, monospace !important;
+  font-weight: 500 !important;
+  color: #3b6fb6 !important;
+  font-size: 14px !important;
+}
+
+.swagger-ui .parameter__type {
+  font-family: 'IBM Plex Mono', Monaco, Consolas, monospace !important;
+  color: #666666 !important;
+  font-size: 12px !important;
+}
+
+/* Input fields */
+.swagger-ui input[type="text"],
+.swagger-ui input[type="email"],
+.swagger-ui input[type="password"],
+.swagger-ui input[type="number"],
+.swagger-ui textarea,
+.swagger-ui select {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif !important;
+  font-size: 14px !important;
+  padding: 8px 12px !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 4px !important;
+  color: #1a1c1a !important;
+  background-color: #ffffff !important;
+}
+
+.swagger-ui input[type="text"]:focus,
+.swagger-ui input[type="email"]:focus,
+.swagger-ui input[type="password"]:focus,
+.swagger-ui input[type="number"]:focus,
+.swagger-ui textarea:focus,
+.swagger-ui select:focus {
+  border-color: #3b6fb6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 111, 182, 0.2) !important;
+  outline: none !important;
+}
+
+/* Buttons */
+.swagger-ui .btn {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.swagger-ui .btn.execute {
+  background-color: #3b6fb6 !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .btn.execute:hover {
+  background-color: #193f90 !important;
+}
+
+.swagger-ui .btn.cancel {
+  background-color: transparent !important;
+  color: #3b6fb6 !important;
+  border: 1px solid #3b6fb6 !important;
+}
+
+.swagger-ui .btn.cancel:hover {
+  background-color: #3b6fb6 !important;
+  color: #ffffff !important;
+}
+
+/* Response section */
+.swagger-ui .responses-wrapper {
+  margin-top: 24px !important;
+}
+
+.swagger-ui .response-col_status {
+  font-family: 'IBM Plex Mono', Monaco, Consolas, monospace !important;
+  font-weight: 500 !important;
+}
+
+.swagger-ui .response-col_description {
+  font-size: 14px !important;
+  color: #666666 !important;
+}
+
+/* Code blocks */
+.swagger-ui .highlight-code {
+  font-family: 'IBM Plex Mono', Monaco, Consolas, monospace !important;
+  font-size: 13px !important;
+  background-color: #f8f9fa !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px !important;
+  padding: 16px !important;
+}
+
+.swagger-ui .microlight {
+  font-family: 'IBM Plex Mono', Monaco, Consolas, monospace !important;
+}
+
+/* Model/Schema section */
+.swagger-ui .model-box {
+  background-color: #f8f9fa !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px !important;
+  padding: 16px !important;
+  margin: 16px 0 !important;
+}
+
+.swagger-ui .model-title {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif !important;
+  font-weight: 600 !important;
+  color: #3b6fb6 !important;
+  font-size: 16px !important;
+}
+
+/* Tables */
+.swagger-ui table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+.swagger-ui table thead tr {
+  background-color: #f8f9fa !important;
+}
+
+.swagger-ui table thead tr th {
+  font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif !important;
+  font-weight: 600 !important;
+  color: #1a1c1a !important;
+  padding: 12px !important;
+  text-align: left !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+}
+
+.swagger-ui table tbody tr {
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+.swagger-ui table tbody tr:hover {
+  background-color: #f8f9fa !important;
+}
+
+.swagger-ui table tbody tr td {
+  padding: 12px !important;
+  font-size: 14px !important;
+  color: #1a1c1a !important;
+}
+
+/* Links */
+.swagger-ui a {
+  color: #3b6fb6 !important;
+  text-decoration: none !important;
+}
+
+.swagger-ui a:hover {
+  color: #193f90 !important;
+  text-decoration: underline !important;
+}
+
+/* Loading spinner */
+.swagger-ui .loading {
+  color: #3b6fb6 !important;
+}
+
+/* Error messages */
+.swagger-ui .error-wrapper {
+  background-color: #fff5f5 !important;
+  border: 1px solid #dc004e !important;
+  border-radius: 4px !important;
+  padding: 16px !important;
+  color: #dc004e !important;
+}
+
+/* Scrollbar styling */
+.swagger-ui ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.swagger-ui ::-webkit-scrollbar-track {
+  background: #f8f9fa;
+}
+
+.swagger-ui ::-webkit-scrollbar-thumb {
+  background: #3b6fb6;
+  border-radius: 4px;
+}
+
+.swagger-ui ::-webkit-scrollbar-thumb:hover {
+  background: #193f90;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .swagger-ui .wrapper {
+    padding: 16px !important;
+  }
+  
+  .swagger-ui .opblock .opblock-summary-path {
+    font-size: 14px !important;
+  }
+}
+
