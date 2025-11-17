@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from ninja import Router, Query, Path
 
@@ -9,16 +8,15 @@ from dataportal.schema.core.gene_schemas import (
     GeneFacetedSearchQuerySchema,
     GeneAdvancedSearchQuerySchema,
     GeneDownloadTSVQuerySchema,
+    GetAllGenesQuerySchema,
 )
 from dataportal.schema.response_schemas import (
     SuccessResponseSchema,
-    PaginatedResponseSchema,
+    GenePaginatedResponseSchema,
     create_success_response,
 )
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.utils.constants import (
-    DEFAULT_PAGE_SIZE,
-    DEFAULT_SORT_DIRECTION,
     GENE_FIELD_PFAM,
     GENE_FIELD_INTERPRO,
     GENE_FIELD_COG_ID,
@@ -64,14 +62,10 @@ gene_router = Router(tags=[ROUTER_GENE])
     include_in_schema=False,
 )
 @wrap_success_response
-async def gene_autocomplete_suggestions(
-    request, query: GeneAutocompleteQuerySchema = Query(...)
-):
+async def gene_autocomplete_suggestions(request, query: GeneAutocompleteQuerySchema = Query(...)):
     try:
         result = await gene_service.autocomplete_gene_suggestions(query)
-        return create_success_response(
-            data=result, message=f"Found {len(result)} gene suggestions"
-        )
+        return create_success_response(data=result, message=f"Found {len(result)} gene suggestions")
     except ServiceError as e:
         logger.error(f"Service error in autocomplete: {e}")
         raise_internal_server_error(f"Failed to fetch gene suggestions: {str(e)}")
@@ -80,7 +74,7 @@ async def gene_autocomplete_suggestions(
 # API Endpoint to search genes by query string
 @gene_router.get(
     "/search",
-    response=PaginatedResponseSchema,
+    response=GenePaginatedResponseSchema,
     summary="Search genes by query string",
 )
 @wrap_paginated_response
@@ -103,9 +97,7 @@ async def search_genes_by_string(request, query: GeneSearchQuerySchema = Query(.
 async def get_faceted_search(request, query: GeneFacetedSearchQuerySchema = Query(...)):
     try:
         result = await gene_service.get_faceted_search(query)
-        return create_success_response(
-            data=result, message="Faceted search completed successfully"
-        )
+        return create_success_response(data=result, message="Faceted search completed successfully")
     except ServiceError as e:
         logger.error(f"Service error in faceted search: {e}")
         raise_internal_server_error(f"Failed to perform faceted search: {str(e)}")
@@ -126,7 +118,9 @@ async def get_faceted_search(request, query: GeneFacetedSearchQuerySchema = Quer
 async def get_gene_by_locus_tag(
     request,
     locus_tag: str = Path(
-        ..., description="Unique locus tag identifier for the gene (e.g., 'ABC_123')."
+        ...,
+        description="Unique locus tag identifier for the gene (e.g., 'ABC_123').",
+        example="BU_ATCC8492_00001",
     ),
 ):
     try:
@@ -141,15 +135,13 @@ async def get_gene_by_locus_tag(
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise_internal_server_error(
-            f"Failed to fetch gene information for locus tag '{locus_tag}'"
-        )
+        raise_internal_server_error(f"Failed to fetch gene information for locus tag '{locus_tag}'")
 
 
 # API Endpoint to retrieve all genes
 @gene_router.get(
     "/",
-    response=PaginatedResponseSchema,
+    response=GenePaginatedResponseSchema,
     summary="Get all genes",
     description=(
         "Retrieves a paginated list of all genes across all available genomes. "
@@ -160,18 +152,11 @@ async def get_gene_by_locus_tag(
 @wrap_paginated_response
 async def get_all_genes(
     request,
-    page: int = Query(1, description="Page number to retrieve."),
-    per_page: int = Query(
-        DEFAULT_PAGE_SIZE, description="Number of genes to return per page."
-    ),
-    sort_field: Optional[str] = Query(None, description="Field to sort results by."),
-    sort_order: Optional[str] = Query(
-        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
-    ),
+    query: GetAllGenesQuerySchema = Query(...),
 ):
     try:
         result = await gene_service.get_all_genes(
-            page, per_page, sort_field, sort_order
+            query.page, query.per_page, query.sort_field, query.sort_order
         )
         return result
     except ServiceError as e:
@@ -182,7 +167,7 @@ async def get_all_genes(
 # API Endpoint to search genes across multiple genome IDs using a gene string
 @gene_router.get(
     "/search/advanced",
-    response=PaginatedResponseSchema,
+    response=GenePaginatedResponseSchema,
     summary="Advanced gene search across genomes and species",
 )
 @wrap_paginated_response
@@ -216,6 +201,7 @@ async def get_gene_protein_seq(
     locus_tag: str = Path(
         ...,
         description="Unique locus tag identifier for the gene (e.g., 'BU_ATCC8492_00001').",
+        example="BU_ATCC8492_00001",
     ),
 ):
     try:
@@ -231,9 +217,7 @@ async def get_gene_protein_seq(
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise_internal_server_error(
-            f"Failed to fetch protein sequence for locus tag '{locus_tag}'"
-        )
+        raise_internal_server_error(f"Failed to fetch protein sequence for locus tag '{locus_tag}'")
 
 
 @gene_router.get(
@@ -292,35 +276,15 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
 
                         # Handle special cases
                         if col == GENE_FIELD_ALIAS and value:
-                            value = (
-                                "; ".join(value)
-                                if isinstance(value, list)
-                                else str(value)
-                            )
+                            value = "; ".join(value) if isinstance(value, list) else str(value)
                         elif col == GENE_FIELD_PFAM and value:
-                            value = (
-                                "; ".join(value)
-                                if isinstance(value, list)
-                                else str(value)
-                            )
+                            value = "; ".join(value) if isinstance(value, list) else str(value)
                         elif col == GENE_FIELD_INTERPRO and value:
-                            value = (
-                                "; ".join(value)
-                                if isinstance(value, list)
-                                else str(value)
-                            )
+                            value = "; ".join(value) if isinstance(value, list) else str(value)
                         elif col == GENE_FIELD_KEGG and value:
-                            value = (
-                                "; ".join(value)
-                                if isinstance(value, list)
-                                else str(value)
-                            )
+                            value = "; ".join(value) if isinstance(value, list) else str(value)
                         elif col == GENE_FIELD_COG_ID and value:
-                            value = (
-                                "; ".join(value)
-                                if isinstance(value, list)
-                                else str(value)
-                            )
+                            value = "; ".join(value) if isinstance(value, list) else str(value)
                         elif col == GENE_FIELD_AMR and value:
                             # Format AMR data
                             amr_parts = []
@@ -339,20 +303,14 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
                                     GENE_FIELD_AMR_DRUG_CLASS
                                 ):
                                     drug_class = amr_item[GENE_FIELD_AMR_DRUG_CLASS]
-                                    drug_subclass = amr_item.get(
-                                        GENE_FIELD_AMR_DRUG_SUBCLASS, ""
-                                    )
+                                    drug_subclass = amr_item.get(GENE_FIELD_AMR_DRUG_SUBCLASS, "")
                                     amr_parts.append(f"{drug_class}({drug_subclass})")
                             value = "; ".join(amr_parts) if amr_parts else ""
                         else:
                             value = str(value) if value is not None else ""
 
                         # Escape tabs and newlines in the value
-                        value = (
-                            value.replace("\t", " ")
-                            .replace("\n", " ")
-                            .replace("\r", " ")
-                        )
+                        value = value.replace("\t", " ").replace("\n", " ").replace("\r", " ")
                         row_data.append(value)
 
                     yield "\t".join(row_data) + "\n"
@@ -372,9 +330,7 @@ async def download_genes_tsv(request, query: GeneDownloadTSVQuerySchema = Query(
                 loop.close()
 
         # Return streaming response
-        response = StreamingHttpResponse(
-            generate_tsv(), content_type="text/tab-separated-values"
-        )
+        response = StreamingHttpResponse(generate_tsv(), content_type="text/tab-separated-values")
         response["Content-Disposition"] = 'attachment; filename="genes_export.tsv"'
         return response
 

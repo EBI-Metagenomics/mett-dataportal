@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
     """
     Comprehensive service for retrieving essentiality data.
-    
+
     Supports both:
     1. Gene-centric API methods (get_by_id, search_with_filters)
     2. Genome browser methods (get_essentiality_data_by_strain_and_ref) with caching
@@ -89,18 +89,23 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
             Search(index=self.index_name)
             .filter("term", feature_type="gene")
             .filter("term", has_essentiality=True)
-            .query("bool", should=[
-                {"term": {"locus_tag.keyword": identifier}},
-                {"term": {"uniprot_id": identifier}},
-            ])
+            .query(
+                "bool",
+                should=[
+                    {"term": {"locus_tag.keyword": identifier}},
+                    {"term": {"uniprot_id": identifier}},
+                ],
+            )
             .extra(size=1)
         )
-        
+
         response = s.execute()
-        
+
         if not response.hits:
-            raise GeneNotFoundError(f"Gene with identifier '{identifier}' not found or has no essentiality data")
-        
+            raise GeneNotFoundError(
+                f"Gene with identifier '{identifier}' not found or has no essentiality data"
+            )
+
         hit = response.hits[0]
         return self._convert_hit_to_essentiality_schema(hit)
 
@@ -117,56 +122,71 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
         """Fetch essentiality data for multiple identifiers."""
         locus_tags = locus_tags or []
         uniprot_ids = uniprot_ids or []
-        
-        s = (
-            Search(index=self.index_name)
-            .filter("term", has_essentiality=True)  # Fast boolean filter
-        )
-        
+
+        s = Search(index=self.index_name).filter(
+            "term", has_essentiality=True
+        )  # Fast boolean filter
+
         should_conditions = []
         if locus_tags:
             should_conditions.append({"terms": {"locus_tag.keyword": locus_tags}})
         if uniprot_ids:
             should_conditions.append({"terms": {"uniprot_id": uniprot_ids}})
-        
+
         if should_conditions:
             s = s.query("bool", should=should_conditions, minimum_should_match=1)
-        
+
         # Apply nested filters for essentiality_data
-        if any([essentiality_call, experimental_condition, min_tas_in_locus is not None, min_tas_hit is not None, element]):
+        if any(
+            [
+                essentiality_call,
+                experimental_condition,
+                min_tas_in_locus is not None,
+                min_tas_hit is not None,
+                element,
+            ]
+        ):
             nested_conditions = []
-            
+
             if essentiality_call:
-                nested_conditions.append({"term": {"essentiality_data.essentiality_call": essentiality_call}})
+                nested_conditions.append(
+                    {"term": {"essentiality_data.essentiality_call": essentiality_call}}
+                )
             if experimental_condition:
-                nested_conditions.append({"term": {"essentiality_data.experimental_condition": experimental_condition}})
+                nested_conditions.append(
+                    {"term": {"essentiality_data.experimental_condition": experimental_condition}}
+                )
             if min_tas_in_locus is not None:
                 # Map API param (lowercase) to ES field (camelCase)
-                nested_conditions.append({"range": {"essentiality_data.TAs_in_locus": {"gte": min_tas_in_locus}}})
+                nested_conditions.append(
+                    {"range": {"essentiality_data.TAs_in_locus": {"gte": min_tas_in_locus}}}
+                )
             if min_tas_hit is not None:
                 # Map API param (lowercase) to ES field (camelCase)
-                nested_conditions.append({"range": {"essentiality_data.TAs_hit": {"gte": min_tas_hit}}})
+                nested_conditions.append(
+                    {"range": {"essentiality_data.TAs_hit": {"gte": min_tas_hit}}}
+                )
             if element:
                 nested_conditions.append({"term": {"essentiality_data.element": element}})
-            
+
             if nested_conditions:
-                s = s.filter("nested", path="essentiality_data", query={
-                    "bool": {"must": nested_conditions}
-                })
-        
+                s = s.filter(
+                    "nested", path="essentiality_data", query={"bool": {"must": nested_conditions}}
+                )
+
         total_identifiers = len(locus_tags) + len(uniprot_ids)
         if total_identifiers > 0:
             s = s.extra(size=min(total_identifiers, 1000))
         else:
             s = s.extra(size=100000)
-        
+
         response = s.execute()
-        
+
         results = []
         for hit in response.hits:
             try:
                 schema = self._convert_hit_to_essentiality_schema(hit)
-                
+
                 # Post-filter the essentiality_data array to only include entries matching the search criteria
                 if schema.essentiality_data and len(schema.essentiality_data) > 0:
                     filtered_data = []
@@ -174,35 +194,44 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
                         # Apply the same filters used in the nested query
                         if essentiality_call and entry.essentiality_call != essentiality_call:
                             continue
-                        if experimental_condition and entry.experimental_condition != experimental_condition:
+                        if (
+                            experimental_condition
+                            and entry.experimental_condition != experimental_condition
+                        ):
                             continue
-                        if min_tas_in_locus is not None and (entry.tas_in_locus is None or entry.tas_in_locus < min_tas_in_locus):
+                        if min_tas_in_locus is not None and (
+                            entry.tas_in_locus is None or entry.tas_in_locus < min_tas_in_locus
+                        ):
                             continue
-                        if min_tas_hit is not None and (entry.tas_hit is None or entry.tas_hit < min_tas_hit):
+                        if min_tas_hit is not None and (
+                            entry.tas_hit is None or entry.tas_hit < min_tas_hit
+                        ):
                             continue
                         if element and entry.element != element:
                             continue
-                        
+
                         filtered_data.append(entry)
-                    
+
                     # Only include genes that have at least one matching essentiality entry after filtering
                     if filtered_data:
                         schema.essentiality_data = filtered_data
                         results.append(schema)
                 else:
-                    logger.warning(f"Gene {schema.locus_tag} has has_essentiality=True but empty essentiality_data array")
+                    logger.warning(
+                        f"Gene {schema.locus_tag} has has_essentiality=True but empty essentiality_data array"
+                    )
             except Exception as e:
                 logger.warning(f"Error converting hit to schema: {e}")
                 continue
-        
+
         return results
 
     def _convert_hit_to_essentiality_schema(self, hit) -> EssentialityWithGeneSchema:
         """Convert Elasticsearch hit to EssentialityWithGeneSchema."""
         hit_dict = hit.to_dict()
-        
+
         gene_data = {
-            "feature_id": hit.meta.id if hasattr(hit, 'meta') else None,
+            "feature_id": hit.meta.id if hasattr(hit, "meta") else None,
             "feature_type": hit_dict.get("feature_type"),
             "locus_tag": hit_dict.get("locus_tag"),
             "gene_name": hit_dict.get("gene_name"),
@@ -212,29 +241,28 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
             "species_scientific_name": hit_dict.get("species_scientific_name"),
             "species_acronym": hit_dict.get("species_acronym"),
         }
-        
+
         essentiality_raw = hit_dict.get("essentiality_data", [])
         essentiality_data = []
-        
+
         if essentiality_raw:
             for entry in essentiality_raw:
-                essentiality_data.append(EssentialityDataSchema(
-                    tas_in_locus=entry.get("TAs_in_locus"),  # ES uses TAs_in_locus
-                    tas_hit=entry.get("TAs_hit"),  # ES uses TAs_hit
-                    essentiality_call=entry.get("essentiality_call"),
-                    experimental_condition=entry.get("experimental_condition"),
-                    element=entry.get("element"),
-                ))
-        
-        return EssentialityWithGeneSchema(
-            **gene_data,
-            essentiality_data=essentiality_data
-        )
-    
+                essentiality_data.append(
+                    EssentialityDataSchema(
+                        tas_in_locus=entry.get("TAs_in_locus"),  # ES uses TAs_in_locus
+                        tas_hit=entry.get("TAs_hit"),  # ES uses TAs_hit
+                        essentiality_call=entry.get("essentiality_call"),
+                        experimental_condition=entry.get("experimental_condition"),
+                        element=entry.get("element"),
+                    )
+                )
+
+        return EssentialityWithGeneSchema(**gene_data, essentiality_data=essentiality_data)
+
     # ============================================================================
     # Genome Browser Methods (with caching)
     # ============================================================================
-    
+
     async def load_essentiality_data_by_strain(self) -> Dict[str, Dict[str, Dict[str, Dict]]]:
         """Load essentiality data into cache from Elasticsearch for genome browser."""
         if self.essentiality_cache:
@@ -246,39 +274,60 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
             s = (
                 self._create_search()
                 .filter("term", feature_type="gene")
-                .query("bool", should=[
-                    {"term": {"has_essentiality": True}},
-                    {"exists": {"field": GENE_FIELD_ESSENTIALITY}}
-                ])
-                .source([
-                    GENOME_FIELD_ISOLATE_NAME,
-                    FIELD_SEQ_ID,
-                    GENE_FIELD_LOCUS_TAG,
-                    GENE_FIELD_START,
-                    GENE_FIELD_END,
-                    GENE_FIELD_ESSENTIALITY,
-                    "essentiality_data",
-                    "has_essentiality",
-                ])[:10000]
+                .query(
+                    "bool",
+                    should=[
+                        {"term": {"has_essentiality": True}},
+                        {"exists": {"field": GENE_FIELD_ESSENTIALITY}},
+                        {"exists": {"field": "essentiality_data"}},
+                    ],
+                )
+                .source(
+                    [
+                        GENOME_FIELD_ISOLATE_NAME,
+                        FIELD_SEQ_ID,
+                        GENE_FIELD_LOCUS_TAG,
+                        GENE_FIELD_START,
+                        GENE_FIELD_END,
+                        GENE_FIELD_ESSENTIALITY,
+                        "essentiality_data",
+                        "has_essentiality",
+                    ]
+                )
+                .params(size=1000)
             )
 
-            response = await self._execute_search(s)
-            cache_data = {}
+            response = await self._scan_search(s)
+            cache_data: Dict[str, Dict[str, Dict[str, Dict]]] = {}
+            missing_seq_ids: List[str] = []
+            total_hits = len(response)
+            total_reported = None
+            try:
+                hits_total = getattr(response.hits, "total", None)
+                if hits_total is not None:
+                    total_reported = getattr(hits_total, "value", hits_total)
+            except AttributeError:
+                total_reported = None
 
             for hit in response:
-                isolate_name = hit.isolate_name
-                seq_id = hit.seq_id
-                locus_tag = hit.locus_tag
-                start = hit.start
-                end = hit.end
-                has_essentiality = getattr(hit, "has_essentiality", False)
+                isolate_name = getattr(hit, "isolate_name", None)
+                seq_id = getattr(hit, "seq_id", None)
+                locus_tag = getattr(hit, "locus_tag", None)
+                start = getattr(hit, "start", None)
+                end = getattr(hit, "end", None)
                 essentiality_data = getattr(hit, "essentiality_data", [])
-                
+
+                if not isolate_name or not seq_id:
+                    missing_seq_ids.append(locus_tag or "unknown_locus")
+                    continue
+
                 # Get essentiality from essentiality_data or fallback to legacy field
                 essentiality_call = None
                 if essentiality_data and len(essentiality_data) > 0:
                     first_essentiality = essentiality_data[0]
                     essentiality_call = getattr(first_essentiality, "essentiality_call", None)
+                if not essentiality_call:
+                    essentiality_call = getattr(hit, GENE_FIELD_ESSENTIALITY, None)
 
                 if isolate_name not in cache_data:
                     cache_data[isolate_name] = {}
@@ -294,7 +343,50 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
                 }
 
             self.essentiality_cache.update(cache_data)
-            self.logger.info(f"Loaded {len(response)} essentiality records into cache.")
+
+            contig_total = sum(len(contigs) for contigs in cache_data.values())
+            gene_total = sum(
+                len(genes) for contigs in cache_data.values() for genes in contigs.values()
+            )
+
+            self.logger.info(
+                "Loaded %s essentiality records into cache "
+                "(isolates=%s, contigs=%s, genes=%s, reported_hits=%s).",
+                total_hits,
+                len(cache_data),
+                contig_total,
+                gene_total,
+                total_reported,
+            )
+
+            if missing_seq_ids:
+                self.logger.warning(
+                    "Skipped %s genes without isolate/seq_id while caching essentiality data. "
+                    "Sample locus_tags: %s",
+                    len(missing_seq_ids),
+                    missing_seq_ids[:5],
+                )
+
+            if total_reported is not None and total_reported > total_hits:
+                self.logger.warning(
+                    "Essentiality cache only loaded %s/%s hits. "
+                    "Consider increasing the query size or using scroll for full coverage.",
+                    total_hits,
+                    total_reported,
+                )
+
+            # Emit a per-isolate summary at debug level for deeper inspection
+            for isolate, contigs in cache_data.items():
+                contig_count = len(contigs)
+                gene_count = sum(len(genes) for genes in contigs.values())
+                sample_contigs = list(contigs.keys())[:5]
+                self.logger.info(
+                    "Essentiality cache summary for isolate %s -> contigs=%s genes=%s sample_contigs=%s",
+                    isolate,
+                    contig_count,
+                    gene_count,
+                    sample_contigs,
+                )
 
             return cache_data
 
@@ -306,7 +398,7 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
     ) -> Dict[str, Dict]:
         """
         Retrieve essentiality data for a given isolate and reference name.
-        
+
         Used by genome browser to display essentiality tracks on contigs.
         Returns data in format optimized for visualization.
         """
@@ -316,12 +408,42 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
         self.logger.info(
             f"Fetching essentiality for isolate: {isolate_name}, reference: {ref_name}"
         )
-        isolate_data = self.essentiality_cache.get(isolate_name, {})
-        contig_data = isolate_data.get(ref_name, {})
+        isolate_data = self.essentiality_cache.get(isolate_name)
+        if not isolate_data:
+            available_isolates = list(self.essentiality_cache.keys())[:5]
+            self.logger.warning(
+                "No essentiality cache entry for isolate '%s'. Available isolates sample=%s",
+                isolate_name,
+                available_isolates,
+            )
+            return {}
+
+        contig_data = isolate_data.get(ref_name)
+
+        if not contig_data:
+            # Attempt a case-insensitive match for contig names
+            normalized_ref = ref_name.lower()
+            # matched_key = None
+            for contig_key, contig_values in isolate_data.items():
+                if contig_key.lower() == normalized_ref:
+                    contig_data = contig_values
+                    # matched_key = contig_key
+                    self.logger.debug(
+                        "Matched contig '%s' case-insensitively to cache entry '%s'",
+                        ref_name,
+                        contig_key,
+                    )
+                    break
+
+        available_contigs_sample = list(isolate_data.keys())[:10]
 
         if not contig_data:
             self.logger.warning(
-                f"No essentiality data found for isolate '{isolate_name}' and reference '{ref_name}'"
+                "No essentiality data found for isolate '%s' and reference '%s'. "
+                "Available contigs sample=%s",
+                isolate_name,
+                ref_name,
+                available_contigs_sample,
             )
             return {}
 
@@ -335,4 +457,3 @@ class EssentialityService(BaseService[EssentialityWithGeneSchema, str]):
             }
 
         return response
-

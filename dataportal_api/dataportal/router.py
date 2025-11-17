@@ -68,7 +68,6 @@ api = NinjaAPI(
     title="ME TT DataPortal Data Portal API",
     description="ME TT DataPortal Data Portal APIs to fetch Gut Microbes Genomes / Genes information.",
     urls_namespace="api",
-    csrf=False,
     docs_url="/docs",
 )
 
@@ -98,9 +97,7 @@ def custom_error_handler(request, exc):
 
     # Handle HttpError (already formatted)
     if isinstance(exc, HttpError):
-        logger.error(
-            f"HttpError received: type={type(exc.message)}, message={exc.message}"
-        )
+        logger.error(f"HttpError received: type={type(exc.message)}, message={exc.message}")
         # If the error is a dict, return as is
         if isinstance(exc.message, dict):
             return JsonResponse(exc.message, status=exc.status_code)
@@ -111,9 +108,7 @@ def custom_error_handler(request, exc):
             return JsonResponse(data, status=exc.status_code)
         except Exception as e:
             # Log the parsing error for debugging
-            logger.error(
-                f"Failed to parse HttpError message as JSON: {exc.message}, error: {e}"
-            )
+            logger.error(f"Failed to parse HttpError message as JSON: {exc.message}, error: {e}")
             return JsonResponse({"detail": exc.message}, status=exc.status_code)
 
     # Handle custom exceptions

@@ -28,7 +28,52 @@ GENOME_SEARCH_QUERY_EXAMPLE = {
 }
 
 
+GENOME_AUTOCOMPLETE_QUERY_EXAMPLE = {
+    "query": "ATCC",
+    "limit": 10,
+    "species_acronym": "BU",
+}
+
+GENOMES_BY_ISOLATE_NAMES_QUERY_EXAMPLE = {
+    "isolates": "BU_ATCC8492,PV_ATCC8482",
+}
+
+GET_ALL_GENOMES_QUERY_EXAMPLE = {
+    "page": 1,
+    "per_page": 25,
+    "sortField": "isolate_name",
+    "sortOrder": "asc",
+}
+
+GENES_BY_GENOME_QUERY_EXAMPLE = {
+    "filter": "pfam:PF00669",
+    "filter_operators": "pfam:OR",
+    "page": 1,
+    "per_page": 25,
+    "sort_field": "locus_tag",
+    "sort_order": "asc",
+}
+
+GENOME_DOWNLOAD_TSV_QUERY_EXAMPLE = {
+    "query": "reference",
+    "sortField": "isolate_name",
+    "sortOrder": "asc",
+    "isolates": ["BU_ATCC8492"],
+    "species_acronym": "BU",
+}
+
+STRAIN_SUGGESTION_EXAMPLE = {
+    "isolate_name": "BU_ATCC8492",
+    "assembly_name": "BU_ATCC8492VPI0062_NT5002",
+}
+
 __all__ = [
     "GENOME_RESPONSE_EXAMPLE",
     "GENOME_SEARCH_QUERY_EXAMPLE",
+    "GENOME_AUTOCOMPLETE_QUERY_EXAMPLE",
+    "GENOMES_BY_ISOLATE_NAMES_QUERY_EXAMPLE",
+    "GET_ALL_GENOMES_QUERY_EXAMPLE",
+    "GENES_BY_GENOME_QUERY_EXAMPLE",
+    "GENOME_DOWNLOAD_TSV_QUERY_EXAMPLE",
+    "STRAIN_SUGGESTION_EXAMPLE",
 ]

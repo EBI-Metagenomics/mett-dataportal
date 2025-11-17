@@ -9,5 +9,6 @@ update reusable samples.
 __all__ = [
     "species_examples",
     "genome_examples",
+    "gene_examples",
     "response_examples",
 ]

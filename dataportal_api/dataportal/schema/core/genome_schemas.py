@@ -5,6 +5,12 @@ from pydantic import BaseModel, Field, ConfigDict
 from dataportal.examples.genome_examples import (
     GENOME_SEARCH_QUERY_EXAMPLE,
     GENOME_RESPONSE_EXAMPLE,
+    GENOME_AUTOCOMPLETE_QUERY_EXAMPLE,
+    GENOMES_BY_ISOLATE_NAMES_QUERY_EXAMPLE,
+    GET_ALL_GENOMES_QUERY_EXAMPLE,
+    GENES_BY_GENOME_QUERY_EXAMPLE,
+    GENOME_DOWNLOAD_TSV_QUERY_EXAMPLE,
+    STRAIN_SUGGESTION_EXAMPLE,
 )
 
 from dataportal.schema.base_schemas import BasePaginationSchema
@@ -22,6 +28,10 @@ class GenomeAutocompleteQuerySchema(BaseModel):
     limit: int = Field(DEFAULT_PAGE_SIZE, description="Maximum number of suggestions to return.")
     species_acronym: Optional[str] = Field(
         None, description="Optional species acronym (BU or PV) to filter suggestions."
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": GENOME_AUTOCOMPLETE_QUERY_EXAMPLE},
     )
 
 
@@ -57,6 +67,10 @@ class GenomesByIsolateNamesQuerySchema(BaseModel):
         description="Comma-separated isolate names (e.g., 'BU_61,BU_909,BU_ATCC8492').",
     )
 
+    model_config = ConfigDict(
+        json_schema_extra={"example": GENOMES_BY_ISOLATE_NAMES_QUERY_EXAMPLE},
+    )
+
 
 class GetAllGenomesQuerySchema(BaseModel):
     """Schema for retrieving all genomes with optional pagination and sorting."""
@@ -66,6 +80,10 @@ class GetAllGenomesQuerySchema(BaseModel):
     sortField: Optional[str] = Field(GENOME_FIELD_ISOLATE_NAME, description="Field to sort by.")
     sortOrder: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": GET_ALL_GENOMES_QUERY_EXAMPLE},
     )
 
 
@@ -87,6 +105,10 @@ class GenesByGenomeQuerySchema(BaseModel):
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
 
+    model_config = ConfigDict(
+        json_schema_extra={"example": GENES_BY_GENOME_QUERY_EXAMPLE},
+    )
+
 
 class GenomeDownloadTSVQuerySchema(BaseModel):
     """Schema for downloading genomes as TSV with filtering and sorting."""
@@ -101,12 +123,19 @@ class GenomeDownloadTSVQuerySchema(BaseModel):
     isolates: Optional[List[str]] = Field(None, description="List of isolate names to filter.")
     species_acronym: Optional[str] = Field(None, description="Optional species acronym filter.")
 
+    model_config = ConfigDict(
+        json_schema_extra={"example": GENOME_DOWNLOAD_TSV_QUERY_EXAMPLE},
+    )
+
 
 class StrainSuggestionSchema(BaseModel):
     isolate_name: str
     assembly_name: str
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": STRAIN_SUGGESTION_EXAMPLE},
+    )
 
 
 class StrainMinSchema(BaseModel):

@@ -3,12 +3,11 @@ from typing import List
 
 from ninja import Router, Query, Path
 from ninja.errors import HttpError
-
 from dataportal.schema.core.species_schemas import (
     SpeciesSchema,
     SpeciesGenomeSearchQuerySchema,
 )
-from dataportal.schema.response_schemas import PaginatedResponseSchema
+from dataportal.schema.response_schemas import GenomePaginatedResponseSchema
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.utils.errors import raise_http_error, raise_internal_server_error
 from dataportal.utils.exceptions import (
@@ -45,7 +44,7 @@ async def get_all_species(request):
 # API Endpoint to retrieve genomes filtered by species_acronym
 @species_router.get(
     "/{species_acronym}/genomes",
-    response=PaginatedResponseSchema,
+    response=GenomePaginatedResponseSchema,
     summary="Get genomes by species",
     description="Retrieves genomes under a given species with pagination and sorting.",
 )
@@ -72,7 +71,7 @@ async def get_genomes_by_species(
 # API Endpoint to search genomes by species_acronym and query string
 @species_router.get(
     "/{species_acronym}/genomes/search",
-    response=PaginatedResponseSchema,
+    response=GenomePaginatedResponseSchema,
     summary="Search genomes by species and query string",
     description="Performs a search for genomes within a specific species with pagination and sorting.",
 )

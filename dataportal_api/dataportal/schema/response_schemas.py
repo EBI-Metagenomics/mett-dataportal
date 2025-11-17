@@ -5,7 +5,12 @@ from enum import Enum
 from dataportal.examples.response_examples import (
     PAGINATION_METADATA_EXAMPLE,
     SPECIES_PAGINATED_RESPONSE_EXAMPLE,
+    GENOME_PAGINATED_RESPONSE_EXAMPLE,
+    GENE_PAGINATED_RESPONSE_EXAMPLE,
 )
+from dataportal.schema.core.species_schemas import SpeciesSchema
+from dataportal.schema.core.genome_schemas import GenomeResponseSchema
+from dataportal.schema.core.gene_schemas import GeneResponseSchema
 
 
 class ResponseStatus(str, Enum):
@@ -112,9 +117,37 @@ class PaginatedResponseSchema(BaseResponseSchema):
     data: List[Any] = Field(..., description="List of response items")
     pagination: PaginationMetadataSchema = Field(..., description="Pagination metadata")
 
+
+class SpeciesPaginatedResponseSchema(PaginatedResponseSchema):
+    """Paginated response specialized for species lists."""
+
+    data: List[SpeciesSchema] = Field(..., description="List of species results")
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={"example": SPECIES_PAGINATED_RESPONSE_EXAMPLE},
+    )
+
+
+class GenomePaginatedResponseSchema(PaginatedResponseSchema):
+    """Paginated response specialized for genome listings."""
+
+    data: List[GenomeResponseSchema] = Field(..., description="List of genome results")
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": GENOME_PAGINATED_RESPONSE_EXAMPLE},
+    )
+
+
+class GenePaginatedResponseSchema(PaginatedResponseSchema):
+    """Paginated response specialized for gene listings."""
+
+    data: List[GeneResponseSchema] = Field(..., description="List of gene results")
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": GENE_PAGINATED_RESPONSE_EXAMPLE},
     )
 
 
@@ -193,6 +226,9 @@ __all__ = [
     "ErrorDetailSchema",
     "PaginationMetadataSchema",
     "PaginatedResponseSchema",
+    "SpeciesPaginatedResponseSchema",
+    "GenomePaginatedResponseSchema",
+    "GenePaginatedResponseSchema",
     "HealthResponseSchema",
     "create_success_response",
     "create_error_response",
