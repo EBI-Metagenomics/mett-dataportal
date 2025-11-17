@@ -1,7 +1,11 @@
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
-from pydantic import ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+
+from dataportal.examples.response_examples import (
+    PAGINATION_METADATA_EXAMPLE,
+    SPECIES_PAGINATED_RESPONSE_EXAMPLE,
+)
 
 
 class ResponseStatus(str, Enum):
@@ -47,9 +51,7 @@ class ErrorCode(str, Enum):
 class BaseResponseSchema(BaseModel):
     """Base response schema with common fields."""
 
-    status: ResponseStatus = Field(
-        ..., description="Response status (success, error, warning)"
-    )
+    status: ResponseStatus = Field(..., description="Response status (success, error, warning)")
     message: Optional[str] = Field(None, description="Human-readable message")
     timestamp: str = Field(..., description="ISO 8601 timestamp of the response")
 
@@ -59,9 +61,7 @@ class BaseResponseSchema(BaseModel):
 class SuccessResponseSchema(BaseResponseSchema):
     """Standard success response schema."""
 
-    status: ResponseStatus = Field(
-        ResponseStatus.SUCCESS, description="Response status"
-    )
+    status: ResponseStatus = Field(ResponseStatus.SUCCESS, description="Response status")
     data: Any = Field(..., description="Response data")
 
 
@@ -84,9 +84,7 @@ class ErrorResponseSchema(BaseResponseSchema):
     details: Optional[List[ErrorDetailSchema]] = Field(
         None, description="Detailed error information"
     )
-    request_id: Optional[str] = Field(
-        None, description="Unique request identifier for tracking"
-    )
+    request_id: Optional[str] = Field(None, description="Unique request identifier for tracking")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -101,17 +99,23 @@ class PaginationMetadataSchema(BaseModel):
     total_results: int = Field(..., description="Total number of results")
     per_page: int = Field(..., description="Number of items per page")
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": PAGINATION_METADATA_EXAMPLE},
+    )
 
 
 class PaginatedResponseSchema(BaseResponseSchema):
     """Standard paginated response schema."""
 
-    status: ResponseStatus = Field(
-        ResponseStatus.SUCCESS, description="Response status"
-    )
+    status: ResponseStatus = Field(ResponseStatus.SUCCESS, description="Response status")
     data: List[Any] = Field(..., description="List of response items")
     pagination: PaginationMetadataSchema = Field(..., description="Pagination metadata")
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": SPECIES_PAGINATED_RESPONSE_EXAMPLE},
+    )
 
 
 class HealthResponseSchema(BaseResponseSchema):
@@ -121,9 +125,7 @@ class HealthResponseSchema(BaseResponseSchema):
     service: str = Field(..., description="Service name")
     version: str = Field(..., description="Service version")
     uptime: Optional[float] = Field(None, description="Service uptime in seconds")
-    dependencies: Optional[Dict[str, str]] = Field(
-        None, description="Dependency status"
-    )
+    dependencies: Optional[Dict[str, str]] = Field(None, description="Dependency status")
 
 
 # Response wrapper functions for consistent formatting
@@ -131,7 +133,7 @@ def create_success_response(
     data: Any, message: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None
 ) -> SuccessResponseSchema:
     """Create a standardized success response.
-    
+
     Note: metadata parameter is kept for backward compatibility but not used in schema.
     """
     from datetime import datetime
@@ -169,7 +171,7 @@ def create_paginated_response(
     metadata: Optional[Dict[str, Any]] = None,
 ) -> PaginatedResponseSchema:
     """Create a standardized paginated response.
-    
+
     Note: metadata parameter is kept for backward compatibility but not used in schema.
     """
     from datetime import datetime
