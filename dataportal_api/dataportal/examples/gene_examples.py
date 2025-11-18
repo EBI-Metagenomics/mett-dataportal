@@ -1,7 +1,7 @@
 """Reusable OpenAPI examples for gene-focused requests/responses."""
 
 GENE_SEARCH_QUERY_EXAMPLE = {
-    "query": "flagellin",
+    "query": "dna",
     "page": 1,
     "per_page": 25,
     "sort_field": "gene_name",
@@ -11,7 +11,7 @@ GENE_SEARCH_QUERY_EXAMPLE = {
 GENE_ADVANCED_SEARCH_QUERY_EXAMPLE = {
     "isolates": "BU_ATCC8492,PV_ATCC8482",
     "species_acronym": "BU",
-    "query": "virulence",
+    "query": "dna",
     "filter": "pfam:PF00669;interpro:IPR001621",
     "filter_operators": "pfam:AND;interpro:OR",
     "page": 2,
@@ -34,7 +34,7 @@ GENE_DOWNLOAD_TSV_QUERY_EXAMPLE = {
 }
 
 GENE_AUTOCOMPLETE_QUERY_EXAMPLE = {
-    "query": "dnaK",
+    "query": "dnaA",
     "limit": 10,
     "species_acronym": "BU",
     "isolates": "BU_ATCC8492",
@@ -42,25 +42,33 @@ GENE_AUTOCOMPLETE_QUERY_EXAMPLE = {
 
 GENE_RESPONSE_EXAMPLE = {
     "locus_tag": "BU_ATCC8492_00001",
-    "gene_name": "dnaK",
-    "alias": ["HSP70"],
-    "product": "Chaperone protein DnaK",
+    "gene_name": "dnaA",
+    "alias": ["BACUNI_01739"],
+    "product": "Chromosomal replication initiator protein DnaA",
     "seq_id": "contig_1",
     "isolate_name": "BU_ATCC8492",
     "species_scientific_name": "Bacteroides uniformis",
     "species_acronym": "BU",
-    "uniprot_id": "Q5NEJ5",
-    "essentiality": "essential_liquid",
-    "cog_funcats": ["O"],
-    "pfam": ["PF00012"],
-    "interpro": ["IPR012725"],
-    "amr": [
-        {
-            "drug_class": "Glycopeptide",
-            "drug_subclass": "Vancomycin",
-        }
+    "uniprot_id": "A7V2E8",
+    "essentiality": "essential",
+    "cog_funcats": ["L"],
+    "pfam": ["PF00308", "PF08299", "PF11638"],
+    "interpro": [
+        "IPR001957",
+        "IPR010921",
+        "IPR013159",
+        "IPR013317",
+        "IPR020591",
+        "IPR024633",
+        "IPR027417",
+        "IPR038454",
     ],
-    "has_amr_info": True,
+    "amr": [],
+    "has_amr_info": False,
+    "has_proteomics": True,
+    "has_fitness": False,
+    "has_mutant_growth": False,
+    "has_reactions": False,
     "feature_type": "gene",
 }
 
