@@ -86,15 +86,19 @@ export class ApiResponseHandler {
   }
 
   /**
-   * Handle API response and return data or throw error
+   * Handle API response and return data or throw error.
+   * All API endpoints now return standardized format: { status: 'success'|'error', data: ..., ... }
    */
   static handleResponse<T>(response: ApiResponse<T>): T {
-    // Check if this is a legacy response (direct object without status/data wrapper)
-    if (this.isLegacyResponse(response)) {
-      // For legacy responses, return the response directly as the data
-      return response as T;
+    // Validate response structure
+    if (!response || typeof response !== 'object' || !('status' in response)) {
+      throw new Error(
+        'Invalid API response: missing status field. ' +
+        'All endpoints now return standardized format with status field.'
+      );
     }
     
+    // Handle error responses
     if (this.isErrorResponse(response)) {
       const errorMessage = this.getErrorMessage(response);
       const error = new Error(errorMessage);
@@ -103,6 +107,7 @@ export class ApiResponseHandler {
       throw error;
     }
     
+    // Handle success responses
     return this.extractData(response);
   }
 
@@ -122,24 +127,33 @@ export class ApiResponseHandler {
   }
 
   /**
-   * Legacy compatibility: check if response is in old format and convert
+   * @deprecated Legacy compatibility method - no longer needed.
+   * All API endpoints now return standardized format: { status: 'success'|'error', data: ..., ... }
+   * This method is kept for backward compatibility but should not be used in new code.
+   * 
+   * @throws Error if called, as legacy responses are no longer supported
    */
   static isLegacyResponse(response: any): boolean {
-    // Check if response doesn't have the new structure
-    // A response is legacy if:
-    // 1. It doesn't have a 'status' field, OR
-    // 2. It has a 'status' field but it's not the standard API response format ('success'/'error')
-    //    - Backend might return 'SUCCESS', 'PENDING', etc. which are not standard API response statuses
-    return !response || 
-           typeof response !== 'object' || 
-           !('status' in response) ||
-           (response.status !== 'success' && response.status !== 'error');
+    console.warn(
+      'isLegacyResponse() is deprecated. ' +
+      'All API endpoints now return standardized format. ' +
+      'Legacy response handling has been removed.'
+    );
+    // Always return false since all endpoints use standardized format
+    return false;
   }
 
   /**
-   * Convert legacy response to new format for backward compatibility
+   * @deprecated Legacy compatibility method - no longer needed.
+   * All API endpoints now return standardized format: { status: 'success'|'error', data: ..., ... }
+   * This method is kept for backward compatibility but should not be used in new code.
    */
   static convertLegacyResponse<T>(response: any): SuccessApiResponse<T> {
+    console.warn(
+      'convertLegacyResponse() is deprecated. ' +
+      'All API endpoints now return standardized format. ' +
+      'Legacy response conversion is no longer needed.'
+    );
     return {
       status: 'success',
       data: response,

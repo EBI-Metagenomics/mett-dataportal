@@ -1,15 +1,9 @@
 import logging
-from typing import List, Dict
 
 from ninja import Router, Query, Path
 from ninja.errors import HttpError
 
-from dataportal.schema.core.gene_schemas import (
-    EssentialityByContigSchema,
-)
 from dataportal.schema.core.genome_schemas import (
-    StrainSuggestionSchema,
-    GenomeResponseSchema,
     GenomeAutocompleteQuerySchema,
     GenomeSearchQuerySchema,
     GenomesByIsolateNamesQuerySchema,
@@ -20,6 +14,8 @@ from dataportal.schema.core.genome_schemas import (
 from dataportal.schema.response_schemas import (
     GenomePaginatedResponseSchema,
     GenePaginatedResponseSchema,
+    SuccessResponseSchema,
+    create_success_response,
 )
 from dataportal.services.core.gene_service import GeneService
 from dataportal.services.experimental.drug_service import DrugService
@@ -34,7 +30,7 @@ from dataportal.utils.errors import raise_http_error, raise_internal_server_erro
 from dataportal.utils.exceptions import (
     ServiceError,
 )
-from dataportal.utils.response_wrappers import wrap_paginated_response
+from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
 
 logger = logging.getLogger(__name__)
 
@@ -49,19 +45,21 @@ genome_router = Router(tags=[ROUTER_GENOME])
 
 @genome_router.get(
     "/autocomplete",
-    response=List[StrainSuggestionSchema],
+    response=SuccessResponseSchema,
     summary="Suggest isolates / genomes",
     description="Returns isolate suggestions based on the input query. You can optionally filter by species acronym. ",
     include_in_schema=False,
 )
+@wrap_success_response
 async def autocomplete_suggestions(request, query: GenomeAutocompleteQuerySchema = Query(...)):
-    return await genome_service.search_strains(query)
+    result = await genome_service.search_strains(query)
+    return create_success_response(data=result, message=f"Found {len(result)} suggestions")
 
 
 # API Endpoint to search genomes by query string
 @genome_router.get(
     "/type-strains",
-    response=List[GenomeResponseSchema],
+    response=SuccessResponseSchema,
     summary="Get all type strains",
     description=(
         "Returns a list of genomes that are designated as type strains. "
@@ -69,9 +67,13 @@ async def autocomplete_suggestions(request, query: GenomeAutocompleteQuerySchema
         "for comparative analysis and classification."
     ),
 )
+@wrap_success_response
 async def get_type_strains(request):
     try:
-        return await genome_service.get_type_strains()
+        result = await genome_service.get_type_strains()
+        return create_success_response(
+            data=result, message=f"Retrieved {len(result)} type strains successfully"
+        )
     except ServiceError:
         raise HttpError(500, "An error occurred while fetching type strains.")
 
@@ -98,7 +100,7 @@ async def search_genomes_by_string(request, query: GenomeSearchQuerySchema = Que
 
 @genome_router.get(
     "/by-isolate-names",
-    response=List[GenomeResponseSchema],
+    response=SuccessResponseSchema,
     summary="Get genomes by isolate names",
     description=(
         "Retrieves genome records for one or more isolate names. "
@@ -106,11 +108,15 @@ async def search_genomes_by_string(request, query: GenomeSearchQuerySchema = Que
         "Useful for batch lookups when isolate identifiers are known."
     ),
 )
+@wrap_success_response
 async def get_genomes_by_isolate_names(
     request, query: GenomesByIsolateNamesQuerySchema = Query(...)
 ):
     try:
-        return await genome_service.get_genomes_by_isolate_names(query)
+        result = await genome_service.get_genomes_by_isolate_names(query)
+        return create_success_response(
+            data=result, message=f"Retrieved {len(result)} genomes successfully"
+        )
     except ServiceError as e:
         raise_http_error(500, f"An error occurred: {str(e)}")
 
@@ -178,7 +184,7 @@ async def get_genes_by_genome(
 # API endpoint to retrieve essentiality data from cache for a specific strain ID.
 @genome_router.get(
     "/{isolate_name}/essentiality/{ref_name}",
-    response=Dict[str, EssentialityByContigSchema],
+    response=SuccessResponseSchema,
     summary="Get essentiality data by genome and contig",
     description=(
         "Retrieves cached essentiality data for a given genome isolate and reference name (e.g. contig_1). "
@@ -186,6 +192,7 @@ async def get_genes_by_genome(
         "This data is typically precomputed and used to visualize gene essentiality in genome browsers or analysis tools."
     ),
 )
+@wrap_success_response
 async def get_essentiality_data_by_contig(
     request,
     isolate_name: str = Path(
@@ -204,9 +211,14 @@ async def get_essentiality_data_by_contig(
             isolate_name, ref_name
         )
         if not essentiality_data:
-            return {}
+            return create_success_response(
+                data={}, message="No essentiality data found for the specified genome and contig"
+            )
 
-        return essentiality_data
+        return create_success_response(
+            data=essentiality_data,
+            message=f"Essentiality data for {isolate_name}/{ref_name} retrieved successfully",
+        )
     except Exception as e:
         logger.error(
             f"Error retrieving essentiality data for isolate_name={isolate_name}, ref_name={ref_name}: {e}",

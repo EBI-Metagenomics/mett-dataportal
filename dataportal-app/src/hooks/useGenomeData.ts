@@ -53,7 +53,7 @@ export const useGenomeData = (): UseGenomeDataReturn => {
                     SpeciesService.fetchSpeciesList(),
                     GenomeService.fetchTypeStrains()
                 ]);
-
+                console.log("######## species: ", species)
                 setSpeciesList(species || []);
                 setTypeStrains(strains || []);
             } catch (err) {

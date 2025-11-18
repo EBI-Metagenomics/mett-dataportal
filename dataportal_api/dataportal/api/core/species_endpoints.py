@@ -1,19 +1,21 @@
 import logging
-from typing import List
 
 from ninja import Router, Query, Path
 from ninja.errors import HttpError
 from dataportal.schema.core.species_schemas import (
-    SpeciesSchema,
     SpeciesGenomeSearchQuerySchema,
 )
-from dataportal.schema.response_schemas import GenomePaginatedResponseSchema
+from dataportal.schema.response_schemas import (
+    GenomePaginatedResponseSchema,
+    SuccessResponseSchema,
+    create_success_response,
+)
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.utils.errors import raise_http_error, raise_internal_server_error
 from dataportal.utils.exceptions import (
     ServiceError,
 )
-from dataportal.utils.response_wrappers import wrap_paginated_response
+from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +29,17 @@ species_router = Router(tags=[ROUTER_SPECIES])
 # API Endpoint to retrieve all species
 @species_router.get(
     "/",
-    response=List[SpeciesSchema],
+    response=SuccessResponseSchema,
     summary="Get all species",
     description="Get all available species",
 )
+@wrap_success_response
 async def get_all_species(request):
     try:
         species = await species_service.get_all_species()
-        return species
+        return create_success_response(
+            data=species, message=f"Retrieved {len(species)} species successfully"
+        )
     except ServiceError:
         raise HttpError(500, "An error occurred while fetching species.")
     except Exception:

@@ -28,11 +28,12 @@
 													"",
 													"pm.test(\"Health is Ok\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.status).to.eql(\"ok\")",
+													"    pm.expect(jsonData.data.status).to.eql(\"ok\")",
 													"});"
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -104,12 +105,13 @@
 													"",
 													"pm.test(\"Array length is greater than or equal to 2\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.be.at.least(2); ",
+													"    pm.expect(jsonData.data.length).to.be.at.least(2); ",
 													"});",
 													""
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -148,12 +150,13 @@
 													"",
 													"pm.test(\"Array length is equal to 5\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.eql(5); ",
+													"    pm.expect(jsonData.data.length).to.eql(5); ",
 													"});",
 													""
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -203,12 +206,13 @@
 													"",
 													"pm.test(\"Array length is equal to 5\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.eql(5); ",
+													"    pm.expect(jsonData.data.length).to.eql(5); ",
 													"});",
 													""
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -257,12 +261,12 @@
 													"",
 													"pm.test(\"Name matches expected value\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData[0].species_scientific_name).contain(\"Bacteroides\");",
+													"    pm.expect(jsonData.data[0].species_scientific_name).contain(\"Bacteroides\");",
 													"});",
 													"",
 													"pm.test(\"Isolate Name matches expected value\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData[0].isolate_name).contain(\"BU_909\");",
+													"    pm.expect(jsonData.data[0].isolate_name).contain(\"BU_909\");",
 													"});"
 												],
 												"type": "text/javascript",
@@ -307,7 +311,7 @@
 													"",
 													"pm.test(\"Array length is equal to 0\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.eql(0); ",
+													"    pm.expect(jsonData.data.length).to.eql(0); ",
 													"});",
 													""
 												],
@@ -353,9 +357,9 @@
 													"",
 													"pm.test(\"Species Name matches expected value (first or second element)\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.be.above(0);",
+													"    pm.expect(jsonData.data.length).to.be.above(0);",
 													"",
-													"    const first = jsonData[0]?.species_scientific_name || \"\";",
+													"    const first = jsonData.data[0]?.species_scientific_name || \"\";",
 													"    const second = jsonData[1]?.species_scientific_name || \"\";",
 													"",
 													"    pm.expect(first.includes(\"Bacteroides\") || second.includes(\"Bacteroides\")).to.be.true;",
@@ -363,17 +367,17 @@
 													"",
 													"pm.test(\"Isolate Name matches expected value (first or second element)\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.be.above(0);",
+													"    pm.expect(jsonData.data.length).to.be.above(0);",
 													"",
-													"    const first = jsonData[0]?.isolate_name || \"\";",
-													"    const second = jsonData[1]?.isolate_name || \"\";",
+													"    const first = jsonData.data[0]?.isolate_name || \"\";",
+													"    const second = jsonData.data[1]?.isolate_name || \"\";",
 													"",
 													"    pm.expect(first.includes(\"PV_ATCC8482\") || second.includes(\"PV_ATCC8482\")).to.be.true;",
 													"});",
 													"",
 													"pm.test(\"Array length is equal to 2\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.eql(2); ",
+													"    pm.expect(jsonData.data.length).to.eql(2); ",
 													"});",
 													""
 												],
@@ -431,13 +435,13 @@
 													"",
 													"pm.test(\"Species Name matches expected value\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData[0].species_scientific_name).contain(\"Bacteroides\");",
+													"    pm.expect(jsonData.data[0].species_scientific_name).contain(\"Bacteroides\");",
 													"});",
 													"",
 													"",
 													"pm.test(\"Isolate Name matches expected value\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData[0].isolate_name).contain(\"BU_ATCC8492\");",
+													"    pm.expect(jsonData.data[0].isolate_name).contain(\"BU_ATCC8492\");",
 													"});"
 												],
 												"type": "text/javascript",
@@ -548,15 +552,15 @@
 													"",
 													"pm.test(\"Array length is equal to 2\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.eql(2); ",
+													"    pm.expect(jsonData.data.length).to.eql(2); ",
 													"});",
 													"",
 													"pm.test(\"Isolate Name matches expected value (first or second element)\", function () {",
 													"    const jsonData = pm.response.json();",
-													"    pm.expect(jsonData.length).to.be.above(0);",
+													"    pm.expect(jsonData.data.length).to.be.above(0);",
 													"",
-													"    const first = jsonData[0]?.isolate_name || \"\";",
-													"    const second = jsonData[1]?.isolate_name || \"\";",
+													"    const first = jsonData.data[0]?.isolate_name || \"\";",
+													"    const second = jsonData.data[1]?.isolate_name || \"\";",
 													"",
 													"    pm.expect(first.includes(\"PV_ATCC8482\") || second.includes(\"PV_ATCC8482\")).to.be.true;",
 													"});"
@@ -601,7 +605,8 @@
 													"});"
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -1063,7 +1068,7 @@
 													"});",
 													"",
 													"// Extract the response JSON",
-													"let response = pm.response.json();",
+													"let response = pm.response.json().data;",
 													"",
 													"// Check if the locus_tag \"BU_ATCC8492_00001\" exists",
 													"let geneData = Object.values(response).find(item => item.locus_tag === \"BU_ATCC8492_00001\");",
@@ -1117,7 +1122,7 @@
 													"});",
 													"",
 													"// Extract the response JSON",
-													"let response = pm.response.json();",
+													"let response = pm.response.json().data;",
 													"",
 													"// Check if the locus_tag \"PV_ATCC8482_00001\" exists",
 													"let geneData = Object.values(response).find(item => item.locus_tag === \"PV_ATCC8482_00001\");",
@@ -1135,7 +1140,8 @@
 													""
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -2667,6 +2673,68 @@
 												{
 													"key": "query",
 													"value": "BU_2243B_00003"
+												},
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "per_page",
+													"value": "10"
+												},
+												{
+													"key": "sort_field",
+													"value": "locus_tag"
+												},
+												{
+													"key": "sort_order",
+													"value": "asc"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Genes-by-LocusTag-QueryString-Advanced-01 Copy",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});",
+													"",
+													"pm.test(\"Results array contains exactly 5 records\", function () {",
+													"    const jsonData = pm.response.json(); ",
+													"    pm.expect(jsonData.data).to.be.an('array').with.lengthOf(1);",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {},
+												"requests": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{mett-current}}/api/genes/search/advanced?query=BU_ATCC8492_00001&page=1&per_page=10&sort_field=locus_tag&sort_order=asc",
+											"host": [
+												"{{mett-current}}"
+											],
+											"path": [
+												"api",
+												"genes",
+												"search",
+												"advanced"
+											],
+											"query": [
+												{
+													"key": "query",
+													"value": "BU_ATCC8492_00001"
 												},
 												{
 													"key": "page",
@@ -9542,6 +9610,69 @@
 							]
 						},
 						"description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "StringDB-APIs",
+			"item": [
+				{
+					"name": "searchProtein-UniprotId",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://string-db.org/api/tsv/get_string_ids?identifiers=A7V2E8&species=820",
+							"protocol": "https",
+							"host": [
+								"string-db",
+								"org"
+							],
+							"path": [
+								"api",
+								"tsv",
+								"get_string_ids"
+							],
+							"query": [
+								{
+									"key": "identifiers",
+									"value": "A7V2E8"
+								},
+								{
+									"key": "species",
+									"value": "820"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "searchProtein-functional-annotations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://string-db.org/api/tsv/functional_annotation?identifiers=A7V2E8",
+							"protocol": "https",
+							"host": [
+								"string-db",
+								"org"
+							],
+							"path": [
+								"api",
+								"tsv",
+								"functional_annotation"
+							],
+							"query": [
+								{
+									"key": "identifiers",
+									"value": "A7V2E8"
+								}
+							]
+						}
 					},
 					"response": []
 				}

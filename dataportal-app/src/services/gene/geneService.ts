@@ -161,9 +161,20 @@ export class GeneService extends BaseService {
                 console.warn(`Failed to fetch essentiality data for ${refName}: ${response.status} ${response.statusText}`);
                 return {};
             }
-            const data = await response.json();
-            console.log(`Essentiality data received for ${refName}:`, data);
-            return data;
+            const responseData = await response.json();
+            
+            // Handle standardized API response format
+            // Response now has format: { status: 'success', data: {...}, message: '...', timestamp: '...' }
+            if (responseData && typeof responseData === 'object' && 'status' in responseData && 'data' in responseData) {
+                // Extract data from standardized response
+                const data = responseData.data;
+                console.log(`Essentiality data received for ${refName}:`, data);
+                return data || {};
+            }
+            
+            // Fallback for legacy format (should not happen, but safe to handle)
+            console.log(`Essentiality data received for ${refName} (legacy format):`, responseData);
+            return responseData || {};
         } catch (error) {
             console.error(`Error fetching essentiality data for ${refName}:`, error);
             return {};
