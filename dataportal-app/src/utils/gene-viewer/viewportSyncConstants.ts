@@ -5,6 +5,8 @@
 export const VIEWPORT_SYNC_CONSTANTS = {
   // Navigation cooldown period (milliseconds)
   TABLE_NAVIGATION_COOLDOWN_MS: 5000,
+  // How long to respect a manual switch back to search view before auto-switching again
+  AUTO_SWITCH_MANUAL_OVERRIDE_MS: 2000,
   
   // Safety window after blocking a fetch (milliseconds)
   RECENT_BLOCK_WINDOW_MS: 1000,

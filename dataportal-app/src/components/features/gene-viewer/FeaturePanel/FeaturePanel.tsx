@@ -499,7 +499,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                     return (
                         <div key={idx} className={styles.filterValueRow}>
                             {renderExternalLink(database, id, displayId)}
-                            {filterType && renderFilterButton(filterType, filterValue)}
+                            {/* {filterType && renderFilterButton(filterType, filterValue)} */}
                         </div>
                     );
                 })}
@@ -609,7 +609,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                     <span className={styles.essentiality}>
                                         {getIconForEssentiality(featureData.essentiality)} {featureData.essentiality}
                                     </span>
-                                    {renderFilterButton('essentiality', featureData.essentiality)}
+                                    {/* {renderFilterButton('essentiality', featureData.essentiality)} */}
                                 </div>
                             </div>
                         )}
@@ -618,7 +618,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                 <label>AMR:</label>
                                 <div className={styles.filterValueRow}>
                                     <span>Has AMR information</span>
-                                    {renderFilterButton('has_amr_info', true)}
+                                    {/* {renderFilterButton('has_amr_info', true)} */}
                                 </div>
                             </div>
                         )}

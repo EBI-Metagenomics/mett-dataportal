@@ -60,6 +60,7 @@ const GeneViewerPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'search' | 'sync'>('search');
     const [showAutoSwitchNotification, setShowAutoSwitchNotification] = useState(false);
     const [wasAutoSwitched, setWasAutoSwitched] = useState(false);
+    const manualOverrideUntilRef = useRef<number | null>(null);
 
     // URL synchronization for gene viewer
     useGeneViewerUrlSync();
@@ -114,7 +115,12 @@ const GeneViewerPage: React.FC = () => {
         if (geneViewerData.genomeMeta?.isolate_name !== lastGenomeRef.current) {
             lastGenomeRef.current = geneViewerData.genomeMeta?.isolate_name || null;
             setJbrowseInitKey((k) => k + 1);
-            useViewportSyncStore.getState().setViewportInitialized(false);
+            const viewportStore = useViewportSyncStore.getState();
+            viewportStore.setViewportInitialized(false);
+            viewportStore.setViewportChanged(false);
+            viewportStore.setChangeSource(null);
+            viewportStore.setLastTableNavigationTime(null);
+            manualOverrideUntilRef.current = null;
         }
     }, [geneViewerData.genomeMeta?.isolate_name]);
 
@@ -133,26 +139,60 @@ const GeneViewerPage: React.FC = () => {
         enabled: true,
     });
 
-    useEffect(() => {
-        if (viewportChanged && activeTab === 'search') {
-            const { lastTableNavigationTime } = useViewportSyncStore.getState();
-            const isInCooldown = lastTableNavigationTime !== null &&
-                (Date.now() - lastTableNavigationTime) < VIEWPORT_SYNC_CONSTANTS.TABLE_NAVIGATION_COOLDOWN_MS;
-            
-            if (!isInCooldown) {
-                setActiveTab('sync');
-                setWasAutoSwitched(true);
-                setShowAutoSwitchNotification(true);
-            }
-            setViewportChanged(false);
-        }
-    }, [viewportChanged, activeTab, setViewportChanged]);
+    const recordManualSearchOverride = useCallback(() => {
+        manualOverrideUntilRef.current = Date.now() + VIEWPORT_SYNC_CONSTANTS.AUTO_SWITCH_MANUAL_OVERRIDE_MS;
+    }, []);
 
-    const handleSwitchToSearch = useCallback(() => {
+    const clearManualOverride = useCallback(() => {
+        manualOverrideUntilRef.current = null;
+    }, []);
+
+    useEffect(() => {
+        if (!viewportChanged) {
+            return;
+        }
+
+        const { lastTableNavigationTime } = useViewportSyncStore.getState();
+        const isInCooldown = lastTableNavigationTime !== null &&
+            (Date.now() - lastTableNavigationTime) < VIEWPORT_SYNC_CONSTANTS.TABLE_NAVIGATION_COOLDOWN_MS;
+
+        if (isInCooldown) {
+            setViewportChanged(false);
+            return;
+        }
+
+        const manualOverrideActive = manualOverrideUntilRef.current !== null &&
+            manualOverrideUntilRef.current > Date.now();
+
+        if (manualOverrideActive) {
+            setViewportChanged(false);
+            return;
+        }
+        
+        if (activeTab === 'search') {
+            clearManualOverride();
+            setActiveTab('sync');
+            setWasAutoSwitched(true);
+            setShowAutoSwitchNotification(true);
+        }
+        setViewportChanged(false);
+    }, [viewportChanged, activeTab, setViewportChanged, clearManualOverride]);
+
+    const handleSetSearchView = useCallback(() => {
+        recordManualSearchOverride();
         setActiveTab('search');
         setShowAutoSwitchNotification(false);
         setWasAutoSwitched(false);
-    }, []);
+    }, [recordManualSearchOverride]);
+
+    const handleSetSyncView = useCallback(() => {
+        clearManualOverride();
+        setActiveTab('sync');
+    }, [clearManualOverride]);
+
+    const handleSwitchToSearch = useCallback(() => {
+        handleSetSearchView();
+    }, [handleSetSearchView]);
 
     const handleDismissNotification = useCallback(() => {
         setShowAutoSwitchNotification(false);
@@ -334,11 +374,10 @@ const GeneViewerPage: React.FC = () => {
                                         activeTab={activeTab}
                                         onTabClick={(tabId) => {
                                             const newTab = tabId as 'search' | 'sync';
-                                            setActiveTab(newTab);
-                                            // Reset notification when manually switching tabs
                                             if (newTab === 'search') {
-                                                setShowAutoSwitchNotification(false);
-                                                setWasAutoSwitched(false);
+                                                handleSetSearchView();
+                                            } else {
+                                                handleSetSyncView();
                                             }
                                         }}
                                     />
@@ -386,14 +425,14 @@ const GeneViewerPage: React.FC = () => {
                         </div>
 
                         {/* Right column: Feature Panel */}
-                        <div className={styles.rightColumn}>
+                                <div className={styles.rightColumn}>
                             <FeaturePanel 
                                 feature={selectedFeature}
                                 onClose={handleCloseFeaturePanel}
                                 viewState={viewState || undefined}
                                 setLoading={geneViewerData.setLoading}
                                 activeTab={activeTab}
-                                onSwitchToSearch={() => setActiveTab('search')}
+                                        onSwitchToSearch={handleSetSearchView}
                                 onToggleFacet={handleToggleFacet}
                                 facets={facets}
                             />
