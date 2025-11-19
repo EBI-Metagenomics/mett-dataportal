@@ -13,13 +13,11 @@ from ninja.errors import HttpError
 from dataportal.api.core import gene_router
 from dataportal.authentication import RoleBasedJWTAuth, APIRoles
 from dataportal.services.interactions.fitness_correlation_service import FitnessCorrelationService
-from dataportal.schema.interactions.fitness_correlation_schemas import (
-    GeneCorrelationQuerySchema,
-    GenePairCorrelationQuerySchema,
-    TopCorrelationsQuerySchema,
-    CorrelationSearchQuerySchema,
+from dataportal.schema.response_schemas import create_success_response, ErrorCode
+from dataportal.utils.errors import (
+    raise_not_found_error,
+    raise_internal_server_error,
 )
-from dataportal.schema.response_schemas import create_success_response
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.response_wrappers import wrap_success_response
 
@@ -34,6 +32,7 @@ fitness_correlation_service = FitnessCorrelationService()
 
 # ---- API Endpoints ----
 
+
 @gene_router.get(
     "/{locus_tag}/correlations",
     summary="Get correlations for a gene",
@@ -46,8 +45,10 @@ async def get_gene_correlations(
     request,
     locus_tag: str,
     species_acronym: Optional[str] = Query(None),
-    min_correlation: Optional[float] = Query(None, description="Minimum absolute correlation value"),
-    max_results: int = Query(100, description="Maximum number of results to return")
+    min_correlation: Optional[float] = Query(
+        None, description="Minimum absolute correlation value"
+    ),
+    max_results: int = Query(100, description="Maximum number of results to return"),
 ):
     """Get all correlations for a specific gene."""
     try:
@@ -55,19 +56,19 @@ async def get_gene_correlations(
             locus_tag=locus_tag,
             species_acronym=species_acronym,
             min_correlation=min_correlation,
-            max_results=max_results
+            max_results=max_results,
         )
 
         return create_success_response(
             data={"correlations": correlations, "locus_tag": locus_tag, "count": len(correlations)},
-            message=f"Found {len(correlations)} correlations for gene {locus_tag}"
+            message=f"Found {len(correlations)} correlations for gene {locus_tag}",
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get correlations: {str(e)}")
+        raise_internal_server_error(f"Failed to get correlations: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @fitness_correlation_router.get(
@@ -82,31 +83,32 @@ async def get_gene_pair_correlation(
     request,
     locus_tag_a: str = Query(..., description="First gene locus tag"),
     locus_tag_b: str = Query(..., description="Second gene locus tag"),
-    species_acronym: Optional[str] = Query(None)
+    species_acronym: Optional[str] = Query(None),
 ):
     """Get correlation between two specific genes."""
     try:
         correlation = await fitness_correlation_service.get_correlation_between_genes(
-            locus_tag_a=locus_tag_a,
-            locus_tag_b=locus_tag_b,
-            species_acronym=species_acronym
+            locus_tag_a=locus_tag_a, locus_tag_b=locus_tag_b, species_acronym=species_acronym
         )
 
         if correlation is None:
-            raise HttpError(404, f"No correlation found between {locus_tag_a} and {locus_tag_b}")
+            raise_not_found_error(
+                message=f"No correlation found between {locus_tag_a} and {locus_tag_b}",
+                error_code=ErrorCode.GENE_NOT_FOUND,
+            )
 
         return create_success_response(
             data=correlation,
-            message=f"Correlation between {locus_tag_a} and {locus_tag_b} retrieved successfully"
+            message=f"Correlation between {locus_tag_a} and {locus_tag_b} retrieved successfully",
         )
     except HttpError:
         raise
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get correlation: {str(e)}")
+        raise_internal_server_error(f"Failed to get correlation: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @fitness_correlation_router.get(
@@ -122,28 +124,26 @@ async def get_top_correlations(
     species_acronym: Optional[str] = Query(None),
     correlation_strength: Optional[str] = Query(
         None,
-        description="Filter by strength (e.g., strong_positive, strong_negative, moderate_positive)"
+        description="Filter by strength (e.g., strong_positive, strong_negative, moderate_positive)",
     ),
-    limit: int = Query(100, description="Number of results to return")
+    limit: int = Query(100, description="Number of results to return"),
 ):
     """Get top correlations across the dataset."""
     try:
         correlations = await fitness_correlation_service.get_top_correlations(
-            species_acronym=species_acronym,
-            correlation_strength=correlation_strength,
-            limit=limit
+            species_acronym=species_acronym, correlation_strength=correlation_strength, limit=limit
         )
 
         return create_success_response(
             data={"correlations": correlations, "count": len(correlations)},
-            message=f"Retrieved top {len(correlations)} correlations"
+            message=f"Retrieved top {len(correlations)} correlations",
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get top correlations: {str(e)}")
+        raise_internal_server_error(f"Failed to get top correlations: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @fitness_correlation_router.get(
@@ -154,10 +154,7 @@ async def get_top_correlations(
     include_in_schema=False,
 )
 @wrap_success_response
-async def get_correlation_statistics(
-    request,
-    species_acronym: Optional[str] = Query(None)
-):
+async def get_correlation_statistics(request, species_acronym: Optional[str] = Query(None)):
     """Get statistics about correlations."""
     try:
         stats = await fitness_correlation_service.get_correlation_statistics(
@@ -165,15 +162,14 @@ async def get_correlation_statistics(
         )
 
         return create_success_response(
-            data=stats,
-            message="Correlation statistics retrieved successfully"
+            data=stats, message="Correlation statistics retrieved successfully"
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get statistics: {str(e)}")
+        raise_internal_server_error(f"Failed to get statistics: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @fitness_correlation_router.get(
@@ -189,27 +185,23 @@ async def search_correlations(
     query: str = Query(..., description="Search query (gene name or product)"),
     species_acronym: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100)
+    per_page: int = Query(20, ge=1, le=100),
 ):
     """Search correlations by gene name or product."""
     try:
         results = await fitness_correlation_service.search_correlations(
-            query=query,
-            species_acronym=species_acronym,
-            page=page,
-            per_page=per_page
+            query=query, species_acronym=species_acronym, page=page, per_page=per_page
         )
 
         return create_success_response(
-            data=results,
-            message=f"Found {results['total']} correlations matching '{query}'"
+            data=results, message=f"Found {results['total']} correlations matching '{query}'"
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to search correlations: {str(e)}")
+        raise_internal_server_error(f"Failed to search correlations: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @fitness_correlation_router.get(
@@ -228,14 +220,13 @@ async def get_correlation_strengths(request):
             "moderate_positive",
             "weak",
             "moderate_negative",
-            "strong_negative"
+            "strong_negative",
         ]
 
         return create_success_response(
             data={"strength_categories": categories},
-            message="Correlation strength categories retrieved successfully"
+            message="Correlation strength categories retrieved successfully",
         )
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
-
+        raise_internal_server_error("Internal server error")

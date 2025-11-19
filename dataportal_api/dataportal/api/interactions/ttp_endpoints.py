@@ -5,10 +5,13 @@ API endpoints for Pooled TTP (Thermal Proteome Profiling) data.
 import logging
 
 from ninja import Router, Query, Path
-from ninja.errors import HttpError
 
 from dataportal.authentication import APIRoles, RoleBasedJWTAuth
-from dataportal.schema.response_schemas import SuccessResponseSchema, create_success_response, PaginatedResponseSchema
+from dataportal.schema.response_schemas import (
+    SuccessResponseSchema,
+    create_success_response,
+    PaginatedResponseSchema,
+)
 from dataportal.schema.interactions.ttp_schemas import (
     TTPInteractionQuerySchema,
     TTPGeneInteractionsQuerySchema,
@@ -19,6 +22,10 @@ from dataportal.schema.interactions.ttp_schemas import (
 )
 from dataportal.services.interactions.ttp_service import TTPService
 from dataportal.utils.exceptions import ServiceError
+from dataportal.utils.errors import (
+    raise_validation_error,
+    raise_internal_server_error,
+)
 from dataportal.utils.response_wrappers import wrap_success_response, wrap_paginated_response
 
 logger = logging.getLogger(__name__)
@@ -45,10 +52,10 @@ async def get_ttp_metadata(request):
         metadata = await ttp_service.get_metadata()
         return create_success_response(metadata)
     except ServiceError as e:
-        raise HttpError(400, str(e))
+        raise_validation_error(str(e))
     except Exception as e:
         logger.error(f"Error in get_ttp_metadata: {str(e)}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ttp_router.get(
@@ -60,18 +67,15 @@ async def get_ttp_metadata(request):
     include_in_schema=False,
 )
 @wrap_paginated_response
-async def search_interactions(
-        request,
-        query: TTPInteractionQuerySchema = Query(...)
-):
+async def search_interactions(request, query: TTPInteractionQuerySchema = Query(...)):
     """Search TTP interactions with basic query parameters."""
     try:
         return await ttp_service.search_interactions(query)
     except ServiceError as e:
-        raise HttpError(400, str(e))
+        raise_validation_error(str(e))
     except Exception as e:
         logger.error(f"Error in search_interactions: {str(e)}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ttp_router.get(
@@ -84,9 +88,9 @@ async def search_interactions(
 )
 @wrap_success_response
 async def get_gene_interactions(
-        request,
-        locus_tag: str = Path(..., description="Locus tag of the gene"),
-        query: TTPGeneInteractionsQuerySchema = Query(...)
+    request,
+    locus_tag: str = Path(..., description="Locus tag of the gene"),
+    query: TTPGeneInteractionsQuerySchema = Query(...),
 ):
     """Get all interactions for a specific gene."""
     try:
@@ -95,10 +99,10 @@ async def get_gene_interactions(
         interactions = await ttp_service.get_gene_interactions(query)
         return create_success_response(interactions)
     except ServiceError as e:
-        raise HttpError(400, str(e))
+        raise_validation_error(str(e))
     except Exception as e:
         logger.error(f"Error in get_gene_interactions: {str(e)}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ttp_router.get(
@@ -111,9 +115,9 @@ async def get_gene_interactions(
 )
 @wrap_success_response
 async def get_compound_interactions(
-        request,
-        compound: str = Path(..., description="Name of the compound"),
-        query: TTPCompoundInteractionsQuerySchema = Query(...)
+    request,
+    compound: str = Path(..., description="Name of the compound"),
+    query: TTPCompoundInteractionsQuerySchema = Query(...),
 ):
     """Get all interactions for a specific compound."""
     try:
@@ -122,10 +126,10 @@ async def get_compound_interactions(
         interactions = await ttp_service.get_compound_interactions(query)
         return create_success_response(interactions)
     except ServiceError as e:
-        raise HttpError(400, str(e))
+        raise_validation_error(str(e))
     except Exception as e:
         logger.error(f"Error in get_compound_interactions: {str(e)}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ttp_router.get(
@@ -137,22 +141,16 @@ async def get_compound_interactions(
     include_in_schema=False,
 )
 @wrap_success_response
-async def get_hit_analysis(
-        request,
-        query: TTPHitAnalysisQuerySchema = Query(...)
-):
+async def get_hit_analysis(request, query: TTPHitAnalysisQuerySchema = Query(...)):
     """Get hit analysis - significant interactions with summary statistics."""
     try:
         interactions, summary = await ttp_service.get_hit_analysis(query)
-        return create_success_response({
-            "genes": interactions,
-            "summary": summary
-        })
+        return create_success_response({"genes": interactions, "summary": summary})
     except ServiceError as e:
-        raise HttpError(400, str(e))
+        raise_validation_error(str(e))
     except Exception as e:
         logger.error(f"Error in get_hit_analysis: {str(e)}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ttp_router.get(
@@ -164,19 +162,16 @@ async def get_hit_analysis(
     include_in_schema=False,
 )
 @wrap_success_response
-async def get_pool_analysis(
-        request,
-        query: TTPPoolAnalysisQuerySchema = Query(...)
-):
+async def get_pool_analysis(request, query: TTPPoolAnalysisQuerySchema = Query(...)):
     """Get pool-based analysis summary."""
     try:
         summary = await ttp_service.get_pool_analysis(query)
         return create_success_response(summary)
     except ServiceError as e:
-        raise HttpError(400, str(e))
+        raise_validation_error(str(e))
     except Exception as e:
         logger.error(f"Error in get_pool_analysis: {str(e)}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ttp_router.get(
@@ -186,10 +181,7 @@ async def get_pool_analysis(
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
     include_in_schema=False,
 )
-async def download_ttp_data(
-        request,
-        query: TTPDownloadQuerySchema = Query(...)
-):
+async def download_ttp_data(request, query: TTPDownloadQuerySchema = Query(...)):
     """Download TTP data in CSV/TSV format."""
     try:
         data = await ttp_service.download_data(query)
@@ -199,12 +191,13 @@ async def download_ttp_data(
         filename = f"ttp_interactions.{query.format}"
 
         from django.http import HttpResponse
+
         response = HttpResponse(data, content_type=content_type)
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
     except ServiceError as e:
-        raise HttpError(400, str(e))
+        raise_validation_error(str(e))
     except Exception as e:
         logger.error(f"Error in download_ttp_data: {str(e)}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")

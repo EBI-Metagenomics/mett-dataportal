@@ -1,7 +1,6 @@
 import logging
 
 from ninja import Router, Query, Path
-from ninja.errors import HttpError
 
 from dataportal.schema.core.genome_schemas import (
     GenomeAutocompleteQuerySchema,
@@ -75,7 +74,7 @@ async def get_type_strains(request):
             data=result, message=f"Retrieved {len(result)} type strains successfully"
         )
     except ServiceError:
-        raise HttpError(500, "An error occurred while fetching type strains.")
+        raise_internal_server_error("An error occurred while fetching type strains.")
 
 
 @genome_router.get(
@@ -224,9 +223,8 @@ async def get_essentiality_data_by_contig(
             f"Error retrieving essentiality data for isolate_name={isolate_name}, ref_name={ref_name}: {e}",
             exc_info=True,
         )
-        raise HttpError(
-            500,
-            f"Failed to retrieve essentiality data for strain {isolate_name} and refName {ref_name}.",
+        raise_internal_server_error(
+            f"Failed to retrieve essentiality data for strain {isolate_name} and refName {ref_name}."
         )
 
 
@@ -302,4 +300,4 @@ async def download_genomes_tsv(request, query: GenomeDownloadTSVQuerySchema = Qu
 
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to download genomes: {str(e)}")
+        raise_internal_server_error(f"Failed to download genomes: {str(e)}")

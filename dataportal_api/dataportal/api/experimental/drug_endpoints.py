@@ -5,7 +5,6 @@ Drug-specific API endpoints for MIC and metabolism data.
 import logging
 
 from ninja import Router, Query, Path
-from ninja.errors import HttpError
 
 from dataportal.api.core import genome_router
 from dataportal.authentication import APIRoles, RoleBasedJWTAuth
@@ -20,10 +19,11 @@ from dataportal.schema.experimental.drug_schemas import (
 from dataportal.schema.response_schemas import (
     PaginatedResponseSchema,
     SuccessResponseSchema,
+    ErrorCode,
     create_success_response,
 )
 from dataportal.services.experimental.drug_service import DrugService
-from dataportal.utils.errors import raise_internal_server_error
+from dataportal.utils.errors import raise_internal_server_error, raise_not_found_error
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
 
@@ -57,14 +57,17 @@ async def get_strain_drug_mic(
     try:
         result = await drug_service.get_strain_drug_mic_paginated(isolate_name, page, per_page)
         if not result:
-            raise HttpError(404, f"No drug MIC data found for strain: {isolate_name}")
+            raise_not_found_error(
+                message=f"No drug MIC data found for strain: {isolate_name}",
+                error_code=ErrorCode.DRUG_DATA_NOT_FOUND,
+            )
         return result
     except ServiceError as e:
         logger.error(f"Service error getting drug MIC data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug MIC data: {str(e)}")
+        raise_internal_server_error(f"Failed to retrieve drug MIC data: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error getting drug MIC data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug MIC data: {str(e)}")
+        raise_internal_server_error(f"Failed to retrieve drug MIC data: {str(e)}")
 
 
 @genome_router.get(
@@ -90,14 +93,17 @@ async def get_strain_drug_metabolism(
             isolate_name, page, per_page
         )
         if not result:
-            raise HttpError(404, f"No drug metabolism data found for strain: {isolate_name}")
+            raise_not_found_error(
+                message=f"No drug metabolism data found for strain: {isolate_name}",
+                error_code=ErrorCode.DRUG_DATA_NOT_FOUND,
+            )
         return result
     except ServiceError as e:
         logger.error(f"Service error getting drug metabolism data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug metabolism data: {str(e)}")
+        raise_internal_server_error(f"Failed to retrieve drug metabolism data: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error getting drug metabolism data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug metabolism data: {str(e)}")
+        raise_internal_server_error(f"Failed to retrieve drug metabolism data: {str(e)}")
 
 
 @genome_router.get(
@@ -119,14 +125,17 @@ async def get_strain_drug_data(
     try:
         result = await drug_service.get_strain_drug_data(isolate_name)
         if not result:
-            raise HttpError(404, f"No drug data found for strain: {isolate_name}")
+            raise_not_found_error(
+                message=f"No drug data found for strain: {isolate_name}",
+                error_code=ErrorCode.DRUG_DATA_NOT_FOUND,
+            )
         return result
     except ServiceError as e:
         logger.error(f"Service error getting drug data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug data: {str(e)}")
+        raise_internal_server_error(f"Failed to retrieve drug data: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error getting drug data for {isolate_name}: {e}")
-        raise HttpError(500, f"Failed to retrieve drug data: {str(e)}")
+        raise_internal_server_error(f"Failed to retrieve drug data: {str(e)}")
 
 
 # Drug MIC endpoints

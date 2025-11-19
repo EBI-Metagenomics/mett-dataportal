@@ -5,8 +5,10 @@ from ninja import Router
 from dataportal.schema.response_schemas import (
     SuccessResponseSchema,
     create_success_response,
+    ErrorCode,
 )
 from dataportal.services.service_factory import ServiceFactory
+from dataportal.utils.errors import raise_http_error
 from dataportal.utils.response_wrappers import wrap_success_response
 
 logger = logging.getLogger(__name__)
@@ -26,14 +28,17 @@ def health(request):
     # - (status_code, dict) for unhealthy
     # - dict for healthy
     if isinstance(health_result, tuple):
-        # Unhealthy - return error info in data
         status_code, health_data = health_result
-        return create_success_response(data=health_data, message="Health check completed")
-    else:
-        # Healthy
-        return create_success_response(
-            data=health_result, message="Health check completed successfully"
+        message = health_data.get("reason", "Service unhealthy")
+        raise_http_error(
+            status_code=status_code,
+            message=message,
+            error_code=ErrorCode.SERVICE_UNAVAILABLE,
         )
+
+    return create_success_response(
+        data=health_result, message="Health check completed successfully"
+    )
 
 
 @health_router.get("/features", response=SuccessResponseSchema, include_in_schema=False)

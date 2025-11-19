@@ -1,7 +1,6 @@
 import logging
 
 from ninja import Router, Query, Path
-from ninja.errors import HttpError
 from dataportal.schema.core.species_schemas import (
     SpeciesGenomeSearchQuerySchema,
 )
@@ -41,7 +40,7 @@ async def get_all_species(request):
             data=species, message=f"Retrieved {len(species)} species successfully"
         )
     except ServiceError:
-        raise HttpError(500, "An error occurred while fetching species.")
+        raise_internal_server_error("An error occurred while fetching species.")
     except Exception:
         raise_http_error(500, "An error occurred while fetching species.")
 

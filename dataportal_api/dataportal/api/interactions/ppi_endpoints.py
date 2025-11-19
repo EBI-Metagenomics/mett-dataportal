@@ -1,7 +1,6 @@
 import logging
 
 from ninja import Router, Query
-from ninja.errors import HttpError
 
 from dataportal.authentication import RoleBasedJWTAuth, APIRoles
 from dataportal.schema.interactions.ppi_schemas import (
@@ -17,9 +16,14 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkPropertiesQuerySchema,
     PPIScoreTypesResponseSchema,
 )
-from dataportal.schema.response_schemas import create_success_response
+from dataportal.schema.response_schemas import create_success_response, ErrorCode
 from dataportal.services.interactions.ppi_service import PPIService
 from dataportal.utils.exceptions import ServiceError
+from dataportal.utils.errors import (
+    raise_not_found_error,
+    raise_validation_error,
+    raise_internal_server_error,
+)
 from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
 
 logger = logging.getLogger(__name__)
@@ -54,16 +58,16 @@ async def get_available_score_types(request):
             "string_score",
             "operon_score",
             "ecocyc_score",
-            "tt_score"
+            "tt_score",
         ]
 
         return create_success_response(
             data={"score_types": score_types},
-            message="Available score types retrieved successfully"
+            message="Available score types retrieved successfully",
         )
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ppi_router.get(
@@ -78,24 +82,34 @@ async def get_available_score_types(request):
 async def search_ppi_interactions(request, query: PPISearchQuerySchema = Query(...)):
     """Search for PPI interactions based on query parameters."""
     # Enhanced validation: ensure at least one search parameter is provided
-    has_search_criteria = any([
-        query.protein_id, query.locus_tag, query.species_acronym, query.isolate_name,
-        query.score_type, query.has_xlms, query.has_string, query.has_operon, query.has_ecocyc
-    ])
+    has_search_criteria = any(
+        [
+            query.protein_id,
+            query.locus_tag,
+            query.species_acronym,
+            query.isolate_name,
+            query.score_type,
+            query.has_xlms,
+            query.has_string,
+            query.has_operon,
+            query.has_ecocyc,
+        ]
+    )
 
     if not has_search_criteria:
-        raise HttpError(400,
-                        "At least one search parameter must be provided. Use protein_id or locus_tag for specific protein searches, or species_acronym for species-wide searches.")
+        raise_validation_error(
+            "At least one search parameter must be provided. Use protein_id or locus_tag for specific protein searches, or species_acronym for species-wide searches."
+        )
 
     try:
         result = await ppi_service.search_interactions(query)
         return result
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to search PPI interactions: {str(e)}")
+        raise_internal_server_error(f"Failed to search PPI interactions: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ppi_router.get(
@@ -107,48 +121,47 @@ async def search_ppi_interactions(request, query: PPISearchQuerySchema = Query(.
     include_in_schema=False,
 )
 @wrap_success_response
-async def get_protein_neighborhood(
-        request,
-        query: PPINeighborhoodQuerySchema = Query(...)
-):
+async def get_protein_neighborhood(request, query: PPINeighborhoodQuerySchema = Query(...)):
     """Get neighborhood data for a specific protein by protein_id or locus_tag."""
     # Validation: exactly one of protein_id or locus_tag must be provided
     if not query.protein_id and not query.locus_tag:
-        raise HttpError(400, "Either 'protein_id' or 'locus_tag' must be provided")
+        raise_validation_error("Either 'protein_id' or 'locus_tag' must be provided")
     if query.protein_id and query.locus_tag:
-        raise HttpError(400, "Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+        raise_validation_error("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
 
     # Resolve locus_tag to protein_id if needed
     actual_protein_id = query.protein_id
     if query.locus_tag:
         try:
             actual_protein_id = await ppi_service.resolve_locus_tag_to_protein_id(
-                locus_tag=query.locus_tag,
-                species_acronym=query.species_acronym
+                locus_tag=query.locus_tag, species_acronym=query.species_acronym
             )
-            logger.info(f"Resolved locus tag '{query.locus_tag}' to protein_id '{actual_protein_id}'")
+            logger.info(
+                f"Resolved locus tag '{query.locus_tag}' to protein_id '{actual_protein_id}'"
+            )
         except ServiceError as e:
             logger.error(f"Locus tag resolution error: {e}")
-            raise HttpError(404, str(e))
+            raise_not_found_error(
+                message=str(e),
+                error_code=ErrorCode.GENE_NOT_FOUND,
+            )
 
     try:
         neighborhood = await ppi_service.get_protein_neighborhood(
-            protein_id=actual_protein_id,
-            n=query.n,
-            species_acronym=query.species_acronym
+            protein_id=actual_protein_id, n=query.n, species_acronym=query.species_acronym
         )
 
         search_identifier = query.locus_tag if query.locus_tag else actual_protein_id
         return create_success_response(
             data=neighborhood,
-            message=f"Neighborhood data for {search_identifier} retrieved successfully"
+            message=f"Neighborhood data for {search_identifier} retrieved successfully",
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get protein neighborhood: {str(e)}")
+        raise_internal_server_error(f"Failed to get protein neighborhood: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ppi_router.get(
@@ -160,47 +173,47 @@ async def get_protein_neighborhood(
     include_in_schema=False,
 )
 @wrap_success_response
-async def get_all_protein_neighbors(
-        request,
-        query: PPINeighborsQuerySchema = Query(...)
-):
+async def get_all_protein_neighbors(request, query: PPINeighborsQuerySchema = Query(...)):
     """Get all neighbors for a specific protein without algorithm processing."""
     # Validation: exactly one of protein_id or locus_tag must be provided
     if not query.protein_id and not query.locus_tag:
-        raise HttpError(400, "Either 'protein_id' or 'locus_tag' must be provided")
+        raise_validation_error("Either 'protein_id' or 'locus_tag' must be provided")
     if query.protein_id and query.locus_tag:
-        raise HttpError(400, "Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+        raise_validation_error("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
 
     # Resolve locus_tag to protein_id if needed
     actual_protein_id = query.protein_id
     if query.locus_tag:
         try:
             actual_protein_id = await ppi_service.resolve_locus_tag_to_protein_id(
-                locus_tag=query.locus_tag,
-                species_acronym=query.species_acronym
+                locus_tag=query.locus_tag, species_acronym=query.species_acronym
             )
-            logger.info(f"Resolved locus tag '{query.locus_tag}' to protein_id '{actual_protein_id}'")
+            logger.info(
+                f"Resolved locus tag '{query.locus_tag}' to protein_id '{actual_protein_id}'"
+            )
         except ServiceError as e:
             logger.error(f"Locus tag resolution error: {e}")
-            raise HttpError(404, str(e))
+            raise_not_found_error(
+                message=str(e),
+                error_code=ErrorCode.GENE_NOT_FOUND,
+            )
 
     try:
         neighbors_data = await ppi_service.get_all_protein_neighbors(
-            protein_id=actual_protein_id,
-            species_acronym=query.species_acronym
+            protein_id=actual_protein_id, species_acronym=query.species_acronym
         )
 
         search_identifier = query.locus_tag if query.locus_tag else actual_protein_id
         return create_success_response(
             data=neighbors_data,
-            message=f"All neighbors for {search_identifier} retrieved successfully"
+            message=f"All neighbors for {search_identifier} retrieved successfully",
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get all protein neighbors: {str(e)}")
+        raise_internal_server_error(f"Failed to get all protein neighbors: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ppi_router.get(
@@ -212,17 +225,13 @@ async def get_all_protein_neighbors(
     include_in_schema=False,
 )
 @wrap_success_response
-async def get_ppi_network(
-        request,
-        score_type: str,
-        query: PPINetworkQuerySchema = Query(...)
-):
+async def get_ppi_network(request, score_type: str, query: PPINetworkQuerySchema = Query(...)):
     """Get PPI network data for a specific score type and threshold."""
     try:
         network_data = await ppi_service.get_network_data(
             score_type=score_type,
             score_threshold=query.score_threshold,
-            species_acronym=query.species_acronym
+            species_acronym=query.species_acronym,
         )
 
         # Include properties if requested
@@ -230,20 +239,20 @@ async def get_ppi_network(
             properties = await ppi_service.get_network_properties(
                 score_type=score_type,
                 score_threshold=query.score_threshold,
-                species_acronym=query.species_acronym
+                species_acronym=query.species_acronym,
             )
             network_data.properties = properties
 
         return create_success_response(
             data=network_data,
-            message=f"Network data for {score_type} (threshold: {query.score_threshold}) retrieved successfully"
+            message=f"Network data for {score_type} (threshold: {query.score_threshold}) retrieved successfully",
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get network data: {str(e)}")
+        raise_internal_server_error(f"Failed to get network data: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")
 
 
 @ppi_router.get(
@@ -255,25 +264,22 @@ async def get_ppi_network(
     include_in_schema=False,
 )
 @wrap_success_response
-async def get_ppi_network_properties(
-        request,
-        query: PPINetworkPropertiesQuerySchema = Query(...)
-):
+async def get_ppi_network_properties(request, query: PPINetworkPropertiesQuerySchema = Query(...)):
     """Get PPI network properties for a specific score type and threshold."""
     try:
         properties = await ppi_service.get_network_properties(
             score_type=query.score_type,
             score_threshold=query.score_threshold,
-            species_acronym=query.species_acronym
+            species_acronym=query.species_acronym,
         )
 
         return create_success_response(
             data=properties,
-            message=f"Network properties for {query.score_type} (threshold: {query.score_threshold}) retrieved successfully"
+            message=f"Network properties for {query.score_type} (threshold: {query.score_threshold}) retrieved successfully",
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
-        raise HttpError(500, f"Failed to get network properties: {str(e)}")
+        raise_internal_server_error(f"Failed to get network properties: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HttpError(500, "Internal server error")
+        raise_internal_server_error("Internal server error")

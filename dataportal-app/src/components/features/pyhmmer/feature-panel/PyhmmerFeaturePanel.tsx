@@ -60,15 +60,32 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
             }
             
             // Execute the search and get real backend job ID
+            console.log('PyhmmerFeaturePanel: Starting search execution');
             const searchResponse = await PyhmmerService.executeSearch(proteinSequence, database);
-            setResults(searchResponse.results);
+            console.log('PyhmmerFeaturePanel: Search completed, results:', searchResponse);
+            console.log('PyhmmerFeaturePanel: Results count:', searchResponse.results?.length || 0);
+            
+            if (searchResponse.results && searchResponse.results.length > 0) {
+                setResults(searchResponse.results);
+                console.log('PyhmmerFeaturePanel: Results set successfully');
+            } else {
+                console.warn('PyhmmerFeaturePanel: No results returned from search');
+                setResults([]);
+            }
             
             // Update the history with the real job ID from backend
             if (historyTempJobId && searchResponse.jobId) {
                 updateJBrowseSearchWithRealJobId(historyTempJobId, searchResponse.jobId);
             }
         } catch (error: any) {
-            setError(error.message || 'Search failed');
+            console.error('PyhmmerFeaturePanel: Search error:', error);
+            console.error('PyhmmerFeaturePanel: Error details:', {
+                message: error?.message,
+                stack: error?.stack,
+                response: error?.response,
+            });
+            setError(error?.message || error?.toString() || 'Search failed');
+            setResults([]);
         } finally {
             setIsSearching(false);
         }
