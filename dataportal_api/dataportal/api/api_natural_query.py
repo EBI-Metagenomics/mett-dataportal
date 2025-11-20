@@ -28,6 +28,7 @@ nl_query_router = Router(tags=[ROUTER_NL_QUERY])
         "This endpoint interprets user intent and returns actual database results without requiring "
         "manual API parameter construction."
     ),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def execute_natural_language_query(request, query: str):
@@ -63,9 +64,7 @@ async def execute_natural_language_query(request, query: str):
         total_results = results_data.get("total_results", 0)
 
         # Determine API method used
-        method_name = nl_query_service._determine_api_method(
-            result.get("interpreted_query", {})
-        )
+        method_name = nl_query_service._determine_api_method(result.get("interpreted_query", {}))
 
         return create_success_response(
             data={
@@ -89,9 +88,7 @@ async def execute_natural_language_query(request, query: str):
         # Re-raise HTTP errors as they're already properly formatted
         raise
     except Exception as e:
-        logger.error(
-            f"Unexpected error in natural language query: {str(e)}", exc_info=True
-        )
+        logger.error(f"Unexpected error in natural language query: {str(e)}", exc_info=True)
         raise_internal_server_error(f"Unexpected error occurred: {str(e)}")
 
 
@@ -103,6 +100,7 @@ async def execute_natural_language_query(request, query: str):
         "Convert natural language query to structured parameters without executing the query. "
         "Useful for debugging or when you want to see how the AI interprets the query before execution."
     ),
+    include_in_schema=False,
 )
 @wrap_success_response
 async def interpret_query_only(request, query: str):
@@ -141,7 +139,5 @@ async def interpret_query_only(request, query: str):
     except HttpError:
         raise
     except Exception as e:
-        logger.error(
-            f"Unexpected error in query interpretation: {str(e)}", exc_info=True
-        )
+        logger.error(f"Unexpected error in query interpretation: {str(e)}", exc_info=True)
         raise_internal_server_error(f"Unexpected error occurred: {str(e)}")

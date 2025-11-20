@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
@@ -167,6 +167,32 @@ class HealthResponseSchema(BaseResponseSchema):
     dependencies: Optional[Dict[str, str]] = Field(None, description="Dependency status")
 
 
+class ResponseFormat(str, Enum):
+    """Supported API response formats."""
+
+    JSON = "json"
+    TSV = "tsv"
+
+
+def normalize_response_format(
+    value: Optional[Union[str, "ResponseFormat"]] = None,
+) -> "ResponseFormat":
+    """Validate and normalize response format values."""
+
+    if value is None:
+        return ResponseFormat.JSON
+
+    if isinstance(value, ResponseFormat):
+        return value
+
+    value_str = str(value).strip().lower()
+    for format_option in ResponseFormat:
+        if value_str == format_option.value:
+            return format_option
+
+    return ResponseFormat.JSON
+
+
 # Response wrapper functions for consistent formatting
 def create_success_response(
     data: Any, message: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None
@@ -226,6 +252,8 @@ def create_paginated_response(
 __all__ = [
     "ResponseStatus",
     "ErrorCode",
+    "ResponseFormat",
+    "normalize_response_format",
     "BaseResponseSchema",
     "SuccessResponseSchema",
     "ErrorResponseSchema",

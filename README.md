@@ -718,6 +718,14 @@ When running the development server:
 - **Swagger UI (Dev)**: `http://localhost:8000/api/docs`
 - **Swagger UI (Production)**: `http://www.gut-microbes.org/api/docs`
 
+### Response Formats
+
+- All API endpoints accept an optional `format` query parameter.
+- Supported values: `json` (default) and `tsv`.
+- When `format=tsv`, only the `data` payload is serialized as tab-separated text and returned as `text/tab-separated-values`.
+- Example: `GET /api/genomes?species=BU&format=tsv`
+- Endpoints that already stream binary/TSV payloads ignore this parameter and keep their existing behavior.
+
 ---
 
 ## License
