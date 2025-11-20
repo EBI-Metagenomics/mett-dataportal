@@ -1,4 +1,4 @@
-import { generateExternalDbLink, getBacinteractomeUniprotUrl } from "../../../utils/common/constants";
+import { generateExternalDbLink, getBacinteractomeUniprotUrl } from "../../../utils/common/geneUtils";
 
 export interface ExternalLink {
     label: string;

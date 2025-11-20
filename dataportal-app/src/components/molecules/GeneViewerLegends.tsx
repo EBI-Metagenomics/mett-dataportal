@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './GeneViewerLegends.module.scss';
-import {getColorForEssentiality, getIconForEssentiality} from "../../utils/common/constants";
+import {getColorForEssentiality, getIconForEssentiality} from "../../utils/common/geneUtils";
+import {VIEWPORT_SYNC_CONSTANTS} from "../../utils/gene-viewer";
 
 interface GeneViewerLegendsProps {
     showEssentiality: boolean;
@@ -41,6 +42,10 @@ const GeneViewerLegends: React.FC<GeneViewerLegendsProps> = ({showEssentiality})
         {label: 'Stop Codon', color: 'red'},
     ];
 
+    const userActionsLegend = [
+        {label: 'Selected Gene', color: VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR},
+    ];
+
     const renderLegendItems = (
         items: { label: string; color: string; icon?: string }[]
     ) =>
@@ -58,7 +63,7 @@ const GeneViewerLegends: React.FC<GeneViewerLegendsProps> = ({showEssentiality})
     return (
         <div className={styles.viewerLegend}>
             <div className={styles.legendHeader}>Legend</div>
-            <div className={styles.legendColumns}>
+            <div className={`${styles.legendColumns} ${showEssentiality ? styles.threeColumns : styles.twoColumns}`}>
                 {showEssentiality && (
                     <div>
                         <div className={styles.legendTitle}>Essentiality</div>
@@ -68,6 +73,10 @@ const GeneViewerLegends: React.FC<GeneViewerLegendsProps> = ({showEssentiality})
                 <div>
                     <div className={styles.legendTitle}>Codons</div>
                     {renderLegendItems(codonLegend)}
+                </div>
+                <div>
+                    <div className={styles.legendTitle}>User Actions</div>
+                    {renderLegendItems(userActionsLegend)}
                 </div>
             </div>
         </div>

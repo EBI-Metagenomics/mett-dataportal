@@ -234,39 +234,55 @@ export class PyhmmerService extends BaseService {
         while (attempts < maxAttempts) {
             try {
                 const jobDetails = await this.getJobDetails(jobId);
+                console.log('PyhmmerService.pollJobStatus: Full jobDetails:', jobDetails);
+                
                 const status = jobDetails.status;
+                console.log('PyhmmerService.pollJobStatus: Job status:', status);
 
-                if (status === 'completed' || status === 'SUCCESS') {
+                // Check for completed status (handle both lowercase and uppercase)
+                const normalizedStatus = status?.toUpperCase();
+                if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'SUCCESS') {
                     const results = jobDetails.task?.result || [];
+                    console.log('PyhmmerService.pollJobStatus: Results type:', typeof results);
+                    console.log('PyhmmerService.pollJobStatus: Results is array:', Array.isArray(results));
+                    console.log('PyhmmerService.pollJobStatus: Results length:', Array.isArray(results) ? results.length : 'N/A');
 
                     // Handle different result formats
                     if (Array.isArray(results)) {
                         // Convert unknown results to PyhmmerSearchResult
-                        return results.map(result => this.convertToSearchResult(result));
+                        const convertedResults = results.map(result => this.convertToSearchResult(result));
+                        console.log('PyhmmerService.pollJobStatus: Converted results count:', convertedResults.length);
+                        return convertedResults;
                     } else if (results && typeof results === 'object') {
                         // If results is an object, try to extract the array
                         const resultKeys = Object.keys(results);
+                        console.log('PyhmmerService.pollJobStatus: Result object keys:', resultKeys);
 
                         // Look for common result array keys
                         for (const key of ['hits', 'domains', 'results', 'data']) {
                             if (Array.isArray(results[key])) {
+                                console.log(`PyhmmerService.pollJobStatus: Found array in key '${key}' with ${results[key].length} items`);
                                 return (results[key] as unknown[]).map(result => this.convertToSearchResult(result));
                             }
                         }
 
                         // If no array found, return the object as a single result
+                        console.log('PyhmmerService.pollJobStatus: No array found, converting object as single result');
                         return [this.convertToSearchResult(results)];
                     } else {
+                        console.warn('PyhmmerService.pollJobStatus: Results is not an array or object, returning empty array');
                         return [];
                     }
-                } else if (status === 'failed' || status === 'FAILED') {
+                } else if (normalizedStatus === 'FAILED' || normalizedStatus === 'FAILURE') {
                     throw new Error('PyHMMER search failed');
                 }
 
+                // Job still processing, wait and retry
+                console.log(`PyhmmerService.pollJobStatus: Job status is '${status}', waiting before retry (attempt ${attempts + 1}/${maxAttempts})`);
                 await new Promise(resolve => setTimeout(resolve, PYHMMER_CONSTANTS.TIMING.JOB_POLL_INTERVAL));
                 attempts++;
             } catch (error) {
-                console.error('Error polling job status:', error);
+                console.error('PyhmmerService.pollJobStatus: Error polling job status:', error);
                 throw error;
             }
         }
@@ -277,17 +293,51 @@ export class PyhmmerService extends BaseService {
     private static convertToSearchResult(result: unknown): PyhmmerSearchResult {
         if (result && typeof result === 'object') {
             const resultObj = result as Record<string, unknown>;
+            
+            // Extract target name (backend uses 'target', frontend expects 'target_name')
+            const targetName = resultObj.target_name || resultObj.name || resultObj.target || 'Unknown';
+            
+            // Extract evalue (backend returns as string, convert to number if needed)
+            let evalue: string | number = 0;
+            if (resultObj.evalue !== undefined && resultObj.evalue !== null) {
+                if (typeof resultObj.evalue === 'string') {
+                    evalue = resultObj.evalue;
+                } else {
+                    evalue = Number(resultObj.evalue) || 0;
+                }
+            }
+            
+            // Extract score (backend returns as string, convert to number if needed)
+            let score: string | number = 0;
+            if (resultObj.score !== undefined && resultObj.score !== null) {
+                if (typeof resultObj.score === 'string') {
+                    score = resultObj.score;
+                } else {
+                    score = Number(resultObj.score) || 0;
+                }
+            }
+            
+            // Extract is_significant (handle various field names)
+            const isSignificant = Boolean(
+                resultObj.is_significant !== undefined ? resultObj.is_significant :
+                resultObj.significant !== undefined ? resultObj.significant :
+                resultObj.significant_match !== undefined ? resultObj.significant_match :
+                resultObj.significantMatch !== undefined ? resultObj.significantMatch :
+                false
+            );
+            
             return {
-                target_name: String(resultObj.target_name || resultObj.name || resultObj.target || 'Unknown'),
-                evalue: Number(resultObj.evalue) || 0,
-                score: Number(resultObj.score) || 0,
-                is_significant: Boolean(resultObj.is_significant || resultObj.significant || resultObj.significant_match),
-                description: String(resultObj.description || ''),
-                sequence: String(resultObj.sequence || '')
+                target_name: String(targetName),
+                evalue: evalue,
+                score: score,
+                is_significant: isSignificant,
+                description: resultObj.description ? String(resultObj.description) : undefined,
+                sequence: resultObj.sequence ? String(resultObj.sequence) : undefined
             };
         }
 
         // Fallback for unexpected result types
+        console.warn('PyhmmerService.convertToSearchResult: Unexpected result type:', typeof result, result);
         return {
             target_name: 'Unknown',
             evalue: 0,

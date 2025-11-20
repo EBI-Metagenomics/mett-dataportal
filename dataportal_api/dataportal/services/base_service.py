@@ -35,21 +35,15 @@ class BaseService(ABC, Generic[T, U]):
 
     async def create(self, data: Dict[str, Any]) -> T:
         """Create operation not supported in read-only data portal."""
-        raise NotImplementedError(
-            "Create operation not supported in read-only data portal"
-        )
+        raise NotImplementedError("Create operation not supported in read-only data portal")
 
     async def update(self, id: str, data: Dict[str, Any]) -> T:
         """Update operation not supported in read-only data portal."""
-        raise NotImplementedError(
-            "Update operation not supported in read-only data portal"
-        )
+        raise NotImplementedError("Update operation not supported in read-only data portal")
 
     async def delete(self, id: str) -> bool:
         """Delete operation not supported in read-only data portal."""
-        raise NotImplementedError(
-            "Delete operation not supported in read-only data portal"
-        )
+        raise NotImplementedError("Delete operation not supported in read-only data portal")
 
     def _create_search(self) -> Search:
         """Create a base Elasticsearch search object."""
@@ -63,19 +57,23 @@ class BaseService(ABC, Generic[T, U]):
             self.logger.error(f"Error executing search: {e}")
             raise ServiceError(f"Search execution failed: {str(e)}")
 
+    async def _scan_search(self, search: Search) -> List[Any]:
+        """Retrieve all documents for a search using the scroll/scan helper."""
+        try:
+            return await sync_to_async(lambda: list(search.scan()))()
+        except Exception as e:
+            self.logger.error(f"Error scanning search results: {e}")
+            raise ServiceError(f"Search scan failed: {str(e)}")
+
     def _handle_elasticsearch_error(self, error: Exception, operation: str) -> None:
         """Handle Elasticsearch errors consistently."""
         self.logger.error(f"Elasticsearch error during {operation}: {error}")
         raise ServiceError(f"Elasticsearch operation failed: {str(error)}")
 
-    def _validate_required_fields(
-        self, data: Dict[str, Any], required_fields: List[str]
-    ) -> None:
+    def _validate_required_fields(self, data: Dict[str, Any], required_fields: List[str]) -> None:
         """Validate that required fields are present in data."""
         missing_fields = [
-            field
-            for field in required_fields
-            if field not in data or data[field] is None
+            field for field in required_fields if field not in data or data[field] is None
         ]
         if missing_fields:
             raise ServiceError(f"Missing required fields: {', '.join(missing_fields)}")

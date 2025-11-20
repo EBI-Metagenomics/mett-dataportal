@@ -98,6 +98,16 @@
   }
 }
 
+.selectedRow {
+  background-color: var(--gene-highlight-background, #dbeafe) !important; // unified light blue highlight for selected row
+  border-left: 4px solid var(--gene-highlight-border, #2563eb) !important; // unified blue left border indicator
+  font-weight: 500; // slightly bolder text
+  
+  &:hover {
+    background-color: var(--gene-highlight-background-hover, #bfdbfe) !important; // unified slightly darker blue on hover
+  }
+}
+
 
 .vfTableCell {
   font-size: 14px !important;

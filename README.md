@@ -159,6 +159,12 @@ cd ../dataportal-app
 npm install
 
 # 5. Run development servers
+
+# 5a. Setup auth mechanism (temporary)
+cd dataportal_api
+python manage.py migrate
+python manage.py seed_roles
+
 # Terminal 1 - Backend
 cd dataportal_api
 python manage.py runserver
@@ -180,10 +186,13 @@ npm start
 cd dataportal_api
 
 # Generate lock file (if needed)
-uv pip compile pyproject.toml --group dev --generate-hashes > uv.lock
+uv lock
 
-# Install dependencies (development)
-uv pip install -r uv.lock
+# Install dependencies (development) - (uv will respect the active conda env.)
+pip install uv
+
+# Sync dependencies from the existing lock
+uv sync
 
 # Install dependencies (production)
 uv pip install -r uv.lock --no-dev

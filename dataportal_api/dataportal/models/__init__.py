@@ -19,6 +19,8 @@ from .interactions import ProteinProteinDocument
 from .operons import OperonDocument
 from .orthologs import OrthologDocument
 from .fitness_correlation import GeneFitnessCorrelationDocument
+from .role import Role
+from .api_token import APIToken
 
 __all__ = [
     # Base utilities
@@ -35,4 +37,7 @@ __all__ = [
     "OperonDocument",
     "OrthologDocument",
     "GeneFitnessCorrelationDocument",
+    # Database models
+    "Role",
+    "APIToken",
 ]

@@ -6,6 +6,7 @@ import PyhmmerSearchForm from '@components/features/pyhmmer/PyhmmerSearchForm/Py
 import {useFeatureFlags} from '../../hooks/useFeatureFlags';
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
+import Breadcrumb from '@components/molecules/Breadcrumb';
 
 
 import {useFilterStore} from '../../stores/filterStore';
@@ -286,6 +287,9 @@ const HomePage: React.FC = () => {
                         <p>Error: {genomeData.error}</p>
                     </div>
                 )}
+
+                {/* Breadcrumb Navigation */}
+                <Breadcrumb currentPage="home" />
 
                 <div>
                     <HomePageHeadBand

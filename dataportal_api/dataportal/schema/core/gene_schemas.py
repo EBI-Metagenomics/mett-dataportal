@@ -1,7 +1,16 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
-from pydantic import BaseModel, ConfigDict
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from dataportal.examples.gene_examples import (
+    GENE_SEARCH_QUERY_EXAMPLE,
+    GENE_ADVANCED_SEARCH_QUERY_EXAMPLE,
+    GENE_DOWNLOAD_TSV_QUERY_EXAMPLE,
+    GENE_AUTOCOMPLETE_QUERY_EXAMPLE,
+    GENE_RESPONSE_EXAMPLE,
+    GET_ALL_GENES_QUERY_EXAMPLE,
+    ESSENTIALITY_BY_CONTIG_ENTRY_EXAMPLE,
+)
 
 from dataportal.schema.base_schemas import BasePaginationSchema
 from dataportal.utils.constants import (
@@ -34,6 +43,10 @@ class GeneAutocompleteQuerySchema(BaseModel):
         description="Comma-separated list of isolate names to restrict the search scope.",
     )
 
+    model_config = ConfigDict(
+        json_schema_extra={"example": GENE_AUTOCOMPLETE_QUERY_EXAMPLE},
+    )
+
 
 class GeneSearchQuerySchema(BaseModel):
     """Schema for basic gene search endpoint."""
@@ -43,15 +56,17 @@ class GeneSearchQuerySchema(BaseModel):
         description="Free-text search term to match against gene names or locus tags.",
     )
     page: int = Field(1, description="Page number for pagination (1-based).")
-    per_page: int = Field(
-        DEFAULT_PAGE_SIZE, description="Number of genes to return per page."
-    )
+    per_page: int = Field(DEFAULT_PAGE_SIZE, description="Number of genes to return per page.")
     sort_field: Optional[str] = Field(
         None,
         description="Field to sort results by (e.g., 'gene_name', 'isolate_name').",
     )
     sort_order: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": GENE_SEARCH_QUERY_EXAMPLE},
     )
 
 
@@ -71,9 +86,7 @@ class GeneFacetedSearchQuerySchema(BaseModel):
     isolates: Optional[str] = Field(
         "", description="Comma-separated list of isolate names to filter."
     )
-    cog_id: Optional[str] = Field(
-        None, description="Comma-separated list of COG IDs to filter."
-    )
+    cog_id: Optional[str] = Field(None, description="Comma-separated list of COG IDs to filter.")
     cog_funcats: Optional[str] = Field(
         None, description="Comma-separated list of COG functional categories to filter."
     )
@@ -106,17 +119,13 @@ class GeneFacetedSearchQuerySchema(BaseModel):
     go_term_operator: Optional[str] = Field(
         "OR", description="Logical operator ('AND'/'OR') for GO term filtering."
     )
-    limit: int = Field(
-        DEFAULT_FACET_LIMIT, description="Maximum number of genes to return."
-    )
+    limit: int = Field(DEFAULT_FACET_LIMIT, description="Maximum number of genes to return.")
 
 
 class GeneAdvancedSearchQuerySchema(BaseModel):
     """Schema for advanced gene search across multiple genomes/species with filters."""
 
-    isolates: str = Field(
-        "", description="Comma-separated list of isolate names to filter."
-    )
+    isolates: str = Field("", description="Comma-separated list of isolate names to filter.")
     species_acronym: Optional[str] = Field(
         None, description="Species acronym to filter (e.g., 'BU', 'PV')."
     )
@@ -136,23 +145,33 @@ class GeneAdvancedSearchQuerySchema(BaseModel):
         None, description="Logical operators for filters, e.g., 'pfam:AND;interpro:OR'."
     )
     page: int = Field(1, description="Page number for pagination (1-based).")
-    per_page: int = Field(
-        DEFAULT_PAGE_SIZE, description="Number of genes to return per page."
-    )
+    per_page: int = Field(DEFAULT_PAGE_SIZE, description="Number of genes to return per page.")
     sort_field: Optional[str] = Field(
         None, description="Field to sort results by, e.g., 'gene_name', 'isolate_name'."
     )
     sort_order: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
+    # Coordinate range filtering for viewport sync
+    seq_id: Optional[str] = Field(
+        None, description="Sequence ID (contig/chromosome) to filter genes by coordinate range."
+    )
+    start_position: Optional[int] = Field(
+        None, description="Start position for coordinate range filtering."
+    )
+    end_position: Optional[int] = Field(
+        None, description="End position for coordinate range filtering."
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": GENE_ADVANCED_SEARCH_QUERY_EXAMPLE},
+    )
 
 
 class GeneDownloadTSVQuerySchema(BaseModel):
     """Schema for downloading genes as TSV with filtering and sorting."""
 
-    isolates: str = Field(
-        "", description="Comma-separated list of isolate names to filter."
-    )
+    isolates: str = Field("", description="Comma-separated list of isolate names to filter.")
     species_acronym: Optional[str] = Field(
         None, description="Species acronym filter (e.g., 'BU', 'PV')."
     )
@@ -170,6 +189,25 @@ class GeneDownloadTSVQuerySchema(BaseModel):
     sort_field: Optional[str] = Field(None, description="Field to sort results by.")
     sort_order: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": GENE_DOWNLOAD_TSV_QUERY_EXAMPLE},
+    )
+
+
+class GetAllGenesQuerySchema(BaseModel):
+    """Schema for retrieving all genes with pagination and sorting."""
+
+    page: int = Field(1, description="Page number to retrieve.")
+    per_page: int = Field(DEFAULT_PAGE_SIZE, description="Number of genes to return per page.")
+    sort_field: Optional[str] = Field(None, description="Field to sort results by.")
+    sort_order: Optional[str] = Field(
+        DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": GET_ALL_GENES_QUERY_EXAMPLE},
     )
 
 
@@ -236,9 +274,7 @@ class NaturalLanguageGeneQuery(BaseModel):
     species_acronym: str | None = Field(
         None, description="Species acronym filter (e.g., 'BU', 'PV')"
     )
-    isolates: str | None = Field(
-        None, description="Comma-separated list of isolate names"
-    )
+    isolates: str | None = Field(None, description="Comma-separated list of isolate names")
 
     # Essentiality and AMR filters
     essentiality: str | None = Field(
@@ -253,9 +289,7 @@ class NaturalLanguageGeneQuery(BaseModel):
     )
 
     # Functional annotation filters
-    cog_id: str | None = Field(
-        None, description="Comma-separated list of COG IDs to filter"
-    )
+    cog_id: str | None = Field(None, description="Comma-separated list of COG IDs to filter")
     cog_funcats: str | None = Field(
         None, description="Comma-separated list of COG functional categories"
     )
@@ -266,9 +300,7 @@ class NaturalLanguageGeneQuery(BaseModel):
 
     # Additional filters
     filter: str | None = Field(None, description="Additional gene filter string")
-    filter_operators: str | None = Field(
-        None, description="Logical operators for filters"
-    )
+    filter_operators: str | None = Field(None, description="Logical operators for filters")
 
     # Pagination and sorting
     page: int = Field(1, description="Page number for pagination (1-based)")
@@ -277,19 +309,13 @@ class NaturalLanguageGeneQuery(BaseModel):
     sort_order: str = Field("asc", description="Sort order: 'asc' or 'desc'")
 
     # Limit for faceted search
-    limit: int = Field(
-        50, description="Maximum number of genes to return for faceted search"
-    )
+    limit: int = Field(50, description="Maximum number of genes to return for faceted search")
 
     # Backward compatibility fields (for simple queries)
-    species: str | None = Field(
-        None, description="Species filter (maps to species_acronym)"
-    )
+    species: str | None = Field(None, description="Species filter (maps to species_acronym)")
     amr: bool | None = Field(None, description="AMR filter (maps to has_amr_info)")
     function: str | None = Field(None, description="Function search (maps to query)")
-    cog_category: str | None = Field(
-        None, description="COG category (maps to cog_funcats)"
-    )
+    cog_category: str | None = Field(None, description="COG category (maps to cog_funcats)")
 
     def model_post_init(self, __context) -> None:
         """Post-initialization to map backward compatibility fields."""
@@ -309,6 +335,7 @@ class GeneResponseSchema(BaseModel):
     gene_name: Optional[str] = None
     alias: Optional[List[str]] = None
     product: Optional[str] = None
+    product_source: Optional[str] = None
     start_position: Optional[int] = None
     end_position: Optional[int] = None
     seq_id: Optional[str] = None
@@ -325,6 +352,12 @@ class GeneResponseSchema(BaseModel):
     ec_number: Optional[str] = None
     dbxref: Optional[List[DBXRefSchema]] = None
     eggnog: Optional[str] = None
+    inference: Optional[str] = None
+    ontology_terms: Optional[List[Dict[str, Any]]] = None
+    uf_ontology_terms: Optional[List[str]] = None
+    uf_prot_rec_fullname: Optional[str] = None
+    uf_keyword: Optional[List[str]] = None
+    uf_gene_name: Optional[str] = None
     amr: Optional[List[AMRSchema]] = None
     has_amr_info: Optional[bool] = None
     has_proteomics: Optional[bool] = None
@@ -332,7 +365,10 @@ class GeneResponseSchema(BaseModel):
     has_mutant_growth: Optional[bool] = None
     has_reactions: Optional[bool] = None
     feature_type: Optional[str] = "gene"
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": GENE_RESPONSE_EXAMPLE},
+    )
 
 
 class GeneProteinSeqSchema(BaseModel):
@@ -351,6 +387,11 @@ class EssentialityByContigSchema(BaseModel):
     start: Optional[int]
     end: Optional[int]
     essentiality: Optional[str]
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={"example": ESSENTIALITY_BY_CONTIG_ENTRY_EXAMPLE},
+    )
 
 
 __all__ = [

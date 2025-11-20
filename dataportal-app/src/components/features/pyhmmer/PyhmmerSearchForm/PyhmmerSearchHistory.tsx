@@ -45,45 +45,31 @@ const PyhmmerSearchHistory: React.FC<PyhmmerSearchHistoryProps> = ({history, onS
                             key={item.jobId}
                             className={`${styles.historyItem} ${item.jobId === selectedJobId ? styles.selected : ''} ${item.isJBrowseSearch ? styles.jbrowseItem : ''}`}
                             onClick={() => {
-                                if (item.isJBrowseSearch) {
-                                    // For JBrowse searches, just show the search details without fetching results
-                                    console.log('JBrowse search selected:', item);
-                                    // You could show a modal or info panel here instead
-                                } else if (item.source === 'jbrowse' && !item.isJBrowseSearch) {
-                                    // This was a JBrowse search that now has a real job ID - fetch results
-                                    onSelect(item.jobId);
-                                } else {
-                                    // Regular search - fetch results
-                                    onSelect(item.jobId);
-                                }
+                                // Always fetch results - all searches should have valid job IDs
+                                onSelect(item.jobId);
                             }}
                         >
                             <div className={styles.itemContent}>
-                                <div 
-                                    className={styles.queryText}
-                                    onMouseEnter={(e) => handleMouseEnter(e, item.query || item.input || 'Unknown')}
-                                    onMouseLeave={handleMouseLeave}
-                                >
-                                    {item.source === 'jbrowse' && item.locusTag ? (
-                                        <span className={styles.locusTagDescription}>{item.locusTag}</span>
-                                    ) : (
-                                        item.query || item.input || 'Unknown'
-                                    )}
-                                </div>
-                                
-                                {/* Show JBrowse context if available */}
-                                {item.source === 'jbrowse' && (
-                                    <div className={styles.jbrowseContext}>
-                                        <span className={styles.jbrowseBadge}>JBrowse</span>
-                                        {item.product && (
-                                            <span className={styles.productInfo}>{item.product}</span>
-                                        )}
-                                        {item.geneName && item.geneName !== item.locusTag && (
-                                            <span className={styles.geneName}>{item.geneName}</span>
-                                        )}
-                                        {item.genome && (
-                                            <span className={styles.genomeInfo}>{item.genome}</span>
-                                        )}
+                                {/* Format: >locusTag pro... (truncated in display, full in tooltip) */}
+                                {item.source === 'jbrowse' && item.locusTag ? (
+                                    <div 
+                                        className={styles.queryHeader}
+                                        onMouseEnter={(e) => {
+                                            // Show full details in tooltip: >locusTag product + sequence
+                                            const fullText = `>${item.locusTag} ${item.product || ''}\n${item.input || ''}`;
+                                            handleMouseEnter(e, fullText);
+                                        }}
+                                        onMouseLeave={handleMouseLeave}
+                                    >
+                                        {'>'}{item.locusTag} {item.product ? `${item.product.substring(0, 3)}...` : ''}
+                                    </div>
+                                ) : (
+                                    <div 
+                                        className={styles.queryText}
+                                        onMouseEnter={(e) => handleMouseEnter(e, item.query || item.input || 'Unknown')}
+                                        onMouseLeave={handleMouseLeave}
+                                    >
+                                        {item.query || item.input || 'Unknown'}
                                     </div>
                                 )}
                                 

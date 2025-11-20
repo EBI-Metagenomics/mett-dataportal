@@ -120,6 +120,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             gene_name=hit_dict.get("gene_name"),
             alias=hit_dict.get("alias", []),
             product=hit_dict.get("product"),
+            product_source=hit_dict.get("product_source"), 
             start_position=hit_dict.get("start", hit_dict.get("start_position")),
             end_position=hit_dict.get("end", hit_dict.get("end_position")),
             seq_id=hit_dict.get("seq_id"),
@@ -136,6 +137,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             ec_number=hit_dict.get("ec_number"),
             dbxref=hit_dict.get("dbxref", []),
             eggnog=hit_dict.get("eggnog"),
+            inference=hit_dict.get("inference"), 
+            ontology_terms=hit_dict.get("ontology_terms", []), 
+            uf_ontology_terms=hit_dict.get("uf_ontology_terms", []),
+            uf_prot_rec_fullname=hit_dict.get("uf_prot_rec_fullname"),
+            uf_keyword=hit_dict.get("uf_keyword", []), 
+            uf_gene_name=hit_dict.get("uf_gene_name"), 
             amr=hit_dict.get("amr", []),
             has_amr_info=hit_dict.get("has_amr_info", False),
             has_proteomics=hit_dict.get("has_proteomics", False),
@@ -444,6 +451,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        # Map frontend field names to Elasticsearch field names
+        if sort_by == "start_position":
+            sort_by = "start"
+        elif sort_by == "end_position":
+            sort_by = "end"
+        
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
@@ -642,6 +655,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        # Map frontend field names to Elasticsearch field names
+        if sort_by == "start_position":
+            sort_by = "start"
+        elif sort_by == "end_position":
+            sort_by = "end"
+        
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
@@ -738,6 +757,28 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                         es_query["bool"]["must"].append({"terms": {field: value}})
                     else:
                         es_query["bool"]["must"].append({"term": {field: value}})
+
+        # Coordinate range filtering for viewport sync
+        # Filter genes that overlap with the viewport range
+        if params and params.seq_id and params.start_position is not None and params.end_position is not None:
+            # Ensure start < end (handle swapped values)
+            viewport_start = min(params.start_position, params.end_position)
+            viewport_end = max(params.start_position, params.end_position)
+            
+            # Filter by seq_id
+            es_query["bool"]["must"].append({"term": {FIELD_SEQ_ID: params.seq_id}})
+            
+            # Filter genes that overlap with viewport range
+            # A gene overlaps if: gene_start <= viewport_end AND gene_end >= viewport_start
+            # Elasticsearch uses "start" and "end" fields, not "start_position" and "end_position"
+            es_query["bool"]["must"].append({
+                "bool": {
+                    "must": [
+                        {"range": {"start": {"lte": viewport_end}}},
+                        {"range": {"end": {"gte": viewport_start}}}
+                    ]
+                }
+            })
 
         logger.info(
             f"DEBUG - Final Elasticsearch Query: {json.dumps(es_query, indent=2)}"
@@ -1092,6 +1133,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_field = GENOME_FIELD_ISOLATE_NAME
 
         sort_by = sort_field or GENE_DEFAULT_SORT_FIELD
+        # Map frontend field names to Elasticsearch field names
+        if sort_by == "start_position":
+            sort_by = "start"
+        elif sort_by == "end_position":
+            sort_by = "end"
+        
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by

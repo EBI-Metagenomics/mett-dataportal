@@ -45,6 +45,8 @@ interface GeneSearchFormProps {
     onResultsUpdate?: (results: any[], pagination: any) => void;
     onPageSizeChange?: (newPageSize: number) => void;
     onPageChange?: (page: number) => void;
+    onFeatureSelect?: (feature: any) => void;
+    hideActionsColumn?: boolean; // If true, hide Actions column and make rows clickable
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -67,6 +69,8 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            onResultsUpdate,
                                                            onPageSizeChange,
                                                            onPageChange,
+                                                           onFeatureSelect,
+                                                           hideActionsColumn = false,
                                                        }) => {
 
     const renderCount = useRef(0);
@@ -831,6 +835,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         isLoading={isDownloading}
                         sortField={sortField}
                         sortOrder={sortOrder}
+                        onFeatureSelect={onFeatureSelect}
+                        tableSource="search-table"
+                        hideActionsColumn={hideActionsColumn}
                     />
                     {/* Page size dropdown and pagination */}
                     <div className={styles.paginationContainer}>

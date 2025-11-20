@@ -1,22 +1,20 @@
 import logging
-from typing import List
 
 from ninja import Router, Query, Path
-from ninja.errors import HttpError
-
-from dataportal.schema.core.genome_schemas import (
-    GenomeSearchQuerySchema,
-)
 from dataportal.schema.core.species_schemas import (
-    SpeciesSchema,
+    SpeciesGenomeSearchQuerySchema,
 )
-from dataportal.schema.response_schemas import PaginatedResponseSchema
+from dataportal.schema.response_schemas import (
+    GenomePaginatedResponseSchema,
+    SuccessResponseSchema,
+    create_success_response,
+)
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.utils.errors import raise_http_error, raise_internal_server_error
 from dataportal.utils.exceptions import (
     ServiceError,
 )
-from dataportal.utils.response_wrappers import wrap_paginated_response
+from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
 
 logger = logging.getLogger(__name__)
 
@@ -30,16 +28,19 @@ species_router = Router(tags=[ROUTER_SPECIES])
 # API Endpoint to retrieve all species
 @species_router.get(
     "/",
-    response=List[SpeciesSchema],
+    response=SuccessResponseSchema,
     summary="Get all species",
     description="Get all available species",
 )
+@wrap_success_response
 async def get_all_species(request):
     try:
         species = await species_service.get_all_species()
-        return species
+        return create_success_response(
+            data=species, message=f"Retrieved {len(species)} species successfully"
+        )
     except ServiceError:
-        raise HttpError(500, "An error occurred while fetching species.")
+        raise_internal_server_error("An error occurred while fetching species.")
     except Exception:
         raise_http_error(500, "An error occurred while fetching species.")
 
@@ -47,48 +48,51 @@ async def get_all_species(request):
 # API Endpoint to retrieve genomes filtered by species_acronym
 @species_router.get(
     "/{species_acronym}/genomes",
-    response=PaginatedResponseSchema,
+    response=GenomePaginatedResponseSchema,
     summary="Get genomes by species",
     description="Retrieves genomes under a given species with pagination and sorting.",
 )
 @wrap_paginated_response
 async def get_genomes_by_species(
     request,
-    species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
-    query: GenomeSearchQuerySchema = Query(...),
+    species_acronym: str = Path(
+        ...,
+        description="Acronym for the species (BU or PV).",
+        example="BU",
+    ),
+    query: SpeciesGenomeSearchQuerySchema = Query(...),
 ):
     try:
-        query.species_acronym = species_acronym
-        # Clear any existing query to get all genomes for the species
-        query.query = ""
-        result = await genome_service.search_genomes_by_string(query)
+        species_query = query.model_copy()
+        genome_query = species_query.to_genome_search_query(species_acronym)
+        result = await genome_service.search_genomes_by_string(genome_query)
         return result
     except ServiceError as e:
         logger.error(f"Service error in get genomes by species: {e}")
-        raise_internal_server_error(
-            f"Failed to fetch genomes by species: {species_acronym}"
-        )
+        raise_internal_server_error(f"Failed to fetch genomes by species: {species_acronym}")
 
 
 # API Endpoint to search genomes by species_acronym and query string
 @species_router.get(
     "/{species_acronym}/genomes/search",
-    response=PaginatedResponseSchema,
+    response=GenomePaginatedResponseSchema,
     summary="Search genomes by species and query string",
     description="Performs a search for genomes within a specific species with pagination and sorting.",
 )
 @wrap_paginated_response
 async def search_genomes_by_species_and_string(
     request,
-    species_acronym: str = Path(..., description="Acronym for the species (BU or PV)."),
-    query: GenomeSearchQuerySchema = Query(...),
+    species_acronym: str = Path(
+        ...,
+        description="Acronym for the species (BU or PV).",
+        example="BU",
+    ),
+    query: SpeciesGenomeSearchQuerySchema = Query(...),
 ):
     try:
-        query.species_acronym = species_acronym
-        result = await genome_service.search_genomes_by_string(query)
+        genome_query = query.to_genome_search_query(species_acronym)
+        result = await genome_service.search_genomes_by_string(genome_query)
         return result
     except ServiceError as e:
         logger.error(f"Service error in search genomes by species: {e}")
-        raise_internal_server_error(
-            f"Failed to search genomes by species: {species_acronym}"
-        )
+        raise_internal_server_error(f"Failed to search genomes by species: {species_acronym}")

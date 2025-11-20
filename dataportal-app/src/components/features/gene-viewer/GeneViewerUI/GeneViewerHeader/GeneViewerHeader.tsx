@@ -1,6 +1,7 @@
 import React from 'react';
 import {GenomeMeta} from '../../../../../interfaces/Genome';
 import GeneViewerLegends from '@components/molecules/GeneViewerLegends';
+import Breadcrumb from '@components/molecules/Breadcrumb';
 import styles from './GeneViewerHeader.module.scss';
 
 interface GeneViewerHeaderProps {
@@ -11,17 +12,7 @@ const GeneViewerHeader: React.FC<GeneViewerHeaderProps> = ({genomeMeta}) => {
     return (
         <div className={styles.geneViewerHeader}>
             {/* Breadcrumb Section */}
-            <nav className="vf-breadcrumbs" aria-label="Breadcrumb">
-                <ul className="vf-breadcrumbs__list vf-list vf-list--inline">
-                    <li className={styles.breadcrumbsItem}>
-                        <a href="/" className="vf-breadcrumbs__link">Home</a>
-                    </li>
-                    <span className={styles.separator}> | </span>
-                    <li className={styles.breadcrumbsItem}>
-                        <b>Genome View</b>
-                    </li>
-                </ul>
-            </nav>
+            <Breadcrumb currentPage="genome-view" />
 
             {/* Genome Metadata Section */}
             <section className={styles.infoSection}>

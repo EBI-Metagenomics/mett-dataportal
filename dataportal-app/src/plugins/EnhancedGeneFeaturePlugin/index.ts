@@ -2,7 +2,8 @@ import Plugin from '@jbrowse/core/Plugin';
 import PluginManager from '@jbrowse/core/PluginManager';
 import AdapterType from '@jbrowse/core/pluggableElementTypes/AdapterType';
 import configSchema from "./configSchema";
-import {getColorForEssentiality} from '../../utils/common/constants';
+import {getColorForEssentiality} from '../../utils/common/geneUtils';
+import {VIEWPORT_SYNC_CONSTANTS} from '../../utils/gene-viewer';
 
 export default class EnhancedGeneFeaturePlugin extends Plugin {
     name = 'EnhancedGeneFeaturePlugin';
@@ -11,6 +12,24 @@ export default class EnhancedGeneFeaturePlugin extends Plugin {
 
         // const { jexl } = pluginManager.jexl;
         pluginManager.jexl.addFunction('getColorForEssentiality', getColorForEssentiality);
+        
+        // Add function to get selected gene ID for highlighting
+        pluginManager.jexl.addFunction('selectedGeneId', () => {
+            return (typeof window !== 'undefined' && (window as typeof window & { selectedGeneId?: string }).selectedGeneId) || null;
+        });
+        
+        // Add function to get gene color with highlighting support
+        pluginManager.jexl.addFunction('getGeneColor', (feature: any) => {
+            const locusTag = feature?.locus_tag || feature?.get?.('locus_tag');
+            const selectedId = (typeof window !== 'undefined' && (window as typeof window & { selectedGeneId?: string }).selectedGeneId) || null;
+            
+            if (selectedId && locusTag === selectedId) {
+                return VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR; // Unified blue color for selected gene
+            }
+            
+            const essentiality = feature?.Essentiality || feature?.get?.('Essentiality');
+            return getColorForEssentiality(essentiality);
+        });
 
         // console.log("install called");
         pluginManager.addAdapterType(

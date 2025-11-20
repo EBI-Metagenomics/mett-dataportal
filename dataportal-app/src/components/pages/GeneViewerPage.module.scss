@@ -1,137 +1,12 @@
 .vfContent {
   width: 100% !important;
-  min-width: 1200px;
+  min-width: 800px;
   float: left !important;
   padding-right: 20px;
   justify-content: normal;
   max-width: none;
 }
 
-.infoSection {
-  margin-bottom: 2rem;
-}
-
-.infoGrid {
-  display: flex;
-  flex-direction: row;
-  gap: 2rem;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-.leftPane {
-  flex: 1;
-  min-width: 500px;
-}
-
-.rightPane {
-  flex: 2;
-  min-width: 300px;
-  margin-left: 15rem;
-}
-
-.pyhmmerContainer {
-  padding: 1rem 5px;
-  margin: 1rem 0;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f8fafc;
-}
-
-.geneSearchContainer {
-  padding-left: 5px;
-  padding-top: 5px;
-  position: relative;
-  z-index: 1;
-}
-
-// Gene Search Container
-.geneSearchContainer {
-  margin-top: 2rem;
-}
-
-.breadcrumbsItem {
-  display: inline-block;
-  margin-right: 5px;
-}
-
-.breadcrumbsItem::after {
-  content: none !important;
-}
-
-.separator {
-  display: inline-block;
-  margin: 0 5px;
-  color: #000;
-}
-
-.iconDownTriangle {
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid #0072CE;
-  display: inline-block;
-  margin-left: 5px;
-}
-
-.iconBlack {
-  color: #555;
-}
-
-.dropdownList {
-  display: none;
-  position: absolute;
-  background-color: white;
-  border: 1px solid #ccc;
-  list-style: none;
-  padding: 5px;
-  margin: 0;
-  z-index: 1000;
-}
-
-.dropdownItem {
-  margin: 5px 0;
-}
-
-.dropdownLink {
-  text-decoration: none;
-  color: #000;
-  padding: 5px 10px;
-  display: block;
-}
-
-.dropdownLink:hover {
-  background-color: #f0f0f0;
-}
-
-.dropdown:hover .dropdownList {
-  display: block;
-}
-
-.jbrowseViewer {
-  display: block;
-  width: 100%;
-  min-width: 1200px;
-  max-width: none;
-}
-
-/* Let jbrowseContainer grow, and scroll vertically */
-.jbrowseContainer {
-  width: 100%;
-  min-width: 1200px;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-width: none;
-}
-
-.sidePanel {
-  flex-grow: 1;
-  height: calc(100% - 50px);
-  overflow-y: auto;
-}
 
 header.MuiToolbar-root.MuiToolbar-gutters.MuiToolbar-dense[class*="css-"],
 header[class*="MuiToolbar-root.MuiToolbar-gutters"] [class*="css-"],
@@ -143,8 +18,27 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   display: none !important;
 }
 
-[class*="trackRenderingContainer"] {
-  min-height: 130px !important;
+// JBrowse track height overrides
+// Note: Heights are managed in constants.tsx (JBROWSE_TRACK_HEIGHTS)
+:global {
+  [class*="trackRenderingContainer"] {
+    min-height: 200px !important;
+  }
+  
+  // Structural annotation track - show more genes vertically
+  [data-testid*="structural_annotation"] [class*="trackRenderingContainer"],
+  [class*="structural_annotation"] [class*="trackRenderingContainer"] {
+    min-height: 250px !important;
+    max-height: 400px !important;
+  }
+  
+  // Reference sequence track - compact display
+  [data-testid*="reference"] [class*="trackRenderingContainer"],
+  [class*="LinearReferenceSequenceDisplay"] [class*="trackRenderingContainer"],
+  div[class*="ReferenceSequenceTrack"] [class*="trackRenderingContainer"] {
+    min-height: 30px !important;
+    max-height: 50px !important;
+  }
 }
 
 // Utility Classes
@@ -156,27 +50,84 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   display: none;
 }
 
-// PyHMMER Integration Styles - Moved to PyhmmerFeatureWidget.module.scss
-
 // Gene Search Container
 .geneSearchContainer {
   margin-top: 2rem;
+  width: 100%;
 }
 
-// Breadcrumbs
-.breadcrumbsItem {
-  color: #6b7280;
-  text-decoration: none;
-  
-  &:hover {
-    color: #374151;
-    text-decoration: underline;
+// Tab Navigation
+.tabs-container {
+  display: flex;
+  border-bottom: 2px solid #ccc;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #666;
+  outline: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.3s, border-bottom 0.3s;
+}
+
+.tab:hover {
+  color: #333;
+}
+
+.tab.active {
+  color: #0072ce;
+  border-bottom: 2px solid #0072ce;
+}
+
+// ULTIMATE NUCLEAR HIDING: Remove JBrowse drawer from existence
+:global {
+  // Hide ALL MUI Drawer variations with maximum specificity
+  .MuiDrawer-root,
+  .MuiDrawer-paper,
+  .MuiDrawer-modal,
+  .MuiDrawer-docked,
+  [class*="MuiDrawer"],
+  div[class^="MuiDrawer"],
+  aside[class*="MuiDrawer"],
+  // Hide ALL feature detail variations
+  [class*="BaseFeatureDetail"],
+  [class*="FeatureDetails"],
+  [class*="featureDetails"],
+  [class*="DrawerWidget"],
+  [class*="FeatureWidget"],
+  [class*="BaseFeatureWidget"],
+  // Hide backdrops (but not Autocomplete popper)
+  .MuiBackdrop-root:not([aria-hidden="true"]),
+  [class*="MuiBackdrop"]:not([class*="MuiAutocomplete"]),
+  // Hide by role and aria - only JBrowse specific elements
+  aside[role="presentation"],
+  div[class*="Drawer"][role="presentation"],
+  [role="presentation"][class*="Drawer"],
+  [role="presentation"][class*="Feature"],
+  [aria-label*="drawer"],
+  [aria-label*="Drawer"],
+  [aria-label*="feature"],
+  [data-testid*="drawer"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0px !important;
+    height: 0px !important;
+    max-width: 0px !important;
+    max-height: 0px !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    top: -99999px !important;
+    left: -99999px !important;
+    z-index: -99999 !important;
+    transform: scale(0) !important;
   }
-}
-
-.breadcrumbsSeparator {
-  color: #9ca3af;
-  margin: 0 0.5rem;
 }
 
 // Spinner
@@ -207,12 +158,6 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   100% { transform: rotate(360deg); }
 }
 
-// VF Content
-.vfContent {
-  position: relative;
-  z-index: 1;
-}
-
 // Gene Viewer Page specific styles for wider layout
 .geneViewerPage {
   width: 100%;
@@ -226,5 +171,169 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   width: 100%;
   max-width: none;
   margin: 0;
+  padding: 0;
+}
+
+// Main content grid: Left column (JBrowse + Search) and Right column (Feature Panel)
+.mainContentGrid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  grid-auto-rows: 1fr;
+  gap: 0;
+  width: 100%;
+  min-height: 600px;
+  margin: 0;
   padding: 0 20px;
+  align-items: start;
+}
+
+// Left column: Contains JBrowse viewer and search/facets
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-right: 20px;
+}
+
+// Right column: Feature panel - aligns with left column
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+  height: 100%;
+}
+
+// JBrowse viewer section
+.jbrowseSection {
+  width: 100%;
+  display: flex;
+  height: 600px;
+  flex-direction: column;
+  margin-bottom: 0; // Remove margin since notification bar will provide spacing
+  overflow: hidden;
+  position: relative;
+}
+
+// Sync View Notification Bar
+.syncNotificationBar {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.syncNotificationContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.syncNotificationIcon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.syncNotificationText {
+  flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  
+  strong {
+    font-weight: 600;
+  }
+}
+
+.syncNotificationActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.syncNotificationButton {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  
+  &:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.syncNotificationDismiss {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 1400px) {
+  .mainContentGrid {
+    grid-template-columns: 1fr 280px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .mainContentGrid {
+    grid-template-columns: 1fr 260px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .mainContentGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .rightColumn {
+    max-height: 800px;
+  }
+  
+  .leftColumn {
+    padding-right: 0;
+  }
 }

@@ -4,7 +4,7 @@ import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/features/gene-viewer/GeneSearchForm/GeneSearchForm";
 
 // Import new hooks and utilities
-import {useGeneViewerData, useGeneViewerNavigation, useGeneViewerSearch} from '../../hooks';
+import {useGeneViewerData, useGeneViewerSearch} from '../../hooks';
 import {useGeneViewerUrlSync} from '../../hooks/useGeneViewerUrlSync';
 import {useDebouncedLoading} from '../../hooks/useDebouncedLoading';
 
@@ -13,9 +13,40 @@ import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../featur
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {useFilterStore} from '../../stores/filterStore';
 import {DEFAULT_PER_PAGE_CNT} from '../../utils/common/constants';
+import {useFacetedFilters} from '../../hooks/useFacetedFilters';
 
-// Import PyHMMER integration component
-import { PyhmmerIntegration } from '../features/pyhmmer/feature-panel/PyhmmerIntegration';
+// Import custom feature panel
+import FeaturePanel from '../features/gene-viewer/FeaturePanel/FeaturePanel';
+import SyncView from '../features/gene-viewer/SyncView';
+import { useJBrowseViewportSync } from '../../hooks/useJBrowseViewportSync';
+import { useViewportSyncStore } from '../../stores/viewportSyncStore';
+import { VIEWPORT_SYNC_CONSTANTS } from '../../utils/gene-viewer';
+
+// Tab Navigation Component
+interface Tab {
+    id: string;
+    label: string;
+}
+
+interface TabNavigationProps {
+    tabs: Tab[];
+    activeTab: string;
+    onTabClick: (tabId: string) => void;
+}
+
+const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClick}) => (
+    <div className={styles["tabs-container"]}>
+        {tabs.map((tab) => (
+            <button
+                key={tab.id}
+                onClick={() => onTabClick(tab.id)}
+                className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
+            >
+                {tab.label}
+            </button>
+        ))}
+    </div>
+);
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -23,13 +54,20 @@ const GeneViewerPage: React.FC = () => {
 
     // Get state from Zustand stores
     const filterStore = useFilterStore();
+    const { viewportChanged, setViewportChanged } = useViewportSyncStore();
+    
+    // Tab state for Search View / Genomic Context
+    const [activeTab, setActiveTab] = useState<'search' | 'sync'>('search');
+    const [showAutoSwitchNotification, setShowAutoSwitchNotification] = useState(false);
+    const [wasAutoSwitched, setWasAutoSwitched] = useState(false);
+    const manualOverrideUntilRef = useRef<number | null>(null);
 
     // URL synchronization for gene viewer
     useGeneViewerUrlSync();
 
     // Local state
-    const [height] = useState(450);
     const [pageSize, setPageSize] = useState(DEFAULT_PER_PAGE_CNT);
+    const [selectedFeature, setSelectedFeature] = useState<any | null>(null);
 
     // Custom hooks for data management
     const geneViewerData = useGeneViewerData();
@@ -70,18 +108,23 @@ const GeneViewerPage: React.FC = () => {
         includeEssentiality
     );
 
-    // Only re-initialize JBrowse view state when genome changes
     const lastGenomeRef = React.useRef<string | null>(null);
     const [jbrowseInitKey, setJbrowseInitKey] = useState(0);
 
     useEffect(() => {
         if (geneViewerData.genomeMeta?.isolate_name !== lastGenomeRef.current) {
             lastGenomeRef.current = geneViewerData.genomeMeta?.isolate_name || null;
-            setJbrowseInitKey((k) => k + 1); // force re-init
+            setJbrowseInitKey((k) => k + 1);
+            const viewportStore = useViewportSyncStore.getState();
+            viewportStore.setViewportInitialized(false);
+            viewportStore.setViewportChanged(false);
+            viewportStore.setChangeSource(null);
+            viewportStore.setLastTableNavigationTime(null);
+            manualOverrideUntilRef.current = null;
         }
     }, [geneViewerData.genomeMeta?.isolate_name]);
 
-    const {viewState, initializationError} = useGeneViewerState(
+    const {viewState} = useGeneViewerState(
         geneViewerConfig.assembly,
         geneViewerConfig.tracks,
         geneViewerConfig.sessionConfig,
@@ -89,9 +132,73 @@ const GeneViewerPage: React.FC = () => {
         jbrowseInitKey
     );
 
-    const handleTrackRefresh = useCallback(() => {
-        console.log('🔧 handleTrackRefresh called with:', { includeEssentiality, hasViewState: !!viewState });
+    useJBrowseViewportSync({
+        viewState,
+        isolateName: geneViewerData.genomeMeta?.isolate_name || null,
+        debounceMs: VIEWPORT_SYNC_CONSTANTS.VIEWPORT_DEBOUNCE_MS,
+        enabled: true,
+    });
+
+    const recordManualSearchOverride = useCallback(() => {
+        manualOverrideUntilRef.current = Date.now() + VIEWPORT_SYNC_CONSTANTS.AUTO_SWITCH_MANUAL_OVERRIDE_MS;
+    }, []);
+
+    const clearManualOverride = useCallback(() => {
+        manualOverrideUntilRef.current = null;
+    }, []);
+
+    useEffect(() => {
+        if (!viewportChanged) {
+            return;
+        }
+
+        const { lastTableNavigationTime } = useViewportSyncStore.getState();
+        const isInCooldown = lastTableNavigationTime !== null &&
+            (Date.now() - lastTableNavigationTime) < VIEWPORT_SYNC_CONSTANTS.TABLE_NAVIGATION_COOLDOWN_MS;
+
+        if (isInCooldown) {
+            setViewportChanged(false);
+            return;
+        }
+
+        const manualOverrideActive = manualOverrideUntilRef.current !== null &&
+            manualOverrideUntilRef.current > Date.now();
+
+        if (manualOverrideActive) {
+            setViewportChanged(false);
+            return;
+        }
         
+        if (activeTab === 'search') {
+            clearManualOverride();
+            setActiveTab('sync');
+            setWasAutoSwitched(true);
+            setShowAutoSwitchNotification(true);
+        }
+        setViewportChanged(false);
+    }, [viewportChanged, activeTab, setViewportChanged, clearManualOverride]);
+
+    const handleSetSearchView = useCallback(() => {
+        recordManualSearchOverride();
+        setActiveTab('search');
+        setShowAutoSwitchNotification(false);
+        setWasAutoSwitched(false);
+    }, [recordManualSearchOverride]);
+
+    const handleSetSyncView = useCallback(() => {
+        clearManualOverride();
+        setActiveTab('sync');
+    }, [clearManualOverride]);
+
+    const handleSwitchToSearch = useCallback(() => {
+        handleSetSearchView();
+    }, [handleSetSearchView]);
+
+    const handleDismissNotification = useCallback(() => {
+        setShowAutoSwitchNotification(false);
+    }, []);
+
+    const handleTrackRefresh = useCallback(() => {
         if (!viewState) return;
         
         const session = viewState.session;
@@ -99,16 +206,13 @@ const GeneViewerPage: React.FC = () => {
         if (!view) return;
 
         try {
-            console.log('🔧 Hiding track: structural_annotation');
             view.hideTrack('structural_annotation');
 
             const newTrack = geneViewerConfig.tracks.find(
                 (track: any) => track.trackId === 'structural_annotation'
             );
-            console.log('🔧 Found track:', newTrack?.trackId, 'with adapter:', newTrack?.adapter?.type);
             
             if (newTrack) {
-                console.log('🔧 Showing track with includeEssentiality:', includeEssentiality);
                 view.showTrack('structural_annotation', {
                     ...newTrack,
                     adapter: {
@@ -123,23 +227,24 @@ const GeneViewerPage: React.FC = () => {
     }, [viewState, geneViewerConfig.tracks, includeEssentiality]);
 
     useEffect(() => {
-        console.log('🔧 Track refresh effect triggered');
         handleTrackRefresh();
     }, [handleTrackRefresh]);
-
-    // Navigation logic
-    const navigation = useGeneViewerNavigation({
-        viewState,
-        geneMeta: geneViewerData.geneMeta,
-        loading: geneViewerData.loading,
-        setLoading: geneViewerData.setLoading,
-    });
 
     const handleRefreshTracks = useCallback(() => {
         if (viewState) {
             refreshStructuralAnnotationTrack(viewState);
         }
     }, [viewState]);
+
+    // Handle feature selection from JBrowse
+    const handleFeatureSelect = useCallback((feature: any) => {
+        setSelectedFeature(feature);
+    }, []);
+
+    // Handle closing the feature panel
+    const handleCloseFeaturePanel = useCallback(() => {
+        setSelectedFeature(null);
+    }, []);
 
     const handleError = useCallback((error: Error, errorInfo: React.ErrorInfo) => {
         console.error('GeneViewerPage error:', error, errorInfo);
@@ -150,25 +255,31 @@ const GeneViewerPage: React.FC = () => {
         type_strain: geneViewerData.genomeMeta.type_strain || false
     }] : [], [geneViewerData.genomeMeta]);
 
+    // Create shared handleToggleFacet for FeaturePanel to use the same mechanism as facet checkboxes
+    const selectedSpeciesFromStore = useFilterStore(state => state.selectedSpecies);
+    const geneSearchQuery = useFilterStore(state => state.geneSearchQuery);
+    const { handleToggleFacet, facets } = useFacetedFilters({
+        selectedSpecies: selectedSpeciesFromStore,
+        selectedGenomes,
+        searchQuery: geneSearchQuery,
+    });
+
     const linkData = useMemo(() => ({
         template: '/genome/${strain_name}?locus_tag=${locus_tag}',
         alias: 'Browse'
     }), []);
 
-    const handleRemoveGenome = useCallback((isolate_name: string) => {
-        // if needed
+    const handleRemoveGenome = useCallback(() => {
+        // Not used in single genome view
     }, []);
 
-    // Callback to handle page size changes (same pattern as HomePage)
+    // Callback to handle page size changes
     const handlePageSizeChange = useCallback((newPageSize: number) => {
-        console.log('GeneViewerPage - handlePageSizeChange called with:', newPageSize);
         setPageSize(newPageSize);
-        // Trigger a new search with the new page size
         if (geneViewerData.genomeMeta) {
             geneViewerSearch.handleGeneSearch(newPageSize);
         }
-    }, [geneViewerData.genomeMeta, geneViewerSearch.handleGeneSearch]);
-
+    }, [geneViewerData.genomeMeta, geneViewerSearch]);
 
     // Memoize the loading spinner to prevent unnecessary re-renders
     const spinner = useMemo(() => {
@@ -180,13 +291,6 @@ const GeneViewerPage: React.FC = () => {
             </div>
         );
     }, [debouncedLoading]);
-
-    // Memoize error message to prevent unnecessary re-renders
-    const errorMessage = useMemo(() => {
-        return geneViewerData.error || 
-               navigation.navigationError || 
-               (initializationError ? initializationError.toString() : null);
-    }, [geneViewerData.error, navigation.navigationError, initializationError]);
 
     return (
         <ErrorBoundary onError={handleError}>
@@ -218,51 +322,121 @@ const GeneViewerPage: React.FC = () => {
                         onEssentialityToggle={handleEssentialityToggle}
                     />
 
-                    {/* Main JBrowse content */}
-                    <GeneViewerContent
-                        viewState={viewState}
-                        height={height}
-                        onRefreshTracks={handleRefreshTracks}
-                        // Feature selection is now handled by JBrowse's built-in feature panel
-                    />
+                    {/* Main content grid: JBrowse/Search on left, Feature Panel on right */}
+                    <div className={styles.mainContentGrid}>
+                        {/* Left column: JBrowse viewer and search/facets */}
+                        <div className={styles.leftColumn}>
+                            {/* JBrowse Viewer Container */}
+                            <div className={styles.jbrowseSection}>
+                                <GeneViewerContent
+                                    viewState={viewState}
+                                    onRefreshTracks={handleRefreshTracks}
+                                    onFeatureSelect={handleFeatureSelect}
+                                />
+                            </div>
+                            
+                            {/* Auto-Switch Notification Bar - positioned below JBrowse */}
+                            {showAutoSwitchNotification && activeTab === 'sync' && wasAutoSwitched && (
+                                <div className={styles.syncNotificationBar}>
+                                    <div className={styles.syncNotificationContent}>
+                                        <span className={styles.syncNotificationIcon}>🔄</span>
+                                        <span className={styles.syncNotificationText}>
+                                            View automatically switched to <strong>Genomic Context</strong> to show genes in the current viewport.
+                                        </span>
+                                        <div className={styles.syncNotificationActions}>
+                                            <button 
+                                                className={styles.syncNotificationButton}
+                                                onClick={handleSwitchToSearch}
+                                            >
+                                                Switch back to Search View
+                                            </button>
+                                            <button 
+                                                className={styles.syncNotificationDismiss}
+                                                onClick={handleDismissNotification}
+                                                aria-label="Dismiss notification"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
-                    {/* PyHMMER Integration - handles all PyHMMER functionality */}
-                    <PyhmmerIntegration />
+                            {/* Gene Search Section - Below the JBrowse viewer */}
+                            <div className={styles.geneSearchContainer}>
+                                <section>
+                                    {/* Tab Navigation */}
+                                    <TabNavigation
+                                        tabs={[
+                                            { id: 'search', label: 'Search View' },
+                                            { id: 'sync', label: 'Genomic Context' },
+                                        ]}
+                                        activeTab={activeTab}
+                                        onTabClick={(tabId) => {
+                                            const newTab = tabId as 'search' | 'sync';
+                                            if (newTab === 'search') {
+                                                handleSetSearchView();
+                                            } else {
+                                                handleSetSyncView();
+                                            }
+                                        }}
+                                    />
+                                    
+                                    {/* Tab Content */}
+                                    {activeTab === 'search' ? (
+                                        <GeneSearchForm
+                                            searchQuery={filterStore.geneSearchQuery}
+                                            onSearchQueryChange={() => {
+                                            }}
+                                            onSearchSubmit={() => {
+                                                // GeneSearchForm handles search internally
+                                            }}
+                                            selectedSpecies={[]}
+                                            selectedGenomes={selectedGenomes}
+                                            results={geneViewerSearch.geneResults}
+                                            onSortClick={geneViewerSearch.handleGeneSortClick}
+                                            sortField={filterStore.geneSortField}
+                                            sortOrder={filterStore.geneSortOrder}
+                                            linkData={linkData}
+                                            viewState={viewState || undefined}
+                                            setLoading={geneViewerData.setLoading}
+                                            handleRemoveGenome={handleRemoveGenome}
+                                            onPageSizeChange={handlePageSizeChange}
+                                            onPageChange={geneViewerSearch.handlePageChange}
+                                            currentPage={geneViewerSearch.currentPage}
+                                            totalPages={geneViewerSearch.totalPages}
+                                            hasPrevious={geneViewerSearch.hasPrevious}
+                                            hasNext={geneViewerSearch.hasNext}
+                                            totalCount={geneViewerSearch.totalCount}
+                                            onFeatureSelect={handleFeatureSelect}
+                                            hideActionsColumn={true}
+                                        />
+                                    ) : (
+                                        <SyncView
+                                            viewState={viewState || undefined}
+                                            selectedGenomes={selectedGenomes}
+                                            setLoading={geneViewerData.setLoading}
+                                            onFeatureSelect={handleFeatureSelect}
+                                            linkData={linkData}
+                                        />
+                                    )}
+                                </section>
+                            </div>
+                        </div>
 
-                    {/* Instructions for JBrowse Integration */}
-                    <div className={styles.pyhmmerIntegration}> 
-                        {/* PyHMMER search links will use CSS classes from the module */}
-                    </div>
-
-                    {/* Gene Search Section */}
-                    <div className={styles.geneSearchContainer}>
-                        <section>
-                            <GeneSearchForm
-                                searchQuery={filterStore.geneSearchQuery}
-                                onSearchQueryChange={() => {
-                                }}
-                                onSearchSubmit={() => {
-                                    // GeneSearchForm handles search internally
-                                }}
-                                selectedSpecies={[]}
-                                selectedGenomes={selectedGenomes}
-                                results={geneViewerSearch.geneResults}
-                                onSortClick={geneViewerSearch.handleGeneSortClick}
-                                sortField={filterStore.geneSortField}
-                                sortOrder={filterStore.geneSortOrder}
-                                linkData={linkData}
+                        {/* Right column: Feature Panel */}
+                                <div className={styles.rightColumn}>
+                            <FeaturePanel 
+                                feature={selectedFeature}
+                                onClose={handleCloseFeaturePanel}
                                 viewState={viewState || undefined}
                                 setLoading={geneViewerData.setLoading}
-                                handleRemoveGenome={handleRemoveGenome}
-                                onPageSizeChange={handlePageSizeChange}
-                                onPageChange={geneViewerSearch.handlePageChange}
-                                currentPage={geneViewerSearch.currentPage}
-                                totalPages={geneViewerSearch.totalPages}
-                                hasPrevious={geneViewerSearch.hasPrevious}
-                                hasNext={geneViewerSearch.hasNext}
-                                totalCount={geneViewerSearch.totalCount}
+                                activeTab={activeTab}
+                                        onSwitchToSearch={handleSetSearchView}
+                                onToggleFacet={handleToggleFacet}
+                                facets={facets}
                             />
-                        </section>
+                        </div>
                     </div>
                 </section>
             </div>

@@ -4,12 +4,19 @@ from datetime import timedelta
 from django.utils import timezone
 from django_celery_results.models import TaskResult
 from ninja import Router
-from ninja.errors import HttpError
 
+from dataportal.schema.response_schemas import (
+    SuccessResponseSchema,
+    create_success_response,
+)
+from dataportal.utils.errors import (
+    raise_validation_error,
+    raise_internal_server_error,
+)
 from dataportal.utils.response_wrappers import wrap_success_response
 from .models import Database
 from .models import HmmerJob
-from .schemas import SearchRequestSchema, SearchResponseSchema
+from .schemas import SearchRequestSchema
 from .tasks import run_search
 
 import time
@@ -19,11 +26,12 @@ logger = logging.getLogger(__name__)
 pyhmmer_router_search = Router(tags=["PyHMMER Search"])
 
 
-@pyhmmer_router_search.post("", response=SearchResponseSchema)
+@pyhmmer_router_search.post("", response=SuccessResponseSchema)
+@wrap_success_response
 def search(request, body: SearchRequestSchema):
     try:
         logger.info("=== SEARCH REQUEST RECEIVED ===")
-        logger.info(f"Request body: {body.dict()}")
+        logger.debug("Request metadata captured; input sequence omitted for privacy.")
 
         # Create the job
         logger.info("Creating HmmerJob...")
@@ -42,7 +50,7 @@ def search(request, body: SearchRequestSchema):
             logger.info(f"Job {job.id} should be committed to database")
         except Exception as e:
             logger.error(f"Failed to verify job in database: {e}")
-            raise HttpError(500, f"Failed to create job: {str(e)}")
+            raise_internal_server_error(f"Failed to create job: {str(e)}")
 
         # Start the task
         logger.info("Starting Celery task...")
@@ -72,11 +80,13 @@ def search(request, body: SearchRequestSchema):
         logger.info(f"Job ID: {job.id}")
         logger.info(f"Task ID: {result.id}")
 
-        return {"id": job.id}
+        return create_success_response(
+            data={"id": job.id}, message=f"PyHMMER search job created successfully with ID {job.id}"
+        )
 
     except Exception as e:
         logger.error(f"Error in search: {e}")
-        raise HttpError(500, f"Internal server error: {str(e)}")
+        raise_internal_server_error(f"Internal server error: {str(e)}")
 
 
 @pyhmmer_router_search.get("/databases", include_in_schema=False)
@@ -92,9 +102,7 @@ def get_databases(request):
                 "name": db.name,
                 "type": db.type,
                 "version": db.version,
-                "release_date": (
-                    db.release_date.isoformat() if db.release_date else None
-                ),
+                "release_date": (db.release_date.isoformat() if db.release_date else None),
                 "order": db.order,
             }
             for db in databases
@@ -128,15 +136,13 @@ def get_databases(request):
 
 
 @pyhmmer_router_search.get("/tasks-status", include_in_schema=False)
+@wrap_success_response
 def get_tasks_status(request, threshold_days: int = 30):
     """Get current status of PyHMMER task results in the database."""
     try:
         # Validate threshold_days parameter
         if threshold_days < 1 or threshold_days > 365:
-            return {
-                "status": "error",
-                "message": "threshold_days must be between 1 and 365",
-            }, 400
+            raise_validation_error("threshold_days must be between 1 and 365")
 
         cutoff = timezone.now() - timedelta(days=threshold_days)
 
@@ -145,7 +151,6 @@ def get_tasks_status(request, threshold_days: int = 30):
         recent_tasks = total_tasks - old_tasks
 
         return {
-            "status": "success",
             "total_tasks": total_tasks,
             "old_tasks_eligible_for_cleanup": old_tasks,
             "recent_tasks": recent_tasks,
@@ -154,22 +159,17 @@ def get_tasks_status(request, threshold_days: int = 30):
         }
     except Exception as e:
         logger.error(f"Error getting PyHMMER tasks status: {e}")
-        return {
-            "status": "error",
-            "message": f"Failed to get tasks status: {str(e)}",
-        }, 500
+        raise_internal_server_error(f"Failed to get tasks status: {str(e)}")
 
 
 @pyhmmer_router_search.post("/cleanup-tasks", include_in_schema=False)
+@wrap_success_response
 def cleanup_tasks_manual(request, threshold_days: int = 30):
     """Manually trigger cleanup of old PyHMMER task results."""
     try:
         # Validate threshold_days parameter
         if threshold_days < 1 or threshold_days > 365:
-            return {
-                "status": "error",
-                "message": "threshold_days must be between 1 and 365",
-            }, 400
+            raise_validation_error("threshold_days must be between 1 and 365")
 
         # Use the same logic as the scheduled task
         cutoff = timezone.now() - timedelta(days=threshold_days)
@@ -180,7 +180,6 @@ def cleanup_tasks_manual(request, threshold_days: int = 30):
         )
 
         return {
-            "status": "success",
             "message": f"Successfully deleted {deleted} old PyHMMER task results (older than {threshold_days} days)",
             "deleted_count": deleted,
             "cutoff_date": cutoff.isoformat(),
@@ -188,7 +187,4 @@ def cleanup_tasks_manual(request, threshold_days: int = 30):
         }
     except Exception as e:
         logger.error(f"Error during manual PyHMMER cleanup: {e}")
-        return {
-            "status": "error",
-            "message": f"Failed to cleanup old PyHMMER tasks: {str(e)}",
-        }, 500
+        raise_internal_server_error(f"Failed to cleanup old PyHMMER tasks: {str(e)}")

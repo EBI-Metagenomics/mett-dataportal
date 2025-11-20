@@ -1,0 +1,327 @@
+.featurePanel {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-left: 1px solid #dee2e6;
+  min-height: 600px;
+  max-height: calc(100vh - 20px);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid #dee2e6;
+  background: #721E63;
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+
+  &:hover {
+    background: #e9ecef;
+    color: #333;
+  }
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.75rem;
+}
+
+.section {
+  margin-bottom: 1rem;
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+  padding: 0.4rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.2rem;
+    line-height: 1.3;
+  }
+
+  span {
+    font-size: 14px;
+    color: #212529;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+}
+
+.essentiality {
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+
+  &:contains('Essential') {
+    background: #ffe5e5;
+    color: #c82333;
+  }
+
+  &:contains('Non-Essential') {
+    background: #fff3cd;
+    color: #856404;
+  }
+}
+
+.sequenceContainer {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 0.5rem;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.sequence {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-all;
+  white-space: pre-wrap;
+  color: #212529;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 1.5rem;
+  text-align: center;
+
+  p {
+    color: #6c757d;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.3;
+  }
+}
+
+// PyHMMER Integration Styles
+.pyhmmerSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.pyhmmerButton {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #0056b3;
+  }
+  
+  &:active {
+    background: #004085;
+  }
+}
+
+.pyhmmerContainer {
+  margin-top: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #f8f9fa;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+// External Link Styles
+.externalLink {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.3;
+  
+  &:hover {
+    text-decoration: underline;
+    color: #0056b3;
+  }
+}
+
+.linkList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.linkListVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filterValueRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.5rem;
+}
+
+.filterButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+  
+  &:active {
+    opacity: 0.6;
+  }
+  
+  &:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.filterButtonSelected {
+  // Red-ish color for remove (matching user preference)
+  .filterIcon {
+    color: #dc3545; // Red color for remove icon
+  }
+  
+  &:focus {
+    outline: 2px solid #dc3545;
+  }
+}
+
+.filterIcon {
+  display: inline-block;
+  line-height: 1;
+  font-size: 18px;
+  color: #007bff; // Blue color for add icon (default)
+}
+
+.cogCategory {
+  display: inline-block;
+  padding: 0.15rem 0.35rem;
+  margin: 0.1rem 0.2rem 0.1rem 0;
+  background: #e9ecef;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  line-height: 1.3;
+}
+
+.dbxrefItem {
+  padding: 0.2rem 0;
+  font-size: 12px;
+  line-height: 1.3;
+  
+  strong {
+    color: #495057;
+    margin-right: 0.25rem;
+  }
+}
+
+.highlightedLocusTag {
+  background-color: #dbeafe !important;
+  color: #2563eb !important;
+  font-weight: 600 !important;
+  padding: 0.2rem 0.5rem !important;
+  border-radius: 4px !important;
+  display: inline-block !important;
+  border: 2px solid #2563eb !important;
+}
+
+.navigationBanner {
+  padding: 0.75rem;
+  background: transparent;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scrollToGeneButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #1e40af;
+  }
+  
+  &:active {
+    background: #1e3a8a;
+  }
+}
+
+.scrollToGeneIcon {
+  font-size: 16px;
+}
+

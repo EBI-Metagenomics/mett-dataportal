@@ -1,6 +1,6 @@
 import {GeneMeta} from "../../../../interfaces/Gene";
 import {GenomeMeta} from "../../../../interfaces/Genome";
-import {ZOOM_LEVELS} from "../../../../utils/common/constants";
+import {ZOOM_LEVELS, JBROWSE_TRACK_HEIGHTS} from "../../../../utils/common/constants";
 
 const getDefaultSessionConfig = (
     geneMeta: GeneMeta | null,
@@ -30,6 +30,14 @@ const getDefaultSessionConfig = (
             },
         },
         margin: 0,
+        // Disable all widgets at session level
+        widgets: {
+            // Explicitly disable the BaseFeatureWidget
+            BaseFeatureWidget: {
+                type: 'BaseFeatureWidget',
+                disabled: true,
+            }
+        },
         views: [
             {
                 id: 'linearGenomeView',
@@ -37,13 +45,16 @@ const getDefaultSessionConfig = (
                 type: 'LinearGenomeView',
                 hideHeader: true,
                 configuration: {
-                    // Add an extra configuration to hide header
+                    // Disable header and feature details
                     header: {
                         hidden: true,
                         disable: true
-                    }
+                    },
+                    // Disable feature click to open drawer
+                    onFeatureClick: null,
                 },
                 hideTrackSelector: true,
+                hideVerticalResizeHandle: true,
                 displayedRegions: displayedRegions,
                 tracks: [
                     {
@@ -51,10 +62,12 @@ const getDefaultSessionConfig = (
                         type: assembly.sequence.type,
                         configuration: 'reference',
                         minimized: false,
+                        height: JBROWSE_TRACK_HEIGHTS.REFERENCE_SEQUENCE,
                         displays: [
                             {
                                 id: assembly.sequence.trackId,
                                 type: 'LinearReferenceSequenceDisplay',
+                                height: JBROWSE_TRACK_HEIGHTS.REFERENCE_SEQUENCE,
                                 showForward: true,
                                 showReverse: true,
                                 showLabels: true,

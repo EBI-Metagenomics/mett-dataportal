@@ -1,6 +1,13 @@
 import React from 'react';
 import {GeneMeta} from '../../../../interfaces/Gene';
-import {getBacinteractomeUniprotUrl, getIconForEssentiality, renderExternalDbLinks} from '../../../../utils/common';
+import {
+    getBacinteractomeUniprotUrl,
+    getIconForEssentiality,
+    renderExternalDbLinks,
+    getAnnotationIndicators,
+    getAnnotationIndicatorsTooltip,
+    GENE_TABLE_CONFIG
+} from '../../../../utils/common';
 
 export interface ColumnDefinition {
     key: string;
@@ -73,6 +80,30 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
                 '---'
             ),
     },
+    ...(GENE_TABLE_CONFIG.SHOW_ANNOTATION_INDICATORS ? [{
+        key: 'annotations',
+        label: 'Annotations',
+        sortable: false,
+        defaultVisible: true,
+        render: (gene: GeneMeta) => {
+            const tooltip = getAnnotationIndicatorsTooltip(gene);
+            const indicators = getAnnotationIndicators(gene);
+            
+            return (
+                <div 
+                    title={tooltip}
+                    style={{ 
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px'
+                    }}
+                >
+                    {indicators}
+                </div>
+            );
+        }
+    }] : []),
     {
         key: 'essentiality',
         label: 'Essentiality',

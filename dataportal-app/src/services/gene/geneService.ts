@@ -55,11 +55,14 @@ export class GeneService extends BaseService {
         selectedSpecies?: string[],
         selectedFacets?: Record<string, string[]>,
         facetOperators?: Record<string, 'AND' | 'OR'>,
-        locusTag?: string
+        locusTag?: string,
+        seqId?: string | null,
+        startPosition?: number | null,
+        endPosition?: number | null
     ): Promise<PaginatedApiResponse<GeneMeta>> {
         try {
             console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
-                query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators, locusTag
+                query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators, locusTag, seqId, startPosition, endPosition
             });
             
             // Use the same parameter construction logic as buildParamsFetchGeneSearchResults
@@ -73,7 +76,10 @@ export class GeneService extends BaseService {
                 selectedSpecies,
                 selectedFacets,
                 facetOperators,
-                locusTag
+                locusTag,
+                seqId,
+                startPosition,
+                endPosition
             );
 
             const response = await BaseService.getRawResponse<GeneMeta[]>("/genes/search/advanced", params);
@@ -155,9 +161,20 @@ export class GeneService extends BaseService {
                 console.warn(`Failed to fetch essentiality data for ${refName}: ${response.status} ${response.statusText}`);
                 return {};
             }
-            const data = await response.json();
-            console.log(`Essentiality data received for ${refName}:`, data);
-            return data;
+            const responseData = await response.json();
+            
+            // Handle standardized API response format
+            // Response now has format: { status: 'success', data: {...}, message: '...', timestamp: '...' }
+            if (responseData && typeof responseData === 'object' && 'status' in responseData && 'data' in responseData) {
+                // Extract data from standardized response
+                const data = responseData.data;
+                console.log(`Essentiality data received for ${refName}:`, data);
+                return data || {};
+            }
+            
+            // Fallback for legacy format (should not happen, but safe to handle)
+            console.log(`Essentiality data received for ${refName} (legacy format):`, responseData);
+            return responseData || {};
         } catch (error) {
             console.error(`Error fetching essentiality data for ${refName}:`, error);
             return {};
@@ -298,7 +315,10 @@ export class GeneService extends BaseService {
         selectedSpecies?: string[],
         selectedFacets?: Record<string, string[]>,
         facetOperators?: Record<string, 'AND' | 'OR'>,
-        locusTag?: string
+        locusTag?: string,
+        seqId?: string | null,
+        startPosition?: number | null,
+        endPosition?: number | null
     ): URLSearchParams {
         const params = this.buildParams({
             query,
@@ -343,6 +363,13 @@ export class GeneService extends BaseService {
             if (filterOpParts.length > 0) {
                 params.append("filter_operators", filterOpParts.join(";"));
             }
+        }
+
+        // Add coordinate range parameters for viewport sync
+        if (seqId && startPosition !== null && startPosition !== undefined && endPosition !== null && endPosition !== undefined) {
+            params.append("seq_id", seqId);
+            params.append("start_position", startPosition.toString());
+            params.append("end_position", endPosition.toString());
         }
 
         return params;

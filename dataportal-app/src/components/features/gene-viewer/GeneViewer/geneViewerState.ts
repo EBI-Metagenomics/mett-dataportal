@@ -4,8 +4,6 @@ import makeWorkerInstance from '@jbrowse/react-app2/esm/makeWorkerInstance';
 import * as CorePlugins from '@jbrowse/core/pluggableElementTypes';
 import Plugin from '@jbrowse/core/Plugin';
 import EnhancedGeneFeaturePlugin from "../../../../plugins/EnhancedGeneFeaturePlugin";
-// Temporarily disabled PyHMMERFeaturePlugin due to import issues
-// TODO: Re-enable once plugin system is working
 
 
 interface Track {
@@ -51,8 +49,6 @@ const useGeneViewerState = (
                     .filter((plugin): plugin is PluginConstructor => isPluginConstructor(plugin));
 
                 const plugins: PluginConstructor[] = [EnhancedGeneFeaturePlugin, ...corePluginConstructors];
-                // Temporarily disabled PyHMMERFeaturePlugin due to import issues
-                // TODO: Re-enable once plugin system is working
 
                 const config = {
                     assemblies: [assembly],
@@ -63,10 +59,24 @@ const useGeneViewerState = (
                         display: {
                             ...track.display,
                             type: track.display?.type || 'LinearBasicDisplay'
-                            // Temporarily disabled custom feature widget
-                            // TODO: Re-enable once plugin system is working
                         }
                     })),
+                    configuration: {
+                        disableAnalytics: true,
+                        rpc: {
+                            defaultDriver: 'MainThreadRpcDriver',
+                        },
+                        theme: {
+                            palette: {
+                                primary: {
+                                    main: '#0D233F',
+                                },
+                                secondary: {
+                                    main: '#721E63',
+                                },
+                            },
+                        },
+                    },
                     defaultSession: defaultSession ? {...defaultSession, name: 'defaultSession'} : undefined
                 };
 
@@ -76,15 +86,22 @@ const useGeneViewerState = (
                     makeWorkerInstance,
                 });
 
-                console.log('✅ Plugins loaded:', state.pluginManager.plugins.map(p => p.name))
-                console.log('✅ getAdapterElements:', state.pluginManager.getAdapterElements())
-                console.log('✅ Custom feature widget configured for tracks')
-                
-                // Debug: Check if our adapter is registered
-                const adapterElements = state.pluginManager.getAdapterElements();
-                const ourAdapter = adapterElements.find((adapter: any) => adapter.name === 'EnhancedGeneFeatureAdapter');
-                console.log('🔧 Our adapter found:', ourAdapter);
-                console.log('🔧 All adapter types:', adapterElements.map((a: any) => a.name));
+                // Override session's showWidget and addWidget to prevent feature drawer from opening
+                try {
+                    const session = state.session;
+                    if (session) {
+                        // Override widget methods to block JBrowse's built-in feature panel
+                        session.showWidget = function() {
+                            return undefined;
+                        };
+                        
+                        session.addWidget = function() {
+                            return undefined;
+                        };
+                    }
+                } catch (error) {
+                    console.warn('Failed to override widget methods:', error);
+                }
 
                 setViewState(state);
                 setInitializationError(null); // Clear any previous errors

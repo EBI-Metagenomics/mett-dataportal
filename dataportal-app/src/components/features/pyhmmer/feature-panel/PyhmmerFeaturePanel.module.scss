@@ -30,6 +30,28 @@
   }
 }
 
+// Search Button
+.searchButton {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #0056b3;
+  }
+  
+  &:active {
+    background: #004085;
+  }
+}
+
 // Results Container
 .resultsContainer {
   margin-top: 8px;

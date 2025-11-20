@@ -151,6 +151,24 @@ export const saveJBrowseSearchToHistory = (searchRequest: any, context: {
     };
 }): string => {
     try {
+        const existingHistory = localStorage.getItem(HISTORY_KEY);
+        let history = existingHistory ? JSON.parse(existingHistory) : [];
+        
+        // Check if this locus tag was already added in the last 5 seconds to prevent duplicates
+        if (context.locusTag) {
+            const recentDuplicate = history.find((item: any) => {
+                if (item.locusTag === context.locusTag && item.source === 'jbrowse') {
+                    const timeDiff = Date.now() - new Date(item.dateCreated).getTime();
+                    return timeDiff < 5000; // Within last 5 seconds
+                }
+                return false;
+            });
+            
+            if (recentDuplicate) {
+                return recentDuplicate.jobId; // Return existing job ID instead of creating duplicate
+            }
+        }
+        
         // Generate a special JBrowse job ID
         const jbrowseJobId = `jbrowse_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
@@ -169,9 +187,6 @@ export const saveJBrowseSearchToHistory = (searchRequest: any, context: {
             isJBrowseSearch: true, // Special flag for JBrowse searches
             hasResults: false // JBrowse searches don't have backend results
         };
-
-        const existingHistory = localStorage.getItem(HISTORY_KEY);
-        let history = existingHistory ? JSON.parse(existingHistory) : [];
         
         // Add new item to beginning
         history.unshift(historyItem);
@@ -182,7 +197,6 @@ export const saveJBrowseSearchToHistory = (searchRequest: any, context: {
         }
         
         localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-        console.log('JBrowse search saved to history:', jbrowseJobId);
         
         return jbrowseJobId;
         
@@ -211,11 +225,10 @@ export const updateJBrowseSearchWithRealJobId = (tempJobId: string, realJobId: s
                 jbrowseItem.jobId = realJobId;
                 jbrowseItem.isJBrowseSearch = false; // No longer a temporary JBrowse search
                 jbrowseItem.hasResults = true;
-                jbrowseItem.source = 'main'; // Change source to main since it now has real results
+                // Keep source as 'jbrowse' to preserve the display format with locus tag
                 
                 // Save updated history
                 localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-                console.log('Updated JBrowse search with real job ID:', tempJobId, '->', realJobId);
             }
         }
     } catch (error) {

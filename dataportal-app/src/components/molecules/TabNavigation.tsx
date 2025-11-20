@@ -12,8 +12,14 @@ const TabNavigation: React.FC<TabNavigationProps> = ({tabs, onTabClick, activeTa
             <ul className="vf-tabs__list" data-vf-js-tabs>
                 {tabs.map(tab => (
                     <li key={tab.id} className="vf-tabs__item">
-                        <a className={`vf-tabs__link ${activeTab === tab.id ? 'active' : ''}`} href={`#${tab.id}`}
-                           onClick={() => onTabClick(tab.id)}>
+                        <a 
+                            className={`vf-tabs__link ${activeTab === tab.id ? 'active' : ''}`} 
+                            href={`#${tab.id}`}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onTabClick(tab.id);
+                            }}
+                        >
                             {tab.label}
                         </a>
                     </li>

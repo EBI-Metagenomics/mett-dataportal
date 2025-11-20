@@ -6,6 +6,7 @@ export interface GeneMeta {
     gene_name?: string;
     alias?: string[];
     product?: string;
+    product_source?: string;  // Added: source of product annotation
     start_position?: number;
     end_position?: number;
     seq_id: string;
@@ -21,6 +22,13 @@ export interface GeneMeta {
     interpro?: string[] | null;
     ec_number?: string | null;
     dbxref?: { db: string; ref: string }[] | null;
+    eggnog?: string | null;
+    inference?: string | null;  // Added: inference method
+    ontology_terms?: { ontology_type?: string; ontology_id?: string; ontology_description?: string }[] | null;  // Added: GO terms
+    uf_ontology_terms?: string[] | null;  // Added: UniFire ontology terms
+    uf_prot_rec_fullname?: string | null;  // Added: UniFire protein full name
+    uf_keyword?: string[] | null;  // Added: UniFire keywords
+    uf_gene_name?: string | null;  // Added: UniFire gene name
     amr?: AMR[] | null;
     has_amr_info?: boolean | null;
 }

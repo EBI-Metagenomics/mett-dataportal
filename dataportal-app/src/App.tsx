@@ -91,7 +91,7 @@ const App: React.FC = () => {
                             <main
                                 className="gene-viewer-page vf-body | vf-stack vf-stack--200"
                                 style={{
-                                    '--vf-body-width': '80%',
+                                    '--vf-body-width': '95%',
                                     paddingBottom: '200px',
                                 } as React.CSSProperties}
                             >
