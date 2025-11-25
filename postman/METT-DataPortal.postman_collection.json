@@ -1858,7 +1858,8 @@
 													"});"
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -1866,7 +1867,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&gisolates=BU_ATCC8492&query=pr&filter=essentiality:essential",
+											"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&isolates=BU_ATCC8492&query=pr&filter=essentiality:essential",
 											"host": [
 												"{{mett-current}}"
 											],
@@ -1881,7 +1882,7 @@
 													"value": "BU"
 												},
 												{
-													"key": "gisolates",
+													"key": "isolates",
 													"value": "BU_ATCC8492"
 												},
 												{
@@ -1914,7 +1915,8 @@
 													"});"
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -1922,7 +1924,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&gisolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid",
+											"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&isolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid",
 											"host": [
 												"{{mett-current}}"
 											],
@@ -1937,7 +1939,7 @@
 													"value": "BU"
 												},
 												{
-													"key": "gisolates",
+													"key": "isolates",
 													"value": "BU_ATCC8492"
 												},
 												{
@@ -1970,7 +1972,8 @@
 													"});"
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -1978,7 +1981,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&gisolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid,unclear",
+											"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&isolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid,unclear",
 											"host": [
 												"{{mett-current}}"
 											],
@@ -1993,7 +1996,7 @@
 													"value": "BU"
 												},
 												{
-													"key": "gisolates",
+													"key": "isolates",
 													"value": "BU_ATCC8492"
 												},
 												{
@@ -2026,7 +2029,8 @@
 													"});"
 												],
 												"type": "text/javascript",
-												"packages": {}
+												"packages": {},
+												"requests": {}
 											}
 										}
 									],
@@ -2034,7 +2038,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&gisolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid;interpro:IPR035952",
+											"raw": "{{mett-current}}/api/genes/autocomplete?species_acronym=BU&isolates=BU_ATCC8492&query=pr&filter=essentiality:essential_liquid;interpro:IPR035952",
 											"host": [
 												"{{mett-current}}"
 											],
@@ -2049,7 +2053,7 @@
 													"value": "BU"
 												},
 												{
-													"key": "gisolates",
+													"key": "isolates",
 													"value": "BU_ATCC8492"
 												},
 												{
