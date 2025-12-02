@@ -15,6 +15,7 @@ from dataportal.authentication import APIRoles, RoleBasedJWTAuth
 from dataportal.services.interactions.ortholog_service import OrthologService
 from dataportal.schema.response_schemas import (
     SuccessResponseSchema,
+    PaginatedResponseSchema,
     create_success_response,
     ErrorCode,
 )
@@ -23,7 +24,7 @@ from dataportal.utils.errors import (
     raise_internal_server_error,
 )
 from dataportal.utils.exceptions import ServiceError
-from dataportal.utils.response_wrappers import wrap_success_response
+from dataportal.utils.response_wrappers import wrap_success_response, wrap_paginated_response
 
 logger = logging.getLogger(__name__)
 
@@ -121,13 +122,13 @@ async def get_ortholog_pair(
 
 @ortholog_router.get(
     "/search",
-    response=SuccessResponseSchema,
+    response=PaginatedResponseSchema,
     summary="Search orthologs with filters",
     description="Search for ortholog pairs with various filters and pagination",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ORTHOLOGS]),
     include_in_schema=False,
 )
-@wrap_success_response
+@wrap_paginated_response
 async def search_orthologs(
     request,
     species_acronym: Optional[str] = Query(None, description="Filter by species"),
@@ -148,9 +149,7 @@ async def search_orthologs(
             per_page=per_page,
         )
 
-        return create_success_response(
-            data=results, message=f"Found {results['total']} ortholog pairs"
-        )
+        return results
     except ServiceError as e:
         logger.error(f"Service error in ortholog search: {e}")
         raise_internal_server_error(f"Failed to search orthologs: {str(e)}")

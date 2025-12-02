@@ -12,6 +12,7 @@ from asgiref.sync import sync_to_async
 from elasticsearch_dsl import Search
 
 from dataportal.models.operons import OperonDocument
+from dataportal.schema.interactions.operon_schemas import OperonSearchPaginationSchema
 from dataportal.services.base_service import BaseService
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.constants import INDEX_OPERONS
@@ -27,9 +28,9 @@ class OperonService(BaseService):
         self.document_class = OperonDocument
 
     def _build_base_search(
-            self,
-            species_acronym: Optional[str] = None,
-            isolate_name: Optional[str] = None,
+        self,
+        species_acronym: Optional[str] = None,
+        isolate_name: Optional[str] = None,
     ) -> Search:
         """Build a base search query with common filters."""
         s = Search(index=self.index_name)
@@ -41,7 +42,7 @@ class OperonService(BaseService):
             s = s.filter("term", isolate_name=isolate_name)
 
         # logger.info(f'Build base search query: {s.to_dict()}')
-        
+
         return s
 
     async def get_by_id(self, operon_id: str) -> Optional[Dict[str, Any]]:
@@ -57,30 +58,34 @@ class OperonService(BaseService):
         try:
             s = Search(index=self.index_name)
             s = s.filter("term", operon_id=operon_id)
-            
+
             response = await self._execute_search(s)
-            
+
             if not response.hits:
                 return None
-                
+
             return self._convert_doc_to_dict(response.hits[0])
-            
+
         except Exception as e:
             logger.debug(f"Operon {operon_id} not found: {e}")
             return None
 
     async def get_all(self, **kwargs) -> List[Dict[str, Any]]:
         """Not implemented - use search methods instead."""
-        raise NotImplementedError("get_all not implemented for Operons - use search methods instead")
+        raise NotImplementedError(
+            "get_all not implemented for Operons - use search methods instead"
+        )
 
     async def search(self, query: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Not implemented - use specific search methods instead."""
-        raise NotImplementedError("search not implemented for Operons - use specific search methods instead")
+        raise NotImplementedError(
+            "search not implemented for Operons - use specific search methods instead"
+        )
 
     async def get_operons_by_gene(
-            self,
-            locus_tag: str,
-            species_acronym: Optional[str] = None,
+        self,
+        locus_tag: str,
+        species_acronym: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get all operons containing a specific gene.
@@ -94,7 +99,7 @@ class OperonService(BaseService):
         """
         try:
             s = self._build_base_search(species_acronym)
-            
+
             # Search for gene in genes list
             s = s.filter("term", genes=locus_tag)
 
@@ -111,17 +116,17 @@ class OperonService(BaseService):
             raise ServiceError(f"Failed to get operons: {str(e)}")
 
     async def search_operons(
-            self,
-            locus_tag: Optional[str] = None,
-            operon_id: Optional[str] = None,
-            species_acronym: Optional[str] = None,
-            isolate_name: Optional[str] = None,
-            has_tss: Optional[bool] = None,
-            has_terminator: Optional[bool] = None,
-            min_gene_count: Optional[int] = None,
-            page: int = 1,
-            per_page: int = 20,
-    ) -> Dict[str, Any]:
+        self,
+        locus_tag: Optional[str] = None,
+        operon_id: Optional[str] = None,
+        species_acronym: Optional[str] = None,
+        isolate_name: Optional[str] = None,
+        has_tss: Optional[bool] = None,
+        has_terminator: Optional[bool] = None,
+        min_gene_count: Optional[int] = None,
+        page: int = 1,
+        per_page: int = 20,
+    ) -> OperonSearchPaginationSchema:
         """
         Search operons with filters.
 
@@ -162,7 +167,7 @@ class OperonService(BaseService):
 
             # Apply pagination
             offset = (page - 1) * per_page
-            s = s[offset: offset + per_page]
+            s = s[offset : offset + per_page]
 
             response = await self._execute_search(s)
 
@@ -172,23 +177,22 @@ class OperonService(BaseService):
 
             num_pages = (total + per_page - 1) // per_page
 
-            return {
-                "results": results,
-                "page": page,
-                "per_page": per_page,
-                "total": total,
-                "num_pages": num_pages,
-                "has_previous": page > 1,
-                "has_next": page < num_pages,
-            }
+            return OperonSearchPaginationSchema(
+                results=results,
+                page_number=page,
+                num_pages=num_pages,
+                has_previous=page > 1,
+                has_next=page < num_pages,
+                total_results=total,
+            )
 
         except Exception as e:
             logger.error(f"Error searching operons: {e}")
             raise ServiceError(f"Failed to search operons: {str(e)}")
 
     async def get_operon_statistics(
-            self,
-            species_acronym: Optional[str] = None,
+        self,
+        species_acronym: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get statistics about operons.
@@ -208,10 +212,12 @@ class OperonService(BaseService):
             # Get counts by gene count
             s_copy = self._build_base_search(species_acronym)
             s_copy.aggs.bucket("by_gene_count", "terms", field="gene_count", size=20)
-            
+
             # Get counts with TSS/terminator
             s_copy.aggs.bucket("with_tss", "filter", filter={"term": {"has_tss": True}})
-            s_copy.aggs.bucket("with_terminator", "filter", filter={"term": {"has_terminator": True}})
+            s_copy.aggs.bucket(
+                "with_terminator", "filter", filter={"term": {"has_terminator": True}}
+            )
 
             response = await self._execute_search(s_copy)
 
@@ -222,8 +228,16 @@ class OperonService(BaseService):
 
             return {
                 "total_operons": total,
-                "with_tss": response.aggregations.with_tss.doc_count if hasattr(response, "aggregations") else 0,
-                "with_terminator": response.aggregations.with_terminator.doc_count if hasattr(response, "aggregations") else 0,
+                "with_tss": (
+                    response.aggregations.with_tss.doc_count
+                    if hasattr(response, "aggregations")
+                    else 0
+                ),
+                "with_terminator": (
+                    response.aggregations.with_terminator.doc_count
+                    if hasattr(response, "aggregations")
+                    else 0
+                ),
                 "gene_count_distribution": gene_count_distribution,
                 "species_acronym": species_acronym,
             }
@@ -238,7 +252,7 @@ class OperonService(BaseService):
         genes = getattr(doc, "genes", [])
         if genes and not isinstance(genes, list):
             genes = list(genes)  # Convert AttrList to list
-        
+
         result = {
             "operon_id": doc.operon_id,
             "isolate_name": getattr(doc, "isolate_name", None),
@@ -271,4 +285,3 @@ class OperonService(BaseService):
             }
 
         return result
-

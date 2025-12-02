@@ -13,13 +13,17 @@ from ninja.errors import HttpError
 from dataportal.api.core import gene_router
 from dataportal.authentication import RoleBasedJWTAuth, APIRoles
 from dataportal.services.interactions.fitness_correlation_service import FitnessCorrelationService
-from dataportal.schema.response_schemas import create_success_response, ErrorCode
+from dataportal.schema.response_schemas import (
+    create_success_response,
+    ErrorCode,
+    PaginatedResponseSchema,
+)
 from dataportal.utils.errors import (
     raise_not_found_error,
     raise_internal_server_error,
 )
 from dataportal.utils.exceptions import ServiceError
-from dataportal.utils.response_wrappers import wrap_success_response
+from dataportal.utils.response_wrappers import wrap_success_response, wrap_paginated_response
 
 logger = logging.getLogger(__name__)
 
@@ -178,8 +182,9 @@ async def get_correlation_statistics(request, species_acronym: Optional[str] = Q
     description="Search correlations by gene name or product description",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.FITNESS_CORRELATION]),
     include_in_schema=False,
+    response=PaginatedResponseSchema,
 )
-@wrap_success_response
+@wrap_paginated_response
 async def search_correlations(
     request,
     query: str = Query(..., description="Search query (gene name or product)"),
@@ -193,9 +198,7 @@ async def search_correlations(
             query=query, species_acronym=species_acronym, page=page, per_page=per_page
         )
 
-        return create_success_response(
-            data=results, message=f"Found {results['total']} correlations matching '{query}'"
-        )
+        return results
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise_internal_server_error(f"Failed to search correlations: {str(e)}")

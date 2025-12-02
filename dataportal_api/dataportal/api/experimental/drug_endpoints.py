@@ -15,6 +15,8 @@ from dataportal.schema.experimental.drug_schemas import (
     PaginatedStrainDrugMICResponseSchema,
     PaginatedStrainDrugMetabolismResponseSchema,
     StrainDrugDataResponseSchema,
+    DrugMICPaginationSchema,
+    DrugMetabolismPaginationSchema,
 )
 from dataportal.schema.response_schemas import (
     PaginatedResponseSchema,
@@ -168,27 +170,41 @@ async def search_drug_mic(request, query: DrugMICSearchQuerySchema = Query(...))
 
 @drug_router.get(
     "/mic/by-drug/{drug_name}",
-    response=SuccessResponseSchema,
+    response=PaginatedResponseSchema,
     summary="Get MIC data by drug name",
     description=(
-        "Retrieves all MIC data for a specific drug across all strains. "
-        "Optionally filter by species acronym to narrow results to specific species."
+        "Retrieves MIC data for a specific drug across all strains. "
+        "Supports pagination and optional species filtering."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
-@wrap_success_response
+@wrap_paginated_response
 async def get_drug_mic_by_drug(
     request,
     drug_name: str = Path(..., description="Name of the drug"),
     species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)"),
+    page: int = Query(1, description="Page number", ge=1),
+    per_page: int = Query(20, description="Number of results per page", ge=1, le=100),
 ):
-    """Get all MIC data for a specific drug."""
+    """Get paginated MIC data for a specific drug."""
     try:
-        results = await drug_service.get_drug_mic_by_drug(drug_name, species_acronym)
-        return create_success_response(
-            data=results,
-            message=f"Retrieved {len(results)} MIC records for {drug_name} successfully",
+        # Get all MIC records for this drug, then paginate at the record level
+        all_results = await drug_service.get_drug_mic_by_drug(drug_name, species_acronym)
+
+        total_results = len(all_results)
+        total_pages = (total_results + per_page - 1) // per_page if total_results > 0 else 1
+        start_index = (page - 1) * per_page
+        end_index = start_index + per_page
+        page_results = all_results[start_index:end_index]
+
+        return DrugMICPaginationSchema(
+            results=page_results,
+            page_number=page,
+            num_pages=total_pages,
+            has_previous=page > 1,
+            has_next=page < total_pages,
+            total_results=total_results,
         )
     except ServiceError as e:
         logger.error(f"Service error getting MIC data for drug {drug_name}: {e}")
@@ -267,27 +283,41 @@ async def search_drug_metabolism(request, query: DrugMetabolismSearchQuerySchema
 
 @drug_router.get(
     "/metabolism/by-drug/{drug_name}",
-    response=SuccessResponseSchema,
+    response=PaginatedResponseSchema,
     summary="Get metabolism data by drug name",
     description=(
-        "Retrieves all metabolism data for a specific drug across all strains. "
-        "Optionally filter by species acronym to narrow results to specific species."
+        "Retrieves metabolism data for a specific drug across all strains. "
+        "Supports pagination and optional species filtering."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
     include_in_schema=False,
 )
-@wrap_success_response
+@wrap_paginated_response
 async def get_drug_metabolism_by_drug(
     request,
     drug_name: str = Path(..., description="Name of the drug"),
     species_acronym: str = Query(None, description="Optional species acronym filter (BU, PV)"),
+    page: int = Query(1, description="Page number", ge=1),
+    per_page: int = Query(20, description="Number of results per page", ge=1, le=100),
 ):
-    """Get all metabolism data for a specific drug."""
+    """Get paginated metabolism data for a specific drug."""
     try:
-        results = await drug_service.get_drug_metabolism_by_drug(drug_name, species_acronym)
-        return create_success_response(
-            data=results,
-            message=f"Retrieved {len(results)} metabolism records for {drug_name} successfully",
+        # Get all metabolism records for this drug, then paginate at the record level
+        all_results = await drug_service.get_drug_metabolism_by_drug(drug_name, species_acronym)
+
+        total_results = len(all_results)
+        total_pages = (total_results + per_page - 1) // per_page if total_results > 0 else 1
+        start_index = (page - 1) * per_page
+        end_index = start_index + per_page
+        page_results = all_results[start_index:end_index]
+
+        return DrugMetabolismPaginationSchema(
+            results=page_results,
+            page_number=page,
+            num_pages=total_pages,
+            has_previous=page > 1,
+            has_next=page < total_pages,
+            total_results=total_results,
         )
     except ServiceError as e:
         logger.error(f"Service error getting metabolism data for drug {drug_name}: {e}")

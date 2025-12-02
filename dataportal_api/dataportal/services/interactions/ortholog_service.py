@@ -12,6 +12,7 @@ from asgiref.sync import sync_to_async
 from elasticsearch_dsl import Search
 
 from dataportal.models.orthologs import OrthologDocument
+from dataportal.schema.interactions.ortholog_schemas import OrthologSearchPaginationSchema
 from dataportal.services.base_service import BaseService
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.constants import INDEX_ORTHOLOGS
@@ -27,8 +28,8 @@ class OrthologService(BaseService):
         self.document_class = OrthologDocument
 
     def _build_base_search(
-            self,
-            species_acronym: Optional[str] = None,
+        self,
+        species_acronym: Optional[str] = None,
     ) -> Search:
         """Build a base search query with common filters."""
         s = Search(index=self.index_name)
@@ -41,7 +42,7 @@ class OrthologService(BaseService):
                     {"term": {"species_a_acronym": species_acronym}},
                     {"term": {"species_b_acronym": species_acronym}},
                 ],
-                minimum_should_match=1
+                minimum_should_match=1,
             )
 
         return s
@@ -57,9 +58,7 @@ class OrthologService(BaseService):
             Ortholog pair dictionary or None if not found
         """
         try:
-            doc = await sync_to_async(
-                OrthologDocument.get
-            )(id=pair_id, index=self.index_name)
+            doc = await sync_to_async(OrthologDocument.get)(id=pair_id, index=self.index_name)
 
             return self._convert_doc_to_dict(doc)
         except Exception as e:
@@ -68,20 +67,24 @@ class OrthologService(BaseService):
 
     async def get_all(self, **kwargs) -> List[Dict[str, Any]]:
         """Not implemented - use search methods instead."""
-        raise NotImplementedError("get_all not implemented for Orthologs - use search methods instead")
+        raise NotImplementedError(
+            "get_all not implemented for Orthologs - use search methods instead"
+        )
 
     async def search(self, query: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Not implemented - use specific search methods instead."""
-        raise NotImplementedError("search not implemented for Orthologs - use specific search methods instead")
+        raise NotImplementedError(
+            "search not implemented for Orthologs - use specific search methods instead"
+        )
 
     async def get_orthologs_for_gene(
-            self,
-            locus_tag: str,
-            species_acronym: Optional[str] = None,
-            orthology_type: Optional[str] = None,
-            one_to_one_only: bool = False,
-            cross_species_only: bool = False,
-            max_results: int = 10000,
+        self,
+        locus_tag: str,
+        species_acronym: Optional[str] = None,
+        orthology_type: Optional[str] = None,
+        one_to_one_only: bool = False,
+        cross_species_only: bool = False,
+        max_results: int = 10000,
     ) -> Dict[str, Any]:
         """
         Get all orthologs for a specific gene.
@@ -99,7 +102,7 @@ class OrthologService(BaseService):
         """
         try:
             s = Search(index=self.index_name)
-            
+
             # Search for gene in members field
             s = s.filter("term", members=locus_tag)
 
@@ -111,7 +114,7 @@ class OrthologService(BaseService):
                         {"term": {"species_a_acronym": species_acronym}},
                         {"term": {"species_b_acronym": species_acronym}},
                     ],
-                    minimum_should_match=1
+                    minimum_should_match=1,
                 )
 
             if orthology_type:
@@ -186,9 +189,9 @@ class OrthologService(BaseService):
             raise ServiceError(f"Failed to get orthologs: {str(e)}")
 
     async def get_ortholog_pair(
-            self,
-            locus_tag_a: str,
-            locus_tag_b: str,
+        self,
+        locus_tag_a: str,
+        locus_tag_b: str,
     ) -> Optional[Dict[str, Any]]:
         """
         Get ortholog relationship between two genes.
@@ -202,17 +205,17 @@ class OrthologService(BaseService):
         """
         try:
             s = Search(index=self.index_name)
-            
+
             # Search for both genes in members field
             s = s.filter("terms", members=[locus_tag_a, locus_tag_b])
-            
+
             # Ensure we have the exact pair
             s = s.query(
                 "bool",
                 must=[
                     {"term": {"members": locus_tag_a}},
                     {"term": {"members": locus_tag_b}},
-                ]
+                ],
             )
 
             response = await self._execute_search(s)
@@ -228,14 +231,14 @@ class OrthologService(BaseService):
             raise ServiceError(f"Failed to get ortholog pair: {str(e)}")
 
     async def search_orthologs(
-            self,
-            species_acronym: Optional[str] = None,
-            orthology_type: Optional[str] = None,
-            one_to_one_only: bool = False,
-            cross_species_only: bool = False,
-            page: int = 1,
-            per_page: int = 20,
-    ) -> Dict[str, Any]:
+        self,
+        species_acronym: Optional[str] = None,
+        orthology_type: Optional[str] = None,
+        one_to_one_only: bool = False,
+        cross_species_only: bool = False,
+        page: int = 1,
+        per_page: int = 20,
+    ) -> OrthologSearchPaginationSchema:
         """
         Search orthologs with filters.
 
@@ -267,7 +270,7 @@ class OrthologService(BaseService):
 
             # Apply pagination
             offset = (page - 1) * per_page
-            s = s[offset: offset + per_page]
+            s = s[offset : offset + per_page]
 
             response = await self._execute_search(s)
 
@@ -277,15 +280,14 @@ class OrthologService(BaseService):
 
             num_pages = (total + per_page - 1) // per_page
 
-            return {
-                "results": results,
-                "page": page,
-                "per_page": per_page,
-                "total": total,
-                "num_pages": num_pages,
-                "has_previous": page > 1,
-                "has_next": page < num_pages,
-            }
+            return OrthologSearchPaginationSchema(
+                results=results,
+                page_number=page,
+                num_pages=num_pages,
+                has_previous=page > 1,
+                has_next=page < num_pages,
+                total_results=total,
+            )
 
         except Exception as e:
             logger.error(f"Error searching orthologs: {e}")
@@ -323,4 +325,3 @@ class OrthologService(BaseService):
                 "isolate": getattr(doc, "isolate_b", None),
             },
         }
-

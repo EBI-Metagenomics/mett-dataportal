@@ -12,6 +12,9 @@ from asgiref.sync import sync_to_async
 from elasticsearch_dsl import Search
 
 from dataportal.models.fitness_correlation import GeneFitnessCorrelationDocument
+from dataportal.schema.interactions.fitness_correlation_schemas import (
+    FitnessCorrelationSearchPaginationSchema,
+)
 from dataportal.services.base_service import BaseService
 from dataportal.utils.exceptions import ServiceError
 
@@ -29,9 +32,9 @@ class FitnessCorrelationService(BaseService):
         self.document_class = GeneFitnessCorrelationDocument
 
     def _build_base_search(
-            self,
-            species_acronym: Optional[str] = None,
-            isolate_name: Optional[str] = None,
+        self,
+        species_acronym: Optional[str] = None,
+        isolate_name: Optional[str] = None,
     ) -> Search:
         """Build a base search query with common filters."""
         s = Search(index=self.index_name)
@@ -45,24 +48,29 @@ class FitnessCorrelationService(BaseService):
         return s
 
     async def get_by_id(self, id: str) -> Optional[str]:
-        """ Not Implemented."""
-        raise NotImplementedError("get_all not implemented for Fitness Correlation - use search methods instead")
+        """Not Implemented."""
+        raise NotImplementedError(
+            "get_all not implemented for Fitness Correlation - use search methods instead"
+        )
 
     async def get_all(self, **kwargs) -> List[str]:
-        """ Not Implemented."""
-        raise NotImplementedError("get_all not implemented for Fitness Correlation - use search methods instead")
+        """Not Implemented."""
+        raise NotImplementedError(
+            "get_all not implemented for Fitness Correlation - use search methods instead"
+        )
 
     async def search(self, query: Dict[str, Any]) -> List[str]:
-        """ Not Implemented."""
+        """Not Implemented."""
         raise NotImplementedError(
-            "search not implemented for Fitness Correlation - use specific search methods instead")
+            "search not implemented for Fitness Correlation - use specific search methods instead"
+        )
 
     async def get_correlations_for_gene(
-            self,
-            locus_tag: str,
-            species_acronym: Optional[str] = None,
-            min_correlation: Optional[float] = None,
-            max_results: int = 100,
+        self,
+        locus_tag: str,
+        species_acronym: Optional[str] = None,
+        min_correlation: Optional[float] = None,
+        max_results: int = 100,
     ) -> List[Dict[str, Any]]:
         """
         Get all correlations for a specific gene.
@@ -95,18 +103,22 @@ class FitnessCorrelationService(BaseService):
                 partner_gene = hit.gene_b if hit.gene_a == locus_tag else hit.gene_a
                 partner_prefix = "gene_b" if hit.gene_a == locus_tag else "gene_a"
 
-                correlations.append({
-                    "locus_tag": locus_tag,
-                    "partner_gene": partner_gene,
-                    "partner_locus_tag": getattr(hit, f"{partner_prefix}_locus_tag", partner_gene),
-                    "partner_name": getattr(hit, f"{partner_prefix}_name", None),
-                    "partner_product": getattr(hit, f"{partner_prefix}_product", None),
-                    "correlation_value": hit.correlation_value,
-                    "abs_correlation": hit.abs_correlation,
-                    "correlation_strength": hit.correlation_strength,
-                    "species_acronym": hit.species_acronym,
-                    "isolate_name": getattr(hit, "isolate_name", None),
-                })
+                correlations.append(
+                    {
+                        "locus_tag": locus_tag,
+                        "partner_gene": partner_gene,
+                        "partner_locus_tag": getattr(
+                            hit, f"{partner_prefix}_locus_tag", partner_gene
+                        ),
+                        "partner_name": getattr(hit, f"{partner_prefix}_name", None),
+                        "partner_product": getattr(hit, f"{partner_prefix}_product", None),
+                        "correlation_value": hit.correlation_value,
+                        "abs_correlation": hit.abs_correlation,
+                        "correlation_strength": hit.correlation_strength,
+                        "species_acronym": hit.species_acronym,
+                        "isolate_name": getattr(hit, "isolate_name", None),
+                    }
+                )
 
             return correlations
 
@@ -115,10 +127,10 @@ class FitnessCorrelationService(BaseService):
             raise ServiceError(f"Failed to get correlations: {str(e)}")
 
     async def get_correlation_between_genes(
-            self,
-            locus_tag_a: str,
-            locus_tag_b: str,
-            species_acronym: Optional[str] = None,
+        self,
+        locus_tag_a: str,
+        locus_tag_b: str,
+        species_acronym: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Get the correlation value between two specific genes.
@@ -148,9 +160,9 @@ class FitnessCorrelationService(BaseService):
 
             # Try to fetch by document ID
             try:
-                doc = await sync_to_async(
-                    GeneFitnessCorrelationDocument.get
-                )(id=pair_id, index=self.index_name)
+                doc = await sync_to_async(GeneFitnessCorrelationDocument.get)(
+                    id=pair_id, index=self.index_name
+                )
 
                 return {
                     "pair_id": doc.pair_id,
@@ -174,10 +186,10 @@ class FitnessCorrelationService(BaseService):
             raise ServiceError(f"Failed to get correlation: {str(e)}")
 
     async def get_top_correlations(
-            self,
-            species_acronym: Optional[str] = None,
-            correlation_strength: Optional[str] = None,
-            limit: int = 100,
+        self,
+        species_acronym: Optional[str] = None,
+        correlation_strength: Optional[str] = None,
+        limit: int = 100,
     ) -> List[Dict[str, Any]]:
         """
         Get top correlations across the dataset.
@@ -207,20 +219,22 @@ class FitnessCorrelationService(BaseService):
 
             correlations = []
             for hit in response.hits:
-                correlations.append({
-                    "gene_a": hit.gene_a,
-                    "gene_b": hit.gene_b,
-                    "gene_a_locus_tag": getattr(hit, "gene_a_locus_tag", hit.gene_a),
-                    "gene_a_name": getattr(hit, "gene_a_name", None),
-                    "gene_a_product": getattr(hit, "gene_a_product", None),
-                    "gene_b_locus_tag": getattr(hit, "gene_b_locus_tag", hit.gene_b),
-                    "gene_b_name": getattr(hit, "gene_b_name", None),
-                    "gene_b_product": getattr(hit, "gene_b_product", None),
-                    "correlation_value": hit.correlation_value,
-                    "abs_correlation": hit.abs_correlation,
-                    "correlation_strength": hit.correlation_strength,
-                    "species_acronym": hit.species_acronym,
-                })
+                correlations.append(
+                    {
+                        "gene_a": hit.gene_a,
+                        "gene_b": hit.gene_b,
+                        "gene_a_locus_tag": getattr(hit, "gene_a_locus_tag", hit.gene_a),
+                        "gene_a_name": getattr(hit, "gene_a_name", None),
+                        "gene_a_product": getattr(hit, "gene_a_product", None),
+                        "gene_b_locus_tag": getattr(hit, "gene_b_locus_tag", hit.gene_b),
+                        "gene_b_name": getattr(hit, "gene_b_name", None),
+                        "gene_b_product": getattr(hit, "gene_b_product", None),
+                        "correlation_value": hit.correlation_value,
+                        "abs_correlation": hit.abs_correlation,
+                        "correlation_strength": hit.correlation_strength,
+                        "species_acronym": hit.species_acronym,
+                    }
+                )
 
             return correlations
 
@@ -229,8 +243,8 @@ class FitnessCorrelationService(BaseService):
             raise ServiceError(f"Failed to get top correlations: {str(e)}")
 
     async def get_correlation_statistics(
-            self,
-            species_acronym: Optional[str] = None,
+        self,
+        species_acronym: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get statistics about correlations in the dataset.
@@ -269,12 +283,12 @@ class FitnessCorrelationService(BaseService):
             raise ServiceError(f"Failed to get statistics: {str(e)}")
 
     async def search_correlations(
-            self,
-            query: str,
-            species_acronym: Optional[str] = None,
-            page: int = 1,
-            per_page: int = 20,
-    ) -> Dict[str, Any]:
+        self,
+        query: str,
+        species_acronym: Optional[str] = None,
+        page: int = 1,
+        per_page: int = 20,
+    ) -> FitnessCorrelationSearchPaginationSchema:
         """
         Search correlations by gene name or product.
 
@@ -310,7 +324,7 @@ class FitnessCorrelationService(BaseService):
 
             # Apply pagination
             offset = (page - 1) * per_page
-            s = s[offset: offset + per_page]
+            s = s[offset : offset + per_page]
 
             # Sort by relevance, then correlation strength
             s = s.sort("_score", {"abs_correlation": {"order": "desc"}})
@@ -319,28 +333,29 @@ class FitnessCorrelationService(BaseService):
 
             results = []
             for hit in response.hits:
-                results.append({
-                    "gene_a": hit.gene_a,
-                    "gene_b": hit.gene_b,
-                    "gene_a_name": getattr(hit, "gene_a_name", None),
-                    "gene_a_product": getattr(hit, "gene_a_product", None),
-                    "gene_b_name": getattr(hit, "gene_b_name", None),
-                    "gene_b_product": getattr(hit, "gene_b_product", None),
-                    "correlation_value": hit.correlation_value,
-                    "correlation_strength": hit.correlation_strength,
-                })
+                results.append(
+                    {
+                        "gene_a": hit.gene_a,
+                        "gene_b": hit.gene_b,
+                        "gene_a_name": getattr(hit, "gene_a_name", None),
+                        "gene_a_product": getattr(hit, "gene_a_product", None),
+                        "gene_b_name": getattr(hit, "gene_b_name", None),
+                        "gene_b_product": getattr(hit, "gene_b_product", None),
+                        "correlation_value": hit.correlation_value,
+                        "correlation_strength": hit.correlation_strength,
+                    }
+                )
 
             num_pages = (total + per_page - 1) // per_page
 
-            return {
-                "results": results,
-                "page": page,
-                "per_page": per_page,
-                "total": total,
-                "num_pages": num_pages,
-                "has_previous": page > 1,
-                "has_next": page < num_pages,
-            }
+            return FitnessCorrelationSearchPaginationSchema(
+                results=results,
+                page_number=page,
+                num_pages=num_pages,
+                has_previous=page > 1,
+                has_next=page < num_pages,
+                total_results=total,
+            )
 
         except Exception as e:
             logger.error(f"Error searching correlations: {e}")

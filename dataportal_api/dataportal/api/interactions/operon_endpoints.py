@@ -15,6 +15,7 @@ from dataportal.authentication import APIRoles, RoleBasedJWTAuth
 from dataportal.services.interactions.operon_service import OperonService
 from dataportal.schema.response_schemas import (
     SuccessResponseSchema,
+    PaginatedResponseSchema,
     create_success_response,
     ErrorCode,
 )
@@ -23,7 +24,7 @@ from dataportal.utils.errors import (
     raise_internal_server_error,
 )
 from dataportal.utils.exceptions import ServiceError
-from dataportal.utils.response_wrappers import wrap_success_response
+from dataportal.utils.response_wrappers import wrap_success_response, wrap_paginated_response
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +71,13 @@ async def get_gene_operons(
 
 @operon_router.get(
     "/search",
-    response=SuccessResponseSchema,
+    response=PaginatedResponseSchema,
     summary="Search operons with filters",
     description="Search for operons with various filters and pagination",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.OPERONS]),
     include_in_schema=False,
 )
-@wrap_success_response
+@wrap_paginated_response
 async def search_operons(
     request,
     locus_tag: Optional[str] = Query(
@@ -105,7 +106,7 @@ async def search_operons(
             per_page=per_page,
         )
 
-        return create_success_response(data=results, message=f"Found {results['total']} operons")
+        return results
     except ServiceError as e:
         logger.error(f"Service error in operon search: {e}")
         raise_internal_server_error(f"Failed to search operons: {str(e)}")
