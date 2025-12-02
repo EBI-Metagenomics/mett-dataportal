@@ -44,7 +44,6 @@ ortholog_service = OrthologService()
     summary="Get orthologs for a gene",
     description="Get all orthologous genes for a specific gene across species",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ORTHOLOGS]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_orthologs(
@@ -86,7 +85,6 @@ async def get_gene_orthologs(
     summary="Get ortholog relationship between two genes",
     description="Check if two genes are orthologs and get their relationship details",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ORTHOLOGS]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_ortholog_pair(
@@ -126,7 +124,6 @@ async def get_ortholog_pair(
     summary="Search orthologs with filters",
     description="Search for ortholog pairs with various filters and pagination",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ORTHOLOGS]),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def search_orthologs(

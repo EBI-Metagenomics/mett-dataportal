@@ -47,7 +47,6 @@ drug_router = Router(tags=[ROUTER_DRUG])
         "Returns paginated MIC measurements including drug names, values, units, and experimental conditions."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
-    include_in_schema=False,
 )
 async def get_strain_drug_mic(
     request,
@@ -81,7 +80,6 @@ async def get_strain_drug_mic(
         "Returns paginated degradation percentages, statistical significance, and metabolizer classifications."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
-    include_in_schema=False,
 )
 async def get_strain_drug_metabolism(
     request,
@@ -118,7 +116,6 @@ async def get_strain_drug_metabolism(
         "No pagination is applied as this endpoint returns complete datasets for both MIC and metabolism data."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
-    include_in_schema=False,
 )
 async def get_strain_drug_data(
     request, isolate_name: str = Path(..., description="Strain isolate name")
@@ -152,7 +149,6 @@ async def get_strain_drug_data(
         "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def search_drug_mic(request, query: DrugMICSearchQuerySchema = Query(...)):
@@ -177,7 +173,6 @@ async def search_drug_mic(request, query: DrugMICSearchQuerySchema = Query(...))
         "Supports pagination and optional species filtering."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def get_drug_mic_by_drug(
@@ -265,7 +260,6 @@ async def get_drug_mic_by_class(
         "Note: Sorting is limited to top-level fields (isolate_name, species_acronym, species_scientific_name)."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def search_drug_metabolism(request, query: DrugMetabolismSearchQuerySchema = Query(...)):
@@ -290,7 +284,6 @@ async def search_drug_metabolism(request, query: DrugMetabolismSearchQuerySchema
         "Supports pagination and optional species filtering."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.DRUGS]),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def get_drug_metabolism_by_drug(

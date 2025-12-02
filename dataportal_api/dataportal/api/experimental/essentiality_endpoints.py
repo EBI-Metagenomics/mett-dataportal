@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from ninja import Router, Query, Path
 
@@ -8,7 +7,11 @@ from dataportal.authentication import RoleBasedJWTAuth, APIRoles
 from dataportal.schema.experimental.essentiality_schemas import EssentialitySearchQuerySchema
 from dataportal.schema.response_schemas import SuccessResponseSchema, create_success_response
 from dataportal.services.experimental.essentiality_service import EssentialityService
-from dataportal.utils.errors import raise_not_found_error, raise_internal_server_error, raise_validation_error
+from dataportal.utils.errors import (
+    raise_not_found_error,
+    raise_internal_server_error,
+    raise_validation_error,
+)
 from dataportal.utils.exceptions import GeneNotFoundError, ServiceError
 from dataportal.utils.response_wrappers import wrap_success_response
 from dataportal.utils.utils import split_comma_param
@@ -31,7 +34,6 @@ essentiality_router = Router(tags=[ROUTER_ESSENTIALITY])
         "essentiality calls, and experimental conditions."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ESSENTIALITY]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_essentiality_by_gene(
@@ -41,22 +43,19 @@ async def get_essentiality_by_gene(
     """Get essentiality data for a specific gene."""
     try:
         result = await essentiality_service.get_by_id(locus_tag)
-        
+
         if not result.essentiality_data or len(result.essentiality_data) == 0:
             return create_success_response(
-                data=result,
-                message=f"No essentiality data found for gene {locus_tag}"
+                data=result, message=f"No essentiality data found for gene {locus_tag}"
             )
-        
+
         return create_success_response(
-            data=result,
-            message=f"Essentiality data for gene {locus_tag} retrieved successfully"
+            data=result, message=f"Essentiality data for gene {locus_tag} retrieved successfully"
         )
-    except GeneNotFoundError as e:
+    except GeneNotFoundError:
         logger.error(f"Gene not found: {locus_tag}")
         raise_not_found_error(
-            f"Gene with identifier '{locus_tag}' not found",
-            error_code="GENE_NOT_FOUND"
+            f"Gene with identifier '{locus_tag}' not found", error_code="GENE_NOT_FOUND"
         )
     except ServiceError as e:
         logger.error(f"Service error: {e}")
@@ -72,7 +71,6 @@ async def get_essentiality_by_gene(
         "Supports identifier-based search and discovery mode (filter-only queries)."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ESSENTIALITY]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def search_essentiality(
@@ -83,26 +81,28 @@ async def search_essentiality(
     try:
         locus_tags = split_comma_param(query.locus_tags) if query.locus_tags else []
         uniprot_ids = split_comma_param(query.uniprot_ids) if query.uniprot_ids else []
-        
+
         has_identifiers = locus_tags or uniprot_ids
-        has_filters = any([
-            query.essentiality_call,
-            query.experimental_condition,
-            query.min_tas_in_locus,
-            query.min_tas_hit,
-            query.element
-        ])
-        
+        has_filters = any(
+            [
+                query.essentiality_call,
+                query.experimental_condition,
+                query.min_tas_in_locus,
+                query.min_tas_hit,
+                query.element,
+            ]
+        )
+
         if not has_identifiers and not has_filters:
             raise_validation_error(
                 "At least one search criterion must be provided: "
                 "locus_tags, uniprot_ids, or filter parameters"
             )
-        
+
         total_identifiers = len(locus_tags) + len(uniprot_ids)
         if total_identifiers > 1000:
             raise_validation_error("Maximum 1000 total identifiers allowed per search request")
-        
+
         results = await essentiality_service.search_with_filters(
             locus_tags=locus_tags,
             uniprot_ids=uniprot_ids,
@@ -112,12 +112,10 @@ async def search_essentiality(
             min_tas_hit=query.min_tas_hit,
             element=query.element,
         )
-        
+
         return create_success_response(
-            data=results,
-            message=f"Found {len(results)} genes with essentiality data"
+            data=results, message=f"Found {len(results)} genes with essentiality data"
         )
     except ServiceError as e:
         logger.error(f"Service error in essentiality search: {e}")
         raise_internal_server_error(f"Failed to search essentiality data: {str(e)}")
-

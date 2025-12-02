@@ -43,7 +43,6 @@ ttp_router = Router(tags=[ROUTER_TTP])
     summary="Get TTP metadata",
     description="Get metadata about the TTP dataset including counts, available compounds, and score ranges.",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_ttp_metadata(request):
@@ -64,7 +63,6 @@ async def get_ttp_metadata(request):
     summary="Search TTP interactions",
     description="Search for protein-compound interactions with basic filtering and pagination.",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def search_interactions(request, query: TTPInteractionQuerySchema = Query(...)):
@@ -84,7 +82,6 @@ async def search_interactions(request, query: TTPInteractionQuerySchema = Query(
     summary="Get gene interactions",
     description="Get all protein-compound interactions for a specific gene.",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_interactions(
@@ -111,7 +108,6 @@ async def get_gene_interactions(
     summary="Get compound interactions",
     description="Get all protein-compound interactions for a specific compound.",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.TTP]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_compound_interactions(

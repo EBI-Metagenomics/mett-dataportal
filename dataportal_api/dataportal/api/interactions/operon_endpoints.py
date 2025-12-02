@@ -44,7 +44,6 @@ operon_service = OperonService()
     summary="Get operons containing a gene",
     description="Get all operons that contain a specific gene",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.OPERONS]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_gene_operons(
@@ -75,7 +74,6 @@ async def get_gene_operons(
     summary="Search operons with filters",
     description="Search for operons with various filters and pagination",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.OPERONS]),
-    include_in_schema=False,
 )
 @wrap_paginated_response
 async def search_operons(
@@ -149,7 +147,6 @@ async def get_operon_statistics(
     summary="Get operon by ID",
     description="Get detailed information about a specific operon",
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.OPERONS]),
-    include_in_schema=False,
 )
 @wrap_success_response
 async def get_operon_by_id(
