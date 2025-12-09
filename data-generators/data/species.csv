@@ -1,3 +1,4 @@
-scientific_name,common_name,acronym,taxonomy_id
-Bacteroides uniformis,Bacteroides,BU,"820"
-Phocaeicola vulgatus,Bacteroides vulgatus,PV,"821"
+scientific_name,common_name,acronym,taxonomy_id,enabled
+Bacteroides uniformis,Bacteroides,BU,"820",true
+Phocaeicola vulgatus,Bacteroides vulgatus,PV,"435590",true
+Bacteroides thetaiotaomicron,Bacteroides theta,BT,226186,false

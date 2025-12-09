@@ -2,7 +2,7 @@ import pandas as pd
 from django.core.management.base import BaseCommand, CommandError
 from elasticsearch_dsl import connections
 from elasticsearch.helpers import bulk, BulkIndexError
-from dataportal.models import SpeciesDocument
+
 
 class Command(BaseCommand):
     help = "Imports species data from a CSV file into a specified Elasticsearch index."
@@ -40,7 +40,16 @@ class Command(BaseCommand):
             dtype={"scientific_name": "string", "common_name": "string", "acronym": "string"},
         )
         if "taxonomy_id" in species_df.columns:
-            species_df["taxonomy_id"] = pd.to_numeric(species_df["taxonomy_id"], errors="coerce").astype("Int64")
+            species_df["taxonomy_id"] = pd.to_numeric(
+                species_df["taxonomy_id"], errors="coerce"
+            ).astype("Int64")
+        # Handle enabled field - default to True if not present or if value is invalid
+        if "enabled" in species_df.columns:
+            species_df["enabled"] = (
+                pd.to_numeric(species_df["enabled"], errors="coerce").fillna(1).astype(bool)
+            )
+        else:
+            species_df["enabled"] = True
         for col in ("scientific_name", "common_name", "acronym"):
             if col in species_df.columns:
                 species_df[col] = species_df[col].fillna("").str.strip()
@@ -57,6 +66,12 @@ class Command(BaseCommand):
                 tax = getattr(row, "taxonomy_id", None)
                 if tax is not None and pd.notna(tax):
                     src["taxonomy_id"] = int(tax)
+
+                # Handle enabled field - default to True if not present
+                enabled = getattr(row, "enabled", True)
+                if enabled is None or pd.isna(enabled):
+                    enabled = True
+                src["enabled"] = bool(enabled)
 
                 yield {
                     "_op_type": "index",
@@ -78,7 +93,9 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"Bulk completed with {len(errors)} errors."))
         except BulkIndexError as e:
             errs = getattr(e, "errors", [])
-            self.stderr.write(self.style.ERROR(f"{len(errs)} document(s) failed to index. Showing up to 5:"))
+            self.stderr.write(
+                self.style.ERROR(f"{len(errs)} document(s) failed to index. Showing up to 5:")
+            )
             for i, err in enumerate(errs[:5], 1):
                 self.stderr.write(self.style.ERROR(f"[{i}] {err}"))
             raise

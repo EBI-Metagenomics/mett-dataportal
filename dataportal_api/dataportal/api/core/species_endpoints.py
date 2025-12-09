@@ -10,10 +10,15 @@ from dataportal.schema.response_schemas import (
     create_success_response,
 )
 from dataportal.services.service_factory import ServiceFactory
-from dataportal.utils.errors import raise_http_error, raise_internal_server_error
+from dataportal.utils.errors import (
+    raise_http_error,
+    raise_internal_server_error,
+    raise_not_found_error,
+)
 from dataportal.utils.exceptions import (
     ServiceError,
 )
+from dataportal.schema.response_schemas import ErrorCode
 from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
 
 logger = logging.getLogger(__name__)
@@ -63,6 +68,14 @@ async def get_genomes_by_species(
     query: SpeciesGenomeSearchQuerySchema = Query(...),
 ):
     try:
+        # Validate that the species exists and is enabled
+        species = await species_service.get_by_id(species_acronym)
+        if not species:
+            raise_not_found_error(
+                f"Species '{species_acronym}' not found or is disabled",
+                error_code=ErrorCode.SPECIES_NOT_FOUND,
+            )
+
         species_query = query.model_copy()
         genome_query = species_query.to_genome_search_query(species_acronym)
         result = await genome_service.search_genomes_by_string(genome_query)
@@ -90,6 +103,14 @@ async def search_genomes_by_species_and_string(
     query: SpeciesGenomeSearchQuerySchema = Query(...),
 ):
     try:
+        # Validate that the species exists and is enabled
+        species = await species_service.get_by_id(species_acronym)
+        if not species:
+            raise_not_found_error(
+                f"Species '{species_acronym}' not found or is disabled",
+                error_code=ErrorCode.SPECIES_NOT_FOUND,
+            )
+
         genome_query = query.to_genome_search_query(species_acronym)
         result = await genome_service.search_genomes_by_string(genome_query)
         return result

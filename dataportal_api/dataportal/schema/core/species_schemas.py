@@ -18,6 +18,9 @@ class SpeciesSchema(BaseModel):
     common_name: str
     acronym: str
     taxonomy_id: int
+    enabled: bool = Field(
+        default=True, description="Whether the species is enabled and visible in API responses"
+    )
 
     model_config = ConfigDict(
         from_attributes=True,

@@ -16,7 +16,7 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
     async def get_by_id(self, id: str) -> Optional[SpeciesSchema]:
         """Retrieve a single species by ID (acronym)."""
         try:
-            search = self._create_search().query("term", acronym=id)
+            search = self._create_search().query("term", acronym=id).filter("term", enabled=True)
             response = await self._execute_search(search)
 
             if not response:
@@ -27,9 +27,9 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
             self._handle_elasticsearch_error(e, f"get_by_id for species {id}")
 
     async def get_all(self, **kwargs) -> List[SpeciesSchema]:
-        """Retrieve all species from Elasticsearch."""
+        """Retrieve all enabled species from Elasticsearch."""
         try:
-            search = self._create_search().query("match_all")
+            search = self._create_search().query("match_all").filter("term", enabled=True)
             response = await self._execute_search(search)
 
             return [self._convert_hit_to_entity(hit) for hit in response]
@@ -48,6 +48,9 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
                 search = search.query("match", scientific_name=query["scientific_name"])
             else:
                 search = search.query("match_all")
+
+            # Always filter to only enabled species
+            search = search.filter("term", enabled=True)
 
             response = await self._execute_search(search)
             return [self._convert_hit_to_entity(hit) for hit in response]

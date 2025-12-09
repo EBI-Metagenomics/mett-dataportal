@@ -145,4 +145,7 @@ https://string-db.org/api/tsv/network?identifiers=820.CUP55842&species=820&calle
 ```
 Parse edges, merge with your internal PPIs, classify intra/inter/cross as planned.
 
-
+### Downloads from string DB
+```html 
+https://string-db.org/cgi/download?sessionId=bOOcopaODBCk&species_text=Bacteroides+vulgatus+ATCC+8482&settings_expanded=0&min_download_score=0&filter_redundant_pairs=0&delimiter_type=txt
+```
