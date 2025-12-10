@@ -466,6 +466,22 @@ $ python manage.py import_features \
   --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
 ```
 
+**STRING DBXREF Data**:
+Single file
+```bash
+python manage.py import_dbxref \
+    --index feature_index \
+    --tsv ../data-generators/stringdb-mapper/output/bu_to_string_raw.tsv \
+    --db-name STRING
+```
+Directory with multiple files
+```bash
+python manage.py import_dbxref \
+    --index feature_index \
+    --tsv-dir ../data-generators/stringdb-mapper/output \
+    --db-name STRING
+```
+
 ### Experimental Data
 
 #### Fitness Data
