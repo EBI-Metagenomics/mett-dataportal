@@ -335,7 +335,7 @@ python manage.py migrate django_celery_beat
 $ python manage.py create_es_index
 
 # Create indices with specific version
-$ python manage.py create_es_index --es-version 2025.09.03
+$ python manage.py create_es_index --es-version v5
 
 # Create specific model index
 $ python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 2025.09.03
