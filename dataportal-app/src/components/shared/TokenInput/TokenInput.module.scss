@@ -1,0 +1,149 @@
+.tokenInput {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.header {
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #666;
+    line-height: 1.5;
+
+    .temporary {
+      font-style: italic;
+      color: #888;
+      font-size: 0.8125rem;
+    }
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .input {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: monospace;
+    transition: border-color 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+    }
+
+    &:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+    }
+  }
+
+  .error {
+    color: #d32f2f;
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.submitButton,
+.clearButton,
+.cancelButton {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.submitButton {
+  background-color: #1976d2;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #1565c0;
+  }
+
+  &:active:not(:disabled) {
+    background-color: #0d47a1;
+  }
+}
+
+.clearButton {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+
+  &:hover:not(:disabled) {
+    background-color: #e0e0e0;
+  }
+}
+
+.cancelButton {
+  background-color: transparent;
+  color: #666;
+  border: 1px solid #ddd;
+
+  &:hover:not(:disabled) {
+    background-color: #f5f5f5;
+  }
+}
+
+.tokenStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: #e8f5e9;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #2e7d32;
+
+  .statusIcon {
+    font-weight: bold;
+    color: #2e7d32;
+  }
+}
+

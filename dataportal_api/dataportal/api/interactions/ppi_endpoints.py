@@ -228,6 +228,8 @@ async def get_ppi_network(request, score_type: str, query: PPINetworkQuerySchema
             score_type=score_type,
             score_threshold=query.score_threshold,
             species_acronym=query.species_acronym,
+            isolate_name=query.isolate_name,
+            locus_tag=query.locus_tag,
         )
 
         # Include properties if requested
@@ -236,6 +238,8 @@ async def get_ppi_network(request, score_type: str, query: PPINetworkQuerySchema
                 score_type=score_type,
                 score_threshold=query.score_threshold,
                 species_acronym=query.species_acronym,
+                isolate_name=query.isolate_name,
+                locus_tag=query.locus_tag,
             )
             network_data.properties = properties
 
@@ -266,6 +270,7 @@ async def get_ppi_network_properties(request, query: PPINetworkPropertiesQuerySc
             score_type=query.score_type,
             score_threshold=query.score_threshold,
             species_acronym=query.species_acronym,
+            isolate_name=query.isolate_name,
         )
 
         return create_success_response(

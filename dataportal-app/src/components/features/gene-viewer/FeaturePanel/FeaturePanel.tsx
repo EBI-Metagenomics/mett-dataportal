@@ -17,7 +17,7 @@ interface FeaturePanelProps {
     onClose?: () => void;
     viewState?: ViewModel;
     setLoading?: React.Dispatch<React.SetStateAction<boolean>>;
-    activeTab?: 'search' | 'sync';
+    activeTab?: 'search' | 'sync' | 'network';
     onSwitchToSearch?: () => void;
     onToggleFacet?: (facetGroup: string, value: string | boolean) => void;
     facets?: GeneFacetResponse;

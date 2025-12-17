@@ -11,6 +11,7 @@ import {useDebouncedLoading} from '../../hooks/useDebouncedLoading';
 import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils/gene-viewer';
 import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../features/gene-viewer/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
+import { TokenBanner } from '../shared/TokenBanner';
 import {useFilterStore} from '../../stores/filterStore';
 import {DEFAULT_PER_PAGE_CNT} from '../../utils/common/constants';
 import {useFacetedFilters} from '../../hooks/useFacetedFilters';
@@ -18,6 +19,7 @@ import {useFacetedFilters} from '../../hooks/useFacetedFilters';
 // Import custom feature panel
 import FeaturePanel from '../features/gene-viewer/FeaturePanel/FeaturePanel';
 import SyncView from '../features/gene-viewer/SyncView';
+import { NetworkView } from '../features/gene-viewer/NetworkView';
 import { useJBrowseViewportSync } from '../../hooks/useJBrowseViewportSync';
 import { useViewportSyncStore } from '../../stores/viewportSyncStore';
 import { VIEWPORT_SYNC_CONSTANTS } from '../../utils/gene-viewer';
@@ -56,8 +58,8 @@ const GeneViewerPage: React.FC = () => {
     const filterStore = useFilterStore();
     const { viewportChanged, setViewportChanged } = useViewportSyncStore();
     
-    // Tab state for Search View / Genomic Context
-    const [activeTab, setActiveTab] = useState<'search' | 'sync'>('search');
+    // Tab state for Search View / Genomic Context / Network View
+    const [activeTab, setActiveTab] = useState<'search' | 'sync' | 'network'>('search');
     const [showAutoSwitchNotification, setShowAutoSwitchNotification] = useState(false);
     const [wasAutoSwitched, setWasAutoSwitched] = useState(false);
     const manualOverrideUntilRef = useRef<number | null>(null);
@@ -255,6 +257,14 @@ const GeneViewerPage: React.FC = () => {
         type_strain: geneViewerData.genomeMeta.type_strain || false
     }] : [], [geneViewerData.genomeMeta]);
 
+    // Extract locus_tag from selected feature for network filtering
+    const selectedLocusTag = useMemo(() => {
+        if (!selectedFeature) return null;
+        // Handle both feature.data.locus_tag and feature.locus_tag structures
+        const data = selectedFeature?.data || selectedFeature;
+        return data?.locus_tag || null;
+    }, [selectedFeature]);
+
     // Create shared handleToggleFacet for FeaturePanel to use the same mechanism as facet checkboxes
     const selectedSpeciesFromStore = useFilterStore(state => state.selectedSpecies);
     const geneSearchQuery = useFilterStore(state => state.geneSearchQuery);
@@ -294,6 +304,7 @@ const GeneViewerPage: React.FC = () => {
 
     return (
         <ErrorBoundary onError={handleError}>
+            <TokenBanner />
             <div className={styles.geneViewerPage}>
                 {spinner}
 
@@ -370,14 +381,20 @@ const GeneViewerPage: React.FC = () => {
                                         tabs={[
                                             { id: 'search', label: 'Search View' },
                                             { id: 'sync', label: 'Genomic Context' },
+                                            { id: 'network', label: 'Network View' },
                                         ]}
                                         activeTab={activeTab}
                                         onTabClick={(tabId) => {
-                                            const newTab = tabId as 'search' | 'sync';
+                                            const newTab = tabId as 'search' | 'sync' | 'network';
                                             if (newTab === 'search') {
                                                 handleSetSearchView();
-                                            } else {
+                                            } else if (newTab === 'sync') {
                                                 handleSetSyncView();
+                                            } else if (newTab === 'network') {
+                                                clearManualOverride();
+                                                setActiveTab('network');
+                                                setShowAutoSwitchNotification(false);
+                                                setWasAutoSwitched(false);
                                             }
                                         }}
                                     />
@@ -411,13 +428,21 @@ const GeneViewerPage: React.FC = () => {
                                             onFeatureSelect={handleFeatureSelect}
                                             hideActionsColumn={true}
                                         />
-                                    ) : (
+                                    ) : activeTab === 'sync' ? (
                                         <SyncView
                                             viewState={viewState || undefined}
                                             selectedGenomes={selectedGenomes}
                                             setLoading={geneViewerData.setLoading}
                                             onFeatureSelect={handleFeatureSelect}
                                             linkData={linkData}
+                                        />
+                                    ) : (
+                                        <NetworkView
+                                            speciesAcronym={geneViewerData.genomeMeta?.species_acronym}
+                                            isolateName={geneViewerData.genomeMeta?.isolate_name}
+                                            selectedLocusTag={selectedLocusTag}
+                                            setLoading={geneViewerData.setLoading}
+                                            onFeatureSelect={handleFeatureSelect}
                                         />
                                     )}
                                 </section>

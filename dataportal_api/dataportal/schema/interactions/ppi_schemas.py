@@ -7,6 +7,7 @@ from dataportal.utils.constants import PPI_VALID_FILTER_FIELDS
 
 class PPIInteractionSchema(BaseModel):
     """Schema for a single PPI interaction."""
+
     pair_id: str
     species_scientific_name: Optional[str] = None
     species_acronym: Optional[str] = None
@@ -15,19 +16,19 @@ class PPIInteractionSchema(BaseModel):
     protein_b: str
     participants: List[str]
     is_self_interaction: bool = False
-    
+
     # Gene information for protein_a
     protein_a_locus_tag: Optional[str] = None
     protein_a_uniprot_id: Optional[str] = None
     protein_a_name: Optional[str] = None
     protein_a_product: Optional[str] = None
-    
+
     # Gene information for protein_b
     protein_b_locus_tag: Optional[str] = None
     protein_b_uniprot_id: Optional[str] = None
     protein_b_name: Optional[str] = None
     protein_b_product: Optional[str] = None
-    
+
     # Scores
     dl_score: Optional[float] = None
     comelt_score: Optional[float] = None
@@ -41,46 +42,55 @@ class PPIInteractionSchema(BaseModel):
     ecocyc_score: Optional[float] = None
     tt_score: Optional[float] = None
     ds_score: Optional[float] = None
-    
+
     # Evidence flags
     has_xlms: bool = False
     has_string: bool = False
     has_operon: bool = False
     has_ecocyc: bool = False
-    
+
     # Metadata
     evidence_count: int = 0
 
 
 class PPISearchQuerySchema(BaseModel):
     """Schema for PPI search queries."""
+
     species_acronym: Optional[str] = Field(None, description="Species acronym (e.g., 'PV', 'BU')")
-    isolate_name: Optional[str] = Field(None, description="Isolate name (e.g., 'BU_ATCC8492', 'PV_ATCC8482')")
+    isolate_name: Optional[str] = Field(
+        None, description="Isolate name (e.g., 'BU_ATCC8492', 'PV_ATCC8482')"
+    )
     score_type: Optional[str] = Field(None, description="Score type to filter by")
     score_threshold: Optional[float] = Field(None, description="Minimum score threshold")
     has_xlms: Optional[bool] = Field(None, description="Filter by XL-MS evidence")
     has_string: Optional[bool] = Field(None, description="Filter by STRING evidence")
     has_operon: Optional[bool] = Field(None, description="Filter by operon evidence")
     has_ecocyc: Optional[bool] = Field(None, description="Filter by EcoCyc evidence")
-    protein_id: Optional[str] = Field(None, description="Filter interactions involving specific protein")
-    locus_tag: Optional[str] = Field(None, description="Filter interactions involving specific locus tag")
+    protein_id: Optional[str] = Field(
+        None, description="Filter interactions involving specific protein"
+    )
+    locus_tag: Optional[str] = Field(
+        None, description="Filter interactions involving specific locus tag"
+    )
     page: int = Field(1, ge=1, description="Page number")
     per_page: int = Field(20, ge=1, le=100000, description="Results per page")
 
-    @validator('score_type')
+    @validator("score_type")
     def validate_score_type(cls, v):
         if v is not None and v not in PPI_VALID_FILTER_FIELDS:
             # Check if it's a base name that can be converted to a score field
-            if not v.endswith('_score'):
+            if not v.endswith("_score"):
                 potential_score = f"{v}_score"
                 if potential_score not in PPI_VALID_FILTER_FIELDS:
-                    raise ValueError(f"Invalid score_type: {v}. Valid options: {PPI_VALID_FILTER_FIELDS}")
+                    raise ValueError(
+                        f"Invalid score_type: {v}. Valid options: {PPI_VALID_FILTER_FIELDS}"
+                    )
         return v
 
-    @validator('locus_tag')
+    @validator("locus_tag")
     def validate_protein_identifier(cls, v, values):
         """Validate that only one of protein_id or locus_tag is provided."""
-        protein_id = values.get('protein_id')
+        protein_id = values.get("protein_id")
         if v is not None and protein_id is not None:
             raise ValueError("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
         return v
@@ -88,6 +98,7 @@ class PPISearchQuerySchema(BaseModel):
 
 class PPINetworkSchema(BaseModel):
     """Schema for PPI network data."""
+
     nodes: List[Dict[str, Any]]
     edges: List[Dict[str, Any]]
     properties: Dict[str, Any]
@@ -95,6 +106,7 @@ class PPINetworkSchema(BaseModel):
 
 class PPINetworkPropertiesSchema(BaseModel):
     """Schema for network properties."""
+
     num_nodes: int
     num_edges: int
     density: float
@@ -104,6 +116,7 @@ class PPINetworkPropertiesSchema(BaseModel):
 
 class PPINeighborhoodSchema(BaseModel):
     """Schema for protein neighborhood data."""
+
     protein_id: str
     neighbors: List[Dict[str, Any]]
     network_data: PPINetworkSchema
@@ -111,30 +124,37 @@ class PPINeighborhoodSchema(BaseModel):
 
 class PPIPaginationSchema(BasePaginationSchema):
     """Pagination schema for PPI interactions."""
+
     results: List[PPIInteractionSchema]
+
 
 class PPISearchResponseSchema(PaginatedResponseSchema):
     """Response schema for PPI search results."""
+
     data: List[PPIInteractionSchema]
 
 
 class PPINetworkResponseSchema(SuccessResponseSchema):
     """Response schema for PPI network data."""
+
     data: PPINetworkSchema
 
 
 class PPINetworkPropertiesResponseSchema(SuccessResponseSchema):
     """Response schema for network properties."""
+
     data: PPINetworkPropertiesSchema
 
 
 class PPINeighborhoodResponseSchema(SuccessResponseSchema):
     """Response schema for protein neighborhood data."""
+
     data: PPINeighborhoodSchema
 
 
 class PPIAllNeighborsSchema(BaseModel):
     """Schema for all protein neighbors (raw data without algorithm processing)."""
+
     protein_id: str
     total_interactions: int
     interactions: List[PPIInteractionSchema]
@@ -143,21 +163,23 @@ class PPIAllNeighborsSchema(BaseModel):
 
 class PPIAllNeighborsResponseSchema(SuccessResponseSchema):
     """Response schema for all protein neighbors data."""
+
     data: PPIAllNeighborsSchema
 
 
 # Request Schemas
 class PPINeighborhoodQuerySchema(BaseModel):
     """Schema for protein neighborhood query parameters."""
+
     protein_id: Optional[str] = Field(None, description="UniProt ID of the protein")
     locus_tag: Optional[str] = Field(None, description="Locus tag of the protein")
     n: int = Field(5, ge=1, le=50, description="Number of neighbors to retrieve")
     species_acronym: Optional[str] = Field(None, description="Species acronym filter")
 
-    @validator('locus_tag')
+    @validator("locus_tag")
     def validate_protein_identifier(cls, v, values):
         """Validate that only one of protein_id or locus_tag is provided."""
-        protein_id = values.get('protein_id')
+        protein_id = values.get("protein_id")
         if v is not None and protein_id is not None:
             raise ValueError("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
         return v
@@ -165,14 +187,15 @@ class PPINeighborhoodQuerySchema(BaseModel):
 
 class PPINeighborsQuerySchema(BaseModel):
     """Schema for protein neighbors query parameters."""
+
     protein_id: Optional[str] = Field(None, description="UniProt ID of the protein")
     locus_tag: Optional[str] = Field(None, description="Locus tag of the protein")
     species_acronym: Optional[str] = Field(None, description="Species acronym filter")
 
-    @validator('locus_tag')
+    @validator("locus_tag")
     def validate_protein_identifier(cls, v, values):
         """Validate that only one of protein_id or locus_tag is provided."""
-        protein_id = values.get('protein_id')
+        protein_id = values.get("protein_id")
         if v is not None and protein_id is not None:
             raise ValueError("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
         return v
@@ -180,18 +203,34 @@ class PPINeighborsQuerySchema(BaseModel):
 
 class PPINetworkQuerySchema(BaseModel):
     """Schema for PPI network query parameters."""
-    score_threshold: float = Field(0.8, ge=0.0, le=1.0, description="Score threshold for network construction")
+
+    score_threshold: float = Field(
+        0.8, ge=0.0, le=1.0, description="Score threshold for network construction"
+    )
     species_acronym: Optional[str] = Field(None, description="Species acronym filter")
+    isolate_name: Optional[str] = Field(
+        None, description="Isolate name filter (e.g., 'BU_ATCC8492', 'PV_ATCC8482')"
+    )
+    locus_tag: Optional[str] = Field(
+        None, description="Filter to PPIs involving this locus_tag (creates neighborhood view)"
+    )
     include_properties: bool = Field(False, description="Whether to include network properties")
 
 
 class PPINetworkPropertiesQuerySchema(BaseModel):
     """Schema for PPI network properties query parameters."""
+
     score_type: str = Field(..., description="Score type for network construction")
-    score_threshold: float = Field(0.8, ge=0.0, le=1.0, description="Score threshold for network construction")
+    score_threshold: float = Field(
+        0.8, ge=0.0, le=1.0, description="Score threshold for network construction"
+    )
     species_acronym: Optional[str] = Field(None, description="Species acronym filter")
+    isolate_name: Optional[str] = Field(
+        None, description="Isolate name filter (e.g., 'BU_ATCC8492', 'PV_ATCC8482')"
+    )
 
 
 class PPIScoreTypesResponseSchema(SuccessResponseSchema):
     """Response schema for available score types."""
+
     data: Dict[str, List[str]] = Field(..., description="Available score types")
