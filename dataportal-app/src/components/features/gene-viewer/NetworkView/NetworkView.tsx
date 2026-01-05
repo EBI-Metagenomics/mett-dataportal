@@ -5,7 +5,6 @@ import { PPINetworkNode } from '../../../../interfaces/PPI';
 import { NetworkGraph, NetworkGraphRef } from './NetworkGraph';
 import { NetworkControls } from './NetworkControls';
 import { NetworkStats } from './NetworkStats';
-import { NetworkLegend } from './NetworkLegend';
 import { EmptyState } from './EmptyState';
 import { AuthRequired } from './AuthRequired';
 import { NodeInfoPopup } from './NodeInfoPopup';
@@ -152,17 +151,16 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   return (
     <div className={styles.networkView}>
       {/* Controls - Always visible */}
-      <NetworkControls
-        scoreType={scoreType}
-        displayThreshold={displayThreshold}
-        showOrthologs={showOrthologs}
-        availableScoreTypes={availableScoreTypes}
-        onScoreTypeChange={handleScoreTypeChange}
-        onThresholdChange={handleThresholdChange}
-        onOrthologToggle={handleOrthologToggle}
-        onRefresh={refreshNetwork}
-        onResetView={handleResetView}
-      />
+        <NetworkControls
+          scoreType={scoreType}
+          displayThreshold={displayThreshold}
+          showOrthologs={showOrthologs}
+          availableScoreTypes={availableScoreTypes}
+          onScoreTypeChange={handleScoreTypeChange}
+          onThresholdChange={handleThresholdChange}
+          onOrthologToggle={handleOrthologToggle}
+          onResetView={handleResetView}
+        />
 
       {/* Error Message */}
       {error && (
@@ -183,24 +181,21 @@ const NetworkView: React.FC<NetworkViewProps> = ({
 
       {/* Network Stats */}
       {hasData && networkProperties && (
-        <NetworkStats properties={networkProperties} />
+        <NetworkStats properties={networkProperties} showOrthologs={showOrthologs} />
       )}
 
       {/* Network Visualization */}
       {hasData && !error && (
-        <>
-          <div className={styles.networkVisualization}>
-            <NetworkGraph
-              ref={graphRef}
-              nodes={enrichedNodes}
-              edges={enrichedEdges}
-              showOrthologs={showOrthologs}
-              onNodeClick={handleNodeClick}
-              selectedNode={selectedNode}
-            />
-          </div>
-          <NetworkLegend showOrthologs={showOrthologs} />
-        </>
+        <div className={styles.networkVisualization}>
+          <NetworkGraph
+            ref={graphRef}
+            nodes={enrichedNodes}
+            edges={enrichedEdges}
+            showOrthologs={showOrthologs}
+            onNodeClick={handleNodeClick}
+            selectedNode={selectedNode}
+          />
+        </div>
       )}
 
       {/* Node Info Popup */}

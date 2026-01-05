@@ -8,7 +8,7 @@ interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  message = 'No network data available for this species.',
+  message = 'No network data available for the selected gene and filters.',
   hint = 'Try adjusting the score threshold or selecting a different score type.',
   variant = 'empty',
 }) => {

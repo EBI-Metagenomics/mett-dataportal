@@ -9,7 +9,6 @@ interface NetworkControlsProps {
   onScoreTypeChange: (scoreType: string) => void;
   onThresholdChange: (threshold: number) => void;
   onOrthologToggle: (enabled: boolean) => void;
-  onRefresh: () => void;
   onResetView?: () => void;
 }
 
@@ -21,7 +20,6 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   onScoreTypeChange,
   onThresholdChange,
   onOrthologToggle,
-  onRefresh,
   onResetView,
 }) => {
   return (
@@ -70,10 +68,6 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
         </label>
       </div>
 
-      <button onClick={onRefresh} className={styles.analyzeButton}>
-        Analyse
-      </button>
-      
       {onResetView && (
         <button onClick={onResetView} className={styles.resetButton} title="Reset view to fit all nodes">
           🔍 Reset View
