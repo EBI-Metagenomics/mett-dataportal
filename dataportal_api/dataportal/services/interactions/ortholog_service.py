@@ -293,6 +293,134 @@ class OrthologService(BaseService):
             logger.error(f"Error searching orthologs: {e}")
             raise ServiceError(f"Failed to search orthologs: {str(e)}")
 
+    async def get_orthologs_batch(
+        self,
+        locus_tags: List[str],
+        species_acronym: Optional[str] = None,
+        orthology_type: Optional[str] = None,
+        one_to_one_only: bool = False,
+        cross_species_only: bool = False,
+        max_results_per_gene: int = 100,
+    ) -> Dict[str, Any]:
+        """
+        Get orthologs for multiple genes in a single query.
+
+        Args:
+            locus_tags: List of gene locus tags
+            species_acronym: Optional species filter
+            orthology_type: Optional orthology type filter
+            one_to_one_only: Return only one-to-one orthologs
+            cross_species_only: Return only cross-species orthologs
+            max_results_per_gene: Maximum number of orthologs per gene
+
+        Returns:
+            Dictionary with results for each gene
+        """
+        try:
+            if not locus_tags:
+                return {
+                    "results": [],
+                    "total_genes": 0,
+                    "total_orthologs": 0,
+                }
+
+            s = Search(index=self.index_name)
+
+            # Filter by all locus tags in members field
+            s = s.filter("terms", members=locus_tags)
+
+            if species_acronym:
+                s = s.query(
+                    "bool",
+                    should=[
+                        {"term": {"species_a_acronym": species_acronym}},
+                        {"term": {"species_b_acronym": species_acronym}},
+                    ],
+                    minimum_should_match=1,
+                )
+
+            if orthology_type:
+                s = s.filter("term", orthology_type=orthology_type)
+
+            if one_to_one_only:
+                s = s.filter("term", is_one_to_one=True)
+
+            if cross_species_only:
+                s = s.filter("term", same_species=False)
+
+            # Get all results (we'll group by gene)
+            s = s[:10000]  # Reasonable limit for batch requests
+
+            response = await self._execute_search(s)
+
+            # Group orthologs by query gene
+            orthologs_by_gene: Dict[str, List[Dict[str, Any]]] = {tag: [] for tag in locus_tags}
+            total_orthologs = 0
+
+            for hit in response.hits:
+                # Determine which gene is the query gene and which is the ortholog
+                if hit.gene_a in locus_tags:
+                    query_gene = hit.gene_a
+                    ortholog_gene = {
+                        "locus_tag": hit.gene_b,
+                        "uniprot_id": getattr(hit, "gene_b_uniprot_id", None),
+                        "gene_name": getattr(hit, "gene_b_name", None),
+                        "product": getattr(hit, "gene_b_product", None),
+                        "start": getattr(hit, "gene_b_start", None),
+                        "end": getattr(hit, "gene_b_end", None),
+                        "strand": getattr(hit, "gene_b_strand", None),
+                        "species_acronym": getattr(hit, "species_b_acronym", None),
+                        "isolate": getattr(hit, "isolate_b", None),
+                        "orthology_type": getattr(hit, "orthology_type", None),
+                        "oma_group_id": getattr(hit, "oma_group_id", None),
+                        "is_one_to_one": getattr(hit, "is_one_to_one", False),
+                    }
+                elif hit.gene_b in locus_tags:
+                    query_gene = hit.gene_b
+                    ortholog_gene = {
+                        "locus_tag": hit.gene_a,
+                        "uniprot_id": getattr(hit, "gene_a_uniprot_id", None),
+                        "gene_name": getattr(hit, "gene_a_name", None),
+                        "product": getattr(hit, "gene_a_product", None),
+                        "start": getattr(hit, "gene_a_start", None),
+                        "end": getattr(hit, "gene_a_end", None),
+                        "strand": getattr(hit, "gene_a_strand", None),
+                        "species_acronym": getattr(hit, "species_a_acronym", None),
+                        "isolate": getattr(hit, "isolate_a", None),
+                        "orthology_type": getattr(hit, "orthology_type", None),
+                        "oma_group_id": getattr(hit, "oma_group_id", None),
+                        "is_one_to_one": getattr(hit, "is_one_to_one", False),
+                    }
+                else:
+                    continue  # Skip if neither gene is in our query list
+
+                # Limit orthologs per gene
+                if len(orthologs_by_gene[query_gene]) < max_results_per_gene:
+                    orthologs_by_gene[query_gene].append(ortholog_gene)
+                    total_orthologs += 1
+
+            # Build results
+            results = []
+            for locus_tag in locus_tags:
+                orthologs = orthologs_by_gene.get(locus_tag, [])
+                results.append(
+                    {
+                        "locus_tag": locus_tag,
+                        "orthologs": orthologs,
+                        "total_count": len(orthologs),
+                    }
+                )
+
+            return {
+                "results": results,
+                "total_genes": len(locus_tags),
+                "total_orthologs": total_orthologs,
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting batch orthologs: {e}")
+            raise ServiceError(f"Failed to get batch orthologs: {str(e)}")
+
     def _convert_doc_to_dict(self, doc) -> Dict[str, Any]:
         """Convert Elasticsearch document to dictionary."""
         return {

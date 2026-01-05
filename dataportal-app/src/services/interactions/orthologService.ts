@@ -71,36 +71,67 @@ export class OrthologService extends BaseService {
   }
 
   /**
-   * Get orthologs for multiple genes in batch
-   * This is useful for enriching network nodes with ortholog information
+   * Get orthologs for multiple genes in batch using the batch endpoint
+   * This is much more efficient than making individual API calls
    */
   static async getBatchOrthologs(
     locusTags: string[],
     speciesAcronym?: string
   ): Promise<Map<string, OrthologRelationship[]>> {
     try {
-      // Fetch orthologs for each gene
-      // Note: This could be optimized on the backend with a batch endpoint
-      const orthologMap = new Map<string, OrthologRelationship[]>();
-      
-      const promises = locusTags.map(async (locusTag) => {
-        try {
-          const orthologs = await this.getGeneOrthologs(locusTag, {
-            species_acronym: speciesAcronym,
-            max_results: 100,
-          });
-          orthologMap.set(locusTag, orthologs.orthologs);
-        } catch (error) {
-          console.warn(`Failed to fetch orthologs for ${locusTag}:`, error);
-          orthologMap.set(locusTag, []);
-        }
+      if (locusTags.length === 0) {
+        return new Map<string, OrthologRelationship[]>();
+      }
+
+      // Use batch endpoint for efficiency
+      const searchParams = this.buildParams({
+        locus_tags: locusTags.join(','), // Comma-separated list
+        species_acronym: speciesAcronym,
+        max_results_per_gene: 100, // Limit per gene
       });
 
-      await Promise.all(promises);
+      // Call the batch endpoint
+      const response = await this.getWithRetry<{
+        results: Array<{
+          locus_tag: string;
+          orthologs: Array<{
+            locus_tag?: string;
+            species_acronym?: string;
+            orthology_type?: string;
+            is_one_to_one?: boolean;
+            [key: string]: unknown;
+          }>;
+          total_count: number;
+        }>;
+        total_genes: number;
+        total_orthologs: number;
+      }>(
+        `${this.BASE_ENDPOINT}/batch`,
+        searchParams
+      );
+
+      // Transform response to Map<string, OrthologRelationship[]>
+      const orthologMap = new Map<string, OrthologRelationship[]>();
+
+      for (const result of response.results || []) {
+        const queryLocusTag = result.locus_tag;
+        const transformedOrthologs: OrthologRelationship[] = (result.orthologs || []).map((ortholog) => ({
+          locus_tag_a: queryLocusTag, // The query gene (source)
+          locus_tag_b: ortholog.locus_tag || '', // The ortholog gene (target)
+          species_acronym_a: queryLocusTag.split('_')[0], // Extract species from locus tag
+          species_acronym_b: ortholog.species_acronym,
+          orthology_type: ortholog.orthology_type,
+          confidence_score: ortholog.is_one_to_one ? 1.0 : 0.8, // Use 1.0 for 1:1, lower for others
+        }));
+
+        orthologMap.set(queryLocusTag, transformedOrthologs);
+      }
+
       return orthologMap;
     } catch (error) {
       console.error("Error fetching batch orthologs:", error);
-      throw error;
+      // Return empty map on error instead of throwing, to allow partial functionality
+      return new Map<string, OrthologRelationship[]>();
     }
   }
 }

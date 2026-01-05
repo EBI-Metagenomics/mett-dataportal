@@ -19,12 +19,17 @@ from dataportal.schema.response_schemas import (
     create_success_response,
     ErrorCode,
 )
+from dataportal.schema.interactions.ortholog_schemas import (
+    OrthologBatchQuerySchema,
+)
 from dataportal.utils.errors import (
     raise_not_found_error,
     raise_internal_server_error,
+    raise_validation_error,
 )
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.response_wrappers import wrap_success_response, wrap_paginated_response
+from dataportal.utils.utils import split_comma_param
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +155,53 @@ async def search_orthologs(
     except ServiceError as e:
         logger.error(f"Service error in ortholog search: {e}")
         raise_internal_server_error(f"Failed to search orthologs: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise_internal_server_error("Internal server error")
+
+
+@ortholog_router.get(
+    "/batch",
+    response=SuccessResponseSchema,
+    summary="Get orthologs for multiple genes (batch)",
+    description="Get orthologs for multiple genes in a single request for improved efficiency",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.ORTHOLOGS]),
+)
+@wrap_success_response
+async def get_orthologs_batch(
+    request,
+    query: OrthologBatchQuerySchema = Query(...),
+):
+    """Get orthologs for multiple genes in a single batch request."""
+    try:
+        # Parse comma-separated locus tags
+        locus_tags = split_comma_param(query.locus_tags) if query.locus_tags else []
+
+        if not locus_tags:
+            raise_validation_error("At least one locus_tag must be provided")
+
+        # Limit to reasonable number
+        if len(locus_tags) > 1000:
+            raise_validation_error("Maximum 1000 locus tags allowed per batch request")
+
+        result = await ortholog_service.get_orthologs_batch(
+            locus_tags=locus_tags,
+            species_acronym=query.species_acronym,
+            orthology_type=query.orthology_type,
+            one_to_one_only=query.one_to_one_only,
+            cross_species_only=query.cross_species_only,
+            max_results_per_gene=query.max_results_per_gene,
+        )
+
+        return create_success_response(
+            data=result,
+            message=f"Found orthologs for {result['total_genes']} genes (total: {result['total_orthologs']} orthologs)",
+        )
+    except HttpError:
+        raise
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise_internal_server_error(f"Failed to get batch orthologs: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise_internal_server_error("Internal server error")

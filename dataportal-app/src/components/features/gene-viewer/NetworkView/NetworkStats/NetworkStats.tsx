@@ -63,10 +63,10 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({ properties, showOrth
               <span className={`${styles.legendColor} ${styles.legendColorOrtholog}`}></span>
               <span>Ortholog Node</span>
             </div>
-            <div className={styles.legendItem}>
+            {/* <div className={styles.legendItem}>
               <span className={`${styles.legendColor} ${styles.legendColorOrthologEdge}`}></span>
               <span>Ortholog Relationship</span>
-            </div>
+            </div> */}
           </>
         )}
       </div>

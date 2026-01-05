@@ -85,3 +85,39 @@ class OrthologSearchPaginationSchema(BasePaginationSchema):
     """Pagination schema for ortholog search results."""
 
     results: List[Dict[str, Any]]
+
+
+class OrthologBatchQuerySchema(BaseModel):
+    """Schema for batch ortholog query parameters."""
+
+    locus_tags: Optional[str] = Field(
+        None,
+        description="Comma-separated list of locus tags to get orthologs for (e.g., 'BU_ATCC8492_00001,BU_ATCC8492_00002')",
+    )
+    species_acronym: Optional[str] = Field(None, description="Filter by target species acronym")
+    orthology_type: Optional[str] = Field(
+        None, description="Filter by orthology type (1:1, many:1, etc.)"
+    )
+    one_to_one_only: bool = Field(False, description="Return only one-to-one orthologs")
+    cross_species_only: bool = Field(
+        False, description="Return only cross-species orthologs (exclude same species)"
+    )
+    max_results_per_gene: int = Field(
+        100, description="Maximum number of orthologs per gene", le=10000
+    )
+
+
+class OrthologBatchResultSchema(BaseModel):
+    """Schema for batch ortholog results."""
+
+    locus_tag: str
+    orthologs: List[OrthologGeneInfoSchema]
+    total_count: int
+
+
+class OrthologBatchResponseSchema(BaseModel):
+    """Schema for batch ortholog response."""
+
+    results: List[OrthologBatchResultSchema]
+    total_genes: int
+    total_orthologs: int

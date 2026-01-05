@@ -78,14 +78,16 @@ export const useNetworkData = ({
       }
 
       try {
-        const orthologs = await OrthologService.getBatchOrthologs(locusTags, speciesAcronym);
+        // Don't filter by speciesAcronym - orthologs are cross-species relationships
+        // and we want to see orthologs from all species, not just the current one
+        const orthologs = await OrthologService.getBatchOrthologs(locusTags, undefined);
         return orthologs;
       } catch (err) {
         console.error('Error fetching ortholog data:', err);
         return new Map<string, OrthologRelationship[]>();
       }
     },
-    [showOrthologs, speciesAcronym]
+    [showOrthologs]
   );
 
   // Fetch network data
