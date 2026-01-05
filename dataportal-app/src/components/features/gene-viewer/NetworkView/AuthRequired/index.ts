@@ -1,0 +1,2 @@
+export { AuthRequired } from './AuthRequired';
+

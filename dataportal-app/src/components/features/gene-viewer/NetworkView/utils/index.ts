@@ -1,0 +1,2 @@
+export { enrichNetworkData } from './enrichNodes';
+

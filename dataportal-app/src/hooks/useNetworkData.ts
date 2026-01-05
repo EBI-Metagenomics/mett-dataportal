@@ -45,6 +45,17 @@ export const useNetworkData = ({
 
   const lastFetchRef = useRef<string>('');
   const isFetchingRef = useRef(false);
+  const networkDataRef = useRef<PPINetworkData | null>(null);
+  const orthologMapRef = useRef<Map<string, OrthologRelationship[]>>(new Map());
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    networkDataRef.current = networkData;
+  }, [networkData]);
+
+  useEffect(() => {
+    orthologMapRef.current = orthologMap;
+  }, [orthologMap]);
 
   // Fetch available score types on mount
   useEffect(() => {
@@ -86,9 +97,9 @@ export const useNetworkData = ({
     const baseFetchKey = `${speciesAcronym}-${isolateName}-${locusTag}-${scoreType}-${scoreThreshold}`;
     const fetchKey = `${baseFetchKey}-${showOrthologs}`;
     
-    // Check if we need to fetch PPI data or just ortholog data
+      // Check if we need to fetch PPI data or just ortholog data
     const needsPPIData = lastFetchRef.current === '' || !lastFetchRef.current.startsWith(baseFetchKey);
-    const needsOrthologData = showOrthologs && (orthologMap.size === 0 || lastFetchRef.current !== fetchKey);
+    const needsOrthologData = showOrthologs && (orthologMapRef.current.size === 0 || lastFetchRef.current !== fetchKey);
     
     // Prevent duplicate fetches only if we already have the exact data we need
     if (!needsPPIData && !needsOrthologData && isFetchingRef.current) {
@@ -100,7 +111,7 @@ export const useNetworkData = ({
       setLoading(true);
       setError(null);
 
-      let network = networkData;
+      let network = networkDataRef.current;
       
       // Fetch PPI network data if needed
       if (needsPPIData) {
@@ -115,6 +126,7 @@ export const useNetworkData = ({
 
         network = await PPIService.getNetworkData(query);
         setNetworkData(network);
+        networkDataRef.current = network;
 
         // Extract properties if available
         if (network.properties) {
@@ -140,9 +152,12 @@ export const useNetworkData = ({
         if (locusTags.length > 0) {
           const orthologs = await fetchOrthologData(locusTags);
           setOrthologMap(orthologs);
+          orthologMapRef.current = orthologs;
         }
       } else if (!showOrthologs) {
-        setOrthologMap(new Map());
+        const emptyMap = new Map<string, OrthologRelationship[]>();
+        setOrthologMap(emptyMap);
+        orthologMapRef.current = emptyMap;
       }
 
       lastFetchRef.current = fetchKey;
@@ -153,7 +168,7 @@ export const useNetworkData = ({
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [enabled, speciesAcronym, isolateName, locusTag, scoreType, scoreThreshold, showOrthologs, fetchOrthologData, networkData, orthologMap]);
+  }, [enabled, speciesAcronym, isolateName, locusTag, scoreType, scoreThreshold, showOrthologs, fetchOrthologData]);
 
   // Refresh network data
   const refreshNetwork = useCallback(async () => {
