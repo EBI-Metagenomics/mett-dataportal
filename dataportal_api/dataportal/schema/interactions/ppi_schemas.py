@@ -96,11 +96,28 @@ class PPISearchQuerySchema(BaseModel):
         return v
 
 
+class PPINetworkNodeSchema(BaseModel):
+    """Schema for a PPI network node."""
+
+    id: str = Field(..., description="Protein ID (UniProt ID)")
+    locus_tag: Optional[str] = Field(None, description="Locus tag of the gene")
+    name: Optional[str] = Field(None, description="Gene name")
+    product: Optional[str] = Field(None, description="Gene product description")
+
+
+class PPINetworkEdgeSchema(BaseModel):
+    """Schema for a PPI network edge."""
+
+    source: str = Field(..., description="Source node ID")
+    target: str = Field(..., description="Target node ID")
+    weight: Optional[float] = Field(None, description="Edge weight (score)")
+
+
 class PPINetworkSchema(BaseModel):
     """Schema for PPI network data."""
 
-    nodes: List[Dict[str, Any]]
-    edges: List[Dict[str, Any]]
+    nodes: List[PPINetworkNodeSchema]
+    edges: List[PPINetworkEdgeSchema]
     properties: Dict[str, Any]
 
 

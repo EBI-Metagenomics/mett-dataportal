@@ -11,6 +11,8 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPIInteractionSchema,
     PPISearchQuerySchema,
     PPINetworkSchema,
+    PPINetworkNodeSchema,
+    PPINetworkEdgeSchema,
     PPINetworkPropertiesSchema,
     PPINeighborhoodSchema,
     PPIPaginationSchema,
@@ -450,8 +452,8 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
 
             response = await self._execute_search(s)
 
-            # Build network data
-            nodes = set()
+            # Build network data with node metadata
+            nodes_dict = {}  # protein_id -> node metadata dict
             edges = []
 
             for hit in response.hits:
@@ -459,17 +461,59 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 protein_b = hit.protein_b
                 score = getattr(hit, score_field, 0)
 
-                # Add nodes
-                nodes.add(protein_a)
-                nodes.add(protein_b)
+                # Collect metadata for protein_a
+                if protein_a not in nodes_dict:
+                    nodes_dict[protein_a] = {
+                        "id": protein_a,
+                        "locus_tag": getattr(hit, "protein_a_locus_tag", None),
+                        "name": getattr(hit, "protein_a_name", None),
+                        "product": getattr(hit, "protein_a_product", None),
+                    }
+                else:
+                    # Update metadata with non-null values if current values are None
+                    node_meta = nodes_dict[protein_a]
+                    node_meta["locus_tag"] = node_meta.get("locus_tag") or getattr(
+                        hit, "protein_a_locus_tag", None
+                    )
+                    node_meta["name"] = node_meta.get("name") or getattr(
+                        hit, "protein_a_name", None
+                    )
+                    node_meta["product"] = node_meta.get("product") or getattr(
+                        hit, "protein_a_product", None
+                    )
 
-                # Add edge
-                edges.append({"source": protein_a, "target": protein_b, "weight": score})
+                # Collect metadata for protein_b
+                if protein_b not in nodes_dict:
+                    nodes_dict[protein_b] = {
+                        "id": protein_b,
+                        "locus_tag": getattr(hit, "protein_b_locus_tag", None),
+                        "name": getattr(hit, "protein_b_name", None),
+                        "product": getattr(hit, "protein_b_product", None),
+                    }
+                else:
+                    # Update metadata with non-null values if current values are None
+                    node_meta = nodes_dict[protein_b]
+                    node_meta["locus_tag"] = node_meta.get("locus_tag") or getattr(
+                        hit, "protein_b_locus_tag", None
+                    )
+                    node_meta["name"] = node_meta.get("name") or getattr(
+                        hit, "protein_b_name", None
+                    )
+                    node_meta["product"] = node_meta.get("product") or getattr(
+                        hit, "protein_b_product", None
+                    )
 
-            # Convert nodes to list with metadata
-            node_list = []
-            for node in nodes:
-                node_list.append({"id": node, "label": node})
+                # Add edge using schema
+                edges.append(
+                    PPINetworkEdgeSchema(
+                        source=protein_a,
+                        target=protein_b,
+                        weight=score if score else None,
+                    )
+                )
+
+            # Convert nodes dict to list of schema objects
+            node_list = [PPINetworkNodeSchema(**node_data) for node_data in nodes_dict.values()]
 
             return PPINetworkSchema(nodes=node_list, edges=edges, properties={})
 

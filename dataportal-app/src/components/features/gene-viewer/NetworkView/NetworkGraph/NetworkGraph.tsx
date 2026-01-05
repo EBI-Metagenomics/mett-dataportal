@@ -1,29 +1,55 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import cytoscape from 'cytoscape';
 import { PPINetworkNode, PPINetworkEdge } from '../../../../../interfaces/PPI';
 import styles from './NetworkGraph.module.scss';
+
+export interface NetworkGraphRef {
+  resetView: () => void;
+  fitToNodes: () => void;
+}
 
 interface NetworkGraphProps {
   nodes: Array<PPINetworkNode & { hasOrthologs?: boolean; orthologCount?: number; nodeType?: 'ppi' | 'ortholog' }>;
   edges: PPINetworkEdge[];
   showOrthologs: boolean;
-  onNodeClick: (node: PPINetworkNode) => void;
+  onNodeClick: (node: PPINetworkNode, event?: MouseEvent) => void;
   selectedNode: PPINetworkNode | null;
 }
 
 /**
  * NetworkGraph component - Cytoscape.js graph visualization
  */
-export const NetworkGraph: React.FC<NetworkGraphProps> = ({
+export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(({
   nodes,
   edges,
   showOrthologs,
   onNodeClick,
   selectedNode,
-}) => {
+}, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  const layoutRunningRef = useRef(false);
 
+  // Expose reset view method to parent
+  useImperativeHandle(ref, () => ({
+    resetView: () => {
+      if (cyRef.current) {
+        cyRef.current.fit(undefined, 50); // Fit all nodes with 50px padding
+      }
+    },
+    fitToNodes: () => {
+      if (cyRef.current) {
+        const selected = cyRef.current.nodes();
+        if (selected.length > 0) {
+          cyRef.current.fit(selected, 100); // Fit selected nodes with padding
+        } else {
+          cyRef.current.fit(undefined, 50); // Fit all if nothing selected
+        }
+      }
+    },
+  }));
+
+  // Initialize Cytoscape only when nodes/edges change (not on selectedNode changes)
   useEffect(() => {
     // Check if container exists and has nodes
     if (!containerRef.current || nodes.length === 0) {
@@ -47,6 +73,7 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
         // Ignore errors during cleanup
       }
       cyRef.current = null;
+      layoutRunningRef.current = false;
     }
 
     // Small delay to ensure container is ready
@@ -152,19 +179,7 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
               },
             },
           ],
-          layout: {
-            name: 'cose',
-            // Force-directed layout similar to D3
-            idealEdgeLength: (edge: cytoscape.EdgeSingular) => 100 / (edge.data('weight') || 1),
-            nodeRepulsion: 3000,
-            nodeOverlap: 20,
-            nestingFactor: 0.1,
-            gravity: 0.25,
-            numIter: 2500,
-            animate: true,
-            animationDuration: 1000,
-            animationEasing: 'ease-out',
-          },
+          // Don't set layout here - we'll run it separately after initialization
           userPanningEnabled: true,
           userZoomingEnabled: true,
           boxSelectionEnabled: false,
@@ -172,6 +187,29 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
 
         // Store cytoscape reference
         cyRef.current = cy;
+        layoutRunningRef.current = true;
+
+        // Run layout only once on initialization
+        const layout = cy.layout({
+          name: 'cose',
+          idealEdgeLength: (edge: cytoscape.EdgeSingular) => 100 / (edge.data('weight') || 1),
+          nodeRepulsion: 3000,
+          nodeOverlap: 20,
+          nestingFactor: 0.1,
+          gravity: 0.25,
+          numIter: 2500,
+          animate: true,
+          animationDuration: 1000,
+          animationEasing: 'ease-out',
+        });
+
+        layout.one('layoutstop', () => {
+          // Fit view after layout completes
+          cy.fit(undefined, 50);
+          layoutRunningRef.current = false;
+        });
+
+        layout.run();
 
         // Handle node clicks
         cy.on('tap', 'node', (event: cytoscape.EventObject) => {
@@ -180,7 +218,16 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
           // Find the original node data
           const originalNode = nodes.find((n) => n.id === nodeData.id);
           if (originalNode) {
-            onNodeClick(originalNode);
+            // Get the original browser event for mouse position
+            const originalEvent = event.originalEvent as MouseEvent | undefined;
+            onNodeClick(originalNode, originalEvent);
+          }
+        });
+
+        // Handle background clicks to deselect
+        cy.on('tap', (event: cytoscape.EventObject) => {
+          if (event.target === cy) {
+            // Clicked on background - could deselect here if needed
           }
         });
       } catch {
@@ -198,14 +245,39 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
           // Ignore errors during cleanup
         }
         cyRef.current = null;
+        layoutRunningRef.current = false;
       }
     };
-  }, [nodes, edges, showOrthologs, selectedNode, onNodeClick]);
+  }, [nodes, edges, showOrthologs, onNodeClick]);
+
+  // Update node styles when selectedNode changes (without recreating the graph)
+  useEffect(() => {
+    if (!cyRef.current || layoutRunningRef.current) return;
+
+    const selectedNodeId = selectedNode?.id;
+
+    // Update node styles dynamically
+    cyRef.current.nodes().forEach((cyNode) => {
+      const nodeData = cyNode.data() as { id: string };
+      const isSelected = selectedNodeId === nodeData.id;
+      
+      // Update border and size for selected state
+      cyNode.style({
+        'border-width': isSelected ? 3 : 1,
+        'border-color': isSelected ? '#FF6B6B' : '#333',
+        width: isSelected ? (cyNode.data('nodeType') === 'ortholog' ? 20 : 24) : (cyNode.data('nodeType') === 'ortholog' ? 14 : 16),
+        height: isSelected ? (cyNode.data('nodeType') === 'ortholog' ? 20 : 24) : (cyNode.data('nodeType') === 'ortholog' ? 14 : 16),
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNode]); // selectedNode is the correct dependency (selectedNode?.id is derived from it)
 
   return (
     <div className={styles.graphContainer}>
       <div ref={containerRef} className={styles.cytoscapeContainer} />
     </div>
   );
-};
+});
+
+NetworkGraph.displayName = 'NetworkGraph';
 

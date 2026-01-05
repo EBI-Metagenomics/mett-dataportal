@@ -2,12 +2,13 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useNetworkData } from '../../../../hooks/useNetworkData';
 import { useAuth } from '../../../../hooks/useAuth';
 import { PPINetworkNode } from '../../../../interfaces/PPI';
-import { NetworkGraph } from './NetworkGraph';
+import { NetworkGraph, NetworkGraphRef } from './NetworkGraph';
 import { NetworkControls } from './NetworkControls';
 import { NetworkStats } from './NetworkStats';
 import { NetworkLegend } from './NetworkLegend';
 import { EmptyState } from './EmptyState';
 import { AuthRequired } from './AuthRequired';
+import { NodeInfoPopup } from './NodeInfoPopup';
 import { enrichNetworkData } from './utils/enrichNodes';
 import styles from './NetworkView.module.scss';
 
@@ -32,7 +33,6 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   isolateName,
   selectedLocusTag,
   setLoading,
-  onFeatureSelect,
 }) => {
   const { isAuthenticated } = useAuth();
   const [scoreType, setScoreType] = useState<string>('ds_score');
@@ -40,7 +40,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [displayThreshold, setDisplayThreshold] = useState<number>(0.8);
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
   const [selectedNode, setSelectedNode] = useState<PPINetworkNode | null>(null);
+  const [popupNode, setPopupNode] = useState<{ node: PPINetworkNode; x: number; y: number } | null>(null);
   const thresholdDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const graphRef = useRef<NetworkGraphRef>(null);
 
   const {
     networkData,
@@ -77,25 +79,28 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     return enrichNetworkData(networkData, orthologMap, showOrthologs);
   }, [networkData, orthologMap, showOrthologs]);
 
-  // Handle node click
+  // Handle node click - only show popup, don't change view
   const handleNodeClick = useCallback(
-    (node: PPINetworkNode) => {
+    (node: PPINetworkNode, event?: MouseEvent) => {
       setSelectedNode(node);
-      if (onFeatureSelect && node.locus_tag) {
-        onFeatureSelect({
-          data: {
-            locus_tag: node.locus_tag,
-            gene_name: node.name,
-            product: node.product,
-            uniprot_id: node.uniprot_id,
-            isolate_name: isolateName,
-            species_acronym: speciesAcronym,
-          },
-        });
+      
+      // Show popup at click position
+      if (event) {
+        setPopupNode({ node, x: event.clientX, y: event.clientY });
       }
+      
+      // Note: We intentionally don't call onFeatureSelect here to avoid
+      // changing the view and keeping JBrowse and network view in sync
     },
-    [onFeatureSelect, isolateName, speciesAcronym]
+    []
   );
+
+  // Handle reset view
+  const handleResetView = useCallback(() => {
+    if (graphRef.current) {
+      graphRef.current.resetView();
+    }
+  }, []);
 
   // Handle score type change
   const handleScoreTypeChange = useCallback((newScoreType: string) => {
@@ -156,6 +161,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         onThresholdChange={handleThresholdChange}
         onOrthologToggle={handleOrthologToggle}
         onRefresh={refreshNetwork}
+        onResetView={handleResetView}
       />
 
       {/* Error Message */}
@@ -185,6 +191,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         <>
           <div className={styles.networkVisualization}>
             <NetworkGraph
+              ref={graphRef}
               nodes={enrichedNodes}
               edges={enrichedEdges}
               showOrthologs={showOrthologs}
@@ -194,6 +201,16 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           </div>
           <NetworkLegend showOrthologs={showOrthologs} />
         </>
+      )}
+
+      {/* Node Info Popup */}
+      {popupNode && (
+        <NodeInfoPopup
+          node={popupNode.node}
+          x={popupNode.x}
+          y={popupNode.y}
+          onClose={() => setPopupNode(null)}
+        />
       )}
     </div>
   );
