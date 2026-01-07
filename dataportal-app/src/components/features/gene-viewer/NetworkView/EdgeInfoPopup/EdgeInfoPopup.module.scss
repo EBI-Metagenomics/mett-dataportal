@@ -1,0 +1,134 @@
+.popupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background-color: transparent;
+  cursor: default;
+}
+
+.popupContent {
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 300px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 1001;
+  animation: popupFadeIn 0.2s ease-out;
+}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.closeButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f0f0f0;
+    color: #333;
+  }
+}
+
+.popupHeader {
+  padding: 16px 40px 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .expansionBadge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    background-color: #ffebee;
+    color: #c62828;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+}
+
+.popupBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nodeSection {
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+
+  .sectionTitle {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.edgeProperties {
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 12px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .label {
+    font-weight: 500;
+    color: #666;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+
+  .value {
+    color: #333;
+    font-size: 0.875rem;
+    text-align: right;
+    word-break: break-word;
+    flex: 1;
+  }
+}
+

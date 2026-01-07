@@ -1,0 +1,68 @@
+.breadcrumbContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  font-size: 0.875rem;
+}
+
+.breadcrumbLabel {
+  font-weight: 600;
+  color: #666;
+}
+
+.breadcrumbList {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.separator {
+  color: #999;
+  margin: 0 0.25rem;
+}
+
+.breadcrumbItem {
+  padding: 0.25rem 0.5rem;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #333;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #e8f4f8;
+    border-color: #4A90E2;
+  }
+
+  &:active {
+    background-color: #d0e8f2;
+  }
+}
+
+.clearButton {
+  padding: 0.25rem 0.75rem;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  margin-left: auto;
+
+  &:hover {
+    background-color: #c82333;
+  }
+
+  &:active {
+    background-color: #bd2130;
+  }
+}
+

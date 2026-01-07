@@ -1,0 +1,2 @@
+export { EdgeInfoPopup } from './EdgeInfoPopup';
+
