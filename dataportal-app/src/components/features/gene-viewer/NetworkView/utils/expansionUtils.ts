@@ -71,8 +71,9 @@ export const mergeExpansionData = (
     }
   });
 
-  // Add new edges, merging with existing ones (keep highest weight)
+  // Add new edges, merging with existing ones
   // Also tag edges with expansion level for visual styling
+  // IMPORTANT: Prefer edges from lower levels (earlier in path) to maintain color consistency
   expansionData.edges.forEach(edge => {
     const key = `${edge.source}-${edge.target}`;
     const existing = edgeMap.get(key);
@@ -82,14 +83,20 @@ export const mergeExpansionData = (
       expansionLevel: level,
     } as PPINetworkEdge & { expansionLevel?: number };
     
-    if (!existing || (edge.weight ?? 0) > (existing.weight ?? 0)) {
+    if (!existing) {
+      // New edge - always add
       edgeMap.set(key, edgeWithLevel);
-    } else if (existing) {
-      // Keep existing but update level if this edge is from a higher level
-      const existingLevel = (existing as PPINetworkEdge & { expansionLevel?: number }).expansionLevel;
-      if (existingLevel === undefined || level > existingLevel) {
+    } else {
+      // Existing edge - prefer the one from the lower level (earlier in path) for color consistency
+      const existingLevel = (existing as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0;
+      if (level < existingLevel) {
+        // New edge is from earlier level - prefer it for color consistency
+        edgeMap.set(key, edgeWithLevel);
+      } else if (level === existingLevel && (edge.weight ?? 0) > (existing.weight ?? 0)) {
+        // Same level, keep higher weight
         edgeMap.set(key, edgeWithLevel);
       }
+      // Otherwise keep existing edge (from earlier level) to maintain consistent colors
     }
   });
 
@@ -154,36 +161,46 @@ export const navigateToPathLevel = (
       initialState.allExpandedNodes = new Map(
         originalNodes.map(node => [node.id, { ...node, expansionLevel: 0 }])
       );
-      initialState.allExpandedEdges = [...originalEdges];
+      initialState.allExpandedEdges = originalEdges.map(edge => ({
+        ...edge,
+        expansionLevel: 0,
+      }));
     }
     return initialState;
   }
 
-  // Rebuild state from scratch up to target level
+  // Rebuild state from scratch up to target level (inclusive)
   let newState = createInitialExpansionState();
   newState.allExpandedNodes = new Map(
     originalNodes.map(node => [node.id, { ...node, expansionLevel: 0 }])
   );
-  newState.allExpandedEdges = [...originalEdges];
+  newState.allExpandedEdges = originalEdges.map(edge => ({
+    ...edge,
+    expansionLevel: 0,
+  }));
   
-  // Keep starting node in path
+  // Start with the starting node (level 0) in path
+  const pathNodes: ExpansionPathNode[] = [];
   if (state.path.nodes.length > 0) {
-    newState.path.nodes = [state.path.nodes[0]];
+    pathNodes.push(state.path.nodes[0]);
   }
 
-  // Apply expansions up to target level
-  for (let i = 1; i <= targetLevel + 1 && i < state.path.nodes.length; i++) {
+  // Apply expansions up to targetLevel (inclusive)
+  // targetLevel 0 means we stay at starting node
+  // targetLevel 1 means we expand from starting node (1st expansion)
+  for (let i = 1; i <= targetLevel && i < state.path.nodes.length; i++) {
     const pathNode = state.path.nodes[i];
     const expansionData = state.expandedNodes.get(pathNode.locusTag);
     
     if (expansionData) {
       const expandingNode = pathNode.node;
       newState = mergeExpansionData(newState, expansionData, expandingNode, i);
-      newState.path.nodes.push(pathNode);
+      pathNodes.push(pathNode);
     }
   }
 
-  newState.path.currentLevel = targetLevel;
+  newState.path.nodes = pathNodes;
+  newState.path.currentLevel = Math.min(targetLevel, pathNodes.length - 1);
   return newState;
 };
 

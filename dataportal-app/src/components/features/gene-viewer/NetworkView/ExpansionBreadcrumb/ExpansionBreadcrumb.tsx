@@ -27,12 +27,13 @@ export const ExpansionBreadcrumb: React.FC<ExpansionBreadcrumbProps> = ({
             <button
               className={styles.breadcrumbItem}
               onClick={() => {
-                // Navigate back: clicking on a node shows the state up to that node
-                // For level 0, we want to go back to the initial state
-                const targetLevel = index === 0 ? -1 : index - 1;
+                // Navigate to the clicked level (inclusive)
+                // Clicking level 0 goes to initial state, clicking level N goes to that level
+                const targetLevel = index === 0 ? -1 : index;
                 onNavigateToLevel?.(targetLevel);
               }}
               title={`Navigate to level ${pathNode.level}`}
+              disabled={index === expansionState.path.nodes.length - 1}
             >
               {pathNode.locusTag || pathNode.nodeId}
             </button>

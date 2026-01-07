@@ -435,14 +435,17 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     // For expanded networks: use preset positions (no layout) to maintain level separation
                     // For original network: use COSE force-directed layout
                     if (hasExpansionLevels) {
-                        // Set node positions directly based on expansion level (radial/concentric layout)
-                        // This keeps levels separated without overlap
+                        // Set node positions directly - prioritize preserved positions
                         cy.batch(() => {
                             cyNodes.forEach((nodeData) => {
                                 if (nodeData.position) {
                                     const cyNode = cy.getElementById(nodeData.data.id);
                                     if (cyNode && cyNode.length > 0) {
                                         cyNode.position(nodeData.position);
+                                        // Lock position for nodes that existed before (prevent shuffling)
+                                        if (existingPositions.has(nodeData.data.id)) {
+                                            cyNode.lock();
+                                        }
                                     }
                                 }
                             });
@@ -451,28 +454,32 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                         // Use preset layout to respect initial positions without recalculating
                         // Only fit if there are new nodes (nodes without preserved positions)
                         const hasNewNodes = cyNodes.some(n => !existingPositions.has(n.data.id));
-                        const presetLayout = cy.layout({
-                            name: 'preset',
-                            animate: false,
-                            fit: hasNewNodes, // Only fit if we have new nodes
-                            padding: 50,
+                        
+                        // For preset layout, we don't need to run it if all positions are set
+                        // Just unlock nodes and optionally fit to new ones
+                        cy.batch(() => {
+                            cy.nodes().forEach(node => {
+                                if (!existingPositions.has(node.id())) {
+                                    node.unlock();
+                                }
+                            });
                         });
                         
-                        presetLayout.one('layoutstop', () => {
-                            // Only fit to new nodes, preserving view if no new nodes
-                            if (hasNewNodes) {
-                                // Fit to only new nodes to avoid disrupting view
+                        if (hasNewNodes) {
+                            // Small delay to ensure positions are set, then fit to new nodes only
+                            setTimeout(() => {
                                 const newNodes = cy.nodes().filter(node => {
                                     return !existingPositions.has(node.id());
                                 });
                                 if (newNodes.length > 0) {
                                     cy.fit(newNodes, 100);
                                 }
-                            }
+                                layoutRunningRef.current = false;
+                            }, 50);
+                        } else {
+                            // No new nodes - don't change view at all
                             layoutRunningRef.current = false;
-                        });
-                        
-                        presetLayout.run();
+                        }
                     } else {
                         // For original network: use standard COSE force-directed layout
                         const layoutOptions: cytoscape.CoseLayoutOptions = {
