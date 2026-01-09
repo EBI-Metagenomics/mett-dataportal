@@ -11,13 +11,16 @@ import { useCytoscapeStyles } from './hooks/useCytoscapeStyles';
 import { useGraphFading } from './hooks/useGraphFading';
 import { prepareNodes, prepareEdges } from './utils/prepareElements';
 import { preservePositions, applyPositions } from './utils/positionPreservation';
+import { calculateGlobalCloudPositions } from '../utils/globalCloudLayout';
+import { getZoomLevel, applyZoomOptimization, createDebouncedZoomHandler } from '../utils/zoomOptimization';
+import { NETWORK_VIEW_CONSTANTS } from '../constants';
 import styles from './NetworkGraph.module.scss';
 
 /**
  * NetworkGraph component - Cytoscape.js graph visualization
  */
 export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
-    ({nodes, edges, showOrthologs, currentExpansionLevel, expansionPath = [], onNodeClick, onEdgeClick, selectedNode}, ref) => {
+    ({nodes, edges, showOrthologs, viewMode = 'focused', currentExpansionLevel, expansionPath = [], onNodeClick, onEdgeClick, selectedNode}, ref) => {
         // Create a set of path node IDs for quick lookup
         const pathNodeIds = useMemo(() => {
             return new Set(expansionPath.map(p => p.nodeId));
@@ -26,6 +29,14 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         const containerRef = useRef<HTMLDivElement>(null);
         const cyRef = useRef<cytoscape.Core | null>(null);
         const layoutRunningRef = useRef(false);
+        const zoomHandlerCleanupRef = useRef<(() => void) | null>(null);
+        const existingNodeIdsRef = useRef<Set<string>>(new Set());
+        const existingEdgeKeysRef = useRef<Set<string>>(new Set());
+        const nodesKeyRef = useRef<string>('');
+        const edgesKeyRef = useRef<string>('');
+        const previousViewModeRef = useRef<string>(viewMode);
+        const previousNodesKeyRef = useRef<string>('');
+        const previousEdgesKeyRef = useRef<string>('');
 
         // Calculate score range for normalization
         const scoreRange = useMemo(() => {
@@ -47,6 +58,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
             showOrthologs,
             scoreRange,
             currentExpansionLevel,
+            viewMode,
         });
 
         // Expose view controls to parent
@@ -63,42 +75,77 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
             getCytoscapeInstance: () => cyRef.current,
         }));
 
-        // (Re)create Cytoscape instance when nodes/edges change
+        // Create stable keys for nodes/edges to detect actual changes
+        const nodesKey = useMemo(() => {
+            return `${nodes.length}-${nodes.map(n => n.id).sort().join(',')}`;
+        }, [nodes]);
+        
+        const edgesKey = useMemo(() => {
+            return `${edges.length}-${edges.map(e => `${e.source}-${e.target}`).sort().join(',')}`;
+        }, [edges]);
+
+        // Initialize or update Cytoscape instance when:
+        // 1. First mount
+        // 2. View mode changes
+        // 3. Nodes/edges actually change (e.g., after expansion)
+        // 4. Graph becomes empty
         useEffect(() => {
             // Container check + empty graph cleanup
-            if (!containerRef.current || nodes.length === 0) {
+            if (!containerRef.current) {
+                return;
+            }
+
+            const viewModeChanged = previousViewModeRef.current !== viewMode;
+            const nodesChanged = nodesKey !== previousNodesKeyRef.current;
+            const edgesChanged = edgesKey !== previousEdgesKeyRef.current;
+            
+            // Only recreate if:
+            // - No instance exists
+            // - View mode changed
+            // - Nodes or edges actually changed (but not if we're currently empty)
+            const shouldRecreate = !cyRef.current || viewModeChanged || (nodesChanged && nodes.length > 0) || (edgesChanged && edges.length > 0);
+
+            if (shouldRecreate) {
+                // Clean up existing instance
                 if (cyRef.current) {
+                    // Cleanup zoom handler
+                    if (zoomHandlerCleanupRef.current) {
+                        zoomHandlerCleanupRef.current();
+                        zoomHandlerCleanupRef.current = null;
+                    }
                     try {
                         cyRef.current.destroy();
                     } catch {
                         // ignore cleanup errors
                     }
                     cyRef.current = null;
+                    layoutRunningRef.current = false;
+                    existingNodeIdsRef.current = new Set();
+                    existingEdgeKeysRef.current = new Set();
                 }
-                return;
-            }
 
-            // Preserve existing node positions before destroying instance
-            const existingPositions = preservePositions(cyRef.current);
-
-            // Destroy any existing instance before recreating
-            if (cyRef.current) {
-                try {
-                    cyRef.current.destroy();
-                } catch {
-                    // ignore
+                // If graph is empty, just cleanup and return
+                if (nodes.length === 0) {
+                    previousViewModeRef.current = viewMode;
+                    previousNodesKeyRef.current = nodesKey;
+                    previousEdgesKeyRef.current = edgesKey;
+                    return;
                 }
-                cyRef.current = null;
-                layoutRunningRef.current = false;
-            }
 
-            const initTimeout = setTimeout(() => {
-                if (!containerRef.current) return;
+                previousViewModeRef.current = viewMode;
+                previousNodesKeyRef.current = nodesKey;
+                previousEdgesKeyRef.current = edgesKey;
+
+                const initTimeout = setTimeout(() => {
+                    if (!containerRef.current) return;
 
                 // Check if we have expansion levels
                 const hasExpansionLevels = nodes.some(node => 
                     ((node as { expansionLevel?: number }).expansionLevel ?? 0) > 0
                 );
+
+                // Preserve existing node positions if instance exists
+                const existingPositions = cyRef.current ? preservePositions(cyRef.current) : new Map<string, { x: number; y: number }>();
 
                 // Prepare nodes and edges for Cytoscape
                 const preparedNodes = prepareNodes(nodes, pathNodeIds, existingPositions, hasExpansionLevels);
@@ -112,7 +159,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                         userPanningEnabled: true,
                         userZoomingEnabled: true,
                         boxSelectionEnabled: false,
-                        wheelSensitivity: 0.2,
+                        wheelSensitivity: 0.1, // Lower sensitivity for smoother, more controlled zoom
                     });
 
                     cyRef.current = cy;
@@ -177,29 +224,71 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                         }
                     });
 
-                    // Zoom handler for label visibility
-                    cy.on('zoom', () => {
-                        const z = cy.zoom();
-                        cy.nodes().forEach(node => {
-                            const nodeData = node.data();
-                            const isPPI = nodeData.nodeType === 'ppi';
-                            const isOrtholog = nodeData.nodeType === 'ortholog';
-                            
-                            if (showOrthologs && isPPI) {
-                                node.style('text-opacity', 1);
-                            } else if (isOrtholog) {
-                                node.style('text-opacity', 0);
-                            } else {
-                                node.style('text-opacity', z > 0.9 ? 1 : 0);
-                            }
-                        });
-                    });
+                    // Set up debounced zoom handler for smooth zooming
+                    // This only applies optimization when zoom level actually changes
+                    const { handler: zoomHandler, cleanup: zoomCleanup } = createDebouncedZoomHandler(
+                        cy,
+                        showOrthologs,
+                        100 // 100ms debounce for smooth zoom
+                    );
+                    cy.on('zoom', zoomHandler);
+                    zoomHandlerCleanupRef.current = zoomCleanup;
                     
                     // Trigger initial label visibility
-                    cy.trigger('zoom');
+                    const initialZoom = cy.zoom();
+                    const initialZoomLevel = getZoomLevel(initialZoom);
+                    applyZoomOptimization(cy, initialZoomLevel, showOrthologs);
 
-                    // Apply layout (direct call, not a hook)
-                    if (hasExpansionLevels) {
+                    // Apply layout based on view mode
+                    if (viewMode === 'global') {
+                        // Global cloud layout: positions nodes by centrality
+                        const cloudPositions = calculateGlobalCloudPositions(
+                            nodes,
+                            edges,
+                            {
+                                centerX: NETWORK_VIEW_CONSTANTS.GLOBAL_CLOUD.CENTER_X,
+                                centerY: NETWORK_VIEW_CONSTANTS.GLOBAL_CLOUD.CENTER_Y,
+                                baseRadius: NETWORK_VIEW_CONSTANTS.GLOBAL_CLOUD.BASE_RADIUS,
+                                tierRadiusIncrement: NETWORK_VIEW_CONSTANTS.GLOBAL_CLOUD.TIER_RADIUS_INCREMENT,
+                                numTiers: NETWORK_VIEW_CONSTANTS.GLOBAL_CLOUD.NUM_TIERS,
+                                angleSpread: NETWORK_VIEW_CONSTANTS.GLOBAL_CLOUD.ANGLE_SPREAD,
+                                minNodeDistance: NETWORK_VIEW_CONSTANTS.GLOBAL_CLOUD.MIN_NODE_DISTANCE,
+                            }
+                        );
+                        
+                        // Apply positions to nodes
+                        cy.batch(() => {
+                            cy.nodes().forEach(node => {
+                                const pos = cloudPositions.get(node.id());
+                                if (pos) {
+                                    node.position(pos);
+                                }
+                            });
+                        });
+                        
+                        // Use preset layout to maintain cloud positions
+                        // Create position map from node ID to position
+                        const positionMap: Record<string, { x: number; y: number }> = {};
+                        cloudPositions.forEach((pos, nodeId) => {
+                            positionMap[nodeId] = pos;
+                        });
+                        
+                        const cloudLayout = cy.layout({
+                            name: 'preset',
+                            positions: (nodeId: string) => positionMap[nodeId],
+                            animate: true,
+                            animationDuration: 1000,
+                            fit: true,
+                            padding: 50,
+                        });
+                        
+                        cloudLayout.one('layoutstop', () => {
+                            layoutRunningRef.current = false;
+                        });
+                        
+                        cloudLayout.run();
+                    } else if (hasExpansionLevels) {
+                        // Focused mode with expansions: use radial layout
                         // Set node positions and lock existing ones
                         applyPositions(cy, preparedNodes, existingPositions);
                         
@@ -246,13 +335,63 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
 
                         layout.run();
                     }
+
+                    // Track existing elements
+                    cy.nodes().forEach(node => {
+                        existingNodeIdsRef.current.add(node.id());
+                    });
+                    cy.edges().forEach(edge => {
+                        const source = edge.source().id();
+                        const target = edge.target().id();
+                        existingEdgeKeysRef.current.add(`${source}-${target}`);
+                    });
+                    nodesKeyRef.current = nodesKey;
+                    edgesKeyRef.current = edgesKey;
                 } catch {
                     // Initialization errors are swallowed
                 }
-            }, 50);
+                }, 50);
 
+                return () => {
+                    clearTimeout(initTimeout);
+                };
+            }
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            // We depend on viewMode, nodesKey, and edgesKey to detect actual changes
+            // nodesKey and edgesKey are stable and only change when node/edge IDs actually change
+        }, [viewMode, nodesKey, edgesKey]); // Recreate when view mode changes OR nodes/edges actually change
+
+        // Handle empty graph cleanup separately
+        useEffect(() => {
+            if (nodes.length === 0 && cyRef.current) {
+                try {
+                    if (zoomHandlerCleanupRef.current) {
+                        zoomHandlerCleanupRef.current();
+                        zoomHandlerCleanupRef.current = null;
+                    }
+                    cyRef.current.destroy();
+                    cyRef.current = null;
+                    layoutRunningRef.current = false;
+                    existingNodeIdsRef.current = new Set();
+                    existingEdgeKeysRef.current = new Set();
+                } catch {
+                    // ignore
+                }
+            }
+        }, [nodes.length]);
+
+        // Skip all updates during transitions - this prevents flickering
+        // The graph will remain stable with existing data until a full recreation happens
+        // Note: We intentionally don't update elements incrementally to prevent multiple renders
+        // The graph will only be recreated when viewMode changes, keeping it stable during data fetches
+
+        // Cleanup on unmount
+        useEffect(() => {
             return () => {
-                clearTimeout(initTimeout);
+                if (zoomHandlerCleanupRef.current) {
+                    zoomHandlerCleanupRef.current();
+                    zoomHandlerCleanupRef.current = null;
+                }
                 if (cyRef.current) {
                     try {
                         cyRef.current.destroy();
@@ -263,7 +402,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     layoutRunningRef.current = false;
                 }
             };
-        }, [nodes, edges, cyStyles, showOrthologs, pathNodeIds, onNodeClick, onEdgeClick]);
+        }, []);
 
         // Update label visibility when showOrthologs changes
         useEffect(() => {

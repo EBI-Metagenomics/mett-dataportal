@@ -43,5 +43,27 @@ export const NETWORK_VIEW_CONSTANTS = {
       ANGLE_SPREAD: Math.PI * 2, // Full circle (2π radians)
     },
   },
+
+  /**
+   * Global cloud view configuration
+   */
+  GLOBAL_CLOUD: {
+    CENTER_X: 800, // Center X coordinate for cloud layout
+    CENTER_Y: 600, // Center Y coordinate for cloud layout
+    BASE_RADIUS: 500, // Base radius for outermost tier (increased for better distribution)
+    TIER_RADIUS_INCREMENT: 100, // Radius increment per tier (increased spacing)
+    NUM_TIERS: 8, // Number of centrality tiers (more tiers for better granularity)
+    ANGLE_SPREAD: Math.PI * 2, // Full circle (2π radians)
+    MIN_NODE_DISTANCE: 35, // Minimum distance between nodes in same tier (increased)
+  },
+
+  /**
+   * Zoom optimization thresholds
+   */
+  ZOOM: {
+    MINIMAL_THRESHOLD: 0.3, // Below this zoom, show minimal rendering
+    MEDIUM_THRESHOLD: 0.7, // Below this zoom, show medium rendering
+    // Above MEDIUM_THRESHOLD, show full rendering
+  },
 } as const;
 
