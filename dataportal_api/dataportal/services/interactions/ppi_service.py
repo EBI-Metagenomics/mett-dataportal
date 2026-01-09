@@ -17,6 +17,9 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPINeighborhoodSchema,
     PPIPaginationSchema,
     PPIAllNeighborsSchema,
+    PPILightweightNetworkSchema,
+    PPILightweightNodeSchema,
+    PPILightweightEdgeSchema,
 )
 from dataportal.services.base_service import BaseService
 from dataportal.utils.constants import INDEX_PPI, PPI_VALID_FILTER_FIELDS, PPI_SCORE_FIELDS
@@ -520,6 +523,108 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         except Exception as e:
             logger.error(f"Error getting network data: {e}")
             raise ServiceError(f"Failed to get network data: {str(e)}")
+
+    async def get_lightweight_network_data(
+        self,
+        score_type: str,
+        score_threshold: float,
+        species_acronym: Optional[str] = None,
+        isolate_name: Optional[str] = None,
+        max_interactions: int = 50000,
+    ) -> PPILightweightNetworkSchema:
+        """Get lightweight network data for global cloud view.
+
+        This method is optimized for performance by:
+        - Only fetching essential fields (protein IDs, locus tags, scores)
+        - Limiting the number of interactions returned
+        - Using minimal source fields to reduce data transfer
+        - Designed to avoid timeouts for large networks
+        """
+        try:
+            s = self._build_base_search(species_acronym, isolate_name, score_type, score_threshold)
+
+            # Get total matches for informational purposes
+            from asgiref.sync import sync_to_async
+
+            total_matches = await sync_to_async(s.count)()
+            logger.info(
+                f"get_lightweight_network_data: Found {total_matches} total matches, limiting to {max_interactions}"
+            )
+
+            # Limit results to avoid timeouts
+            s = s[:max_interactions]
+
+            # Only fetch essential fields to reduce data transfer
+            score_field = self._validate_and_normalize_score_field(score_type)
+            s = s.source(
+                [
+                    "protein_a",
+                    "protein_b",
+                    "protein_a_locus_tag",
+                    "protein_b_locus_tag",
+                    score_field,
+                ]
+            )
+
+            # Increase timeout for this query since we're fetching a large dataset
+            # Set timeout directly on the Search object
+            s = s.params(request_timeout=60)  # 60 second timeout
+            response = await self._execute_search(s)
+
+            # Build lightweight network data
+            nodes_dict = {}  # protein_id -> lightweight node dict
+            edges = []
+
+            for hit in response.hits:
+                protein_a = hit.protein_a
+                protein_b = hit.protein_b
+                score = getattr(hit, score_field, 0)
+
+                # Collect minimal metadata for protein_a
+                if protein_a not in nodes_dict:
+                    nodes_dict[protein_a] = {
+                        "id": protein_a,
+                        "locus_tag": getattr(hit, "protein_a_locus_tag", None),
+                    }
+                else:
+                    # Update locus_tag if we have it and it's missing
+                    node_meta = nodes_dict[protein_a]
+                    if not node_meta.get("locus_tag"):
+                        node_meta["locus_tag"] = getattr(hit, "protein_a_locus_tag", None)
+
+                # Collect minimal metadata for protein_b
+                if protein_b not in nodes_dict:
+                    nodes_dict[protein_b] = {
+                        "id": protein_b,
+                        "locus_tag": getattr(hit, "protein_b_locus_tag", None),
+                    }
+                else:
+                    # Update locus_tag if we have it and it's missing
+                    node_meta = nodes_dict[protein_b]
+                    if not node_meta.get("locus_tag"):
+                        node_meta["locus_tag"] = getattr(hit, "protein_b_locus_tag", None)
+
+                # Add lightweight edge
+                edges.append(
+                    PPILightweightEdgeSchema(
+                        source=protein_a,
+                        target=protein_b,
+                        weight=score if score else None,
+                    )
+                )
+
+            # Convert nodes dict to list of lightweight schema objects
+            node_list = [PPILightweightNodeSchema(**node_data) for node_data in nodes_dict.values()]
+
+            return PPILightweightNetworkSchema(
+                nodes=node_list,
+                edges=edges,
+                total_available=total_matches if total_matches > max_interactions else None,
+            )
+
+        except Exception as e:
+            logger.error(f"Error getting lightweight network data: {e}")
+            raise ServiceError(f"Failed to get lightweight network data: {str(e)}")
 
     async def get_network_properties(
         self,

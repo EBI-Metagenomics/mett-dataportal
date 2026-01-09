@@ -12,6 +12,7 @@ interface UseNetworkDataProps {
   scoreThreshold?: number;
   showOrthologs?: boolean;
   enabled?: boolean;
+  useLightweight?: boolean; // Use lightweight endpoint for global cloud view (avoids timeouts)
 }
 
 interface UseNetworkDataReturn {
@@ -35,6 +36,7 @@ export const useNetworkData = ({
   scoreThreshold = 0.8,
   showOrthologs = false,
   enabled = true,
+  useLightweight = false,
 }: UseNetworkDataProps): UseNetworkDataReturn => {
   const [networkData, setNetworkData] = useState<PPINetworkData | null>(null);
   const [networkProperties, setNetworkProperties] = useState<PPINetworkProperties | null>(null);
@@ -96,7 +98,7 @@ export const useNetworkData = ({
       return;
     }
 
-    const baseFetchKey = `${speciesAcronym}-${isolateName}-${locusTag}-${scoreType}-${scoreThreshold}`;
+    const baseFetchKey = `${speciesAcronym}-${isolateName}-${locusTag}-${scoreType}-${scoreThreshold}-${useLightweight ? 'lightweight' : 'full'}`;
     const fetchKey = `${baseFetchKey}-${showOrthologs}`;
     
       // Check if we need to fetch PPI data or just ortholog data
@@ -117,24 +119,37 @@ export const useNetworkData = ({
       
       // Fetch PPI network data if needed
       if (needsPPIData) {
-        const query: PPINetworkQuery = {
-          score_type: scoreType,
-          score_threshold: scoreThreshold,
-          species_acronym: speciesAcronym,
-          isolate_name: isolateName,
-          locus_tag: locusTag,
-          include_properties: true,
-        };
+        if (useLightweight) {
+          // Use lightweight endpoint for global cloud view
+          network = await PPIService.getLightweightNetworkData({
+            score_type: scoreType,
+            score_threshold: scoreThreshold,
+            species_acronym: speciesAcronym,
+            isolate_name: isolateName,
+            max_interactions: 50000, // Reasonable limit to avoid timeouts
+          });
+        } else {
+          // Use full endpoint for focused/neighborhood view
+          const query: PPINetworkQuery = {
+            score_type: scoreType,
+            score_threshold: scoreThreshold,
+            species_acronym: speciesAcronym,
+            isolate_name: isolateName,
+            locus_tag: locusTag,
+            include_properties: true,
+          };
 
-        network = await PPIService.getNetworkData(query);
+          network = await PPIService.getNetworkData(query);
+        }
         setNetworkData(network);
         networkDataRef.current = network;
 
-        // Extract properties if available
+        // Extract properties if available (only for full endpoint)
         if (network.properties) {
           setNetworkProperties(network.properties);
-        } else {
-          // Fetch properties separately if not included
+        } else if (!useLightweight) {
+          // Fetch properties separately if not included (only for full endpoint)
+          // For lightweight endpoint, we skip properties to save time
           const properties = await PPIService.getNetworkProperties({
             score_type: scoreType,
             score_threshold: scoreThreshold,
@@ -142,6 +157,15 @@ export const useNetworkData = ({
             isolate_name: isolateName,
           });
           setNetworkProperties(properties);
+        } else {
+          // For lightweight endpoint, set minimal properties based on actual data
+          setNetworkProperties({
+            num_nodes: network.nodes.length,
+            num_edges: network.edges.length,
+            density: 0, // Not calculated for lightweight
+            avg_clustering_coefficient: 0, // Not calculated for lightweight
+            degree_distribution: [],
+          });
         }
       }
 
@@ -170,7 +194,7 @@ export const useNetworkData = ({
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [enabled, speciesAcronym, isolateName, locusTag, scoreType, scoreThreshold, showOrthologs, fetchOrthologData]);
+  }, [enabled, speciesAcronym, isolateName, locusTag, scoreType, scoreThreshold, showOrthologs, useLightweight, fetchOrthologData]);
 
   // Refresh network data
   const refreshNetwork = useCallback(async () => {

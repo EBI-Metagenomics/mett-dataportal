@@ -15,6 +15,8 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkQuerySchema,
     PPINetworkPropertiesQuerySchema,
     PPIScoreTypesResponseSchema,
+    PPILightweightNetworkQuerySchema,
+    PPILightweightNetworkResponseSchema,
 )
 from dataportal.schema.response_schemas import create_success_response, ErrorCode
 from dataportal.services.interactions.ppi_service import PPIService
@@ -280,6 +282,43 @@ async def get_ppi_network_properties(request, query: PPINetworkPropertiesQuerySc
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise_internal_server_error(f"Failed to get network properties: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise_internal_server_error("Internal server error")
+
+
+@ppi_router.get(
+    "/network-lightweight/{score_type}",
+    response=PPILightweightNetworkResponseSchema,
+    summary="Get lightweight PPI network data (optimized for global cloud view)",
+    description="Get minimal network data optimized for global cloud visualization. Returns only essential fields (IDs, locus tags, scores) with a configurable limit to avoid timeouts. Use this endpoint for large-scale network visualizations.",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
+)
+@wrap_success_response
+async def get_ppi_lightweight_network(
+    request, score_type: str, query: PPILightweightNetworkQuerySchema = Query(...)
+):
+    """Get lightweight PPI network data optimized for global cloud view."""
+    try:
+        network_data = await ppi_service.get_lightweight_network_data(
+            score_type=score_type,
+            score_threshold=query.score_threshold,
+            species_acronym=query.species_acronym,
+            isolate_name=query.isolate_name,
+            max_interactions=query.max_interactions,
+        )
+
+        total_msg = f"Retrieved {len(network_data.edges)} interactions"
+        if network_data.total_available and network_data.total_available > query.max_interactions:
+            total_msg += f" (out of {network_data.total_available} available)"
+
+        return create_success_response(
+            data=network_data,
+            message=f"Lightweight network data for {score_type} (threshold: {query.score_threshold}) - {total_msg}",
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise_internal_server_error(f"Failed to get lightweight network data: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise_internal_server_error("Internal server error")

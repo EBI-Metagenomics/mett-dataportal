@@ -6,6 +6,7 @@ interface UseCytoscapeStylesProps {
     showOrthologs: boolean;
     scoreRange: { min: number; max: number };
     currentExpansionLevel?: number;
+    viewMode?: 'global' | 'focused';
 }
 
 /**
@@ -15,6 +16,7 @@ export const useCytoscapeStyles = ({
     showOrthologs,
     scoreRange,
     currentExpansionLevel,
+    viewMode = 'focused',
 }: UseCytoscapeStylesProps): cytoscape.StylesheetCSS[] => {
     return useMemo(() => {
         const styles: cytoscape.StylesheetCSS[] = [
@@ -25,9 +27,13 @@ export const useCytoscapeStyles = ({
                     'curve-style': 'bezier',
                     'control-point-step-size': 18,
                     'line-color': '#999',
-                    opacity: 0.55,
+                    // Hide edges in global view (too cluttered)
+                    opacity: viewMode === 'global' ? 0 : 0.55,
+                    'transition-property': 'opacity',
+                    'transition-duration': '0.2s',
+                    'transition-timing-function': 'ease-out',
                     width: (edge: cytoscape.EdgeSingular) => {
-                        const w = edge.data('weight') ?? 0;
+                        const w = edge.data('weight') ?? 0; 
                         if (w <= 0) return NETWORK_VIEW_CONSTANTS.EDGE_WIDTH.MIN;
                         
                         const normalized = scoreRange.max > scoreRange.min
@@ -74,7 +80,11 @@ export const useCytoscapeStyles = ({
                     },
                     label: 'data(label)',
                     'font-size': '10px',
-                    'text-opacity': 0,
+                    // Hide labels in global view (not readable anyway)
+                    'text-opacity': viewMode === 'global' ? 0 : 0,
+                    'transition-property': 'text-opacity, opacity',
+                    'transition-duration': '0.2s',
+                    'transition-timing-function': 'ease-out',
                 },
             },
             
@@ -170,6 +180,6 @@ export const useCytoscapeStyles = ({
         ];
         
         return styles as cytoscape.StylesheetCSS[];
-    }, [showOrthologs, scoreRange, currentExpansionLevel]);
+    }, [showOrthologs, scoreRange, currentExpansionLevel, viewMode]);
 };
 

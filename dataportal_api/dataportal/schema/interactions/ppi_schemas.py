@@ -184,6 +184,56 @@ class PPIAllNeighborsResponseSchema(SuccessResponseSchema):
     data: PPIAllNeighborsSchema
 
 
+# Lightweight schemas for global cloud view
+class PPILightweightNodeSchema(BaseModel):
+    """Lightweight schema for a PPI network node (minimal data for global view)."""
+
+    id: str = Field(..., description="Protein ID (UniProt ID)")
+    locus_tag: Optional[str] = Field(None, description="Locus tag of the gene")
+
+
+class PPILightweightEdgeSchema(BaseModel):
+    """Lightweight schema for a PPI network edge (minimal data for global view)."""
+
+    source: str = Field(..., description="Source node ID")
+    target: str = Field(..., description="Target node ID")
+    weight: Optional[float] = Field(None, description="Edge weight (score)")
+
+
+class PPILightweightNetworkSchema(BaseModel):
+    """Lightweight schema for PPI network data (minimal data for global cloud view)."""
+
+    nodes: List[PPILightweightNodeSchema]
+    edges: List[PPILightweightEdgeSchema]
+    total_available: Optional[int] = Field(
+        None, description="Total interactions available (may be more than returned)"
+    )
+
+
+class PPILightweightNetworkResponseSchema(SuccessResponseSchema):
+    """Response schema for lightweight PPI network data."""
+
+    data: PPILightweightNetworkSchema
+
+
+class PPILightweightNetworkQuerySchema(BaseModel):
+    """Schema for lightweight PPI network query parameters."""
+
+    score_threshold: float = Field(
+        0.8, ge=0.0, le=1.0, description="Score threshold for network construction"
+    )
+    species_acronym: Optional[str] = Field(None, description="Species acronym filter")
+    isolate_name: Optional[str] = Field(
+        None, description="Isolate name filter (e.g., 'BU_ATCC8492', 'PV_ATCC8482')"
+    )
+    max_interactions: int = Field(
+        50000,
+        ge=1000,
+        le=100000,
+        description="Maximum number of interactions to fetch (for performance)",
+    )
+
+
 # Request Schemas
 class PPINeighborhoodQuerySchema(BaseModel):
     """Schema for protein neighborhood query parameters."""

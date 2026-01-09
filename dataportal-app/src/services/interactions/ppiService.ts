@@ -147,5 +147,37 @@ export class PPIService extends BaseService {
       throw error;
     }
   }
+
+  /**
+   * Get lightweight PPI network data (optimized for global cloud view)
+   * Returns minimal data (IDs, locus tags, scores) with configurable limit
+   */
+  static async getLightweightNetworkData(query: {
+    score_type: string;
+    score_threshold: number;
+    species_acronym?: string;
+    isolate_name?: string;
+    max_interactions?: number;
+  }): Promise<PPINetworkData> {
+    try {
+      const params = this.buildParams({
+        score_threshold: query.score_threshold,
+        species_acronym: query.species_acronym,
+        isolate_name: query.isolate_name,
+        max_interactions: query.max_interactions || 50000,
+      });
+
+      // The lightweight endpoint returns the same structure but with minimal fields
+      const networkData = await this.getWithRetry<PPINetworkData>(
+        `${this.BASE_ENDPOINT}/network-lightweight/${query.score_type}`,
+        params
+      );
+
+      return networkData;
+    } catch (error) {
+      console.error("Error fetching lightweight PPI network data:", error);
+      throw error;
+    }
+  }
 }
 

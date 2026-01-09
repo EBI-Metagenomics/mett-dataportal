@@ -20,6 +20,7 @@ export interface NetworkGraphProps {
     >;
     edges: Array<PPINetworkEdge & { edgeType?: string; orthology_type?: string; expansionLevel?: number }>;
     showOrthologs: boolean;
+    viewMode?: 'global' | 'focused';
     currentExpansionLevel?: number;
     expansionPath?: Array<{ nodeId: string; level: number }>;
     onNodeClick: (node: PPINetworkNode, event?: MouseEvent) => void;
