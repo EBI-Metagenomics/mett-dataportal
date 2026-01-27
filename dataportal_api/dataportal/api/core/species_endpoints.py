@@ -68,6 +68,9 @@ async def get_genomes_by_species(
     query: SpeciesGenomeSearchQuerySchema = Query(...),
 ):
     try:
+        # Normalize species acronym (case-insensitive path param)
+        species_acronym = species_acronym.strip().upper()
+
         # Validate that the species exists and is enabled
         species = await species_service.get_by_id(species_acronym)
         if not species:
@@ -103,6 +106,9 @@ async def search_genomes_by_species_and_string(
     query: SpeciesGenomeSearchQuerySchema = Query(...),
 ):
     try:
+        # Normalize species acronym (case-insensitive path param)
+        species_acronym = species_acronym.strip().upper()
+
         # Validate that the species exists and is enabled
         species = await species_service.get_by_id(species_acronym)
         if not species:
