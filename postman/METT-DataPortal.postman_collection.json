@@ -4398,7 +4398,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4443,7 +4443,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-int-dev}}",
+                                  "value": "bearer-token-current",
                                   "type": "string"
                                 }
                               ]
@@ -4526,7 +4526,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4576,7 +4576,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4607,7 +4607,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4638,7 +4638,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4675,7 +4675,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4723,7 +4723,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4771,7 +4771,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4824,7 +4824,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4855,7 +4855,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4892,7 +4892,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4933,7 +4933,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -4990,7 +4990,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5020,7 +5020,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5056,7 +5056,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5100,7 +5100,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5144,7 +5144,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5192,7 +5192,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5228,7 +5228,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5272,7 +5272,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5302,7 +5302,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5337,7 +5337,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5373,7 +5373,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5404,7 +5404,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5441,7 +5441,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5487,7 +5487,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5518,7 +5518,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5549,7 +5549,7 @@
                               "bearer": [
                                 {
                                   "key": "token",
-                                  "value": "{{bearer-token-exp+int-dev}}",
+                                  "value": "{{bearer-token-current}}",
                                   "type": "string"
                                 }
                               ]
@@ -5603,7 +5603,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5633,7 +5633,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5669,7 +5669,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5709,7 +5709,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -5771,7 +5771,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -5815,7 +5815,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -5865,7 +5865,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -5915,7 +5915,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -5961,7 +5961,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6013,7 +6013,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6059,7 +6059,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6114,7 +6114,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6169,7 +6169,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6228,7 +6228,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6273,7 +6273,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6318,7 +6318,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6372,7 +6372,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6438,7 +6438,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6501,7 +6501,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6546,7 +6546,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6591,7 +6591,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6641,7 +6641,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6695,7 +6695,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6749,7 +6749,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6808,7 +6808,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6853,7 +6853,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6898,7 +6898,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -6949,7 +6949,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7003,7 +7003,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7053,7 +7053,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7112,7 +7112,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7157,7 +7157,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7202,7 +7202,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7252,7 +7252,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7302,7 +7302,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7352,7 +7352,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7402,7 +7402,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7460,7 +7460,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7519,7 +7519,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7564,7 +7564,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7609,7 +7609,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7659,7 +7659,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7723,7 +7723,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7768,7 +7768,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7826,7 +7826,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7884,7 +7884,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -7950,7 +7950,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8004,7 +8004,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8058,7 +8058,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8108,7 +8108,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8166,7 +8166,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8220,7 +8220,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8278,7 +8278,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8336,7 +8336,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8379,7 +8379,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8431,7 +8431,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8483,7 +8483,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8526,7 +8526,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8569,7 +8569,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8612,7 +8612,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8655,7 +8655,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8698,7 +8698,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8745,7 +8745,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8788,7 +8788,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8831,7 +8831,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8874,7 +8874,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8918,7 +8918,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -8966,7 +8966,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9038,7 +9038,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9089,7 +9089,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9143,7 +9143,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9194,7 +9194,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9253,7 +9253,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9298,7 +9298,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9343,7 +9343,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9397,7 +9397,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9452,7 +9452,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9510,7 +9510,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9560,7 +9560,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
@@ -9604,7 +9604,7 @@
                       "bearer": [
                         {
                           "key": "token",
-                          "value": "{{bearer-token-exp+int-dev}}",
+                          "value": "{{bearer-token-current}}",
                           "type": "string"
                         }
                       ]
