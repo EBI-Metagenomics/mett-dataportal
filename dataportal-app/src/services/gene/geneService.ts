@@ -61,9 +61,9 @@ export class GeneService extends BaseService {
         endPosition?: number | null
     ): Promise<PaginatedApiResponse<GeneMeta>> {
         try {
-            console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
-                query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators, locusTag, seqId, startPosition, endPosition
-            });
+            // console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
+            //     query, page, perPage, sortField, sortOrder, selectedGenomes, selectedSpecies, selectedFacets, facetOperators, locusTag, seqId, startPosition, endPosition
+            // });
             
             // Use the same parameter construction logic as buildParamsFetchGeneSearchResults
             const params = this.buildParamsFetchGeneSearchResults(
@@ -155,7 +155,7 @@ export class GeneService extends BaseService {
     @cacheResponse(60 * 60 * 1000, (apiUrl: string, refName: string) => `${apiUrl}:${refName}`) // Cache for 60 minutes, uses combined key
     static async fetchEssentialityData(apiUrl: string, refName: string): Promise<Record<string, any>> {
         try {
-            console.log(`Fetching essentiality data from: ${apiUrl}/${refName}`);
+            // console.log(`Fetching essentiality data from: ${apiUrl}/${refName}`);
             const response = await fetch(`${apiUrl}/${refName}`);
             if (!response.ok) {
                 console.warn(`Failed to fetch essentiality data for ${refName}: ${response.status} ${response.statusText}`);
@@ -168,12 +168,12 @@ export class GeneService extends BaseService {
             if (responseData && typeof responseData === 'object' && 'status' in responseData && 'data' in responseData) {
                 // Extract data from standardized response
                 const data = responseData.data;
-                console.log(`Essentiality data received for ${refName}:`, data);
+                // console.log(`Essentiality data received for ${refName}:`, data);
                 return data || {};
             }
             
             // Fallback for legacy format (should not happen, but safe to handle)
-            console.log(`Essentiality data received for ${refName} (legacy format):`, responseData);
+            // console.log(`Essentiality data received for ${refName} (legacy format):`, responseData);
             return responseData || {};
         } catch (error) {
             console.error(`Error fetching essentiality data for ${refName}:`, error);

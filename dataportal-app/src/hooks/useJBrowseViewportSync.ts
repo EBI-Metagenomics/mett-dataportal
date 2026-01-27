@@ -42,6 +42,12 @@ export const useJBrowseViewportSync = ({
       const view = views[0]
       if (!view) return
 
+      // JBrowse throws if we read certain computed properties before initialization.
+      // (e.g. width getter: "width undefined, make sure to check for model.initialized")
+      if (!view.initialized) {
+        return
+      }
+
       const displayedRegions = view.displayedRegions
       if (!displayedRegions || displayedRegions.length === 0) return
 
