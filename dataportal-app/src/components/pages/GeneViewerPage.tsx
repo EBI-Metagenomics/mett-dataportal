@@ -4,7 +4,7 @@ import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/features/gene-viewer/GeneSearchForm/GeneSearchForm";
 
 // Import new hooks and utilities
-import {useGeneViewerData, useGeneViewerSearch} from '../../hooks';
+import {useGeneViewerData, useGeneViewerDeepLinkBootstrap, useGeneViewerSearch} from '../../hooks';
 import {useGeneViewerUrlSync} from '../../hooks/useGeneViewerUrlSync';
 import {useDebouncedLoading} from '../../hooks/useDebouncedLoading';
 
@@ -12,7 +12,7 @@ import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils
 import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../features/gene-viewer/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {useFilterStore} from '../../stores/filterStore';
-import {DEFAULT_PER_PAGE_CNT, ZOOM_LEVELS} from '../../utils/common/constants';
+import {DEFAULT_PER_PAGE_CNT} from '../../utils/common/constants';
 import {useFacetedFilters} from '../../hooks/useFacetedFilters';
 
 // Import custom feature panel
@@ -21,33 +21,7 @@ import SyncView from '../features/gene-viewer/SyncView';
 import { useJBrowseViewportSync } from '../../hooks/useJBrowseViewportSync';
 import { useViewportSyncStore } from '../../stores/viewportSyncStore';
 import { VIEWPORT_SYNC_CONSTANTS } from '../../utils/gene-viewer';
-import { GeneService } from '../../services/gene';
-
-// Tab Navigation Component
-interface Tab {
-    id: string;
-    label: string;
-}
-
-interface TabNavigationProps {
-    tabs: Tab[];
-    activeTab: string;
-    onTabClick: (tabId: string) => void;
-}
-
-const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClick}) => (
-    <div className={styles["tabs-container"]}>
-        {tabs.map((tab) => (
-            <button
-                key={tab.id}
-                onClick={() => onTabClick(tab.id)}
-                className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
-            >
-                {tab.label}
-            </button>
-        ))}
-    </div>
-);
+import GeneViewerTabNavigation from '../features/gene-viewer/GeneViewerTabNavigation/GeneViewerTabNavigation';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -133,11 +107,6 @@ const GeneViewerPage: React.FC = () => {
         jbrowseInitKey
     );
 
-    // Only mark a URL bootstrap as "done" after we successfully navigate.
-    // In dev StrictMode, effects can mount+cleanup+remount quickly; if we mark as done too early,
-    // we can accidentally cancel retries and never navigate.
-    const urlBootstrapCompletedKeyRef = useRef<string | null>(null);
-
     useJBrowseViewportSync({
         viewState,
         isolateName: geneViewerData.genomeMeta?.isolate_name || null,
@@ -145,186 +114,19 @@ const GeneViewerPage: React.FC = () => {
         enabled: true,
     });
 
-    const urlGeneMeta = geneViewerData.geneMeta;
-    const urlGenomeIsolateName = geneViewerData.genomeMeta?.isolate_name;
-    const setPageLoading = geneViewerData.setLoading;
-
-    // If page is opened with `?locus_tag=...`, bootstrap viewer + panels from URL.
-    useEffect(() => {
-        const geneMeta = urlGeneMeta;
-        const locusTag = geneMeta?.locus_tag;
-
-        if (!viewState || !geneMeta || !locusTag) {
-            return;
-        }
-
-        const isolateName = geneMeta.isolate_name || urlGenomeIsolateName || '';
-        const bootstrapKey = `${isolateName}:${locusTag}:${jbrowseInitKey}`;
-
-        if (urlBootstrapCompletedKeyRef.current === bootstrapKey) {
-            return;
-        }
-
-        // eslint-disable-next-line no-console
-        console.log('[GeneViewerPage] URL bootstrap start', {
-            bootstrapKey,
-            locusTag,
-            isolateName,
-            seq_id: geneMeta.seq_id,
-            start_position: geneMeta.start_position,
-            end_position: geneMeta.end_position,
-        });
-
-        // Ensure the Genomic Context view is shown for deep-links to a specific gene.
-        manualOverrideUntilRef.current = null;
-        setShowAutoSwitchNotification(false);
-        setWasAutoSwitched(false);
-        setActiveTab('sync');
-
-        // Set highlight + selection for both JBrowse styling and the Genomic Context table.
-        try {
-            window.selectedGeneId = locusTag;
-        } catch {
-            // ignore
-        }
-        const viewportStore = useViewportSyncStore.getState();
-        viewportStore.setSelectedLocusTag(locusTag);
-
-        // Populate Feature Details panel immediately (then enrich with protein sequence async).
-        setSelectedFeature(geneMeta);
-        GeneService.fetchGeneProteinSeq(locusTag)
-            .then((proteinData) => {
-                setSelectedFeature({
-                    ...geneMeta,
-                    protein_sequence: proteinData?.protein_sequence || '',
-                });
-            })
-            .catch(() => {
-                // keep base geneMeta
-            });
-
-        const view = viewState.session?.views?.[0];
-        if (!view || typeof view.navToLocString !== 'function') {
-            // eslint-disable-next-line no-console
-            console.log('[GeneViewerPage] URL bootstrap: view not ready for navigation', {
-                hasView: Boolean(view),
-                navToLocStringType: typeof view?.navToLocString,
-            });
-            return;
-        }
-
-        // On initial page load, JBrowse may not be fully ready yet.
-        // Unlike table-click navigation (which works without checking `initialized`),
-        // we just retry `navToLocString` until the view is usable.
-        let cancelled = false;
-        const maxRetries = 50;
-        const retryDelayMs = 200;
-
-        const navigateWhenReady = async () => {
-            for (let i = 0; i < maxRetries; i++) {
-                if (cancelled) return;
-
-                const currentView = viewState.session?.views?.[0];
-                if (currentView && typeof currentView.navToLocString === 'function') {
-                    const initialized = Boolean((currentView as any)?.initialized);
-
-                    const geneStart = Number(geneMeta.start_position ?? 0);
-                    const geneEnd = Number(geneMeta.end_position ?? 0);
-                    const start = Math.max(0, (Number.isFinite(geneStart) ? geneStart : 0) - 500);
-                    const endBase = Number.isFinite(geneEnd) && geneEnd > 0 ? geneEnd : start + 1000;
-                    const end = endBase + 500;
-
-                    const displayedRefName =
-                        currentView.displayedRegions?.[0]?.refName ??
-                        currentView.volatile?.displayedRegions?.[0]?.refName ??
-                        null;
-
-                    // eslint-disable-next-line no-console
-                    console.log('[GeneViewerPage] URL bootstrap nav attempt', {
-                        attempt: i + 1,
-                        initialized,
-                        displayedRefName,
-                        targetSeqId: geneMeta.seq_id,
-                        start,
-                        end,
-                        locString: `${geneMeta.seq_id}:${start}..${end}`,
-                    });
-
-                    // Don't attempt to navigate until the model is initialized.
-                    // If we call nav too early it can be a no-op (what we're seeing now).
-                    if (!initialized) {
-                        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-                        continue;
-                    }
-
-                    setPageLoading(true);
-                    try {
-                        currentView.navToLocString(`${geneMeta.seq_id}:${start}..${end}`);
-                        // eslint-disable-next-line no-console
-                        console.log('[GeneViewerPage] URL bootstrap navToLocString called - ' + `${geneMeta.seq_id}:${start}..${end}`);
-                        urlBootstrapCompletedKeyRef.current = bootstrapKey;
-                        setTimeout(() => {
-                            try {
-                                currentView.zoomTo(ZOOM_LEVELS.NAV);
-                                // eslint-disable-next-line no-console
-                                console.log('[GeneViewerPage] URL bootstrap zoomTo called', { zoom: ZOOM_LEVELS.NAV });
-                            } catch {
-                                // ignore
-                            }
-
-                            // Force track re-render to apply highlight (window.selectedGeneId).
-                            try {
-                                if (currentView.tracks) {
-                                    currentView.tracks.forEach((track: any) => {
-                                        track?.displays?.forEach((display: any) => {
-                                            try {
-                                                if (display.reload) {
-                                                    display.reload();
-                                                } else if (display.setError) {
-                                                    display.setError(undefined);
-                                                }
-                                            } catch {
-                                                // ignore
-                                            }
-                                        });
-                                    });
-                                }
-                            } catch {
-                                // ignore
-                            }
-
-                            setPageLoading(false);
-                        }, 200);
-                    } catch (e) {
-                        // eslint-disable-next-line no-console
-                        console.log('[GeneViewerPage] URL bootstrap navToLocString threw', e);
-                        setPageLoading(false);
-                        // If nav fails (e.g. refName not ready yet), retry.
-                        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-                        continue;
-                    }
-                    return;
-                }
-
-                // eslint-disable-next-line no-console
-                console.log('[GeneViewerPage] URL bootstrap: view missing navToLocString', {
-                    attempt: i + 1,
-                    hasView: Boolean(currentView),
-                    navToLocStringType: typeof currentView?.navToLocString,
-                });
-                await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-            }
-
-            // eslint-disable-next-line no-console
-            console.log('[GeneViewerPage] URL bootstrap: giving up after retries', { maxRetries });
-        };
-
-        navigateWhenReady();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [viewState, urlGeneMeta, urlGenomeIsolateName, jbrowseInitKey, setPageLoading]);
+    useGeneViewerDeepLinkBootstrap({
+        viewState,
+        geneMeta: geneViewerData.geneMeta,
+        genomeIsolateName: geneViewerData.genomeMeta?.isolate_name,
+        jbrowseInitKey,
+        setLoading: geneViewerData.setLoading,
+        setSelectedFeature,
+        setActiveTab,
+        setShowAutoSwitchNotification,
+        setWasAutoSwitched,
+        manualOverrideUntilRef,
+        debug: true,
+    });
 
     const recordManualSearchOverride = useCallback(() => {
         manualOverrideUntilRef.current = Date.now() + VIEWPORT_SYNC_CONSTANTS.AUTO_SWITCH_MANUAL_OVERRIDE_MS;
@@ -553,7 +355,7 @@ const GeneViewerPage: React.FC = () => {
                             <div className={styles.geneSearchContainer}>
                                 <section>
                                     {/* Tab Navigation */}
-                                    <TabNavigation
+                                    <GeneViewerTabNavigation
                                         tabs={[
                                             { id: 'search', label: 'Search View' },
                                             { id: 'sync', label: 'Genomic Context' },
