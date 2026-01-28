@@ -1476,7 +1476,8 @@
                           ""
                         ],
                         "type": "text/javascript",
-                        "packages": {}
+                        "packages": {},
+                        "requests": {}
                       }
                     }
                   ],
@@ -1484,9 +1485,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{mett-prod}}/api/genes/faceted-search",
+                      "raw": "{{mett-current}}/api/genes/faceted-search",
                       "host": [
-                        "{{mett-prod}}"
+                        "{{mett-current}}"
                       ],
                       "path": [
                         "api",
@@ -7514,16 +7515,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7604,16 +7595,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7654,16 +7635,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7689,6 +7660,40 @@
                     }
                   },
                   "response": []
+                }
+              ],
+              "auth": {
+                "type": "bearer",
+                "bearer": [
+                  {
+                    "key": "token",
+                    "value": "{{bearer-token-exp+int-dev}}",
+                    "type": "string"
+                  }
+                ]
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      ""
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      ""
+                    ]
+                  }
                 }
               ]
             }
@@ -9867,6 +9872,40 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "test-random",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"prompt\": \"Return ONLY valid JSON without any markdown or explanation.\\n\\nQuery: Show essential genes in PV involved in AMR\\n\\nFormat:\\n{\\n  \\\"species\\\": \\\"<species acronym or name>\\\",\\n  \\\"essentiality\\\": \\\"<essential/non-essential>\\\",\\n  \\\"amr\\\": <true/false>\\n}\",\n    \"n_predict\": 300,\n    \"temperature\": 0.1\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://{{testme}}:8080/completion",
+              "protocol": "http",
+              "host": [
+                "{{testme}}"
+              ],
+              "port": "8080",
+              "path": [
+                "completion"
+              ]
+            },
+            "description": "Generated from cURL: curl -X POST http://localhost:8080/completion \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"prompt\": \"What is Bacteroides uniformis?\",\n    \"n_predict\": 50,\n    \"temperature\": 0.2\n  }'"
+          },
+          "response": []
         }
       ]
     },

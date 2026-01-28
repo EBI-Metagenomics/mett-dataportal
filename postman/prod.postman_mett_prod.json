@@ -1,0 +1,75 @@
+{
+	"id": "fb63923d-d2c0-4386-81d8-520f6908eef9",
+	"values": [
+		{
+			"key": "mett-prod",
+			"value": "http://www.gut-microbes.org",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "mett-current",
+			"value": "{{mett-prod}}",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "mett-elasticsearch-dev",
+			"value": "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:32467",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "mett-elasticsearch-prod",
+			"value": "http://hh-rke-wp-webadmin-52-master-1.caas.ebi.ac.uk:32457",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "mett-elasticsearch-current",
+			"value": "{{mett-elasticsearch-dev}}",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "mett-elasticsearch-prod-pass",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "hmmer_job_id",
+			"value": "",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "bearer-token-exp+int-prod",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "bearer-token-exp-prod",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "bearer-token-int-prod",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "bearer-token-current",
+			"value": "{{bearer-token-exp+int-prod}}",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"name": "METT_PROD",
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-01-28T12:12:14.966Z",
+	"_postman_exported_using": "Postman/11.82.1"
+}
