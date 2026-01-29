@@ -1,0 +1,27 @@
+{
+	"id": "fb63923d-d2c0-4386-81d8-520f6908eef9",
+	"values": [
+		{
+			"key": "ebi-prod",
+			"value": "https://www.ebi.ac.uk",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "ebi-dev",
+			"value": "https://wwwdev.ebi.ac.uk",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "current-context",
+			"value": "http://127.0.0.1:8000",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"name": "Globals",
+	"_postman_variable_scope": "globals",
+	"_postman_exported_at": "2026-01-28T12:12:14.966Z",
+	"_postman_exported_using": "Postman/11.82.1"
+}

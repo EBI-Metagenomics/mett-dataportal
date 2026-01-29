@@ -9,7 +9,7 @@ jobs:
   build-and-push-django-dev:
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: ${{ github.ref_name }}_dev
+      IMAGE_TAG: ${{ github.ref_name }}
     steps:
       - name: Check out the code
         uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
   build-and-push-react-dev:
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: ${{ github.ref_name }}_dev
+      IMAGE_TAG: ${{ github.ref_name }}
     steps:
       - name: Check out the code
         uses: actions/checkout@v4

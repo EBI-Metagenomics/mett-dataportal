@@ -65,19 +65,21 @@ Basic best-hit mapping:
 $ diamond blastp \
   -q ./mett-faa-files/bu_typestrains.faa \
   -d bu820_string \
-  -o bu_to_string_raw.tsv \
+  -o ./output/bu_to_string_raw.tsv \
   -f 6 qseqid sseqid pident length qcovhsp scovhsp evalue bitscore \
-  --max-target-seqs 1 \
-  --evalue 1e-5
+  --max-target-seqs 1  \
+  --evalue 1e-3 \
+  --more-sensitive
 ```
 ```bash
 $ diamond blastp \
   -q ./mett-faa-files/pv_typestrains.faa \
   -d pv435590_string \
-  -o pv_to_string_raw.tsv \
+  -o ./output/pv_to_string_raw.tsv \
   -f 6 qseqid sseqid pident length qcovhsp scovhsp evalue bitscore \
-  --max-target-seqs 1 \
-  --evalue 1e-5
+  --max-target-seqs 1  \
+  --evalue 1e-3 \
+  --more-sensitive
 ```
 
 **Explanation:**

@@ -57,10 +57,19 @@ const ConditionalNaturalQueryRoute: React.FC = () => {
 };
 
 const App: React.FC = () => {
+    // Prefer Vite's BASE_URL (tied to build `base`) for router basename.
+    // This avoids "blank page" failures when VITE_BASENAME is unset/mis-set in a deployment.
+    const baseUrl = import.meta.env.BASE_URL;
+    const routerBasename = (() => {
+        if (!baseUrl) return '/';
+        const trimmed = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        return trimmed === '' ? '/' : trimmed;
+    })();
+
     return (
         <QueryClientProvider client={queryClient}>
             <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
-                <Router basename={import.meta.env.VITE_BASENAME || '/'}>
+                <Router basename={routerBasename}>
                     <UrlCleanupHandler/>
                     <PageCleanupHandler/>
                     <Header/>

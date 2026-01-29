@@ -4,7 +4,7 @@ import styles from "./GeneViewerPage.module.scss";
 import GeneSearchForm from "@components/features/gene-viewer/GeneSearchForm/GeneSearchForm";
 
 // Import new hooks and utilities
-import {useGeneViewerData, useGeneViewerSearch} from '../../hooks';
+import {useGeneViewerData, useGeneViewerDeepLinkBootstrap, useGeneViewerSearch} from '../../hooks';
 import {useGeneViewerUrlSync} from '../../hooks/useGeneViewerUrlSync';
 import {useDebouncedLoading} from '../../hooks/useDebouncedLoading';
 
@@ -23,32 +23,7 @@ import { NetworkView } from '../features/gene-viewer/NetworkView';
 import { useJBrowseViewportSync } from '../../hooks/useJBrowseViewportSync';
 import { useViewportSyncStore } from '../../stores/viewportSyncStore';
 import { VIEWPORT_SYNC_CONSTANTS } from '../../utils/gene-viewer';
-
-// Tab Navigation Component
-interface Tab {
-    id: string;
-    label: string;
-}
-
-interface TabNavigationProps {
-    tabs: Tab[];
-    activeTab: string;
-    onTabClick: (tabId: string) => void;
-}
-
-const TabNavigation: React.FC<TabNavigationProps> = ({tabs, activeTab, onTabClick}) => (
-    <div className={styles["tabs-container"]}>
-        {tabs.map((tab) => (
-            <button
-                key={tab.id}
-                onClick={() => onTabClick(tab.id)}
-                className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
-            >
-                {tab.label}
-            </button>
-        ))}
-    </div>
-);
+import GeneViewerTabNavigation from '../features/gene-viewer/GeneViewerTabNavigation/GeneViewerTabNavigation';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -139,6 +114,20 @@ const GeneViewerPage: React.FC = () => {
         isolateName: geneViewerData.genomeMeta?.isolate_name || null,
         debounceMs: VIEWPORT_SYNC_CONSTANTS.VIEWPORT_DEBOUNCE_MS,
         enabled: true,
+    });
+
+    useGeneViewerDeepLinkBootstrap({
+        viewState,
+        geneMeta: geneViewerData.geneMeta,
+        genomeIsolateName: geneViewerData.genomeMeta?.isolate_name,
+        jbrowseInitKey,
+        setLoading: geneViewerData.setLoading,
+        setSelectedFeature,
+        setActiveTab,
+        setShowAutoSwitchNotification,
+        setWasAutoSwitched,
+        manualOverrideUntilRef,
+        debug: true,
     });
 
     const recordManualSearchOverride = useCallback(() => {
@@ -377,7 +366,7 @@ const GeneViewerPage: React.FC = () => {
                             <div className={styles.geneSearchContainer}>
                                 <section>
                                     {/* Tab Navigation */}
-                                    <TabNavigation
+                                    <GeneViewerTabNavigation
                                         tabs={[
                                             { id: 'search', label: 'Search View' },
                                             { id: 'sync', label: 'Genomic Context' },

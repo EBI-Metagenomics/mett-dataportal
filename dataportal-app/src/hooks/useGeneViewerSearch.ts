@@ -60,7 +60,7 @@ export const useGeneViewerSearch = ({
         if (genomeMeta?.isolate_name) {
             try {
                 setLoading(true);
-                console.log('useGeneViewerSearch - Making API call with query:', geneSearchQuery);
+                // console.log('useGeneViewerSearch - Making API call with query:', geneSearchQuery);
                 const response = await GeneService.fetchGeneSearchResultsAdvanced(
                     geneSearchQuery,
                     overridePage || currentPage, // page - use override if provided, otherwise use current page
@@ -73,11 +73,11 @@ export const useGeneViewerSearch = ({
                     convertFacetOperatorsToLegacy(facetOperators), // Convert facet operators to legacy format
                     undefined // No locus_tag for gene viewer search
                 );
-                console.log('useGeneViewerSearch - Search results received:', {
-                    query: geneSearchQuery,
-                    dataLength: response.data?.length || 0,
-                    pagination: response.pagination
-                });
+                // console.log('useGeneViewerSearch - Search results received:', {
+                //     query: geneSearchQuery,
+                //     dataLength: response.data?.length || 0,
+                //     pagination: response.pagination
+                // });
 
                 setGeneResults(response.data || []);
                 setTotalPages(response.pagination?.num_pages || 1);

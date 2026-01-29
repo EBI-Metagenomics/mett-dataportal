@@ -335,7 +335,7 @@ python manage.py migrate django_celery_beat
 $ python manage.py create_es_index
 
 # Create indices with specific version
-$ python manage.py create_es_index --es-version 2025.09.03
+$ python manage.py create_es_index --es-version v5
 
 # Create specific model index
 $ python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 2025.09.03
@@ -464,6 +464,22 @@ $ python manage.py import_features \
   --gene-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
   --met-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/met_rx/ \
   --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
+```
+
+**STRING DBXREF Data**:
+Single file
+```bash
+python manage.py import_dbxref \
+    --index feature_index \
+    --tsv ../data-generators/stringdb-mapper/output/bu_to_string_raw.tsv \
+    --db-name STRING
+```
+Directory with multiple files
+```bash
+python manage.py import_dbxref \
+    --index feature_index \
+    --tsv-dir ../data-generators/stringdb-mapper/output \
+    --db-name STRING
 ```
 
 ### Experimental Data

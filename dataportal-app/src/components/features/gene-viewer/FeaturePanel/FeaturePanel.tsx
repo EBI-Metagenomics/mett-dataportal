@@ -457,25 +457,25 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
         const normalizedIds = normalizeFilterValues(ids) as string[];
         
         // Debug logging for pfam, interpro, kegg
-        if (filterType === 'pfam' || filterType === 'interpro' || filterType === 'kegg') {
-            console.log(`[FeaturePanel] renderExternalLinks - ${filterType}:`, {
-                'database': database,
-                'filterType': filterType,
-                'original ids': ids,
-                'original ids details': ids.map(id => ({
-                    value: id,
-                    length: id.length,
-                    json: JSON.stringify(id),
-                    normalized: normalizeFilterValue(id),
-                })),
-                'normalizedIds': normalizedIds,
-                'normalizedIds details': normalizedIds.map(id => ({
-                    value: id,
-                    length: id.length,
-                    json: JSON.stringify(id),
-                })),
-            });
-        }
+        // if (filterType === 'pfam' || filterType === 'interpro' || filterType === 'kegg') {
+        //     console.log(`[FeaturePanel] renderExternalLinks - ${filterType}:`, {
+        //         'database': database,
+        //         'filterType': filterType,
+        //         'original ids': ids,
+        //         'original ids details': ids.map(id => ({
+        //             value: id,
+        //             length: id.length,
+        //             json: JSON.stringify(id),
+        //             normalized: normalizeFilterValue(id),
+        //         })),
+        //         'normalizedIds': normalizedIds,
+        //         'normalizedIds details': normalizedIds.map(id => ({
+        //             value: id,
+        //             length: id.length,
+        //             json: JSON.stringify(id),
+        //         })),
+        //     });
+        // }
         
         return (
             <div className={styles.linkListVertical}>
@@ -485,16 +485,17 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                     const filterValue = normalizeFilterValue(database === 'KEGG' && id.startsWith('ko:') ? id.replace('ko:', '') : id);
                     
                     // Debug logging for each individual value
-                    if (filterType === 'pfam' || filterType === 'interpro' || filterType === 'kegg') {
-                        console.log(`[FeaturePanel] renderExternalLinks - processing ${filterType} item ${idx}:`, {
-                            'id (from normalizedIds)': id,
-                            'displayId': displayId,
-                            'filterValue (passed to renderFilterButton)': filterValue,
-                            'filterValue type': typeof filterValue,
-                            'filterValue length': typeof filterValue === 'string' ? filterValue.length : 'N/A',
-                            'filterValue JSON': JSON.stringify(filterValue),
-                        });
-                    }
+                    // if (filterType === 'pfam' || filterType === 'interpro' || filterType === 'kegg') {
+                    //     console.log(`[FeaturePanel] renderExternalLinks - processing ${filterType} item ${idx}:`,
+                    //         {
+                    //         'id (from normalizedIds)': id,
+                    //         'displayId': displayId,
+                    //         'filterValue (passed to renderFilterButton)': filterValue,
+                    //         'filterValue type': typeof filterValue,
+                    //         'filterValue length': typeof filterValue === 'string' ? filterValue.length : 'N/A',
+                    //         'filterValue JSON': JSON.stringify(filterValue),
+                    //     });
+                    // }
                     
                     return (
                         <div key={idx} className={styles.filterValueRow}>
