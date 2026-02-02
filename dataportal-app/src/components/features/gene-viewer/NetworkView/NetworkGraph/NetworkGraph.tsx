@@ -17,7 +17,7 @@ import styles from './NetworkGraph.module.scss';
  * NetworkGraph component - Cytoscape.js graph visualization
  */
 export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
-    ({nodes, edges, showOrthologs, currentExpansionLevel, expansionPath = [], onNodeClick, onEdgeClick, selectedNode}, ref) => {
+    ({nodes, edges, showOrthologs, currentExpansionLevel, expansionPath = [], focalNodeId, onNodeClick, onEdgeClick, selectedNode}, ref) => {
         // Create a set of path node IDs for quick lookup
         const pathNodeIds = useMemo(() => {
             return new Set(expansionPath.map(p => p.nodeId));
@@ -119,19 +119,10 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     layoutRunningRef.current = true;
 
                     // Set up event handlers immediately after creating instance
-                    // Node click handler
+                    // Node click handler - show popup only; no fading to avoid confusing "refresh" effect
                     cy.on('tap', 'node', (event: cytoscape.EventObject) => {
                         const tapped = event.target as cytoscape.NodeSingular;
                         const nodeData = tapped.data() as { id: string };
-
-                        cy.batch(() => {
-                            cy.elements().removeClass('faded');
-                            cy.elements().addClass('faded');
-
-                            tapped.removeClass('faded');
-                            tapped.connectedEdges().removeClass('faded');
-                            tapped.connectedEdges().connectedNodes().removeClass('faded');
-                        });
 
                         const original = nodes.find((n) => n.id === nodeData.id);
                         if (original) {
@@ -177,20 +168,21 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                         }
                     });
 
-                    // Zoom handler for label visibility
+                    // Zoom handler: show labels when zoomed in; at full view show short labels to reduce clutter
                     cy.on('zoom', () => {
                         const z = cy.zoom();
+                        const labelThreshold = 0.5;
                         cy.nodes().forEach(node => {
                             const nodeData = node.data();
                             const isPPI = nodeData.nodeType === 'ppi';
                             const isOrtholog = nodeData.nodeType === 'ortholog';
-                            
+
                             if (showOrthologs && isPPI) {
                                 node.style('text-opacity', 1);
                             } else if (isOrtholog) {
                                 node.style('text-opacity', 0);
                             } else {
-                                node.style('text-opacity', z > 0.9 ? 1 : 0);
+                                node.style('text-opacity', z > labelThreshold ? 1 : 0);
                             }
                         });
                     });
@@ -219,32 +211,47 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                             layoutRunningRef.current = false;
                         }
                     } else {
-                        // For original network: use standard COSE force-directed layout
-                        const layoutOptions: cytoscape.CoseLayoutOptions = {
-                            name: 'cose',
-                            animate: true,
-                            animationDuration: 700,
-                            fit: true,
-                            padding: 50,
-                            idealEdgeLength: (edge: cytoscape.EdgeSingular) => {
-                                const w = edge.data('weight') ?? 1;
-                                const len = 140 - Math.min(w, 1) * 60;
-                                return Math.max(70, len);
-                            },
-                            nodeRepulsion: 6000,
-                            nodeOverlap: 10,
-                            gravity: 0.15,
-                            numIter: 1200,
-                        };
-                        
-                        const layout = cy.layout(layoutOptions);
-
-                        layout.one('layoutstop', () => {
-                            cy.fit(undefined, 50);
-                            layoutRunningRef.current = false;
-                        });
-
-                        layout.run();
+                        // Deterministic layout: concentric (focal gene at center, neighbors on a ring) or circle (no focal)
+                        const centerId = focalNodeId ?? expansionPath[0]?.nodeId ?? null;
+                        if (centerId && cy.getElementById(centerId).length > 0) {
+                            const concentricOptions: cytoscape.ConcentricLayoutOptions = {
+                                name: 'concentric',
+                                fit: true,
+                                padding: 80,
+                                animate: true,
+                                animationDuration: 500,
+                                avoidOverlap: true,
+                                nodeDimensionsIncludeLabels: true,
+                                minNodeSpacing: 90,
+                                equidistant: true,
+                                concentric: (node) => (node.id() === centerId ? 0 : 1),
+                                levelWidth: () => 1,
+                            };
+                            const layout = cy.layout(concentricOptions);
+                            layout.one('layoutstop', () => {
+                                cy.fit(undefined, 80);
+                                layoutRunningRef.current = false;
+                            });
+                            layout.run();
+                        } else {
+                            // No focal: place all nodes on one circle for a clean, overlap-free layout
+                            const circleOptions: cytoscape.CircleLayoutOptions = {
+                                name: 'circle',
+                                fit: true,
+                                padding: 80,
+                                animate: true,
+                                animationDuration: 500,
+                                avoidOverlap: true,
+                                nodeDimensionsIncludeLabels: true,
+                                radius: undefined,
+                            };
+                            const layout = cy.layout(circleOptions);
+                            layout.one('layoutstop', () => {
+                                cy.fit(undefined, 80);
+                                layoutRunningRef.current = false;
+                            });
+                            layout.run();
+                        }
                     }
                 } catch {
                     // Initialization errors are swallowed
@@ -263,7 +270,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     layoutRunningRef.current = false;
                 }
             };
-        }, [nodes, edges, cyStyles, showOrthologs, pathNodeIds, onNodeClick, onEdgeClick]);
+        }, [nodes, edges, cyStyles, showOrthologs, pathNodeIds, focalNodeId, expansionPath, onNodeClick, onEdgeClick]);
 
         // Update label visibility when showOrthologs changes
         useEffect(() => {

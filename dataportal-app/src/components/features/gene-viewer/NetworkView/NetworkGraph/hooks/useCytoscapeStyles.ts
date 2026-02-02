@@ -54,7 +54,7 @@ export const useCytoscapeStyles = ({
                 },
             },
             
-            // Base node styling
+            // Base node styling – labels below node to reduce overlap
             {
                 selector: 'node',
                 style: {
@@ -66,14 +66,18 @@ export const useCytoscapeStyles = ({
                     },
                     'border-color': '#333',
                     'border-width': 1,
-                    width: 16,
-                    height: 16,
+                    width: 18,
+                    height: 18,
                     shape: (node: cytoscape.NodeSingular) => {
                         const nodeData = node.data();
                         return nodeData.nodeType === 'ortholog' ? 'diamond' : 'ellipse';
                     },
                     label: 'data(label)',
-                    'font-size': '10px',
+                    'font-size': '9px',
+                    'text-valign': 'bottom',
+                    'text-margin-y': -4,
+                    'text-max-width': '80px',
+                    'text-wrap': 'ellipsis',
                     'text-opacity': 0,
                 },
             },
@@ -111,8 +115,8 @@ export const useCytoscapeStyles = ({
                 style: {
                     'border-width': NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_BORDER_WIDTH,
                     'border-color': NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_BORDER_COLOR,
-                    width: 16 * NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_SIZE_MULTIPLIER,
-                    height: 16 * NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_SIZE_MULTIPLIER,
+                    width: 18 * NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_SIZE_MULTIPLIER,
+                    height: 18 * NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_SIZE_MULTIPLIER,
                     'font-weight': 'bold',
                 },
             }] : []),

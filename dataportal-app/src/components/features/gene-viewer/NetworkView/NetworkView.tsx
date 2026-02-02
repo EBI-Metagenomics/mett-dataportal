@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useNetworkData } from '../../../../hooks/useNetworkData';
+import { useNetworkData, type NetworkLimitMode, type SpeciesScope } from '../../../../hooks/useNetworkData';
 import { useAuth } from '../../../../hooks/useAuth';
 import { PPINetworkNode, PPINetworkEdge } from '../../../../interfaces/PPI';
 import { PPIService } from '../../../../services/interactions/ppiService';
@@ -30,6 +30,8 @@ interface NetworkViewProps {
   selectedLocusTag?: string | null;
   setLoading?: React.Dispatch<React.SetStateAction<boolean>>;
   onFeatureSelect?: (feature: { data: { locus_tag?: string; gene_name?: string; product?: string; uniprot_id?: string; isolate_name?: string; species_acronym?: string } }) => void;
+  /** Navigate JBrowse to the gene for this locus tag (current genome). Used for "View in JBrowse" from node popup. */
+  onViewInJBrowse?: (locusTag: string) => void;
 }
 
 /**
@@ -45,11 +47,15 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   isolateName,
   selectedLocusTag,
   setLoading,
+  onViewInJBrowse,
 }) => {
   const { isAuthenticated } = useAuth();
   const [scoreType, setScoreType] = useState<string>('ds_score');
-  const [scoreThreshold, setScoreThreshold] = useState<number>(0.8);
-  const [displayThreshold, setDisplayThreshold] = useState<number>(0.8);
+  const [scoreThreshold, setScoreThreshold] = useState<number>(0.9);
+  const [displayThreshold, setDisplayThreshold] = useState<number>(0.9);
+  const [limitMode, setLimitMode] = useState<NetworkLimitMode>('topN');
+  const [topN, setTopN] = useState<number>(5);
+  const [speciesScope, setSpeciesScope] = useState<SpeciesScope>('current');
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
   const [selectedNode, setSelectedNode] = useState<PPINetworkNode | null>(null);
   const [popupNode, setPopupNode] = useState<{ node: PPINetworkNode; x: number; y: number } | null>(null);
@@ -78,6 +84,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     locusTag: selectedLocusTag || undefined,
     scoreType,
     scoreThreshold,
+    topN,
+    limitMode,
+    speciesScope,
     showOrthologs,
     enabled: !!speciesAcronym && !!selectedLocusTag && isAuthenticated,
   });
@@ -256,6 +265,18 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     setShowOrthologs(enabled);
   }, []);
 
+  const handleLimitModeChange = useCallback((mode: NetworkLimitMode) => {
+    setLimitMode(mode);
+  }, []);
+
+  const handleTopNChange = useCallback((n: number) => {
+    setTopN(n);
+  }, []);
+
+  const handleSpeciesScopeChange = useCallback((scope: SpeciesScope) => {
+    setSpeciesScope(scope);
+  }, []);
+
   // Handle node expansion
   const handleExpandNode = useCallback(async (node: PPINetworkNode) => {
     const locusTag = node.locus_tag || node.id;
@@ -275,19 +296,32 @@ const NetworkView: React.FC<NetworkViewProps> = ({
 
     try {
       setExpandingNodeId(node.id);
-      
-      // Fetch interactions for this node
-      const expansionQuery = {
-        score_type: scoreType,
-        score_threshold: scoreThreshold,
-        species_acronym: speciesAcronym,
-        isolate_name: isolateName,
-        locus_tag: locusTag,
-        include_properties: false,
-      };
 
-      const expansionData = await PPIService.getNetworkData(expansionQuery);
-      
+      const effectiveSpecies = speciesScope === 'all' ? undefined : speciesAcronym;
+
+      // Use same API and filters as the main view: Top N → neighborhood, Score threshold → network
+      let expansionData: { nodes: PPINetworkNode[]; edges: PPINetworkEdge[] } | null = null;
+
+      if (limitMode === 'topN') {
+        const neighborhood = await PPIService.getProteinNeighborhood({
+          locus_tag: locusTag,
+          species_acronym: effectiveSpecies ?? undefined,
+          n: topN,
+          score_type: scoreType,
+          score_threshold: 0,
+        });
+        expansionData = neighborhood?.network_data ?? null;
+      } else {
+        expansionData = await PPIService.getNetworkData({
+          score_type: scoreType,
+          score_threshold: scoreThreshold,
+          species_acronym: effectiveSpecies ?? undefined,
+          isolate_name: isolateName ?? undefined,
+          locus_tag: locusTag,
+          include_properties: false,
+        });
+      }
+
       if (expansionData && expansionData.nodes && expansionData.edges) {
         // Enrich with orthologs if enabled
         const enriched = enrichNetworkData(
@@ -359,7 +393,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     } finally {
       setExpandingNodeId(null);
     }
-  }, [expansionState, scoreType, scoreThreshold, speciesAcronym, isolateName, orthologMap, showOrthologs]);
+  }, [expansionState, limitMode, topN, scoreType, scoreThreshold, speciesAcronym, speciesScope, isolateName, orthologMap, showOrthologs]);
 
 
   // Early returns for edge cases
@@ -383,10 +417,16 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         <NetworkControls
           scoreType={scoreType}
           displayThreshold={displayThreshold}
+          limitMode={limitMode}
+          topN={topN}
+          speciesScope={speciesScope}
           showOrthologs={showOrthologs}
           availableScoreTypes={availableScoreTypes}
           onScoreTypeChange={handleScoreTypeChange}
           onThresholdChange={handleThresholdChange}
+          onLimitModeChange={handleLimitModeChange}
+          onTopNChange={handleTopNChange}
+          onSpeciesScopeChange={handleSpeciesScopeChange}
           onOrthologToggle={handleOrthologToggle}
           onResetView={handleResetView}
         />
@@ -409,8 +449,13 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       {!loading && !error && !hasData && <EmptyState />}
 
       {/* Network Stats */}
-      {hasData && networkProperties && (
-        <NetworkStats properties={networkProperties} showOrthologs={showOrthologs} />
+      {hasData && (
+        <NetworkStats
+          properties={networkProperties ?? null}
+          nodeCount={networkData?.nodes?.length}
+          edgeCount={networkData?.edges?.length}
+          showOrthologs={showOrthologs}
+        />
       )}
 
       {/* Expansion Breadcrumb */}
@@ -469,6 +514,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             showOrthologs={showOrthologs}
             currentExpansionLevel={expansionState.path.currentLevel}
             expansionPath={expansionState.path.nodes.map(p => ({ nodeId: p.nodeId, level: p.level }))}
+            focalNodeId={enrichedNodes.find(n => n.locus_tag === selectedLocusTag || n.id === selectedLocusTag)?.id ?? expansionState.path.nodes[0]?.nodeId ?? null}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
             selectedNode={selectedNode}
@@ -487,9 +533,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             e.source === popupNode.node.id || e.target === popupNode.node.id
           )}
           connectedNodes={new Map(enrichedNodes.map(n => [n.id, n]))}
+          isOrthologNode={(popupNode.node as PPINetworkNode & { nodeType?: string }).nodeType === 'ortholog'}
           onClose={() => setPopupNode(null)}
           onExpand={handleExpandNode}
           isExpanding={expandingNodeId === popupNode.node.id}
+          onViewInJBrowse={onViewInJBrowse}
         />
       )}
 

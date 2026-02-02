@@ -11,9 +11,13 @@ interface NodeInfoPopupProps {
   expansionState?: ExpansionState;
   interactions?: Array<PPINetworkEdge & { edgeType?: string; orthology_type?: string }>;
   connectedNodes?: Map<string, PPINetworkNode>;
+  /** When true, hide "Show Interactions" (ortholog nodes don't have PPI expansion in this genome). */
+  isOrthologNode?: boolean;
   onClose: () => void;
   onExpand?: (node: PPINetworkNode) => void;
   isExpanding?: boolean;
+  /** Navigate JBrowse to this gene (current genome). Only shown for non-ortholog nodes. */
+  onViewInJBrowse?: (locusTag: string) => void;
 }
 
 export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({ 
@@ -23,9 +27,11 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
   expansionState,
   interactions = [],
   connectedNodes = new Map(),
+  isOrthologNode = false,
   onClose, 
   onExpand,
   isExpanding = false,
+  onViewInJBrowse,
 }) => {
   const canExpand = expansionState && canExpandNode(expansionState.path.currentLevel);
   const expansionLevel = expansionState ? getNodeExpansionLevel(expansionState, node.id) : undefined;
@@ -150,21 +156,37 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
           </div>
         )}
 
-        {onExpand && (
+        {((onViewInJBrowse && !isOrthologNode && node.locus_tag) || (onExpand && !isOrthologNode)) && (
           <div className={styles.popupFooter}>
-            <button
-              className={styles.expandButton}
-              onClick={handleExpand}
-              disabled={!canExpand || isExpanding || isExpanded}
-              title={!canExpand 
-                ? `Maximum expansion depth reached` 
-                : isExpanded 
-                ? `Already expanded` 
-                : `Show interactions for this node`
-              }
-            >
-              {isExpanding ? 'Loading...' : 'Show Interactions'}
-            </button>
+            {onViewInJBrowse && !isOrthologNode && node.locus_tag && (
+              <button
+                type="button"
+                className={styles.viewInJBrowseButton}
+                onClick={() => {
+                  onClose();
+                  onViewInJBrowse(node.locus_tag!);
+                }}
+                title="Scroll JBrowse viewer to show this gene"
+              >
+                View in JBrowse
+              </button>
+            )}
+            {onExpand && !isOrthologNode && (
+              <button
+                type="button"
+                className={styles.expandButton}
+                onClick={handleExpand}
+                disabled={!canExpand || isExpanding || isExpanded}
+                title={!canExpand 
+                  ? `Maximum expansion depth reached` 
+                  : isExpanded 
+                  ? `Already expanded` 
+                  : `Show interactions for this node`
+                }
+              >
+                {isExpanding ? 'Loading...' : 'Show Interactions'}
+              </button>
+            )}
           </div>
         )}
       </div>

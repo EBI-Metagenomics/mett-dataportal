@@ -192,6 +192,16 @@ class PPINeighborhoodQuerySchema(BaseModel):
     locus_tag: Optional[str] = Field(None, description="Locus tag of the protein")
     n: int = Field(5, ge=1, le=50, description="Number of neighbors to retrieve")
     species_acronym: Optional[str] = Field(None, description="Species acronym filter")
+    score_type: Optional[str] = Field(
+        "ds_score",
+        description="Score type used to rank and filter interactions (e.g. ds_score, string_score). Determines which interactions are considered and their order for 'top N'.",
+    )
+    score_threshold: Optional[float] = Field(
+        0.0,
+        ge=0.0,
+        le=1.0,
+        description="Minimum score threshold; only interactions with score >= this value are considered when building the neighborhood.",
+    )
 
     @validator("locus_tag")
     def validate_protein_identifier(cls, v, values):

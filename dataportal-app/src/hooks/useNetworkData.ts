@@ -4,12 +4,20 @@ import { OrthologService } from '../services/interactions/orthologService';
 import { PPINetworkData, PPINetworkQuery, PPINetworkProperties } from '../interfaces/PPI';
 import { OrthologRelationship } from '../interfaces/Ortholog';
 
+export type NetworkLimitMode = 'threshold' | 'topN';
+export type SpeciesScope = 'current' | 'all';
+
 interface UseNetworkDataProps {
   speciesAcronym?: string;
   isolateName?: string;
   locusTag?: string; // Optional: Filter to PPIs involving this locus_tag (creates neighborhood view)
   scoreType?: string;
   scoreThreshold?: number;
+  /** When limitMode is 'topN', show this many top interactors (neighborhood API). */
+  topN?: number;
+  limitMode?: NetworkLimitMode;
+  /** 'current' = filter by species_acronym; 'all' = no species filter. */
+  speciesScope?: SpeciesScope;
   showOrthologs?: boolean;
   enabled?: boolean;
 }
@@ -32,7 +40,10 @@ export const useNetworkData = ({
   isolateName,
   locusTag,
   scoreType = 'ds_score',
-  scoreThreshold = 0.8,
+  scoreThreshold = 0.9,
+  topN = 5,
+  limitMode = 'threshold',
+  speciesScope = 'current',
   showOrthologs = false,
   enabled = true,
 }: UseNetworkDataProps): UseNetworkDataReturn => {
@@ -96,10 +107,13 @@ export const useNetworkData = ({
       return;
     }
 
-    const baseFetchKey = `${speciesAcronym}-${isolateName}-${locusTag}-${scoreType}-${scoreThreshold}`;
+    const effectiveSpecies = speciesScope === 'all' ? undefined : speciesAcronym;
+    const baseFetchKey = limitMode === 'topN'
+      ? `${effectiveSpecies ?? 'all'}-${isolateName}-${locusTag}-topN-${topN}-${scoreType}-${scoreThreshold}`
+      : `${effectiveSpecies ?? 'all'}-${isolateName}-${locusTag}-${scoreType}-${scoreThreshold}`;
     const fetchKey = `${baseFetchKey}-${showOrthologs}`;
-    
-      // Check if we need to fetch PPI data or just ortholog data
+
+    // Check if we need to fetch PPI data or just ortholog data
     const needsPPIData = lastFetchRef.current === '' || !lastFetchRef.current.startsWith(baseFetchKey);
     const needsOrthologData = showOrthologs && (orthologMapRef.current.size === 0 || lastFetchRef.current !== fetchKey);
     
@@ -114,34 +128,57 @@ export const useNetworkData = ({
       setError(null);
 
       let network = networkDataRef.current;
-      
+
       // Fetch PPI network data if needed
       if (needsPPIData) {
-        const query: PPINetworkQuery = {
-          score_type: scoreType,
-          score_threshold: scoreThreshold,
-          species_acronym: speciesAcronym,
-          isolate_name: isolateName,
-          locus_tag: locusTag,
-          include_properties: true,
-        };
-
-        network = await PPIService.getNetworkData(query);
-        setNetworkData(network);
-        networkDataRef.current = network;
-
-        // Extract properties if available
-        if (network.properties) {
-          setNetworkProperties(network.properties);
+        if (limitMode === 'topN' && locusTag) {
+          // Top N mode: only n and score_type (for ranking). No min score filter so we get up to N nodes.
+          const neighborhood = await PPIService.getProteinNeighborhood({
+            locus_tag: locusTag,
+            species_acronym: effectiveSpecies ?? undefined,
+            n: topN,
+            score_type: scoreType,
+            score_threshold: 0,
+          });
+          network = neighborhood.network_data;
+          setNetworkData(network);
+          networkDataRef.current = network;
+          // Neighborhood API does not return properties; derive from nodes/edges so stats display
+          const nNodes = network.nodes?.length ?? 0;
+          const nEdges = network.edges?.length ?? 0;
+          const density = nNodes > 1 ? (2 * nEdges) / (nNodes * (nNodes - 1)) : 0;
+          setNetworkProperties({
+            num_nodes: nNodes,
+            num_edges: nEdges,
+            density,
+            avg_clustering_coefficient: 0,
+            degree_distribution: [],
+          });
         } else {
-          // Fetch properties separately if not included
-          const properties = await PPIService.getNetworkProperties({
+          const query: PPINetworkQuery = {
             score_type: scoreType,
             score_threshold: scoreThreshold,
-            species_acronym: speciesAcronym,
+            species_acronym: effectiveSpecies,
             isolate_name: isolateName,
-          });
-          setNetworkProperties(properties);
+            locus_tag: locusTag,
+            include_properties: true,
+          };
+
+          network = await PPIService.getNetworkData(query);
+          setNetworkData(network);
+          networkDataRef.current = network;
+
+          if (network.properties) {
+            setNetworkProperties(network.properties);
+          } else {
+            const properties = await PPIService.getNetworkProperties({
+              score_type: scoreType,
+              score_threshold: scoreThreshold,
+              species_acronym: effectiveSpecies ?? undefined,
+              isolate_name: isolateName,
+            });
+            setNetworkProperties(properties);
+          }
         }
       }
 
@@ -170,7 +207,7 @@ export const useNetworkData = ({
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [enabled, speciesAcronym, isolateName, locusTag, scoreType, scoreThreshold, showOrthologs, fetchOrthologData]);
+  }, [enabled, speciesAcronym, isolateName, locusTag, scoreType, scoreThreshold, topN, limitMode, speciesScope, showOrthologs, fetchOrthologData]);
 
   // Refresh network data
   const refreshNetwork = useCallback(async () => {

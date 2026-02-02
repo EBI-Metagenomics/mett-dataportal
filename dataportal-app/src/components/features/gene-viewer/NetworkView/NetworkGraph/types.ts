@@ -22,6 +22,8 @@ export interface NetworkGraphProps {
     showOrthologs: boolean;
     currentExpansionLevel?: number;
     expansionPath?: Array<{ nodeId: string; level: number }>;
+    /** Node id to place at center (e.g. selected gene in neighborhood view). Enables concentric layout. */
+    focalNodeId?: string | null;
     onNodeClick: (node: PPINetworkNode, event?: MouseEvent) => void;
     onEdgeClick?: (edge: PPINetworkEdge & { edgeType?: string; orthology_type?: string; expansionLevel?: number }, event?: MouseEvent) => void;
     selectedNode: PPINetworkNode | null;

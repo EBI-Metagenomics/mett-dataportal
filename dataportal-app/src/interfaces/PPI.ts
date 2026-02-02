@@ -98,3 +98,10 @@ export interface PPIScoreType {
   score_types: string[];
 }
 
+/** Response from /ppi/neighborhood (top N interactors by graph distance). */
+export interface PPINeighborhoodData {
+  protein_id: string;
+  neighbors: Array<{ id: string; label?: string; locus_tag?: string; name?: string; product?: string }>;
+  network_data: PPINetworkData;
+}
+

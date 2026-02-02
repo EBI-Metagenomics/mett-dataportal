@@ -4,7 +4,8 @@ import {
   PPINetworkData, 
   PPINetworkProperties,
   PPINetworkQuery,
-  PPIScoreType 
+  PPIScoreType,
+  PPINeighborhoodData,
 } from "../../interfaces/PPI";
 
 export class PPIService extends BaseService {
@@ -144,6 +145,37 @@ export class PPIService extends BaseService {
       );
     } catch (error) {
       console.error("Error fetching protein neighbors:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get protein neighborhood (top N interactors).
+   * In Top N mode the frontend passes score_threshold: 0 so only n and score_type apply:
+   * returns up to n nodes, ranked by score_type (no min score filter).
+   */
+  static async getProteinNeighborhood(params: {
+    locus_tag: string;
+    species_acronym?: string | null;
+    n?: number;
+    score_type?: string;
+    score_threshold?: number;
+  }): Promise<PPINeighborhoodData> {
+    try {
+      const searchParams = this.buildParams({
+        locus_tag: params.locus_tag,
+        species_acronym: params.species_acronym ?? undefined,
+        n: params.n ?? 5,
+        score_type: params.score_type ?? "ds_score",
+        score_threshold: params.score_threshold ?? 0,
+      });
+
+      return await this.getWithRetry<PPINeighborhoodData>(
+        `${this.BASE_ENDPOINT}/neighborhood`,
+        searchParams
+      );
+    } catch (error) {
+      console.error("Error fetching protein neighborhood:", error);
       throw error;
     }
   }

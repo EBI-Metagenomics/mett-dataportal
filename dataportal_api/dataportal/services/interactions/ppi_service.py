@@ -682,32 +682,49 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             raise ServiceError(f"Failed to get protein interactions: {str(e)}")
 
     async def get_protein_neighborhood(
-        self, protein_id: str, n: int = 5, species_acronym: Optional[str] = None
+        self,
+        protein_id: str,
+        n: int = 5,
+        species_acronym: Optional[str] = None,
+        score_type: str = "ds_score",
+        score_threshold: float = 0.0,
     ) -> PPINeighborhoodSchema:
-        """Get neighborhood data for a specific protein using Dijkstra's algorithm (optimized)."""
+        """Get neighborhood data for a specific protein using Dijkstra's algorithm.
+
+        Only interactions with score >= score_threshold (for the chosen score_type) are
+        considered. Among those, 'top N' neighbors are determined by the same score
+        (higher score = closer in the graph = ranked first).
+        """
         try:
-            # Build search for protein interactions
-            s = self._build_base_search(species_acronym)
+            score_field = self._validate_and_normalize_score_field(score_type)
+            source_fields = self._get_standard_source_fields(include_scores=True)
+            if score_field not in source_fields:
+                source_fields = list(source_fields) + [score_field]
+
+            # Build search: filter by participant and by score threshold
+            s = self._build_base_search(
+                species_acronym,
+                isolate_name=None,
+                score_type=score_type,
+                score_threshold=score_threshold,
+            )
             s = s.filter("terms", participants=[protein_id])
-            s = s.source(self._get_standard_source_fields())
+            s = s.source(source_fields)
 
             response = await self._execute_search(s)
 
-            # Build a NetworkX graph to use Dijkstra's algorithm
+            # Build a NetworkX graph; edge weight = chosen score (higher = closer for Dijkstra)
             G = nx.Graph()
             gene_mapping = {}
 
-            # Add all interactions to the graph and build gene mapping
             for hit in response.hits:
                 protein_a = hit.protein_a
                 protein_b = hit.protein_b
-                weight = hit.ds_score or 0
+                weight = getattr(hit, score_field, None) or 0
 
-                # Add edge with weight (use 1/weight for distance since higher scores = closer)
                 distance = 1.0 / (weight + 0.001) if weight > 0 else 1000
                 G.add_edge(protein_a, protein_b, weight=distance)
 
-                # Build gene mapping
                 if protein_a == protein_id:
                     gene_mapping[protein_b] = {
                         "locus_tag": hit.protein_b_locus_tag,
@@ -721,47 +738,45 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         "product": hit.protein_a_product,
                     }
 
-            # Use Dijkstra's algorithm to find nearest neighbors
             if protein_id in G:
                 distances = nx.single_source_dijkstra_path_length(G, protein_id, weight="weight")
-                # Sort by distance and get the n nearest neighbors (excluding the protein itself)
                 nearest_neighbors = sorted(distances, key=distances.get)[1 : n + 1]
             else:
                 nearest_neighbors = []
 
-            # Build neighborhood data
             neighborhood_data = await self._build_neighborhood_data(
                 protein_id, nearest_neighbors, gene_mapping, species_acronym
             )
 
-            # Add edges for the neighborhood subgraph
             neighborhood_nodes = [protein_id] + nearest_neighbors
             edges = []
 
-            # Add edges from the original interactions
             for hit in response.hits:
                 protein_a = hit.protein_a
                 protein_b = hit.protein_b
-
-                # Include all edges within the neighborhood subgraph
                 if protein_a in neighborhood_nodes and protein_b in neighborhood_nodes:
-                    edges.append(
-                        {"source": protein_a, "target": protein_b, "weight": hit.ds_score or 0}
-                    )
+                    w = getattr(hit, score_field, None) or 0
+                    edges.append({"source": protein_a, "target": protein_b, "weight": w})
 
-            # Query for additional interactions between neighbor proteins
+            # Neighbor-to-neighbor edges: same score filter and score field
             if len(nearest_neighbors) > 1:
                 try:
                     logger.info(
                         f"Searching for neighbor-to-neighbor interactions among: {nearest_neighbors}"
                     )
 
-                    # Use base search builder for neighbor interactions
-                    neighbor_search = self._build_base_search(species_acronym)
+                    neighbor_search = self._build_base_search(
+                        species_acronym,
+                        isolate_name=None,
+                        score_type=score_type,
+                        score_threshold=score_threshold,
+                    )
                     neighbor_search = neighbor_search.filter(
                         "terms", participants=nearest_neighbors
                     )
-                    neighbor_search = neighbor_search.source(["protein_a", "protein_b", "ds_score"])
+                    neighbor_search = neighbor_search.source(
+                        ["protein_a", "protein_b", score_field]
+                    )
 
                     neighbor_response = await self._execute_search(neighbor_search)
                     logger.info(
@@ -785,13 +800,8 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                             and (protein_b, protein_a) not in existing_edges
                         ):
 
-                            edges.append(
-                                {
-                                    "source": protein_a,
-                                    "target": protein_b,
-                                    "weight": hit.ds_score or 0,
-                                }
-                            )
+                            w = getattr(hit, score_field, None) or 0
+                            edges.append({"source": protein_a, "target": protein_b, "weight": w})
                             new_edges_count += 1
                             logger.info(
                                 f"Added neighbor-to-neighbor edge: {protein_a} -> {protein_b}"

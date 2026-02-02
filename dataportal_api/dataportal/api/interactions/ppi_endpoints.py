@@ -146,7 +146,11 @@ async def get_protein_neighborhood(request, query: PPINeighborhoodQuerySchema = 
 
     try:
         neighborhood = await ppi_service.get_protein_neighborhood(
-            protein_id=actual_protein_id, n=query.n, species_acronym=query.species_acronym
+            protein_id=actual_protein_id,
+            n=query.n,
+            species_acronym=query.species_acronym,
+            score_type=query.score_type or "ds_score",
+            score_threshold=query.score_threshold if query.score_threshold is not None else 0.0,
         )
 
         search_identifier = query.locus_tag if query.locus_tag else actual_protein_id

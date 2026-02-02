@@ -98,14 +98,38 @@
 }
 
 .popupFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   padding: 0.75rem 1rem;
   border-top: 1px solid #eee;
   background-color: #f9f9f9;
   border-radius: 0 0 8px 8px;
 }
 
+.viewInJBrowseButton {
+  padding: 0.5rem 1rem;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #1b5e20;
+  }
+
+  &:active {
+    background-color: #0d3d12;
+  }
+}
+
 .expandButton {
-  width: 100%;
+  flex: 1;
+  min-width: 120px;
   padding: 0.5rem 1rem;
   background-color: #4A90E2;
   color: white;

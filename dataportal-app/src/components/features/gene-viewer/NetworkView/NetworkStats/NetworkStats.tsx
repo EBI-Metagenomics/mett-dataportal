@@ -3,41 +3,52 @@ import { PPINetworkProperties } from '../../../../../interfaces/PPI';
 import styles from './NetworkStats.module.scss';
 
 interface NetworkStatsProps {
-  properties: PPINetworkProperties;
+  properties: PPINetworkProperties | null;
+  /** When properties are missing/partial, show these counts (e.g. from neighborhood API). */
+  nodeCount?: number;
+  edgeCount?: number;
   showOrthologs: boolean;
 }
 
-export const NetworkStats: React.FC<NetworkStatsProps> = ({ properties, showOrthologs }) => {
+export const NetworkStats: React.FC<NetworkStatsProps> = ({
+  properties,
+  nodeCount,
+  edgeCount,
+  showOrthologs,
+}) => {
+  const numNodes = properties?.num_nodes ?? nodeCount ?? 0;
+  const numEdges = properties?.num_edges ?? edgeCount ?? 0;
+
   return (
     <div className={styles.networkStats}>
       <div className={styles.statsLeft}>
         <div className={styles.statItem}>
           <span className={styles.statLabel}>Nodes:</span>
-          <span className={styles.statValue}>{properties.num_nodes}</span>
+          <span className={styles.statValue}>{numNodes}</span>
         </div>
         <div className={styles.statItem}>
           <span className={styles.statLabel}>Edges:</span>
-          <span className={styles.statValue}>{properties.num_edges}</span>
+          <span className={styles.statValue}>{numEdges}</span>
         </div>
-        {properties.internal_only_edges !== undefined && (
+        {properties?.internal_only_edges !== undefined && (
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Internal-only edges:</span>
             <span className={styles.statValue}>{properties.internal_only_edges}</span>
           </div>
         )}
-        {properties.avg_degree !== undefined && (
+        {properties?.avg_degree !== undefined && (
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Avg. degree:</span>
             <span className={styles.statValue}>{properties.avg_degree.toFixed(1)}</span>
           </div>
         )}
-        {properties.cross_species_edges !== undefined && (
+        {properties?.cross_species_edges !== undefined && (
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Cross-species edges:</span>
             <span className={styles.statValue}>{properties.cross_species_edges}</span>
           </div>
         )}
-        {properties.ppi_enrichment_p_value !== undefined && (
+        {properties?.ppi_enrichment_p_value !== undefined && (
           <div className={styles.statItem}>
             <span className={styles.statLabel}>PPI enrichment p-value:</span>
             <span className={styles.statValue}>

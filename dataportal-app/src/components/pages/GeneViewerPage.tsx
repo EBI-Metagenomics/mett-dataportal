@@ -24,6 +24,8 @@ import { useJBrowseViewportSync } from '../../hooks/useJBrowseViewportSync';
 import { useViewportSyncStore } from '../../stores/viewportSyncStore';
 import { VIEWPORT_SYNC_CONSTANTS } from '../../utils/gene-viewer';
 import GeneViewerTabNavigation from '../features/gene-viewer/GeneViewerTabNavigation/GeneViewerTabNavigation';
+import { GeneService } from '../../services/gene';
+import { ZOOM_LEVELS } from '../../utils/common/constants';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -232,6 +234,37 @@ const GeneViewerPage: React.FC = () => {
         setSelectedFeature(feature);
     }, []);
 
+    // Navigate JBrowse to a gene by locus tag (e.g. from Network View "View in JBrowse" button)
+    const handleViewInJBrowse = useCallback(async (locusTag: string) => {
+        if (!viewState || !geneViewerData.setLoading) return;
+        const view = viewState.session?.views?.[0];
+        if (!view || typeof view.navToLocString !== 'function') return;
+
+        geneViewerData.setLoading(true);
+        try {
+            const geneMeta = await GeneService.fetchGeneByLocusTag(locusTag);
+            const seqId = geneMeta.seq_id;
+            const start = geneMeta.start_position ?? 0;
+            const end = geneMeta.end_position ?? 0;
+
+            useViewportSyncStore.getState().setSelectedLocusTag(locusTag);
+            if (typeof window !== 'undefined') (window as any).selectedGeneId = locusTag;
+
+            view.navToLocString(`${seqId}:${start}..${end}`);
+            setTimeout(() => {
+                view.zoomTo(ZOOM_LEVELS.NAV);
+                geneViewerData.setLoading(false);
+            }, 200);
+
+            const proteinData = await GeneService.fetchGeneProteinSeq(locusTag).catch(() => ({ protein_sequence: '' }));
+            const completeData = { ...geneMeta, protein_sequence: proteinData.protein_sequence || '' };
+            setSelectedFeature(completeData);
+        } catch (err) {
+            console.error('Failed to navigate to gene:', err);
+            geneViewerData.setLoading(false);
+        }
+    }, [viewState, geneViewerData]);
+
     // Handle closing the feature panel
     const handleCloseFeaturePanel = useCallback(() => {
         setSelectedFeature(null);
@@ -432,6 +465,7 @@ const GeneViewerPage: React.FC = () => {
                                             selectedLocusTag={selectedLocusTag}
                                             setLoading={geneViewerData.setLoading}
                                             onFeatureSelect={handleFeatureSelect}
+                                            onViewInJBrowse={handleViewInJBrowse}
                                         />
                                     )}
                                 </section>
