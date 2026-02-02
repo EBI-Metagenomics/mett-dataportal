@@ -19,6 +19,8 @@ interface UseNetworkDataProps {
   /** 'current' = filter by species_acronym; 'all' = no species filter. */
   speciesScope?: SpeciesScope;
   showOrthologs?: boolean;
+  /** Extra locus tags (e.g. from expanded nodes) to include when fetching orthologs. */
+  extraLocusTagsForOrthologs?: string[];
   enabled?: boolean;
 }
 
@@ -45,6 +47,7 @@ export const useNetworkData = ({
   limitMode = 'threshold',
   speciesScope = 'current',
   showOrthologs = false,
+  extraLocusTagsForOrthologs,
   enabled = true,
 }: UseNetworkDataProps): UseNetworkDataReturn => {
   const [networkData, setNetworkData] = useState<PPINetworkData | null>(null);
@@ -111,7 +114,8 @@ export const useNetworkData = ({
     const baseFetchKey = limitMode === 'topN'
       ? `${effectiveSpecies ?? 'all'}-${isolateName}-${locusTag}-topN-${topN}-${scoreType}-${scoreThreshold}`
       : `${effectiveSpecies ?? 'all'}-${isolateName}-${locusTag}-${scoreType}-${scoreThreshold}`;
-    const fetchKey = `${baseFetchKey}-${showOrthologs}`;
+    const extraKey = (extraLocusTagsForOrthologs ?? []).slice().sort().join(',');
+    const fetchKey = `${baseFetchKey}-${showOrthologs}-${extraKey}`;
 
     // Check if we need to fetch PPI data or just ortholog data
     const needsPPIData = lastFetchRef.current === '' || !lastFetchRef.current.startsWith(baseFetchKey);
@@ -182,12 +186,13 @@ export const useNetworkData = ({
         }
       }
 
-      // Fetch ortholog data if enabled (always fetch when showOrthologs is true and we don't have data)
+      // Fetch ortholog data if enabled (base nodes + expanded nodes so orthologs show for all)
       if (showOrthologs && network && network.nodes) {
-        const locusTags = network.nodes
+        const baseTags = network.nodes
           .map((node) => node.locus_tag)
           .filter((tag): tag is string => !!tag);
-        
+        const extra = extraLocusTagsForOrthologs ?? [];
+        const locusTags = Array.from(new Set([...baseTags, ...extra]));
         if (locusTags.length > 0) {
           const orthologs = await fetchOrthologData(locusTags);
           setOrthologMap(orthologs);
@@ -207,7 +212,7 @@ export const useNetworkData = ({
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [enabled, speciesAcronym, isolateName, locusTag, scoreType, scoreThreshold, topN, limitMode, speciesScope, showOrthologs, fetchOrthologData]);
+  }, [enabled, speciesAcronym, isolateName, locusTag, scoreType, scoreThreshold, topN, limitMode, speciesScope, showOrthologs, extraLocusTagsForOrthologs, fetchOrthologData]);
 
   // Refresh network data
   const refreshNetwork = useCallback(async () => {

@@ -71,6 +71,19 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const originalNodesRef = useRef<PPINetworkNode[]>([]);
   const originalEdgesRef = useRef<PPINetworkEdge[]>([]);
 
+  // Locus tags from expanded nodes so orthologs are fetched for them too
+  const expandedLocusTags = useMemo(() => {
+    const tags: string[] = [];
+    expansionState.allExpandedNodes.forEach((node) => {
+      const n = node as PPINetworkNode & { nodeType?: string };
+      if (n.nodeType !== 'ortholog') {
+        const tag = n.locus_tag || n.id;
+        if (tag) tags.push(tag);
+      }
+    });
+    return tags;
+  }, [expansionState]);
+
   const {
     networkData,
     networkProperties,
@@ -88,6 +101,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     limitMode,
     speciesScope,
     showOrthologs,
+    extraLocusTagsForOrthologs: expandedLocusTags.length > 0 ? expandedLocusTags : undefined,
     enabled: !!speciesAcronym && !!selectedLocusTag && isAuthenticated,
   });
 
@@ -103,31 +117,27 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     setDisplayThreshold(scoreThreshold);
   }, [scoreThreshold]);
 
-  // Store original nodes/edges when network data changes
-  // Also initialize expansion path with the starting node
+  // Store original nodes/edges and init expansion path when base network changes only.
+  // Do NOT reset when showOrthologs/orthologMap change so toggling orthologs keeps expansion.
   useEffect(() => {
     if (networkData && selectedLocusTag) {
       const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs);
       originalNodesRef.current = enriched.enrichedNodes;
       originalEdgesRef.current = enriched.enrichedEdges;
-      
-      // Find the starting node and initialize path with it
+
       const startingNode = enriched.enrichedNodes.find(
         node => node.locus_tag === selectedLocusTag || node.id === selectedLocusTag
       );
-      
+
       if (startingNode) {
         const initialState = createInitialExpansionState();
         initialState.allExpandedNodes = new Map(
           enriched.enrichedNodes.map(node => [node.id, { ...node, expansionLevel: 0 }])
         );
-        // Tag original edges with expansionLevel 0
         initialState.allExpandedEdges = enriched.enrichedEdges.map(edge => ({
           ...edge,
           expansionLevel: 0,
         }));
-        
-        // Add starting node to path as level 0
         initialState.path.nodes = [{
           locusTag: startingNode.locus_tag || startingNode.id,
           nodeId: startingNode.id,
@@ -136,57 +146,86 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           level: 0,
         }];
         initialState.path.currentLevel = 0;
-        
         setExpansionState(initialState);
       } else {
-        // Reset expansion state when base network changes
         setExpansionState(createInitialExpansionState());
       }
     }
-  }, [networkData, orthologMap, showOrthologs, selectedLocusTag]);
+    // Intentionally omit orthologMap/showOrthologs so toggling "Show Orthologs" does not reset expansion
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [networkData, selectedLocusTag]);
 
-  // Enrich nodes with ortholog information and merge with expansions
+  // Enrich nodes with ortholog information and merge with expansions.
+  // When there are expansions: merge base + expanded PPI nodes, then enrich so orthologs
+  // are added for all nodes (including expanded); preserve expansion ortholog nodes and levels.
   const { enrichedNodes, enrichedEdges } = useMemo(() => {
-    const baseEnriched = enrichNetworkData(networkData, orthologMap, showOrthologs);
-    
-    // If there are expansions, merge them with base network
-    if (expansionState.allExpandedNodes.size > 0) {
-      // Merge base nodes with expanded nodes
-      const allNodes = new Map<string, PPINetworkNode>();
-      
-      // Add base nodes
-      baseEnriched.enrichedNodes.forEach(node => {
-        allNodes.set(node.id, node);
-      });
-      
-      // Add expanded nodes (they override base if same ID)
-      expansionState.allExpandedNodes.forEach((node: PPINetworkNode & { expansionLevel?: number }, id: string) => {
-        allNodes.set(id, node);
-      });
-      
-      // Merge edges (keep unique, highest weight wins)
-      // Tag base edges with expansionLevel 0 if not already set
-      const baseEdgesWithLevel = baseEnriched.enrichedEdges.map(edge => ({
-        ...edge,
-        expansionLevel: (edge as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0,
-      }));
-      
-      const edgeMap = new Map<string, PPINetworkEdge & { expansionLevel?: number }>();
-      [...baseEdgesWithLevel, ...expansionState.allExpandedEdges].forEach(edge => {
-        const key = `${edge.source}-${edge.target}`;
-        const existing = edgeMap.get(key);
-        if (!existing || (edge.weight ?? 0) > (existing.weight ?? 0)) {
-          edgeMap.set(key, edge);
-        }
-      });
-      
-      return {
-        enrichedNodes: Array.from(allNodes.values()),
-        enrichedEdges: Array.from(edgeMap.values()),
-      };
+    if (!networkData?.nodes) {
+      return { enrichedNodes: [], enrichedEdges: [] as PPINetworkEdge[] };
     }
-    
-    return baseEnriched;
+
+    const baseNodes = networkData.nodes;
+    const baseEdges = networkData.edges || [];
+
+    if (expansionState.allExpandedNodes.size === 0) {
+      return enrichNetworkData(networkData, orthologMap, showOrthologs);
+    }
+
+    // Merge base + expanded: PPI nodes only for enrichment (enrichNetworkData overwrites nodeType)
+    const mergedPpiNodes = new Map<string, PPINetworkNode & { expansionLevel?: number }>();
+    baseNodes.forEach(n => mergedPpiNodes.set(n.id, { ...n, expansionLevel: 0 }));
+    expansionState.allExpandedNodes.forEach((node, id) => {
+      const n = node as PPINetworkNode & { nodeType?: string; expansionLevel?: number };
+      if (n.nodeType !== 'ortholog') {
+        mergedPpiNodes.set(id, n);
+      }
+    });
+
+    const mergedPpiEdges = new Map<string, PPINetworkEdge & { expansionLevel?: number }>();
+    baseEdges.forEach(e => mergedPpiEdges.set(`${e.source}-${e.target}`, { ...e, expansionLevel: 0 }));
+    expansionState.allExpandedEdges.forEach(e => {
+      const key = `${e.source}-${e.target}`;
+      const existing = mergedPpiEdges.get(key);
+      if (!existing || (e.weight ?? 0) > (existing.weight ?? 0)) {
+        mergedPpiEdges.set(key, { ...e, expansionLevel: (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0 });
+      }
+    });
+
+    const mergedNetwork = {
+      nodes: Array.from(mergedPpiNodes.values()),
+      edges: Array.from(mergedPpiEdges.values()),
+    };
+    const fullEnriched = enrichNetworkData(mergedNetwork, orthologMap, showOrthologs);
+
+    // Preserve expansionLevel from state and expansion ortholog nodes (from previous expand with showOrthologs on)
+    const nodeMap = new Map<string, PPINetworkNode & { expansionLevel?: number }>();
+    fullEnriched.enrichedNodes.forEach(n => {
+      const expanded = expansionState.allExpandedNodes.get(n.id) as (PPINetworkNode & { expansionLevel?: number }) | undefined;
+      const level = expanded?.expansionLevel ?? (n as PPINetworkNode & { expansionLevel?: number }).expansionLevel;
+      nodeMap.set(n.id, { ...n, expansionLevel: level });
+    });
+    expansionState.allExpandedNodes.forEach((node, id) => {
+      const n = node as PPINetworkNode & { nodeType?: string; expansionLevel?: number };
+      if (n.nodeType === 'ortholog') nodeMap.set(id, n);
+    });
+
+    const edgeMap = new Map<string, PPINetworkEdge & { expansionLevel?: number }>();
+    fullEnriched.enrichedEdges.forEach(e => {
+      const key = `${e.source}-${e.target}`;
+      const fromState = expansionState.allExpandedEdges.find(
+        edge => (edge.source === e.source && edge.target === e.target) || (edge.source === e.target && edge.target === e.source)
+      ) as (PPINetworkEdge & { expansionLevel?: number }) | undefined;
+      const level = fromState?.expansionLevel ?? (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0;
+      edgeMap.set(key, { ...e, expansionLevel: level });
+    });
+    expansionState.allExpandedEdges.forEach(e => {
+      const key = `${e.source}-${e.target}`;
+      if (!edgeMap.has(key)) edgeMap.set(key, { ...e, expansionLevel: (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0 });
+    });
+
+    return {
+      enrichedNodes: Array.from(nodeMap.values()),
+      enrichedEdges: Array.from(edgeMap.values()),
+    };
   }, [networkData, orthologMap, showOrthologs, expansionState]);
 
   // Stable expansion path so NetworkGraph does not re-create on every render (e.g. when only selectedNode changes)

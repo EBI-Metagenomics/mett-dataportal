@@ -26,6 +26,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         const containerRef = useRef<HTMLDivElement>(null);
         const cyRef = useRef<cytoscape.Core | null>(null);
         const layoutRunningRef = useRef(false);
+        const ppiSignatureRef = useRef<string>('');
 
         // Calculate score range for normalization
         const scoreRange = useMemo(() => {
@@ -65,6 +66,15 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
 
         // (Re)create Cytoscape instance when nodes/edges change
         useEffect(() => {
+            // PPI-only signature: when only ortholog nodes/edges change we update in place (no layout reset)
+            const ppiNodeIds = nodes
+                .filter((n) => (n as { nodeType?: string }).nodeType !== 'ortholog')
+                .map((n) => n.id);
+            const ppiEdgeKeys = edges
+                .filter((e) => (e as { edgeType?: string }).edgeType !== 'ortholog')
+                .map((e) => `${e.source}-${e.target}`);
+            const ppiSignature = JSON.stringify([[...new Set(ppiNodeIds)].sort(), [...new Set(ppiEdgeKeys)].sort()]);
+
             // Container check + empty graph cleanup
             if (!containerRef.current || nodes.length === 0) {
                 if (cyRef.current) {
@@ -75,10 +85,37 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     }
                     cyRef.current = null;
                 }
+                ppiSignatureRef.current = '';
                 return;
             }
 
-            // Preserve existing node positions before destroying instance
+            const cy = cyRef.current;
+            if (cy && ppiSignature === ppiSignatureRef.current) {
+                // Only ortholog visibility changed: add/remove ortholog elements in place, do not run layout
+                const existingIds = new Set(cy.nodes().map((n) => n.id()));
+                const existingEdgeKeys = new Set(cy.edges().map((e) => `${e.source().id()}-${e.target().id()}`));
+                const currentNodeIds = new Set(nodes.map((n) => n.id));
+                const currentEdgeKeys = new Set(edges.map((e) => `${e.source}-${e.target}`));
+                const toRemoveNodes = cy.nodes().filter((n) => !currentNodeIds.has(n.id()));
+                const toRemoveEdges = cy.edges().filter((e) => !currentEdgeKeys.has(`${e.source().id()}-${e.target().id()}`));
+                const toAddNodes = nodes.filter((n) => !existingIds.has(n.id));
+                const toAddEdges = edges.filter((e) => !existingEdgeKeys.has(`${e.source}-${e.target}`));
+                cy.batch(() => {
+                    toRemoveEdges.remove();
+                    toRemoveNodes.remove();
+                });
+                if (toAddNodes.length > 0 || toAddEdges.length > 0) {
+                    const hasExpansionLevels = nodes.some((node) => ((node as { expansionLevel?: number }).expansionLevel ?? 0) > 0);
+                    const preparedNewNodes = prepareNodes(toAddNodes, pathNodeIds, new Map(), hasExpansionLevels);
+                    const preparedNewEdges = prepareEdges(toAddEdges, pathNodeIds);
+                    cy.add([...preparedNewNodes, ...preparedNewEdges]);
+                }
+                cy.style(cyStyles);
+                cy.trigger('zoom');
+                return;
+            }
+
+            // Full recreate: preserve existing node positions before destroying instance
             const existingPositions = preservePositions(cyRef.current);
 
             // Destroy any existing instance before recreating
@@ -117,6 +154,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
 
                     cyRef.current = cy;
                     layoutRunningRef.current = true;
+                    ppiSignatureRef.current = ppiSignature;
 
                     // Set up event handlers immediately after creating instance
                     // Node click handler - show popup only; no fading to avoid confusing "refresh" effect
