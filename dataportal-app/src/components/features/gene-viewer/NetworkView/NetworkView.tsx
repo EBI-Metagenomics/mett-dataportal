@@ -118,7 +118,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   }, [scoreThreshold]);
 
   // Store original nodes/edges and init expansion path when base network changes only.
-  // Do NOT reset when showOrthologs/orthologMap change so toggling orthologs keeps expansion.
+  // Do NOT reset when showOrthologs/orthologMap change (toggling orthologs) or when selectedLocusTag
+  // changes only (e.g. "View in JBrowse" updates the viewed gene); only reset when networkData changes.
   useEffect(() => {
     if (networkData && selectedLocusTag) {
       const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs);
@@ -151,9 +152,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         setExpansionState(createInitialExpansionState());
       }
     }
-    // Intentionally omit orthologMap/showOrthologs so toggling "Show Orthologs" does not reset expansion
+    // Only depend on networkData so "View in JBrowse" (which updates selectedLocusTag) does not reset expansion
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [networkData, selectedLocusTag]);
+  }, [networkData]);
 
   // Enrich nodes with ortholog information and merge with expansions.
   // When there are expansions: merge base + expanded PPI nodes, then enrich so orthologs
@@ -559,7 +560,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             showOrthologs={showOrthologs}
             currentExpansionLevel={expansionState.path.currentLevel}
             expansionPath={expansionPath}
-            focalNodeId={enrichedNodes.find(n => n.locus_tag === selectedLocusTag || n.id === selectedLocusTag)?.id ?? expansionState.path.nodes[0]?.nodeId ?? null}
+            focalNodeId={expansionState.path.nodes[0]?.nodeId ?? null}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
             selectedNode={selectedNode}
