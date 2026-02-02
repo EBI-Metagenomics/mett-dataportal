@@ -76,7 +76,9 @@ LOGGING = {
 CSRF_TRUSTED_ORIGINS = [
     f"https://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
     f"http://{os.environ.get('DATA_PORTAL_URL', '127.0.0.1')}",
+    "https://www.gut-microbes.org",
     "http://www.gut-microbes.org",
+    "https://api.gut-microbes.org",
     "http://api.gut-microbes.org",
 ]
 
@@ -243,12 +245,16 @@ if DEBUG:
 logger.info("ALLOWED_HOSTS: %s", ALLOWED_HOSTS)
 logger.info("CORS_ALLOWED_ORIGINS: %s", CORS_ALLOWED_ORIGINS)
 
-# if not DEBUG:
-#     SECURE_SSL_REDIRECT = True
-#     CSRF_COOKIE_SECURE = True
-#     SESSION_COOKIE_SECURE = True
-# else:
-#     SECURE_SSL_REDIRECT = False
+# HTTPS security settings for production (behind ingress/LB that terminates TLS)
+# NOTE: SECURE_SSL_REDIRECT disabled - TLS terminates at ingress; redirect would cause
+# a loop when X-Forwarded-Proto is not forwarded through the full proxy chain.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+if not DEBUG:
+    SECURE_SSL_REDIRECT = False  # Enforce HTTPS at ingress layer instead
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+else:
+    SECURE_SSL_REDIRECT = False
 
 CORS_ALLOW_PRIVATE_NETWORK = True
 
