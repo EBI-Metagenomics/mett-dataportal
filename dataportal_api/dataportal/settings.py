@@ -246,9 +246,11 @@ logger.info("ALLOWED_HOSTS: %s", ALLOWED_HOSTS)
 logger.info("CORS_ALLOWED_ORIGINS: %s", CORS_ALLOWED_ORIGINS)
 
 # HTTPS security settings for production (behind ingress/LB that terminates TLS)
+# NOTE: SECURE_SSL_REDIRECT disabled - TLS terminates at ingress; redirect would cause
+# a loop when X-Forwarded-Proto is not forwarded through the full proxy chain.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = False  # Enforce HTTPS at ingress layer instead
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
 else:
