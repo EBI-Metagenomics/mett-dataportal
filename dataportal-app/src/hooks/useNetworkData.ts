@@ -41,7 +41,7 @@ export const useNetworkData = ({
   locusTag,
   scoreType = 'ds_score',
   scoreThreshold = 0.9,
-  topN = 5,
+  topN = 10,
   limitMode = 'threshold',
   speciesScope = 'current',
   showOrthologs = false,

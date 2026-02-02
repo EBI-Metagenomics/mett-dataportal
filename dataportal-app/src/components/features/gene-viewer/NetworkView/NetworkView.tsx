@@ -54,7 +54,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [scoreThreshold, setScoreThreshold] = useState<number>(0.9);
   const [displayThreshold, setDisplayThreshold] = useState<number>(0.9);
   const [limitMode, setLimitMode] = useState<NetworkLimitMode>('topN');
-  const [topN, setTopN] = useState<number>(5);
+  const [topN, setTopN] = useState<number>(10);
   const [speciesScope, setSpeciesScope] = useState<SpeciesScope>('current');
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
   const [selectedNode, setSelectedNode] = useState<PPINetworkNode | null>(null);
@@ -188,6 +188,12 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     
     return baseEnriched;
   }, [networkData, orthologMap, showOrthologs, expansionState]);
+
+  // Stable expansion path so NetworkGraph does not re-create on every render (e.g. when only selectedNode changes)
+  const expansionPath = useMemo(
+    () => expansionState.path.nodes.map(p => ({ nodeId: p.nodeId, level: p.level })),
+    [expansionState]
+  );
 
   // Handle node click - only show popup, don't change view
   const handleNodeClick = useCallback(
@@ -513,7 +519,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             edges={enrichedEdges}
             showOrthologs={showOrthologs}
             currentExpansionLevel={expansionState.path.currentLevel}
-            expansionPath={expansionState.path.nodes.map(p => ({ nodeId: p.nodeId, level: p.level }))}
+            expansionPath={expansionPath}
             focalNodeId={enrichedNodes.find(n => n.locus_tag === selectedLocusTag || n.id === selectedLocusTag)?.id ?? expansionState.path.nodes[0]?.nodeId ?? null}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}

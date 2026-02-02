@@ -1,67 +1,156 @@
 .networkControls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto auto minmax(200px, 280px) auto auto auto;
+  grid-template-rows: auto auto auto auto;
+  column-gap: 0.5rem;
+  row-gap: 0.25rem;
+  align-items: start;
   padding: 1rem;
   background-color: #f5f5f5;
   border-radius: 4px;
 
-  .controlGroup {
+  .rowLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #333;
+    margin: 0;
+  }
+
+  .rowLabelSpacer {
+    min-width: 0;
+  }
+
+  .groupStart {
+    margin-left: 1rem;
+  }
+
+  .controlCell {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    min-width: 150px;
+    align-items: center;
+    min-height: 2rem;
+  }
 
-    label {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #333;
+  .select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background-color: white;
+    cursor: pointer;
+    min-width: 120px;
+
+    &:hover {
+      border-color: #999;
     }
 
-    .select {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 0.875rem;
-      background-color: white;
-      cursor: pointer;
-
-      &:hover {
-        border-color: #999;
-      }
-    }
-
-    .sliderWithScale {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      min-width: 140px;
-    }
-
-    .slider {
-      flex: 1;
-      min-width: 80px;
-      cursor: pointer;
-    }
-
-    .scaleLabel {
-      font-size: 0.75rem;
-      color: #666;
-      min-width: 1.25rem;
-      text-align: center;
-    }
-
-    .select:disabled {
+    &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
       background-color: #eee;
     }
+  }
 
-    .checkbox {
-      margin-right: 0.5rem;
+  .sliderColumn {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    row-gap: 2px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .sliderTrackWrap {
+    position: relative;
+    min-width: 0;
+    padding-top: 0;
+  }
+
+  .valueBoxCurrent {
+    position: absolute;
+    top: -1.75rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    background-color: #1976d2;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .slider {
+    display: block;
+    width: 100%;
+    height: 8px;
+    margin: 0;
+    cursor: pointer;
+    appearance: none;
+    background: linear-gradient(to right, #1976d2 0%, #1976d2 var(--slider-fill, 50%), #e0e0e0 var(--slider-fill, 50%), #e0e0e0 100%);
+    border-radius: 4px;
+
+    &::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #bdbdbd;
+      border: 1px solid #9e9e9e;
       cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
+
+    &::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #bdbdbd;
+      border: 1px solid #9e9e9e;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .tickMarks {
+    position: relative;
+    height: 12px;
+    min-width: 0;
+  }
+
+  .tick {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background-color: #bdbdbd;
+    transform: translateX(-50%);
+  }
+
+  .tickLabels {
+    position: relative;
+    height: 1.2rem;
+    min-width: 0;
+  }
+
+  .tickLabel {
+    position: absolute;
+    font-size: 0.7rem;
+    color: #666;
+    transform: translateX(-50%);
+  }
+
+  .checkboxLabel {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+  }
+
+  .checkbox {
+    margin-right: 0.5rem;
+    cursor: pointer;
   }
 
   .analyzeButton {
@@ -84,15 +173,16 @@
   }
 
   .resetButton {
-    padding: 0.375rem 0.75rem;
+    padding: 0.5rem 0.75rem;
     background-color: #1976d2;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 500;
-    margin-left: auto;
+    min-height: 2.25rem;
+    box-sizing: border-box;
 
     &:hover {
       background-color: #1565c0;

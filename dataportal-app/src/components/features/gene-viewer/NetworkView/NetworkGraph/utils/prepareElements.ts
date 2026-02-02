@@ -93,15 +93,12 @@ export const prepareNodes = (
         
         const inPath = pathNodeIds.has(id);
         const fullLabel = node.locus_tag || node.label || id;
-        // Short label for graph: use last segment after final underscore to reduce overlap (e.g. BU_ATCC8492_02892 -> 02892)
-        const shortLabel = typeof fullLabel === 'string' && fullLabel.includes('_')
-            ? fullLabel.split('_').pop() ?? fullLabel
-            : fullLabel;
+        const displayLabel = typeof fullLabel === 'string' ? fullLabel : String(fullLabel ?? id);
 
         return {
             data: {
                 id,
-                label: shortLabel,
+                label: displayLabel,
                 fullLabel,
                 nodeType: nodeType || 'ppi',
                 hasOrthologs: hasOrthologs || false,

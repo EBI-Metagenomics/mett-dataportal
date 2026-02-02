@@ -1,5 +1,5 @@
 import React from 'react';
-import type { NetworkLimitMode, SpeciesScope } from '../../../../hooks/useNetworkData';
+import type { NetworkLimitMode, SpeciesScope } from '../../../../../hooks/useNetworkData';
 import styles from './NetworkControls.module.scss';
 
 interface NetworkControlsProps {
@@ -19,8 +19,11 @@ interface NetworkControlsProps {
   onResetView?: () => void;
 }
 
-const TOP_N_MIN = 5;
+const TOP_N_MIN = 1;
 const TOP_N_MAX = 50;
+const TOP_N_TICK_VALUES = [1, 10, 20, 30, 40, 50];
+
+const THRESHOLD_TICK_VALUES = [0, 0.25, 0.5, 0.75, 1];
 
 export const NetworkControls: React.FC<NetworkControlsProps> = ({
   scoreType,
@@ -40,9 +43,18 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
 }) => {
   return (
     <div className={styles.networkControls}>
-      {/* 1. Score – first */}
-      <div className={styles.controlGroup}>
-        <label htmlFor="score-type">Score:</label>
+      {/* Row 1: all labels – same baseline */}
+      <label htmlFor="score-type" className={styles.rowLabel}>Score:</label>
+      <label htmlFor="limit-mode" className={styles.rowLabel}>Limit by:</label>
+      <label htmlFor={limitMode === 'topN' ? 'top-n' : 'threshold'} className={styles.rowLabel}>
+        {limitMode === 'topN' ? 'Number of top interactions to display' : 'Min score'}
+      </label>
+      <label htmlFor="species-scope" className={`${styles.rowLabel} ${styles.groupStart}`}>Interactors:</label>
+      <span className={styles.rowLabel}>Show Orthologs</span>
+      <span className={styles.rowLabelSpacer} />
+
+      {/* Row 2: all controls – same baseline */}
+      <div className={styles.controlCell}>
         <select
           id="score-type"
           value={scoreType}
@@ -56,10 +68,7 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
           ))}
         </select>
       </div>
-
-      {/* 2. Limit by */}
-      <div className={styles.controlGroup}>
-        <label htmlFor="limit-mode">Limit by:</label>
+      <div className={styles.controlCell}>
         <select
           id="limit-mode"
           value={limitMode}
@@ -71,12 +80,21 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
         </select>
       </div>
 
-      {/* 3. One slider only – Top N or Min score */}
-      {limitMode === 'topN' ? (
-        <div className={styles.controlGroup}>
-          <label htmlFor="top-n">Top N: {topN}</label>
-          <div className={styles.sliderWithScale}>
-            <span className={styles.scaleLabel}>{TOP_N_MIN}</span>
+      {/* Slider column: track on row 2, ticks/labels on rows 3–4 */}
+      <div className={styles.sliderColumn}>
+        <div className={styles.sliderTrackWrap}>
+          <span
+            className={styles.valueBoxCurrent}
+            style={{
+              left: limitMode === 'topN'
+                ? `${((topN - TOP_N_MIN) / (TOP_N_MAX - TOP_N_MIN)) * 100}%`
+                : `${displayThreshold * 100}%`,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            {limitMode === 'topN' ? topN : displayThreshold.toFixed(2)}
+          </span>
+          {limitMode === 'topN' ? (
             <input
               id="top-n"
               type="range"
@@ -86,15 +104,9 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
               value={topN}
               onChange={(e) => onTopNChange(parseInt(e.target.value, 10))}
               className={styles.slider}
+              style={{ ['--slider-fill' as string]: `${((topN - TOP_N_MIN) / (TOP_N_MAX - TOP_N_MIN)) * 100}%` }}
             />
-            <span className={styles.scaleLabel}>{TOP_N_MAX}</span>
-          </div>
-        </div>
-      ) : (
-        <div className={styles.controlGroup}>
-          <label htmlFor="threshold">Min score: {displayThreshold.toFixed(2)}</label>
-          <div className={styles.sliderWithScale}>
-            <span className={styles.scaleLabel}>0</span>
+          ) : (
             <input
               id="threshold"
               type="range"
@@ -104,15 +116,35 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
               value={displayThreshold}
               onChange={(e) => onThresholdChange(parseFloat(e.target.value))}
               className={styles.slider}
+              style={{ ['--slider-fill' as string]: `${displayThreshold * 100}%` }}
             />
-            <span className={styles.scaleLabel}>1</span>
-          </div>
+          )}
         </div>
-      )}
+        <div className={styles.tickMarks}>
+          {limitMode === 'topN'
+            ? TOP_N_TICK_VALUES.map((n) => (
+                <span key={n} className={styles.tick} style={{ left: `${((n - TOP_N_MIN) / (TOP_N_MAX - TOP_N_MIN)) * 100}%` }} />
+              ))
+            : THRESHOLD_TICK_VALUES.map((v) => (
+                <span key={v} className={styles.tick} style={{ left: `${v * 100}%` }} />
+              ))}
+        </div>
+        <div className={styles.tickLabels}>
+          {limitMode === 'topN'
+            ? TOP_N_TICK_VALUES.map((n) => (
+                <span key={n} className={styles.tickLabel} style={{ left: `${((n - TOP_N_MIN) / (TOP_N_MAX - TOP_N_MIN)) * 100}%` }}>
+                  {n}
+                </span>
+              ))
+            : THRESHOLD_TICK_VALUES.map((v) => (
+                <span key={v} className={styles.tickLabel} style={{ left: `${v * 100}%` }}>
+                  {v === 0 ? '0' : v === 1 ? '1' : v.toFixed(2)}
+                </span>
+              ))}
+        </div>
+      </div>
 
-      {/* 4. Interactors – disabled for now */}
-      <div className={styles.controlGroup}>
-        <label htmlFor="species-scope">Interactors:</label>
+      <div className={`${styles.controlCell} ${styles.groupStart}`}>
         <select
           id="species-scope"
           value={speciesScope}
@@ -125,9 +157,8 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
           <option value="all">All species</option>
         </select>
       </div>
-
-      <div className={styles.controlGroup}>
-        <label>
+      <div className={styles.controlCell}>
+        <label className={styles.checkboxLabel}>
           <input
             type="checkbox"
             checked={showOrthologs}
@@ -137,11 +168,12 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
           Show Orthologs
         </label>
       </div>
-
       {onResetView && (
-        <button onClick={onResetView} className={styles.resetButton} title="Reset view to fit all nodes">
-          🔍 Reset View
-        </button>
+        <div className={styles.controlCell}>
+          <button onClick={onResetView} className={styles.resetButton} title="Reset view to fit all nodes">
+            🔍 Reset View
+          </button>
+        </div>
       )}
     </div>
   );

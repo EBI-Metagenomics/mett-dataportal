@@ -54,7 +54,7 @@ export const useCytoscapeStyles = ({
                 },
             },
             
-            // Base node styling – labels below node to reduce overlap
+            // Base node styling – full locus tags, labels below node
             {
                 selector: 'node',
                 style: {
@@ -66,8 +66,8 @@ export const useCytoscapeStyles = ({
                     },
                     'border-color': '#333',
                     'border-width': 1,
-                    width: 18,
-                    height: 18,
+                    width: 26,
+                    height: 26,
                     shape: (node: cytoscape.NodeSingular) => {
                         const nodeData = node.data();
                         return nodeData.nodeType === 'ortholog' ? 'diamond' : 'ellipse';
@@ -75,8 +75,8 @@ export const useCytoscapeStyles = ({
                     label: 'data(label)',
                     'font-size': '9px',
                     'text-valign': 'bottom',
-                    'text-margin-y': -4,
-                    'text-max-width': '80px',
+                    'text-margin-y': -5,
+                    'text-max-width': '120px',
                     'text-wrap': 'ellipsis',
                     'text-opacity': 0,
                 },
@@ -109,14 +109,14 @@ export const useCytoscapeStyles = ({
                 },
             },
             
-            // Current expansion level nodes
+            // Current expansion level nodes (base size 26)
             ...(currentExpansionLevel !== undefined && currentExpansionLevel > 0 ? [{
                 selector: `node[expansionLevel = "${currentExpansionLevel}"]`,
                 style: {
                     'border-width': NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_BORDER_WIDTH,
                     'border-color': NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_BORDER_COLOR,
-                    width: 18 * NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_SIZE_MULTIPLIER,
-                    height: 18 * NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_SIZE_MULTIPLIER,
+                    width: 26 * NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_SIZE_MULTIPLIER,
+                    height: 26 * NETWORK_VIEW_CONSTANTS.EXPANSION.EXPANDED_NODE_SIZE_MULTIPLIER,
                     'font-weight': 'bold',
                 },
             }] : []),

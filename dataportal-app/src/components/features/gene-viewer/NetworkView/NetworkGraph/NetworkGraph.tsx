@@ -168,7 +168,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                         }
                     });
 
-                    // Zoom handler: show labels when zoomed in; at full view show short labels to reduce clutter
+                    // Zoom handler: show labels – when Show Orthologs is on, show PPI and ortholog labels at any zoom; otherwise show when zoomed in
                     cy.on('zoom', () => {
                         const z = cy.zoom();
                         const labelThreshold = 0.5;
@@ -177,10 +177,8 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                             const isPPI = nodeData.nodeType === 'ppi';
                             const isOrtholog = nodeData.nodeType === 'ortholog';
 
-                            if (showOrthologs && isPPI) {
+                            if (showOrthologs && (isPPI || isOrtholog)) {
                                 node.style('text-opacity', 1);
-                            } else if (isOrtholog) {
-                                node.style('text-opacity', 0);
                             } else {
                                 node.style('text-opacity', z > labelThreshold ? 1 : 0);
                             }
