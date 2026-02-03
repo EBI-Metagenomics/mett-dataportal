@@ -1,4 +1,5 @@
 import cytoscape from 'cytoscape';
+import { NETWORK_VIEW_CONSTANTS } from '../../constants';
 import { applyPositions } from '../utils/positionPreservation';
 import { PreparedNode } from '../utils/prepareElements';
 
@@ -42,28 +43,28 @@ export const useCytoscapeLayout = ({
             layoutRunningRef.current = false;
         }
     } else {
-        // For original network: use standard COSE force-directed layout
+        const L = NETWORK_VIEW_CONSTANTS.COSE_LAYOUT;
         const layoutOptions: cytoscape.CoseLayoutOptions = {
             name: 'cose',
             animate: true,
-            animationDuration: 700,
+            animationDuration: L.ANIMATION_DURATION_IN_PLACE,
             fit: true,
-            padding: 50,
+            padding: L.PADDING_IN_PLACE,
             idealEdgeLength: (edge: cytoscape.EdgeSingular) => {
                 const w = edge.data('weight') ?? 1;
                 const len = 140 - Math.min(w, 1) * 60;
                 return Math.max(70, len);
             },
-            nodeRepulsion: 6000,
-            nodeOverlap: 10,
-            gravity: 0.15,
-            numIter: 1200,
+            nodeRepulsion: L.NODE_REPULSION_IN_PLACE,
+            nodeOverlap: L.NODE_OVERLAP_IN_PLACE,
+            gravity: L.GRAVITY_IN_PLACE,
+            numIter: L.NUM_ITER_IN_PLACE,
         };
-        
+
         const layout = cy.layout(layoutOptions);
 
         layout.one('layoutstop', () => {
-            cy.fit(undefined, 50);
+            cy.fit(undefined, L.FIT_PADDING_IN_PLACE);
             layoutRunningRef.current = false;
         });
 

@@ -1,12 +1,14 @@
+@use '../_networkViewTheme' as theme;
+
 .networkStats {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1.5rem;
   padding: 1rem;
-  background-color: #f9f9f9;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
+  background-color: theme.$network-ui-bg-subtle;
+  border-radius: theme.$network-radius;
+  border: 1px solid theme.$network-ui-border;
 
   .statsLeft {
     display: flex;
@@ -21,14 +23,14 @@
 
     .statLabel {
       font-size: 0.875rem;
-      color: #666;
+      color: theme.$network-ui-text-muted;
       font-weight: 500;
     }
 
     .statValue {
       font-size: 1.125rem;
       font-weight: 600;
-      color: #333;
+      color: theme.$network-ui-text;
     }
   }
 
@@ -44,7 +46,7 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 0.875rem;
-    color: #666;
+    color: theme.$network-ui-text-muted;
   }
 
   .legendColor {
@@ -52,21 +54,21 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    border: 1px solid #ccc;
+    border: 1px solid theme.$network-color-border-muted;
   }
 
   .legendColorPPI {
-    background-color: #4A90E2;
+    background-color: theme.$network-color-ppi;
   }
 
   .legendColorPPIWithOrthologs {
-    background-color: #50C878;
-    border: 2px solid #333;
+    background-color: theme.$network-color-ppi-with-orthologs;
+    border: 2px solid theme.$network-color-border-default;
   }
 
   .legendColorOrtholog {
-    background-color: #FF9800;
-    border: 1px solid #E65100;
+    background-color: theme.$network-color-ortholog;
+    border: 1px solid theme.$network-color-ortholog-border;
     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     width: 12px;
     height: 12px;
@@ -74,7 +76,7 @@
   }
 
   .legendColorOrthologEdge {
-    border-top: 2px dashed #FF9800;
+    border-top: 2px dashed theme.$network-color-ortholog;
     width: 20px;
     height: 0;
     border-radius: 0;

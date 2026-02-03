@@ -1,6 +1,9 @@
 import React from 'react';
 import type { NetworkLimitMode, SpeciesScope } from '../../../../../hooks/useNetworkData';
+import { NETWORK_VIEW_CONSTANTS } from '../constants';
 import styles from './NetworkControls.module.scss';
+
+const SLIDER = NETWORK_VIEW_CONSTANTS.SLIDER;
 
 interface NetworkControlsProps {
   scoreType: string;
@@ -18,12 +21,6 @@ interface NetworkControlsProps {
   onOrthologToggle: (enabled: boolean) => void;
   onResetView?: () => void;
 }
-
-const TOP_N_MIN = 1;
-const TOP_N_MAX = 50;
-const TOP_N_TICK_VALUES = [1, 10, 20, 30, 40, 50];
-
-const THRESHOLD_TICK_VALUES = [0, 0.25, 0.5, 0.75, 1];
 
 export const NetworkControls: React.FC<NetworkControlsProps> = ({
   scoreType,
@@ -87,7 +84,7 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
             className={styles.valueBoxCurrent}
             style={{
               left: limitMode === 'topN'
-                ? `${((topN - TOP_N_MIN) / (TOP_N_MAX - TOP_N_MIN)) * 100}%`
+                ? `${((topN - SLIDER.TOP_N_MIN) / (SLIDER.TOP_N_MAX - SLIDER.TOP_N_MIN)) * 100}%`
                 : `${displayThreshold * 100}%`,
               transform: 'translateX(-50%)',
             }}
@@ -98,13 +95,13 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
             <input
               id="top-n"
               type="range"
-              min={TOP_N_MIN}
-              max={TOP_N_MAX}
+              min={SLIDER.TOP_N_MIN}
+              max={SLIDER.TOP_N_MAX}
               step="1"
               value={topN}
               onChange={(e) => onTopNChange(parseInt(e.target.value, 10))}
               className={styles.slider}
-              style={{ ['--slider-fill' as string]: `${((topN - TOP_N_MIN) / (TOP_N_MAX - TOP_N_MIN)) * 100}%` }}
+              style={{ ['--slider-fill' as string]: `${((topN - SLIDER.TOP_N_MIN) / (SLIDER.TOP_N_MAX - SLIDER.TOP_N_MIN)) * 100}%` }}
             />
           ) : (
             <input
@@ -122,21 +119,21 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
         </div>
         <div className={styles.tickMarks}>
           {limitMode === 'topN'
-            ? TOP_N_TICK_VALUES.map((n) => (
-                <span key={n} className={styles.tick} style={{ left: `${((n - TOP_N_MIN) / (TOP_N_MAX - TOP_N_MIN)) * 100}%` }} />
+            ? SLIDER.TOP_N_TICK_VALUES.map((n: number) => (
+                <span key={n} className={styles.tick} style={{ left: `${((n - SLIDER.TOP_N_MIN) / (SLIDER.TOP_N_MAX - SLIDER.TOP_N_MIN)) * 100}%` }} />
               ))
-            : THRESHOLD_TICK_VALUES.map((v) => (
+            : SLIDER.THRESHOLD_TICK_VALUES.map((v: number) => (
                 <span key={v} className={styles.tick} style={{ left: `${v * 100}%` }} />
               ))}
         </div>
         <div className={styles.tickLabels}>
           {limitMode === 'topN'
-            ? TOP_N_TICK_VALUES.map((n) => (
-                <span key={n} className={styles.tickLabel} style={{ left: `${((n - TOP_N_MIN) / (TOP_N_MAX - TOP_N_MIN)) * 100}%` }}>
+            ? SLIDER.TOP_N_TICK_VALUES.map((n: number) => (
+                <span key={n} className={styles.tickLabel} style={{ left: `${((n - SLIDER.TOP_N_MIN) / (SLIDER.TOP_N_MAX - SLIDER.TOP_N_MIN)) * 100}%` }}>
                   {n}
                 </span>
               ))
-            : THRESHOLD_TICK_VALUES.map((v) => (
+            : SLIDER.THRESHOLD_TICK_VALUES.map((v: number) => (
                 <span key={v} className={styles.tickLabel} style={{ left: `${v * 100}%` }}>
                   {v === 0 ? '0' : v === 1 ? '1' : v.toFixed(2)}
                 </span>

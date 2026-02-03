@@ -145,6 +145,14 @@ export const useNetworkData = ({
             score_threshold: 0,
           });
           network = neighborhood.network_data;
+          // Ensure focal node shows locus tag: API may return protein_id as UniProt; set locus_tag so display is consistent
+          if (network?.nodes && locusTag && neighborhood.protein_id) {
+            network.nodes.forEach((n) => {
+              if (n.id === neighborhood.protein_id && !n.locus_tag) {
+                n.locus_tag = locusTag;
+              }
+            });
+          }
           setNetworkData(network);
           networkDataRef.current = network;
           // Neighborhood API does not return properties; derive from nodes/edges so stats display
@@ -169,6 +177,14 @@ export const useNetworkData = ({
           };
 
           network = await PPIService.getNetworkData(query);
+          // Ensure focal node has locus_tag when we requested by locus_tag (API may use UniProt id)
+          if (network?.nodes && locusTag) {
+            network.nodes.forEach((n) => {
+              if (n.id === locusTag && !n.locus_tag) {
+                n.locus_tag = locusTag;
+              }
+            });
+          }
           setNetworkData(network);
           networkDataRef.current = network;
 

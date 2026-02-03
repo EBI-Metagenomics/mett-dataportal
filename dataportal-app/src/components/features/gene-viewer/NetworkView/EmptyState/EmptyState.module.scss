@@ -1,3 +1,5 @@
+@use '../_networkViewTheme' as theme;
+
 .networkViewEmpty {
   display: flex;
   flex-direction: column;
@@ -5,13 +7,13 @@
   justify-content: center;
   padding: 2rem;
   text-align: center;
-  color: #666;
+  color: theme.$network-ui-text-muted;
   min-height: 300px;
 
   .emptyHint {
     margin-top: 0.5rem;
     font-size: 0.9rem;
-    color: #999;
+    color: theme.$network-ui-slider-thumb-border;
   }
 
   .selectGeneMessage {
@@ -34,21 +36,21 @@
       h3 {
         margin: 0;
         font-size: 1.5rem;
-        color: #333;
+        color: theme.$network-ui-text;
         font-weight: 600;
       }
 
       p {
         margin: 0;
         font-size: 1rem;
-        color: #666;
+        color: theme.$network-ui-text-muted;
         line-height: 1.6;
       }
 
       .selectGeneHint {
         margin-top: 0.5rem;
         font-size: 0.9rem;
-        color: #999;
+        color: theme.$network-ui-slider-thumb-border;
         font-style: italic;
       }
     }

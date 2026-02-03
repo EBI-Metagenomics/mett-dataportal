@@ -1,5 +1,6 @@
 /**
- * Constants for Network View configuration
+ * Constants for Network View configuration.
+ * Graph colors here should match _networkViewTheme.scss for consistency.
  */
 
 export const NETWORK_VIEW_CONSTANTS = {
@@ -16,6 +17,87 @@ export const NETWORK_VIEW_CONSTANTS = {
     MIN: 1, // Minimum edge width in pixels (weak interactions)
     MAX: 14, // Maximum edge width in pixels (strong interactions)
     BASE_SCALE: 1, // Use full range for clear weight differences
+  },
+
+  /**
+   * Graph theme (Cytoscape styles). Align with _networkViewTheme.scss for legend/UI.
+   */
+  GRAPH_THEME: {
+    EDGE: {
+      LINE_COLOR: '#5B8DEE',
+      OPACITY: 0.65,
+      ORTHOLOG_LINE_COLOR: '#FF9800',
+      ORTHOLOG_OPACITY: 0.6,
+      ORTHOLOG_WIDTH: 2,
+      CONTROL_POINT_STEP_SIZE: 18,
+    },
+    NODE: {
+      PPI_COLOR: '#4A90E2',
+      PPI_WITH_ORTHOLOGS_COLOR: '#50C878',
+      ORTHOLOG_COLOR: '#FF9800',
+      BORDER_COLOR: '#333',
+      BORDER_WIDTH: 1,
+      WIDTH: 26,
+      HEIGHT: 26,
+      FONT_SIZE: '9px',
+      TEXT_MARGIN_Y: -5,
+      TEXT_MAX_WIDTH: '120px',
+    },
+    FADED: {
+      OPACITY: 0.2,
+      TEXT_OPACITY: 0.1,
+    },
+    PATH: {
+      NODE_OPACITY: 1,
+      EDGE_OPACITY: 0.7,
+    },
+    PREVIOUS_EXPANSION: {
+      BORDER_COLOR: '#ccc',
+      NODE_OPACITY: 0.7,
+    },
+    EXPANSION_EDGE: {
+      LINE_WIDTH: 2,
+      OPACITY: 0.7,
+    },
+    SELECTED_EDGE: {
+      LINE_WIDTH: 4,
+      OPACITY: 1,
+      LINE_COLOR: '#FF6B6B',
+      Z_INDEX: 999,
+    },
+  },
+
+  /**
+   * Cose (force-directed) layout options. Used in NetworkGraph and useCytoscapeLayout.
+   */
+  COSE_LAYOUT: {
+    PADDING: 80,
+    PADDING_IN_PLACE: 50,
+    ANIMATION_DURATION: 500,
+    ANIMATION_DURATION_IN_PLACE: 700,
+    FIT_PADDING: 80,
+    FIT_PADDING_IN_PLACE: 50,
+    IDEAL_EDGE_LENGTH: 100,
+    NODE_REPULSION: 80000,
+    NODE_OVERLAP: 20,
+    GRAVITY: 0.2,
+    NUM_ITER: 1000,
+    RANDOMIZE: false,
+    AVOID_OVERLAP: true,
+    NODE_OVERLAP_IN_PLACE: 10,
+    GRAVITY_IN_PLACE: 0.15,
+    NUM_ITER_IN_PLACE: 1200,
+    NODE_REPULSION_IN_PLACE: 6000,
+  },
+
+  /**
+   * Slider configuration for NetworkControls (top N / min score).
+   */
+  SLIDER: {
+    TOP_N_MIN: 1,
+    TOP_N_MAX: 50,
+    TOP_N_TICK_VALUES: [1, 10, 20, 30, 40, 50] as const,
+    THRESHOLD_TICK_VALUES: [0, 0.25, 0.5, 0.75, 1] as const,
   },
 
   /**

@@ -1,3 +1,5 @@
+@use '../_networkViewTheme' as theme;
+
 .networkControls {
   display: grid;
   grid-template-columns: auto auto minmax(200px, 280px) auto auto auto;
@@ -6,13 +8,13 @@
   row-gap: 0.25rem;
   align-items: start;
   padding: 1rem;
-  background-color: #f5f5f5;
-  border-radius: 4px;
+  background-color: theme.$network-ui-bg-controls;
+  border-radius: theme.$network-radius;
 
   .rowLabel {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #333;
+    color: theme.$network-ui-text;
     margin: 0;
   }
 
@@ -32,15 +34,15 @@
 
   .select {
     padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid theme.$network-ui-border-light;
+    border-radius: theme.$network-radius;
     font-size: 0.875rem;
     background-color: white;
     cursor: pointer;
     min-width: 120px;
 
     &:hover {
-      border-color: #999;
+      border-color: theme.$network-ui-slider-thumb-border;
     }
 
     &:disabled {
@@ -72,12 +74,13 @@
     font-size: 0.875rem;
     font-weight: 500;
     color: white;
-    background-color: #1976d2;
-    border-radius: 6px;
+    background-color: theme.$network-ui-primary;
+    border-radius: theme.$network-radius-lg;
     white-space: nowrap;
     pointer-events: none;
   }
 
+  /* --slider-fill is set dynamically by JS for the filled portion of the track */
   .slider {
     display: block;
     width: 100%;
@@ -85,16 +88,16 @@
     margin: 0;
     cursor: pointer;
     appearance: none;
-    background: linear-gradient(to right, #1976d2 0%, #1976d2 var(--slider-fill, 50%), #e0e0e0 var(--slider-fill, 50%), #e0e0e0 100%);
-    border-radius: 4px;
+    background: linear-gradient(to right, theme.$network-ui-primary 0%, theme.$network-ui-primary var(--slider-fill, 50%), theme.$network-ui-slider-track var(--slider-fill, 50%), theme.$network-ui-slider-track 100%);
+    border-radius: theme.$network-radius;
 
     &::-webkit-slider-thumb {
       appearance: none;
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      background: #bdbdbd;
-      border: 1px solid #9e9e9e;
+      background: theme.$network-ui-slider-thumb;
+      border: 1px solid theme.$network-ui-slider-thumb-border;
       cursor: pointer;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
@@ -103,8 +106,8 @@
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      background: #bdbdbd;
-      border: 1px solid #9e9e9e;
+      background: theme.$network-ui-slider-thumb;
+      border: 1px solid theme.$network-ui-slider-thumb-border;
       cursor: pointer;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
@@ -121,7 +124,7 @@
     top: 0;
     width: 1px;
     height: 100%;
-    background-color: #bdbdbd;
+    background-color: theme.$network-ui-slider-thumb;
     transform: translateX(-50%);
   }
 
@@ -134,7 +137,7 @@
   .tickLabel {
     position: absolute;
     font-size: 0.7rem;
-    color: #666;
+    color: theme.$network-ui-text-muted;
     transform: translateX(-50%);
   }
 
@@ -144,7 +147,7 @@
     margin: 0;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #333;
+    color: theme.$network-ui-text;
     cursor: pointer;
   }
 
@@ -155,29 +158,29 @@
 
   .analyzeButton {
     padding: 0.5rem 1.5rem;
-    background-color: #1976d2;
+    background-color: theme.$network-ui-primary;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: theme.$network-radius;
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 500;
 
     &:hover {
-      background-color: #1565c0;
+      background-color: theme.$network-ui-primary-hover;
     }
 
     &:active {
-      background-color: #0d47a1;
+      background-color: theme.$network-ui-primary-active;
     }
   }
 
   .resetButton {
     padding: 0.5rem 0.75rem;
-    background-color: #1976d2;
+    background-color: theme.$network-ui-primary;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: theme.$network-radius;
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 500;
@@ -185,11 +188,11 @@
     box-sizing: border-box;
 
     &:hover {
-      background-color: #1565c0;
+      background-color: theme.$network-ui-primary-hover;
     }
 
     &:active {
-      background-color: #0d47a1;
+      background-color: theme.$network-ui-primary-active;
     }
   }
 }

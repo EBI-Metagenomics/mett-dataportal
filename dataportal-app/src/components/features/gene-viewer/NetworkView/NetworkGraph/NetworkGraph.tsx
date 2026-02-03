@@ -6,6 +6,7 @@ import React, {
     useMemo,
 } from 'react';
 import cytoscape from 'cytoscape';
+import { NETWORK_VIEW_CONSTANTS } from '../constants';
 import { NetworkGraphRef, NetworkGraphProps } from './types';
 import { useCytoscapeStyles } from './hooks/useCytoscapeStyles';
 import { useGraphFading } from './hooks/useGraphFading';
@@ -229,24 +230,25 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     // Apply layout: always use force-directed (cose) for organic look, including expanded graphs
                     // Nodes already have initial positions from prepareNodes (radial or preserved); don't lock so cose can rearrange all
                     cy.nodes().unlock();
+                    const L = NETWORK_VIEW_CONSTANTS.COSE_LAYOUT;
                     const coseOptions: cytoscape.CoseLayoutOptions = {
                         name: 'cose',
                         fit: true,
-                        padding: 80,
+                        padding: L.PADDING,
                         animate: true,
-                        animationDuration: 500,
-                        avoidOverlap: true,
+                        animationDuration: L.ANIMATION_DURATION,
+                        avoidOverlap: L.AVOID_OVERLAP,
                         nodeDimensionsIncludeLabels: true,
-                        idealEdgeLength: 100,
-                        nodeRepulsion: 80000,
-                        nodeOverlap: 20,
-                        gravity: 0.2,
-                        numIter: 1000,
-                        randomize: false,
+                        idealEdgeLength: L.IDEAL_EDGE_LENGTH,
+                        nodeRepulsion: L.NODE_REPULSION,
+                        nodeOverlap: L.NODE_OVERLAP,
+                        gravity: L.GRAVITY,
+                        numIter: L.NUM_ITER,
+                        randomize: L.RANDOMIZE,
                     };
                     const layout = cy.layout(coseOptions);
                     layout.one('layoutstop', () => {
-                        cy.fit(undefined, 80);
+                        cy.fit(undefined, L.FIT_PADDING);
                         layoutRunningRef.current = false;
                     });
                     layout.run();
