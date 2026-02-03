@@ -164,7 +164,7 @@ const HomePageHeadBand: React.FC<HomePageHeadBandProps> = ({
                         <p>
                             {HOMEPAGE_TEXT.MAIN_CONTENT.PARAGRAPH_2}
                             <i>{HOMEPAGE_TEXT.MAIN_CONTENT.B_UNIFORMIS}</i> 
-                            {HOMEPAGE_TEXT.MAIN_CONTENT.AND} <i>{HOMEPAGE_TEXT.MAIN_CONTENT.P_VULGATUS}</i>.
+                            {HOMEPAGE_TEXT.MAIN_CONTENT.AND} <i>{HOMEPAGE_TEXT.MAIN_CONTENT.P_VULGATUS}</i>
                             {HOMEPAGE_TEXT.MAIN_CONTENT.PARAGRAPH_2_CONTINUATION}&nbsp;
                             <a href={EBI_FTP_SERVER} target="_blank" rel="noopener noreferrer">
                                 {HOMEPAGE_TEXT.MAIN_CONTENT.FTP_SERVER_LINK}
