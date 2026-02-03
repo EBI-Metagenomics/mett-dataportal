@@ -18,27 +18,23 @@ export const useCytoscapeStyles = ({
 }: UseCytoscapeStylesProps): cytoscape.StylesheetCSS[] => {
     return useMemo(() => {
         const styles: cytoscape.StylesheetCSS[] = [
-            // Base edge styling
+            // Base edge styling (blue-tinted for visibility; ortholog edges stay orange)
             {
                 selector: 'edge',
                 style: {
                     'curve-style': 'bezier',
                     'control-point-step-size': 18,
-                    'line-color': '#999',
-                    opacity: 0.55,
+                    'line-color': '#5B8DEE',
+                    opacity: 0.65,
                     width: (edge: cytoscape.EdgeSingular) => {
                         const w = edge.data('weight') ?? 0;
                         if (w <= 0) return NETWORK_VIEW_CONSTANTS.EDGE_WIDTH.MIN;
-                        
+                        const { MIN, MAX, BASE_SCALE } = NETWORK_VIEW_CONSTANTS.EDGE_WIDTH;
                         const normalized = scoreRange.max > scoreRange.min
                             ? (w - scoreRange.min) / (scoreRange.max - scoreRange.min)
                             : 0.5;
-                        
-                        const scaled = NETWORK_VIEW_CONSTANTS.EDGE_WIDTH.MIN + 
-                            (normalized * (NETWORK_VIEW_CONSTANTS.EDGE_WIDTH.MAX - NETWORK_VIEW_CONSTANTS.EDGE_WIDTH.MIN)) *
-                            NETWORK_VIEW_CONSTANTS.EDGE_WIDTH.BASE_SCALE;
-                        
-                        return Math.min(Math.max(scaled, NETWORK_VIEW_CONSTANTS.EDGE_WIDTH.MIN), NETWORK_VIEW_CONSTANTS.EDGE_WIDTH.MAX);
+                        const scaled = MIN + (normalized * (MAX - MIN)) * BASE_SCALE;
+                        return Math.min(Math.max(scaled, MIN), MAX);
                     },
                 },
             },

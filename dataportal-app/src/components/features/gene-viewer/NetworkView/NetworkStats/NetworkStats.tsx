@@ -16,8 +16,9 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
   edgeCount,
   showOrthologs,
 }) => {
-  const numNodes = properties?.num_nodes ?? nodeCount ?? 0;
-  const numEdges = properties?.num_edges ?? edgeCount ?? 0;
+  // Prefer explicit counts when provided (e.g. enriched graph with expansions); otherwise use properties
+  const numNodes = nodeCount ?? properties?.num_nodes ?? 0;
+  const numEdges = edgeCount ?? properties?.num_edges ?? 0;
 
   return (
     <div className={styles.networkStats}>

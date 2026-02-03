@@ -10,7 +10,7 @@ import { NetworkGraphRef, NetworkGraphProps } from './types';
 import { useCytoscapeStyles } from './hooks/useCytoscapeStyles';
 import { useGraphFading } from './hooks/useGraphFading';
 import { prepareNodes, prepareEdges } from './utils/prepareElements';
-import { preservePositions, applyPositions } from './utils/positionPreservation';
+import { preservePositions } from './utils/positionPreservation';
 import styles from './NetworkGraph.module.scss';
 
 /**
@@ -226,69 +226,30 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     // Trigger initial label visibility
                     cy.trigger('zoom');
 
-                    // Apply layout (direct call, not a hook)
-                    if (hasExpansionLevels) {
-                        // Set node positions and lock existing ones
-                        applyPositions(cy, preparedNodes, existingPositions);
-                        
-                        const hasNewNodes = preparedNodes.some(n => !existingPositions.has(n.data.id));
-                        
-                        if (hasNewNodes) {
-                            setTimeout(() => {
-                                const newNodes = cy.nodes().filter(node => {
-                                    return !existingPositions.has(node.id());
-                                });
-                                if (newNodes.length > 0) {
-                                    cy.fit(newNodes, 100);
-                                }
-                                layoutRunningRef.current = false;
-                            }, 50);
-                        } else {
-                            layoutRunningRef.current = false;
-                        }
-                    } else {
-                        // Deterministic layout: concentric (focal gene at center, neighbors on a ring) or circle (no focal)
-                        const centerId = focalNodeId ?? expansionPath[0]?.nodeId ?? null;
-                        if (centerId && cy.getElementById(centerId).length > 0) {
-                            const concentricOptions: cytoscape.ConcentricLayoutOptions = {
-                                name: 'concentric',
-                                fit: true,
-                                padding: 80,
-                                animate: true,
-                                animationDuration: 500,
-                                avoidOverlap: true,
-                                nodeDimensionsIncludeLabels: true,
-                                minNodeSpacing: 90,
-                                equidistant: true,
-                                concentric: (node) => (node.id() === centerId ? 0 : 1),
-                                levelWidth: () => 1,
-                            };
-                            const layout = cy.layout(concentricOptions);
-                            layout.one('layoutstop', () => {
-                                cy.fit(undefined, 80);
-                                layoutRunningRef.current = false;
-                            });
-                            layout.run();
-                        } else {
-                            // No focal: place all nodes on one circle for a clean, overlap-free layout
-                            const circleOptions: cytoscape.CircleLayoutOptions = {
-                                name: 'circle',
-                                fit: true,
-                                padding: 80,
-                                animate: true,
-                                animationDuration: 500,
-                                avoidOverlap: true,
-                                nodeDimensionsIncludeLabels: true,
-                                radius: undefined,
-                            };
-                            const layout = cy.layout(circleOptions);
-                            layout.one('layoutstop', () => {
-                                cy.fit(undefined, 80);
-                                layoutRunningRef.current = false;
-                            });
-                            layout.run();
-                        }
-                    }
+                    // Apply layout: always use force-directed (cose) for organic look, including expanded graphs
+                    // Nodes already have initial positions from prepareNodes (radial or preserved); don't lock so cose can rearrange all
+                    cy.nodes().unlock();
+                    const coseOptions: cytoscape.CoseLayoutOptions = {
+                        name: 'cose',
+                        fit: true,
+                        padding: 80,
+                        animate: true,
+                        animationDuration: 500,
+                        avoidOverlap: true,
+                        nodeDimensionsIncludeLabels: true,
+                        idealEdgeLength: 100,
+                        nodeRepulsion: 80000,
+                        nodeOverlap: 20,
+                        gravity: 0.2,
+                        numIter: 1000,
+                        randomize: false,
+                    };
+                    const layout = cy.layout(coseOptions);
+                    layout.one('layoutstop', () => {
+                        cy.fit(undefined, 80);
+                        layoutRunningRef.current = false;
+                    });
+                    layout.run();
                 } catch {
                     // Initialization errors are swallowed
                 }

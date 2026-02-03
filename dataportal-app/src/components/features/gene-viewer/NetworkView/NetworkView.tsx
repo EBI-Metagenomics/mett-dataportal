@@ -156,6 +156,31 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [networkData]);
 
+  // When path is still empty but we have networkData + selectedLocusTag (e.g. selectedLocusTag set after load), set initial path with starting node
+  useEffect(() => {
+    if (!networkData || !selectedLocusTag || expansionState.path.nodes.length > 0) return;
+    const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs);
+    const startingNode = enriched.enrichedNodes.find(
+      node => node.locus_tag === selectedLocusTag || node.id === selectedLocusTag
+    );
+    if (!startingNode) return;
+    const initialState = createInitialExpansionState();
+    initialState.allExpandedNodes = new Map(
+      enriched.enrichedNodes.map(node => [node.id, { ...node, expansionLevel: 0 }])
+    );
+    initialState.allExpandedEdges = enriched.enrichedEdges.map(edge => ({ ...edge, expansionLevel: 0 }));
+    initialState.path.nodes = [{
+      locusTag: startingNode.locus_tag || startingNode.id,
+      nodeId: startingNode.id,
+      node: startingNode,
+      expandedAt: Date.now(),
+      level: 0,
+    }];
+    initialState.path.currentLevel = 0;
+    setExpansionState(initialState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [networkData, selectedLocusTag, expansionState.path.nodes.length]);
+
   // Enrich nodes with ortholog information and merge with expansions.
   // When there are expansions: merge base + expanded PPI nodes, then enrich so orthologs
   // are added for all nodes (including expanded); preserve expansion ortholog nodes and levels.
@@ -494,12 +519,12 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       {/* Empty State */}
       {!loading && !error && !hasData && <EmptyState />}
 
-      {/* Network Stats */}
+      {/* Network Stats (use enriched counts so expansion increases node/edge count) */}
       {hasData && (
         <NetworkStats
           properties={networkProperties ?? null}
-          nodeCount={networkData?.nodes?.length}
-          edgeCount={networkData?.edges?.length}
+          nodeCount={enrichedNodes.length}
+          edgeCount={enrichedEdges.length}
           showOrthologs={showOrthologs}
         />
       )}

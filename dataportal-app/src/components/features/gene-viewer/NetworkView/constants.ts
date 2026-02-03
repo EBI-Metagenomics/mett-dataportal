@@ -10,12 +10,12 @@ export const NETWORK_VIEW_CONSTANTS = {
   MAX_EXPANSION_DEPTH: 5,
 
   /**
-   * Edge width configuration
+   * Edge width configuration (weight-based thickness, reference-style visibility)
    */
   EDGE_WIDTH: {
-    MIN: 2, // Minimum edge width in pixels
-    MAX: 10, // Maximum edge width in pixels
-    BASE_SCALE: 2.0, // Base multiplier for score scaling
+    MIN: 1, // Minimum edge width in pixels (weak interactions)
+    MAX: 14, // Maximum edge width in pixels (strong interactions)
+    BASE_SCALE: 1, // Use full range for clear weight differences
   },
 
   /**
