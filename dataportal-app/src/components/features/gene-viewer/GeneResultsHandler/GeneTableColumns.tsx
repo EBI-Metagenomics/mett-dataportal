@@ -142,7 +142,7 @@ export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
     },
     {
         key: 'cog_funcats',
-        label: 'COG Catergories',
+        label: 'COG Categories',
         sortable: false,
         defaultVisible: false,
         render: gene => gene.cog_funcats || '---',

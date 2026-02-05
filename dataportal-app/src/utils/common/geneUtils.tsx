@@ -88,7 +88,9 @@ export const getAnnotationIndicators = (gene: GeneMeta): React.ReactNode => {
     );
   }
   
-  if (gene.cog_id && Array.isArray(gene.cog_id) && gene.cog_id.length > 0) {
+  const hasCog = (gene.cog_funcats && Array.isArray(gene.cog_funcats) && gene.cog_funcats.length > 0) ||
+    (gene.cog_id && Array.isArray(gene.cog_id) && gene.cog_id.length > 0);
+  if (hasCog) {
     indicators.push(
       <span key="cog" style={boxStyle(ANNOTATION_INDICATORS.cog_id.color, false)}>
         {ANNOTATION_INDICATORS.cog_id.icon}
@@ -129,8 +131,14 @@ export const getAnnotationIndicatorsTooltip = (gene: GeneMeta): string => {
     tooltips.push(`[${ANNOTATION_INDICATORS.kegg.icon}] ${ANNOTATION_INDICATORS.kegg.label}: ${values}`);
   }
   
-  if (gene.cog_id && Array.isArray(gene.cog_id) && gene.cog_id.length > 0) {
-    const values = gene.cog_id.join(', ');
+  // Prefer COG categories (user-friendly); fall back to COG IDs when categories missing
+  const hasCogFuncats = gene.cog_funcats && Array.isArray(gene.cog_funcats) && gene.cog_funcats.length > 0;
+  const hasCogId = gene.cog_id && Array.isArray(gene.cog_id) && gene.cog_id.length > 0;
+  if (hasCogFuncats) {
+    const values = gene.cog_funcats!.join(', ');
+    tooltips.push(`[${ANNOTATION_INDICATORS.cog_id.icon}] COG Categories: ${values}`);
+  } else if (hasCogId) {
+    const values = gene.cog_id!.join(', ');
     tooltips.push(`[${ANNOTATION_INDICATORS.cog_id.icon}] ${ANNOTATION_INDICATORS.cog_id.label}: ${values}`);
   }
   
