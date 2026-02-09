@@ -30,10 +30,57 @@
   cursor: pointer;
 }
 
+// Ensure facet checkboxes render consistently in Safari and other browsers,
+// and are not hidden by external VF / browser styles.
 .facetList label {
   cursor: pointer;
   display: flex;
   align-items: center;
+}
+
+// Dedicated label style so we can position the custom checkbox
+.facetLabel {
+  display: flex;
+  align-items: center;
+  position: relative;
+  gap: 6px;
+}
+
+// Visually hidden native checkbox for accessibility (keyboard focus, screen readers).
+// Custom .checkboxVisual is shown so Safari / VF styles can't hide it.
+.facetCheckbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.checkboxVisual {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #666;
+  background-color: #fff;
+  display: inline-block;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.checkboxVisual[data-selected='true'] {
+  background-color: #3b6fb6;
+  border-color: #3b6fb6;
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+.facetLabelText {
+  display: inline-block;
 }
 
 .facetList li {

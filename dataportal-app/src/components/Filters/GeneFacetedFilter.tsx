@@ -319,18 +319,33 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
 
                                 <ul className={styles.facetList}>
                                     {dedupedFiltered.slice(0, showCount).map((facet: FacetItem) => {
+                                        const labelText = getFacetLabel(facetGroup, facet.value);
                                         return (
                                             <li key={facet.value}>
-                                                <label className={facet.count === 0 ? styles.disabledFacet : ''}>
+                                                <label
+                                                    className={
+                                                        facet.count === 0
+                                                            ? `${styles.facetLabel} ${styles.disabledFacet}`
+                                                            : styles.facetLabel
+                                                    }
+                                                >
+                                                    <span
+                                                        className={styles.checkboxVisual}
+                                                        data-selected={facet.selected ? 'true' : 'false'}
+                                                        aria-hidden="true"
+                                                    />
                                                     <input
                                                         type="checkbox"
+                                                        className={styles.facetCheckbox}
                                                         checked={facet.selected}
                                                         onChange={() => {
                                                             onToggleFacet(facetGroup, facet.value);
                                                         }}
                                                     />
-                                                    {getFacetLabel(facetGroup, facet.value)} <span
-                                                    className={styles.countBadge}>{facet.count}</span>
+                                                    <span className={styles.facetLabelText}>
+                                                        {labelText}
+                                                    </span>
+                                                    <span className={styles.countBadge}>{facet.count}</span>
                                                 </label>
                                             </li>
                                         );
