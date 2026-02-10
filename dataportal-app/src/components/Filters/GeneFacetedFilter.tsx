@@ -131,6 +131,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
     return (
         <div className={styles.facetedFilter}>
             <h3 className={styles.title}>Filter by Facets</h3>
+
             {orderedFacetEntries.map(([facetGroup, values]) => {
                 if (facetGroup === 'total_hits' || !Array.isArray(values)) return null;
 
