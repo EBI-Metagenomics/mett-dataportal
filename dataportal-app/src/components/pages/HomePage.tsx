@@ -395,8 +395,9 @@ const HomePage: React.FC = () => {
                                         filterStore.setSelectedGenomes(updatedGenomes);
                                     }}
                                     setLoading={(loading) => {
-                                        // GeneSearchForm manages its own loading state
-                                        console.log('GeneSearchForm loading state:', loading);
+                                        // Use the same full-page spinner for all gene tab activity,
+                                        // including faceted filter loading triggered inside GeneSearchForm.
+                                        setGeneLoading(loading);
                                     }}
                                     // Add pagination props for HomePage
                                     currentPage={genePagination?.current_page || genePagination?.page_number || 1}

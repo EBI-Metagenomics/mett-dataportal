@@ -142,6 +142,34 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         searchQuery: isProcessingSuggestion ? currentLocusTag : debouncedSearchQuery, // Use locus tag when processing suggestion
     });
 
+    // Only use the full-page spinner for the *initial* facets load.
+    // After at least one batch of facet groups has been loaded, later facet changes
+    // no longer drive the global loading state.
+    const isInitialFacetPhaseRef = useRef(true);
+
+    useEffect(() => {
+        // Determine whether we have any real facet groups populated yet
+        const hasFacetGroups = Object.entries(facets || {}).some(
+            ([key, values]) =>
+                key !== 'total_hits' &&
+                key !== 'operators' &&
+                Array.isArray(values) &&
+                values.length > 0
+        );
+
+        if (isInitialFacetPhaseRef.current) {
+            // While we're still in the initial phase, mirror the facet loading state
+            // into the shared page-level loading spinner.
+            setLoading(facetsLoading);
+
+            // As soon as we see real facet groups, we consider the initial phase complete
+            // and stop coupling future facet loads to the global spinner.
+            if (hasFacetGroups && !facetsLoading) {
+                isInitialFacetPhaseRef.current = false;
+            }
+        }
+    }, [facets, facetsLoading, setLoading]);
+
     const [apiRequestDetails, setApiRequestDetails] = useState<{
         url: string;
         method: string;

@@ -138,86 +138,98 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
             const target = event.target as HTMLElement;
             const featureElement = target.closest('[data-testid]') as HTMLElement;
             
-            if (featureElement) {
-                const featureId = featureElement.getAttribute('data-testid');
-                
-                // Only process gene features (match locus tag pattern: XX_YYYY...)
-                // Matches: BU_ATCC8492_00001, PV_ATCC8482_00001, etc.
-                const locusTagPattern = /^[A-Z]{2,3}_[A-Z0-9]+_\d+$/;
-                if (featureId && locusTagPattern.test(featureId)) {
-                    // Prevent duplicate processing
-                    if (featureId === lastClickedFeatureId) {
-                        return;
-                    }
-                    lastClickedFeatureId = featureId;
-                    
-                    // Prevent JBrowse's default drawer behavior
-                    event.stopPropagation();
-                    event.preventDefault();
-                    
-                    // Store the selected gene ID globally for JBrowse JEXL expressions
-                    window.selectedGeneId = featureId;
-                    
-                    // Force JBrowse to re-render the track to apply highlighting
-                    if (viewState) {
-                        try {
-                            const view = viewState.session?.views?.[0];
-                            if (view && view.tracks) {
-                                // Force all tracks to reload/re-render
-                                view.tracks.forEach((track: any) => {
-                                    if (track.displays) {
-                                        track.displays.forEach((display: any) => {
-                                            try {
-                                                // Trigger display re-render by reloading
-                                                if (display.reload) {
-                                                    display.reload();
-                                                } else if (display.setError) {
-                                                    // Alternative: clear and refresh
-                                                    display.setError(undefined);
-                                                }
-                                            } catch (e) {
-                                                // Ignore individual display errors
-                                            }
-                                        });
+            if (!featureElement) {
+                return;
+            }
+
+            const featureId = featureElement.getAttribute('data-testid');
+
+            // Historically we only processed "type strain" locus tags using a very strict pattern
+            // like BU_ATCC8492_00001 or PV_ATCC8482_00001. Non–type-strain genomes often use
+            // different locus tag formats (hyphens, dots, different prefixes, etc.), which meant
+            // clicks on those genes were completely ignored.
+            //
+            // To ensure a consistent experience for all genomes, we now treat ANY non-empty
+            // data-testid as a candidate locus tag. The backend will simply return 404/empty
+            // if the ID is not a real locus tag, and we still fall back to a minimal feature
+            // object so the custom feature panel can render something.
+            if (!featureId) {
+                return;
+            }
+
+            // Prevent duplicate processing of the same feature ID
+            if (featureId === lastClickedFeatureId) {
+                return;
+            }
+            lastClickedFeatureId = featureId;
+            
+            // Prevent JBrowse's default drawer behavior
+            event.stopPropagation();
+            event.preventDefault();
+            
+            // Store the selected gene ID globally for JBrowse JEXL expressions
+            window.selectedGeneId = featureId;
+            
+            // Force JBrowse to re-render the track to apply highlighting
+            if (viewState) {
+                try {
+                    const view = viewState.session?.views?.[0];
+                    if (view && view.tracks) {
+                        // Force all tracks to reload/re-render
+                        view.tracks.forEach((track: any) => {
+                            if (track.displays) {
+                                track.displays.forEach((display: any) => {
+                                    try {
+                                        // Trigger display re-render by reloading
+                                        if (display.reload) {
+                                            display.reload();
+                                        } else if (display.setError) {
+                                            // Alternative: clear and refresh
+                                            display.setError(undefined);
+                                        }
+                                    } catch (e) {
+                                        // Ignore individual display errors
                                     }
                                 });
-                                
-                                // Also try to refresh the view itself
-                                if (view.setWidth) {
-                                    view.setWidth(view.width + 0.001);
-                                    setTimeout(() => view.setWidth(view.width - 0.001), 10);
-                                }
                             }
-                        } catch (err) {
-                            console.warn('Could not trigger JBrowse re-render:', err);
+                        });
+                        
+                        // Also try to refresh the view itself
+                        if (view.setWidth) {
+                            view.setWidth(view.width + 0.001);
+                            setTimeout(() => view.setWidth(view.width - 0.001), 10);
                         }
                     }
-                    
-                    // Update viewport sync store with selected locus tag
-                    useViewportSyncStore.getState().setSelectedLocusTag(featureId);
-                    
-                    // Fetch complete gene data from API
-                    Promise.all([
-                        GeneService.fetchGeneByLocusTag(featureId),
-                        GeneService.fetchGeneProteinSeq(featureId).catch(() => ({ protein_sequence: '' }))
-                    ])
-                        .then(([geneData, proteinData]) => {
-                            const completeData = {
-                                ...geneData,
-                                protein_sequence: proteinData.protein_sequence || ''
-                            };
-                            onFeatureSelect(completeData);
-                        })
-                        .catch((err: any) => {
-                            console.warn('Failed to fetch gene data:', err);
-                            // Fallback to minimal data
-                            onFeatureSelect({ 
-                                locus_tag: featureId,
-                                id: featureId 
-                            });
-                        });
+                } catch (err) {
+                    console.warn('Could not trigger JBrowse re-render:', err);
                 }
             }
+            
+            // Update viewport sync store with selected locus tag so:
+            // - the Genomic Context table can highlight the corresponding row
+            // - other components react to the selected gene
+            useViewportSyncStore.getState().setSelectedLocusTag(featureId);
+            
+            // Fetch complete gene data from API
+            Promise.all([
+                GeneService.fetchGeneByLocusTag(featureId),
+                GeneService.fetchGeneProteinSeq(featureId).catch(() => ({ protein_sequence: '' }))
+            ])
+                .then(([geneData, proteinData]) => {
+                    const completeData = {
+                        ...geneData,
+                        protein_sequence: proteinData.protein_sequence || ''
+                    };
+                    onFeatureSelect(completeData);
+                })
+                .catch((err: any) => {
+                    console.warn('Failed to fetch gene data:', err);
+                    // Fallback to minimal data so the custom feature panel still opens
+                    onFeatureSelect({ 
+                        locus_tag: featureId,
+                        id: featureId 
+                    });
+                });
         };
 
         // Handle double-click to prevent JBrowse's default feature drawer
