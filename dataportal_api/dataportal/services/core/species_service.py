@@ -1,10 +1,17 @@
+import logging
 from typing import List, Optional
 
+from asgiref.sync import sync_to_async
 
+from dataportal.models.species import SpeciesDocument
 from dataportal.schema.core.species_schemas import SpeciesSchema
 from dataportal.services.base_service import BaseService
 from dataportal.utils.constants import INDEX_SPECIES
 from dataportal.utils.errors import raise_exception
+from dataportal.utils.exceptions import SpeciesNotFoundError
+from dataportal.utils.species_registry import update_species_enabled
+
+logger = logging.getLogger(__name__)
 
 
 class SpeciesService(BaseService[SpeciesSchema, dict]):
@@ -69,3 +76,30 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
 
     async def get_all_species(self) -> List[SpeciesSchema]:
         return await self.get_all()
+
+    def _set_species_enabled_sync(self, acronym: str, enabled: bool) -> SpeciesSchema:
+        """Sync implementation: get species doc by id, set enabled, save. Raises if not found."""
+        normalized = acronym.strip().upper()
+        try:
+            doc = SpeciesDocument.get(id=normalized)
+        except Exception as e:
+            logger.warning("Species document not found for acronym=%s: %s", normalized, e)
+            raise SpeciesNotFoundError(species_acronym=normalized, message="Species not found")
+        doc.enabled = enabled
+        doc.save()
+        return SpeciesSchema(
+            scientific_name=doc.scientific_name,
+            common_name=doc.common_name,
+            acronym=doc.acronym,
+            taxonomy_id=doc.taxonomy_id,
+            enabled=doc.enabled,
+        )
+
+    async def set_species_enabled(self, acronym: str, enabled: bool) -> SpeciesSchema:
+        """
+        Enable or disable a species by acronym. Updates Elasticsearch and the in-memory registry.
+        Raises SpeciesNotFoundError if the species does not exist.
+        """
+        result = await sync_to_async(self._set_species_enabled_sync)(acronym, enabled)
+        update_species_enabled(acronym, enabled)
+        return result

@@ -92,7 +92,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
-    "dataportal",
+    "dataportal.apps.DataportalConfig",
     "ninja",
     "django_celery_results",
     "django_celery_beat",

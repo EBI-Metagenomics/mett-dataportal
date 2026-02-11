@@ -4,7 +4,6 @@ from typing import List, Optional, Dict, Any
 
 from asgiref.sync import sync_to_async
 from django.db.models import Q
-from django.forms.models import model_to_dict
 from elasticsearch_dsl import Search, connections
 
 from dataportal.models import StrainDocument
@@ -31,6 +30,7 @@ from dataportal.utils.constants import (
     SCROLL_TIMEOUT,
 )
 from dataportal.utils.exceptions import ServiceError
+from dataportal.utils.species_registry import get_enabled_species_acronyms
 
 logger = logging.getLogger(__name__)
 
@@ -41,23 +41,40 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     def __init__(self, limit: int = 10):
         super().__init__(INDEX_STRAINS)
         self.limit = limit
-    
+
+    def _apply_enabled_species_filter(self, filter_criteria: Dict[str, Any]) -> Dict[str, Any]:
+        """Restrict results to genomes whose species is enabled. Modifies filter_criteria in place."""
+        enabled = get_enabled_species_acronyms()
+        if not enabled:
+            filter_criteria[SPECIES_FIELD_ACRONYM_SHORT] = []
+            return filter_criteria
+        allowed = list(enabled)
+        key = SPECIES_FIELD_ACRONYM_SHORT
+        existing = filter_criteria.get(key)
+        if existing is None:
+            filter_criteria[key] = allowed
+        elif isinstance(existing, list):
+            filter_criteria[key] = [s for s in existing if s in enabled]
+        else:
+            filter_criteria[key] = [existing] if existing in enabled else []
+        return filter_criteria
+
     def _convert_hit_to_genome_schema(self, hit) -> GenomeResponseSchema:
         """Convert Elasticsearch hit directly to GenomeResponseSchema (Pydantic)."""
         hit_dict = hit.to_dict()
-        
+
         # Extract contigs with proper structure
         contigs_raw = hit_dict.get("contigs", [])
         contigs = []
         if contigs_raw:
             from dataportal.schema.core.genome_schemas import ContigSchema
+
             for contig in contigs_raw:
                 if isinstance(contig, dict):
-                    contigs.append(ContigSchema(
-                        seq_id=contig.get("seq_id"),
-                        length=contig.get("length")
-                    ))
-        
+                    contigs.append(
+                        ContigSchema(seq_id=contig.get("seq_id"), length=contig.get("length"))
+                    )
+
         return GenomeResponseSchema(
             species_scientific_name=hit_dict.get("species_scientific_name"),
             species_acronym=hit_dict.get("species_acronym"),
@@ -156,8 +173,12 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
 
     # Original methods with minimal changes - keeping existing query logic
     async def get_type_strains(self) -> List[GenomeResponseSchema]:
+        filter_criteria = {"type_strain": True}
+        self._apply_enabled_species_filter(filter_criteria)
+        if filter_criteria.get(SPECIES_FIELD_ACRONYM_SHORT) == []:
+            return []
         return await self._fetch_and_validate_strains(
-            filter_criteria={"type_strain": True},
+            filter_criteria=filter_criteria,
             schema=GenomeResponseSchema,
             error_message="Error fetching type strains",
         )
@@ -176,6 +197,10 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         if params.species_acronym:
             filter_criteria[SPECIES_FIELD_ACRONYM_SHORT] = params.species_acronym
 
+        self._apply_enabled_species_filter(filter_criteria)
+        if filter_criteria.get(SPECIES_FIELD_ACRONYM_SHORT) == []:
+            return await self._create_pagination_schema([], 0, params.page, params.per_page)
+
         if use_scroll:
             # Use scroll API for large downloads
             strains, total_results = await self._fetch_all_strains_with_scroll(
@@ -184,9 +209,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                 sortOrder=params.sortOrder,
                 schema=GenomeResponseSchema,
             )
-            return await self._create_pagination_schema(
-                strains, total_results, 1, total_results
-            )
+            return await self._create_pagination_schema(strains, total_results, 1, total_results)
         else:
             # Use regular pagination for normal requests
             return await self._search_paginated_strains(
@@ -203,10 +226,15 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         params: GenomeAutocompleteQuerySchema,
     ) -> List[StrainSuggestionSchema]:
         try:
+            enabled = get_enabled_species_acronyms()
+            if not enabled:
+                return []
+
             search = Search(index=INDEX_STRAINS)
             search = search.query(
                 "wildcard", **{GENOME_FIELD_ISOLATE_NAME: f"*{params.query.lower()}*"}
             )
+            search = search.filter("terms", **{SPECIES_FIELD_ACRONYM_SHORT: list(enabled)})
 
             if params.species_acronym:
                 search = search.filter(
@@ -220,10 +248,12 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             for hit in response:
                 # For StrainSuggestionSchema we only need isolate_name and assembly_name
                 hit_dict = hit.to_dict()
-                results.append(StrainSuggestionSchema(
-                    isolate_name=hit_dict.get("isolate_name"),
-                    assembly_name=hit_dict.get("assembly_name")
-                ))
+                results.append(
+                    StrainSuggestionSchema(
+                        isolate_name=hit_dict.get("isolate_name"),
+                        assembly_name=hit_dict.get("assembly_name"),
+                    )
+                )
 
             return results
 
@@ -235,8 +265,12 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         self,
         params: GetAllGenomesQuerySchema,
     ) -> GenomePaginationSchema:
+        filter_criteria = {}
+        self._apply_enabled_species_filter(filter_criteria)
+        if filter_criteria.get(SPECIES_FIELD_ACRONYM_SHORT) == []:
+            return await self._create_pagination_schema([], 0, params.page, params.per_page)
         return await self._search_paginated_strains(
-            filter_criteria={},
+            filter_criteria=filter_criteria,
             page=params.page,
             per_page=params.per_page,
             sortField=params.sortField,
@@ -255,8 +289,12 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         params: GenomesByIsolateNamesQuerySchema,
     ) -> List[GenomeResponseSchema]:
         isolate_names_list = [id.strip() for id in params.isolates.split(",")]
+        filter_criteria = {"isolate_name.keyword": isolate_names_list}
+        self._apply_enabled_species_filter(filter_criteria)
+        if filter_criteria.get(SPECIES_FIELD_ACRONYM_SHORT) == []:
+            return []
         return await self._fetch_and_validate_strains(
-            filter_criteria={"isolate_name.keyword": isolate_names_list},
+            filter_criteria=filter_criteria,
             schema=GenomeResponseSchema,
             error_message="Error fetching genomes by isolate names",
         )
@@ -297,9 +335,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                 sortOrder,
                 schema=GenomeResponseSchema,
             )
-            return await self._create_pagination_schema(
-                strains, total_results, page, per_page
-            )
+            return await self._create_pagination_schema(strains, total_results, page, per_page)
         except Exception as e:
             logger.error(f"{error_message}: {e}")
             raise ServiceError(e)
@@ -307,9 +343,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     async def _fetch_single_genome(self, filter_criteria, error_message):
         try:
             if isinstance(filter_criteria, Q):
-                filter_kwargs = {
-                    child[0]: child[1] for child in filter_criteria.children
-                }
+                filter_kwargs = {child[0]: child[1] for child in filter_criteria.children}
             else:
                 filter_kwargs = filter_criteria
 
@@ -339,11 +373,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                         search = search.query(
                             "bool",
                             should=[
-                                {
-                                    "wildcard": {
-                                        f"{field}.keyword": f"*{value.lower()}*"
-                                    }
-                                },
+                                {"wildcard": {f"{field}.keyword": f"*{value.lower()}*"}},
                                 {"term": {f"{field}.keyword": value}},
                             ],
                             minimum_should_match=1,
@@ -440,9 +470,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
 
         return header + "\n" + "\n".join(rows)
 
-    async def _fetch_all_strains_with_scroll(
-        self, filter_criteria, sortField, sortOrder, schema
-    ):
+    async def _fetch_all_strains_with_scroll(self, filter_criteria, sortField, sortOrder, schema):
         """Fetch all strains using Elasticsearch scroll API for large downloads."""
         try:
             es_client = connections.get_connection()
@@ -456,11 +484,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                             {
                                 "bool": {
                                     "should": [
-                                        {
-                                            "wildcard": {
-                                                f"{field}.keyword": f"*{value.lower()}*"
-                                            }
-                                        },
+                                        {"wildcard": {f"{field}.keyword": f"*{value.lower()}*"}},
                                         {"term": {f"{field}.keyword": value}},
                                     ],
                                     "minimum_should_match": 1,
@@ -472,22 +496,16 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                             {"wildcard": {field: f"*{value}*"}}
                         )
                 elif isinstance(value, list):
-                    search_body["query"]["bool"]["must"].append(
-                        {"terms": {field: value}}
-                    )
+                    search_body["query"]["bool"]["must"].append({"terms": {field: value}})
                 else:
-                    search_body["query"]["bool"]["must"].append(
-                        {"term": {field: value}}
-                    )
+                    search_body["query"]["bool"]["must"].append({"term": {field: value}})
 
             # Map "species" to its actual field
             sortField = self._resolve_sort_field(sortField)
             sort_order = "asc" if sortOrder == SORT_DIRECTION_ASC else "desc"
             search_body["sort"] = [{sortField: {"order": sort_order}}]
 
-            logger.info(
-                f"Starting scroll search with query: {json.dumps(search_body, indent=2)}"
-            )
+            logger.info(f"Starting scroll search with query: {json.dumps(search_body, indent=2)}")
 
             # Execute initial search
             response = await sync_to_async(
@@ -518,16 +536,12 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                     results.append(self._convert_hit_to_genome_schema(mock_hit))
 
                 total_results += len(response["hits"]["hits"])
-                logger.info(
-                    f"Fetched {total_results} strains in {batch_count} batches..."
-                )
+                logger.info(f"Fetched {total_results} strains in {batch_count} batches...")
 
                 # Get next batch using scroll
                 try:
                     response = await sync_to_async(
-                        lambda: es_client.scroll(
-                            scroll_id=scroll_id, scroll=SCROLL_TIMEOUT
-                        )
+                        lambda: es_client.scroll(scroll_id=scroll_id, scroll=SCROLL_TIMEOUT)
                     )()
                     scroll_id = response["_scroll_id"]
                 except Exception as scroll_error:
@@ -539,9 +553,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                     f"Reached maximum result limit of {max_results}. Some results may be truncated."
                 )
 
-            logger.info(
-                f"Scroll search completed. Total strains fetched: {total_results}"
-            )
+            logger.info(f"Scroll search completed. Total strains fetched: {total_results}")
             return results, total_results
 
         except Exception as e:

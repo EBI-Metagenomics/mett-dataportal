@@ -15,6 +15,8 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkQuerySchema,
     PPINetworkPropertiesQuerySchema,
     PPIScoreTypesResponseSchema,
+    PPIStringNetworkQuerySchema,
+    PPIStringNetworkResponseSchema,
 )
 from dataportal.schema.response_schemas import create_success_response, ErrorCode
 from dataportal.services.interactions.ppi_service import PPIService
@@ -275,6 +277,41 @@ async def get_ppi_network_properties(request, query: PPINetworkPropertiesQuerySc
     except ServiceError as e:
         logger.error(f"Service error: {e}")
         raise_internal_server_error(f"Failed to get network properties: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise_internal_server_error("Internal server error")
+
+
+@ppi_router.get(
+    "/string-network",
+    response=PPIStringNetworkResponseSchema,
+    summary="Get STRING DB network for PPI pair",
+    description="Fetch STRING DB interaction network for a PPI pair. Provide either pair_id (lookup from PPI index) or protein_ids (STRING protein IDs directly).",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
+)
+@wrap_success_response
+async def get_string_network(request, query: PPIStringNetworkQuerySchema = Query(...)):
+    """Get STRING DB network data for a PPI pair or direct STRING protein IDs."""
+    if not query.pair_id and not query.protein_ids:
+        raise_validation_error("Either 'pair_id' or 'protein_ids' must be provided")
+    if query.pair_id and query.protein_ids:
+        raise_validation_error("Only one of 'pair_id' or 'protein_ids' can be provided, not both")
+
+    try:
+        result = await ppi_service.get_string_network_for_pair(
+            pair_id=query.pair_id,
+            protein_ids=query.protein_ids,
+            species_acronym=query.species_acronym,
+            required_score=query.required_score,
+            network_type=query.network_type,
+        )
+        return create_success_response(
+            data=result,
+            message="STRING network data retrieved successfully",
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise_internal_server_error(f"Failed to get STRING network: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise_internal_server_error("Internal server error")
