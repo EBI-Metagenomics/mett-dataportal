@@ -172,11 +172,10 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
                 return;
             }
 
-            // If this doesn't look like a real gene ID, don't fire any gene APIs.
-            // Also clear any previous gene selection so the feature panel can reset.
+            // If this doesn't look like a real gene ID, ignore the click entirely.
+            // This avoids firing bogus API calls for container elements while
+            // preserving the currently selected gene in the feature panel.
             if (!isLikelyGeneId(featureId)) {
-                useViewportSyncStore.getState().setSelectedLocusTag(null);
-                onFeatureSelect(null);
                 return;
             }
 
