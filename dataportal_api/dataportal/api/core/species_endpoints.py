@@ -17,6 +17,7 @@ from dataportal.utils.errors import (
 )
 from dataportal.utils.exceptions import (
     ServiceError,
+    SpeciesNotFoundError,
 )
 from dataportal.schema.response_schemas import ErrorCode
 from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
@@ -28,6 +29,72 @@ genome_service = ServiceFactory.get_genome_service()
 
 ROUTER_SPECIES = "Species"
 species_router = Router(tags=[ROUTER_SPECIES])
+
+
+# API Endpoint to enable a species by acronym
+@species_router.post(
+    "/{species_acronym}/enable",
+    response=SuccessResponseSchema,
+    summary="Enable a species",
+    description="Sets the species as enabled so it is included in gene and genome API results.",
+)
+@wrap_success_response
+async def enable_species(
+    request,
+    species_acronym: str = Path(
+        ...,
+        description="Acronym for the species (e.g. BU, PV).",
+        example="BU",
+    ),
+):
+    try:
+        species_acronym = species_acronym.strip().upper()
+        species = await species_service.set_species_enabled(species_acronym, True)
+        return create_success_response(
+            data=species.model_dump(),
+            message=f"Species '{species_acronym}' has been enabled",
+        )
+    except SpeciesNotFoundError as e:
+        raise_not_found_error(
+            str(e.message),
+            error_code=ErrorCode.SPECIES_NOT_FOUND,
+        )
+    except ServiceError as e:
+        logger.error(f"Service error enabling species: {e}")
+        raise_internal_server_error(f"Failed to enable species: {species_acronym}")
+
+
+# API Endpoint to disable a species by acronym
+@species_router.post(
+    "/{species_acronym}/disable",
+    response=SuccessResponseSchema,
+    summary="Disable a species",
+    description="Sets the species as disabled so it is excluded from gene and genome API results.",
+)
+@wrap_success_response
+async def disable_species(
+    request,
+    species_acronym: str = Path(
+        ...,
+        description="Acronym for the species (e.g. BU, PV).",
+        example="BU",
+    ),
+):
+    try:
+        species_acronym = species_acronym.strip().upper()
+        species = await species_service.set_species_enabled(species_acronym, False)
+        return create_success_response(
+            data=species.model_dump(),
+            message=f"Species '{species_acronym}' has been disabled",
+        )
+    except SpeciesNotFoundError as e:
+        raise_not_found_error(
+            str(e.message),
+            error_code=ErrorCode.SPECIES_NOT_FOUND,
+        )
+    except ServiceError as e:
+        logger.error(f"Service error disabling species: {e}")
+        raise_internal_server_error(f"Failed to disable species: {species_acronym}")
 
 
 # API Endpoint to retrieve all species

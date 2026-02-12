@@ -10,31 +10,68 @@
 
 ## Table of Contents
 
-- [About](#about)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-  - [Backend Setup](#backend-setup)
-  - [Frontend Setup](#frontend-setup)
-  - [Docker Setup](#docker-setup)
-- [Configuration](#configuration)
-- [Database Setup](#database-setup)
-  - [PostgreSQL Migrations](#postgresql-migrations)
-  - [Elasticsearch Indices](#elasticsearch-indices)
-- [Data Import](#data-import)
-  - [Core Data Import](#core-data-import)
-  - [Feature Annotations](#feature-annotations)
-  - [Experimental Data](#experimental-data)
-  - [Network Data](#network-data)
-- [Development](#development)
-  - [Code Style](#code-style)
-  - [Local Development Workflow](#local-development-workflow)
-- [Deployment](#deployment)
-  - [Kubernetes Deployment](#kubernetes-deployment)
-- [API Documentation](#api-documentation)
-- [License](#license)
+- [METT Data Portal](#mett-data-portal)
+  - [Table of Contents](#table-of-contents)
+  - [About](#about)
+  - [Features](#features)
+  - [Architecture](#architecture)
+  - [Prerequisites](#prerequisites)
+    - [Required Software](#required-software)
+    - [System Requirements](#system-requirements)
+  - [Quick Start](#quick-start)
+    - [Development Setup (Minimal)](#development-setup-minimal)
+  - [Installation](#installation)
+    - [Backend Setup](#backend-setup)
+      - [1. Install Python Dependencies](#1-install-python-dependencies)
+      - [2. Environment Variables](#2-environment-variables)
+    - [Frontend Setup](#frontend-setup)
+    - [Docker Setup](#docker-setup)
+      - [Build Docker Image](#build-docker-image)
+      - [Run with Docker](#run-with-docker)
+      - [Docker Compose (Recommended)](#docker-compose-recommended)
+  - [Configuration](#configuration)
+    - [Pydantic Configuration](#pydantic-configuration)
+    - [Environment Files](#environment-files)
+  - [Database Setup](#database-setup)
+    - [PostgreSQL Migrations](#postgresql-migrations)
+    - [Elasticsearch Indices](#elasticsearch-indices)
+      - [Create Indices](#create-indices)
+      - [Index Naming Convention](#index-naming-convention)
+  - [Data Import](#data-import)
+    - [Core Data Import](#core-data-import)
+      - [1. Species Data](#1-species-data)
+      - [2. Strain Data](#2-strain-data)
+    - [Feature Annotations](#feature-annotations)
+      - [Core Genes Features Import](#core-genes-features-import)
+      - [Incremental Feature Updates](#incremental-feature-updates)
+    - [Experimental Data](#experimental-data)
+      - [Fitness Data](#fitness-data)
+      - [Mutant Growth Data](#mutant-growth-data)
+      - [Thermal Proteome Profiling (TPP)](#thermal-proteome-profiling-tpp)
+      - [Fitness Correlation Data](#fitness-correlation-data)
+    - [Network Data](#network-data)
+      - [Protein-Protein Interactions (PPI)](#protein-protein-interactions-ppi)
+      - [Operons](#operons)
+      - [Ortholog Pairs](#ortholog-pairs)
+    - [Index File Generation](#index-file-generation)
+  - [Development](#development)
+    - [Code Style](#code-style)
+      - [Pre-commit Hooks](#pre-commit-hooks)
+      - [Manual Formatting](#manual-formatting)
+    - [Testing](#testing)
+      - [Backend Tests](#backend-tests)
+      - [Frontend Tests](#frontend-tests)
+    - [Local Development Workflow](#local-development-workflow)
+  - [Deployment](#deployment)
+    - [Kubernetes Deployment](#kubernetes-deployment)
+      - [Prerequisites](#prerequisites-1)
+      - [Deploy Resources](#deploy-resources)
+      - [Configuration](#configuration-1)
+  - [API Documentation](#api-documentation)
+    - [Endpoints Overview](#endpoints-overview)
+    - [Interactive API Documentation](#interactive-api-documentation)
+    - [Response Formats](#response-formats)
+  - [License](#license)
 
 ---
 
@@ -528,15 +565,17 @@ $ python manage.py import_fitness_correlations \
 ```bash
 # Basic import
 $ python manage.py import_ppi_with_genes \
-  --index ppi_index \
-  --pattern "*.csv" \
-  --csv-folder ../data-generators/Sub-Projects-Data/SP2/
+    --index ppi_index \
+    --pattern "*.csv" \
+    --csv-folder ../data-generators/Sub-Projects-Data/SP2/ \
+    --string-mapping-dir data-generators/stringdb-mapper/output/uniprot_mapped
 
 # With refresh optimization (recommended for large datasets)
 $ python manage.py import_ppi_with_genes \
   --index ppi_index \
   --pattern "*.csv" \
   --csv-folder ../data-generators/Sub-Projects-Data/SP2/ \
+  --string-mapping-dir data-generators/stringdb-mapper/output/uniprot_mapped \
   --refresh-every-rows 500000
   # Alternative: --refresh-every-secs 120
 ```

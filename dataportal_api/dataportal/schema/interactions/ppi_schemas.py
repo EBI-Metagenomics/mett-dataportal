@@ -15,6 +15,7 @@ class PPIInteractionSchema(BaseModel):
     protein_a: str
     protein_b: str
     participants: List[str]
+    participants_locus_tag: Optional[List[str]] = None
     is_self_interaction: bool = False
 
     # Gene information for protein_a
@@ -28,6 +29,10 @@ class PPIInteractionSchema(BaseModel):
     protein_b_uniprot_id: Optional[str] = None
     protein_b_name: Optional[str] = None
     protein_b_product: Optional[str] = None
+
+    # External identifiers (STRING DB)
+    string_protein_a_id: Optional[str] = None
+    string_protein_b_id: Optional[str] = None
 
     # Scores
     dl_score: Optional[float] = None
@@ -261,3 +266,29 @@ class PPIScoreTypesResponseSchema(SuccessResponseSchema):
     """Response schema for available score types."""
 
     data: Dict[str, List[str]] = Field(..., description="Available score types")
+
+
+# STRING DB network schemas
+class PPIStringNetworkQuerySchema(BaseModel):
+    """Schema for STRING network query parameters."""
+
+    pair_id: Optional[str] = Field(
+        None, description="PPI pair_id to look up (e.g. bu:A0A0X1ABC1__B0ABC123)"
+    )
+    protein_ids: Optional[List[str]] = Field(
+        None,
+        description="STRING protein IDs (e.g. ['820.ERS852554_01920', '820.ERS852554_01919'])",
+    )
+    species_acronym: Optional[str] = Field(
+        None, description="Species acronym (BU, PV) for taxid resolution"
+    )
+    required_score: Optional[int] = Field(
+        None, ge=0, le=1000, description="Minimum STRING score threshold"
+    )
+    network_type: str = Field("physical", description="Network type: physical or functional")
+
+
+class PPIStringNetworkResponseSchema(SuccessResponseSchema):
+    """Response schema for STRING network data."""
+
+    data: Dict[str, Any] = Field(..., description="STRING network data and interaction metadata")

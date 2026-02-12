@@ -17,6 +17,31 @@ interface GeneViewerContentProps {
     onFeatureSelect?: (feature: any) => void;
 }
 
+// Heuristic to distinguish real gene locus tags from generic JBrowse container IDs
+// like "tracksContainer", "svgfeatures", "display-placeholderId", etc.
+const isLikelyGeneId = (rawId: string | null): boolean => {
+    if (!rawId) return false;
+    const id = rawId.trim();
+    if (!id) return false;
+
+    // Ignore obvious non-gene/container IDs
+    if (/(container|tracks?|svg|placeholder|display)/i.test(id)) {
+        return false;
+    }
+
+    // Require at least one letter and one digit
+    if (!/[A-Za-z]/.test(id) || !/\d/.test(id)) {
+        return false;
+    }
+
+    // Disallow whitespace
+    if (/\s/.test(id)) {
+        return false;
+    }
+
+    return true;
+};
+
 const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
     viewState,
     onRefreshTracks,
@@ -143,17 +168,14 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
             }
 
             const featureId = featureElement.getAttribute('data-testid');
-
-            // Historically we only processed "type strain" locus tags using a very strict pattern
-            // like BU_ATCC8492_00001 or PV_ATCC8482_00001. Non–type-strain genomes often use
-            // different locus tag formats (hyphens, dots, different prefixes, etc.), which meant
-            // clicks on those genes were completely ignored.
-            //
-            // To ensure a consistent experience for all genomes, we now treat ANY non-empty
-            // data-testid as a candidate locus tag. The backend will simply return 404/empty
-            // if the ID is not a real locus tag, and we still fall back to a minimal feature
-            // object so the custom feature panel can render something.
             if (!featureId) {
+                return;
+            }
+
+            // If this doesn't look like a real gene ID, ignore the click entirely.
+            // This avoids firing bogus API calls for container elements while
+            // preserving the currently selected gene in the feature panel.
+            if (!isLikelyGeneId(featureId)) {
                 return;
             }
 
@@ -239,10 +261,9 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
             
             if (featureElement) {
                 const featureId = featureElement.getAttribute('data-testid');
-                const locusTagPattern = /^[A-Z]{2,3}_[A-Z0-9]+_\d+$/;
                 
                 // If it's a gene feature, prevent JBrowse's default drawer
-                if (featureId && locusTagPattern.test(featureId)) {
+                if (isLikelyGeneId(featureId)) {
                     event.stopPropagation();
                     event.preventDefault();
                     

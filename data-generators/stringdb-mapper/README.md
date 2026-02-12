@@ -65,7 +65,7 @@ Basic best-hit mapping:
 $ diamond blastp \
   -q ./mett-faa-files/bu_typestrains.faa \
   -d bu820_string \
-  -o ./output/bu_to_string_raw.tsv \
+  -o ./output/raw/bu_to_string_raw.tsv \
   -f 6 qseqid sseqid pident length qcovhsp scovhsp evalue bitscore \
   --max-target-seqs 1  \
   --evalue 1e-3 \
@@ -75,7 +75,7 @@ $ diamond blastp \
 $ diamond blastp \
   -q ./mett-faa-files/pv_typestrains.faa \
   -d pv435590_string \
-  -o ./output/pv_to_string_raw.tsv \
+  -o ./output/raw/pv_to_string_raw.tsv \
   -f 6 qseqid sseqid pident length qcovhsp scovhsp evalue bitscore \
   --max-target-seqs 1  \
   --evalue 1e-3 \
@@ -121,24 +121,42 @@ BU_METT_00001 ↔ 820.CUP55842 with 99.1% identity, full-length.
 That 820.CUP55842 is what you’ll later send to STRING’s PPI endpoints as identifiers=820.CUP55842&species=820.
 If you want to separate the numeric taxid and the CUP ID, you can split sseqid later in Python or SQL (split_part).
 ```
-### Turn this into a clean mapping table
+### Convert to UniProt→STRING mapping (for PPI import)
 
-From here:
+PPI data uses UniProt IDs; the raw DIAMOND output uses locus_tags. Run the conversion script to produce UniProt-keyed mappings:
+
+```bash
+# BU (downloads GFF from FTP)
+python convert_to_uniprot_mapping.py \
+  --raw-tsv output/raw/bu_to_string_raw.tsv \
+  --download-gff BU_ATCC8492 \
+  --output output/uniprot_mapped/bu_uniprot_to_string.tsv
+
+# PV
+python convert_to_uniprot_mapping.py \
+  --raw-tsv output/raw/pv_to_string_raw.tsv \
+  --download-gff PV_ATCC8482 \
+  --output output/uniprot_mapped/pv_uniprot_to_string.tsv
 ```
-Load mett_to_string_raw.tsv into pandas / a small script.
-Filter by thresholds:
-pident >= 80
-qcovhsp >= 80
-scovhsp >= 80
-Write out a final mapping file:
-mett_protein_id, mett_uniprot, string_protein_id, taxid, pident, qcov, scov
-Then insert into your DB, e.g. protein_external_id:
-protein_external_id
-- protein_id      (FK → your protein table)
-- source          = 'STRING'
-- identifier      = '820.CUP55842'
-- metadata        = { "taxid": 820, "pident": 99.1, ... }
+
+Or with a local GFF file:
+```bash
+python convert_to_uniprot_mapping.py \
+  --raw-tsv output/raw/bu_to_string_raw.tsv \
+  --gff-file /path/to/BU_ATCC8492/.../merged_annotations.gff \
+  --output output/uniprot_mapped/bu_uniprot_to_string.tsv
 ```
+
+Then point PPI import at the output directory:
+```bash
+python manage.py import_ppi_with_genes \
+  --csv-folder /path/to/ppi_csvs \
+  --string-mapping-dir output/uniprot_mapped/
+```
+
+The output TSV has columns: `locus_tag`, `uniprot_id`, `string_protein_id`.
+
+Both locus_tag and uniprot_id can be used for lookups at different stages (e.g. PPI import uses uniprot_id; feature/other workflows may use locus_tag).
 
 ### Using it in PPI module
 Call STRING:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
-import csv
 
 from django.utils.timezone import now
 
@@ -37,7 +36,9 @@ def _species_key(species_name: Optional[str], species_map: Dict[str, str]) -> st
     return "NA"
 
 
-def _get_isolate_name(species_name: Optional[str], species_map: Dict[str, str]) -> Optional[str]:
+def _get_isolate_name(
+    species_name: Optional[str], species_map: Dict[str, str]
+) -> Optional[str]:
     """Get isolate name from species name using the mapping."""
     if species_name and species_name in species_map:
         return species_map[species_name]
@@ -55,9 +56,18 @@ def _flags_and_rollups(src: Dict) -> None:
     #         "secondary_score", "bayesian_score", "tt_score", "ds_score"
     #     ]
     # )
-    keys = ['ds_score', 'tt_score', 'perturbation_score', 'abundance_score',
-            'melt_score', 'secondary_score', 'bayesian_score', 'string_score',
-            'operon_score', 'ecocyc_score']
+    # keys = [
+    #     "ds_score",
+    #     "tt_score",
+    #     "perturbation_score",
+    #     "abundance_score",
+    #     "melt_score",
+    #     "secondary_score",
+    #     "bayesian_score",
+    #     "string_score",
+    #     "operon_score",
+    #     "ecocyc_score",
+    # ]
     # cnt = sum(1 for k in keys if src.get(k) is not None)
     # src["evidence_count"] = cnt
 
@@ -75,6 +85,8 @@ class PPICSVFlow:
     repo: PPIIndexRepository
     species_map: Dict[str, str]
     gff_parser: Optional[GFFParser] = None
+    # Optional mapping from UniProt → STRING protein id
+    string_map: Optional[Dict[str, str]] = None
 
     def _row_to_action(self, row: Dict) -> Optional[Dict]:
         a, b = row.get("protein_a"), row.get("protein_b")
@@ -88,6 +100,25 @@ class PPICSVFlow:
         aa, bb = canonical_pair(a, b)
         pair_id = build_pair_id(sp_key, aa, bb)
 
+        # Optional locus-tag participants (if gene info was populated)
+        locus_a = row.get("protein_a_locus_tag")
+        locus_b = row.get("protein_b_locus_tag")
+        locus_participants = [x for x in (locus_a, locus_b) if x]
+        locus_participants_sorted = (
+            sorted(locus_participants) if locus_participants else None
+        )
+
+        # Optional STRING protein ids from mapping file (UniProt → STRING).
+        # Use convert_to_uniprot_mapping.py to produce UniProt-keyed mappings from
+        # raw locus_tag-based DIAMOND output.
+        string_protein_a_id = None
+        string_protein_b_id = None
+        if self.string_map:
+            uniprot_a = row.get("protein_a_uniprot_id") or a
+            uniprot_b = row.get("protein_b_uniprot_id") or b
+            string_protein_a_id = self.string_map.get(uniprot_a)
+            string_protein_b_id = self.string_map.get(uniprot_b)
+
         src = {
             # identity
             "pair_id": pair_id,
@@ -99,7 +130,8 @@ class PPICSVFlow:
             "participants": [a, b],
             "participants_sorted": [aa, bb],
             "is_self_interaction": (aa == bb),
-
+            "participants_locus_tag": locus_participants or None,
+            "participants_locus_tag_sorted": locus_participants_sorted,
             # scores
             "ds_score": row.get("ds_score"),
             "tt_score": row.get("tt_score"),
@@ -111,11 +143,9 @@ class PPICSVFlow:
             "string_score": row.get("string_score"),
             "operon_score": row.get("operon_score"),
             "ecocyc_score": row.get("ecocyc_score"),
-
             # xlms
             "xlms_peptides": row.get("xlms_peptides"),
             "xlms_files": row.get("xlms_files"),
-            
             # gene information for protein_a
             "protein_a_locus_tag": row.get("protein_a_locus_tag"),
             "protein_a_uniprot_id": row.get("protein_a_uniprot_id"),
@@ -129,7 +159,6 @@ class PPICSVFlow:
             "protein_a_strand": row.get("protein_a_strand"),
             "protein_a_phase": row.get("protein_a_phase"),
             "protein_a_product": row.get("protein_a_product"),
-            
             # gene information for protein_b
             "protein_b_locus_tag": row.get("protein_b_locus_tag"),
             "protein_b_uniprot_id": row.get("protein_b_uniprot_id"),
@@ -143,6 +172,9 @@ class PPICSVFlow:
             "protein_b_strand": row.get("protein_b_strand"),
             "protein_b_phase": row.get("protein_b_phase"),
             "protein_b_product": row.get("protein_b_product"),
+            # External ids
+            "string_protein_a_id": string_protein_a_id,
+            "string_protein_b_id": string_protein_b_id,
         }
 
         _flags_and_rollups(src)
@@ -156,15 +188,15 @@ class PPICSVFlow:
         }
 
     def run(
-            self,
-            folder: str,
-            pattern: str = "*.csv",
-            batch_size: int = 5000,
-            refresh: Optional[str | bool] = None,  # set "wait_for" at the end if needed
-            log_every: int = 100_000,
-            optimize_indexing: bool = True,
-            refresh_every_rows: int | None = None,
-            refresh_every_secs: float | None = None,
+        self,
+        folder: str,
+        pattern: str = "*.csv",
+        batch_size: int = 5000,
+        refresh: Optional[str | bool] = None,  # set "wait_for" at the end if needed
+        log_every: int = 100_000,
+        optimize_indexing: bool = True,
+        refresh_every_rows: int | None = None,
+        refresh_every_secs: float | None = None,
     ) -> int:
         """
         Stream CSVs and bulk-index in chunks. No Painless, no large in-memory merge.
@@ -172,20 +204,18 @@ class PPICSVFlow:
         """
         es = self.repo._conn()
         self.repo.ensure_index()
-        
+
         # Pre-load GFF files if GFF parser is available
         if self.gff_parser:
             print("[ppi] Pre-loading GFF files...")
-            # Set species mapping
             self.gff_parser.set_species_mapping(self.species_map)
-            
-            # Get unique species from CSV files
-            species_list = self._get_unique_species_from_csvs(folder, pattern)
+            # Use species from mapping (avoids full CSV scan)
+            species_list = list(self.species_map.keys())
             if species_list:
                 self.gff_parser.preload_gff_files(species_list)
                 print(f"[ppi] Pre-loaded GFF files for {len(species_list)} species")
             else:
-                print("[ppi] No species found in CSV files")
+                print("[ppi] No species in mapping")
 
         # Optional: speed up big initial loads
         old_settings = {}
@@ -206,6 +236,8 @@ class PPICSVFlow:
 
         buffer: List[Dict] = []
         total = 0
+        rows_since_refresh = 0
+        last_refresh_ts = now()
 
         try:
             for i, row in enumerate(iter_ppi_rows(folder, pattern, self.gff_parser), 1):
@@ -213,26 +245,37 @@ class PPICSVFlow:
                 if act is None:
                     continue
                 buffer.append(act)
+                rows_since_refresh += 1
 
                 if len(buffer) >= batch_size:
-                    success, _ = self.repo.bulk_index(buffer, chunk_size=batch_size, refresh=None)
+                    success, _ = self.repo.bulk_index(
+                        buffer, chunk_size=batch_size, refresh=None
+                    )
                     total += success
                     buffer.clear()
                     if log_every and (i % log_every == 0):
                         print(f"[ppi] processed rows: {i:,} | indexed: {total:,}")
 
-                should_refresh = (
-                        (refresh_every_rows is not None and rows_since_refresh >= refresh_every_rows) or
-                        (refresh_every_secs is not None and now - last_refresh_ts >= refresh_every_secs)
-                )
-                if should_refresh:
-                    self.repo.refresh()  # <- on-demand refresh
-                    rows_since_refresh = 0
-                    last_refresh_ts = now
-                    print(f"[ppi] periodic refresh after {i:,} rows; total indexed: {total:,}")
+                    should_refresh = (
+                        refresh_every_rows is not None
+                        and rows_since_refresh >= refresh_every_rows
+                    ) or (
+                        refresh_every_secs is not None
+                        and (now() - last_refresh_ts).total_seconds()
+                        >= refresh_every_secs
+                    )
+                    if should_refresh:
+                        es.indices.refresh(index=self.repo.concrete_index)
+                        rows_since_refresh = 0
+                        last_refresh_ts = now()
+                        print(
+                            f"[ppi] periodic refresh after {i:,} rows; total indexed: {total:,}"
+                        )
 
             if buffer:
-                success, _ = self.repo.bulk_index(buffer, chunk_size=batch_size, refresh=refresh)
+                success, _ = self.repo.bulk_index(
+                    buffer, chunk_size=batch_size, refresh=refresh
+                )
                 total += success
         finally:
             if optimize_indexing and old_settings:
@@ -242,7 +285,9 @@ class PPICSVFlow:
                         body={
                             "index": {
                                 "refresh_interval": old_settings["refresh_interval"],
-                                "number_of_replicas": old_settings["number_of_replicas"],
+                                "number_of_replicas": old_settings[
+                                    "number_of_replicas"
+                                ],
                             }
                         },
                     )
@@ -252,24 +297,3 @@ class PPICSVFlow:
                     print(f"[ppi] warn: restore index settings failed: {e}")
 
         return total
-    
-    def _get_unique_species_from_csvs(self, folder: str, pattern: str) -> List[str]:
-        """Get unique species from CSV files to pre-load GFF data."""
-        import glob
-        import os
-        
-        species_set = set()
-        
-        for path in sorted(glob.glob(os.path.join(folder, pattern))):
-            try:
-                with open(path, "r", newline="", encoding="utf-8") as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
-                        species = row.get("species")
-                        if species and species.strip():
-                            species_set.add(species.strip())
-            except Exception as e:
-                print(f"[ppi] Warning: Error reading CSV file {path}: {e}")
-                continue
-        
-        return list(species_set)

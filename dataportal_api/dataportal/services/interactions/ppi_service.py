@@ -18,9 +18,12 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPIPaginationSchema,
     PPIAllNeighborsSchema,
 )
+from asgiref.sync import sync_to_async
+
 from dataportal.services.base_service import BaseService
 from dataportal.utils.constants import INDEX_PPI, PPI_VALID_FILTER_FIELDS, PPI_SCORE_FIELDS
 from dataportal.utils.exceptions import ServiceError, ValidationError
+from dataportal.utils.string_client import fetch_string_network
 
 logger = logging.getLogger(__name__)
 
@@ -132,13 +135,16 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             "pair_id",
             "protein_a",
             "protein_b",
+            "participants",
+            "participants_locus_tag",
             "protein_a_locus_tag",
             "protein_a_name",
             "protein_a_product",
             "protein_b_locus_tag",
             "protein_b_name",
             "protein_b_product",
-            "participants",
+            "string_protein_a_id",
+            "string_protein_b_id",
             "is_self_interaction",
             "species_scientific_name",
             "species_acronym",
@@ -856,6 +862,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                             "name": getattr(hit, "protein_b_name", None),
                             "product": getattr(hit, "protein_b_product", None),
                             "uniprot_id": getattr(hit, "protein_b_uniprot_id", None),
+                            "string_protein_id": getattr(hit, "string_protein_b_id", None),
                         }
                     elif protein_b == protein_id and protein_a != protein_id:
                         unique_neighbors.add(protein_a)
@@ -865,6 +872,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                             "name": getattr(hit, "protein_a_name", None),
                             "product": getattr(hit, "protein_a_product", None),
                             "uniprot_id": getattr(hit, "protein_a_uniprot_id", None),
+                            "string_protein_id": getattr(hit, "string_protein_a_id", None),
                         }
 
                 except Exception as e:
@@ -883,6 +891,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         "name": metadata.get("name"),
                         "product": metadata.get("product"),
                         "uniprot_id": metadata.get("uniprot_id"),
+                        "string_protein_id": metadata.get("string_protein_id"),
                     }
                 )
 
@@ -907,6 +916,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             "protein_a": hit.protein_a,
             "protein_b": hit.protein_b,
             "participants": getattr(hit, "participants", []),
+            "participants_locus_tag": getattr(hit, "participants_locus_tag", None),
             "is_self_interaction": getattr(hit, "is_self_interaction", False),
             # Protein A info
             "protein_a_locus_tag": getattr(hit, "protein_a_locus_tag", None),
@@ -918,6 +928,9 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             "protein_b_uniprot_id": getattr(hit, "protein_b_uniprot_id", None),
             "protein_b_name": getattr(hit, "protein_b_name", None),
             "protein_b_product": getattr(hit, "protein_b_product", None),
+            # STRING DB ids
+            "string_protein_a_id": getattr(hit, "string_protein_a_id", None),
+            "string_protein_b_id": getattr(hit, "string_protein_b_id", None),
             # Scores
             "dl_score": getattr(hit, "dl_score", None),
             "comelt_score": getattr(hit, "comelt_score", None),
@@ -939,3 +952,90 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             # Metadata
             "evidence_count": getattr(hit, "evidence_count", 0),
         }
+
+    async def get_interaction_by_pair_id(self, pair_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch a single PPI interaction by pair_id.
+
+        Returns:
+            Dict with interaction data (including string_protein_a_id, string_protein_b_id) or None
+        """
+        try:
+            doc = await sync_to_async(ProteinProteinDocument.get)(
+                id=pair_id, index=self.index_name, ignore=404
+            )
+            if doc is None:
+                return None
+            return self._hit_to_dict(doc)
+        except Exception as e:
+            logger.error(f"Error fetching PPI by pair_id {pair_id}: {e}")
+            raise ServiceError(f"Failed to fetch interaction: {str(e)}")
+
+    async def get_string_network_for_pair(
+        self,
+        pair_id: Optional[str] = None,
+        protein_ids: Optional[List[str]] = None,
+        species_acronym: Optional[str] = None,
+        required_score: Optional[int] = None,
+        network_type: str = "physical",
+    ) -> Dict[str, Any]:
+        """
+        Fetch STRING DB network data for a PPI pair.
+
+        Either pair_id (lookup from ES) or protein_ids (direct STRING IDs) must be provided.
+
+        Returns:
+            Dict with interaction (if pair_id), network edges, network_url, and any error.
+        """
+        identifiers: List[str] = []
+        interaction: Optional[Dict[str, Any]] = None
+        resolved_species: Optional[str] = None
+
+        if pair_id:
+            interaction = await self.get_interaction_by_pair_id(pair_id)
+            if not interaction:
+                return {
+                    "interaction": None,
+                    "network": [],
+                    "network_url": None,
+                    "error": f"PPI pair_id '{pair_id}' not found",
+                }
+            sa = interaction.get("string_protein_a_id")
+            sb = interaction.get("string_protein_b_id")
+            if sa and sb:
+                identifiers = [sa, sb]
+            else:
+                return {
+                    "interaction": interaction,
+                    "network": [],
+                    "network_url": None,
+                    "error": "STRING protein IDs not available for this pair (missing string_protein_a_id or string_protein_b_id)",
+                }
+            resolved_species = interaction.get("species_acronym") or species_acronym
+        elif protein_ids:
+            identifiers = [p for p in protein_ids if p]
+            resolved_species = species_acronym
+        else:
+            return {
+                "interaction": None,
+                "network": [],
+                "network_url": None,
+                "error": "Either pair_id or protein_ids must be provided",
+            }
+
+        if not identifiers:
+            return {
+                "interaction": interaction,
+                "network": [],
+                "network_url": None,
+                "error": "No valid STRING protein IDs",
+            }
+
+        result = await fetch_string_network(
+            identifiers=identifiers,
+            species_acronym=resolved_species,
+            required_score=float(required_score) if required_score is not None else None,
+            network_type=network_type,
+        )
+        result["interaction"] = interaction
+        return result
