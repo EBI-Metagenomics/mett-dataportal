@@ -268,6 +268,18 @@ class PPIScoreTypesResponseSchema(SuccessResponseSchema):
     data: Dict[str, List[str]] = Field(..., description="Available score types")
 
 
+class PPIDataSourcesResponseSchema(SuccessResponseSchema):
+    """Response schema for available PPI data sources (local ES, STRING DB, etc.)."""
+
+    data: Dict[str, Any] = Field(
+        ...,
+        description=(
+            "Available PPI data sources and defaults. "
+            "Example: {'sources': ['local_es', 'stringdb'], 'default': 'local_es'}."
+        ),
+    )
+
+
 # STRING DB network schemas
 class PPIStringNetworkQuerySchema(BaseModel):
     """Schema for STRING network query parameters."""
@@ -279,11 +291,15 @@ class PPIStringNetworkQuerySchema(BaseModel):
         None,
         description="STRING protein IDs (e.g. ['820.ERS852554_01920', '820.ERS852554_01919'])",
     )
+    locus_tag: Optional[str] = Field(
+        None,
+        description="When using pair_id: use only the STRING ID for this protein (neighborhood of one gene). Omit to get subnetwork for both proteins in the pair.",
+    )
     species_acronym: Optional[str] = Field(
         None, description="Species acronym (BU, PV) for taxid resolution"
     )
     required_score: Optional[int] = Field(
-        None, ge=0, le=1000, description="Minimum STRING score threshold"
+        None, ge=0, le=1000, description="Minimum STRING score threshold (0-1000)"
     )
     network_type: str = Field("physical", description="Network type: physical or functional")
 

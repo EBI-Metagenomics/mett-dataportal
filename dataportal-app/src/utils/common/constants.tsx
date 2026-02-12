@@ -48,7 +48,7 @@ export const APP_CONSTANTS = {
 export type SortOrder = typeof APP_CONSTANTS.DEFAULT_SORT_ORDER;
 export type TabId = typeof APP_CONSTANTS.TABS[keyof typeof APP_CONSTANTS.TABS];
 
-// API Configuration
+// API Configuration (backend base URL; all PPI/STRING requests go through the backend)
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 export const API_GENOMES_BY_ISOLATE_NAMES = `${API_BASE_URL}/genomes/by-isolate-names`;
 export const API_GENOME_SEARCH = `${API_BASE_URL}/genomes/search`;
@@ -73,6 +73,9 @@ export const EXTERNAL_DB_URLS = {
 
 // Bacinteractome Configuration
 export const BACINTERACTOME_SHINY_APP_BASE_URL = import.meta.env.VITE_BACINTERACTOME_SHINY_APP_URL;
+
+// STRING DB (used for "View on STRING" links in UI; API calls go through our backend)
+export const STRING_DB_WEB_BASE = import.meta.env.VITE_STRING_DB_WEB_BASE || 'https://string-db.org';
 
 // EBI and External Links
 export const EBI_FTP_SERVER = "https://ftp.ebi.ac.uk/pub/databases/mett/";

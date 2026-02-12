@@ -6,6 +6,8 @@ import {
   PPINetworkQuery,
   PPIScoreType,
   PPINeighborhoodData,
+  PPIDataSources,
+  PPIStringNetworkRaw,
 } from "../../interfaces/PPI";
 
 export class PPIService extends BaseService {
@@ -21,6 +23,21 @@ export class PPIService extends BaseService {
       );
     } catch (error) {
       console.error("Error fetching available score types:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available PPI data sources (local ES, STRING DB, etc.).
+   * This allows the UI to treat data sources generically.
+   */
+  static async getDataSources(): Promise<PPIDataSources> {
+    try {
+      return await this.getWithRetry<PPIDataSources>(
+        `${this.BASE_ENDPOINT}/data-sources`
+      );
+    } catch (error) {
+      console.error("Error fetching PPI data sources:", error);
       throw error;
     }
   }
@@ -176,6 +193,38 @@ export class PPIService extends BaseService {
       );
     } catch (error) {
       console.error("Error fetching protein neighborhood:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get STRING DB network for a PPI pair or explicit STRING protein IDs.
+   * This delegates to the backend, which calls the STRING DB API.
+   */
+  static async getStringNetwork(params: {
+    pair_id?: string;
+    protein_ids?: string[];
+    locus_tag?: string;
+    species_acronym?: string;
+    required_score?: number;
+    network_type?: string;
+  }): Promise<PPIStringNetworkRaw> {
+    try {
+      const searchParams = this.buildParams({
+        pair_id: params.pair_id,
+        protein_ids: params.protein_ids,
+        locus_tag: params.locus_tag,
+        species_acronym: params.species_acronym,
+        required_score: params.required_score,
+        network_type: params.network_type ?? "physical",
+      });
+
+      return await this.getWithRetry<PPIStringNetworkRaw>(
+        `${this.BASE_ENDPOINT}/string-network`,
+        searchParams
+      );
+    } catch (error) {
+      console.error("Error fetching STRING network:", error);
       throw error;
     }
   }

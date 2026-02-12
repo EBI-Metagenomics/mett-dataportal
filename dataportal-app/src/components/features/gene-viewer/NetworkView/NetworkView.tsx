@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNetworkData, type NetworkLimitMode, type SpeciesScope } from '../../../../hooks/useNetworkData';
 import { useAuth } from '../../../../hooks/useAuth';
-import { PPINetworkNode, PPINetworkEdge } from '../../../../interfaces/PPI';
+import { PPINetworkNode, PPINetworkEdge, PPINetworkData, PPIDataSource } from '../../../../interfaces/PPI';
 import { PPIService } from '../../../../services/interactions/ppiService';
 import { NetworkGraph, NetworkGraphRef } from './NetworkGraph';
 import { NetworkControls } from './NetworkControls';
@@ -56,6 +56,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [limitMode, setLimitMode] = useState<NetworkLimitMode>('topN');
   const [topN, setTopN] = useState<number>(10);
   const [speciesScope, setSpeciesScope] = useState<SpeciesScope>('current');
+  const [dataSource, setDataSource] = useState<PPIDataSource>('local');
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
   const [selectedNode, setSelectedNode] = useState<PPINetworkNode | null>(null);
   const [popupNode, setPopupNode] = useState<{ node: PPINetworkNode; x: number; y: number } | null>(null);
@@ -70,6 +71,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const graphRef = useRef<NetworkGraphRef>(null);
   const originalNodesRef = useRef<PPINetworkNode[]>([]);
   const originalEdgesRef = useRef<PPINetworkEdge[]>([]);
+
+  // STRING DB network state (for STRING-only or combined views)
+  const [stringNetwork, setStringNetwork] = useState<PPINetworkData | null>(null);
+  const [stringLoading, setStringLoading] = useState<boolean>(false);
+  const [stringError, setStringError] = useState<string | null>(null);
 
   // Locus tags from expanded nodes so orthologs are fetched for them too
   const expandedLocusTags = useMemo(() => {
@@ -104,6 +110,170 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     extraLocusTagsForOrthologs: expandedLocusTags.length > 0 ? expandedLocusTags : undefined,
     enabled: !!speciesAcronym && !!selectedLocusTag && isAuthenticated,
   });
+
+  // Fetch STRING DB network when requested by dataSource.
+  useEffect(() => {
+    const shouldUseString = dataSource === 'stringdb' || dataSource === 'both';
+
+    if (!shouldUseString) {
+      setStringNetwork(null);
+      setStringError(null);
+      return;
+    }
+
+    if (!speciesAcronym || !selectedLocusTag) {
+      setStringNetwork(null);
+      setStringError(null);
+      return;
+    }
+
+    const fetchStringNetwork = async () => {
+      try {
+        setStringLoading(true);
+        setStringError(null);
+
+        const effectiveSpecies = speciesScope === 'all' ? undefined : speciesAcronym;
+
+        // Paginated PPI search returns the data array directly from ApiService.get, not { data, pagination }.
+        const searchWithString = await PPIService.searchInteractions({
+          species_acronym: effectiveSpecies ?? undefined,
+          locus_tag: selectedLocusTag,
+          has_string: true,
+          per_page: 5,
+        });
+        const listWithString = Array.isArray(searchWithString)
+          ? searchWithString
+          : (searchWithString as { data?: unknown[] })?.data ?? [];
+
+        let interaction =
+          listWithString.length > 0 ? (listWithString[0] as { pair_id?: string }) : null;
+
+        // Fallback: if no interaction has STRING evidence, try any interaction for this gene
+        // (backend will use string_protein_* from ES if present, or return a clear error).
+        if (!interaction?.pair_id) {
+          const searchAny = await PPIService.searchInteractions({
+            species_acronym: effectiveSpecies ?? undefined,
+            locus_tag: selectedLocusTag,
+            per_page: 10,
+          });
+          const listAny = Array.isArray(searchAny)
+            ? searchAny
+            : (searchAny as { data?: unknown[] })?.data ?? [];
+          interaction =
+            listAny.length > 0 ? (listAny[0] as { pair_id?: string }) : null;
+        }
+
+        if (!interaction?.pair_id) {
+          setStringNetwork(null);
+          setStringError('No PPI interactions found for this gene.');
+          return;
+        }
+
+        // STRING required_score is 0–1000. Use a permissive range (150–500) so we get results;
+        // STRING TSV scores are often 0–1 scale, so 900 would filter out most edges.
+        const requiredScore = Math.round(Math.max(150, Math.min(500, 100 + scoreThreshold * 400)));
+
+        const stringRaw = await PPIService.getStringNetwork({
+          pair_id: interaction.pair_id,
+          locus_tag: selectedLocusTag,
+          species_acronym: effectiveSpecies ?? undefined,
+          required_score: requiredScore,
+          network_type: 'physical',
+        });
+
+        if (stringRaw.error) {
+          setStringNetwork(null);
+          const msg = stringRaw.error || 'Failed to load STRING DB network.';
+          setStringError(
+            msg.includes('STRING protein IDs not available') || msg.includes('missing string_protein')
+              ? 'This gene has no STRING DB identifiers in the database. Try Local (ES) or another gene.'
+              : msg
+          );
+          return;
+        }
+
+        // Convert STRING DB response to PPINetworkData shape for visualization.
+        const rows = Array.isArray(stringRaw.network) ? stringRaw.network : [];
+        const nodeMap = new Map<string, PPINetworkNode>();
+        const edges: PPINetworkEdge[] = [];
+
+        rows.forEach((row: Record<string, any>) => {
+          const sourceId =
+            (row.preferredName_A as string | undefined) ||
+            (row.preferredName1 as string | undefined) ||
+            (row.protein1 as string | undefined);
+          const targetId =
+            (row.preferredName_B as string | undefined) ||
+            (row.preferredName2 as string | undefined) ||
+            (row.protein2 as string | undefined);
+
+          if (!sourceId || !targetId) {
+            return;
+          }
+
+          let rawScore: number | string | undefined =
+            (row.score as number | string | undefined) ??
+            (row.combined_score as number | string | undefined) ??
+            (row.combinedScore as number | string | undefined);
+
+          if (typeof rawScore === 'string') {
+            const parsed = parseFloat(rawScore);
+            rawScore = Number.isNaN(parsed) ? undefined : parsed;
+          }
+
+          // STRING scores are typically 0–1000; normalize to 0–1 if needed.
+          const normalized =
+            typeof rawScore === 'number'
+              ? rawScore > 1
+                ? rawScore / 1000
+                : rawScore
+              : undefined;
+
+          if (!nodeMap.has(sourceId)) {
+            nodeMap.set(sourceId, { id: sourceId, label: sourceId });
+          }
+          if (!nodeMap.has(targetId)) {
+            nodeMap.set(targetId, { id: targetId, label: targetId });
+          }
+
+          edges.push({
+            source: sourceId,
+            target: targetId,
+            weight: normalized,
+            score_type: 'stringdb',
+            dataSource: 'stringdb',
+          });
+        });
+
+        const nodes = Array.from(nodeMap.values());
+        const nNodes = nodes.length;
+        const nEdges = edges.length;
+        const density = nNodes > 1 ? (2 * nEdges) / (nNodes * (nNodes - 1)) : 0;
+
+        const network: PPINetworkData = {
+          nodes,
+          edges,
+          properties: {
+            num_nodes: nNodes,
+            num_edges: nEdges,
+            density,
+            avg_clustering_coefficient: 0,
+            degree_distribution: [],
+          },
+        };
+
+        setStringNetwork(network);
+      } catch (err: any) {
+        console.error('Error fetching STRING DB network:', err);
+        setStringNetwork(null);
+        setStringError(err.message || 'Failed to load STRING DB network.');
+      } finally {
+        setStringLoading(false);
+      }
+    };
+
+    fetchStringNetwork();
+  }, [dataSource, speciesAcronym, selectedLocusTag, speciesScope, scoreThreshold]);
 
   // Sync loading state with parent
   useEffect(() => {
@@ -181,19 +351,63 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [networkData, selectedLocusTag, expansionState.path.nodes.length]);
 
+  // Combine local ES and STRING DB networks based on selected data source
+  const baseNetwork: PPINetworkData | null = useMemo(() => {
+    if (dataSource === 'local' || !stringNetwork) {
+      return networkData ?? null;
+    }
+    if (dataSource === 'stringdb' || !networkData) {
+      return stringNetwork ?? null;
+    }
+
+    // dataSource === 'both' and we have both networks: merge nodes and edges.
+    const nodeMap = new Map<string, PPINetworkNode>();
+    const edgeKey = (e: PPINetworkEdge) => `${e.source}-${e.target}`;
+    const edgeMap = new Map<string, PPINetworkEdge>();
+
+    if (networkData) {
+      networkData.nodes.forEach((n) => nodeMap.set(n.id, { ...n }));
+      networkData.edges.forEach((e) =>
+        edgeMap.set(edgeKey(e), { ...e, dataSource: 'local' })
+      );
+    }
+
+    if (stringNetwork) {
+      stringNetwork.nodes.forEach((n) => {
+        if (!nodeMap.has(n.id)) {
+          nodeMap.set(n.id, { ...n });
+        }
+      });
+      stringNetwork.edges.forEach((e) => {
+        const key = edgeKey(e);
+        if (!edgeMap.has(key)) {
+          edgeMap.set(key, { ...e, dataSource: 'stringdb' });
+        }
+      });
+    }
+
+    return {
+      nodes: Array.from(nodeMap.values()),
+      edges: Array.from(edgeMap.values()),
+      properties: networkData?.properties ?? stringNetwork?.properties,
+    };
+  }, [dataSource, networkData, stringNetwork]);
+
+  const hasData = baseNetwork && baseNetwork.nodes.length > 0;
+
   // Enrich nodes with ortholog information and merge with expansions.
   // When there are expansions: merge base + expanded PPI nodes, then enrich so orthologs
   // are added for all nodes (including expanded); preserve expansion ortholog nodes and levels.
   const { enrichedNodes, enrichedEdges } = useMemo(() => {
-    if (!networkData?.nodes) {
+    if (!baseNetwork?.nodes) {
       return { enrichedNodes: [], enrichedEdges: [] as PPINetworkEdge[] };
     }
 
-    const baseNodes = networkData.nodes;
-    const baseEdges = networkData.edges || [];
+    const baseNodes = baseNetwork.nodes;
+    const baseEdges = baseNetwork.edges || [];
 
     if (expansionState.allExpandedNodes.size === 0) {
-      return enrichNetworkData(networkData, orthologMap, showOrthologs);
+      return enrichNetworkData(baseNetwork, orthologMap, showOrthologs);
     }
 
     // Merge base + expanded: PPI nodes only for enrichment (enrichNetworkData overwrites nodeType)
@@ -252,7 +466,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       enrichedNodes: Array.from(nodeMap.values()),
       enrichedEdges: Array.from(edgeMap.values()),
     };
-  }, [networkData, orthologMap, showOrthologs, expansionState]);
+  }, [baseNetwork, orthologMap, showOrthologs, expansionState]);
 
   // Stable expansion path so NetworkGraph does not re-create on every render (e.g. when only selectedNode changes)
   const expansionPath = useMemo(
@@ -480,12 +694,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     return <EmptyState variant="select-gene" />;
   }
 
-  const hasData = networkData && networkData.nodes.length > 0;
-
   return (
     <div className={styles.networkView}>
       {/* Controls - Always visible */}
         <NetworkControls
+          dataSource={dataSource}
           scoreType={scoreType}
           displayThreshold={displayThreshold}
           limitMode={limitMode}
@@ -493,6 +706,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           speciesScope={speciesScope}
           showOrthologs={showOrthologs}
           availableScoreTypes={availableScoreTypes}
+          onDataSourceChange={setDataSource}
           onScoreTypeChange={handleScoreTypeChange}
           onThresholdChange={handleThresholdChange}
           onLimitModeChange={handleLimitModeChange}
@@ -503,26 +717,26 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         />
 
       {/* Error Message */}
-      {error && (
+      {(error || stringError) && (
         <div className={styles.networkViewError}>
-          <p>Error loading network data: {error}</p>
+          <p>Error loading network data: {error || stringError}</p>
         </div>
       )}
 
       {/* Loading State */}
-      {loading && !networkData && !error && (
+      {(loading || stringLoading) && !hasData && !(error || stringError) && (
         <div className={styles.networkViewLoading}>
           <p>Loading network data...</p>
         </div>
       )}
 
       {/* Empty State */}
-      {!loading && !error && !hasData && <EmptyState />}
+      {!loading && !stringLoading && !(error || stringError) && !hasData && <EmptyState />}
 
       {/* Network Stats (use enriched counts so expansion increases node/edge count) */}
       {hasData && (
         <NetworkStats
-          properties={networkProperties ?? null}
+          properties={networkProperties ?? baseNetwork?.properties ?? null}
           nodeCount={enrichedNodes.length}
           edgeCount={enrichedEdges.length}
           showOrthologs={showOrthologs}
@@ -576,7 +790,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       )}
 
       {/* Network Visualization */}
-      {hasData && !error && (
+      {hasData && !(error || stringError) && (
         <div className={styles.networkVisualization}>
           <NetworkGraph
             ref={graphRef}

@@ -1,11 +1,13 @@
 import React from 'react';
 import type { NetworkLimitMode, SpeciesScope } from '../../../../../hooks/useNetworkData';
+import type { PPIDataSource } from '../../../../../interfaces/PPI';
 import { NETWORK_VIEW_CONSTANTS } from '../constants';
 import styles from './NetworkControls.module.scss';
 
 const SLIDER = NETWORK_VIEW_CONSTANTS.SLIDER;
 
 interface NetworkControlsProps {
+  dataSource: PPIDataSource;
   scoreType: string;
   displayThreshold: number;
   limitMode: NetworkLimitMode;
@@ -13,6 +15,7 @@ interface NetworkControlsProps {
   speciesScope: SpeciesScope;
   showOrthologs: boolean;
   availableScoreTypes: string[];
+  onDataSourceChange: (source: PPIDataSource) => void;
   onScoreTypeChange: (scoreType: string) => void;
   onThresholdChange: (threshold: number) => void;
   onLimitModeChange: (mode: NetworkLimitMode) => void;
@@ -23,6 +26,7 @@ interface NetworkControlsProps {
 }
 
 export const NetworkControls: React.FC<NetworkControlsProps> = ({
+  dataSource,
   scoreType,
   displayThreshold,
   limitMode,
@@ -30,6 +34,7 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   speciesScope,
   showOrthologs,
   availableScoreTypes,
+  onDataSourceChange,
   onScoreTypeChange,
   onThresholdChange,
   onLimitModeChange,
@@ -41,6 +46,7 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   return (
     <div className={styles.networkControls}>
       {/* Row 1: all labels – same baseline */}
+      <label htmlFor="data-source" className={styles.rowLabel}>Source:</label>
       <label htmlFor="score-type" className={styles.rowLabel}>Score:</label>
       <label htmlFor="limit-mode" className={styles.rowLabel}>Limit by:</label>
       <label htmlFor={limitMode === 'topN' ? 'top-n' : 'threshold'} className={styles.rowLabel}>
@@ -51,6 +57,18 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
       <span className={styles.rowLabelSpacer} />
 
       {/* Row 2: all controls – same baseline */}
+      <div className={styles.controlCell}>
+        <select
+          id="data-source"
+          value={dataSource}
+          onChange={(e) => onDataSourceChange(e.target.value as PPIDataSource)}
+          className={styles.select}
+        >
+          <option value="local">Local (ES)</option>
+          <option value="stringdb">STRING DB</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
       <div className={styles.controlCell}>
         <select
           id="score-type"

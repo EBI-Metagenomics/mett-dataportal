@@ -2,16 +2,22 @@
 STRING DB API client for fetching protein interaction network data.
 
 https://string-db.org/cgi/help?subpage=api
+
+Base URLs are configurable via environment variables:
+  STRING_DB_API_BASE  - API root (default: https://string-db.org/api)
+  STRING_DB_WEB_BASE  - Web UI root for network links (default: https://string-db.org)
 """
 
 import logging
+import os
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode
 import httpx
 
 logger = logging.getLogger(__name__)
 
-STRING_API_BASE = "https://string-db.org/api"
+STRING_API_BASE = os.environ.get("STRING_DB_API_BASE", "https://string-db.org/api").rstrip("/")
+STRING_WEB_BASE = os.environ.get("STRING_DB_WEB_BASE", "https://string-db.org").rstrip("/")
 CALLER_IDENTITY = "mett-dataportal"
 
 # NCBI taxonomy IDs for METT species
@@ -128,4 +134,4 @@ def build_string_network_url(
             "network_type": network_type,
         }
     )
-    return f"https://string-db.org/cgi/network?{params}"
+    return f"{STRING_WEB_BASE}/cgi/network?{params}"

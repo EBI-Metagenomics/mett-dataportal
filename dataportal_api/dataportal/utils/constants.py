@@ -248,7 +248,18 @@ PPI_NON_SCORE_FIELDS = [
 # --- All Valid PPI Filter Fields ---
 PPI_VALID_FILTER_FIELDS = PPI_SCORE_FIELDS + PPI_NON_SCORE_FIELDS
 
+# --- PPI Data Sources ---
+# These represent logical sources of PPI interaction/network data.
+# Kept generic so additional external or internal sources can be added
+# without changing API contracts in many places.
+PPI_DATA_SOURCE_LOCAL_ES = "local_es"
+PPI_DATA_SOURCE_STRINGDB = "stringdb"
+
+PPI_DATA_SOURCES = [
+    PPI_DATA_SOURCE_LOCAL_ES,
+    PPI_DATA_SOURCE_STRINGDB,
+]
+
 # ============================================================================
 # End of Constants
 # ============================================================================
-

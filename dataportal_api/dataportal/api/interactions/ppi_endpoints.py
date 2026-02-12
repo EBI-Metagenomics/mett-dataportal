@@ -15,6 +15,7 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkQuerySchema,
     PPINetworkPropertiesQuerySchema,
     PPIScoreTypesResponseSchema,
+    PPIDataSourcesResponseSchema,
     PPIStringNetworkQuerySchema,
     PPIStringNetworkResponseSchema,
 )
@@ -27,6 +28,11 @@ from dataportal.utils.errors import (
     raise_internal_server_error,
 )
 from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
+from dataportal.utils.constants import (
+    PPI_DATA_SOURCES,
+    PPI_DATA_SOURCE_LOCAL_ES,
+    PPI_DATA_SOURCE_STRINGDB,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +71,30 @@ async def get_available_score_types(request):
         return create_success_response(
             data={"score_types": score_types},
             message="Available score types retrieved successfully",
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise_internal_server_error("Internal server error")
+
+
+@ppi_router.get(
+    "/data-sources",
+    response=PPIDataSourcesResponseSchema,
+    summary="Get available PPI data sources",
+    description="Get list of available data sources for PPI interactions (e.g., local ES index, STRING DB API).",
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
+)
+@wrap_success_response
+async def get_ppi_data_sources(request):
+    """Get list of available PPI data sources."""
+    try:
+        data = {
+            "sources": PPI_DATA_SOURCES,
+            "default": PPI_DATA_SOURCE_LOCAL_ES if PPI_DATA_SOURCES else None,
+        }
+        return create_success_response(
+            data=data,
+            message="Available PPI data sources retrieved successfully",
         )
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
@@ -249,6 +279,15 @@ async def get_ppi_network(request, score_type: str, query: PPINetworkQuerySchema
             )
             network_data.properties = properties
 
+        # Tag network with data source metadata so the UI can generically
+        # distinguish between local ES and other sources.
+        if not isinstance(getattr(network_data, "properties", None), dict):
+            network_data.properties = {}
+        existing_sources = network_data.properties.get("data_sources") or []
+        if PPI_DATA_SOURCE_LOCAL_ES not in existing_sources:
+            existing_sources.append(PPI_DATA_SOURCE_LOCAL_ES)
+        network_data.properties["data_sources"] = existing_sources
+
         return create_success_response(
             data=network_data,
             message=f"Network data for {score_type} (threshold: {query.score_threshold}) retrieved successfully",
@@ -310,10 +349,18 @@ async def get_string_network(request, query: PPIStringNetworkQuerySchema = Query
         result = await ppi_service.get_string_network_for_pair(
             pair_id=query.pair_id,
             protein_ids=query.protein_ids,
+            locus_tag=query.locus_tag,
             species_acronym=query.species_acronym,
             required_score=query.required_score,
             network_type=query.network_type,
         )
+
+        # Tag response with data source metadata for generic multi-source handling.
+        existing_sources = result.get("data_sources") or []
+        if PPI_DATA_SOURCE_STRINGDB not in existing_sources:
+            existing_sources.append(PPI_DATA_SOURCE_STRINGDB)
+        result["data_sources"] = existing_sources
+
         return create_success_response(
             data=result,
             message="STRING network data retrieved successfully",

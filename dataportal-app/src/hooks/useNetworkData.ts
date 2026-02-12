@@ -7,6 +7,10 @@ import { OrthologRelationship } from '../interfaces/Ortholog';
 export type NetworkLimitMode = 'threshold' | 'topN';
 export type SpeciesScope = 'current' | 'all';
 
+// NOTE: Data source selection for the main NetworkView is handled at the
+// component level (NetworkView.tsx) where multiple sources (local + STRING)
+// can be merged. This hook currently fetches the canonical local ES network.
+
 interface UseNetworkDataProps {
   speciesAcronym?: string;
   isolateName?: string;

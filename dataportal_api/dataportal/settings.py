@@ -28,6 +28,10 @@ ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower()
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
+# STRING DB (optional override for API and web base URLs)
+STRING_DB_API_BASE = os.environ.get("STRING_DB_API_BASE", "https://string-db.org/api")
+STRING_DB_WEB_BASE = os.environ.get("STRING_DB_WEB_BASE", "https://string-db.org")
+
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")

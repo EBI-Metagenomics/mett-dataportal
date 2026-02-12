@@ -915,8 +915,17 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             "isolate_name": getattr(hit, "isolate_name", None),
             "protein_a": hit.protein_a,
             "protein_b": hit.protein_b,
-            "participants": getattr(hit, "participants", []),
-            "participants_locus_tag": getattr(hit, "participants_locus_tag", None),
+            # Convert potential AttrList instances to plain Python lists for JSON serialization
+            "participants": (
+                list(getattr(hit, "participants", []))
+                if getattr(hit, "participants", None) is not None
+                else []
+            ),
+            "participants_locus_tag": (
+                list(getattr(hit, "participants_locus_tag", []))
+                if getattr(hit, "participants_locus_tag", None) is not None
+                else None
+            ),
             "is_self_interaction": getattr(hit, "is_self_interaction", False),
             # Protein A info
             "protein_a_locus_tag": getattr(hit, "protein_a_locus_tag", None),
@@ -975,17 +984,18 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         self,
         pair_id: Optional[str] = None,
         protein_ids: Optional[List[str]] = None,
+        locus_tag: Optional[str] = None,
         species_acronym: Optional[str] = None,
         required_score: Optional[int] = None,
         network_type: str = "physical",
     ) -> Dict[str, Any]:
         """
-        Fetch STRING DB network data for a PPI pair.
+        Fetch STRING DB network data for a PPI pair or a single protein.
 
         Either pair_id (lookup from ES) or protein_ids (direct STRING IDs) must be provided.
-
-        Returns:
-            Dict with interaction (if pair_id), network edges, network_url, and any error.
+        When pair_id is used with locus_tag, only the STRING ID for that protein is sent to STRING,
+        so STRING returns the neighborhood of that one gene (interactors of the selected protein).
+        Without locus_tag, both proteins in the pair are sent and STRING returns the combined subnetwork.
         """
         identifiers: List[str] = []
         interaction: Optional[Dict[str, Any]] = None
@@ -1002,15 +1012,29 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 }
             sa = interaction.get("string_protein_a_id")
             sb = interaction.get("string_protein_b_id")
-            if sa and sb:
-                identifiers = [sa, sb]
-            else:
+            if not sa and not sb:
                 return {
                     "interaction": interaction,
                     "network": [],
                     "network_url": None,
                     "error": "STRING protein IDs not available for this pair (missing string_protein_a_id or string_protein_b_id)",
                 }
+            # If locus_tag given, send only the STRING ID for that protein (neighborhood of one gene).
+            if locus_tag:
+                locus_tag_norm = (locus_tag or "").strip()
+                a_tag = (interaction.get("protein_a_locus_tag") or "").strip()
+                b_tag = (interaction.get("protein_b_locus_tag") or "").strip()
+                if locus_tag_norm and (a_tag or b_tag):
+                    if locus_tag_norm == a_tag and sa:
+                        identifiers = [sa]
+                    elif locus_tag_norm == b_tag and sb:
+                        identifiers = [sb]
+                    else:
+                        identifiers = [sa, sb] if sa and sb else ([sa] if sa else [sb])
+                else:
+                    identifiers = [sa, sb] if (sa and sb) else ([sa] if sa else [sb])
+            else:
+                identifiers = [sa, sb] if (sa and sb) else ([sa] if sa else [sb])
             resolved_species = interaction.get("species_acronym") or species_acronym
         elif protein_ids:
             identifiers = [p for p in protein_ids if p]

@@ -85,6 +85,27 @@ export interface PPINetworkData {
   properties?: PPINetworkProperties;
 }
 
+/** Logical identifiers for PPI data sources used in the UI. */
+export type PPIDataSource = 'local' | 'stringdb' | 'both';
+
+/** Available PPI data sources response (from /ppi/data-sources). */
+export interface PPIDataSources {
+  sources: string[];
+  default: string | null;
+}
+
+/** Raw STRING network response shape (simplified, as returned by /ppi/string-network). */
+export interface PPIStringNetworkRaw {
+  interaction?: any;
+  network: Array<Record<string, any>>;
+  network_url?: string | null;
+  raw_text?: string | null;
+  identifiers?: string[];
+  species_taxid?: number;
+  data_sources?: string[];
+  error?: string | null;
+}
+
 export interface PPINetworkQuery {
   score_type: string;
   score_threshold: number;
