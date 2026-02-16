@@ -157,6 +157,21 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-prod
                   key: PYHMMER_ISOLATES_BASE_PATH
+            - name: STRING_DB_API_BASE
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-prod
+                  key: STRING_DB_API_BASE
+            - name: STRING_DB_WEB_BASE
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-prod
+                  key: STRING_DB_WEB_BASE
+            # Outbound HTTP/HTTPS via EBI proxy (e.g. for STRING DB API)
+            - name: HTTP_PROXY
+              value: "http://hh-wwwcache.ebi.ac.uk:3128"
+            - name: HTTPS_PROXY
+              value: "http://hh-wwwcache.ebi.ac.uk:3128"
           resources:
             requests:
               memory: "4Gi"

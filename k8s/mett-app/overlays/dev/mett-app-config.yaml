@@ -25,6 +25,8 @@ data:
   VITE_GO_URL: "https://quickgo.org/term/"
   PYHMMER_FAA_BASE_PATH: "/data/pyhmmer/output/"
   PYHMMER_ISOLATES_BASE_PATH: "/data/pyhmmer/output/isolates-db/"
+  STRING_DB_API_BASE: "https://string-db.org/api"
+  STRING_DB_WEB_BASE: "https://string-db.org"
   ENABLE_PYHMMER_SEARCH: "true"
   ENABLE_FEEDBACK: "true"
   ENABLE_NATURAL_QUERY: "false"

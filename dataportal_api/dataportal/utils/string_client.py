@@ -81,8 +81,17 @@ async def fetch_string_network(
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             text = resp.text
+    except httpx.HTTPStatusError as e:
+        logger.warning(
+            "STRING API request failed: %s %s response=%s body=%s",
+            type(e).__name__,
+            e,
+            e.response.status_code if e.response is not None else None,
+            (e.response.text[:200] if e.response is not None else None) or "",
+        )
+        return {"network": [], "network_url": None, "raw_text": None, "error": str(e)}
     except httpx.HTTPError as e:
-        logger.warning(f"STRING API request failed: {e}")
+        logger.warning("STRING API request failed: %s %s", type(e).__name__, e, exc_info=True)
         return {"network": [], "network_url": None, "raw_text": None, "error": str(e)}
 
     # Parse TSV (header + rows)
