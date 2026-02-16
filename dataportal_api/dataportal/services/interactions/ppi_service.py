@@ -21,9 +21,14 @@ from dataportal.schema.interactions.ppi_schemas import (
 from asgiref.sync import sync_to_async
 
 from dataportal.services.base_service import BaseService
-from dataportal.utils.constants import INDEX_PPI, PPI_VALID_FILTER_FIELDS, PPI_SCORE_FIELDS
+from dataportal.utils.constants import (
+    INDEX_PPI,
+    PPI_VALID_FILTER_FIELDS,
+    PPI_SCORE_FIELDS,
+)
 from dataportal.utils.exceptions import ServiceError, ValidationError
 from dataportal.utils.string_client import fetch_string_network
+from dataportal.services.service_factory import ServiceFactory
 
 logger = logging.getLogger(__name__)
 
@@ -962,6 +967,22 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             "evidence_count": getattr(hit, "evidence_count", 0),
         }
 
+    def _resolve_string_ids_to_locus_tags(
+        self,
+        string_ids: List[str],
+        species_acronym: Optional[str] = None,
+    ) -> Dict[str, str]:
+        """
+        Resolve STRING protein IDs to locus tags using the locus↔STRING mapping from GeneService (feature index, loaded at startup).
+        Returns dict mapping string_id -> locus_tag (only for IDs we could resolve).
+        """
+        if not string_ids:
+            return {}
+        _, string_to_locus = ServiceFactory.get_gene_service().get_locus_string_mapping(
+            species_acronym=species_acronym
+        )
+        return {sid: string_to_locus[sid] for sid in string_ids if sid in string_to_locus}
+
     async def get_interaction_by_pair_id(self, pair_id: str) -> Optional[Dict[str, Any]]:
         """
         Fetch a single PPI interaction by pair_id.
@@ -1062,4 +1083,44 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             network_type=network_type,
         )
         result["interaction"] = interaction
+        # When we queried a single focal protein (locus_tag), expose its STRING preferred name
+        # so the frontend can merge "both" into one graph by normalizing this node to the local id.
+        if locus_tag and len(identifiers) == 1 and result.get("network"):
+            first_row = result["network"][0]
+            sid = identifiers[0]
+            sa_id = first_row.get("stringId_A")
+            sb_id = first_row.get("stringId_B")
+            if sid == sa_id:
+                result["focal_preferred_name"] = first_row.get("preferredName_A")
+            elif sid == sb_id:
+                result["focal_preferred_name"] = first_row.get("preferredName_B")
+            else:
+                result["focal_preferred_name"] = None
+        else:
+            result["focal_preferred_name"] = None
+
+        # Resolve STRING preferred names to locus tags so the frontend can show locus tags consistently.
+        preferred_name_to_locus: Dict[str, str] = {}
+        if result.get("network"):
+            all_string_ids = []
+            for row in result["network"]:
+                aid = row.get("stringId_A")
+                bid = row.get("stringId_B")
+                if aid:
+                    all_string_ids.append(aid)
+                if bid:
+                    all_string_ids.append(bid)
+            string_id_to_locus = self._resolve_string_ids_to_locus_tags(
+                all_string_ids, species_acronym=resolved_species
+            )
+            for row in result["network"]:
+                aid = row.get("stringId_A")
+                bid = row.get("stringId_B")
+                pna = row.get("preferredName_A")
+                pnb = row.get("preferredName_B")
+                if pna and aid and aid in string_id_to_locus:
+                    preferred_name_to_locus[str(pna)] = string_id_to_locus[aid]
+                if pnb and bid and bid in string_id_to_locus:
+                    preferred_name_to_locus[str(pnb)] = string_id_to_locus[bid]
+        result["preferred_name_to_locus_tag"] = preferred_name_to_locus
         return result

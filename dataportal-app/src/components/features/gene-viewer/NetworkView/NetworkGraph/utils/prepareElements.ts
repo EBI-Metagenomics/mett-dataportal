@@ -124,21 +124,26 @@ export const prepareEdges = (
             orthology_type?: string;
             weight?: number;
             expansionLevel?: number;
+            dataSource?: string;
         };
 
         const sourceInPath = pathNodeIds.has(edge.source);
         const targetInPath = pathNodeIds.has(edge.target);
         const edgeInPath = sourceInPath && targetInPath;
-        
+        const dataSource = edgeData.dataSource ?? 'local';
+        const edgeId =
+            edgeData.id || `${dataSource}-${edge.source}-${edge.target}-${index}`;
+
         return {
             data: {
-                id: edgeData.id || `edge-${index}`,
+                id: edgeId,
                 source: edge.source,
                 target: edge.target,
                 weight: edge.weight ?? 1,
                 edgeType: edgeData.edgeType || 'ppi',
                 orthology_type: edgeData.orthology_type,
                 expansionLevel: edgeData.expansionLevel,
+                dataSource,
                 inPath: edgeInPath ? 'true' : 'false',
             },
         };

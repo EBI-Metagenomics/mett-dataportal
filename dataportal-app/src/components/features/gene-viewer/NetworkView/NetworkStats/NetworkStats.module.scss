@@ -83,5 +83,12 @@
     background-color: transparent;
     border: none;
   }
+
+  .legendEdgeLine {
+    display: inline-block;
+    width: 20px;
+    height: 3px;
+    border-radius: 1px;
+  }
 }
 

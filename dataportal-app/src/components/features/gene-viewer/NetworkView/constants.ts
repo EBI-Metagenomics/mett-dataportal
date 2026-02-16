@@ -26,6 +26,10 @@ export const NETWORK_VIEW_CONSTANTS = {
     EDGE: {
       LINE_COLOR: '#5B8DEE',
       OPACITY: 0.65,
+      /** Local ES edges (default PPI) */
+      LOCAL_EDGE_COLOR: '#5B8DEE',
+      /** STRING DB edges – distinct color so "both" view shows two edge types clearly */
+      STRINGDB_EDGE_COLOR: '#E65100',
       ORTHOLOG_LINE_COLOR: '#FF9800',
       ORTHOLOG_OPACITY: 0.6,
       ORTHOLOG_WIDTH: 2,

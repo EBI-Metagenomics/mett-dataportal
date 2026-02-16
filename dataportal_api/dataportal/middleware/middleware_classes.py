@@ -12,6 +12,26 @@ from dataportal.middleware.swagger_templates import (
 logger = logging.getLogger(__name__)
 
 
+class LocusStringMappingMiddleware(MiddlewareMixin):
+    """
+    Startup middleware: loads locus_tag ↔ STRING ID mapping from the feature index
+    when the middleware chain is built (first request or server start). No-op on each request.
+    """
+
+    def __init__(self, get_response):
+        super().__init__(get_response)
+        try:
+            from dataportal.services.service_factory import ServiceFactory
+
+            gene_service = ServiceFactory.get_gene_service()
+            gene_service.load_locus_string_mapping_sync(species_acronym=None)
+        except Exception as e:
+            logger.warning(
+                "Startup load of locus↔STRING mapping failed (will fall back to empty): %s",
+                e,
+            )
+
+
 class RemoveCOOPHeaderMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         # Remove the Cross-Origin-Opener-Policy header if it exists

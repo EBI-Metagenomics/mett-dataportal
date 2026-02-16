@@ -73,7 +73,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                 .map((n) => n.id);
             const ppiEdgeKeys = edges
                 .filter((e) => (e as { edgeType?: string }).edgeType !== 'ortholog')
-                .map((e) => `${e.source}-${e.target}`);
+                .map((e, i) => `${(e as { dataSource?: string }).dataSource ?? 'local'}-${e.source}-${e.target}-${i}`);
             const ppiSignature = JSON.stringify([[...new Set(ppiNodeIds)].sort(), [...new Set(ppiEdgeKeys)].sort()]);
 
             // Container check + empty graph cleanup
@@ -94,13 +94,16 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
             if (cy && ppiSignature === ppiSignatureRef.current) {
                 // Only ortholog visibility changed: add/remove ortholog elements in place, do not run layout
                 const existingIds = new Set(cy.nodes().map((n) => n.id()));
-                const existingEdgeKeys = new Set(cy.edges().map((e) => `${e.source().id()}-${e.target().id()}`));
+                const existingEdgeIds = new Set(cy.edges().map((e) => e.id()));
                 const currentNodeIds = new Set(nodes.map((n) => n.id));
-                const currentEdgeKeys = new Set(edges.map((e) => `${e.source}-${e.target}`));
+                const incomingEdgeId = (e: typeof edges[0], i: number) =>
+                    (e as { id?: string }).id ||
+                    `${(e as { dataSource?: string }).dataSource ?? 'local'}-${e.source}-${e.target}-${i}`;
+                const currentEdgeIds = new Set(edges.map((e, i) => incomingEdgeId(e, i)));
                 const toRemoveNodes = cy.nodes().filter((n) => !currentNodeIds.has(n.id()));
-                const toRemoveEdges = cy.edges().filter((e) => !currentEdgeKeys.has(`${e.source().id()}-${e.target().id()}`));
+                const toRemoveEdges = cy.edges().filter((e) => !currentEdgeIds.has(e.id()));
                 const toAddNodes = nodes.filter((n) => !existingIds.has(n.id));
-                const toAddEdges = edges.filter((e) => !existingEdgeKeys.has(`${e.source}-${e.target}`));
+                const toAddEdges = edges.filter((e, i) => !existingEdgeIds.has(incomingEdgeId(e, i)));
                 cy.batch(() => {
                     toRemoveEdges.remove();
                     toRemoveNodes.remove();

@@ -3,8 +3,7 @@ import logging
 from typing import Optional, List, Tuple, Dict, Any
 
 from asgiref.sync import sync_to_async
-from django.forms.models import model_to_dict
-from elasticsearch_dsl import Search, connections
+from elasticsearch_dsl import Search, Q, connections
 
 from dataportal.schema.core.gene_schemas import (
     GenePaginationSchema,
@@ -56,11 +55,100 @@ from dataportal.utils.utils import split_comma_param
 logger = logging.getLogger(__name__)
 
 
+# Cache key when no species filter is applied
+_LOCUS_STRING_CACHE_KEY_ALL = "__all__"
+
+
 class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     """Service for managing gene data operations in the read-only data portal."""
 
     def __init__(self):
         super().__init__(INDEX_FEATURES)
+        # Locus tag ↔ STRING protein ID from feature index (dbxref.db=STRING). Loaded at startup.
+        # Key: species_acronym (lower) or _LOCUS_STRING_CACHE_KEY_ALL. Value: (locus_to_string, string_to_locus).
+        self._locus_string_cache: Dict[str, Tuple[Dict[str, str], Dict[str, str]]] = {}
+
+    def load_locus_string_mapping_sync(self, species_acronym: Optional[str] = None) -> None:
+        """
+        Load locus_tag ↔ STRING protein ID mapping from the feature index (dbxref.db=STRING).
+        Call at startup for quick processing. One scan; populates both global and per-species cache.
+        """
+        s = (
+            Search(index=self.index_name)
+            .filter("term", feature_type="gene")
+            .filter(
+                "nested",
+                path="dbxref",
+                query=Q("term", dbxref__db="STRING"),
+            )
+            .source(["locus_tag", "dbxref", "species_acronym"])
+        )
+        if species_acronym:
+            s = s.filter("term", species_acronym=species_acronym.strip().lower())
+        locus_to_string_all: Dict[str, str] = {}
+        string_to_locus_all: Dict[str, str] = {}
+        per_species: Dict[str, Tuple[Dict[str, str], Dict[str, str]]] = {}
+        try:
+            for hit in s.scan():
+                locus = (
+                    getattr(hit, "locus_tag", None)
+                    or getattr(hit, "feature_id", None)
+                    or (getattr(hit.meta, "id", None) if hasattr(hit, "meta") else None)
+                )
+                if locus is None or locus == "":
+                    locus = getattr(hit.meta, "id", "") if hasattr(hit, "meta") else ""
+                if isinstance(locus, list):
+                    locus = locus[0] if locus else ""
+                if not locus:
+                    continue
+                locus = str(locus)
+                dbxref = getattr(hit, "dbxref", None) or []
+                string_ref = None
+                for entry in dbxref:
+                    if isinstance(entry, dict) and entry.get("db") == "STRING":
+                        string_ref = entry.get("ref")
+                        if string_ref:
+                            string_ref = str(string_ref)
+                        break
+                if not string_ref:
+                    continue
+                species = getattr(hit, "species_acronym", None) or ""
+                if isinstance(species, list):
+                    species = species[0] if species else ""
+                species = str(species).strip().lower() if species else _LOCUS_STRING_CACHE_KEY_ALL
+                locus_to_string_all[locus] = string_ref
+                string_to_locus_all[string_ref] = locus
+                if species and species != _LOCUS_STRING_CACHE_KEY_ALL:
+                    if species not in per_species:
+                        per_species[species] = ({}, {})
+                    per_species[species][0][locus] = string_ref
+                    per_species[species][1][string_ref] = locus
+            self._locus_string_cache[_LOCUS_STRING_CACHE_KEY_ALL] = (
+                locus_to_string_all,
+                string_to_locus_all,
+            )
+            for sp, pair in per_species.items():
+                self._locus_string_cache[sp] = pair
+            logger.info(
+                "Loaded locus↔STRING mapping from feature index: %s locus tags (species=%s)",
+                len(locus_to_string_all),
+                species_acronym or "all",
+            )
+        except Exception as e:
+            logger.warning("Failed to load locus↔STRING mapping from feature index: %s", e)
+
+    def get_locus_string_mapping(
+        self, species_acronym: Optional[str] = None
+    ) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """
+        Return (locus_tag → STRING ID, STRING ID → locus_tag) from cache.
+        Use after load_locus_string_mapping_sync() has been called at startup.
+        """
+        key = (species_acronym or "").strip().lower() or _LOCUS_STRING_CACHE_KEY_ALL
+        if key in self._locus_string_cache:
+            return self._locus_string_cache[key]
+        # Fallback to full mapping if no per-species entry
+        return self._locus_string_cache.get(_LOCUS_STRING_CACHE_KEY_ALL, ({}, {}))
 
     async def get_by_id(self, id: str) -> Optional[GeneResponseSchema]:
         """Retrieve a single gene by ID (locus tag)."""
@@ -110,17 +198,17 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     def _convert_hit_to_entity(self, hit) -> GeneResponseSchema:
         """Convert Elasticsearch hit to GeneResponseSchema."""
         return self._convert_hit_to_gene_schema(hit)
-    
+
     def _convert_hit_to_gene_schema(self, hit) -> GeneResponseSchema:
         """Convert Elasticsearch hit directly to GeneResponseSchema (Pydantic)."""
         hit_dict = hit.to_dict()
-        
+
         return GeneResponseSchema(
             locus_tag=hit_dict.get("locus_tag"),
             gene_name=hit_dict.get("gene_name"),
             alias=hit_dict.get("alias", []),
             product=hit_dict.get("product"),
-            product_source=hit_dict.get("product_source"), 
+            product_source=hit_dict.get("product_source"),
             start_position=hit_dict.get("start", hit_dict.get("start_position")),
             end_position=hit_dict.get("end", hit_dict.get("end_position")),
             seq_id=hit_dict.get("seq_id"),
@@ -137,12 +225,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             ec_number=hit_dict.get("ec_number"),
             dbxref=hit_dict.get("dbxref", []),
             eggnog=hit_dict.get("eggnog"),
-            inference=hit_dict.get("inference"), 
-            ontology_terms=hit_dict.get("ontology_terms", []), 
+            inference=hit_dict.get("inference"),
+            ontology_terms=hit_dict.get("ontology_terms", []),
             uf_ontology_terms=hit_dict.get("uf_ontology_terms", []),
             uf_prot_rec_fullname=hit_dict.get("uf_prot_rec_fullname"),
-            uf_keyword=hit_dict.get("uf_keyword", []), 
-            uf_gene_name=hit_dict.get("uf_gene_name"), 
+            uf_keyword=hit_dict.get("uf_keyword", []),
+            uf_gene_name=hit_dict.get("uf_gene_name"),
             amr=hit_dict.get("amr", []),
             has_amr_info=hit_dict.get("has_amr_info", False),
             has_proteomics=hit_dict.get("has_proteomics", False),
@@ -175,9 +263,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             return result
 
         except Exception as e:
-            logger.error(
-                f"Error fetching gene autocomplete suggestions: {e}", exc_info=True
-            )
+            logger.error(f"Error fetching gene autocomplete suggestions: {e}", exc_info=True)
             return []
 
     async def _autocomplete_impl(
@@ -228,9 +314,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
             s = s[:limit]
 
-            logger.info(
-                f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}"
-            )
+            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
 
             response = await sync_to_async(s.execute)()
 
@@ -248,9 +332,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
     async def get_gene_by_locus_tag(self, locus_tag: str) -> GeneResponseSchema:
         try:
-            gene = await sync_to_async(
-                self.fetch_gene_by_locus_tag, thread_sensitive=False
-            )(locus_tag)
+            gene = await sync_to_async(self.fetch_gene_by_locus_tag, thread_sensitive=False)(
+                locus_tag
+            )
             return self._convert_hit_to_gene_schema(gene)
         except ServiceError:
             logger.error(f"Error in get_gene_by_locus_tag: {locus_tag}")
@@ -260,7 +344,11 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
 
     def fetch_gene_by_locus_tag(self, locus_tag: str):
-        s = Search(index=self.index_name).filter("term", feature_type="gene").query("match", locus_tag=locus_tag)
+        s = (
+            Search(index=self.index_name)
+            .filter("term", feature_type="gene")
+            .query("match", locus_tag=locus_tag)
+        )
         response = s.execute()
 
         if not response.hits:
@@ -364,9 +452,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             )
 
             isolate_names_list = (
-                [id.strip() for id in params.isolates.split(",")]
-                if params.isolates
-                else []
+                [id.strip() for id in params.isolates.split(",")] if params.isolates else []
             )
             logger.info(f"DEBUG - Parsed isolate names: {isolate_names_list}")
 
@@ -377,9 +463,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 filter_criteria["bool"]["must"].append(
                     {"terms": {GENOME_FIELD_ISOLATE_NAME: isolate_names_list}}
                 )
-                logger.info(
-                    f"DEBUG - Added isolate filter: {filter_criteria['bool']['must']}"
-                )
+                logger.info(f"DEBUG - Added isolate filter: {filter_criteria['bool']['must']}")
             if params.species_acronym:
                 filter_criteria["bool"]["must"].append(
                     {"term": {SPECIES_FIELD_ACRONYM_SHORT: params.species_acronym}}
@@ -387,17 +471,13 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
             # Apply additional filters
             parsed_filters = self._parse_filters(params.filter)
-            parsed_filter_operators = self._parse_filter_operators(
-                params.filter_operators
-            )
+            parsed_filter_operators = self._parse_filter_operators(params.filter_operators)
             type_strain_filters = await self._apply_filters_for_type_strain(
                 {}, parsed_filters, parsed_filter_operators
             )
 
             if "bool" in type_strain_filters and "must" in type_strain_filters["bool"]:
-                filter_criteria["bool"]["must"].extend(
-                    type_strain_filters["bool"]["must"]
-                )
+                filter_criteria["bool"]["must"].extend(type_strain_filters["bool"]["must"])
 
             logger.info(
                 f"DEBUG - Final filter_criteria before building ES query: {json.dumps(filter_criteria, indent=2)}"
@@ -456,7 +536,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_by = "start"
         elif sort_by == "end_position":
             sort_by = "end"
-        
+
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
@@ -478,9 +558,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 "size": SCROLL_BATCH_SIZE,
             }
 
-            logger.info(
-                f"Starting scroll search with query: {json.dumps(search_body, indent=2)}"
-            )
+            logger.info(f"Starting scroll search with query: {json.dumps(search_body, indent=2)}")
 
             # Execute initial search
             response = await sync_to_async(
@@ -512,16 +590,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     results.append(validated)
 
                 total_results += len(response["hits"]["hits"])
-                logger.info(
-                    f"Fetched {total_results} genes in {batch_count} batches..."
-                )
+                logger.info(f"Fetched {total_results} genes in {batch_count} batches...")
 
                 # Get next batch using scroll
                 try:
                     response = await sync_to_async(
-                        lambda: es_client.scroll(
-                            scroll_id=scroll_id, scroll=SCROLL_TIMEOUT
-                        )
+                        lambda: es_client.scroll(scroll_id=scroll_id, scroll=SCROLL_TIMEOUT)
                     )()
                     scroll_id = response["_scroll_id"]
                 except Exception as scroll_error:
@@ -533,9 +607,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     f"Reached maximum result limit of {max_results}. Some results may be truncated."
                 )
 
-            logger.info(
-                f"Scroll search completed. Total genes fetched: {total_results}"
-            )
+            logger.info(f"Scroll search completed. Total genes fetched: {total_results}")
             return results, total_results
 
         except Exception as e:
@@ -561,9 +633,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     filters[key] = values
         except ValueError as e:
             logger.error(f"Invalid filter format: {filter_str} — {e}")
-            raise ServiceError(
-                "Invalid filter format. Use 'key:val1,val2;key2:val3,...'"
-            )
+            raise ServiceError("Invalid filter format. Use 'key:val1,val2;key2:val3,...'")
 
         logger.debug(f"Parsed filters: {filters}")
         return filters
@@ -582,9 +652,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 operators[key.strip()] = op.strip().upper()
         except ValueError as e:
             logger.error(f"Invalid filter_operators format: {filter_str} — {e}")
-            raise ServiceError(
-                "Invalid filter_operators format. Use 'key:AND;key2:OR,...'"
-            )
+            raise ServiceError("Invalid filter_operators format. Use 'key:AND;key2:OR,...'")
 
         return operators
 
@@ -660,7 +728,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_by = "start"
         elif sort_by == "end_position":
             sort_by = "end"
-        
+
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
@@ -683,9 +751,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 .extra(track_total_hits=True)
             )
 
-            logger.info(
-                f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}"
-            )
+            logger.info(f"Final Elasticsearch Query: {json.dumps(s.to_dict(), indent=2)}")
 
             response = await sync_to_async(s.execute)()
 
@@ -715,7 +781,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     ) -> dict:
         """Build a properly structured Elasticsearch query for both full-text search and filters."""
         es_query = {"bool": {"must": []}}
-        
+
         # Always filter for genes only in feature_index
         es_query["bool"]["must"].append({"term": {"feature_type": "gene"}})
 
@@ -744,9 +810,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             )
 
         if isolate_name:
-            es_query["bool"]["must"].append(
-                {"term": {GENOME_FIELD_ISOLATE_NAME: isolate_name}}
-            )
+            es_query["bool"]["must"].append({"term": {GENOME_FIELD_ISOLATE_NAME: isolate_name}})
 
         if filter_criteria:
             if "bool" in filter_criteria and "must" in filter_criteria["bool"]:
@@ -760,29 +824,34 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
         # Coordinate range filtering for viewport sync
         # Filter genes that overlap with the viewport range
-        if params and params.seq_id and params.start_position is not None and params.end_position is not None:
+        if (
+            params
+            and params.seq_id
+            and params.start_position is not None
+            and params.end_position is not None
+        ):
             # Ensure start < end (handle swapped values)
             viewport_start = min(params.start_position, params.end_position)
             viewport_end = max(params.start_position, params.end_position)
-            
+
             # Filter by seq_id
             es_query["bool"]["must"].append({"term": {FIELD_SEQ_ID: params.seq_id}})
-            
+
             # Filter genes that overlap with viewport range
             # A gene overlaps if: gene_start <= viewport_end AND gene_end >= viewport_start
             # Elasticsearch uses "start" and "end" fields, not "start_position" and "end_position"
-            es_query["bool"]["must"].append({
-                "bool": {
-                    "must": [
-                        {"range": {"start": {"lte": viewport_end}}},
-                        {"range": {"end": {"gte": viewport_start}}}
-                    ]
+            es_query["bool"]["must"].append(
+                {
+                    "bool": {
+                        "must": [
+                            {"range": {"start": {"lte": viewport_end}}},
+                            {"range": {"end": {"gte": viewport_start}}},
+                        ]
+                    }
                 }
-            })
+            )
 
-        logger.info(
-            f"DEBUG - Final Elasticsearch Query: {json.dumps(es_query, indent=2)}"
-        )
+        logger.info(f"DEBUG - Final Elasticsearch Query: {json.dumps(es_query, indent=2)}")
         return es_query
 
     async def get_faceted_search(
@@ -873,7 +942,11 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             response = gs.execute()
 
             try:
-                total_hits = response.hits.total.value if hasattr(response.hits.total, 'value') else response.hits.total
+                total_hits = (
+                    response.hits.total.value
+                    if hasattr(response.hits.total, "value")
+                    else response.hits.total
+                )
                 logger.info("Faceted search response - total_hits=%s", total_hits)
             except Exception:
                 logger.exception("Failed to log total hits for faceted search")
@@ -881,9 +954,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             facet_results = {}
             for field in FACET_FIELDS:
                 try:
-                    filtered_agg_result = response.aggregations[f"{field}_filtered"][
-                        field
-                    ]
+                    filtered_agg_result = response.aggregations[f"{field}_filtered"][field]
                     buckets = filtered_agg_result["buckets"]
                     # Prefer unique gene counts if present; fallback to doc_count
                     aggregation_dict = {}
@@ -906,26 +977,28 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
                     facet_results[field] = self.process_aggregation_results(
                         aggregation_dict,
-                        selected_values=(
-                            [selected_map[field]] if selected_map.get(field) else []
-                        ),
+                        selected_values=([selected_map[field]] if selected_map.get(field) else []),
                         facet_group=field,
                     )
 
                     try:
                         selected_vals = selected_map.get(field)
                         sum_bucket_docs = sum(
-                            (getattr(getattr(b, "unique_genes", None), "value", None) if hasattr(b, "unique_genes") else None)
+                            (
+                                getattr(getattr(b, "unique_genes", None), "value", None)
+                                if hasattr(b, "unique_genes")
+                                else None
+                            )
                             or getattr(b, "doc_count", 0)
                             for b in buckets
                         )
-                        # logger.info(
-                        #     "Facet '%s' debug - buckets=%s sum_doc_counts=%s selected=%s",
-                        #     field,
-                        #     len(buckets),
-                        #     sum_bucket_docs,
-                        #     selected_vals,
-                        # )
+                        logger.info(
+                            "Facet '%s' debug - buckets=%s sum_doc_counts=%s selected=%s",
+                            field,
+                            len(buckets),
+                            sum_bucket_docs,
+                            selected_vals,
+                        )
                     except Exception:
                         logger.exception("Failed logging facet '%s' debug info", field)
                 except KeyError:
@@ -967,15 +1040,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 if facet_group == "has_amr_info" and str(key).lower() in ["1", "true"]
                 else (
                     False
-                    if facet_group == "has_amr_info"
-                    and str(key).lower() in ["0", "false"]
+                    if facet_group == "has_amr_info" and str(key).lower() in ["0", "false"]
                     else str(key)
                 )
             )
 
-            is_selected = str(value).lower() in [
-                str(val).lower() for val in selected_values
-            ]
+            is_selected = str(value).lower() in [str(val).lower() for val in selected_values]
 
             if count > 0 or is_selected:
                 results.append(
@@ -1001,9 +1071,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             logger.info(f"Response: {response}")
 
             if not response.hits:
-                raise GeneNotFoundError(
-                    f"Could not find gene with locus tag: {locus_tag}"
-                )
+                raise GeneNotFoundError(f"Could not find gene with locus tag: {locus_tag}")
 
             hit = response.hits[0]
             # logger.info(f"Hit.locus_tag: {hit.locus_tag}")
@@ -1015,9 +1083,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         except GeneNotFoundError:
             raise
         except Exception as e:
-            logger.error(
-                f"Error fetching protein sequence for locus tag {locus_tag}: {e}"
-            )
+            logger.error(f"Error fetching protein sequence for locus tag {locus_tag}: {e}")
             raise ServiceError(f"Error fetching protein sequence: {str(e)}")
 
     def convert_to_tsv(self, genes: List[GeneResponseSchema]) -> str:
@@ -1095,9 +1161,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         sort_order: Optional[str] = SORT_DIRECTION_ASC,
     ):
         """Stream genes directly from Elasticsearch scroll API without loading all into memory."""
-        isolate_names_list = (
-            [id.strip() for id in isolates.split(",")] if isolates else []
-        )
+        isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
         filter_criteria = {"bool": {"must": []}}
 
         # Filters for genome IDs and species ID
@@ -1138,7 +1202,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             sort_by = "start"
         elif sort_by == "end_position":
             sort_by = "end"
-        
+
         sort_by = (
             f"{sort_by}.keyword"
             if sort_by
@@ -1194,16 +1258,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     total_results += 1
                     yield validated
 
-                logger.info(
-                    f"Streamed {total_results} genes in {batch_count} batches..."
-                )
+                logger.info(f"Streamed {total_results} genes in {batch_count} batches...")
 
                 # Get next batch using scroll
                 try:
                     response = await sync_to_async(
-                        lambda: es_client.scroll(
-                            scroll_id=scroll_id, scroll=SCROLL_TIMEOUT
-                        )
+                        lambda: es_client.scroll(scroll_id=scroll_id, scroll=SCROLL_TIMEOUT)
                     )()
                     scroll_id = response["_scroll_id"]
                 except Exception as scroll_error:

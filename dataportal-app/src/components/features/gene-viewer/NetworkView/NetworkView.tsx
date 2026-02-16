@@ -74,6 +74,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
 
   // STRING DB network state (for STRING-only or combined views)
   const [stringNetwork, setStringNetwork] = useState<PPINetworkData | null>(null);
+  const [stringFocalPreferredName, setStringFocalPreferredName] = useState<string | null>(null);
   const [stringLoading, setStringLoading] = useState<boolean>(false);
   const [stringError, setStringError] = useState<string | null>(null);
 
@@ -117,12 +118,14 @@ const NetworkView: React.FC<NetworkViewProps> = ({
 
     if (!shouldUseString) {
       setStringNetwork(null);
+      setStringFocalPreferredName(null);
       setStringError(null);
       return;
     }
 
     if (!speciesAcronym || !selectedLocusTag) {
       setStringNetwork(null);
+      setStringFocalPreferredName(null);
       setStringError(null);
       return;
     }
@@ -192,24 +195,28 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           return;
         }
 
-        // Convert STRING DB response to PPINetworkData shape for visualization.
+        // Convert STRING DB response to PPINetworkData shape. Use locus tags when available so nodes align with local ES.
         const rows = Array.isArray(stringRaw.network) ? stringRaw.network : [];
         const nodeMap = new Map<string, PPINetworkNode>();
         const edges: PPINetworkEdge[] = [];
+        const preferredToLocus = stringRaw.preferred_name_to_locus_tag ?? {};
 
-        rows.forEach((row: Record<string, any>) => {
-          const sourceId =
+        rows.forEach((row: Record<string, unknown>) => {
+          const sourcePreferred =
             (row.preferredName_A as string | undefined) ||
             (row.preferredName1 as string | undefined) ||
             (row.protein1 as string | undefined);
-          const targetId =
+          const targetPreferred =
             (row.preferredName_B as string | undefined) ||
             (row.preferredName2 as string | undefined) ||
             (row.protein2 as string | undefined);
 
-          if (!sourceId || !targetId) {
+          if (!sourcePreferred || !targetPreferred) {
             return;
           }
+
+          const sourceId = preferredToLocus[sourcePreferred] ?? sourcePreferred;
+          const targetId = preferredToLocus[targetPreferred] ?? targetPreferred;
 
           let rawScore: number | string | undefined =
             (row.score as number | string | undefined) ??
@@ -221,7 +228,6 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             rawScore = Number.isNaN(parsed) ? undefined : parsed;
           }
 
-          // STRING scores are typically 0–1000; normalize to 0–1 if needed.
           const normalized =
             typeof rawScore === 'number'
               ? rawScore > 1
@@ -230,10 +236,18 @@ const NetworkView: React.FC<NetworkViewProps> = ({
               : undefined;
 
           if (!nodeMap.has(sourceId)) {
-            nodeMap.set(sourceId, { id: sourceId, label: sourceId });
+            nodeMap.set(sourceId, {
+              id: sourceId,
+              label: sourceId,
+              locus_tag: preferredToLocus[sourcePreferred] ? sourceId : undefined,
+            });
           }
           if (!nodeMap.has(targetId)) {
-            nodeMap.set(targetId, { id: targetId, label: targetId });
+            nodeMap.set(targetId, {
+              id: targetId,
+              label: targetId,
+              locus_tag: preferredToLocus[targetPreferred] ? targetId : undefined,
+            });
           }
 
           edges.push({
@@ -263,6 +277,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         };
 
         setStringNetwork(network);
+        setStringFocalPreferredName(stringRaw.focal_preferred_name ?? null);
       } catch (err: any) {
         console.error('Error fetching STRING DB network:', err);
         setStringNetwork(null);
@@ -287,10 +302,17 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     setDisplayThreshold(scoreThreshold);
   }, [scoreThreshold]);
 
-  // Store original nodes/edges and init expansion path when base network changes only.
-  // Do NOT reset when showOrthologs/orthologMap change (toggling orthologs) or when selectedLocusTag
-  // changes only (e.g. "View in JBrowse" updates the viewed gene); only reset when networkData changes.
+  // When switching to STRING or Both, clear expansion so we don't show two graphs (stale expansion or local+STRING split).
   useEffect(() => {
+    if (dataSource === 'stringdb' || dataSource === 'both') {
+      setExpansionState(createInitialExpansionState());
+    }
+  }, [dataSource]);
+
+  // Store original nodes/edges and init expansion path when base network changes only.
+  // Only run when we're using local data (local or both) so STRING-only view is not overwritten by local expansion.
+  useEffect(() => {
+    if (dataSource === 'stringdb') return;
     if (networkData && selectedLocusTag) {
       const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs);
       originalNodesRef.current = enriched.enrichedNodes;
@@ -322,13 +344,12 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         setExpansionState(createInitialExpansionState());
       }
     }
-    // Only depend on networkData so "View in JBrowse" (which updates selectedLocusTag) does not reset expansion
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [networkData]);
+  }, [networkData, dataSource]);
 
   // When path is still empty but we have networkData + selectedLocusTag (e.g. selectedLocusTag set after load), set initial path with starting node
   useEffect(() => {
-    if (!networkData || !selectedLocusTag || expansionState.path.nodes.length > 0) return;
+    if (dataSource === 'stringdb' || !networkData || !selectedLocusTag || expansionState.path.nodes.length > 0) return;
     const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs);
     const startingNode = enriched.enrichedNodes.find(
       node => node.locus_tag === selectedLocusTag || node.id === selectedLocusTag
@@ -360,44 +381,60 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       return stringNetwork ?? null;
     }
 
-    // dataSource === 'both' and we have both networks: merge nodes and edges.
+    // dataSource === 'both': single graph with multiple edges. Normalize STRING focal node to local id so they merge.
     const nodeMap = new Map<string, PPINetworkNode>();
-    const edgeKey = (e: PPINetworkEdge) => `${e.source}-${e.target}`;
-    const edgeMap = new Map<string, PPINetworkEdge>();
+    const edgesList: (PPINetworkEdge & { dataSource?: string })[] = [];
+
+    // Local API uses UniProt as node.id; we need one canonical id for the selected gene so STRING and local merge.
+    const localFocalNode = networkData?.nodes.find(
+      (n) => n.locus_tag === selectedLocusTag || n.id === selectedLocusTag
+    );
+    const localFocalId = localFocalNode?.id ?? selectedLocusTag ?? null;
+    const focalStr = stringFocalPreferredName?.trim() || null;
 
     if (networkData) {
       networkData.nodes.forEach((n) => nodeMap.set(n.id, { ...n }));
       networkData.edges.forEach((e) =>
-        edgeMap.set(edgeKey(e), { ...e, dataSource: 'local' })
+        edgesList.push({ ...e, dataSource: 'local' })
       );
     }
 
     if (stringNetwork) {
+      // Map STRING focal node to local id: both gene name (focalStr) and locus tag (selectedLocusTag) must become localFocalId.
+      const norm = (id: string) => {
+        if (!localFocalId) return id;
+        if (id === focalStr || id === selectedLocusTag) return localFocalId;
+        return id;
+      };
       stringNetwork.nodes.forEach((n) => {
-        if (!nodeMap.has(n.id)) {
-          nodeMap.set(n.id, { ...n });
+        const id = norm(n.id);
+        if (!nodeMap.has(id)) {
+          nodeMap.set(id, { ...n, id, label: n.label ?? n.id });
         }
       });
       stringNetwork.edges.forEach((e) => {
-        const key = edgeKey(e);
-        if (!edgeMap.has(key)) {
-          edgeMap.set(key, { ...e, dataSource: 'stringdb' });
-        }
+        const source = norm(e.source);
+        const target = norm(e.target);
+        edgesList.push({
+          ...e,
+          source,
+          target,
+          dataSource: 'stringdb',
+        });
       });
     }
 
     return {
       nodes: Array.from(nodeMap.values()),
-      edges: Array.from(edgeMap.values()),
+      edges: edgesList,
       properties: networkData?.properties ?? stringNetwork?.properties,
     };
-  }, [dataSource, networkData, stringNetwork]);
+  }, [dataSource, networkData, stringNetwork, stringFocalPreferredName, selectedLocusTag]);
 
   const hasData = baseNetwork && baseNetwork.nodes.length > 0;
 
   // Enrich nodes with ortholog information and merge with expansions.
-  // When there are expansions: merge base + expanded PPI nodes, then enrich so orthologs
-  // are added for all nodes (including expanded); preserve expansion ortholog nodes and levels.
+  // When dataSource is STRING only, show only baseNetwork (no expansion merge) so we don't show two graphs.
   const { enrichedNodes, enrichedEdges } = useMemo(() => {
     if (!baseNetwork?.nodes) {
       return { enrichedNodes: [], enrichedEdges: [] as PPINetworkEdge[] };
@@ -406,7 +443,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     const baseNodes = baseNetwork.nodes;
     const baseEdges = baseNetwork.edges || [];
 
-    if (expansionState.allExpandedNodes.size === 0) {
+    if (dataSource === 'stringdb' || expansionState.allExpandedNodes.size === 0) {
       return enrichNetworkData(baseNetwork, orthologMap, showOrthologs);
     }
 
@@ -420,19 +457,18 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       }
     });
 
-    const mergedPpiEdges = new Map<string, PPINetworkEdge & { expansionLevel?: number }>();
-    baseEdges.forEach(e => mergedPpiEdges.set(`${e.source}-${e.target}`, { ...e, expansionLevel: 0 }));
+    // Keep all base edges (for "both" there can be multiple edges per pair: local + STRING).
+    const mergedPpiEdges: (PPINetworkEdge & { expansionLevel?: number })[] = baseEdges.map(e => ({ ...e, expansionLevel: 0 }));
     expansionState.allExpandedEdges.forEach(e => {
-      const key = `${e.source}-${e.target}`;
-      const existing = mergedPpiEdges.get(key);
-      if (!existing || (e.weight ?? 0) > (existing.weight ?? 0)) {
-        mergedPpiEdges.set(key, { ...e, expansionLevel: (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0 });
-      }
+      mergedPpiEdges.push({
+        ...e,
+        expansionLevel: (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0,
+      });
     });
 
     const mergedNetwork = {
       nodes: Array.from(mergedPpiNodes.values()),
-      edges: Array.from(mergedPpiEdges.values()),
+      edges: mergedPpiEdges,
     };
     const fullEnriched = enrichNetworkData(mergedNetwork, orthologMap, showOrthologs);
 
@@ -448,25 +484,29 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       if (n.nodeType === 'ortholog') nodeMap.set(id, n);
     });
 
+    // Use a unique key per edge so we keep multiple edges per pair (e.g. local + STRING when dataSource is 'both').
     const edgeMap = new Map<string, PPINetworkEdge & { expansionLevel?: number }>();
-    fullEnriched.enrichedEdges.forEach(e => {
-      const key = `${e.source}-${e.target}`;
+    fullEnriched.enrichedEdges.forEach((e, i) => {
+      const dataSource = (e as { dataSource?: string }).dataSource ?? 'local';
+      const key = (e as { id?: string }).id ?? `${dataSource}-${e.source}-${e.target}-${i}`;
       const fromState = expansionState.allExpandedEdges.find(
         edge => (edge.source === e.source && edge.target === e.target) || (edge.source === e.target && edge.target === e.source)
       ) as (PPINetworkEdge & { expansionLevel?: number }) | undefined;
       const level = fromState?.expansionLevel ?? (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0;
       edgeMap.set(key, { ...e, expansionLevel: level });
     });
-    expansionState.allExpandedEdges.forEach(e => {
-      const key = `${e.source}-${e.target}`;
-      if (!edgeMap.has(key)) edgeMap.set(key, { ...e, expansionLevel: (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0 });
+    expansionState.allExpandedEdges.forEach((e, i) => {
+      const key = `expansion-${e.source}-${e.target}-${i}`;
+      if (!edgeMap.has(key)) {
+        edgeMap.set(key, { ...e, expansionLevel: (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0 });
+      }
     });
 
     return {
       enrichedNodes: Array.from(nodeMap.values()),
       enrichedEdges: Array.from(edgeMap.values()),
     };
-  }, [baseNetwork, orthologMap, showOrthologs, expansionState]);
+  }, [baseNetwork, orthologMap, showOrthologs, expansionState, dataSource]);
 
   // Stable expansion path so NetworkGraph does not re-create on every render (e.g. when only selectedNode changes)
   const expansionPath = useMemo(
@@ -740,6 +780,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           nodeCount={enrichedNodes.length}
           edgeCount={enrichedEdges.length}
           showOrthologs={showOrthologs}
+          dataSource={dataSource}
         />
       )}
 

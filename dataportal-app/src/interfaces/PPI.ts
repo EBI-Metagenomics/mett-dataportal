@@ -103,6 +103,10 @@ export interface PPIStringNetworkRaw {
   identifiers?: string[];
   species_taxid?: number;
   data_sources?: string[];
+  /** When querying by locus_tag, the STRING preferred name of that protein for merging "both" view. */
+  focal_preferred_name?: string | null;
+  /** Map STRING preferred name -> locus_tag so nodes can be shown by locus tag. */
+  preferred_name_to_locus_tag?: Record<string, string>;
   error?: string | null;
 }
 

@@ -28,7 +28,11 @@ export const useCytoscapeStyles = ({
                 style: {
                     'curve-style': 'bezier',
                     'control-point-step-size': GT.EDGE.CONTROL_POINT_STEP_SIZE,
-                    'line-color': GT.EDGE.LINE_COLOR,
+                    'line-color': (edge: cytoscape.EdgeSingular) => {
+                        const dataSource = edge.data('dataSource') as string | undefined;
+                        if (dataSource === 'stringdb') return GT.EDGE.STRINGDB_EDGE_COLOR;
+                        return GT.EDGE.LOCAL_EDGE_COLOR;
+                    },
                     opacity: GT.EDGE.OPACITY,
                     width: (edge: cytoscape.EdgeSingular) => {
                         const w = edge.data('weight') ?? 0;

@@ -1,6 +1,9 @@
 import React from 'react';
 import { PPINetworkProperties } from '../../../../../interfaces/PPI';
+import { NETWORK_VIEW_CONSTANTS } from '../constants';
 import styles from './NetworkStats.module.scss';
+
+type DataSourceOption = 'local' | 'stringdb' | 'both';
 
 interface NetworkStatsProps {
   properties: PPINetworkProperties | null;
@@ -8,13 +11,18 @@ interface NetworkStatsProps {
   nodeCount?: number;
   edgeCount?: number;
   showOrthologs: boolean;
+  /** When "both", show legend for Local vs STRING DB edge colors. */
+  dataSource?: DataSourceOption;
 }
+
+const GT = NETWORK_VIEW_CONSTANTS.GRAPH_THEME;
 
 export const NetworkStats: React.FC<NetworkStatsProps> = ({
   properties,
   nodeCount,
   edgeCount,
   showOrthologs,
+  dataSource = 'local',
 }) => {
   // Prefer explicit counts when provided (e.g. enriched graph with expansions); otherwise use properties
   const numNodes = nodeCount ?? properties?.num_nodes ?? 0;
@@ -61,10 +69,39 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
 
       {/* Legend on the right */}
       <div className={styles.legend}>
-        <div className={styles.legendItem}>
-          <span className={`${styles.legendColor} ${styles.legendColorPPI}`}></span>
-          <span>PPI Interaction</span>
-        </div>
+        {dataSource === 'both' && (
+          <>
+            <div className={styles.legendItem}>
+              <span
+                className={styles.legendEdgeLine}
+                style={{ backgroundColor: GT.EDGE.LOCAL_EDGE_COLOR }}
+              />
+              <span>Local (ES)</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span
+                className={styles.legendEdgeLine}
+                style={{ backgroundColor: GT.EDGE.STRINGDB_EDGE_COLOR }}
+              />
+              <span>STRING DB</span>
+            </div>
+          </>
+        )}
+        {dataSource === 'stringdb' && (
+          <div className={styles.legendItem}>
+            <span
+              className={styles.legendEdgeLine}
+              style={{ backgroundColor: GT.EDGE.STRINGDB_EDGE_COLOR }}
+            />
+            <span>STRING DB</span>
+          </div>
+        )}
+        {dataSource === 'local' && (
+          <div className={styles.legendItem}>
+            <span className={`${styles.legendColor} ${styles.legendColorPPI}`}></span>
+            <span>PPI Interaction</span>
+          </div>
+        )}
         {showOrthologs && (
           <>
             <div className={styles.legendItem}>
