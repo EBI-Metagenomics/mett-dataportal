@@ -195,6 +195,10 @@ class PPINeighborhoodQuerySchema(BaseModel):
 
     protein_id: Optional[str] = Field(None, description="UniProt ID of the protein")
     locus_tag: Optional[str] = Field(None, description="Locus tag of the protein")
+    string_id: Optional[str] = Field(
+        None,
+        description="STRING DB protein ID (e.g. 820.ERS852554_03539). Resolved to locus_tag via feature index; if no mapping, returns empty neighborhood.",
+    )
     n: int = Field(5, ge=1, le=50, description="Number of neighbors to retrieve")
     species_acronym: Optional[str] = Field(None, description="Species acronym filter")
     score_type: Optional[str] = Field(
@@ -210,10 +214,13 @@ class PPINeighborhoodQuerySchema(BaseModel):
 
     @validator("locus_tag")
     def validate_protein_identifier(cls, v, values):
-        """Validate that only one of protein_id or locus_tag is provided."""
+        """Validate that only one of protein_id, locus_tag, or string_id is provided."""
         protein_id = values.get("protein_id")
-        if v is not None and protein_id is not None:
-            raise ValueError("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+        string_id = values.get("string_id")
+        if v is not None and (protein_id is not None or string_id is not None):
+            raise ValueError(
+                "Only one of 'protein_id', 'locus_tag', or 'string_id' can be provided, not multiple"
+            )
         return v
 
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNetworkData, type NetworkLimitMode, type SpeciesScope } from '../../../../hooks/useNetworkData';
 import { useAuth } from '../../../../hooks/useAuth';
-import { PPINetworkNode, PPINetworkEdge, PPINetworkData, PPIDataSource } from '../../../../interfaces/PPI';
+import { PPINetworkNode, PPINetworkEdge, PPINetworkData, PPIDataSource, type StringScoreBreakdown } from '../../../../interfaces/PPI';
 import { PPIService } from '../../../../services/interactions/ppiService';
 import { NetworkGraph, NetworkGraphRef } from './NetworkGraph';
 import { NetworkControls } from './NetworkControls';
@@ -75,6 +75,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   // STRING DB network state (for STRING-only or combined views)
   const [stringNetwork, setStringNetwork] = useState<PPINetworkData | null>(null);
   const [stringFocalPreferredName, setStringFocalPreferredName] = useState<string | null>(null);
+  const [stringFocalStringId, setStringFocalStringId] = useState<string | null>(null);
   const [stringLoading, setStringLoading] = useState<boolean>(false);
   const [stringError, setStringError] = useState<string | null>(null);
 
@@ -119,6 +120,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     if (!shouldUseString) {
       setStringNetwork(null);
       setStringFocalPreferredName(null);
+      setStringFocalStringId(null);
       setStringError(null);
       return;
     }
@@ -126,6 +128,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     if (!speciesAcronym || !selectedLocusTag) {
       setStringNetwork(null);
       setStringFocalPreferredName(null);
+      setStringFocalStringId(null);
       setStringError(null);
       return;
     }
@@ -215,8 +218,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             return;
           }
 
-          const sourceId = preferredToLocus[sourcePreferred] ?? sourcePreferred;
-          const targetId = preferredToLocus[targetPreferred] ?? targetPreferred;
+          const stringIdA = (row.stringId_A as string | undefined) || (row.string_id_a as string | undefined);
+          const stringIdB = (row.stringId_B as string | undefined) || (row.string_id_b as string | undefined);
+          // Use locus tag when mapped; otherwise use STRING id so nodes are clearly identified and expand can use string_id
+          const sourceId = preferredToLocus[sourcePreferred] ?? stringIdA ?? sourcePreferred;
+          const targetId = preferredToLocus[targetPreferred] ?? stringIdB ?? targetPreferred;
 
           let rawScore: number | string | undefined =
             (row.score as number | string | undefined) ??
@@ -234,19 +240,16 @@ const NetworkView: React.FC<NetworkViewProps> = ({
                 ? rawScore / 1000
                 : rawScore
               : undefined;
-
-          const stringIdA = (row.stringId_A as string | undefined) || (row.string_id_a as string | undefined);
-          const stringIdB = (row.stringId_B as string | undefined) || (row.string_id_b as string | undefined);
           const ncbiTaxonId = row.ncbiTaxonId as number | string | undefined;
-          const scoreBreakdown = {
-            score: row.score,
-            nscore: row.nscore,
-            fscore: row.fscore,
-            pscore: row.pscore,
-            ascore: row.ascore,
-            escore: row.escore,
-            dscore: row.dscore,
-            tscore: row.tscore,
+          const scoreBreakdown: StringScoreBreakdown = {
+            score: row.score as string | number | undefined,
+            nscore: row.nscore as string | number | undefined,
+            fscore: row.fscore as string | number | undefined,
+            pscore: row.pscore as string | number | undefined,
+            ascore: row.ascore as string | number | undefined,
+            escore: row.escore as string | number | undefined,
+            dscore: row.dscore as string | number | undefined,
+            tscore: row.tscore as string | number | undefined,
             ncbiTaxonId,
           };
 
@@ -299,6 +302,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
 
         setStringNetwork(network);
         setStringFocalPreferredName(stringRaw.focal_preferred_name ?? null);
+        setStringFocalStringId(
+          Array.isArray(stringRaw.identifiers) && stringRaw.identifiers.length === 1
+            ? stringRaw.identifiers[0]
+            : null
+        );
       } catch (err: any) {
         console.error('Error fetching STRING DB network:', err);
         setStringNetwork(null);
@@ -412,6 +420,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     );
     const localFocalId = localFocalNode?.id ?? selectedLocusTag ?? null;
     const focalStr = stringFocalPreferredName?.trim() || null;
+    const focalStringId = stringFocalStringId?.trim() || null;
 
     // Dedupe key: at most one edge per (pair, dataSource) so we get at most 2 edges per node pair (local + stringdb).
     const edgeKey = (source: string, target: string, ds: string) =>
@@ -429,10 +438,10 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     }
 
     if (stringNetwork) {
-      // Map STRING focal node to local id: both gene name (focalStr) and locus tag (selectedLocusTag) must become localFocalId.
+      // Map STRING focal node to local id so the two graphs merge (gene name, locus tag, or STRING id → local node id).
       const norm = (id: string) => {
         if (!localFocalId) return id;
-        if (id === focalStr || id === selectedLocusTag) return localFocalId;
+        if (id === focalStr || id === selectedLocusTag || id === focalStringId) return localFocalId;
         return id;
       };
       stringNetwork.nodes.forEach((n) => {
@@ -461,7 +470,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       edges: edgesList,
       properties: networkData?.properties ?? stringNetwork?.properties,
     };
-  }, [dataSource, networkData, stringNetwork, stringFocalPreferredName, selectedLocusTag]);
+  }, [dataSource, networkData, stringNetwork, stringFocalPreferredName, stringFocalStringId, selectedLocusTag]);
 
   const hasData = baseNetwork && baseNetwork.nodes.length > 0;
 
@@ -670,9 +679,13 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       // Use same API and filters as the main view: Top N → neighborhood, Score threshold → network
       let expansionData: { nodes: PPINetworkNode[]; edges: PPINetworkEdge[] } | null = null;
 
+      const useStringId = Boolean(node.string_id && !node.locus_tag);
+
       if (limitMode === 'topN') {
         const neighborhood = await PPIService.getProteinNeighborhood({
-          locus_tag: locusTag,
+          ...(useStringId
+            ? { string_id: node.string_id }
+            : { locus_tag: locusTag }),
           species_acronym: effectiveSpecies ?? undefined,
           n: topN,
           score_type: scoreType,
@@ -680,14 +693,18 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         });
         expansionData = neighborhood?.network_data ?? null;
       } else {
-        expansionData = await PPIService.getNetworkData({
-          score_type: scoreType,
-          score_threshold: scoreThreshold,
-          species_acronym: effectiveSpecies ?? undefined,
-          isolate_name: isolateName ?? undefined,
-          locus_tag: locusTag,
-          include_properties: false,
-        });
+        if (useStringId) {
+          expansionData = { nodes: [], edges: [] };
+        } else {
+          expansionData = await PPIService.getNetworkData({
+            score_type: scoreType,
+            score_threshold: scoreThreshold,
+            species_acronym: effectiveSpecies ?? undefined,
+            isolate_name: isolateName ?? undefined,
+            locus_tag: locusTag,
+            include_properties: false,
+          });
+        }
       }
 
       if (expansionData && expansionData.nodes && expansionData.edges) {

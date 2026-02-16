@@ -1113,6 +1113,11 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             string_id_to_locus = self._resolve_string_ids_to_locus_tags(
                 all_string_ids, species_acronym=resolved_species
             )
+            # Always add the focal protein's mapping from the interaction (locus_tag ↔ string_id)
+            # so the searched node merges in "both" view even when the feature-index cache missed it.
+            if locus_tag and len(identifiers) == 1:
+                focal_string_id = identifiers[0]
+                string_id_to_locus[focal_string_id] = locus_tag.strip()
             for row in result["network"]:
                 aid = row.get("stringId_A")
                 bid = row.get("stringId_B")

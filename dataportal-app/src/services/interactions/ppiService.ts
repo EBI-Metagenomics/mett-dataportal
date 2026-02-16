@@ -168,11 +168,11 @@ export class PPIService extends BaseService {
 
   /**
    * Get protein neighborhood (top N interactors).
-   * In Top N mode the frontend passes score_threshold: 0 so only n and score_type apply:
-   * returns up to n nodes, ranked by score_type (no min score filter).
+   * Pass locus_tag for local genes, or string_id for STRING-only nodes (resolved via feature index; empty if unmapped).
    */
   static async getProteinNeighborhood(params: {
-    locus_tag: string;
+    locus_tag?: string | null;
+    string_id?: string | null;
     species_acronym?: string | null;
     n?: number;
     score_type?: string;
@@ -180,7 +180,8 @@ export class PPIService extends BaseService {
   }): Promise<PPINeighborhoodData> {
     try {
       const searchParams = this.buildParams({
-        locus_tag: params.locus_tag,
+        locus_tag: params.locus_tag ?? undefined,
+        string_id: params.string_id ?? undefined,
         species_acronym: params.species_acronym ?? undefined,
         n: params.n ?? 5,
         score_type: params.score_type ?? "ds_score",

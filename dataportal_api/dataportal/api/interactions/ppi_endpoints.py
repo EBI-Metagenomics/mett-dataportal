@@ -152,22 +152,54 @@ async def search_ppi_interactions(request, query: PPISearchQuerySchema = Query(.
 )
 @wrap_success_response
 async def get_protein_neighborhood(request, query: PPINeighborhoodQuerySchema = Query(...)):
-    """Get neighborhood data for a specific protein by protein_id or locus_tag."""
-    # Validation: exactly one of protein_id or locus_tag must be provided
-    if not query.protein_id and not query.locus_tag:
-        raise_validation_error("Either 'protein_id' or 'locus_tag' must be provided")
-    if query.protein_id and query.locus_tag:
-        raise_validation_error("Only one of 'protein_id' or 'locus_tag' can be provided, not both")
+    """Get neighborhood data for a specific protein by protein_id, locus_tag, or string_id."""
+    # Validation: exactly one of protein_id, locus_tag, or string_id must be provided
+    provided = sum([bool(query.protein_id), bool(query.locus_tag), bool(query.string_id)])
+    if provided == 0:
+        raise_validation_error(
+            "Exactly one of 'protein_id', 'locus_tag', or 'string_id' must be provided"
+        )
+    if provided > 1:
+        raise_validation_error(
+            "Only one of 'protein_id', 'locus_tag', or 'string_id' can be provided, not multiple"
+        )
+
+    # Resolve string_id to locus_tag via feature index (if provided)
+    locus_tag_to_use = query.locus_tag
+    if query.string_id:
+        from dataportal.services.service_factory import ServiceFactory
+
+        _, string_to_locus = ServiceFactory.get_gene_service().get_locus_string_mapping(
+            species_acronym=query.species_acronym
+        )
+        locus_tag_to_use = string_to_locus.get(query.string_id.strip())
+        if not locus_tag_to_use:
+            # No local mapping for this STRING protein: return empty neighborhood (no 404)
+            from dataportal.schema.interactions.ppi_schemas import (
+                PPINeighborhoodSchema,
+                PPINetworkSchema,
+            )
+
+            empty_network = PPINetworkSchema(nodes=[], edges=[], properties={})
+            empty_neighborhood = PPINeighborhoodSchema(
+                protein_id=query.string_id,
+                neighbors=[],
+                network_data=empty_network,
+            )
+            return create_success_response(
+                data=empty_neighborhood,
+                message=f"No local PPI data for STRING protein '{query.string_id}' (not in feature index mapping).",
+            )
 
     # Resolve locus_tag to protein_id if needed
     actual_protein_id = query.protein_id
-    if query.locus_tag:
+    if locus_tag_to_use:
         try:
             actual_protein_id = await ppi_service.resolve_locus_tag_to_protein_id(
-                locus_tag=query.locus_tag, species_acronym=query.species_acronym
+                locus_tag=locus_tag_to_use, species_acronym=query.species_acronym
             )
             logger.info(
-                f"Resolved locus tag '{query.locus_tag}' to protein_id '{actual_protein_id}'"
+                f"Resolved locus tag '{locus_tag_to_use}' to protein_id '{actual_protein_id}'"
             )
         except ServiceError as e:
             logger.error(f"Locus tag resolution error: {e}")
@@ -185,7 +217,7 @@ async def get_protein_neighborhood(request, query: PPINeighborhoodQuerySchema = 
             score_threshold=query.score_threshold if query.score_threshold is not None else 0.0,
         )
 
-        search_identifier = query.locus_tag if query.locus_tag else actual_protein_id
+        search_identifier = locus_tag_to_use or query.protein_id or query.string_id
         return create_success_response(
             data=neighborhood,
             message=f"Neighborhood data for {search_identifier} retrieved successfully",
