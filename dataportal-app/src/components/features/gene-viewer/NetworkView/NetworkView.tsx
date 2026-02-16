@@ -392,11 +392,19 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     const localFocalId = localFocalNode?.id ?? selectedLocusTag ?? null;
     const focalStr = stringFocalPreferredName?.trim() || null;
 
+    // Dedupe key: at most one edge per (pair, dataSource) so we get at most 2 edges per node pair (local + stringdb).
+    const edgeKey = (source: string, target: string, ds: string) =>
+      `${[source, target].sort().join('|')}-${ds}`;
+    const seenEdgeKeys = new Set<string>();
+
     if (networkData) {
       networkData.nodes.forEach((n) => nodeMap.set(n.id, { ...n }));
-      networkData.edges.forEach((e) =>
-        edgesList.push({ ...e, dataSource: 'local' })
-      );
+      networkData.edges.forEach((e) => {
+        const key = edgeKey(e.source, e.target, 'local');
+        if (seenEdgeKeys.has(key)) return;
+        seenEdgeKeys.add(key);
+        edgesList.push({ ...e, dataSource: 'local' });
+      });
     }
 
     if (stringNetwork) {
@@ -415,6 +423,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       stringNetwork.edges.forEach((e) => {
         const source = norm(e.source);
         const target = norm(e.target);
+        const key = edgeKey(source, target, 'stringdb');
+        if (seenEdgeKeys.has(key)) return;
+        seenEdgeKeys.add(key);
         edgesList.push({
           ...e,
           source,
@@ -502,9 +513,20 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       }
     });
 
+    // At most one edge per (source, target, dataSource) so "both" shows at most 2 edges per pair (local + stringdb), no triples.
+    const edgeDedupKey = (src: string, tgt: string, ds: string) => `${[src, tgt].sort().join('|')}-${ds}`;
+    const seen = new Set<string>();
+    const dedupedEdges = Array.from(edgeMap.values()).filter((e) => {
+      const ds = (e as { dataSource?: string }).dataSource ?? 'local';
+      const k = edgeDedupKey(e.source, e.target, ds);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
     return {
       enrichedNodes: Array.from(nodeMap.values()),
-      enrichedEdges: Array.from(edgeMap.values()),
+      enrichedEdges: dedupedEdges,
     };
   }, [baseNetwork, orthologMap, showOrthologs, expansionState, dataSource]);
 

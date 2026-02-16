@@ -139,6 +139,9 @@ export const useCytoscapeStyles = ({
                 selector: 'edge[expansionLevel]',
                 style: {
                     'line-color': (edge: cytoscape.EdgeSingular) => {
+                        const dataSource = edge.data('dataSource') as string | undefined;
+                        if (dataSource === 'stringdb') return GT.EDGE.STRINGDB_EDGE_COLOR;
+                        if (dataSource === 'local') return GT.EDGE.LOCAL_EDGE_COLOR;
                         const level = edge.data('expansionLevel') as number | undefined;
                         if (level === undefined || level === 0) return '#999';
                         const colors = EX.LEVEL_COLORS;
