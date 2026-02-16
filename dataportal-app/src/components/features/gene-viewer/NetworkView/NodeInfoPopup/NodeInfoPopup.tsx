@@ -1,8 +1,21 @@
 import React from 'react';
-import { PPINetworkNode, PPINetworkEdge } from '../../../../../interfaces/PPI';
+import { PPINetworkNode, PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
 import { canExpandNode, getNodeExpansionLevel } from '../utils/expansionUtils';
 import { ExpansionState } from '../types/expansion';
 import styles from './NodeInfoPopup.module.scss';
+
+/** STRING score field labels (from STRING DB API). */
+const STRING_SCORE_LABELS: Record<keyof StringScoreBreakdown, string> = {
+  score: 'Combined score',
+  nscore: 'Neighborhood',
+  fscore: 'Gene fusion',
+  pscore: 'Phylogenetic co-occurrence',
+  ascore: 'Co-expression',
+  escore: 'Experimental',
+  dscore: 'Database',
+  tscore: 'Text mining',
+  ncbiTaxonId: 'NCBI Taxon ID',
+};
 
 interface NodeInfoPopupProps {
   node: PPINetworkNode;
@@ -87,6 +100,48 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
             <div className={styles.infoRow}>
               <span className={styles.label}>Locus Tag:</span>
               <span className={styles.value}>{node.locus_tag}</span>
+            </div>
+          )}
+
+          {/* STRING DB section: show when node has STRING API data */}
+          {(node.string_id || node.string_preferred_name) && (
+            <div className={styles.stringSection}>
+              <div className={styles.sectionTitle}>STRING DB</div>
+              {node.string_id && (
+                <div className={styles.infoRow}>
+                  <span className={styles.label}>STRING protein ID:</span>
+                  <span className={styles.value}>{node.string_id}</span>
+                </div>
+              )}
+              {node.string_preferred_name && (
+                <div className={styles.infoRow}>
+                  <span className={styles.label}>Preferred name:</span>
+                  <span className={styles.value}>{node.string_preferred_name}</span>
+                </div>
+              )}
+              {!node.locus_tag && (node.string_id || node.string_preferred_name) && (
+                <div className={styles.infoRow}>
+                  <span className={styles.label}>Locus tag:</span>
+                  <span className={styles.valueMuted}>Not in feature index mapping</span>
+                </div>
+              )}
+              {node.string_score_breakdown && (
+                <div className={styles.scoreBreakdown}>
+                  <div className={styles.groupTitle}>Score breakdown (from STRING)</div>
+                  {(Object.keys(STRING_SCORE_LABELS) as (keyof StringScoreBreakdown)[]).map((key) => {
+                    const val = node.string_score_breakdown![key];
+                    if (val === undefined || val === null || val === '') return null;
+                    const num = typeof val === 'string' ? parseFloat(val) : val;
+                    const display = typeof num === 'number' && !Number.isNaN(num) ? num.toFixed(3) : String(val);
+                    return (
+                      <div key={key} className={styles.infoRow}>
+                        <span className={styles.label}>{STRING_SCORE_LABELS[key]}:</span>
+                        <span className={styles.value}>{display}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

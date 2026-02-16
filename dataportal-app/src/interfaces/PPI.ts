@@ -48,6 +48,19 @@ export interface PPIInteraction {
   evidence_count: number;
 }
 
+/** STRING DB score breakdown from network row (one row = one interaction). */
+export interface StringScoreBreakdown {
+  score?: number | string;
+  nscore?: number | string;
+  fscore?: number | string;
+  pscore?: number | string;
+  ascore?: number | string;
+  escore?: number | string;
+  dscore?: number | string;
+  tscore?: number | string;
+  ncbiTaxonId?: number | string;
+}
+
 export interface PPINetworkNode {
   id: string;
   label?: string;
@@ -55,6 +68,12 @@ export interface PPINetworkNode {
   name?: string;
   product?: string;
   uniprot_id?: string;
+  /** STRING protein ID (e.g. 820.ERS852554_00297) when node comes from STRING DB. */
+  string_id?: string;
+  /** STRING preferred name (e.g. dnaN_1) when node comes from STRING DB. */
+  string_preferred_name?: string;
+  /** Score breakdown from STRING network row (neighborhood, fusion, coexpression, etc.). */
+  string_score_breakdown?: StringScoreBreakdown;
   [key: string]: any;
 }
 

@@ -235,11 +235,29 @@ const NetworkView: React.FC<NetworkViewProps> = ({
                 : rawScore
               : undefined;
 
+          const stringIdA = (row.stringId_A as string | undefined) || (row.string_id_a as string | undefined);
+          const stringIdB = (row.stringId_B as string | undefined) || (row.string_id_b as string | undefined);
+          const ncbiTaxonId = row.ncbiTaxonId as number | string | undefined;
+          const scoreBreakdown = {
+            score: row.score,
+            nscore: row.nscore,
+            fscore: row.fscore,
+            pscore: row.pscore,
+            ascore: row.ascore,
+            escore: row.escore,
+            dscore: row.dscore,
+            tscore: row.tscore,
+            ncbiTaxonId,
+          };
+
           if (!nodeMap.has(sourceId)) {
             nodeMap.set(sourceId, {
               id: sourceId,
               label: sourceId,
               locus_tag: preferredToLocus[sourcePreferred] ? sourceId : undefined,
+              string_id: stringIdA,
+              string_preferred_name: sourcePreferred,
+              string_score_breakdown: scoreBreakdown,
             });
           }
           if (!nodeMap.has(targetId)) {
@@ -247,6 +265,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
               id: targetId,
               label: targetId,
               locus_tag: preferredToLocus[targetPreferred] ? targetId : undefined,
+              string_id: stringIdB,
+              string_preferred_name: targetPreferred,
+              string_score_breakdown: scoreBreakdown,
             });
           }
 

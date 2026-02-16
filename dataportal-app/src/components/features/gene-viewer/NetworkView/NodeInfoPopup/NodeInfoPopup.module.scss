@@ -61,6 +61,25 @@
     flex: 1;
     word-break: break-word;
   }
+
+  .valueMuted {
+    color: #888;
+    font-size: 0.875rem;
+    font-style: italic;
+    flex: 1;
+  }
+}
+
+.stringSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.scoreBreakdown {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f0f0f0;
 }
 
 .closeButton {
