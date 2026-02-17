@@ -66,7 +66,7 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
         >
           <option value="local">Local (ES)</option>
           <option value="stringdb">STRING DB</option>
-          <option value="both">Both</option>
+          <option value="both">Local (ES) + STRING DB</option>
         </select>
       </div>
       <div className={styles.controlCell}>
