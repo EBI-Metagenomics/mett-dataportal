@@ -1,4 +1,14 @@
+### Mapping coverage Venn diagram
 
+To quantify how many METT proteins map to STRING identifiers:
+
+```bash
+python mapping_coverage_venn.py --all
+```
+
+See [MAPPING_COVERAGE_README.md](MAPPING_COVERAGE_README.md) for output files, verification steps, and Venn diagram tools.
+
+---
 
 ### Convert the STRING DB FASTA for DIAMOND:
 ```bash
