@@ -35,31 +35,41 @@ All outputs go to `output/mapping_coverage/`:
 | `mapping_coverage_{BU,PV}_full.json` | Full data including all IDs |
 | `unmapped_mett_{BU,PV}.txt` | METT protein IDs that failed to map |
 | `unmatched_string_{BU,PV}.txt` | STRING protein IDs not hit by any METT |
-| `venn_{bu,pv}.png` | Venn diagram (if matplotlib-venn installed) |
+| `venn_{bu,pv}.png` | Coverage bar chart (if matplotlib installed) |
 
 ## Current Results
+
+**Note:** The mapping is many-to-one: multiple METT proteins can map to the same STRING protein. So `successfully_mapped` (METT count) can differ from `string_proteins_matched` (unique STRING count).
 
 ### BU (Bacteroides uniformis, taxon 820)
 - METT proteins: 3,844
 - STRING proteins: 3,899
-- Successfully mapped: 3,444 (**89.6%** of METT)
+- Successfully mapped (METT): 3,444 (**89.6%** of METT)
+- STRING proteins matched (unique): 3,108 (**79.7%** of STRING)
 - METT only (unmapped): 400
 - STRING only (unmatched): 791
+
+*Verification: 3108 + 791 = 3899 ✓ | 3444 + 400 = 3844 ✓*
 
 ### PV (Bacteroides vulgatus, taxon 435590)
 - METT proteins: 4,193
 - STRING proteins: 4,065
-- Successfully mapped: 3,943 (**94.0%** of METT)
+- Successfully mapped (METT): 3,943 (**94.0%** of METT)
+- STRING proteins matched (unique): 3,821 (**94.0%** of STRING)
 - METT only (unmapped): 250
 - STRING only (unmatched): 244
 
+*Verification: 3821 + 244 = 4065 ✓ | 3943 + 250 = 4193 ✓*
+
 ---
 
-## Venn Diagram Tools
+## Visualization
 
-### Option 1: matplotlib-venn (Python, recommended)
+**Why not a Venn diagram?** The mapping is many-to-one (e.g. 3444 METT → 3108 unique STRING). A 2-circle Venn requires one overlap count, but METT needs overlap=3444 and STRING needs overlap=3108 for the totals to sum correctly. A standard Venn is therefore invalid here. The script produces a **two-panel bar chart** instead: METT (mapped/unmapped) and STRING (matched/unmatched).
+
+### Option 1: Built-in bar chart (recommended)
 ```bash
-pip install matplotlib matplotlib-venn
+pip install matplotlib
 python mapping_coverage_venn.py --strain BU
 # Produces output/mapping_coverage/venn_bu.png
 ```

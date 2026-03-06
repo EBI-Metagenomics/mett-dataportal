@@ -94,6 +94,9 @@ def compute_venn_sets(
         "mett_proteins": len(mett_ids),
         "string_proteins": len(string_ids),
         "successfully_mapped": len(mapped),
+        "string_proteins_matched": len(
+            string_hit
+        ),  # unique STRING hit (many-to-one mapping)
         "mett_only_unmapped": len(mett_only),
         "string_only_unmatched": len(string_only),
         "mett_only_ids": sorted(mett_only),
@@ -128,69 +131,66 @@ def draw_venn(
     strain: str,
     mett_total: int,
     string_total: int,
-    mapped: int,
+    mett_mapped: int,
+    string_matched: int,
     mett_only: int,
     string_only: int,
 ) -> Path | None:
-    """Draw Venn diagram using matplotlib-venn. Returns output path or None if lib missing."""
+    """Draw coverage bar chart (Venn is invalid: mapping is many-to-one)."""
     try:
         import matplotlib.pyplot as plt
-        from matplotlib_venn import venn2
     except ImportError:
-        print("  (Install matplotlib and matplotlib-venn to generate Venn diagram)")
-        print("    pip install matplotlib matplotlib-venn")
+        print("  (Install matplotlib to generate diagram)")
+        print("    pip install matplotlib")
         return None
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    fig, axes = plt.subplots(2, 1, figsize=(10, 6))
 
-    # venn2 expects (set_a, set_b) or counts as (ab, a, b) for 2-circle
-    # We use: Set A = METT, Set B = STRING via mapping
-    # Actually for "mapping coverage" we want:
-    #   - Circle 1: METT proteins (total = mapped + mett_only)
-    #   - Circle 2: STRING proteins (total = string_hit_count + string_only)
-    #   - Overlap: Mapped METT proteins (they map TO string_ids)
-    #
-    # The overlap in a 2-set Venn: items in BOTH sets.
-    # Here: "mapped" = METT proteins that found a STRING match.
-    # So we have: METT = {mapped} ∪ {mett_only}, and STRING = {string_hit} ∪ {string_only}
-    # The intersection METT ∩ STRING (conceptually, via mapping) = mapped.
-    #
-    # For venn2(subsets=(mapped, mett_only, string_only)):
-    # Actually venn2 uses: (size_of_A_only, size_of_B_only, size_of_A_and_B)
-    # So: (mett_only, string_only, mapped) - but wait, "mapped" is METT→STRING mapping count.
-    # The two sets are:
-    #   A = METT proteins
-    #   B = STRING proteins that we care about for "coverage"
-    #
-    # Simpler interpretation for coverage report:
-    #   Set A: METT proteins (mett_total)
-    #   Set B: Successfully mapped METT proteins (mapped) - this is a SUBSET of A
-    # That would be a contained circle. Not ideal.
-    #
-    # Better: Two circles
-    #   Set A: METT proteome
-    #   Set B: STRING proteome (for same taxon)
-    #   Overlap: The "mapping" - i.e. METT proteins that mapped AND the STRING proteins they hit
-    # The overlap size could be: mapped (count of METT that mapped). The STRING side could have
-    # many-to-one (multiple METT→same STRING), so we use mapped for the intersection.
-    #
-    # For Venn2 with (|A-B|, |B-A|, |A∩B|):
-    #   |A-B| = mett_only (METT not in overlap)
-    #   |B-A| = string_only (STRING not in overlap)
-    #   |A∩B| = mapped
-    # So: venn2(subsets=(mett_only, string_only, mapped), set_labels=('METT proteins', 'STRING proteins'))
-    venn2(
-        subsets=(mett_only, string_only, mapped),
-        set_labels=("METT proteins", "STRING proteins\n(same taxon)"),
-        ax=ax,
+    # Panel 1: METT proteins (mapped | unmapped)
+    ax1 = axes[0]
+    ax1.barh(0, mett_mapped, color="#2ecc71", label=f"Mapped ({mett_mapped:,})")
+    ax1.barh(
+        0,
+        mett_only,
+        left=mett_mapped,
+        color="#e74c3c",
+        label=f"Unmapped ({mett_only:,})",
     )
-    ax.set_title(
-        f"Mapping Coverage: {strain} ({mett_total} METT, {string_total} STRING)"
+    ax1.set_xlim(0, mett_total)
+    ax1.set_yticks([0])
+    ax1.set_yticklabels(["METT proteins"])
+    ax1.set_xlabel("Count")
+    ax1.set_title(
+        f"METT: {mett_mapped:,} mapped + {mett_only:,} unmapped = {mett_total:,} total"
     )
+    ax1.legend(loc="upper right")
+
+    ax2 = axes[1]
+    ax2.barh(0, string_matched, color="#3498db", label=f"Matched ({string_matched:,})")
+    ax2.barh(
+        0,
+        string_only,
+        left=string_matched,
+        color="#95a5a6",
+        label=f"Unmatched ({string_only:,})",
+    )
+    ax2.set_xlim(0, string_total)
+    ax2.set_yticks([0])
+    ax2.set_yticklabels(["STRING proteins"])
+    ax2.set_xlabel("Count")
+    ax2.set_title(
+        f"STRING: {string_matched:,} matched + {string_only:,} unmatched = {string_total:,} total"
+    )
+
+    fig.suptitle(
+        f"Mapping Coverage: {strain} — {mett_mapped:,} METT map to {string_matched:,} unique STRING",
+        fontsize=11,
+    )
+    plt.tight_layout()
     out_path = out_dir / f"venn_{strain.lower()}.png"
     plt.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"  Venn diagram: {out_path}")
+    print(f"  Coverage diagram: {out_path}")
     return out_path
 
 
@@ -262,6 +262,7 @@ def run_strain(base_dir: Path, strain: str, draw: bool) -> dict:
             else 0
         )
         f.write(f"mett_only_unmapped\t{len(mett_only)}\t{pct2:.2f}\n")
+        f.write(f"string_proteins_matched\t{result['string_proteins_matched']}\t-\n")
         f.write(f"string_only_unmatched\t{len(string_only)}\t-\n")
 
     write_verification_files(out_dir, strain, mett_only, string_only)
@@ -273,6 +274,7 @@ def run_strain(base_dir: Path, strain: str, draw: bool) -> dict:
             result["mett_proteins"],
             result["string_proteins"],
             result["successfully_mapped"],
+            result["string_proteins_matched"],
             len(mett_only),
             len(string_only),
         )
@@ -324,6 +326,9 @@ def main() -> None:
             f"  Successfully mapped: {r['successfully_mapped']} ({100*r['successfully_mapped']/r['mett_proteins']:.1f}% of METT)"
         )
         print(f"  METT only (unmapped): {r['mett_only_unmapped']}")
+        print(
+            f"  STRING matched:      {r['string_proteins_matched']} ({100*r['string_proteins_matched']/r['string_proteins']:.1f}% of STRING)"
+        )
         print(f"  STRING only:         {r['string_only_unmatched']}")
         print("  Output: output/mapping_coverage/")
 
