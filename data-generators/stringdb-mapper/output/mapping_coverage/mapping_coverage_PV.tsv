@@ -1,0 +1,7 @@
+set	count	percent_of_mett
+METT_proteins	4193	100.0
+STRING_proteins	4065	-
+successfully_mapped	3943	94.04
+mett_only_unmapped	250	5.96
+string_proteins_matched	3821	-
+string_only_unmatched	244	-

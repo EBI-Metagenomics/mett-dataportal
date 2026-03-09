@@ -1,0 +1,11 @@
+{
+  "mett_proteins": 3844,
+  "string_proteins": 3899,
+  "successfully_mapped": 3444,
+  "string_proteins_matched": 3108,
+  "mett_only_unmapped": 400,
+  "string_only_unmatched": 791,
+  "strain": "BU",
+  "taxon": 820,
+  "species": "Bacteroides uniformis"
+}

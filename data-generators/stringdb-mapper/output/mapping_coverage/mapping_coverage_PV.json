@@ -1,0 +1,11 @@
+{
+  "mett_proteins": 4193,
+  "string_proteins": 4065,
+  "successfully_mapped": 3943,
+  "string_proteins_matched": 3821,
+  "mett_only_unmapped": 250,
+  "string_only_unmatched": 244,
+  "strain": "PV",
+  "taxon": 435590,
+  "species": "Bacteroides vulgatus"
+}
