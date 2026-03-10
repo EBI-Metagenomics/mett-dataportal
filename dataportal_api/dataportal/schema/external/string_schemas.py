@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 from pydantic import BaseModel, Field
 
 from dataportal.schema.interactions.ppi_schemas import (
@@ -7,6 +7,9 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkPropertiesSchema,
 )
 from dataportal.schema.response_schemas import SuccessResponseSchema
+
+# STRING DB supported network types (https://string-db.org/help/api/)
+STRING_NETWORK_TYPE_VALUES = ("physical", "functional")
 
 
 class StringNetworkRowSchema(BaseModel):
@@ -76,7 +79,10 @@ class PPIStringNetworkQuerySchema(BaseModel):
     required_score: Optional[int] = Field(
         None, ge=0, le=1000, description="Minimum STRING score threshold (0-1000)"
     )
-    network_type: str = Field("physical", description="Network type: physical or functional")
+    network_type: Literal["physical", "functional"] = Field(
+        "physical",
+        description="Network type: physical (direct interactions) or functional (physical + indirect associations)",
+    )
 
 
 class PPIStringNetworkResponseSchema(SuccessResponseSchema):

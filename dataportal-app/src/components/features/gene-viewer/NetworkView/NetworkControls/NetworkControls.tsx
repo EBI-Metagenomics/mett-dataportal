@@ -1,7 +1,7 @@
 import React from 'react';
 import type { NetworkLimitMode, SpeciesScope } from '../../../../../hooks/useNetworkData';
 import type { PPIDataSource } from '../../../../../interfaces/PPI';
-import { NETWORK_VIEW_CONSTANTS } from '../constants';
+import { NETWORK_VIEW_CONSTANTS, STRING_NETWORK_TYPES, type StringNetworkType } from '../constants';
 import styles from './NetworkControls.module.scss';
 
 const SLIDER = NETWORK_VIEW_CONSTANTS.SLIDER;
@@ -14,6 +14,7 @@ interface NetworkControlsProps {
   topN: number;
   speciesScope: SpeciesScope;
   showOrthologs: boolean;
+  stringNetworkType: StringNetworkType;
   availableScoreTypes: string[];
   onDataSourceChange: (source: PPIDataSource) => void;
   onScoreTypeChange: (scoreType: string) => void;
@@ -22,6 +23,7 @@ interface NetworkControlsProps {
   onTopNChange: (n: number) => void;
   onSpeciesScopeChange: (scope: SpeciesScope) => void;
   onOrthologToggle: (enabled: boolean) => void;
+  onStringNetworkTypeChange?: (networkType: StringNetworkType) => void;
   onResetView?: () => void;
 }
 
@@ -33,6 +35,7 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   topN,
   speciesScope,
   showOrthologs,
+  stringNetworkType,
   availableScoreTypes,
   onDataSourceChange,
   onScoreTypeChange,
@@ -41,13 +44,19 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   onTopNChange,
   onSpeciesScopeChange,
   onOrthologToggle,
+  onStringNetworkTypeChange,
   onResetView,
 }) => {
+  const showStringNetworkType = (dataSource === 'stringdb' || dataSource === 'both') && !!onStringNetworkTypeChange;
+
   return (
     <div className={styles.networkControls}>
       {/* Row 1: all labels – same baseline */}
       <label htmlFor="data-source" className={styles.rowLabel}>Source:</label>
       <label htmlFor="score-type" className={styles.rowLabel}>Score:</label>
+      {showStringNetworkType && (
+        <label htmlFor="string-network-type" className={styles.rowLabel}>STRING type:</label>
+      )}
       <label htmlFor="limit-mode" className={styles.rowLabel}>Limit by:</label>
       <label htmlFor={limitMode === 'topN' ? 'top-n' : 'threshold'} className={styles.rowLabel}>
         {limitMode === 'topN' ? 'Number of top interactions to display' : 'Min score'}
@@ -83,6 +92,21 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
           ))}
         </select>
       </div>
+      {showStringNetworkType && (
+        <div className={styles.controlCell}>
+          <select
+            id="string-network-type"
+            value={stringNetworkType}
+            onChange={(e) => onStringNetworkTypeChange?.(e.target.value as StringNetworkType)}
+            className={styles.select}
+            title="Physical: direct interactions. Functional: physical + indirect associations."
+          >
+            {STRING_NETWORK_TYPES.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className={styles.controlCell}>
         <select
           id="limit-mode"

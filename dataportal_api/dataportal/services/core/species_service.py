@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from asgiref.sync import sync_to_async
 
@@ -19,6 +19,43 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
 
     def __init__(self):
         super().__init__(INDEX_SPECIES)
+        # Instance cache: species acronym (lower) -> NCBI taxonomy ID
+        self._acronym_to_taxid: Dict[str, int] = {}
+        self._default_taxid: Optional[int] = None
+
+    async def get_taxonomy_id(self, species_acronym: Optional[str] = None) -> int:
+        """
+        Resolve species acronym to NCBI taxonomy ID.
+        Uses instance cache; fetches from ES on cache miss.
+        When species_acronym is None or lookup fails, returns first enabled species's taxonomy_id.
+        """
+        if species_acronym:
+            acr = species_acronym.strip().lower()
+            if acr in self._acronym_to_taxid:
+                return self._acronym_to_taxid[acr]
+            try:
+                species = await self.get_species_by_acronym(species_acronym.strip().upper())
+                taxid = species.taxonomy_id
+                self._acronym_to_taxid[acr] = taxid
+                return taxid
+            except Exception as e:
+                logger.warning(
+                    "Could not resolve species '%s' to taxonomy_id, using default: %s",
+                    species_acronym,
+                    e,
+                )
+        # No species or lookup failed: use first enabled species as default
+        if self._default_taxid is None:
+            all_species = await self.get_all()
+            if all_species:
+                self._default_taxid = all_species[0].taxonomy_id
+                logger.debug("Default taxonomy_id set to %s", self._default_taxid)
+            else:
+                raise ValueError(
+                    "No species in database; cannot determine taxonomy ID. "
+                    "Please add species data or provide species_acronym."
+                )
+        return self._default_taxid
 
     async def get_by_id(self, id: str) -> Optional[SpeciesSchema]:
         """Retrieve a single species by ID (acronym)."""

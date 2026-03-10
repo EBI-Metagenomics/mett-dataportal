@@ -20,24 +20,9 @@ STRING_API_BASE = os.environ.get("STRING_DB_API_BASE", "https://string-db.org/ap
 STRING_WEB_BASE = os.environ.get("STRING_DB_WEB_BASE", "https://string-db.org").rstrip("/")
 CALLER_IDENTITY = "mett-dataportal"
 
-# NCBI taxonomy IDs for METT species
-SPECIES_TAXID = {
-    "bu": 820,  # Bacteroides uniformis
-    "pv": 435590,  # Phocaeicola vulgatus
-}
-
-
-def _species_to_taxid(species_acronym: Optional[str]) -> int:
-    """Map species acronym to STRING taxonomy ID."""
-    if not species_acronym:
-        return 820  # default BU
-    acr = species_acronym.strip().lower()
-    return SPECIES_TAXID.get(acr, 820)
-
 
 async def fetch_string_network(
     identifiers: List[str],
-    species_acronym: Optional[str] = None,
     species_taxid: Optional[int] = None,
     required_score: Optional[float] = None,
     network_type: str = "physical",
@@ -47,8 +32,7 @@ async def fetch_string_network(
 
     Args:
         identifiers: STRING protein IDs (e.g. ["820.ERS852554_01920", "820.ERS852554_01919"])
-        species_acronym: Species filter (BU, PV) - used to infer taxid if species_taxid not set
-        species_taxid: STRING taxonomy ID (820 for BU, 435590 for PV)
+        species_taxid: NCBI taxonomy ID for STRING API (resolve via SpeciesService from species_acronym)
         required_score: Minimum score threshold (0-1000)
         network_type: "physical" or "functional"
 
@@ -64,7 +48,12 @@ async def fetch_string_network(
         }
 
     ids_str = "\r".join(identifiers)  # STRING expects newline or carriage return
-    taxid = species_taxid or _species_to_taxid(species_acronym)
+    if species_taxid is None:
+        raise ValueError(
+            "species_taxid is required for STRING API. "
+            "Resolve from species_acronym using SpeciesService (e.g. StringNetworkService._get_taxid_for_species)."
+        )
+    taxid = species_taxid
 
     params = {
         "identifiers": ids_str,
@@ -97,7 +86,7 @@ async def fetch_string_network(
     # Parse TSV (header + rows)
     lines = text.strip().split("\n")
     network_url = build_string_network_url(
-        identifiers, species_acronym=None, species_taxid=taxid, network_type=network_type
+        identifiers, species_taxid=taxid, network_type=network_type
     )
     if len(lines) < 2:
         return {
@@ -126,14 +115,15 @@ async def fetch_string_network(
 
 def build_string_network_url(
     identifiers: List[str],
-    species_acronym: Optional[str] = None,
     species_taxid: Optional[int] = None,
     network_type: str = "physical",
 ) -> str:
     """Build a URL to the STRING network page for given protein IDs."""
     if not identifiers:
         return ""
-    taxid = species_taxid or _species_to_taxid(species_acronym)
+    if species_taxid is None:
+        raise ValueError("species_taxid is required for build_string_network_url")
+    taxid = species_taxid
     ids_str = "\r".join(identifiers)
     params = urlencode(
         {

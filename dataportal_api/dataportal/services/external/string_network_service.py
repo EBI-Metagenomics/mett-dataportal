@@ -24,6 +24,7 @@ class StringNetworkService:
     def __init__(self):
         self._gene_service = ServiceFactory.get_gene_service()
         self._ppi_service = ServiceFactory.get_ppi_service()
+        self._species_service = ServiceFactory.get_species_service()
 
     def _resolve_ids_to_locus(
         self, string_ids: List[str], species_acronym: Optional[str]
@@ -110,9 +111,10 @@ class StringNetworkService:
                 "error": "No valid STRING protein IDs",
             }
 
+        species_taxid = await self._species_service.get_taxonomy_id(resolved_species)
         result = await fetch_string_network(
             identifiers=identifiers,
-            species_acronym=resolved_species,
+            species_taxid=species_taxid,
             required_score=float(required_score) if required_score is not None else None,
             network_type=network_type,
         )
@@ -173,9 +175,10 @@ class StringNetworkService:
         network_type: str = "physical",
         interaction: Optional[Dict[str, Any]] = None,
     ) -> StringNetworkResponseSchema:
+        species_taxid = await self._species_service.get_taxonomy_id(species_acronym)
         result = await fetch_string_network(
             identifiers=identifiers,
-            species_acronym=species_acronym,
+            species_taxid=species_taxid,
             required_score=required_score,
             network_type=network_type,
         )

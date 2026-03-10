@@ -57,6 +57,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [topN, setTopN] = useState<number>(10);
   const [speciesScope, setSpeciesScope] = useState<SpeciesScope>('current');
   const [dataSource, setDataSource] = useState<PPIDataSource>('local');
+  const [stringNetworkType, setStringNetworkType] = useState<'physical' | 'functional'>('physical');
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
   const [selectedNode, setSelectedNode] = useState<PPINetworkNode | null>(null);
   const [popupNode, setPopupNode] = useState<{ node: PPINetworkNode; x: number; y: number } | null>(null);
@@ -184,7 +185,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           locus_tag: selectedLocusTag,
           species_acronym: effectiveSpecies ?? undefined,
           required_score: requiredScore,
-          network_type: 'physical',
+          network_type: stringNetworkType,
         });
 
         if (stringRaw.error) {
@@ -317,7 +318,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     };
 
     fetchStringNetwork();
-  }, [dataSource, speciesAcronym, selectedLocusTag, speciesScope, scoreThreshold]);
+  }, [dataSource, speciesAcronym, selectedLocusTag, speciesScope, scoreThreshold, stringNetworkType]);
 
   // Sync loading state with parent
   useEffect(() => {
@@ -805,6 +806,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           topN={topN}
           speciesScope={speciesScope}
           showOrthologs={showOrthologs}
+          stringNetworkType={stringNetworkType}
           availableScoreTypes={availableScoreTypes}
           onDataSourceChange={setDataSource}
           onScoreTypeChange={handleScoreTypeChange}
@@ -813,6 +815,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           onTopNChange={handleTopNChange}
           onSpeciesScopeChange={handleSpeciesScopeChange}
           onOrthologToggle={handleOrthologToggle}
+          onStringNetworkTypeChange={setStringNetworkType}
           onResetView={handleResetView}
         />
 

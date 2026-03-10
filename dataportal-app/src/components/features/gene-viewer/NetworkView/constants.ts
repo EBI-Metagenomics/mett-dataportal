@@ -1,4 +1,16 @@
 /**
+ * STRING DB network types (from STRING API: https://string-db.org/help/api/)
+ * - physical: Direct physical interactions between proteins
+ * - functional: Both direct physical and indirect functional associations (broader network)
+ */
+export const STRING_NETWORK_TYPES = [
+  { value: 'physical', label: 'Physical' },
+  { value: 'functional', label: 'Functional' },
+] as const;
+
+export type StringNetworkType = (typeof STRING_NETWORK_TYPES)[number]['value'];
+
+/**
  * Constants for Network View configuration.
  * Graph colors here should match _networkViewTheme.scss for consistency.
  */
