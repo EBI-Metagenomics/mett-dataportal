@@ -26,6 +26,28 @@ export const STRING_EVIDENCE_CHANNELS = [
 
 export type StringEvidenceChannel = (typeof STRING_EVIDENCE_CHANNELS)[number]['value'];
 
+/** Map evidence channel id to STRING TSV score field name */
+export const STRING_EVIDENCE_SCORE_FIELDS: Record<StringEvidenceChannel, string> = {
+  neighborhood: 'nscore',
+  fusion: 'fscore',
+  cooccurrence: 'pscore',
+  coexpression: 'ascore',
+  experimental: 'escore',
+  database: 'dscore',
+  textmining: 'tscore',
+} as const;
+
+/** Colors for STRING evidence edges (one edge per evidence type). Used when showing multiple edges between nodes. */
+export const STRING_EVIDENCE_COLORS: Record<StringEvidenceChannel, string> = {
+  neighborhood: '#9C27B0',   // purple
+  fusion: '#00BCD4',          // cyan
+  cooccurrence: '#8BC34A',    // light green
+  coexpression: '#2196F3',    // blue
+  experimental: '#F44336',    // red
+  database: '#FF9800',        // orange
+  textmining: '#795548',      // brown
+} as const;
+
 /**
  * Constants for Network View configuration.
  * Graph colors here should match _networkViewTheme.scss for consistency.

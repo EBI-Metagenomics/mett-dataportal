@@ -192,8 +192,9 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                                 tapped.addClass('selected');
                             });
 
-                            const originalEdge = edges.find((e) => 
-                                e.source === edgeData.source && e.target === edgeData.target
+                            const originalEdge = edges.find((e) =>
+                                ((e as { id?: string }).id && (e as { id?: string }).id === edgeData.id) ||
+                                (e.source === edgeData.source && e.target === edgeData.target)
                             );
                             if (originalEdge) {
                                 const originalEvent = event.originalEvent as MouseEvent | undefined;

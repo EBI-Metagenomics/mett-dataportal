@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import cytoscape from 'cytoscape';
-import { NETWORK_VIEW_CONSTANTS } from '../../constants';
+import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_COLORS, type StringEvidenceChannel } from '../../constants';
 
 const GT = NETWORK_VIEW_CONSTANTS.GRAPH_THEME;
 const EW = NETWORK_VIEW_CONSTANTS.EDGE_WIDTH;
@@ -30,6 +30,10 @@ export const useCytoscapeStyles = ({
                     'control-point-step-size': GT.EDGE.CONTROL_POINT_STEP_SIZE,
                     'line-color': (edge: cytoscape.EdgeSingular) => {
                         const dataSource = edge.data('dataSource') as string | undefined;
+                        const evidenceChannel = edge.data('evidence_channel') as StringEvidenceChannel | undefined;
+                        if (dataSource === 'stringdb' && evidenceChannel && evidenceChannel in STRING_EVIDENCE_COLORS) {
+                            return STRING_EVIDENCE_COLORS[evidenceChannel];
+                        }
                         if (dataSource === 'stringdb') return GT.EDGE.STRINGDB_EDGE_COLOR;
                         return GT.EDGE.LOCAL_EDGE_COLOR;
                     },
@@ -140,6 +144,10 @@ export const useCytoscapeStyles = ({
                 style: {
                     'line-color': (edge: cytoscape.EdgeSingular) => {
                         const dataSource = edge.data('dataSource') as string | undefined;
+                        const evidenceChannel = edge.data('evidence_channel') as StringEvidenceChannel | undefined;
+                        if (dataSource === 'stringdb' && evidenceChannel && evidenceChannel in STRING_EVIDENCE_COLORS) {
+                            return STRING_EVIDENCE_COLORS[evidenceChannel];
+                        }
                         if (dataSource === 'stringdb') return GT.EDGE.STRINGDB_EDGE_COLOR;
                         if (dataSource === 'local') return GT.EDGE.LOCAL_EDGE_COLOR;
                         const level = edge.data('expansionLevel') as number | undefined;

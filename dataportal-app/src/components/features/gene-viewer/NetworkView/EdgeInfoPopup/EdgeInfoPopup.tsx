@@ -23,6 +23,10 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
     if (edge.edgeType === 'ortholog') {
       return `Ortholog Relationship${edge.orthology_type ? ` (${edge.orthology_type})` : ''}`;
     }
+    const evidenceType = (edge as { evidence_type?: string }).evidence_type;
+    if (evidenceType) {
+      return `STRING: ${evidenceType}`;
+    }
     return 'PPI Interaction';
   };
 
@@ -101,6 +105,12 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
               <div className={styles.infoRow}>
                 <span className={styles.label}>Score Type:</span>
                 <span className={styles.value}>{edge.score_type}</span>
+              </div>
+            )}
+            {(edge as { evidence_type?: string }).evidence_type && (
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Evidence Type:</span>
+                <span className={styles.value}>{(edge as { evidence_type?: string }).evidence_type}</span>
               </div>
             )}
             {edge.orthology_type && (

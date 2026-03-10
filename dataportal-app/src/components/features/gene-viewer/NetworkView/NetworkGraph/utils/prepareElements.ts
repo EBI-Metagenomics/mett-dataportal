@@ -125,6 +125,8 @@ export const prepareEdges = (
             weight?: number;
             expansionLevel?: number;
             dataSource?: string;
+            evidence_type?: string;
+            evidence_channel?: string;
         };
 
         const sourceInPath = pathNodeIds.has(edge.source);
@@ -144,6 +146,8 @@ export const prepareEdges = (
                 orthology_type: edgeData.orthology_type,
                 expansionLevel: edgeData.expansionLevel,
                 dataSource,
+                evidence_type: edgeData.evidence_type,
+                evidence_channel: edgeData.evidence_channel,
                 inPath: edgeInPath ? 'true' : 'false',
             },
         };

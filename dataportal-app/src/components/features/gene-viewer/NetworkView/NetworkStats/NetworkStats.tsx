@@ -1,6 +1,6 @@
 import React from 'react';
 import { PPINetworkProperties } from '../../../../../interfaces/PPI';
-import { NETWORK_VIEW_CONSTANTS } from '../constants';
+import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_COLORS } from '../constants';
 import styles from './NetworkStats.module.scss';
 
 type DataSourceOption = 'local' | 'stringdb' | 'both';
@@ -13,6 +13,8 @@ interface NetworkStatsProps {
   showOrthologs: boolean;
   /** When "both", show legend for Local vs STRING DB edge colors. */
   dataSource?: DataSourceOption;
+  /** When STRING DB, show evidence channel colors (multiple edges per pair). */
+  showStringEvidenceLegend?: boolean;
 }
 
 const GT = NETWORK_VIEW_CONSTANTS.GRAPH_THEME;
@@ -23,6 +25,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
   edgeCount,
   showOrthologs,
   dataSource = 'local',
+  showStringEvidenceLegend = false,
 }) => {
   // Prefer explicit counts when provided (e.g. enriched graph with expansions); otherwise use properties
   const numNodes = nodeCount ?? properties?.num_nodes ?? 0;
@@ -78,6 +81,39 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
               />
               <span>Local (ES)</span>
             </div>
+            {showStringEvidenceLegend
+              ? STRING_EVIDENCE_CHANNELS.map((ch) => (
+                  <div key={ch.value} className={styles.legendItem}>
+                    <span
+                      className={styles.legendEdgeLine}
+                      style={{ backgroundColor: STRING_EVIDENCE_COLORS[ch.value] }}
+                    />
+                    <span>{ch.label}</span>
+                  </div>
+                ))
+              : (
+                <div className={styles.legendItem}>
+                  <span
+                    className={styles.legendEdgeLine}
+                    style={{ backgroundColor: GT.EDGE.STRINGDB_EDGE_COLOR }}
+                  />
+                  <span>STRING DB</span>
+                </div>
+              )}
+          </>
+        )}
+        {dataSource === 'stringdb' && (
+          showStringEvidenceLegend ? (
+            STRING_EVIDENCE_CHANNELS.map((ch) => (
+              <div key={ch.value} className={styles.legendItem}>
+                <span
+                  className={styles.legendEdgeLine}
+                  style={{ backgroundColor: STRING_EVIDENCE_COLORS[ch.value] }}
+                />
+                <span>{ch.label}</span>
+              </div>
+            ))
+          ) : (
             <div className={styles.legendItem}>
               <span
                 className={styles.legendEdgeLine}
@@ -85,16 +121,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
               />
               <span>STRING DB</span>
             </div>
-          </>
-        )}
-        {dataSource === 'stringdb' && (
-          <div className={styles.legendItem}>
-            <span
-              className={styles.legendEdgeLine}
-              style={{ backgroundColor: GT.EDGE.STRINGDB_EDGE_COLOR }}
-            />
-            <span>STRING DB</span>
-          </div>
+          )
         )}
         {dataSource === 'local' && (
           <div className={styles.legendItem}>

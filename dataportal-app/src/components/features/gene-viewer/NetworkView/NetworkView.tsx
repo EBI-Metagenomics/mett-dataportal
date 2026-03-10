@@ -22,7 +22,7 @@ import {
 } from './utils/expansionUtils';
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
-import { STRING_EVIDENCE_CHANNELS, type StringEvidenceChannel } from './constants';
+import { STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, type StringEvidenceChannel } from './constants';
 import styles from './NetworkView.module.scss';
 
 interface NetworkViewProps {
@@ -286,12 +286,30 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             });
           }
 
-          edges.push({
-            source: sourceId,
-            target: targetId,
-            weight: normalized,
-            score_type: 'stringdb',
-            dataSource: 'stringdb',
+          // Create one edge per selected evidence channel that has score > 0.01 (multi-edge view)
+          const evidenceThreshold = 0.01;
+          stringEvidenceChannels.forEach((channel) => {
+            const scoreField = STRING_EVIDENCE_SCORE_FIELDS[channel];
+            let channelScore: number | string | undefined = (row[scoreField] as number | string | undefined) ?? undefined;
+            if (typeof channelScore === 'string') {
+              const parsed = parseFloat(channelScore);
+              channelScore = Number.isNaN(parsed) ? undefined : parsed;
+            }
+            if (channelScore == null || channelScore < evidenceThreshold) return;
+
+            const channelLabel = STRING_EVIDENCE_CHANNELS.find((c) => c.value === channel)?.label ?? channel;
+            const normScore = channelScore > 1 ? channelScore / 1000 : channelScore;
+            const edgeId = `${sourceId}__${targetId}__${channel}`;
+            edges.push({
+              id: edgeId,
+              source: sourceId,
+              target: targetId,
+              weight: normScore,
+              score_type: 'stringdb',
+              evidence_type: channelLabel,
+              evidence_channel: channel,
+              dataSource: 'stringdb',
+            });
           });
         });
 
@@ -442,9 +460,13 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     const focalStr = stringFocalPreferredName?.trim() || null;
     const focalStringId = stringFocalStringId?.trim() || null;
 
-    // Dedupe key: at most one edge per (pair, dataSource) so we get at most 2 edges per node pair (local + stringdb).
-    const edgeKey = (source: string, target: string, ds: string) =>
-      `${[source, target].sort().join('|')}-${ds}`;
+    // Dedupe key: local = one per pair; stringdb = one per (pair, evidence_type) for multi-edge support.
+    const edgeKey = (
+      source: string,
+      target: string,
+      ds: string,
+      evidenceType?: string
+    ) => `${[source, target].sort().join('|')}-${ds}${evidenceType ? `-${evidenceType}` : ''}`;
     const seenEdgeKeys = new Set<string>();
 
     if (networkData) {
@@ -473,7 +495,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       stringNetwork.edges.forEach((e) => {
         const source = norm(e.source);
         const target = norm(e.target);
-        const key = edgeKey(source, target, 'stringdb');
+        const evidenceType = (e as { evidence_type?: string }).evidence_type ?? (e as { evidence_channel?: string }).evidence_channel;
+        const key = edgeKey(source, target, 'stringdb', evidenceType);
         if (seenEdgeKeys.has(key)) return;
         seenEdgeKeys.add(key);
         edgesList.push({
@@ -563,12 +586,18 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       }
     });
 
-    // At most one edge per (source, target, dataSource) so "both" shows at most 2 edges per pair (local + stringdb), no triples.
-    const edgeDedupKey = (src: string, tgt: string, ds: string) => `${[src, tgt].sort().join('|')}-${ds}`;
+    // Local: one per pair; stringdb: one per (pair, evidence_type) for multi-edge support.
+    const edgeDedupKey = (
+      src: string,
+      tgt: string,
+      ds: string,
+      evidenceType?: string
+    ) => `${[src, tgt].sort().join('|')}-${ds}${evidenceType ? `-${evidenceType}` : ''}`;
     const seen = new Set<string>();
     const dedupedEdges = Array.from(edgeMap.values()).filter((e) => {
       const ds = (e as { dataSource?: string }).dataSource ?? 'local';
-      const k = edgeDedupKey(e.source, e.target, ds);
+      const evidenceType = (e as { evidence_type?: string }).evidence_type;
+      const k = edgeDedupKey(e.source, e.target, ds, evidenceType);
       if (seen.has(k)) return false;
       seen.add(k);
       return true;
@@ -865,6 +894,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           edgeCount={enrichedEdges.length}
           showOrthologs={showOrthologs}
           dataSource={dataSource}
+          showStringEvidenceLegend={dataSource === 'stringdb' || dataSource === 'both'}
         />
       )}
 
