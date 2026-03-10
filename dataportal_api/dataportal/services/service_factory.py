@@ -51,6 +51,15 @@ class ServiceFactory:
         return cls._instances["gene"]
 
     @classmethod
+    def get_ppi_service(cls):
+        """Get or create PPIService instance."""
+        if "ppi" not in cls._instances:
+            from dataportal.services.interactions.ppi_service import PPIService
+
+            cls._instances["ppi"] = PPIService()
+        return cls._instances["ppi"]
+
+    @classmethod
     def register_service(cls, name: str, service: BaseService) -> None:
         """Register a custom service instance."""
         cls._instances[name] = service

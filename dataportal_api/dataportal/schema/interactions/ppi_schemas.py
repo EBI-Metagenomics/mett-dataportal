@@ -285,33 +285,3 @@ class PPIDataSourcesResponseSchema(SuccessResponseSchema):
             "Example: {'sources': ['local_es', 'stringdb'], 'default': 'local_es'}."
         ),
     )
-
-
-# STRING DB network schemas
-class PPIStringNetworkQuerySchema(BaseModel):
-    """Schema for STRING network query parameters."""
-
-    pair_id: Optional[str] = Field(
-        None, description="PPI pair_id to look up (e.g. bu:A0A0X1ABC1__B0ABC123)"
-    )
-    protein_ids: Optional[List[str]] = Field(
-        None,
-        description="STRING protein IDs (e.g. ['820.ERS852554_01920', '820.ERS852554_01919'])",
-    )
-    locus_tag: Optional[str] = Field(
-        None,
-        description="When using pair_id: use only the STRING ID for this protein (neighborhood of one gene). Omit to get subnetwork for both proteins in the pair.",
-    )
-    species_acronym: Optional[str] = Field(
-        None, description="Species acronym (BU, PV) for taxid resolution"
-    )
-    required_score: Optional[int] = Field(
-        None, ge=0, le=1000, description="Minimum STRING score threshold (0-1000)"
-    )
-    network_type: str = Field("physical", description="Network type: physical or functional")
-
-
-class PPIStringNetworkResponseSchema(SuccessResponseSchema):
-    """Response schema for STRING network data."""
-
-    data: Dict[str, Any] = Field(..., description="STRING network data and interaction metadata")
