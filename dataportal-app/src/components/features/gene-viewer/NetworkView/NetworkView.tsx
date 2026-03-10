@@ -22,6 +22,7 @@ import {
 } from './utils/expansionUtils';
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
+import { STRING_EVIDENCE_CHANNELS, type StringEvidenceChannel } from './constants';
 import styles from './NetworkView.module.scss';
 
 interface NetworkViewProps {
@@ -58,6 +59,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [speciesScope, setSpeciesScope] = useState<SpeciesScope>('current');
   const [dataSource, setDataSource] = useState<PPIDataSource>('local');
   const [stringNetworkType, setStringNetworkType] = useState<'physical' | 'functional'>('physical');
+  const [stringEvidenceChannels, setStringEvidenceChannels] = useState<StringEvidenceChannel[]>(
+    STRING_EVIDENCE_CHANNELS.map((c) => c.value)
+  );
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
   const [selectedNode, setSelectedNode] = useState<PPINetworkNode | null>(null);
   const [popupNode, setPopupNode] = useState<{ node: PPINetworkNode; x: number; y: number } | null>(null);
@@ -180,13 +184,20 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         // STRING TSV scores are often 0–1 scale, so 900 would filter out most edges.
         const requiredScore = Math.round(Math.max(150, Math.min(500, 100 + scoreThreshold * 400)));
 
-        const stringRaw = await PPIService.getStringNetwork({
+        const stringParams: Parameters<typeof PPIService.getStringNetwork>[0] = {
           pair_id: interaction.pair_id,
           locus_tag: selectedLocusTag,
           species_acronym: effectiveSpecies ?? undefined,
           required_score: requiredScore,
           network_type: stringNetworkType,
-        });
+        };
+        if (
+          stringEvidenceChannels.length > 0 &&
+          stringEvidenceChannels.length < STRING_EVIDENCE_CHANNELS.length
+        ) {
+          stringParams.evidence_channels = stringEvidenceChannels;
+        }
+        const stringRaw = await PPIService.getStringNetwork(stringParams);
 
         if (stringRaw.error) {
           setStringNetwork(null);
@@ -318,7 +329,15 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     };
 
     fetchStringNetwork();
-  }, [dataSource, speciesAcronym, selectedLocusTag, speciesScope, scoreThreshold, stringNetworkType]);
+  }, [
+    dataSource,
+    speciesAcronym,
+    selectedLocusTag,
+    speciesScope,
+    scoreThreshold,
+    stringNetworkType,
+    stringEvidenceChannels,
+  ]);
 
   // Sync loading state with parent
   useEffect(() => {
@@ -807,6 +826,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           speciesScope={speciesScope}
           showOrthologs={showOrthologs}
           stringNetworkType={stringNetworkType}
+          stringEvidenceChannels={stringEvidenceChannels}
           availableScoreTypes={availableScoreTypes}
           onDataSourceChange={setDataSource}
           onScoreTypeChange={handleScoreTypeChange}
@@ -816,6 +836,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           onSpeciesScopeChange={handleSpeciesScopeChange}
           onOrthologToggle={handleOrthologToggle}
           onStringNetworkTypeChange={setStringNetworkType}
+          onStringEvidenceChannelsChange={setStringEvidenceChannels}
           onResetView={handleResetView}
         />
 

@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from dataportal.utils.string_client import fetch_string_network
+from dataportal.utils.constants import STRING_EVIDENCE_CHANNELS
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.schema.external.string_schemas import (
     StringNetworkRowSchema,
@@ -26,6 +27,33 @@ class StringNetworkService:
         self._ppi_service = ServiceFactory.get_ppi_service()
         self._species_service = ServiceFactory.get_species_service()
 
+    def _filter_network_by_evidence(
+        self, network: List[Dict[str, Any]], evidence_channels: Optional[List[str]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Filter network rows to only include edges with score > 0 in at least one selected evidence channel.
+        If evidence_channels is None or empty, return all rows (no filter).
+        """
+        if not evidence_channels:
+            return network
+        channel_to_score = {c[0]: c[1] for c in STRING_EVIDENCE_CHANNELS}
+        valid_channels = set(evidence_channels) & set(channel_to_score)
+        if not valid_channels:
+            return network
+        score_fields = [channel_to_score[c] for c in valid_channels]
+        result = []
+        for row in network:
+            for field in score_fields:
+                val = row.get(field)
+                try:
+                    s = float(val) if val is not None else 0.0
+                except (ValueError, TypeError):
+                    s = 0.0
+                if s > 0.01:  # threshold to exclude noise
+                    result.append(row)
+                    break
+        return result
+
     def _resolve_ids_to_locus(
         self, string_ids: List[str], species_acronym: Optional[str]
     ) -> Dict[str, str]:
@@ -44,6 +72,7 @@ class StringNetworkService:
         species_acronym: Optional[str] = None,
         required_score: Optional[int] = None,
         network_type: str = "physical",
+        evidence_channels: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Fetch STRING DB network data for a PPI pair or a single protein.
@@ -119,6 +148,11 @@ class StringNetworkService:
             network_type=network_type,
         )
         result["interaction"] = interaction
+        # Filter by evidence channels if specified
+        if result.get("network") and evidence_channels:
+            result["network"] = self._filter_network_by_evidence(
+                result["network"], evidence_channels
+            )
         # When we queried a single focal protein (locus_tag), expose its STRING preferred name
         # so the frontend can merge "both" into one graph by normalizing this node to the local id.
         if locus_tag and len(identifiers) == 1 and result.get("network"):

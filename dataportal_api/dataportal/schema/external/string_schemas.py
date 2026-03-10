@@ -1,5 +1,5 @@
-from typing import List, Dict, Any, Optional, Literal
-from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional, Literal, Union
+from pydantic import BaseModel, Field, field_validator
 
 from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkNodeSchema,
@@ -7,9 +7,7 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkPropertiesSchema,
 )
 from dataportal.schema.response_schemas import SuccessResponseSchema
-
-# STRING DB supported network types (https://string-db.org/help/api/)
-STRING_NETWORK_TYPE_VALUES = ("physical", "functional")
+from dataportal.utils.constants import STRING_NETWORK_TYPE_VALUES
 
 
 class StringNetworkRowSchema(BaseModel):
@@ -79,10 +77,26 @@ class PPIStringNetworkQuerySchema(BaseModel):
     required_score: Optional[int] = Field(
         None, ge=0, le=1000, description="Minimum STRING score threshold (0-1000)"
     )
-    network_type: Literal["physical", "functional"] = Field(
+    network_type: Literal[STRING_NETWORK_TYPE_VALUES] = Field(
         "physical",
         description="Network type: physical (direct interactions) or functional (physical + indirect associations)",
     )
+    evidence_channels: Optional[List[str]] = Field(
+        None,
+        description="Filter by STRING evidence channels. Include only edges with score>0 in at least one selected channel. "
+        "Values: neighborhood, fusion, cooccurrence, coexpression, experimental, database, textmining. "
+        "None or empty = no filter (all evidence). Accepts comma-separated string or list.",
+    )
+
+    @field_validator("evidence_channels", mode="before")
+    @classmethod
+    def split_evidence_channels(cls, v: Optional[Union[str, List[str]]]) -> Optional[List[str]]:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            parts = [p.strip() for p in v.split(",") if p.strip()]
+            return parts if parts else None
+        return v if v else None
 
 
 class PPIStringNetworkResponseSchema(SuccessResponseSchema):

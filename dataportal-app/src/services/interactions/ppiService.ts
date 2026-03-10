@@ -209,6 +209,7 @@ export class PPIService extends BaseService {
     species_acronym?: string;
     required_score?: number;
     network_type?: string;
+    evidence_channels?: string[];
   }): Promise<PPIStringNetworkRaw> {
     try {
       const searchParams = this.buildParams({
@@ -218,6 +219,7 @@ export class PPIService extends BaseService {
         species_acronym: params.species_acronym,
         required_score: params.required_score,
         network_type: params.network_type ?? "physical",
+        evidence_channels: params.evidence_channels,
       });
 
       return await this.getWithRetry<PPIStringNetworkRaw>(

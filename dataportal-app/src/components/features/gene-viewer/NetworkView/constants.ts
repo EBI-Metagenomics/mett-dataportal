@@ -11,6 +11,22 @@ export const STRING_NETWORK_TYPES = [
 export type StringNetworkType = (typeof STRING_NETWORK_TYPES)[number]['value'];
 
 /**
+ * STRING DB evidence channels (https://string-db.org/help/api/)
+ * Filter edges by which evidence types support the interaction.
+ */
+export const STRING_EVIDENCE_CHANNELS = [
+  { value: 'neighborhood', label: 'Neighborhood' },
+  { value: 'fusion', label: 'Fusion' },
+  { value: 'cooccurrence', label: 'Co-occurrence' },
+  { value: 'coexpression', label: 'Co-expression' },
+  { value: 'experimental', label: 'Experimental' },
+  { value: 'database', label: 'Database' },
+  { value: 'textmining', label: 'Text mining' },
+] as const;
+
+export type StringEvidenceChannel = (typeof STRING_EVIDENCE_CHANNELS)[number]['value'];
+
+/**
  * Constants for Network View configuration.
  * Graph colors here should match _networkViewTheme.scss for consistency.
  */

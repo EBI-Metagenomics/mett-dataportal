@@ -1,7 +1,13 @@
 import React from 'react';
 import type { NetworkLimitMode, SpeciesScope } from '../../../../../hooks/useNetworkData';
 import type { PPIDataSource } from '../../../../../interfaces/PPI';
-import { NETWORK_VIEW_CONSTANTS, STRING_NETWORK_TYPES, type StringNetworkType } from '../constants';
+import {
+  NETWORK_VIEW_CONSTANTS,
+  STRING_NETWORK_TYPES,
+  STRING_EVIDENCE_CHANNELS,
+  type StringNetworkType,
+  type StringEvidenceChannel,
+} from '../constants';
 import styles from './NetworkControls.module.scss';
 
 const SLIDER = NETWORK_VIEW_CONSTANTS.SLIDER;
@@ -15,6 +21,7 @@ interface NetworkControlsProps {
   speciesScope: SpeciesScope;
   showOrthologs: boolean;
   stringNetworkType: StringNetworkType;
+  stringEvidenceChannels: StringEvidenceChannel[];
   availableScoreTypes: string[];
   onDataSourceChange: (source: PPIDataSource) => void;
   onScoreTypeChange: (scoreType: string) => void;
@@ -24,6 +31,7 @@ interface NetworkControlsProps {
   onSpeciesScopeChange: (scope: SpeciesScope) => void;
   onOrthologToggle: (enabled: boolean) => void;
   onStringNetworkTypeChange?: (networkType: StringNetworkType) => void;
+  onStringEvidenceChannelsChange?: (channels: StringEvidenceChannel[]) => void;
   onResetView?: () => void;
 }
 
@@ -36,6 +44,7 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   speciesScope,
   showOrthologs,
   stringNetworkType,
+  stringEvidenceChannels,
   availableScoreTypes,
   onDataSourceChange,
   onScoreTypeChange,
@@ -45,9 +54,20 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   onSpeciesScopeChange,
   onOrthologToggle,
   onStringNetworkTypeChange,
+  onStringEvidenceChannelsChange,
   onResetView,
 }) => {
-  const showStringNetworkType = (dataSource === 'stringdb' || dataSource === 'both') && !!onStringNetworkTypeChange;
+  const showStringControls = (dataSource === 'stringdb' || dataSource === 'both');
+  const showStringNetworkType = showStringControls && !!onStringNetworkTypeChange;
+  const showStringEvidence = showStringControls && !!onStringEvidenceChannelsChange;
+
+  const handleEvidenceToggle = (channel: StringEvidenceChannel, checked: boolean) => {
+    if (!onStringEvidenceChannelsChange) return;
+    const next = checked
+      ? [...stringEvidenceChannels, channel]
+      : stringEvidenceChannels.filter((c) => c !== channel);
+    onStringEvidenceChannelsChange(next);
+  };
 
   return (
     <div className={styles.networkControls}>
@@ -212,6 +232,26 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
           <button onClick={onResetView} className={styles.resetButton} title="Reset view to fit all nodes">
             🔍 Reset View
           </button>
+        </div>
+      )}
+
+      {/* STRING evidence channel filters - full-width row when STRING selected */}
+      {showStringEvidence && (
+        <div className={styles.evidenceRow}>
+          <span className={styles.rowLabel}>STRING evidence:</span>
+          <div className={styles.evidenceCheckboxes}>
+            {STRING_EVIDENCE_CHANNELS.map(({ value, label }) => (
+              <label key={value} className={styles.evidenceCheckbox}>
+                <input
+                  type="checkbox"
+                  checked={stringEvidenceChannels.includes(value)}
+                  onChange={(e) => handleEvidenceToggle(value, e.target.checked)}
+                  className={styles.checkbox}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
         </div>
       )}
     </div>

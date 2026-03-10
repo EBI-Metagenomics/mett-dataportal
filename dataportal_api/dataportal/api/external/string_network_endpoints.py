@@ -54,6 +54,7 @@ def register_string_network_routes(router: Router) -> None:
                 species_acronym=query.species_acronym,
                 required_score=query.required_score,
                 network_type=query.network_type,
+                evidence_channels=query.evidence_channels,
             )
 
             # Tag response with data source metadata for generic multi-source handling.

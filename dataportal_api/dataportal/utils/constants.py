@@ -260,6 +260,24 @@ PPI_DATA_SOURCES = [
     PPI_DATA_SOURCE_STRINGDB,
 ]
 
+
+# STRING DB supported network types (https://string-db.org/help/api/)
+STRING_NETWORK_TYPE_VALUES = ("physical", "functional")
+
+# STRING DB evidence channels - map channel id to TSV score field name
+# https://string-db.org/help/api/ - network output fields
+STRING_EVIDENCE_CHANNELS = (
+    ("neighborhood", "nscore", "Neighborhood"),
+    ("fusion", "fscore", "Fusion"),
+    ("cooccurrence", "pscore", "Co-occurrence"),
+    ("coexpression", "ascore", "Co-expression"),
+    ("experimental", "escore", "Experimental"),
+    ("database", "dscore", "Database"),
+    ("textmining", "tscore", "Text mining"),
+)
+STRING_EVIDENCE_CHANNEL_IDS = tuple(c[0] for c in STRING_EVIDENCE_CHANNELS)
+
+
 # ============================================================================
 # End of Constants
 # ============================================================================
