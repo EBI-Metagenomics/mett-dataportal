@@ -144,39 +144,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         setStringError(null);
 
         const effectiveSpecies = speciesScope === 'all' ? undefined : speciesAcronym;
-
-        // Paginated PPI search returns the data array directly from ApiService.get, not { data, pagination }.
-        const searchWithString = await PPIService.searchInteractions({
-          species_acronym: effectiveSpecies ?? undefined,
-          locus_tag: selectedLocusTag,
-          has_string: true,
-          per_page: 5,
-        });
-        const listWithString = Array.isArray(searchWithString)
-          ? searchWithString
-          : (searchWithString as { data?: unknown[] })?.data ?? [];
-
-        let interaction =
-          listWithString.length > 0 ? (listWithString[0] as { pair_id?: string }) : null;
-
-        // Fallback: if no interaction has STRING evidence, try any interaction for this gene
-        // (backend will use string_protein_* from ES if present, or return a clear error).
-        if (!interaction?.pair_id) {
-          const searchAny = await PPIService.searchInteractions({
-            species_acronym: effectiveSpecies ?? undefined,
-            locus_tag: selectedLocusTag,
-            per_page: 10,
-          });
-          const listAny = Array.isArray(searchAny)
-            ? searchAny
-            : (searchAny as { data?: unknown[] })?.data ?? [];
-          interaction =
-            listAny.length > 0 ? (listAny[0] as { pair_id?: string }) : null;
-        }
-
-        if (!interaction?.pair_id) {
+        if (!effectiveSpecies) {
           setStringNetwork(null);
-          setStringError('No PPI interactions found for this gene.');
+          setStringError('Species is required for STRING DB network.');
           return;
         }
 
@@ -184,10 +154,10 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         // STRING TSV scores are often 0–1 scale, so 900 would filter out most edges.
         const requiredScore = Math.round(Math.max(150, Math.min(500, 100 + scoreThreshold * 400)));
 
+        // Use locus_tag + species_acronym only — backend resolves to STRING ID via feature index (no pair_id)
         const stringParams: Parameters<typeof PPIService.getStringNetwork>[0] = {
-          pair_id: interaction.pair_id,
-          locus_tag: selectedLocusTag,
-          species_acronym: effectiveSpecies ?? undefined,
+          locus_tag: selectedLocusTag!,
+          species_acronym: effectiveSpecies,
           required_score: requiredScore,
           network_type: stringNetworkType,
         };
@@ -203,20 +173,21 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           setStringNetwork(null);
           const msg = stringRaw.error || 'Failed to load STRING DB network.';
           setStringError(
-            msg.includes('STRING protein IDs not available') || msg.includes('missing string_protein')
-              ? 'This gene has no STRING DB identifiers in the database. Try Local (ES) or another gene.'
+            msg.includes('no STRING identifier') || msg.includes('STRING protein IDs not available')
+              ? 'This gene has no STRING identifier in the feature index. Try Local (ES) or another gene.'
               : msg
           );
           return;
         }
 
-        // Convert STRING DB response to PPINetworkData shape. Use locus tags when available so nodes align with local ES.
+        // Convert STRING DB response to PPINetworkData shape. Use locus_tag_A/B from each row.
         const rows = Array.isArray(stringRaw.network) ? stringRaw.network : [];
         const nodeMap = new Map<string, PPINetworkNode>();
         const edges: PPINetworkEdge[] = [];
-        const preferredToLocus = stringRaw.preferred_name_to_locus_tag ?? {};
 
         rows.forEach((row: Record<string, unknown>) => {
+          const stringIdA = (row.stringId_A as string | undefined) || (row.string_id_a as string | undefined);
+          const stringIdB = (row.stringId_B as string | undefined) || (row.string_id_b as string | undefined);
           const sourcePreferred =
             (row.preferredName_A as string | undefined) ||
             (row.preferredName1 as string | undefined) ||
@@ -226,15 +197,13 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             (row.preferredName2 as string | undefined) ||
             (row.protein2 as string | undefined);
 
-          if (!sourcePreferred || !targetPreferred) {
+          if (!stringIdA || !stringIdB) {
             return;
           }
 
-          const stringIdA = (row.stringId_A as string | undefined) || (row.string_id_a as string | undefined);
-          const stringIdB = (row.stringId_B as string | undefined) || (row.string_id_b as string | undefined);
-          // Use locus tag when mapped; otherwise use STRING id so nodes are clearly identified and expand can use string_id
-          const sourceId = preferredToLocus[sourcePreferred] ?? stringIdA ?? sourcePreferred;
-          const targetId = preferredToLocus[targetPreferred] ?? stringIdB ?? targetPreferred;
+          // Use locus tag from row when available; otherwise fall back to STRING id
+          const sourceId = (row.locus_tag_A as string | undefined) ?? stringIdA ?? (sourcePreferred as string);
+          const targetId = (row.locus_tag_B as string | undefined) ?? stringIdB ?? (targetPreferred as string);
 
           let rawScore: number | string | undefined =
             (row.score as number | string | undefined) ??
@@ -265,13 +234,15 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             ncbiTaxonId,
           };
 
+          const locusA = row.locus_tag_A as string | undefined;
+          const locusB = row.locus_tag_B as string | undefined;
           if (!nodeMap.has(sourceId)) {
             nodeMap.set(sourceId, {
               id: sourceId,
               label: sourceId,
-              locus_tag: preferredToLocus[sourcePreferred] ? sourceId : undefined,
+              locus_tag: locusA ?? undefined,
               string_id: stringIdA,
-              string_preferred_name: sourcePreferred,
+              string_preferred_name: (sourcePreferred as string) ?? undefined,
               string_score_breakdown: scoreBreakdown,
             });
           }
@@ -279,9 +250,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             nodeMap.set(targetId, {
               id: targetId,
               label: targetId,
-              locus_tag: preferredToLocus[targetPreferred] ? targetId : undefined,
+              locus_tag: locusB ?? undefined,
               string_id: stringIdB,
-              string_preferred_name: targetPreferred,
+              string_preferred_name: (targetPreferred as string) ?? undefined,
               string_score_breakdown: scoreBreakdown,
             });
           }
@@ -333,9 +304,10 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         setStringNetwork(network);
         setStringFocalPreferredName(stringRaw.focal_preferred_name ?? null);
         setStringFocalStringId(
-          Array.isArray(stringRaw.identifiers) && stringRaw.identifiers.length === 1
+          stringRaw.focal_string_id ??
+          (Array.isArray(stringRaw.identifiers) && stringRaw.identifiers.length === 1
             ? stringRaw.identifiers[0]
-            : null
+            : null)
         );
       } catch (err: any) {
         console.error('Error fetching STRING DB network:', err);

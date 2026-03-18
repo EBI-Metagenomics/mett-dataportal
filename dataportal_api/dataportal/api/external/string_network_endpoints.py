@@ -38,17 +38,20 @@ def register_string_network_routes(router: Router) -> None:
     )
     @wrap_success_response
     async def get_string_network(request, query: PPIStringNetworkQuerySchema = Query(...)):
-        """Get STRING DB network data for a PPI pair or direct STRING protein IDs."""
-        if not query.pair_id and not query.protein_ids:
-            raise_validation_error("Either 'pair_id' or 'protein_ids' must be provided")
-        if query.pair_id and query.protein_ids:
+        """Get STRING DB network data for a gene (by locus_tag) or PPI pair."""
+        has_locus = bool(query.locus_tag and query.species_acronym)
+        has_pair = bool(query.pair_id)
+        has_proteins = bool(query.protein_ids)
+        if not has_locus and not has_pair and not has_proteins:
+            raise_validation_error("Provide locus_tag+species_acronym, pair_id, or protein_ids")
+        if sum([has_pair, has_proteins]) > 1:
             raise_validation_error(
                 "Only one of 'pair_id' or 'protein_ids' can be provided, not both"
             )
 
         try:
             result = await string_network_service.get_string_network_for_pair(
-                pair_id=query.pair_id,
+                pair_id=query.pair_id if has_pair else None,
                 protein_ids=query.protein_ids,
                 locus_tag=query.locus_tag,
                 species_acronym=query.species_acronym,

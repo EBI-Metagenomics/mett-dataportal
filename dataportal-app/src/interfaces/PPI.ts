@@ -113,7 +113,7 @@ export interface PPIDataSources {
   default: string | null;
 }
 
-/** Raw STRING network response shape (simplified, as returned by /ppi/string-network). */
+/** Raw STRING network response shape (from /ppi/string-network). */
 export interface PPIStringNetworkRaw {
   interaction?: any;
   network: Array<Record<string, any>>;
@@ -122,10 +122,12 @@ export interface PPIStringNetworkRaw {
   identifiers?: string[];
   species_taxid?: number;
   data_sources?: string[];
-  /** When querying by locus_tag, the STRING preferred name of that protein for merging "both" view. */
+  /** Queried locus tag (when locus_tag was provided). */
+  focal_locus_tag?: string | null;
+  /** STRING preferred name for the focal protein (for merging "both" view). */
   focal_preferred_name?: string | null;
-  /** Map STRING preferred name -> locus_tag so nodes can be shown by locus tag. */
-  preferred_name_to_locus_tag?: Record<string, string>;
+  /** STRING protein ID of the focal gene. */
+  focal_string_id?: string | null;
   error?: string | null;
 }
 

@@ -133,6 +133,107 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             logger.error(f"Error resolving locus tag '{locus_tag}': {e}")
             raise ServiceError(f"Failed to resolve locus tag '{locus_tag}': {str(e)}")
 
+    async def get_string_id_for_locus_tag(
+        self,
+        locus_tag: str,
+        species_acronym: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Resolve a locus tag to its STRING protein ID from the PPI index.
+        Use as fallback when the feature index has no STRING dbxref for the gene.
+        Prefers interactions with has_string=True.
+        """
+        try:
+            s = Search(index=self.index_name)
+            s = s.filter(
+                "bool",
+                should=[
+                    {"term": {"protein_a_locus_tag": locus_tag}},
+                    {"term": {"protein_b_locus_tag": locus_tag}},
+                ],
+            )
+            s = s.source(
+                [
+                    "protein_a_locus_tag",
+                    "protein_b_locus_tag",
+                    "string_protein_a_id",
+                    "string_protein_b_id",
+                    "has_string",
+                ]
+            )
+
+            if species_acronym:
+                s = s.filter("term", species_acronym=species_acronym.strip().lower())
+
+            # Prefer interactions with STRING evidence
+            s_has_string = s.filter("term", has_string=True)
+            response = await self._execute_search(s_has_string[:1])
+            if not response.hits:
+                response = await self._execute_search(s[:5])
+
+            for hit in response.hits:
+                a_tag = getattr(hit, "protein_a_locus_tag", None) or ""
+                b_tag = getattr(hit, "protein_b_locus_tag", None) or ""
+                sa = getattr(hit, "string_protein_a_id", None)
+                sb = getattr(hit, "string_protein_b_id", None)
+                if a_tag == locus_tag and sa:
+                    return str(sa)
+                if b_tag == locus_tag and sb:
+                    return str(sb)
+            return None
+        except Exception as e:
+            logger.warning("Error resolving locus tag %s to STRING ID from PPI: %s", locus_tag, e)
+            return None
+
+    async def get_string_ids_to_locus_tag(
+        self,
+        string_ids: List[str],
+        species_acronym: Optional[str] = None,
+    ) -> Dict[str, str]:
+        """
+        Resolve STRING protein IDs to locus tags from the PPI index.
+        Use to enrich preferred_name_to_locus_tag when feature index cache is incomplete.
+        """
+        if not string_ids:
+            return {}
+        ids_set = list(set(s for s in string_ids if s))
+        if not ids_set:
+            return {}
+        result: Dict[str, str] = {}
+        try:
+            s = Search(index=self.index_name)
+            s = s.filter(
+                "bool",
+                should=[
+                    {"terms": {"string_protein_a_id": ids_set}},
+                    {"terms": {"string_protein_b_id": ids_set}},
+                ],
+            )
+            s = s.source(
+                [
+                    "string_protein_a_id",
+                    "string_protein_b_id",
+                    "protein_a_locus_tag",
+                    "protein_b_locus_tag",
+                ]
+            )
+            if species_acronym:
+                s = s.filter("term", species_acronym=species_acronym.strip().lower())
+            s = s[:500]
+            response = await self._execute_search(s)
+            for hit in response.hits:
+                sa = getattr(hit, "string_protein_a_id", None)
+                sb = getattr(hit, "string_protein_b_id", None)
+                a_tag = getattr(hit, "protein_a_locus_tag", None)
+                b_tag = getattr(hit, "protein_b_locus_tag", None)
+                if sa and a_tag and sa not in result:
+                    result[str(sa)] = str(a_tag)
+                if sb and b_tag and sb not in result:
+                    result[str(sb)] = str(b_tag)
+        except Exception as e:
+            logger.warning("Error resolving STRING IDs to locus tags from PPI: %s", e)
+        return result
+
     def _get_standard_source_fields(self, include_scores: bool = True) -> List[str]:
         """Get standard source fields for PPI queries."""
         base_fields = [

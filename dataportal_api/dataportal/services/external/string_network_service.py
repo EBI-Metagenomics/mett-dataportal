@@ -57,12 +57,29 @@ class StringNetworkService:
     def _resolve_ids_to_locus(
         self, string_ids: List[str], species_acronym: Optional[str]
     ) -> Dict[str, str]:
+        """Resolve STRING IDs to locus tags from feature index cache."""
         if not string_ids:
             return {}
         _, string_to_locus = self._gene_service.get_locus_string_mapping(
             species_acronym=species_acronym,
         )
         return {sid: string_to_locus[sid] for sid in string_ids if sid in string_to_locus}
+
+    async def _resolve_ids_to_locus_with_ppi_fallback(
+        self, string_ids: List[str], species_acronym: Optional[str]
+    ) -> Dict[str, str]:
+        """Resolve STRING IDs to locus tags: feature index first, then PPI index for missing."""
+        if not string_ids:
+            return {}
+        result = self._resolve_ids_to_locus(string_ids, species_acronym)
+        missing = [sid for sid in string_ids if sid and sid not in result]
+        if missing:
+            ppi_mapping = await self._ppi_service.get_string_ids_to_locus_tag(
+                string_ids=missing,
+                species_acronym=species_acronym,
+            )
+            result.update(ppi_mapping)
+        return result
 
     async def get_string_network_for_pair(
         self,
@@ -75,18 +92,48 @@ class StringNetworkService:
         evidence_channels: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        Fetch STRING DB network data for a PPI pair or a single protein.
+        Fetch STRING DB network data for a single gene (by locus_tag) or a PPI pair.
 
-        Either pair_id (lookup from ES) or protein_ids (direct STRING IDs) must be provided.
-        When pair_id is used with locus_tag, only the STRING ID for that protein is sent to STRING,
-        so STRING returns the neighborhood of that one gene (interactors of the selected protein).
-        Without locus_tag, both proteins in the pair are sent and STRING returns the combined subnetwork.
+        Accepts one of:
+        - locus_tag + species_acronym: Resolve locus_tag to STRING ID via feature index cache,
+          fetch neighborhood of that protein. No pair_id needed.
+        - pair_id (optionally + locus_tag): Lookup interaction from PPI index, get STRING IDs.
+          With locus_tag, send only that protein to STRING (neighborhood). Without, send both.
+        - protein_ids: Direct STRING IDs to query.
         """
         identifiers: List[str] = []
         interaction: Optional[Dict[str, Any]] = None
         resolved_species: Optional[str] = None
 
-        if pair_id:
+        # Path 1: locus_tag + species_acronym only — resolve via feature index, fallback to PPI index
+        if locus_tag and species_acronym and not pair_id and not protein_ids:
+            locus_tag_norm = locus_tag.strip()
+            locus_to_string, string_to_locus = self._gene_service.get_locus_string_mapping(
+                species_acronym=species_acronym
+            )
+            string_id = locus_to_string.get(locus_tag_norm)
+            # Fallback: PPI index may have STRING IDs even when feature index does not
+            if not string_id:
+                string_id = await self._ppi_service.get_string_id_for_locus_tag(
+                    locus_tag=locus_tag_norm,
+                    species_acronym=species_acronym,
+                )
+            if not string_id:
+                return {
+                    "network": [],
+                    "network_url": None,
+                    "identifiers": [],
+                    "species_taxid": None,
+                    "focal_locus_tag": locus_tag_norm,
+                    "focal_preferred_name": None,
+                    "focal_string_id": None,
+                    "data_sources": ["stringdb"],
+                    "error": f"Gene '{locus_tag_norm}' has no STRING identifier in the feature index or PPI index.",
+                }
+            identifiers = [string_id]
+            resolved_species = species_acronym
+
+        elif pair_id:
             interaction = await self._ppi_service.get_interaction_by_pair_id(pair_id)
             if not interaction:
                 return {
@@ -129,7 +176,7 @@ class StringNetworkService:
                 "interaction": None,
                 "network": [],
                 "network_url": None,
-                "error": "Either pair_id or protein_ids must be provided",
+                "error": "Provide locus_tag+species_acronym, pair_id, or protein_ids",
             }
 
         if not identifiers:
@@ -148,6 +195,13 @@ class StringNetworkService:
             network_type=network_type,
         )
         result["interaction"] = interaction
+        # For locus_tag-only or locus_tag+pair_id with single protein: expose focal gene info
+        if locus_tag and len(identifiers) == 1:
+            result["focal_locus_tag"] = locus_tag.strip()
+            result["focal_string_id"] = identifiers[0]
+        else:
+            result["focal_locus_tag"] = None
+            result["focal_string_id"] = None
         # Filter by evidence channels if specified
         if result.get("network") and evidence_channels:
             result["network"] = self._filter_network_by_evidence(
@@ -169,8 +223,7 @@ class StringNetworkService:
         else:
             result["focal_preferred_name"] = None
 
-        # Resolve STRING preferred names to locus tags so the frontend can show locus tags consistently.
-        preferred_name_to_locus: Dict[str, str] = {}
+        # Resolve STRING IDs to locus tags and embed locus_tag_A/B in each network row.
         if result.get("network"):
             all_string_ids = []
             for row in result["network"]:
@@ -180,24 +233,17 @@ class StringNetworkService:
                     all_string_ids.append(aid)
                 if bid:
                     all_string_ids.append(bid)
-            string_id_to_locus = self._resolve_ids_to_locus(
+            string_id_to_locus = await self._resolve_ids_to_locus_with_ppi_fallback(
                 all_string_ids, species_acronym=resolved_species
             )
-            # Always add the focal protein's mapping from the interaction (locus_tag ↔ string_id)
-            # so the searched node merges in "both" view even when the feature-index cache missed it.
             if locus_tag and len(identifiers) == 1:
                 focal_string_id = identifiers[0]
                 string_id_to_locus[focal_string_id] = locus_tag.strip()
             for row in result["network"]:
                 aid = row.get("stringId_A")
                 bid = row.get("stringId_B")
-                pna = row.get("preferredName_A")
-                pnb = row.get("preferredName_B")
-                if pna and aid and aid in string_id_to_locus:
-                    preferred_name_to_locus[str(pna)] = string_id_to_locus[aid]
-                if pnb and bid and bid in string_id_to_locus:
-                    preferred_name_to_locus[str(pnb)] = string_id_to_locus[bid]
-        result["preferred_name_to_locus_tag"] = preferred_name_to_locus
+                row["locus_tag_A"] = string_id_to_locus.get(aid) if aid else None
+                row["locus_tag_B"] = string_id_to_locus.get(bid) if bid else None
         return result
 
     async def get_network_for_identifiers(
@@ -218,25 +264,29 @@ class StringNetworkService:
         )
 
         rows_raw = result.get("network", []) or []
-        rows = [StringNetworkRowSchema(**row) for row in rows_raw]
 
-        # Build mapping STRING id -> locus_tag using feature index
+        # Build mapping STRING id -> locus_tag (feature index + PPI fallback)
         all_ids: List[str] = []
-        for row in rows:
-            all_ids.append(row.stringId_A)
-            all_ids.append(row.stringId_B)
-        string_id_to_locus = self._resolve_ids_to_locus(all_ids, species_acronym)
-
-        # Safety net: if we queried a single focal id with locus_tag, enforce that mapping
+        for row in rows_raw:
+            aid = row.get("stringId_A")
+            bid = row.get("stringId_B")
+            if aid:
+                all_ids.append(aid)
+            if bid:
+                all_ids.append(bid)
+        string_id_to_locus = await self._resolve_ids_to_locus_with_ppi_fallback(
+            all_ids, species_acronym
+        )
         if locus_tag and len(identifiers) == 1:
             string_id_to_locus[identifiers[0]] = locus_tag.strip()
 
-        preferred_name_to_locus: Dict[str, str] = {}
-        for row in rows:
-            if row.preferredName_A and row.stringId_A in string_id_to_locus:
-                preferred_name_to_locus[row.preferredName_A] = string_id_to_locus[row.stringId_A]
-            if row.preferredName_B and row.stringId_B in string_id_to_locus:
-                preferred_name_to_locus[row.preferredName_B] = string_id_to_locus[row.stringId_B]
+        # Embed locus_tag_A/B in each row
+        rows: List[StringNetworkRowSchema] = []
+        for row_dict in rows_raw:
+            r = dict(row_dict)
+            r["locus_tag_A"] = string_id_to_locus.get(r.get("stringId_A"))
+            r["locus_tag_B"] = string_id_to_locus.get(r.get("stringId_B"))
+            rows.append(StringNetworkRowSchema(**r))
 
         # Build normalized nodes/edges
         node_map: Dict[str, PPINetworkNodeSchema] = {}
@@ -303,7 +353,6 @@ class StringNetworkService:
             identifiers=result.get("identifiers") or identifiers,
             species_taxid=result.get("species_taxid"),
             focal_preferred_name=result.get("focal_preferred_name"),
-            preferred_name_to_locus_tag=preferred_name_to_locus,
             data_sources=["stringdb"],
         )
 

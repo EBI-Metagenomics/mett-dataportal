@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional, Literal, Union
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkNodeSchema,
@@ -11,12 +11,18 @@ from dataportal.utils.constants import STRING_NETWORK_TYPE_VALUES
 
 
 class StringNetworkRowSchema(BaseModel):
-    """One raw row from STRING /tsv/network."""
+    """One raw row from STRING /tsv/network with locus tag mapping."""
 
     stringId_A: str = Field(..., description="STRING protein ID A (e.g. 820.ERS852554_01920)")
     stringId_B: str = Field(..., description="STRING protein ID B")
     preferredName_A: Optional[str] = None
     preferredName_B: Optional[str] = None
+    locus_tag_A: Optional[str] = Field(
+        None, description="Locus tag for protein A when mapped from feature/PPI index"
+    )
+    locus_tag_B: Optional[str] = Field(
+        None, description="Locus tag for protein B when mapped from feature/PPI index"
+    )
     ncbiTaxonId: Optional[int] = None
 
     # STRING score fields
@@ -36,7 +42,6 @@ class StringNetworkMetadataSchema(BaseModel):
     identifiers: List[str] = []
     species_taxid: Optional[int] = None
     focal_preferred_name: Optional[str] = None
-    preferred_name_to_locus_tag: Dict[str, str] = {}
     data_sources: List[str] = ["stringdb"]
 
 
@@ -60,16 +65,17 @@ class StringNetworkResponseSchema(BaseModel):
 class PPIStringNetworkQuerySchema(BaseModel):
     """Schema for STRING network query parameters."""
 
+    locus_tag: Optional[str] = Field(
+        None,
+        description="Gene locus tag. With species_acronym, resolves to STRING ID via feature index and fetches neighborhood (no pair_id needed).",
+    )
     pair_id: Optional[str] = Field(
-        None, description="PPI pair_id to look up (e.g. bu:A0A0X1ABC1__B0ABC123)"
+        None,
+        description="PPI pair_id for lookup from PPI index (e.g. bu:A0A0X1ABC1__B0ABC123). Use with locus_tag for single-protein neighborhood.",
     )
     protein_ids: Optional[List[str]] = Field(
         None,
-        description="STRING protein IDs (e.g. ['820.ERS852554_01920', '820.ERS852554_01919'])",
-    )
-    locus_tag: Optional[str] = Field(
-        None,
-        description="When using pair_id: use only the STRING ID for this protein (neighborhood of one gene). Omit to get subnetwork for both proteins in the pair.",
+        description="Direct STRING protein IDs (e.g. ['820.ERS852554_01920'])",
     )
     species_acronym: Optional[str] = Field(
         None, description="Species acronym (BU, PV) for taxid resolution"
@@ -99,7 +105,57 @@ class PPIStringNetworkQuerySchema(BaseModel):
         return v if v else None
 
 
+class StringNetworkDataSchema(BaseModel):
+    """Typed payload for STRING network API response (the `data` field)."""
+
+    network: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Raw STRING network edges (TSV rows as dicts with stringId_A/B, preferredName_A/B, scores, etc.)",
+    )
+    identifiers: List[str] = Field(
+        default_factory=list,
+        description="STRING protein IDs that were queried",
+    )
+    species_taxid: Optional[int] = Field(
+        None,
+        description="NCBI taxonomy ID used for the STRING API call",
+    )
+    network_url: Optional[str] = Field(
+        None,
+        description="Link to STRING DB web UI for this network",
+    )
+    focal_locus_tag: Optional[str] = Field(
+        None,
+        description="The queried locus tag (when locus_tag was provided); used for merging nodes in 'both' view",
+    )
+    focal_preferred_name: Optional[str] = Field(
+        None,
+        description="STRING's preferred name for the focal protein",
+    )
+    focal_string_id: Optional[str] = Field(
+        None,
+        description="STRING protein ID of the focal gene",
+    )
+    data_sources: List[str] = Field(
+        default_factory=lambda: ["stringdb"],
+        description="Data source identifiers for multi-source graphs",
+    )
+    error: Optional[str] = Field(
+        None,
+        description="Error message when STRING fetch failed or gene has no STRING ID",
+    )
+    interaction: Optional[Dict[str, Any]] = Field(
+        None,
+        description="PPI interaction record when pair_id was used for lookup",
+    )
+
+    model_config = ConfigDict(extra="ignore")
+
+
 class PPIStringNetworkResponseSchema(SuccessResponseSchema):
     """Response schema for STRING network data."""
 
-    data: Dict[str, Any] = Field(..., description="STRING network data and interaction metadata")
+    data: StringNetworkDataSchema = Field(
+        ...,
+        description="STRING network data with locus tag mapping and focal gene info",
+    )
