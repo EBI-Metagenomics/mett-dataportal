@@ -43,6 +43,14 @@ class StringNetworkMetadataSchema(BaseModel):
     species_taxid: Optional[int] = None
     focal_preferred_name: Optional[str] = None
     data_sources: List[str] = ["stringdb"]
+    edges_filtered_unmapped: Optional[int] = Field(
+        None,
+        description="Edges removed due to missing locus tag mapping for one or both proteins",
+    )
+    unmapped_string_ids: Optional[List[str]] = Field(
+        None,
+        description="STRING IDs with no locus tag mapping (see string_network_service STRING_NETWORK_UNMAPPED_FILTER)",
+    )
 
 
 class StringNetworkNormalizedSchema(BaseModel):
@@ -147,6 +155,16 @@ class StringNetworkDataSchema(BaseModel):
     interaction: Optional[Dict[str, Any]] = Field(
         None,
         description="PPI interaction record when pair_id was used for lookup",
+    )
+    edges_filtered_unmapped: Optional[int] = Field(
+        None,
+        description="Number of edges removed because one or both proteins had no locus tag mapping. "
+        "See unmapped_string_ids for excluded STRING IDs.",
+    )
+    unmapped_string_ids: Optional[List[str]] = Field(
+        None,
+        description="STRING protein IDs that had no locus tag mapping (feature/PPI index). "
+        "Edges involving these proteins were filtered out.",
     )
 
     model_config = ConfigDict(extra="ignore")

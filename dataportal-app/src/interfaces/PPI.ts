@@ -128,6 +128,10 @@ export interface PPIStringNetworkRaw {
   focal_preferred_name?: string | null;
   /** STRING protein ID of the focal gene. */
   focal_string_id?: string | null;
+  /** Number of edges removed (unmapped locus tags). Present when filtering occurred. */
+  edges_filtered_unmapped?: number;
+  /** STRING IDs with no locus tag mapping. Present when filtering occurred. */
+  unmapped_string_ids?: string[];
   error?: string | null;
 }
 

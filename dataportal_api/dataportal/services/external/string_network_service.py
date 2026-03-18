@@ -2,6 +2,14 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from dataportal.utils.string_client import fetch_string_network
+
+# --- STRING Network Unmapped Filter (reference for debugging) ---
+# Edges where either protein (A or B) lacks a locus tag mapping are REMOVED from the
+# network response. Rationale: nodes without locus tags cannot be displayed meaningfully
+# or merged with local PPI data in the "both" view. Mapping is resolved via:
+# 1) feature index (dbxref.db=STRING), 2) PPI index fallback.
+# Response includes edges_filtered_unmapped (count) and unmapped_string_ids (list) when
+# any edges were filtered. See get_string_network_for_pair() and logs.
 from dataportal.utils.constants import STRING_EVIDENCE_CHANNELS
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.schema.external.string_schemas import (
@@ -244,6 +252,38 @@ class StringNetworkService:
                 bid = row.get("stringId_B")
                 row["locus_tag_A"] = string_id_to_locus.get(aid) if aid else None
                 row["locus_tag_B"] = string_id_to_locus.get(bid) if bid else None
+
+            # Filter out edges where either protein lacks a locus tag mapping.
+            # Nodes without locus tags cannot be meaningfully displayed/merged with local data.
+            # See: STRING_NETWORK_UNMAPPED_FILTER in this module.
+            original_count = len(result["network"])
+            unmapped_ids: set = set()
+            filtered_network = []
+            for row in result["network"]:
+                locus_a = row.get("locus_tag_A")
+                locus_b = row.get("locus_tag_B")
+                aid = row.get("stringId_A")
+                bid = row.get("stringId_B")
+                if locus_a and locus_b:
+                    filtered_network.append(row)
+                else:
+                    if not locus_a and aid:
+                        unmapped_ids.add(aid)
+                    if not locus_b and bid:
+                        unmapped_ids.add(bid)
+            result["network"] = filtered_network
+            removed_count = original_count - len(filtered_network)
+            if removed_count > 0:
+                unmapped_list = sorted(unmapped_ids)
+                logger.info(
+                    "STRING network filtering: removed %d edge(s) with unmapped proteins. "
+                    "Unmapped STRING IDs (no locus tag in feature/PPI index): %s. "
+                    "Reason: edges require both locus_tag_A and locus_tag_B to be displayed.",
+                    removed_count,
+                    unmapped_list[:20] if len(unmapped_list) > 20 else unmapped_list,
+                )
+                result["edges_filtered_unmapped"] = removed_count
+                result["unmapped_string_ids"] = sorted(unmapped_ids)
         return result
 
     async def get_network_for_identifiers(
@@ -280,13 +320,33 @@ class StringNetworkService:
         if locus_tag and len(identifiers) == 1:
             string_id_to_locus[identifiers[0]] = locus_tag.strip()
 
-        # Embed locus_tag_A/B in each row
-        rows: List[StringNetworkRowSchema] = []
+        # Embed locus_tag_A/B and filter rows (same logic as get_string_network_for_pair)
+        rows_filtered: List[Dict[str, Any]] = []
+        unmapped_ids: set = set()
         for row_dict in rows_raw:
             r = dict(row_dict)
-            r["locus_tag_A"] = string_id_to_locus.get(r.get("stringId_A"))
-            r["locus_tag_B"] = string_id_to_locus.get(r.get("stringId_B"))
-            rows.append(StringNetworkRowSchema(**r))
+            aid = r.get("stringId_A")
+            bid = r.get("stringId_B")
+            locus_a = string_id_to_locus.get(aid)
+            locus_b = string_id_to_locus.get(bid)
+            r["locus_tag_A"] = locus_a
+            r["locus_tag_B"] = locus_b
+            if locus_a and locus_b:
+                rows_filtered.append(r)
+            else:
+                if not locus_a and aid:
+                    unmapped_ids.add(aid)
+                if not locus_b and bid:
+                    unmapped_ids.add(bid)
+        removed_count = len(rows_raw) - len(rows_filtered)
+        if removed_count > 0:
+            logger.info(
+                "STRING network (get_network_for_identifiers): filtered %d edge(s), unmapped IDs: %s",
+                removed_count,
+                sorted(unmapped_ids)[:20],
+            )
+
+        rows = [StringNetworkRowSchema(**r) for r in rows_filtered]
 
         # Build normalized nodes/edges
         node_map: Dict[str, PPINetworkNodeSchema] = {}
@@ -354,6 +414,8 @@ class StringNetworkService:
             species_taxid=result.get("species_taxid"),
             focal_preferred_name=result.get("focal_preferred_name"),
             data_sources=["stringdb"],
+            edges_filtered_unmapped=removed_count if removed_count > 0 else None,
+            unmapped_string_ids=sorted(unmapped_ids) if unmapped_ids else None,
         )
 
         return StringNetworkResponseSchema(
