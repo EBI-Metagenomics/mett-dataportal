@@ -1,0 +1,51 @@
+@use '../_networkViewTheme' as theme;
+
+.overlapDebug {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  background-color: theme.$network-ui-bg-controls;
+  border: 1px dashed theme.$network-ui-border-light;
+  border-radius: theme.$network-radius;
+  color: theme.$network-ui-text-muted;
+
+  summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: theme.$network-ui-text;
+  }
+
+  .stats {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+
+    strong {
+      min-width: 1.5rem;
+    }
+  }
+
+  .sample {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.3rem;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hint {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    font-style: italic;
+  }
+}

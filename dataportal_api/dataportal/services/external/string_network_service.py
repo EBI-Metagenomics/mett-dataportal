@@ -96,6 +96,7 @@ class StringNetworkService:
         locus_tag: Optional[str] = None,
         species_acronym: Optional[str] = None,
         required_score: Optional[int] = None,
+        add_nodes: Optional[int] = None,
         network_type: str = "physical",
         evidence_channels: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
@@ -200,6 +201,7 @@ class StringNetworkService:
             identifiers=identifiers,
             species_taxid=species_taxid,
             required_score=float(required_score) if required_score is not None else None,
+            add_nodes=add_nodes,
             network_type=network_type,
         )
         result["interaction"] = interaction

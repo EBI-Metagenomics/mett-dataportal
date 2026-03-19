@@ -22,6 +22,7 @@ import {
 } from './utils/expansionUtils';
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
+import { SourceOverlapDebug } from './SourceOverlapDebug';
 import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, type StringEvidenceChannel } from './constants';
 import styles from './NetworkView.module.scss';
 
@@ -100,6 +101,15 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     return tags;
   }, [expansionState]);
 
+  // Include STRING network node locus tags when showing STRING so orthologs are fetched for them
+  const extraLocusTagsForOrthologs = useMemo(() => {
+    const tags: string[] = [...expandedLocusTags];
+    if ((dataSource === 'stringdb' || dataSource === 'both') && stringNetwork?.nodes) {
+      stringNetwork.nodes.forEach((n) => { if (n.locus_tag) tags.push(n.locus_tag); });
+    }
+    return tags.length > 0 ? Array.from(new Set(tags)) : undefined;
+  }, [expandedLocusTags, dataSource, stringNetwork]);
+
   const {
     networkData,
     networkProperties,
@@ -117,7 +127,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     limitMode,
     speciesScope,
     showOrthologs,
-    extraLocusTagsForOrthologs: expandedLocusTags.length > 0 ? expandedLocusTags : undefined,
+    extraLocusTagsForOrthologs,
     enabled: !!speciesAcronym && !!selectedLocusTag && isAuthenticated,
   });
 
@@ -154,10 +164,12 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         }
 
         // Use locus_tag + species_acronym only — backend resolves to STRING ID via feature index (no pair_id)
+        // add_nodes: STRING defaults to 10 for single-protein queries; pass topN so "Top interactors" slider applies
         const stringParams: Parameters<typeof PPIService.getStringNetwork>[0] = {
           locus_tag: selectedLocusTag!,
           species_acronym: effectiveSpecies,
           required_score: stringRequiredScore,
+          add_nodes: topN,
           network_type: stringNetworkType,
         };
         if (
@@ -279,6 +291,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
               evidence_type: channelLabel,
               evidence_channel: channel,
               dataSource: 'stringdb',
+              string_score_breakdown: scoreBreakdown,
             });
           });
         });
@@ -326,6 +339,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     stringRequiredScore,
     stringNetworkType,
     stringEvidenceChannels,
+    topN,
   ]);
 
   // Sync loading state with parent
@@ -619,10 +633,10 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   // Handle reset expansions
   const handleResetExpansions = useCallback(() => {
     setExpansionState(clearExpansions());
-    // Reset view to original
-    if (graphRef.current) {
-      graphRef.current.resetView();
-    }
+    // Defer resetView to next tick so it runs after React applies the state update and re-renders the graph
+    setTimeout(() => {
+      graphRef.current?.resetView();
+    }, 0);
   }, []);
 
   // Handle reset view (also resets expansions)
@@ -870,6 +884,14 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           showOrthologs={showOrthologs}
           dataSource={dataSource}
           showStringEvidenceLegend={false}
+        />
+      )}
+
+      {/* Source overlap debug – verify node overlap when both sources selected */}
+      {hasData && dataSource === 'both' && networkData?.nodes && stringNetwork?.nodes && (
+        <SourceOverlapDebug
+          localNodes={networkData.nodes}
+          stringNodes={stringNetwork.nodes}
         />
       )}
 

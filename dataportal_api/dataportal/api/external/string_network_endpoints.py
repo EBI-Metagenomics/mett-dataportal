@@ -56,6 +56,7 @@ def register_string_network_routes(router: Router) -> None:
                 locus_tag=query.locus_tag,
                 species_acronym=query.species_acronym,
                 required_score=query.required_score,
+                add_nodes=query.add_nodes,
                 network_type=query.network_type,
                 evidence_channels=query.evidence_channels,
             )

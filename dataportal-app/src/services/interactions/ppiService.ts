@@ -208,6 +208,7 @@ export class PPIService extends BaseService {
     locus_tag?: string;
     species_acronym?: string;
     required_score?: number;
+    add_nodes?: number;
     network_type?: string;
     evidence_channels?: string[];
   }): Promise<PPIStringNetworkRaw> {
@@ -218,6 +219,7 @@ export class PPIService extends BaseService {
         locus_tag: params.locus_tag,
         species_acronym: params.species_acronym,
         required_score: params.required_score,
+        add_nodes: params.add_nodes,
         network_type: params.network_type ?? "physical",
         evidence_channels: params.evidence_channels,
       });

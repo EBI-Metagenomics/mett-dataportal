@@ -91,6 +91,12 @@ class PPIStringNetworkQuerySchema(BaseModel):
     required_score: Optional[int] = Field(
         None, ge=0, le=1000, description="Minimum STRING score threshold (0-1000)"
     )
+    add_nodes: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Number of additional interaction partners to add by confidence (default 10). "
+        "Set higher (e.g. 50) to get more interactors.",
+    )
     network_type: Literal[STRING_NETWORK_TYPE_VALUES] = Field(
         "physical",
         description="Network type: physical (direct interactions) or functional (physical + indirect associations)",

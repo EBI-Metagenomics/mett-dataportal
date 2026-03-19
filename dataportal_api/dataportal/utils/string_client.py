@@ -26,6 +26,7 @@ async def fetch_string_network(
     species_taxid: Optional[int] = None,
     required_score: Optional[float] = None,
     network_type: str = "physical",
+    add_nodes: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Fetch interaction network from STRING DB API.
@@ -35,6 +36,8 @@ async def fetch_string_network(
         species_taxid: NCBI taxonomy ID for STRING API (resolve via SpeciesService from species_acronym)
         required_score: Minimum score threshold (0-1000)
         network_type: "physical" or "functional"
+        add_nodes: Number of additional interaction partners to add by confidence (default 10 for 1 protein).
+            Set higher to get more interactors; STRING adds partners in order of confidence score.
 
     Returns:
         Dict with "network" (list of edges), "network_url" (link to STRING page), "raw_text" (TSV body)
@@ -63,6 +66,8 @@ async def fetch_string_network(
     }
     if required_score is not None:
         params["required_score"] = int(required_score)
+    if add_nodes is not None:
+        params["add_nodes"] = int(add_nodes)
 
     url = f"{STRING_API_BASE}/tsv/network"
     try:
