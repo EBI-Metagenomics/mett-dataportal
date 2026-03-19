@@ -145,6 +145,18 @@ export const NETWORK_VIEW_CONSTANTS = {
   },
 
   /**
+   * STRING DB required_score (minimum interaction confidence).
+   * Scale 0–1000. Exposed in filters when STRING DB is selected.
+   * @see https://string-db.org/api/json/network
+   */
+  STRING_REQUIRED_SCORE: {
+    MIN: 150,
+    MAX: 900,
+    DEFAULT: 460,
+    STEP: 50,
+  } as const,
+
+  /**
    * Slider configuration for NetworkControls (top N / min score).
    */
   SLIDER: {

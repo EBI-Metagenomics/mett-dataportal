@@ -4,7 +4,7 @@ import { useAuth } from '../../../../hooks/useAuth';
 import { PPINetworkNode, PPINetworkEdge, PPINetworkData, PPIDataSource, type StringScoreBreakdown } from '../../../../interfaces/PPI';
 import { PPIService } from '../../../../services/interactions/ppiService';
 import { NetworkGraph, NetworkGraphRef } from './NetworkGraph';
-import { NetworkControls } from './NetworkControls';
+import { InteractionFilters } from './InteractionFilters';
 import { NetworkStats } from './NetworkStats';
 import { EmptyState } from './EmptyState';
 import { AuthRequired } from './AuthRequired';
@@ -22,7 +22,7 @@ import {
 } from './utils/expansionUtils';
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
-import { STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, type StringEvidenceChannel } from './constants';
+import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, type StringEvidenceChannel } from './constants';
 import styles from './NetworkView.module.scss';
 
 interface NetworkViewProps {
@@ -59,6 +59,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [speciesScope, setSpeciesScope] = useState<SpeciesScope>('current');
   const [dataSource, setDataSource] = useState<PPIDataSource>('local');
   const [stringNetworkType, setStringNetworkType] = useState<'physical' | 'functional'>('physical');
+  const [stringRequiredScore, setStringRequiredScore] = useState<number>(
+    NETWORK_VIEW_CONSTANTS.STRING_REQUIRED_SCORE.DEFAULT
+  );
   const [stringEvidenceChannels, setStringEvidenceChannels] = useState<StringEvidenceChannel[]>(
     STRING_EVIDENCE_CHANNELS.map((c) => c.value)
   );
@@ -150,15 +153,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           return;
         }
 
-        // STRING required_score is 0–1000. Use a permissive range (150–500) so we get results;
-        // STRING TSV scores are often 0–1 scale, so 900 would filter out most edges.
-        const requiredScore = Math.round(Math.max(150, Math.min(500, 100 + scoreThreshold * 400)));
-
         // Use locus_tag + species_acronym only — backend resolves to STRING ID via feature index (no pair_id)
         const stringParams: Parameters<typeof PPIService.getStringNetwork>[0] = {
           locus_tag: selectedLocusTag!,
           species_acronym: effectiveSpecies,
-          required_score: requiredScore,
+          required_score: stringRequiredScore,
           network_type: stringNetworkType,
         };
         if (
@@ -324,7 +323,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     speciesAcronym,
     selectedLocusTag,
     speciesScope,
-    scoreThreshold,
+    stringRequiredScore,
     stringNetworkType,
     stringEvidenceChannels,
   ]);
@@ -817,8 +816,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
 
   return (
     <div className={styles.networkView}>
-      {/* Controls - Always visible */}
-        <NetworkControls
+      <div className={styles.leftPane}>
+        <InteractionFilters
           dataSource={dataSource}
           scoreType={scoreType}
           displayThreshold={displayThreshold}
@@ -827,6 +826,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           speciesScope={speciesScope}
           showOrthologs={showOrthologs}
           stringNetworkType={stringNetworkType}
+          stringRequiredScore={stringRequiredScore}
           stringEvidenceChannels={stringEvidenceChannels}
           availableScoreTypes={availableScoreTypes}
           onDataSourceChange={setDataSource}
@@ -837,10 +837,13 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           onSpeciesScopeChange={handleSpeciesScopeChange}
           onOrthologToggle={handleOrthologToggle}
           onStringNetworkTypeChange={setStringNetworkType}
+          onStringRequiredScoreChange={setStringRequiredScore}
           onStringEvidenceChannelsChange={setStringEvidenceChannels}
           onResetView={handleResetView}
         />
+      </div>
 
+      <div className={styles.rightPane}>
       {/* Error Message */}
       {(error || stringError) && (
         <div className={styles.networkViewError}>
@@ -866,7 +869,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           edgeCount={enrichedEdges.length}
           showOrthologs={showOrthologs}
           dataSource={dataSource}
-          showStringEvidenceLegend={dataSource === 'stringdb' || dataSource === 'both'}
+          showStringEvidenceLegend={false}
         />
       )}
 
@@ -964,6 +967,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           onClose={() => setPopupEdge(null)}
         />
       )}
+      </div>
     </div>
   );
 };
