@@ -12,10 +12,10 @@ jobs:
       IMAGE_TAG: ${{ github.ref_name }}
     steps:
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Quay.io
         env:
@@ -38,10 +38,10 @@ jobs:
       IMAGE_TAG: ${{ github.ref_name }}
     steps:
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Quay.io
         env:
