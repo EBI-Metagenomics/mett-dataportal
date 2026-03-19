@@ -23,6 +23,7 @@ import {
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
 import { SourceOverlapDebug } from './SourceOverlapDebug';
+import { NetworkViewThemeProvider } from './NetworkViewThemeProvider';
 import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, type StringEvidenceChannel } from './constants';
 import styles from './NetworkView.module.scss';
 
@@ -817,18 +818,31 @@ const NetworkView: React.FC<NetworkViewProps> = ({
 
   // Early returns for edge cases
   if (!speciesAcronym) {
-    return <EmptyState message="Please select a species to view the network." variant="no-species" />;
+    return (
+      <NetworkViewThemeProvider>
+        <EmptyState message="Please select a species to view the network." variant="no-species" />
+      </NetworkViewThemeProvider>
+    );
   }
 
   if (!isAuthenticated) {
-    return <AuthRequired />;
+    return (
+      <NetworkViewThemeProvider>
+        <AuthRequired />
+      </NetworkViewThemeProvider>
+    );
   }
 
   if (!selectedLocusTag) {
-    return <EmptyState variant="select-gene" />;
+    return (
+      <NetworkViewThemeProvider>
+        <EmptyState variant="select-gene" />
+      </NetworkViewThemeProvider>
+    );
   }
 
   return (
+    <NetworkViewThemeProvider>
     <div className={styles.networkView}>
       <div className={styles.leftPane}>
         <InteractionFilters
@@ -991,6 +1005,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       )}
       </div>
     </div>
+    </NetworkViewThemeProvider>
   );
 };
 

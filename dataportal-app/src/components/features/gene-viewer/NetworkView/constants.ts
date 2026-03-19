@@ -26,6 +26,24 @@ export const STRING_EVIDENCE_CHANNELS = [
 
 export type StringEvidenceChannel = (typeof STRING_EVIDENCE_CHANNELS)[number]['value'];
 
+/** Display label overrides for evidence channels (e.g. "Database" -> "Curated Database") */
+export const EVIDENCE_DISPLAY_LABELS: Partial<Record<StringEvidenceChannel, string>> = {
+  database: 'Curated Database',
+};
+
+/** STRING score field labels (from STRING DB API). Used in popups. */
+export const STRING_SCORE_LABELS: Record<string, string> = {
+  score: 'Combined score',
+  nscore: 'Neighborhood',
+  fscore: 'Gene fusion',
+  pscore: 'Phylogenetic co-occurrence',
+  ascore: 'Co-expression',
+  escore: 'Experimental',
+  dscore: 'Database',
+  tscore: 'Text mining',
+  ncbiTaxonId: 'NCBI Taxon ID',
+};
+
 /** Map evidence channel id to STRING TSV score field name */
 export const STRING_EVIDENCE_SCORE_FIELDS: Record<StringEvidenceChannel, string> = {
   neighborhood: 'nscore',
@@ -36,6 +54,9 @@ export const STRING_EVIDENCE_SCORE_FIELDS: Record<StringEvidenceChannel, string>
   database: 'dscore',
   textmining: 'tscore',
 } as const;
+
+/** Fallback edge color for expansion levels when no specific color is defined (Cytoscape styles). */
+export const EDGE_FALLBACK_COLOR = '#999';
 
 /** Colors for STRING evidence edges (one edge per evidence type). Used when showing multiple edges between nodes. */
 export const STRING_EVIDENCE_COLORS: Record<StringEvidenceChannel, string> = {
@@ -157,7 +178,7 @@ export const NETWORK_VIEW_CONSTANTS = {
   } as const,
 
   /**
-   * Slider configuration for NetworkControls (top N / min score).
+   * Slider configuration (top N / min score).
    */
   SLIDER: {
     TOP_N_MIN: 1,

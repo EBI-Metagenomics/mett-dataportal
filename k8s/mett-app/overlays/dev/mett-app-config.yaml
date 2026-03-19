@@ -29,5 +29,6 @@ data:
   STRING_DB_WEB_BASE: "https://string-db.org"
   ENABLE_PYHMMER_SEARCH: "true"
   ENABLE_FEEDBACK: "true"
+  VITE_NETWORK_VIEW_ENABLED: "true"
   ENABLE_NATURAL_QUERY: "false"
   HTTPS: "false"

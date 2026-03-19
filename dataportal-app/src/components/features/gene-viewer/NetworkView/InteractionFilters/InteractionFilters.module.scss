@@ -80,7 +80,7 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    background-color: #eee;
+    background-color: theme.$network-ui-bg-subtle;
   }
 }
 
@@ -177,4 +177,27 @@
   height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
+}
+
+/* Evidence channel colors from NetworkViewThemeProvider (--network-evidence-*) */
+.evidenceSwatch[data-channel='neighborhood'] {
+  background-color: var(--network-evidence-neighborhood);
+}
+.evidenceSwatch[data-channel='fusion'] {
+  background-color: var(--network-evidence-fusion);
+}
+.evidenceSwatch[data-channel='cooccurrence'] {
+  background-color: var(--network-evidence-cooccurrence);
+}
+.evidenceSwatch[data-channel='coexpression'] {
+  background-color: var(--network-evidence-coexpression);
+}
+.evidenceSwatch[data-channel='experimental'] {
+  background-color: var(--network-evidence-experimental);
+}
+.evidenceSwatch[data-channel='database'] {
+  background-color: var(--network-evidence-database);
+}
+.evidenceSwatch[data-channel='textmining'] {
+  background-color: var(--network-evidence-textmining);
 }

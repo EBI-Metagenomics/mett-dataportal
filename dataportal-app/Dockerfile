@@ -21,6 +21,7 @@ RUN PUBLIC_URL=$PUBLIC_URL \
     VITE_INTERPRO_URL="VITE_INTERPRO_URL_PLACEHOLDER" \
     VITE_KEGG_URL="VITE_KEGG_URL_PLACEHOLDER" \
     VITE_COG_URL="VITE_COG_URL_PLACEHOLDER" \
+    VITE_NETWORK_VIEW_ENABLED="VITE_NETWORK_VIEW_ENABLED_PLACEHOLDER" \
     npm run build
 
 # Production stage
@@ -73,4 +74,5 @@ CMD /bin/sh -c "\
     find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_INTERPRO_URL_PLACEHOLDER|'\"\$VITE_INTERPRO_URL\"'|g' {} + && \
     find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_KEGG_URL_PLACEHOLDER|'\"\$VITE_KEGG_URL\"'|g' {} + && \
     find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_COG_URL_PLACEHOLDER|'\"\$VITE_COG_URL\"'|g' {} + && \
+    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_NETWORK_VIEW_ENABLED_PLACEHOLDER|'\"\${VITE_NETWORK_VIEW_ENABLED:-false}\"'|g' {} + && \
     nginx -g 'daemon off;'"

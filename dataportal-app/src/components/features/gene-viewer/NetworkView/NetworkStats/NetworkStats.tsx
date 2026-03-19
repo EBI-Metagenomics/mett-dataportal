@@ -1,6 +1,6 @@
 import React from 'react';
 import { PPINetworkProperties } from '../../../../../interfaces/PPI';
-import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_COLORS } from '../constants';
+import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS } from '../constants';
 import styles from './NetworkStats.module.scss';
 
 type DataSourceOption = 'local' | 'stringdb' | 'both';
@@ -17,7 +17,6 @@ interface NetworkStatsProps {
   showStringEvidenceLegend?: boolean;
 }
 
-const GT = NETWORK_VIEW_CONSTANTS.GRAPH_THEME;
 
 export const NetworkStats: React.FC<NetworkStatsProps> = ({
   properties,
@@ -75,10 +74,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
         {dataSource === 'both' && (
           <>
             <div className={styles.legendItem}>
-              <span
-                className={styles.legendEdgeLine}
-                style={{ backgroundColor: GT.EDGE.LOCAL_EDGE_COLOR }}
-              />
+              <span className={`${styles.legendEdgeLine} ${styles.legendEdgeLocal}`} />
               <span>Local (ES)</span>
             </div>
             {showStringEvidenceLegend
@@ -86,17 +82,14 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
                   <div key={ch.value} className={styles.legendItem}>
                     <span
                       className={styles.legendEdgeLine}
-                      style={{ backgroundColor: STRING_EVIDENCE_COLORS[ch.value] }}
+                      data-channel={ch.value}
                     />
                     <span>{ch.label}</span>
                   </div>
                 ))
               : (
                 <div className={styles.legendItem}>
-                  <span
-                    className={styles.legendEdgeLine}
-                    style={{ backgroundColor: GT.EDGE.STRINGDB_EDGE_COLOR }}
-                  />
+                  <span className={`${styles.legendEdgeLine} ${styles.legendEdgeStringdb}`} />
                   <span>STRING DB</span>
                 </div>
               )}
@@ -108,17 +101,14 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
               <div key={ch.value} className={styles.legendItem}>
                 <span
                   className={styles.legendEdgeLine}
-                  style={{ backgroundColor: STRING_EVIDENCE_COLORS[ch.value] }}
+                  data-channel={ch.value}
                 />
                 <span>{ch.label}</span>
               </div>
             ))
           ) : (
             <div className={styles.legendItem}>
-              <span
-                className={styles.legendEdgeLine}
-                style={{ backgroundColor: GT.EDGE.STRINGDB_EDGE_COLOR }}
-              />
+              <span className={`${styles.legendEdgeLine} ${styles.legendEdgeStringdb}`} />
               <span>STRING DB</span>
             </div>
           )

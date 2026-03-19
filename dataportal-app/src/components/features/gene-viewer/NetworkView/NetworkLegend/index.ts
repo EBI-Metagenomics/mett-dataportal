@@ -1,2 +1,0 @@
-export { NetworkLegend } from './NetworkLegend';
-

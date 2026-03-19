@@ -75,6 +75,11 @@ spec:
                 configMapKeyRef:
                   name: mett-app-config-prod
                   key: VITE_GO_URL
+            - name: VITE_NETWORK_VIEW_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: mett-app-config-prod
+                  key: VITE_NETWORK_VIEW_ENABLED
           ports:
             - containerPort: 80
               name: react-app

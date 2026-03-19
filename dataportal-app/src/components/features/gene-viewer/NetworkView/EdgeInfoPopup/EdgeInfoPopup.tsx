@@ -1,12 +1,7 @@
 import React, { useMemo } from 'react';
 import { PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
-import { STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS } from '../constants';
+import { EVIDENCE_DISPLAY_LABELS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS } from '../constants';
 import styles from './EdgeInfoPopup.module.scss';
-
-/** Display label override for evidence channels (e.g. "Database" -> "Curated Database") */
-const EVIDENCE_DISPLAY_LABELS: Record<string, string> = {
-  database: 'Curated Database',
-};
 
 interface EdgeInfoPopupProps {
   edge: PPINetworkEdge & { edgeType?: string; orthology_type?: string; expansionLevel?: number; string_score_breakdown?: StringScoreBreakdown };

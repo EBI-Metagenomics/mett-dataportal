@@ -90,5 +90,34 @@
     height: 3px;
     border-radius: 1px;
   }
+
+  /* Edge legend colors from NetworkViewThemeProvider (no hardcoded colors in TS) */
+  .legendEdgeLocal {
+    background-color: var(--network-edge-local);
+  }
+  .legendEdgeStringdb {
+    background-color: var(--network-edge-stringdb);
+  }
+  .legendEdgeLine[data-channel='neighborhood'] {
+    background-color: var(--network-evidence-neighborhood);
+  }
+  .legendEdgeLine[data-channel='fusion'] {
+    background-color: var(--network-evidence-fusion);
+  }
+  .legendEdgeLine[data-channel='cooccurrence'] {
+    background-color: var(--network-evidence-cooccurrence);
+  }
+  .legendEdgeLine[data-channel='coexpression'] {
+    background-color: var(--network-evidence-coexpression);
+  }
+  .legendEdgeLine[data-channel='experimental'] {
+    background-color: var(--network-evidence-experimental);
+  }
+  .legendEdgeLine[data-channel='database'] {
+    background-color: var(--network-evidence-database);
+  }
+  .legendEdgeLine[data-channel='textmining'] {
+    background-color: var(--network-evidence-textmining);
+  }
 }
 

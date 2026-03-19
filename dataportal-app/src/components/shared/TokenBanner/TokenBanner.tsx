@@ -22,7 +22,6 @@ const TokenBanner: React.FC = () => {
           <span className={styles.icon}>🔒</span>
           <span className={styles.text}>
             Authentication token required for experimental features (PPI, Orthologs).
-            <span className={styles.temporary}> (Temporary - will be removed in 2-3 months)</span>
           </span>
           <button
             className={styles.linkButton}

@@ -5,7 +5,7 @@ import {
   NETWORK_VIEW_CONSTANTS,
   STRING_NETWORK_TYPES,
   STRING_EVIDENCE_CHANNELS,
-  STRING_EVIDENCE_COLORS,
+  EVIDENCE_DISPLAY_LABELS,
   type StringNetworkType,
   type StringEvidenceChannel,
 } from '../constants';
@@ -13,11 +13,6 @@ import styles from './InteractionFilters.module.scss';
 
 const SLIDER = NETWORK_VIEW_CONSTANTS.SLIDER;
 const STRING_SCORE = NETWORK_VIEW_CONSTANTS.STRING_REQUIRED_SCORE;
-
-/** Display label override for evidence channels (e.g. "Database" -> "Curated Database") */
-const EVIDENCE_DISPLAY_LABELS: Partial<Record<StringEvidenceChannel, string>> = {
-  database: 'Curated Database',
-};
 
 interface InteractionFiltersProps {
   dataSource: PPIDataSource;
@@ -291,7 +286,7 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
                   />
                   <span
                     className={styles.evidenceSwatch}
-                    style={{ backgroundColor: STRING_EVIDENCE_COLORS[value] }}
+                    data-channel={value}
                     title={label}
                   />
                   {EVIDENCE_DISPLAY_LABELS[value] ?? label}

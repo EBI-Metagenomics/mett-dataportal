@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import cytoscape from 'cytoscape';
-import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_COLORS, type StringEvidenceChannel } from '../../constants';
+import { EDGE_FALLBACK_COLOR, NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_COLORS, type StringEvidenceChannel } from '../../constants';
 
 const GT = NETWORK_VIEW_CONSTANTS.GRAPH_THEME;
 const EW = NETWORK_VIEW_CONSTANTS.EDGE_WIDTH;
@@ -151,9 +151,9 @@ export const useCytoscapeStyles = ({
                         if (dataSource === 'stringdb') return GT.EDGE.STRINGDB_EDGE_COLOR;
                         if (dataSource === 'local') return GT.EDGE.LOCAL_EDGE_COLOR;
                         const level = edge.data('expansionLevel') as number | undefined;
-                        if (level === undefined || level === 0) return '#999';
+                        if (level === undefined || level === 0) return EDGE_FALLBACK_COLOR;
                         const colors = EX.LEVEL_COLORS;
-                        return colors[Math.min(level, colors.length - 1)] || '#999';
+                        return colors[Math.min(level, colors.length - 1)] ?? EDGE_FALLBACK_COLOR;
                     },
                     'line-width': GT.EXPANSION_EDGE.LINE_WIDTH,
                     opacity: GT.EXPANSION_EDGE.OPACITY,

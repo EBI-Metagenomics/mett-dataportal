@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_BACINTERACTOME_SHINY_APP_URL?: string
   /** STRING DB web UI base for links (default: https://string-db.org). API calls go via backend. */
   readonly VITE_STRING_DB_WEB_BASE?: string
+  /** Enable Network View tab in Gene Viewer (default: false). Set via Kubernetes. */
+  readonly VITE_NETWORK_VIEW_ENABLED?: string
 }
 
 interface ImportMeta {

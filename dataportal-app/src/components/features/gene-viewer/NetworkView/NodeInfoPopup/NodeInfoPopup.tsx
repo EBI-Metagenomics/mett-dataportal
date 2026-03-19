@@ -1,21 +1,9 @@
 import React from 'react';
 import { PPINetworkNode, PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
+import { STRING_SCORE_LABELS } from '../constants';
 import { canExpandNode, getNodeExpansionLevel } from '../utils/expansionUtils';
 import { ExpansionState } from '../types/expansion';
 import styles from './NodeInfoPopup.module.scss';
-
-/** STRING score field labels (from STRING DB API). */
-const STRING_SCORE_LABELS: Record<keyof StringScoreBreakdown, string> = {
-  score: 'Combined score',
-  nscore: 'Neighborhood',
-  fscore: 'Gene fusion',
-  pscore: 'Phylogenetic co-occurrence',
-  ascore: 'Co-expression',
-  escore: 'Experimental',
-  dscore: 'Database',
-  tscore: 'Text mining',
-  ncbiTaxonId: 'NCBI Taxon ID',
-};
 
 interface NodeInfoPopupProps {
   node: PPINetworkNode;

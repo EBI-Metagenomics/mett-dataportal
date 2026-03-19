@@ -11,7 +11,7 @@ import {useDebouncedLoading} from '../../hooks/useDebouncedLoading';
 import {refreshStructuralAnnotationTrack, useGeneViewerConfig} from '../../utils/gene-viewer';
 import {GeneViewerContent, GeneViewerControls, GeneViewerHeader} from '../features/gene-viewer/GeneViewerUI';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
-import { TokenBanner } from '../shared/TokenBanner';
+// import { TokenBanner } from '../shared/TokenBanner';
 import {useFilterStore} from '../../stores/filterStore';
 import {DEFAULT_PER_PAGE_CNT} from '../../utils/common/constants';
 import {useFacetedFilters} from '../../hooks/useFacetedFilters';
@@ -26,6 +26,7 @@ import { VIEWPORT_SYNC_CONSTANTS } from '../../utils/gene-viewer';
 import GeneViewerTabNavigation from '../features/gene-viewer/GeneViewerTabNavigation/GeneViewerTabNavigation';
 import { GeneService } from '../../services/gene';
 import { ZOOM_LEVELS } from '../../utils/common/constants';
+import { NETWORK_VIEW_ENABLED, isNetworkViewEnabled } from '../../config/featureFlags';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -35,8 +36,15 @@ const GeneViewerPage: React.FC = () => {
     const filterStore = useFilterStore();
     const { viewportChanged, setViewportChanged } = useViewportSyncStore();
     
-    // Tab state for Search View / Genomic Context / Network View
+    // Tab state for Search View / Genomic Context / Network View (network hidden when feature flag is off)
     const [activeTab, setActiveTab] = useState<'search' | 'sync' | 'network'>('search');
+
+    // Reset to search when Network View is disabled but user had it selected
+    useEffect(() => {
+        if (!isNetworkViewEnabled() && activeTab === 'network') {
+            setActiveTab('search');
+        }
+    }, [activeTab]);
     const [showAutoSwitchNotification, setShowAutoSwitchNotification] = useState(false);
     const [wasAutoSwitched, setWasAutoSwitched] = useState(false);
     const manualOverrideUntilRef = useRef<number | null>(null);
@@ -326,7 +334,7 @@ const GeneViewerPage: React.FC = () => {
 
     return (
         <ErrorBoundary onError={handleError}>
-            <TokenBanner />
+            {/*<TokenBanner />*/}
             <div className={styles.geneViewerPage}>
                 {spinner}
 
@@ -403,7 +411,7 @@ const GeneViewerPage: React.FC = () => {
                                         tabs={[
                                             { id: 'search', label: 'Search View' },
                                             { id: 'sync', label: 'Genomic Context' },
-                                            { id: 'network', label: 'Network View' },
+                                            ...(NETWORK_VIEW_ENABLED ? [{ id: 'network' as const, label: 'Network View' }] : []),
                                         ]}
                                         activeTab={activeTab}
                                         onTabClick={(tabId) => {
@@ -458,7 +466,7 @@ const GeneViewerPage: React.FC = () => {
                                             onFeatureSelect={handleFeatureSelect}
                                             linkData={linkData}
                                         />
-                                    ) : (
+                                    ) : (activeTab === 'network' && NETWORK_VIEW_ENABLED) ? (
                                         <NetworkView
                                             speciesAcronym={geneViewerData.genomeMeta?.species_acronym}
                                             isolateName={geneViewerData.genomeMeta?.isolate_name}
@@ -466,6 +474,30 @@ const GeneViewerPage: React.FC = () => {
                                             setLoading={geneViewerData.setLoading}
                                             onFeatureSelect={handleFeatureSelect}
                                             onViewInJBrowse={handleViewInJBrowse}
+                                        />
+                                    ) : (
+                                        <GeneSearchForm
+                                            searchQuery={filterStore.geneSearchQuery}
+                                            onSearchQueryChange={() => {}}
+                                            selectedSpecies={[]}
+                                            selectedGenomes={selectedGenomes}
+                                            results={geneViewerSearch.geneResults}
+                                            onSortClick={geneViewerSearch.handleGeneSortClick}
+                                            sortField={filterStore.geneSortField}
+                                            sortOrder={filterStore.geneSortOrder}
+                                            linkData={linkData}
+                                            viewState={viewState || undefined}
+                                            setLoading={geneViewerData.setLoading}
+                                            handleRemoveGenome={handleRemoveGenome}
+                                            onPageSizeChange={handlePageSizeChange}
+                                            onPageChange={geneViewerSearch.handlePageChange}
+                                            currentPage={geneViewerSearch.currentPage}
+                                            totalPages={geneViewerSearch.totalPages}
+                                            hasPrevious={geneViewerSearch.hasPrevious}
+                                            hasNext={geneViewerSearch.hasNext}
+                                            totalCount={geneViewerSearch.totalCount}
+                                            onFeatureSelect={handleFeatureSelect}
+                                            hideActionsColumn={true}
                                         />
                                     )}
                                 </section>
