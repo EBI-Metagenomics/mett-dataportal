@@ -75,7 +75,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
           <>
             <div className={styles.legendItem}>
               <span className={`${styles.legendEdgeLine} ${styles.legendEdgeLocal}`} />
-              <span>Local (ES)</span>
+              <span>METT DB</span>
             </div>
             {showStringEvidenceLegend
               ? STRING_EVIDENCE_CHANNELS.map((ch) => (

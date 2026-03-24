@@ -100,9 +100,9 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
             onChange={(e) => onDataSourceChange(e.target.value as PPIDataSource)}
             className={styles.select}
           >
-            <option value="local">Local (ES)</option>
+            <option value="local">METT DB</option>
             <option value="stringdb">STRING DB</option>
-            <option value="both">Local (ES) + STRING DB</option>
+            <option value="both">METT DB + STRING DB</option>
           </select>
         </div>
 
