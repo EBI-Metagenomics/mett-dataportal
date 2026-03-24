@@ -37,6 +37,7 @@ species_router = Router(tags=[ROUTER_SPECIES])
     response=SuccessResponseSchema,
     summary="Enable a species",
     description="Sets the species as enabled so it is included in gene and genome API results.",
+    include_in_schema=False,
 )
 @wrap_success_response
 async def enable_species(
@@ -67,6 +68,7 @@ async def enable_species(
 # API Endpoint to disable a species by acronym
 @species_router.post(
     "/{species_acronym}/disable",
+    include_in_schema=False,
     response=SuccessResponseSchema,
     summary="Disable a species",
     description="Sets the species as disabled so it is excluded from gene and genome API results.",
