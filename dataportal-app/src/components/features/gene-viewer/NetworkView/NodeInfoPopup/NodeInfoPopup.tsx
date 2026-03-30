@@ -3,6 +3,7 @@ import { PPINetworkNode, PPINetworkEdge, StringScoreBreakdown } from '../../../.
 import { STRING_SCORE_LABELS } from '../constants';
 import { canExpandNode, getNodeExpansionLevel } from '../utils/expansionUtils';
 import { ExpansionState } from '../types/expansion';
+import { useClampPopupToViewport } from '../utils/useClampPopupToViewport';
 import styles from './NodeInfoPopup.module.scss';
 
 interface NodeInfoPopupProps {
@@ -51,20 +52,31 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
     }
   };
 
+  const { popupRef, shift } = useClampPopupToViewport(x, y);
+
   return (
     <div className={styles.popupOverlay} onClick={onClose}>
-      <div 
-        className={styles.popupContent} 
+      <div
+        ref={popupRef}
+        className={styles.popupContent}
         onClick={(e) => e.stopPropagation()}
-        style={{ left: `${x}px`, top: `${y}px` }}
+        style={{
+          left: `${x + shift.dx}px`,
+          top: `${y + shift.dy}px`,
+        }}
       >
-        <button className={styles.closeButton} onClick={onClose} aria-label="Close">×</button>
         <div className={styles.popupHeader}>
-          <h3>{node.locus_tag || node.label || node.id}</h3>
-          {isExpanded && (
-            <span className={styles.expandedBadge}>Expanded (Level {expansionLevel})</span>
-          )}
+          <div className={styles.popupHeaderText}>
+            <h3>{node.locus_tag || node.label || node.id}</h3>
+            {isExpanded && (
+              <span className={styles.expandedBadge}>Expanded (Level {expansionLevel})</span>
+            )}
+          </div>
+          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close">
+            ×
+          </button>
         </div>
+        <div className={styles.popupScroll}>
         <div className={styles.popupBody}>
           {node.name && (
             <div className={styles.infoRow}>
@@ -134,7 +146,6 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
           )}
         </div>
 
-        {/* Interactions Section */}
         {interactions.length > 0 && (
           <div className={styles.interactionsSection}>
             <div className={styles.sectionTitle}>
@@ -198,6 +209,7 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
             )}
           </div>
         )}
+        </div>
 
         {((onViewInJBrowse && !isOrthologNode && node.locus_tag) || (onExpand && !isOrthologNode)) && (
           <div className={styles.popupFooter}>

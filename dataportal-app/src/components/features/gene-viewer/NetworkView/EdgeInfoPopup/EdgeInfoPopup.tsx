@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
 import { EVIDENCE_DISPLAY_LABELS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS } from '../constants';
+import { useClampPopupToViewport } from '../utils/useClampPopupToViewport';
 import styles from './EdgeInfoPopup.module.scss';
 
 interface EdgeInfoPopupProps {
@@ -50,21 +51,26 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
     return 'PPI Interaction';
   };
 
+  const { popupRef, shift } = useClampPopupToViewport(x, y);
+
   return (
     <div className={styles.popupOverlay} onClick={onClose}>
       <div
+        ref={popupRef}
         className={styles.popupContent}
         onClick={(e) => e.stopPropagation()}
-        style={{ left: `${x}px`, top: `${y}px` }}
+        style={{ left: `${x + shift.dx}px`, top: `${y + shift.dy}px` }}
       >
-        <button className={styles.closeButton} onClick={onClose} aria-label="Close">
-          ×
-        </button>
         <div className={styles.popupHeader}>
-          <h3>{getEdgeTypeLabel()}</h3>
-          {edge.expansionLevel !== undefined && edge.expansionLevel > 0 && (
-            <span className={styles.expansionBadge}>Level {edge.expansionLevel}</span>
-          )}
+          <div className={styles.popupHeaderText}>
+            <h3>{getEdgeTypeLabel()}</h3>
+            {edge.expansionLevel !== undefined && edge.expansionLevel > 0 && (
+              <span className={styles.expansionBadge}>Level {edge.expansionLevel}</span>
+            )}
+          </div>
+          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close">
+            ×
+          </button>
         </div>
         <div className={styles.popupBody}>
           {/* Source Node Info */}

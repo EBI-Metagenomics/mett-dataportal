@@ -11,14 +11,16 @@
 
 .popupContent {
   position: absolute;
+  display: flex;
+  flex-direction: column;
+  max-height: min(80vh, calc(100vh - 24px));
   background: white;
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 300px;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-width: min(500px, calc(100vw - 24px));
+  overflow: hidden;
   z-index: 1001;
   animation: popupFadeIn 0.2s ease-out;
 }
@@ -26,36 +28,20 @@
 @keyframes popupFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
   }
   to {
     opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.closeButton {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  line-height: 1;
-  color: #666;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #f0f0f0;
-    color: #333;
   }
 }
 
 .popupHeader {
-  padding: 16px 40px 12px 16px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 12px 12px 16px;
   border-bottom: 1px solid #e0e0e0;
 
   h3 {
@@ -77,7 +63,35 @@
   }
 }
 
+.popupHeaderText {
+  min-width: 0;
+  flex: 1;
+}
+
+.closeButton {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin: 0;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    background-color: #f0f0f0;
+    color: #333;
+  }
+}
+
 .popupBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -131,4 +145,3 @@
     flex: 1;
   }
 }
-

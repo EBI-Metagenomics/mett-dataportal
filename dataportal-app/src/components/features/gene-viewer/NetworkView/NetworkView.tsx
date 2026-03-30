@@ -976,6 +976,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       {/* Node Info Popup */}
       {popupNode && (
         <NodeInfoPopup
+          key={`${popupNode.node.id}-${popupNode.x}-${popupNode.y}`}
           node={popupNode.node}
           x={popupNode.x}
           y={popupNode.y}
@@ -995,6 +996,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       {/* Edge Info Popup */}
       {popupEdge && (
         <EdgeInfoPopup
+          key={`${popupEdge.edge.source}-${popupEdge.edge.target}-${popupEdge.x}-${popupEdge.y}`}
           edge={popupEdge.edge}
           sourceNode={enrichedNodes.find(n => n.id === popupEdge.edge.source)}
           targetNode={enrichedNodes.find(n => n.id === popupEdge.edge.target)}
