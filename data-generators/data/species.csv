@@ -1,4 +1,22 @@
 scientific_name,common_name,acronym,taxonomy_id,enabled
 Bacteroides uniformis,Bacteroides,BU,"820",true
 Phocaeicola vulgatus,Bacteroides vulgatus,PV,"435590",true
-Bacteroides thetaiotaomicron,Bacteroides theta,BT,226186,false
+Eggerthella lenta,Eggerthella,EL,"479437",false
+Bacteroides fragilis,Bacteroides,BF,"272559",false
+Bacteroides thetaiotaomicron,Bacteroides,BT,"226186",false
+Clostridium ramosum,Clostridium,CR,"445974",false
+Eubacterium rectale,Agathobacter rectalis,AR,"39491",false
+Roseburia intestinalis,Roseburia,RI,"536231",false
+Veillonella parvula,Veillonella,VP,"479436",false
+Fusobacterium nucleatum,Fusobacterium,FN,"851",false
+Enterocloster bolteae,Clostridium,EB,"411902",false
+Clostridium perfringens,Clostridium,CP,"1502",false
+Clostridium saccharolyticum,Lacrimispora saccharolytica,LS,"610130",false
+Streptococcus salivarius,Streptococcus,SS,"1304",false
+Ruminococcus gnavus,Ruminococcus,RG,"411470",false
+Coprococcus comes,Coprococcus,CC,"410072",false
+Parabacteroides merdae,Parabacteroides,PM,"411477",false
+Streptococcus parasanguinis,Streptococcus,SP,"760570",false
+Collinsella aerofaciens,Collinsella,CA,"74426",false
+Dorea formicigenerans,Dorea,DF,"39486",false
+Methanobrevibacter smithii,Methanobrevibacter,MS,"521002",false
