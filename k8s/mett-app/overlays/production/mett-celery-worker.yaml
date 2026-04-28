@@ -24,7 +24,7 @@ spec:
             claimName: mett-pyhmmer-pvc-prod
       containers:
         - name: mett-celery-worker-prod
-          image: quay.io/microbiome-informatics/mett-dataportal-api
+          image: dockerhub.ebi.ac.uk/microbiome-informatics/containers/mett-dataportal-api
           volumeMounts:
             - name: pyhmmer-data
               mountPath: /data/pyhmmer
@@ -149,7 +149,7 @@ spec:
                   name: mett-elasticsearch-credentials-prod
                   key: ELASTIC_PASSWORD
       imagePullSecrets:
-        - name: quay-pull-secret
+        - name: containers-pull-secret
 #      affinity:
 #        nodeAffinity:
 #          requiredDuringSchedulingIgnoredDuringExecution:

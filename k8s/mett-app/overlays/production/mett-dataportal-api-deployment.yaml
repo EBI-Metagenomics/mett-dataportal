@@ -27,7 +27,7 @@ spec:
           persistentVolumeClaim:
             claimName: mett-pyhmmer-pvc-prod
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-api
+        - image: dockerhub.ebi.ac.uk/microbiome-informatics/containers/mett-dataportal-api
           imagePullPolicy: Always
           name: mett-dataportal-api-prod
           command: ["python"]
@@ -198,7 +198,7 @@ spec:
             successThreshold: 1
             failureThreshold: 3
       imagePullSecrets:
-        - name: quay-pull-secret
+        - name: containers-pull-secret
 
 ---
 

@@ -16,7 +16,7 @@ spec:
         app: mett-dataportal-app-dev
     spec:
       containers:
-        - image: quay.io/microbiome-informatics/mett-dataportal-react-app:v0.0.145
+        - image: dockerhub.ebi.ac.uk/microbiome-informatics/containers/mett-dataportal-react-app
           imagePullPolicy: Always
           name: mett-dataportal-app-dev
           env:
@@ -92,7 +92,7 @@ spec:
             successThreshold: 1
             failureThreshold: 3
       imagePullSecrets:
-        - name: quay-pull-secret
+        - name: containers-pull-secret
 
 ---
 
