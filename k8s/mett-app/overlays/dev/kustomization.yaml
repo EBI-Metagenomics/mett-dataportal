@@ -14,6 +14,6 @@ resources:
 
 images:
   - name: dockerhub.ebi.ac.uk/microbiome-informatics/containers/mett-dataportal-api
-    newTag: v0.0.217
+    newTag: v0.0.218
   - name: dockerhub.ebi.ac.uk/microbiome-informatics/containers/mett-dataportal-react-app
-    newTag: v0.0.217
+    newTag: v0.0.218

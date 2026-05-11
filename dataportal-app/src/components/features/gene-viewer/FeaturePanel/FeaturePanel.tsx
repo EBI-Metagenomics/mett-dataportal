@@ -9,6 +9,7 @@ import {ZOOM_LEVELS} from '../../../../utils/common/constants';
 import {VIEWPORT_SYNC_CONSTANTS} from '../../../../utils/gene-viewer';
 import {GeneFacetResponse} from '../../../../interfaces/Gene';
 import {compareFilterValues, normalizeFilterValue, normalizeFilterValues} from '../../../../utils/common/filterUtils';
+import {ALL_SECTION_IDS, DEFAULT_EXPANDED_SECTIONS, SectionId} from './constants';
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -23,12 +24,93 @@ interface FeaturePanelProps {
     facets?: GeneFacetResponse;
 }
 
+interface CollapsibleSectionProps {
+    title: string;
+    sectionId: SectionId;
+    expanded: boolean;
+    onToggle: (sectionId: SectionId) => void;
+    children: React.ReactNode;
+}
+
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
+    title,
+    sectionId,
+    expanded,
+    onToggle,
+    children,
+}) => {
+    const headerId = `feature-panel-section-header-${sectionId}`;
+    const contentId = `feature-panel-section-content-${sectionId}`;
+
+    const handleToggle = () => onToggle(sectionId);
+
+    return (
+        <div className={styles.section}>
+            <button
+                type="button"
+                id={headerId}
+                className={styles.sectionHeader}
+                onClick={handleToggle}
+                aria-expanded={expanded}
+                aria-controls={contentId}
+            >
+                <span
+                    className={`${styles.sectionChevron} ${expanded ? styles.sectionChevronExpanded : ''}`}
+                    aria-hidden="true"
+                >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                        <path
+                            d="M6 12L10 8L6 4"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+                </span>
+                <h4 className={styles.sectionTitle}>{title}</h4>
+            </button>
+            {expanded && (
+                <div
+                    id={contentId}
+                    role="region"
+                    aria-labelledby={headerId}
+                    className={styles.sectionBody}
+                >
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState, setLoading, activeTab, onSwitchToSearch, onToggleFacet, facets }) => {
     // Must call hooks before any early returns
     const [showPyhmmer, setShowPyhmmer] = useState(false);
+    const [expandedSections, setExpandedSections] = useState<Record<SectionId, boolean>>(
+        () => ({ ...DEFAULT_EXPANDED_SECTIONS })
+    );
     const { selectedLocusTag, seqId: viewportSeqId, start: viewportStart, end: viewportEnd } = useViewportSyncStore();
     // Subscribe to facetedFilters to ensure reactivity
     const facetedFilters = useFilterStore(state => state.facetedFilters);
+
+    const toggleSection = useCallback((sectionId: SectionId) => {
+        setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
+    }, []);
+
+    const setAllSections = useCallback((expanded: boolean) => {
+        setExpandedSections(
+            ALL_SECTION_IDS.reduce((acc, id) => {
+                acc[id] = expanded;
+                return acc;
+            }, {} as Record<SectionId, boolean>)
+        );
+    }, []);
+
+    const allExpanded = useMemo(
+        () => ALL_SECTION_IDS.every(id => expandedSections[id]),
+        [expandedSections]
+    );
     
     // Extract feature data - handle GeneMeta API response structure (must be before early return)
     const getFeatureData = (featureData: any) => {
@@ -508,15 +590,42 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
         );
     };
 
+    const hasAnnotations =
+        !!featureData.essentiality ||
+        featureData.pfam.length > 0 ||
+        featureData.interpro.length > 0 ||
+        featureData.kegg.length > 0 ||
+        featureData.cog.length > 0 ||
+        featureData.cogCategories.length > 0 ||
+        !!featureData.eggnog ||
+        !!featureData.hasAmr;
+
+    const hasOntology = featureData.ontologyTerms && featureData.ontologyTerms.length > 0;
+    const hasUnifire = !!featureData.ufProtRecFullname || featureData.ufOntologyTerms.length > 0;
+    const hasDbxref =
+        featureData.dbxref && Array.isArray(featureData.dbxref) && featureData.dbxref.length > 0;
+    const hasProtein = !!featureData.proteinSequence;
+
     return (
         <div className={styles.featurePanel}>
             <div className={styles.header}>
                 <h3>Feature Details</h3>
-                {onClose && (
-                    <button className={styles.closeButton} onClick={onClose}>
-                        ×
+                <div className={styles.headerActions}>
+                    <button
+                        type="button"
+                        className={styles.toggleAllButton}
+                        onClick={() => setAllSections(!allExpanded)}
+                        title={allExpanded ? 'Collapse all sections' : 'Expand all sections'}
+                        aria-label={allExpanded ? 'Collapse all sections' : 'Expand all sections'}
+                    >
+                        {allExpanded ? 'Collapse all' : 'Expand all'}
                     </button>
-                )}
+                    {onClose && (
+                        <button className={styles.closeButton} onClick={onClose} aria-label="Close panel">
+                            ×
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Show navigation button if gene is not in viewport */}
@@ -535,11 +644,15 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
 
             <div className={styles.content}>
                 {/* Core Details Section */}
-                <div className={styles.section}>
-                    <h4>Core Details</h4>
+                <CollapsibleSection
+                    title="Core Details"
+                    sectionId="core"
+                    expanded={expandedSections.core}
+                    onToggle={toggleSection}
+                >
                     <div className={styles.field}>
                         <label>Locus Tag:</label>
-                        <span 
+                        <span
                             className={selectedLocusTag === featureData.locusTag ? styles.highlightedLocusTag : ''}
                         >
                             {featureData.locusTag}
@@ -579,10 +692,14 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                             <span>{featureData.inference}</span>
                         </div>
                     )}
-                </div>
+                </CollapsibleSection>
 
-                <div className={styles.section}>
-                    <h4>Location</h4>
+                <CollapsibleSection
+                    title="Location"
+                    sectionId="location"
+                    expanded={expandedSections.location}
+                    onToggle={toggleSection}
+                >
                     <div className={styles.field}>
                         <label>Sequence ID:</label>
                         <span>{featureData.seqId}</span>
@@ -595,14 +712,16 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                         <label>Strand:</label>
                         <span>{featureData.strand > 0 ? 'Forward (+)' : 'Reverse (-)'}</span>
                     </div>
-                </div>
+                </CollapsibleSection>
 
                 {/* Annotations Section */}
-                {(featureData.essentiality || featureData.pfam.length > 0 || featureData.interpro.length > 0 || 
-                  featureData.kegg.length > 0 || featureData.cog.length > 0 || featureData.cogCategories.length > 0 ||
-                  featureData.eggnog) && (
-                    <div className={styles.section}>
-                        <h4>Annotations</h4>
+                {hasAnnotations && (
+                    <CollapsibleSection
+                        title="Annotations"
+                        sectionId="annotations"
+                        expanded={expandedSections.annotations}
+                        onToggle={toggleSection}
+                    >
                         {featureData.essentiality && (
                             <div className={styles.field}>
                                 <label>Essentiality Status:</label>
@@ -659,13 +778,17 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                 <span>{featureData.eggnog}</span>
                             </div>
                         )}
-                    </div>
+                    </CollapsibleSection>
                 )}
 
                 {/* Ontology Terms Section */}
-                {featureData.ontologyTerms && featureData.ontologyTerms.length > 0 && (
-                    <div className={styles.section}>
-                        <h4>Ontology Terms</h4>
+                {hasOntology && (
+                    <CollapsibleSection
+                        title={`Ontology Terms (${featureData.ontologyTerms.length})`}
+                        sectionId="ontology"
+                        expanded={expandedSections.ontology}
+                        onToggle={toggleSection}
+                    >
                         <div className={styles.field}>
                             <label>GO Terms:</label>
                             <div className={styles.linkList}>
@@ -677,7 +800,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                             {/*{goMatch ? (*/}
                                             {/*    renderExternalLink('GO', goMatch[1], ontologyId)*/}
                                             {/*) : (*/}
-                                                <span title={term.ontology_description}>{ontologyId}</span>
+                                            <span title={term.ontology_description}>{ontologyId}</span>
                                             {/*)}*/}
                                             {idx < Math.min(featureData.ontologyTerms.length - 1, 9) && ', '}
                                         </span>
@@ -688,13 +811,17 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </CollapsibleSection>
                 )}
 
                 {/* UniFire Annotations Section */}
-                {(featureData.ufProtRecFullname || featureData.ufOntologyTerms.length > 0) && (
-                    <div className={styles.section}>
-                        <h4>UniFire Annotations</h4>
+                {hasUnifire && (
+                    <CollapsibleSection
+                        title="UniFire Annotations"
+                        sectionId="unifire"
+                        expanded={expandedSections.unifire}
+                        onToggle={toggleSection}
+                    >
                         {featureData.ufProtRecFullname && (
                             <div className={styles.field}>
                                 <label>Protein Name:</label>
@@ -707,13 +834,17 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                 <span>{featureData.ufOntologyTerms.join(', ')}</span>
                             </div>
                         )}
-                    </div>
+                    </CollapsibleSection>
                 )}
 
                 {/* Database Cross-References Section */}
-                {featureData.dbxref && Array.isArray(featureData.dbxref) && featureData.dbxref.length > 0 && (
-                    <div className={styles.section}>
-                        <h4>Database Cross-References</h4>
+                {hasDbxref && (
+                    <CollapsibleSection
+                        title={`Database Cross-References (${featureData.dbxref.length})`}
+                        sectionId="dbxref"
+                        expanded={expandedSections.dbxref}
+                        onToggle={toggleSection}
+                    >
                         <div className={styles.field}>
                             {featureData.dbxref.map((ref: any, idx: number) => (
                                 <div key={idx} className={styles.dbxrefItem}>
@@ -721,19 +852,23 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </CollapsibleSection>
                 )}
 
                 {/* Protein Sequence Section */}
-                {featureData.proteinSequence && (
-                    <div className={styles.section}>
-                        <h4>Protein Sequence</h4>
+                {hasProtein && (
+                    <CollapsibleSection
+                        title="Protein Sequence"
+                        sectionId="protein"
+                        expanded={expandedSections.protein}
+                        onToggle={toggleSection}
+                    >
                         <div className={styles.sequenceContainer}>
                             <pre className={styles.sequence}>
                                 {featureData.proteinSequence}
                             </pre>
                         </div>
-                        
+
                         {/* PyHMMER Search Integration */}
                         <div className={styles.pyhmmerSection}>
                             {!showPyhmmer ? (
@@ -745,7 +880,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                 </button>
                             ) : (
                                 <div className={styles.pyhmmerContainer}>
-                                    <PyhmmerFeaturePanel 
+                                    <PyhmmerFeaturePanel
                                         proteinSequence={featureData.proteinSequence}
                                         isolateName={featureData.locusTag}
                                         product={featureData.product}
@@ -754,7 +889,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </CollapsibleSection>
                 )}
             </div>
         </div>

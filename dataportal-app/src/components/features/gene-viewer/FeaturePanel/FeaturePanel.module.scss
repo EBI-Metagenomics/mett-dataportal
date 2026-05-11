@@ -24,11 +24,41 @@
   }
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggleAllButton {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: background 0.2s, border-color 0.2s;
+  line-height: 1.2;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 1px;
+  }
+}
+
 .closeButton {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #666;
+  color: #ffffff;
   cursor: pointer;
   padding: 0;
   width: 30px;
@@ -39,8 +69,8 @@
   border-radius: 4px;
 
   &:hover {
-    background: #e9ecef;
-    color: #333;
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
   }
 }
 
@@ -52,16 +82,68 @@
 }
 
 .section {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  background: #ffffff;
+  overflow: hidden;
+}
 
-  h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: #495057;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  margin: 0;
+  background: #f1f3f5;
+  border: none;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #e9ecef;
   }
+
+  &:focus-visible {
+    outline: 2px solid #721E63;
+    outline-offset: -2px;
+  }
+
+  &[aria-expanded="true"] {
+    border-bottom-color: #e9ecef;
+  }
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  flex: 1;
+}
+
+.sectionChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  transition: transform 0.2s ease;
+  width: 14px;
+  height: 14px;
+}
+
+.sectionChevronExpanded {
+  transform: rotate(90deg);
+}
+
+.sectionBody {
+  padding: 0.6rem 0.6rem 0.4rem;
 }
 
 .field {
