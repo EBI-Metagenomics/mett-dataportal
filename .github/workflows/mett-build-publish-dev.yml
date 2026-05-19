@@ -11,6 +11,8 @@ env:
 jobs:
   # Dev build for Django API
   build-and-push-django-dev:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
@@ -43,6 +45,8 @@ jobs:
 
   # Dev build for React app
   build-and-push-react-dev:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code

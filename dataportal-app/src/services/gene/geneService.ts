@@ -134,7 +134,7 @@ export class GeneService extends BaseService {
         try {
             return await this.getWithRetry<GeneMeta>(`/genes/${locus_tag}`);
         } catch (error) {
-            console.error(`Error fetching gene with locus tag ${locus_tag}:`, error);
+            console.error("Error fetching gene with locus tag %s", locus_tag, error);
             throw error;
         }
     }

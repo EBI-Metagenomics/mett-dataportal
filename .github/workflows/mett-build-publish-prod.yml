@@ -11,6 +11,8 @@ env:
 jobs:
   # Job to build and push Django API image
   prod-build-and-push-django:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
@@ -36,6 +38,8 @@ jobs:
 
   # Job to build and push React app image
   prod-build-and-push-react:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code

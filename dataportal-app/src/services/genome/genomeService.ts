@@ -51,7 +51,7 @@ export class GenomeService extends BaseService {
             const rawResponse = await this.getWithRetry<GenomeMeta[]>("/genomes/by-isolate-names", params);
             return rawResponse.map(transformGenomeMeta);
         } catch (error) {
-            console.error(`Error fetching genome by isolate names ${isolateNames}:`, error);
+            console.error("Error fetching genome by isolate names %s", isolateNames, error);
             throw error;
         }
     }
