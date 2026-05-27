@@ -30,14 +30,18 @@ RUN ls -la /app/staticfiles/ninja/ || echo "Static files not found"
 # Final runtime image
 FROM python:3.13-slim
 
+RUN groupadd -r mett && useradd -r -g mett mett
+
 WORKDIR /app
 
-COPY --from=builder /app /app
+COPY --from=builder --chown=mett:mett /app /app
 
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/.venv/bin:$PATH"
+
+USER mett
 
 EXPOSE 8000
 

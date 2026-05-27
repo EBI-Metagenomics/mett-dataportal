@@ -243,13 +243,13 @@ pre-commit install
 Create a `.env` file in `dataportal_api/`:
 
 ```bash
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/mett_db
+# Database (do not embed credentials in DATABASE_URL — Gitleaks flags user:password URLs)
+DATABASE_URL=postgresql://localhost:5432/mett_db
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=mett_db
-POSTGRES_USER=user
-POSTGRES_PASSWORD=password
+POSTGRES_USER=your_db_user
+POSTGRES_PASSWORD=your_db_password
 
 # Elasticsearch
 ELASTICSEARCH_HOST=localhost
@@ -258,7 +258,6 @@ ELASTICSEARCH_SCHEME=http
 ES_INDEX_VERSION=2025.09.03
 
 # Django
-SECRET_KEY=your-secret-key-here
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 

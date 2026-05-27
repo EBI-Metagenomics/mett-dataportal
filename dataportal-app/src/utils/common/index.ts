@@ -6,4 +6,5 @@ export * from './tabSelection';
 export * from './transformer';
 export * from './urlHelpers';
 export * from './urlSync';
+export * from './safeFetch';
 export * from './homePageConstants';

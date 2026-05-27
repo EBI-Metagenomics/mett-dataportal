@@ -27,7 +27,9 @@ RUN PUBLIC_URL=$PUBLIC_URL \
 # Production stage
 FROM nginx:stable-alpine
 
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
+COPY --chown=nginx:nginx dataportal-app/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # Create a more comprehensive nginx configuration
 RUN echo 'server { \
@@ -65,14 +67,6 @@ RUN echo 'server { \
 
 EXPOSE 80
 
-CMD /bin/sh -c "\
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_API_BASE_URL_PLACEHOLDER|'\"\$VITE_API_BASE_URL\"'|g' {} + && \
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_ASSEMBLY_INDEXES_PATH_PLACEHOLDER|'\"\$VITE_ASSEMBLY_INDEXES_PATH\"'|g' {} + && \
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_GFF_INDEXES_PATH_PLACEHOLDER|'\"\$VITE_GFF_INDEXES_PATH\"'|g' {} + && \
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_BACINTERACTOME_SHINY_APP_URL_PLACEHOLDER|'\"\$VITE_BACINTERACTOME_SHINY_APP_URL\"'|g' {} + && \
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_PFAM_URL_PLACEHOLDER|'\"\$VITE_PFAM_URL\"'|g' {} + && \
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_INTERPRO_URL_PLACEHOLDER|'\"\$VITE_INTERPRO_URL\"'|g' {} + && \
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_KEGG_URL_PLACEHOLDER|'\"\$VITE_KEGG_URL\"'|g' {} + && \
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_COG_URL_PLACEHOLDER|'\"\$VITE_COG_URL\"'|g' {} + && \
-    find /usr/share/nginx/html/assets -type f -name '*.js' -exec sed -i 's|VITE_NETWORK_VIEW_ENABLED_PLACEHOLDER|'\"\${VITE_NETWORK_VIEW_ENABLED:-false}\"'|g' {} + && \
-    nginx -g 'daemon off;'"
+USER nginx
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

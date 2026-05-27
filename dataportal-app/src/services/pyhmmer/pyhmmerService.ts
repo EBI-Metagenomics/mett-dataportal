@@ -1,4 +1,5 @@
 import {API_BASE_URL} from '../../utils/common';
+import {assertAllowedApiUrl, assertSafePathSegment, fetchAllowedApi} from '../../utils/common/safeFetch';
 import {PYHMMER_CONSTANTS} from '../../utils/pyhmmer';
 import {
     PyhmmerDatabase,
@@ -177,10 +178,16 @@ export class PyhmmerService extends BaseService {
         try {
             console.log(`PyhmmerService.downloadResults: Downloading results for job ${jobId} in format ${format}`);
 
-            const url = `${API_BASE_URL}${API_BASE_RESULT}/${jobId}/download?format=${format}`;
+            const safeJobId = assertSafePathSegment(jobId, 'jobId');
+            const allowedFormats = ['tab', 'fasta', 'aligned_fasta'] as const;
+            if (!allowedFormats.includes(format)) {
+                throw new Error(`Invalid download format: ${format}`);
+            }
+            const url = `${API_BASE_URL}${API_BASE_RESULT}/${safeJobId}/download?format=${format}`;
+            assertAllowedApiUrl(url);
             console.log(`PyhmmerService.downloadResults: Download URL: ${url}`);
 
-            const response = await fetch(url);
+            const response = await fetchAllowedApi(url);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

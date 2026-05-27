@@ -10,6 +10,9 @@ spec:
   containers:
   - name: file-copier
     image: registry.k8s.io/e2e-test-images/busybox:1.29
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
     command: ["/bin/sh", "-c", "sleep 3600"]
     volumeMounts:
     - mountPath: /data/pyhmmer
