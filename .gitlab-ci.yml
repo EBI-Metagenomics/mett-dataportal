@@ -19,6 +19,8 @@ spec:
 stages:
   - prepare
   - build
+  - test
+  - secret-detection
 
 variables:
   BACKEND_DOCKERFILE: dataportal_api/Dockerfile
@@ -68,3 +70,16 @@ build-and-push-react-app:
     - docker build -t "${FRONTEND_IMAGE}" -f "${FRONTEND_DOCKERFILE}" "${FRONTEND_CONTEXT}"
     - docker push "${FRONTEND_IMAGE}"
     - docker rmi "${FRONTEND_IMAGE}" || true
+sast:
+  variables:
+    SAST_EXCLUDED_PATHS: data-generators, postman
+  stage: test
+include:
+- template: Security/SAST.gitlab-ci.yml
+- template: Security/SAST-IaC.latest.gitlab-ci.yml
+- template: Security/Dependency-Scanning.gitlab-ci.yml
+- template: Jobs/Container-Scanning.gitlab-ci.yml
+- template: Security/Secret-Detection.gitlab-ci.yml
+secret_detection:
+  stage: secret-detection
+
