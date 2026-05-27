@@ -243,7 +243,7 @@ pre-commit install
 Create a `.env` file in `dataportal_api/`:
 
 ```bash
-# Database (do not embed credentials in DATABASE_URL — Gitleaks flags user:password URLs)
+# Database (set credentials via POSTGRES_* vars, not in DATABASE_URL)
 DATABASE_URL=postgresql://localhost:5432/mett_db
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432

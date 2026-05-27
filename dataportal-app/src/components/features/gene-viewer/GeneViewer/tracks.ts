@@ -2,7 +2,7 @@ import {GenomeMeta} from "../../../../interfaces/Genome";
 import {JBROWSE_TRACK_HEIGHTS} from "../../../../utils/common/constants";
 
 const getTracks
-        = (genomeMeta: GenomeMeta, gffBaseUrl: string, apiUrl: string, includeEssentiality: boolean) => {
+        = (genomeMeta: GenomeMeta, gffBaseUrl: string, includeEssentiality: boolean) => {
         const tracks = [];
 
         // Structural Annotation Track
@@ -18,7 +18,7 @@ const getTracks
                 gffGzLocation: {
                     uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz`,
                 },
-                apiUrl: apiUrl,
+                isolateName: genomeMeta.isolate_name,
                 isTypeStrain: genomeMeta.type_strain,
                 includeEssentiality: includeEssentiality,
                 speciesName: genomeMeta.species_scientific_name || genomeMeta.species_acronym,

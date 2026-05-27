@@ -1,5 +1,6 @@
 import {API_BASE_URL} from '../../utils/common';
-import {assertAllowedApiUrl, assertSafePathSegment, fetchAllowedApi} from '../../utils/common/safeFetch';
+import apiInstance from '../common/apiInstance';
+import {assertSafePathSegment} from '../../utils/common/safeFetch';
 import {PYHMMER_CONSTANTS} from '../../utils/pyhmmer';
 import {
     PyhmmerDatabase,
@@ -183,16 +184,15 @@ export class PyhmmerService extends BaseService {
             if (!allowedFormats.includes(format)) {
                 throw new Error(`Invalid download format: ${format}`);
             }
-            const url = `${API_BASE_URL}${API_BASE_RESULT}/${safeJobId}/download?format=${format}`;
-            assertAllowedApiUrl(url);
-            console.log(`PyhmmerService.downloadResults: Download URL: ${url}`);
+            const path = `${API_BASE_RESULT}/${safeJobId}/download`;
+            console.log(`PyhmmerService.downloadResults: Download path: ${path}?format=${format}`);
 
-            const response = await fetchAllowedApi(url);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            const response = await apiInstance.get(path, {
+                params: { format },
+                responseType: 'blob',
+            });
 
-            const blob = await response.blob();
+            const blob = response.data as Blob;
             console.log(`PyhmmerService.downloadResults: Successfully downloaded ${blob.size} bytes`);
             return blob;
         } catch (error) {

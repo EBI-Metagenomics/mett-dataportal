@@ -9,7 +9,7 @@ export default class EnhancedGeneFeatureAdapter extends BaseFeatureDataAdapter {
     static type = 'EnhancedGeneFeatureAdapter';
 
     private gffLocation: string;
-    private apiUrl: string;
+    private isolateName: string;
     private isTypeStrain: boolean;
     private includeEssentiality: boolean;
     private speciesName?: string;
@@ -26,7 +26,7 @@ export default class EnhancedGeneFeatureAdapter extends BaseFeatureDataAdapter {
     constructor(config: any) {
         super(config);
         this.gffLocation = config.gffGzLocation.value.uri;
-        this.apiUrl = config.apiUrl.value;
+        this.isolateName = config.isolateName?.value ?? config.apiUrl?.value ?? '';
         this.isTypeStrain = config.isTypeStrain.value;
         this.includeEssentiality = config.includeEssentiality.value;
         this.speciesName = config.speciesName?.value || config.speciesName;
@@ -63,7 +63,7 @@ export default class EnhancedGeneFeatureAdapter extends BaseFeatureDataAdapter {
             
             // Add essentiality data for feature coloring if this is a type strain
             if (this.isTypeStrain && this.includeEssentiality) {
-                const essentialityData = await GeneService.fetchEssentialityData(this.apiUrl, region.refName);
+                const essentialityData = await GeneService.fetchEssentialityData(this.isolateName, region.refName);
                 return FeatureProcessor.mergeAnnotationsWithEssentiality(flattenedFeatures, essentialityData);
             }
             

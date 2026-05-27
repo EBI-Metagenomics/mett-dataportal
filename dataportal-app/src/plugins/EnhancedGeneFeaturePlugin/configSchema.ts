@@ -12,6 +12,11 @@ const enhancedGeneFeatureAdapterConfigSchema = ConfigurationSchema('EnhancedGene
             type: 'fileLocation',
             defaultValue: {uri: '/path/to/my.gff.gz', locationType: 'UriLocation'},
         },
+        isolateName: {
+            type: 'string',
+            defaultValue: '',
+        },
+        /** @deprecated use isolateName */
         apiUrl: {
             type: 'string',
             defaultValue: '',

@@ -28,20 +28,19 @@ RUN uv run python manage.py collectstatic --noinput --verbosity=2
 RUN ls -la /app/staticfiles/ninja/ || echo "Static files not found"
 
 # Final runtime image
-FROM python:3.13-slim
+FROM python:3.13-slim AS runtime
 
-RUN groupadd -r mett && useradd -r -g mett mett
+RUN groupadd -r mett && useradd -r -g mett -u 10001 mett
 
 WORKDIR /app
 
 COPY --from=builder --chown=mett:mett /app /app
 
-# Set environment variables
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
 
-USER mett
+USER 10001
 
 EXPOSE 8000
 

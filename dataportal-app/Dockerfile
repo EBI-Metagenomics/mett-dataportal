@@ -25,11 +25,15 @@ RUN PUBLIC_URL=$PUBLIC_URL \
     npm run build
 
 # Production stage
-FROM nginx:stable-alpine
+FROM nginx:stable-alpine AS runtime
 
 COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
-COPY --chown=nginx:nginx dataportal-app/docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+COPY dataportal-app/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh \
+    && chown -R nginx:nginx /usr/share/nginx/html /docker-entrypoint.sh \
+    && chown -R nginx:nginx /var/cache/nginx /var/log/nginx /etc/nginx/conf.d \
+    && touch /var/run/nginx.pid \
+    && chown nginx:nginx /var/run/nginx.pid
 
 # Create a more comprehensive nginx configuration
 RUN echo 'server { \
@@ -63,10 +67,11 @@ RUN echo 'server { \
     add_header X-Frame-Options "SAMEORIGIN" always; \
     add_header X-Content-Type-Options "nosniff" always; \
     add_header X-XSS-Protection "1; mode=block" always; \
-}' > /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
+}' > /etc/nginx/conf.d/default.conf \
+    && chown -R nginx:nginx /etc/nginx/conf.d/default.conf
 
 USER nginx
+
+EXPOSE 80
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

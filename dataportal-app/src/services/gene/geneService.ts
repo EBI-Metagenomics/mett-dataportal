@@ -3,7 +3,8 @@ import { Gene, GeneFacetResponse, GeneMeta, GeneProteinSeq, GeneSuggestion } fro
 import { PaginatedApiResponse } from "../../interfaces/ApiResponse";
 import { cacheResponse } from "../common/cachingDecorator";
 import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../../utils/common/constants";
-import { assertAllowedApiUrl, assertSafePathSegment, fetchAllowedApi } from "../../utils/common/safeFetch";
+import apiInstance from "../common/apiInstance";
+import { assertSafePathSegment } from "../../utils/common/safeFetch";
 
 export class GeneService extends BaseService {
     /**
@@ -153,19 +154,15 @@ export class GeneService extends BaseService {
         }
     }
 
-    @cacheResponse(60 * 60 * 1000, (apiUrl: string, refName: string) => `${apiUrl}:${refName}`) // Cache for 60 minutes, uses combined key
-    static async fetchEssentialityData(apiUrl: string, refName: string): Promise<Record<string, any>> {
+    @cacheResponse(60 * 60 * 1000, (isolateName: string, refName: string) => `${isolateName}:${refName}`)
+    static async fetchEssentialityData(isolateName: string, refName: string): Promise<Record<string, any>> {
         try {
-            assertAllowedApiUrl(apiUrl);
+            const safeIsolate = assertSafePathSegment(isolateName, 'isolateName');
             const safeRefName = assertSafePathSegment(refName, 'refName');
-            const requestUrl = `${apiUrl.replace(/\/$/, '')}/${safeRefName}`;
-            assertAllowedApiUrl(requestUrl);
-            const response = await fetchAllowedApi(requestUrl);
-            if (!response.ok) {
-                console.warn(`Failed to fetch essentiality data for ${refName}: ${response.status} ${response.statusText}`);
-                return {};
-            }
-            const responseData = await response.json();
+            const response = await apiInstance.get(
+                `/genomes/${safeIsolate}/essentiality/${safeRefName}`
+            );
+            const responseData = response.data;
             
             // Handle standardized API response format
             // Response now has format: { status: 'success', data: {...}, message: '...', timestamp: '...' }

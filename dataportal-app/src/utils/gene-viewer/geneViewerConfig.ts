@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import getAssembly from '@components/features/gene-viewer/GeneViewer/assembly';
 import getTracks from '@components/features/gene-viewer/GeneViewer/tracks';
 import getDefaultSessionConfig from '@components/features/gene-viewer/GeneViewer/defaultSessionConfig';
-import { getEssentialityDataUrl, ZOOM_LEVELS } from '../common/constants';
+import { ZOOM_LEVELS } from '../common/constants';
 import { GenomeMeta } from '../../interfaces/Genome';
 import { GeneMeta } from '../../interfaces/Gene';
 
@@ -37,7 +37,6 @@ export const useGeneViewerConfig = (
       ? getTracks(
           genomeMeta,
           import.meta.env.VITE_GFF_INDEXES_PATH || '',
-          getEssentialityDataUrl(genomeMeta.isolate_name),
           includeEssentiality
         )
       : [];

@@ -29,7 +29,7 @@ const useGeneViewerState = (
     assembly: any,
     tracks: Track[],
     defaultSession: any,
-    apiUrl: string,
+    isolateName: string,
     initKey?: number
 ) => {
     const [viewState, setViewState] = useState<ReturnType<typeof createViewState> | null>(null);
@@ -55,7 +55,7 @@ const useGeneViewerState = (
                     tracks: tracks.map((track) => ({
                         ...track,
                         visible: true,
-                        apiUrl: apiUrl,
+                        isolateName: isolateName,
                         display: {
                             ...track.display,
                             type: track.display?.type || 'LinearBasicDisplay'
