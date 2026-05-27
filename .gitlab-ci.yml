@@ -16,6 +16,13 @@ spec:
       default: ""
 ---
 
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/SAST-IaC.latest.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
 stages:
   - prepare
   - build
@@ -28,6 +35,7 @@ variables:
   FRONTEND_DOCKERFILE: dataportal-app/Dockerfile
   FRONTEND_CONTEXT: .
   IMAGE_TAG_INPUT: $[[ inputs.image_tag ]]
+  SAST_EXCLUDED_PATHS: "data-generators, postman"
 
 .build-image-rules: &build-image-rules
   rules:
@@ -70,16 +78,4 @@ build-and-push-react-app:
     - docker build -t "${FRONTEND_IMAGE}" -f "${FRONTEND_DOCKERFILE}" "${FRONTEND_CONTEXT}"
     - docker push "${FRONTEND_IMAGE}"
     - docker rmi "${FRONTEND_IMAGE}" || true
-sast:
-  variables:
-    SAST_EXCLUDED_PATHS: data-generators, postman
-  stage: test
-include:
-- template: Security/SAST.gitlab-ci.yml
-- template: Security/SAST-IaC.latest.gitlab-ci.yml
-- template: Security/Dependency-Scanning.gitlab-ci.yml
-- template: Jobs/Container-Scanning.gitlab-ci.yml
-- template: Security/Secret-Detection.gitlab-ci.yml
-secret_detection:
-  stage: secret-detection
 
