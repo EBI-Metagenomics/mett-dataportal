@@ -1,0 +1,70 @@
+#
+# Build and publish images to this project's GitLab container registry.
+#
+# Run pipeline (CI/CD → Pipelines → Run pipeline):
+#   1. Set "image_tag" (or leave empty to use the branch/tag you run from)
+#   2. Run build-and-push-api / build-and-push-react-app
+#
+
+spec:
+  inputs:
+    image_tag:
+      description: >
+        Docker image tag to publish (e.g. v0.0.9f). Leave empty to use the
+        current pipeline ref (branch name or git tag).
+      type: string
+      default: ""
+---
+
+stages:
+  - prepare
+  - build
+
+variables:
+  BACKEND_DOCKERFILE: dataportal_api/Dockerfile
+  BACKEND_CONTEXT: .
+  FRONTEND_DOCKERFILE: dataportal-app/Dockerfile
+  FRONTEND_CONTEXT: .
+  IMAGE_TAG_INPUT: $[[ inputs.image_tag ]]
+
+.build-image-rules: &build-image-rules
+  rules:
+    - when: manual
+
+.docker-build:
+  <<: *build-image-rules
+  before_script:
+    - |
+      _tag="$(printf '%s' "${IMAGE_TAG_INPUT}" | tr -d '[:space:]')"
+      if [ -z "${_tag}" ]; then
+        if [ -n "${CI_COMMIT_TAG:-}" ]; then
+          _tag="${CI_COMMIT_TAG}"
+        else
+          _tag="${CI_COMMIT_REF_NAME}"
+        fi
+      fi
+      export IMAGE_TAG="$(printf '%s' "${_tag}" | tr -d '[:space:]')"
+      export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/mett-dataportal-api:${IMAGE_TAG}"
+      export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/mett-dataportal-react-app:${IMAGE_TAG}"
+      echo "Using image tag: ${IMAGE_TAG}"
+      echo "Backend:  ${BACKEND_IMAGE}"
+      echo "Frontend: ${FRONTEND_IMAGE}"
+    - echo "${CI_JOB_TOKEN}" | docker login "${CI_REGISTRY}" -u "${CI_REGISTRY_USER}" --password-stdin
+  after_script:
+    - docker logout "${CI_REGISTRY}" || true
+
+build-and-push-api:
+  extends: .docker-build
+  stage: build
+  script:
+    - docker build -t "${BACKEND_IMAGE}" -f "${BACKEND_DOCKERFILE}" "${BACKEND_CONTEXT}"
+    - docker push "${BACKEND_IMAGE}"
+    - docker rmi "${BACKEND_IMAGE}" || true
+
+build-and-push-react-app:
+  extends: .docker-build
+  stage: build
+  script:
+    - docker build -t "${FRONTEND_IMAGE}" -f "${FRONTEND_DOCKERFILE}" "${FRONTEND_CONTEXT}"
+    - docker push "${FRONTEND_IMAGE}"
+    - docker rmi "${FRONTEND_IMAGE}" || true
