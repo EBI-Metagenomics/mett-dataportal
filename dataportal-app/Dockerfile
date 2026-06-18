@@ -37,7 +37,7 @@ RUN chmod +x /docker-entrypoint.sh \
 
 # Create a more comprehensive nginx configuration
 RUN echo 'server { \
-    listen 80; \
+    listen 8000; \
     server_name localhost; \
     root /usr/share/nginx/html; \
     index index.html; \
@@ -72,6 +72,6 @@ RUN echo 'server { \
 
 USER nginx
 
-EXPOSE 80
+EXPOSE 8000
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

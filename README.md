@@ -317,7 +317,7 @@ docker build -t mett-dataportal-app:latest -f dataportal-app/Dockerfile .
 docker run --rm -it -p 8000:8000 mett-dataportal:latest
 
 # Frontend
-docker run --rm -it -p 3000:80 mett-dataportal-app:latest
+docker run --rm -it -p 3000:8000 mett-dataportal-app:latest
 ```
 
 #### Docker Compose (Recommended)
