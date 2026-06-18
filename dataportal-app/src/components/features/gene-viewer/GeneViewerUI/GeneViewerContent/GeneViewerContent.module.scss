@@ -1,13 +1,50 @@
 .jbrowseViewer {
+  position: relative;
   width: 100%;
   max-width: none;
-  // Let JBrowse determine its own height based on track configurations
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .jbrowseContainer {
   width: 100%;
   max-width: none;
-  // Let JBrowse determine its own height based on track configurations
+  height: 100%;
+  min-height: 0;
+}
+
+/* Suppress JBrowse app view shell controls (hamburger, minimize, close). */
+.jbrowseContainer :global([data-testid='view_menu_icon']),
+.jbrowseContainer :global([data-testid='close_view']),
+.jbrowseContainer :global([data-testid='minimize_view']) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* JBrowse app-core ViewContainer uses margin: theme.spacing(0.5) (4px). */
+.jbrowseContainer :global(.MuiPaper-elevation12) {
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Align JBrowse view header strip with the custom feature panel header (28px). */
+.jbrowseContainer :global(.MuiPaper-elevation12 > header),
+.jbrowseContainer :global(.MuiPaper-elevation12 > .MuiToolbar-root) {
+  min-height: 28px !important;
+  height: 28px !important;
+  max-height: 28px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+}
+
+/* Hide per-track close buttons on track labels. */
+.jbrowseContainer :global(button[title='close this track']) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 // Gene highlighting is now handled by JBrowse's JEXL expressions in tracks.ts 

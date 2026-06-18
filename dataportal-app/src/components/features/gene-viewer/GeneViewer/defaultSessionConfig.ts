@@ -44,6 +44,7 @@ const getDefaultSessionConfig = (
                 minimized: false,
                 type: 'LinearGenomeView',
                 hideHeader: true,
+                closable: false,
                 configuration: {
                     // Disable header and feature details
                     header: {

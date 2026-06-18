@@ -15,7 +15,6 @@ type ViewModel = ReturnType<typeof createViewState>;
 
 interface FeaturePanelProps {
     feature: any | null;
-    onClose?: () => void;
     viewState?: ViewModel;
     setLoading?: React.Dispatch<React.SetStateAction<boolean>>;
     activeTab?: 'search' | 'sync' | 'network';
@@ -84,7 +83,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     );
 };
 
-const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState, setLoading, activeTab, onSwitchToSearch, onToggleFacet, facets }) => {
+const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoading, activeTab, onSwitchToSearch, onToggleFacet, facets }) => {
     // Must call hooks before any early returns
     const [showPyhmmer, setShowPyhmmer] = useState(false);
     const [expandedSections, setExpandedSections] = useState<Record<SectionId, boolean>>(
@@ -265,8 +264,24 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
     if (!feature) {
         return (
             <div className={styles.featurePanel}>
-                <div className={styles.emptyState}>
-                    <p>Click on a gene feature in the viewer to see details</p>
+                <div className={styles.header}>
+                    <h3>Feature Details</h3>
+                    <div className={styles.headerActions}>
+                        <button
+                            type="button"
+                            className={styles.toggleAllButton}
+                            onClick={() => setAllSections(!allExpanded)}
+                            title={allExpanded ? 'Collapse all sections' : 'Expand all sections'}
+                            aria-label={allExpanded ? 'Collapse all sections' : 'Expand all sections'}
+                        >
+                            {allExpanded ? 'Collapse all' : 'Expand all'}
+                        </button>
+                    </div>
+                </div>
+                <div className={styles.content}>
+                    <div className={styles.emptyState}>
+                        <p>Click on a gene feature in the viewer to see details</p>
+                    </div>
                 </div>
             </div>
         );
@@ -620,11 +635,6 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, onClose, viewState
                     >
                         {allExpanded ? 'Collapse all' : 'Expand all'}
                     </button>
-                    {onClose && (
-                        <button className={styles.closeButton} onClick={onClose} aria-label="Close panel">
-                            ×
-                        </button>
-                    )}
                 </div>
             </div>
 

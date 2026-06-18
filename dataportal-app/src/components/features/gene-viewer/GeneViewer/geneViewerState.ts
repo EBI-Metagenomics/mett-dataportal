@@ -98,6 +98,11 @@ const useGeneViewerState = (
                         session.addWidget = function() {
                             return undefined;
                         };
+
+                        // Prevent closing the sole embedded view via app-core ViewHeader.
+                        session.removeView = function() {
+                            return undefined;
+                        };
                     }
                 } catch (error) {
                     console.warn('Failed to override widget methods:', error);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef} from 'react';
 import {JBrowseApp} from "@jbrowse/react-app2";
 import styles from './GeneViewerContent.module.scss';
 import {GeneService} from '../../../../../services/gene';
@@ -42,14 +42,36 @@ const isLikelyGeneId = (rawId: string | null): boolean => {
     return true;
 };
 
+function hideEmbeddedChrome(element: HTMLElement) {
+    element.style.cssText =
+        'display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;';
+    element.setAttribute('aria-hidden', 'true');
+}
+
+/** JBrowse app-core ViewHeader / ViewMenu test ids (see @jbrowse/app-core/ui/App/ViewHeader.js). */
+const HIDDEN_JBROWSE_VIEW_CONTROL_TEST_IDS = ['view_menu_icon', 'close_view', 'minimize_view'] as const;
+
+function hideJBrowseViewChrome(container: HTMLElement | null) {
+    if (!container) return;
+    for (const testId of HIDDEN_JBROWSE_VIEW_CONTROL_TEST_IDS) {
+        container.querySelectorAll(`[data-testid="${testId}"]`).forEach(el => {
+            hideEmbeddedChrome(el as HTMLElement);
+        });
+    }
+}
+
 const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
     viewState,
     onRefreshTracks,
     onFeatureSelect,
 }) => {
+    const containerRef = useRef<HTMLDivElement | null>(null);
+
     // Hide the main JBrowse menu bar (FILE, ADD, TOOLS, HELP) and feature panel
     React.useEffect(() => {
         const hideMenuBarAndFeaturePanel = () => {
+            hideJBrowseViewChrome(containerRef.current);
+
             // Find the "File" button which is part of the main menu bar
             const buttons = Array.from(document.querySelectorAll('button[data-testid="dropDownMenuButton"]'));
             const fileButton = buttons.find(btn => btn.textContent?.includes('File'));
@@ -161,6 +183,7 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
         
         const handleFeatureClick = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
+            if (!containerRef.current?.contains(target)) return;
             const featureElement = target.closest('[data-testid]') as HTMLElement;
             
             if (!featureElement) {
@@ -257,6 +280,7 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
         // Handle double-click to prevent JBrowse's default feature drawer
         const handleDoubleClick = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
+            if (!containerRef.current?.contains(target)) return;
             const featureElement = target.closest('[data-testid]') as HTMLElement;
             
             if (featureElement) {
@@ -332,7 +356,7 @@ const GeneViewerContent: React.FC<GeneViewerContentProps> = ({
 
     return (
         <div className={styles.jbrowseViewer}>
-            <div className={styles.jbrowseContainer}>
+            <div ref={containerRef} className={styles.jbrowseContainer}>
                 <JBrowseApp viewState={viewState}/>
             </div>
         </div>

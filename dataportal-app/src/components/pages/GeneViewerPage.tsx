@@ -273,11 +273,6 @@ const GeneViewerPage: React.FC = () => {
         }
     }, [viewState, geneViewerData]);
 
-    // Handle closing the feature panel
-    const handleCloseFeaturePanel = useCallback(() => {
-        setSelectedFeature(null);
-    }, []);
-
     const handleError = useCallback((error: Error, errorInfo: React.ErrorInfo) => {
         console.error('GeneViewerPage error:', error, errorInfo);
     }, []);
@@ -508,7 +503,6 @@ const GeneViewerPage: React.FC = () => {
                                 <div className={styles.rightColumn}>
                             <FeaturePanel 
                                 feature={selectedFeature}
-                                onClose={handleCloseFeaturePanel}
                                 viewState={viewState || undefined}
                                 setLoading={geneViewerData.setLoading}
                                 activeTab={activeTab}
