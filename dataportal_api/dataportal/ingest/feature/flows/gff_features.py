@@ -3,7 +3,7 @@ import tempfile
 import os
 from dataportal.ingest.feature.flows.base import Flow
 from dataportal.ingest.feature.sources import ftp_connect, load_protein_seqs
-from dataportal.ingest.feature.parsing import parse_dbxref
+from dataportal.ingest.feature.parsing import parse_dbxref, parse_gene_gff_annotations
 from dataportal.ingest.utils import species_name_for_isolate, strain_prefix
 from dataportal.models import FeatureDocument  # your ES DSL document
 
@@ -122,9 +122,7 @@ class GFFGenes(Flow):
                         else []
                     )
                     uf_prot_rec_fullname = attr.get("uf_prot_rec_fullname")
-                    dbcan_prot_family = [
-                        x for x in attr.get("dbcan_prot_family", "").split("|") if x
-                    ]
+                    gff_annotations = parse_gene_gff_annotations(attr)
 
                     doc = FeatureDocument(
                         meta={"id": locus_tag},
@@ -154,10 +152,7 @@ class GFFGenes(Flow):
                         dbxref=dbxref,
                         ec_number=attr.get("eC_number"),
                         uf_prot_rec_ecnumber=attr.get("uf_prot_rec_ecnumber"),
-                        dbcan_prot_type=attr.get("dbcan_prot_type"),
-                        dbcan_prot_family=dbcan_prot_family,
-                        substrate_dbcan_pul=attr.get("substrate_dbcan-pul"),
-                        substrate_dbcan_sub=attr.get("substrate_dbcan-sub"),
+                        **gff_annotations,
                         cog_id=[cog_id] if cog_id else [],
                         cog_funcats=[x for x in attr.get("cog", "").split(",") if x],
                         protein_sequence=prot_seqs.get(locus_tag, ""),

@@ -45,6 +45,9 @@ GENE_RESPONSE_EXAMPLE = {
     "gene_name": "dnaA",
     "alias": ["BACUNI_01739"],
     "product": "Chromosomal replication initiator protein DnaA",
+    "product_source": "Prokka",
+    "start_position": 1,
+    "end_position": 1386,
     "seq_id": "contig_1",
     "isolate_name": "BU_ATCC8492",
     "species_scientific_name": "Bacteroides uniformis",
@@ -52,17 +55,24 @@ GENE_RESPONSE_EXAMPLE = {
     "uniprot_id": "A7V2E8",
     "essentiality": "essential",
     "cog_funcats": ["L"],
+    "cog_id": ["COG0593"],
     "pfam": ["PF00308", "PF08299", "PF11638"],
     "interpro": [
         "IPR001957",
         "IPR010921",
         "IPR013159",
-        "IPR013317",
-        "IPR020591",
-        "IPR024633",
-        "IPR027417",
-        "IPR038454",
     ],
+    "ec_number": None,
+    "dbxref": [{"db": "UniProt", "ref": "A7V2E8"}],
+    "eggnog": None,
+    "inference": "ab initio prediction:Prodigal:002006",
+    "ontology_terms": [
+        {"ontology_type": "GO", "ontology_id": "GO:0006270", "ontology_description": None}
+    ],
+    "uf_ontology_terms": ["GO:0003688", "GO:0005524"],
+    "uf_prot_rec_fullname": "Chromosomal replication initiator protein DnaA",
+    "uf_keyword": ["ATP-binding", "DNA-binding", "Cytoplasm"],
+    "uf_gene_name": "dnaA",
     "amr": [],
     "has_amr_info": False,
     "has_proteomics": True,
@@ -70,6 +80,12 @@ GENE_RESPONSE_EXAMPLE = {
     "has_mutant_growth": False,
     "has_reactions": False,
     "feature_type": "gene",
+    "unifire": {
+        "gene_name": "dnaA",
+        "keywords": ["ATP-binding", "DNA-binding", "Cytoplasm"],
+        "protein_fullname": "Chromosomal replication initiator protein DnaA",
+        "ontology_terms": ["GO:0003688", "GO:0005524"],
+    },
 }
 
 GET_ALL_GENES_QUERY_EXAMPLE = {

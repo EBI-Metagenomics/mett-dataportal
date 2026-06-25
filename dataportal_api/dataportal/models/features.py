@@ -78,6 +78,15 @@ class FeatureDocument(Document):
     has_amr_info = Boolean()
     uf_ontology_terms = Keyword(multi=True)
     uf_prot_rec_fullname = Text(fields={"keyword": Keyword()})
+    uf_keyword = Keyword(multi=True)
+    uf_gene_name = Text(fields={"keyword": Keyword()})
+    uf_gene_name_synonym = Text(fields={"keyword": Keyword()})
+    uf_prot_rec_shortname = Text(fields={"keyword": Keyword()})
+    uf_prot_alt_fullname = Text(fields={"keyword": Keyword()})
+    uf_prot_alt_shortname = Text(fields={"keyword": Keyword()})
+    uf_prot_alt_ecnumber = Keyword()
+    uf_chebi = Keyword(multi=True)
+    uf_pirsr_cofactor = Text(fields={"keyword": Keyword()})
 
     dbxref = Nested(properties={"db": Keyword(), "ref": Keyword()})
 
@@ -89,6 +98,23 @@ class FeatureDocument(Document):
     dbcan_prot_family = Keyword(multi=True)
     substrate_dbcan_pul = Text(fields={"keyword": Keyword()})
     substrate_dbcan_sub = Text(fields={"keyword": Keyword()})
+
+    # Biosynthetic gene cluster annotations
+    gecco_bgc_type = Keyword()
+    nearest_mibig = Keyword()
+    nearest_mibig_class = Keyword()
+    antismash_bgc_function = Text(fields={"keyword": Keyword()})
+
+    # Mobilome annotations
+    mge_id = Keyword()
+    mge_types = Keyword(multi=True)
+
+    # Defense system annotations
+    defense_finder_type = Keyword()
+    defense_finder_subtype = Keyword()
+
+    extra_copy_number = Integer()
+    note = Text(fields={"keyword": Keyword(ignore_above=512)})
 
     has_essentiality = Boolean()  # flag indicating if essentiality data is available
     essentiality = Keyword(normalizer=lowercase_normalizer)

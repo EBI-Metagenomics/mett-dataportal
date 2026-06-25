@@ -12,6 +12,7 @@ export type SectionId =
     | 'annotations'
     | 'ontology'
     | 'unifire'
+    | 'specialized'
     | 'dbxref'
     | 'protein';
 
@@ -24,6 +25,7 @@ export const ALL_SECTION_IDS: readonly SectionId[] = [
     'annotations',
     'ontology',
     'unifire',
+    'specialized',
     'dbxref',
     'protein',
 ] as const;
@@ -37,6 +39,7 @@ export const DEFAULT_EXPANDED_SECTIONS: Record<SectionId, boolean> = {
     annotations: false,
     ontology: false,
     unifire: false,
+    specialized: false,
     dbxref: false,
     protein: false,
 };

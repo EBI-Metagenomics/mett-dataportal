@@ -10,6 +10,7 @@ import {VIEWPORT_SYNC_CONSTANTS} from '../../../../utils/gene-viewer';
 import {GeneFacetResponse} from '../../../../interfaces/Gene';
 import {compareFilterValues, normalizeFilterValue, normalizeFilterValues} from '../../../../utils/common/filterUtils';
 import {ALL_SECTION_IDS, DEFAULT_EXPANDED_SECTIONS, SectionId} from './constants';
+import {mapGeneMetaToFeatureData} from './mapGeneMetaToFeatureData';
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -111,100 +112,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
         [expandedSections]
     );
     
-    // Extract feature data - handle GeneMeta API response structure (must be before early return)
-    const getFeatureData = (featureData: any) => {
-        if (!featureData) {
-            return {
-                locusTag: 'N/A',
-                gene: '',
-                product: 'N/A',
-                alias: [],
-                start: 0,
-                end: 0,
-                strand: 0,
-                seqId: 'N/A',
-                essentiality: '',
-                uniprotId: '',
-                pfam: [],
-                interpro: [],
-                kegg: [],
-                cog: [],
-                cogCategories: [],
-                dbxref: null,
-                inference: '',
-                productSource: '',
-                eggnog: '',
-                ontologyTerms: [],
-                ecNumber: '',
-                ufKeyword: [],
-                ufOntologyTerms: [],
-                ufGeneName: '',
-                ufProtRecFullname: '',
-                proteinSequence: '',
-                isolateName: '',
-                speciesName: '',
-            };
-        }
-        
-        // The feature comes from GeneService API which returns GeneMeta structure
-        const data = featureData?.data || featureData;
-        
-        
-        return {
-            // Basic info - GeneMeta uses gene_name, not gene
-            locusTag: data?.locus_tag || 'N/A',
-            gene: data?.gene_name || data?.gene || '',
-            product: data?.product || 'N/A',
-            alias: Array.isArray(data?.alias) ? data.alias : (data?.alias ? [data.alias] : []),
-            
-            // Location info - GeneMeta uses start_position/end_position
-            start: data?.start_position || data?.start || 0,
-            end: data?.end_position || data?.end || 0,
-            strand: data?.strand || 0,
-            seqId: data?.seq_id || 'N/A',
-            
-            // Annotation info
-            essentiality: data?.essentiality || '',
-            uniprotId: data?.uniprot_id || '',
-            
-            // Arrays - keep as arrays for link generation, normalize and deduplicate values
-            pfam: Array.isArray(data?.pfam) ? normalizeFilterValues(data.pfam) as string[] : (data?.pfam ? normalizeFilterValues([data.pfam]) as string[] : []),
-            interpro: Array.isArray(data?.interpro) ? normalizeFilterValues(data.interpro) as string[] : (data?.interpro ? normalizeFilterValues([data.interpro]) as string[] : []),
-            kegg: Array.isArray(data?.kegg) ? normalizeFilterValues(data.kegg) as string[] : (data?.kegg ? normalizeFilterValues([data.kegg]) as string[] : []),
-            cog: Array.isArray(data?.cog_id) ? normalizeFilterValues(data.cog_id) as string[] : (data?.cog_id ? normalizeFilterValues([data.cog_id]) as string[] : []),
-            cogCategories: Array.isArray(data?.cog_funcats) ? normalizeFilterValues(data.cog_funcats) as string[] : (data?.cog_funcats ? normalizeFilterValues([data.cog_funcats]) as string[] : []),
-            
-            // AMR info
-            amr: data?.amr || null,
-            hasAmr: data?.has_amr_info || false,
-            
-            // Additional metadata fields
-            dbxref: data?.dbxref || null,
-            inference: data?.inference || '',
-            productSource: data?.product_source || '',
-            eggnog: data?.eggnog || '',
-            
-            // Ontology terms - handle nested structure from Elasticsearch
-            ontologyTerms: Array.isArray(data?.ontology_terms) 
-                ? data.ontology_terms 
-                : [],
-            
-            ecNumber: data?.ec_number || '',
-            
-            // Unifire fields (uf_*) - from UniFire annotation system
-            ufKeyword: Array.isArray(data?.uf_keyword) ? data.uf_keyword : [],
-            ufOntologyTerms: Array.isArray(data?.uf_ontology_terms) ? data.uf_ontology_terms : [],
-            ufGeneName: data?.uf_gene_name || '',
-            ufProtRecFullname: data?.uf_prot_rec_fullname || '',
-            
-            // Other fields
-            proteinSequence: data?.protein_sequence || '',
-            isolateName: data?.isolate_name || '',
-            speciesName: data?.species_scientific_name || '',
-        };
-    };
-
-    const featureData = getFeatureData(feature);
+    const featureData = useMemo(() => mapGeneMetaToFeatureData(feature), [feature]);
 
     // Check if the selected gene is currently visible in the viewport (must be before early return)
     // Gene is "out of view" if it does NOT overlap with the current viewport range
@@ -613,10 +521,38 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
         featureData.cog.length > 0 ||
         featureData.cogCategories.length > 0 ||
         !!featureData.eggnog ||
-        !!featureData.hasAmr;
+        !!featureData.hasAmr ||
+        !!featureData.ecNumber ||
+        !!featureData.ufProtRecEcnumber ||
+        !!featureData.ufProtAltEcnumber ||
+        !!featureData.dbcanProtType ||
+        featureData.dbcanProtFamily.length > 0 ||
+        !!featureData.substrateDbcanPul ||
+        !!featureData.substrateDbcanSub ||
+        featureData.ufChebi.length > 0 ||
+        !!featureData.ufPirsrCofactor;
 
     const hasOntology = featureData.ontologyTerms && featureData.ontologyTerms.length > 0;
-    const hasUnifire = !!featureData.ufProtRecFullname || featureData.ufOntologyTerms.length > 0;
+    const hasUnifire =
+        !!featureData.ufProtRecFullname ||
+        !!featureData.ufGeneName ||
+        !!featureData.ufGeneNameSynonym ||
+        !!featureData.ufProtRecShortname ||
+        !!featureData.ufProtAltFullname ||
+        !!featureData.ufProtAltShortname ||
+        featureData.ufKeyword.length > 0 ||
+        featureData.ufOntologyTerms.length > 0;
+    const hasSpecialized =
+        !!featureData.geccoBgcType ||
+        !!featureData.nearestMibig ||
+        !!featureData.nearestMibigClass ||
+        !!featureData.antismashBgcFunction ||
+        !!featureData.mgeId ||
+        featureData.mgeTypes.length > 0 ||
+        !!featureData.defenseFinderType ||
+        !!featureData.defenseFinderSubtype ||
+        featureData.extraCopyNumber !== null ||
+        !!featureData.note;
     const hasDbxref =
         featureData.dbxref && Array.isArray(featureData.dbxref) && featureData.dbxref.length > 0;
     const hasProtein = !!featureData.proteinSequence;
@@ -788,6 +724,60 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
                                 <span>{featureData.eggnog}</span>
                             </div>
                         )}
+                        {featureData.ecNumber && (
+                            <div className={styles.field}>
+                                <label>EC Number:</label>
+                                <span>{featureData.ecNumber}</span>
+                            </div>
+                        )}
+                        {featureData.ufProtRecEcnumber && (
+                            <div className={styles.field}>
+                                <label>UniFire EC Number:</label>
+                                <span>{featureData.ufProtRecEcnumber}</span>
+                            </div>
+                        )}
+                        {featureData.ufProtAltEcnumber && (
+                            <div className={styles.field}>
+                                <label>Alt EC Number:</label>
+                                <span>{featureData.ufProtAltEcnumber}</span>
+                            </div>
+                        )}
+                        {featureData.dbcanProtType && (
+                            <div className={styles.field}>
+                                <label>dbCAN Protein Type:</label>
+                                <span>{featureData.dbcanProtType}</span>
+                            </div>
+                        )}
+                        {featureData.dbcanProtFamily.length > 0 && (
+                            <div className={styles.field}>
+                                <label>dbCAN Protein Family:</label>
+                                <span>{featureData.dbcanProtFamily.join(', ')}</span>
+                            </div>
+                        )}
+                        {featureData.substrateDbcanPul && (
+                            <div className={styles.field}>
+                                <label>dbCAN Substrate (PUL):</label>
+                                <span>{featureData.substrateDbcanPul}</span>
+                            </div>
+                        )}
+                        {featureData.substrateDbcanSub && (
+                            <div className={styles.field}>
+                                <label>dbCAN Substrate:</label>
+                                <span>{featureData.substrateDbcanSub}</span>
+                            </div>
+                        )}
+                        {featureData.ufChebi.length > 0 && (
+                            <div className={styles.field}>
+                                <label>ChEBI:</label>
+                                <span>{featureData.ufChebi.join(', ')}</span>
+                            </div>
+                        )}
+                        {featureData.ufPirsrCofactor && (
+                            <div className={styles.field}>
+                                <label>PIRSR Cofactor:</label>
+                                <span>{featureData.ufPirsrCofactor}</span>
+                            </div>
+                        )}
                     </CollapsibleSection>
                 )}
 
@@ -824,7 +814,6 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
                     </CollapsibleSection>
                 )}
 
-                {/* UniFire Annotations Section */}
                 {hasUnifire && (
                     <CollapsibleSection
                         title="UniFire Annotations"
@@ -832,16 +821,122 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
                         expanded={expandedSections.unifire}
                         onToggle={toggleSection}
                     >
+                        {featureData.ufGeneName && (
+                            <div className={styles.field}>
+                                <label>Gene Name:</label>
+                                <span>{featureData.ufGeneName}</span>
+                            </div>
+                        )}
+                        {featureData.ufGeneNameSynonym && (
+                            <div className={styles.field}>
+                                <label>Gene Name Synonym:</label>
+                                <span>{featureData.ufGeneNameSynonym}</span>
+                            </div>
+                        )}
                         {featureData.ufProtRecFullname && (
                             <div className={styles.field}>
                                 <label>Protein Name:</label>
                                 <span>{featureData.ufProtRecFullname}</span>
                             </div>
                         )}
+                        {featureData.ufProtRecShortname && (
+                            <div className={styles.field}>
+                                <label>Protein Short Name:</label>
+                                <span>{featureData.ufProtRecShortname}</span>
+                            </div>
+                        )}
+                        {featureData.ufProtAltFullname && (
+                            <div className={styles.field}>
+                                <label>Alt Protein Name:</label>
+                                <span>{featureData.ufProtAltFullname}</span>
+                            </div>
+                        )}
+                        {featureData.ufProtAltShortname && (
+                            <div className={styles.field}>
+                                <label>Alt Protein Short Name:</label>
+                                <span>{featureData.ufProtAltShortname}</span>
+                            </div>
+                        )}
+                        {featureData.ufKeyword.length > 0 && (
+                            <div className={styles.field}>
+                                <label>Keywords:</label>
+                                <span>{featureData.ufKeyword.join(', ')}</span>
+                            </div>
+                        )}
                         {featureData.ufOntologyTerms.length > 0 && (
                             <div className={styles.field}>
                                 <label>Ontology:</label>
                                 <span>{featureData.ufOntologyTerms.join(', ')}</span>
+                            </div>
+                        )}
+                    </CollapsibleSection>
+                )}
+
+                {hasSpecialized && (
+                    <CollapsibleSection
+                        title="Specialized Annotations"
+                        sectionId="specialized"
+                        expanded={expandedSections.specialized}
+                        onToggle={toggleSection}
+                    >
+                        {featureData.geccoBgcType && (
+                            <div className={styles.field}>
+                                <label>GECCO BGC Type:</label>
+                                <span>{featureData.geccoBgcType}</span>
+                            </div>
+                        )}
+                        {featureData.nearestMibig && (
+                            <div className={styles.field}>
+                                <label>Nearest MiBIG:</label>
+                                <span>{featureData.nearestMibig}</span>
+                            </div>
+                        )}
+                        {featureData.nearestMibigClass && (
+                            <div className={styles.field}>
+                                <label>Nearest MiBIG Class:</label>
+                                <span>{featureData.nearestMibigClass}</span>
+                            </div>
+                        )}
+                        {featureData.antismashBgcFunction && (
+                            <div className={styles.field}>
+                                <label>antiSMASH BGC Function:</label>
+                                <span>{featureData.antismashBgcFunction}</span>
+                            </div>
+                        )}
+                        {featureData.mgeId && (
+                            <div className={styles.field}>
+                                <label>MGE ID:</label>
+                                <span>{featureData.mgeId}</span>
+                            </div>
+                        )}
+                        {featureData.mgeTypes.length > 0 && (
+                            <div className={styles.field}>
+                                <label>MGE Types:</label>
+                                <span>{featureData.mgeTypes.join(', ')}</span>
+                            </div>
+                        )}
+                        {featureData.defenseFinderType && (
+                            <div className={styles.field}>
+                                <label>Defense Finder Type:</label>
+                                <span>{featureData.defenseFinderType}</span>
+                            </div>
+                        )}
+                        {featureData.defenseFinderSubtype && (
+                            <div className={styles.field}>
+                                <label>Defense Finder Subtype:</label>
+                                <span>{featureData.defenseFinderSubtype}</span>
+                            </div>
+                        )}
+                        {featureData.extraCopyNumber !== null && (
+                            <div className={styles.field}>
+                                <label>Extra Copy Number:</label>
+                                <span>{featureData.extraCopyNumber}</span>
+                            </div>
+                        )}
+                        {featureData.note && (
+                            <div className={styles.field}>
+                                <label>Note:</label>
+                                <span>{featureData.note}</span>
                             </div>
                         )}
                     </CollapsibleSection>

@@ -460,7 +460,7 @@ $ python manage.py import_strains \
 
 ```bash
 $ python manage.py import_features \
-  --index feature_index \
+  --index feature_index-v6 \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
@@ -493,7 +493,7 @@ $ python manage.py import_features \
 **Metabolic Gene-Reaction Data**:
 ```bash
 $ python manage.py import_features \
-  --index feature_index \
+  --index feature_index-v6 \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --skip-core-genes \
@@ -513,8 +513,8 @@ python manage.py import_dbxref \
 Directory with multiple files
 ```bash
 python manage.py import_dbxref \
-    --index feature_index \
-    --tsv-dir ../data-generators/stringdb-mapper/output \
+    --index feature_index-v6 \
+    --tsv-dir ../data-generators/stringdb-mapper/output/raw \
     --db-name STRING
 ```
 
@@ -524,7 +524,7 @@ python manage.py import_dbxref \
 
 ```bash
 $ python manage.py import_fitness_lfc \
-  --index feature_index \
+  --index feature_index-v6 \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
 ```
 
@@ -532,7 +532,7 @@ $ python manage.py import_fitness_lfc \
 
 ```bash
 $ python manage.py import_mutant_growth \
-  --index feature_index \
+  --index feature_index-v6 \
   --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal
 ```
 
@@ -540,7 +540,7 @@ $ python manage.py import_mutant_growth \
 
 ```bash
 $ python manage.py ingest_pooled_ttp \
-  --index feature_index \
+  --index feature_index-v6 \
   --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pooled_TPP.csv \
   --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv
 ```

@@ -64,7 +64,7 @@ export const getAnnotationIndicators = (gene: GeneMeta): React.ReactNode => {
   });
   
   // Check each annotation type and add its colored bordered box if data is present
-  if (gene.interpro && Array.isArray(gene.interpro) && gene.interpro.length > 0) {
+  if (gene.interpro && gene.interpro.length > 0) {
     indicators.push(
       <span key="interpro" style={boxStyle(ANNOTATION_INDICATORS.interpro.color, false)}>
         {ANNOTATION_INDICATORS.interpro.icon}
@@ -72,7 +72,7 @@ export const getAnnotationIndicators = (gene: GeneMeta): React.ReactNode => {
     );
   }
   
-  if (gene.pfam && Array.isArray(gene.pfam) && gene.pfam.length > 0) {
+  if (gene.pfam && gene.pfam.length > 0) {
     indicators.push(
       <span key="pfam" style={boxStyle(ANNOTATION_INDICATORS.pfam.color, false)}>
         {ANNOTATION_INDICATORS.pfam.icon}
@@ -80,7 +80,7 @@ export const getAnnotationIndicators = (gene: GeneMeta): React.ReactNode => {
     );
   }
   
-  if (gene.kegg && Array.isArray(gene.kegg) && gene.kegg.length > 0) {
+  if (gene.kegg && gene.kegg.length > 0) {
     indicators.push(
       <span key="kegg" style={boxStyle(ANNOTATION_INDICATORS.kegg.color, false)}>
         {ANNOTATION_INDICATORS.kegg.icon}
@@ -88,7 +88,7 @@ export const getAnnotationIndicators = (gene: GeneMeta): React.ReactNode => {
     );
   }
   
-  if (gene.cog_id && Array.isArray(gene.cog_id) && gene.cog_id.length > 0) {
+  if (gene.cog_id && gene.cog_id.length > 0) {
     indicators.push(
       <span key="cog" style={boxStyle(ANNOTATION_INDICATORS.cog_id.color, false)}>
         {ANNOTATION_INDICATORS.cog_id.icon}
@@ -114,22 +114,22 @@ export const getAnnotationIndicators = (gene: GeneMeta): React.ReactNode => {
 export const getAnnotationIndicatorsTooltip = (gene: GeneMeta): string => {
   const tooltips: string[] = [];
   
-  if (gene.interpro && Array.isArray(gene.interpro) && gene.interpro.length > 0) {
+  if (gene.interpro && gene.interpro.length > 0) {
     const values = gene.interpro.join(', ');
     tooltips.push(`[${ANNOTATION_INDICATORS.interpro.icon}] ${ANNOTATION_INDICATORS.interpro.label}: ${values}`);
   }
   
-  if (gene.pfam && Array.isArray(gene.pfam) && gene.pfam.length > 0) {
+  if (gene.pfam && gene.pfam.length > 0) {
     const values = gene.pfam.join(', ');
     tooltips.push(`[${ANNOTATION_INDICATORS.pfam.icon}] ${ANNOTATION_INDICATORS.pfam.label}: ${values}`);
   }
   
-  if (gene.kegg && Array.isArray(gene.kegg) && gene.kegg.length > 0) {
+  if (gene.kegg && gene.kegg.length > 0) {
     const values = gene.kegg.join(', ');
     tooltips.push(`[${ANNOTATION_INDICATORS.kegg.icon}] ${ANNOTATION_INDICATORS.kegg.label}: ${values}`);
   }
   
-  if (gene.cog_id && Array.isArray(gene.cog_id) && gene.cog_id.length > 0) {
+  if (gene.cog_id && gene.cog_id.length > 0) {
     const values = gene.cog_id.join(', ');
     tooltips.push(`[${ANNOTATION_INDICATORS.cog_id.icon}] ${ANNOTATION_INDICATORS.cog_id.label}: ${values}`);
   }

@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple, Dict, Any
 from asgiref.sync import sync_to_async
 from elasticsearch_dsl import Search, Q, connections
 
+from dataportal.services.core.gene_response_mapper import hit_dict_to_gene_response
 from dataportal.schema.core.gene_schemas import (
     GenePaginationSchema,
     GeneResponseSchema,
@@ -201,44 +202,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
     def _convert_hit_to_gene_schema(self, hit) -> GeneResponseSchema:
         """Convert Elasticsearch hit directly to GeneResponseSchema (Pydantic)."""
-        hit_dict = hit.to_dict()
-
-        return GeneResponseSchema(
-            locus_tag=hit_dict.get("locus_tag"),
-            gene_name=hit_dict.get("gene_name"),
-            alias=hit_dict.get("alias", []),
-            product=hit_dict.get("product"),
-            product_source=hit_dict.get("product_source"),
-            start_position=hit_dict.get("start", hit_dict.get("start_position")),
-            end_position=hit_dict.get("end", hit_dict.get("end_position")),
-            seq_id=hit_dict.get("seq_id"),
-            isolate_name=hit_dict.get("isolate_name"),
-            species_scientific_name=hit_dict.get("species_scientific_name"),
-            species_acronym=hit_dict.get("species_acronym"),
-            uniprot_id=hit_dict.get("uniprot_id"),
-            essentiality=hit_dict.get("essentiality", "Unknown"),
-            cog_funcats=hit_dict.get("cog_funcats", []),
-            cog_id=hit_dict.get("cog_id", []),
-            kegg=hit_dict.get("kegg", []),
-            pfam=hit_dict.get("pfam", []),
-            interpro=hit_dict.get("interpro", []),
-            ec_number=hit_dict.get("ec_number"),
-            dbxref=hit_dict.get("dbxref", []),
-            eggnog=hit_dict.get("eggnog"),
-            inference=hit_dict.get("inference"),
-            ontology_terms=hit_dict.get("ontology_terms", []),
-            uf_ontology_terms=hit_dict.get("uf_ontology_terms", []),
-            uf_prot_rec_fullname=hit_dict.get("uf_prot_rec_fullname"),
-            uf_keyword=hit_dict.get("uf_keyword", []),
-            uf_gene_name=hit_dict.get("uf_gene_name"),
-            amr=hit_dict.get("amr", []),
-            has_amr_info=hit_dict.get("has_amr_info", False),
-            has_proteomics=hit_dict.get("has_proteomics", False),
-            has_fitness=hit_dict.get("has_fitness", False),
-            has_mutant_growth=hit_dict.get("has_mutant_growth", False),
-            has_reactions=hit_dict.get("has_reactions", False),
-            feature_type=hit_dict.get("feature_type", "gene"),
-        )
+        return hit_dict_to_gene_response(hit.to_dict())
 
     # Original methods with minimal changes - keeping existing query logic
     async def autocomplete_gene_suggestions(
@@ -1129,6 +1093,8 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 elif col == "kegg" and value:
                     value = "; ".join(value) if isinstance(value, list) else str(value)
                 elif col == "cog_id" and value:
+                    value = "; ".join(value) if isinstance(value, list) else str(value)
+                elif col == "cog_funcats" and value:
                     value = "; ".join(value) if isinstance(value, list) else str(value)
                 elif col == "amr" and value:
                     # Format AMR data

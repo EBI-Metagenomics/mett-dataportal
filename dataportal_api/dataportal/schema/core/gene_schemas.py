@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer
 
 from dataportal.examples.gene_examples import (
     GENE_SEARCH_QUERY_EXAMPLE,
@@ -255,6 +255,74 @@ class AMRSchema(BaseModel):
     uf_ecnumber: Optional[str] = None
 
 
+class GeneUnifireAnnotationSchema(BaseModel):
+    """UniFire (uf_*) annotations from merged GFF."""
+
+    gene_name: Optional[str] = None
+    gene_name_synonym: Optional[str] = None
+    keywords: Optional[List[str]] = None
+    ontology_terms: Optional[List[str]] = None
+    protein_fullname: Optional[str] = None
+    protein_shortname: Optional[str] = None
+    protein_ec_number: Optional[str] = None
+    alt_protein_fullname: Optional[str] = None
+    alt_protein_shortname: Optional[str] = None
+    alt_ec_number: Optional[str] = None
+    chebi: Optional[List[str]] = None
+    pirsr_cofactor: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GeneDbcanAnnotationSchema(BaseModel):
+    """dbCAN / CAZyme annotations."""
+
+    prot_type: Optional[str] = None
+    prot_family: Optional[List[str]] = None
+    substrate_pul: Optional[str] = None
+    substrate_sub: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GeneBgcAnnotationSchema(BaseModel):
+    """Biosynthetic gene cluster annotations."""
+
+    gecco_bgc_type: Optional[str] = None
+    nearest_mibig: Optional[str] = None
+    nearest_mibig_class: Optional[str] = None
+    antismash_bgc_function: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GeneMobilomeAnnotationSchema(BaseModel):
+    """Mobile genetic element annotations."""
+
+    mge_id: Optional[str] = None
+    mge_types: Optional[List[str]] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GeneDefenseAnnotationSchema(BaseModel):
+    """Defense system annotations (DefenseFinder)."""
+
+    finder_type: Optional[str] = None
+    finder_subtype: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GeneMetadataSchema(BaseModel):
+    """Additional per-gene metadata from GFF."""
+
+    extra_copy_number: Optional[int] = None
+    note: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class GeneQuery(BaseModel):
     species: str | None = None
     essentiality: str | None = None
@@ -331,11 +399,14 @@ class NaturalLanguageGeneQuery(BaseModel):
 
 
 class GeneResponseSchema(BaseModel):
+    # Core identity and product
     locus_tag: Optional[str] = None
     gene_name: Optional[str] = None
     alias: Optional[List[str]] = None
     product: Optional[str] = None
     product_source: Optional[str] = None
+
+    # Location and taxonomy
     start_position: Optional[int] = None
     end_position: Optional[int] = None
     seq_id: Optional[str] = None
@@ -343,6 +414,7 @@ class GeneResponseSchema(BaseModel):
     species_scientific_name: Optional[str] = None
     species_acronym: Optional[str] = None
     uniprot_id: Optional[str] = None
+
     essentiality: Optional[str] = "Unknown"
     cog_funcats: Optional[List[str]] = None
     cog_id: Optional[List[str]] = None
@@ -354,21 +426,43 @@ class GeneResponseSchema(BaseModel):
     eggnog: Optional[str] = None
     inference: Optional[str] = None
     ontology_terms: Optional[List[Dict[str, Any]]] = None
+
+    # Legacy flat UniFire fields (kept for backward compatibility)
     uf_ontology_terms: Optional[List[str]] = None
     uf_prot_rec_fullname: Optional[str] = None
     uf_keyword: Optional[List[str]] = None
     uf_gene_name: Optional[str] = None
+
     amr: Optional[List[AMRSchema]] = None
     has_amr_info: Optional[bool] = None
+
+    # Experimental data availability flags
     has_proteomics: Optional[bool] = None
     has_fitness: Optional[bool] = None
     has_mutant_growth: Optional[bool] = None
     has_reactions: Optional[bool] = None
     feature_type: Optional[str] = "gene"
+
+    # Optional grouped GFF blocks (additive; omitted from JSON when empty)
+    unifire: Optional[GeneUnifireAnnotationSchema] = None
+    dbcan: Optional[GeneDbcanAnnotationSchema] = None
+    bgc: Optional[GeneBgcAnnotationSchema] = None
+    mobilome: Optional[GeneMobilomeAnnotationSchema] = None
+    defense: Optional[GeneDefenseAnnotationSchema] = None
+    metadata: Optional[GeneMetadataSchema] = None
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={"example": GENE_RESPONSE_EXAMPLE},
     )
+
+    @model_serializer(mode="wrap")
+    def _serialize_api_response(self, handler):
+        data = handler(self)
+        for key in ("unifire", "dbcan", "bgc", "mobilome", "defense", "metadata"):
+            if data.get(key) is None:
+                data.pop(key, None)
+        return data
 
 
 class GeneProteinSeqSchema(BaseModel):
@@ -398,6 +492,12 @@ __all__ = [
     "GeneAutocompleteResponseSchema",
     "GenePaginationSchema",
     "GeneResponseSchema",
+    "GeneUnifireAnnotationSchema",
+    "GeneDbcanAnnotationSchema",
+    "GeneBgcAnnotationSchema",
+    "GeneMobilomeAnnotationSchema",
+    "GeneDefenseAnnotationSchema",
+    "GeneMetadataSchema",
     "EssentialityByContigSchema",
     "NaturalLanguageGeneQuery",
 ]
