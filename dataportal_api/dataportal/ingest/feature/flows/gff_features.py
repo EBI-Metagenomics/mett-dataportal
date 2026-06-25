@@ -1,16 +1,19 @@
 # ingest/feature/flows/gff_features.py
-import tempfile, os
+import tempfile
+import os
 from dataportal.ingest.feature.flows.base import Flow
 from dataportal.ingest.feature.sources import ftp_connect, load_protein_seqs
 from dataportal.ingest.feature.parsing import parse_dbxref
 from dataportal.ingest.utils import species_name_for_isolate, strain_prefix
 from dataportal.models import FeatureDocument  # your ES DSL document
 
+
 class GFFGenes(Flow):
     """
     Builds gene features from GFFs on FTP. IGs are created by Essentiality flow.
     Uses raw isolate names for both FTP paths and ES docs.
     """
+
     def __init__(self, ftp_server, ftp_root, index_name="feature_index", mapping=None):
         super().__init__(index_name)
         self.ftp_server = ftp_server
@@ -53,7 +56,9 @@ class GFFGenes(Flow):
         sp_acronym = strain_prefix(raw_isolate)
 
         for remote in gffs:
-            self._ingest_gff_file(ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, protein_seqs)
+            self._ingest_gff_file(
+                ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, protein_seqs
+            )
 
     def parse_amr_attributes(self, attr_dict):
         """Extract AMR-related fields from GFF attributes dict and return a list of AMR dicts."""
@@ -70,16 +75,16 @@ class GFFGenes(Flow):
             "drug_class": attr_dict.get("drug_class"),
             "drug_subclass": attr_dict.get("drug_subclass"),
             "uf_keyword": [
-                kw.strip()
-                for kw in attr_dict.get("uf_keyword", "").split(",")
-                if kw.strip()
+                kw.strip() for kw in attr_dict.get("uf_keyword", "").split(",") if kw.strip()
             ],
             "uf_ecnumber": attr_dict.get("uf_prot_rec_ecnumber"),
         }
 
         return [amr_entry], True
 
-    def _ingest_gff_file(self, ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, prot_seqs):
+    def _ingest_gff_file(
+        self, ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, prot_seqs
+    ):
         local = tempfile.NamedTemporaryFile(delete=False)
         try:
             with open(local.name, "wb") as out:
@@ -117,6 +122,9 @@ class GFFGenes(Flow):
                         else []
                     )
                     uf_prot_rec_fullname = attr.get("uf_prot_rec_fullname")
+                    dbcan_prot_family = [
+                        x for x in attr.get("dbcan_prot_family", "").split("|") if x
+                    ]
 
                     doc = FeatureDocument(
                         meta={"id": locus_tag},
@@ -137,7 +145,7 @@ class GFFGenes(Flow):
                         eggnog=attr.get("eggNOG") or attr.get("eggnog"),
                         species_scientific_name=sp_name,
                         species_acronym=sp_acronym,
-                        isolate_name=raw_isolate,           # <-- use raw isolate name
+                        isolate_name=raw_isolate,  # <-- use raw isolate name
                         kegg=[x for x in attr.get("kegg", "").split(",") if x],
                         pfam=[x for x in attr.get("pfam", "").split(",") if x],
                         interpro=[x for x in attr.get("interpro", "").split(",") if x],
@@ -145,10 +153,18 @@ class GFFGenes(Flow):
                         amr=amr_entries,
                         dbxref=dbxref,
                         ec_number=attr.get("eC_number"),
+                        uf_prot_rec_ecnumber=attr.get("uf_prot_rec_ecnumber"),
+                        dbcan_prot_type=attr.get("dbcan_prot_type"),
+                        dbcan_prot_family=dbcan_prot_family,
+                        substrate_dbcan_pul=attr.get("substrate_dbcan-pul"),
+                        substrate_dbcan_sub=attr.get("substrate_dbcan-sub"),
                         cog_id=[cog_id] if cog_id else [],
                         cog_funcats=[x for x in attr.get("cog", "").split(",") if x],
                         protein_sequence=prot_seqs.get(locus_tag, ""),
-                        has_reactions=False, has_proteomics=False, has_fitness=False, has_mutant_growth=False,
+                        has_reactions=False,
+                        has_proteomics=False,
+                        has_fitness=False,
+                        has_mutant_growth=False,
                         ontology_terms=ontology_terms,
                         uf_ontology_terms=uf_ontology_terms,
                         uf_prot_rec_fullname=uf_prot_rec_fullname,

@@ -371,7 +371,7 @@ python manage.py migrate django_celery_beat
 $ python manage.py create_es_index
 
 # Create indices with specific version
-$ python manage.py create_es_index --es-version v5
+$ python manage.py create_es_index --es-version v6
 
 # Create specific model index
 $ python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 2025.09.03
@@ -425,11 +425,11 @@ $ python manage.py import_strains \
   --gff-server ftp.ebi.ac.uk \
   --gff-base /pub/databases/mett/annotations/v1_2024-04-15/ \
   --include-mic \
-  --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
-  --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/PV_growth_inhibition.csv \
+  --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
+  --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv \
   --include-metabolism \
-  --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
-  --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv
+  --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
 ```
 
 **Incremental Updates**:
@@ -440,8 +440,8 @@ $ python manage.py import_strains \
   --es-index strain_index \
   --skip-strains \
   --include-mic \
-  --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/BU_growth_inhibition.csv \
-  --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/PV_growth_inhibition.csv
+  --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
+  --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv
 ```
 
 Add Drug Metabolism data only:
@@ -450,8 +450,8 @@ $ python manage.py import_strains \
   --es-index strain_index \
   --skip-strains \
   --include-metabolism \
-  --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/SP5_drug_metabolism_BU_v0.csv \
-  --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/SP5_drug_metabolism_PV_v0.csv
+  --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
 ```
 
 ### Feature Annotations
@@ -541,8 +541,8 @@ $ python manage.py import_mutant_growth \
 ```bash
 $ python manage.py ingest_pooled_ttp \
   --index feature_index \
-  --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_TPP.csv \
-  --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pool_metadata.csv
+  --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pooled_TPP.csv \
+  --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv
 ```
 
 #### Fitness Correlation Data

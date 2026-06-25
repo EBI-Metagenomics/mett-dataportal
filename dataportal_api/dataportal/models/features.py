@@ -12,7 +12,6 @@ from elasticsearch_dsl import (
     Integer,
     Boolean,
     Nested,
-    ScaledFloat,
     Float,
 )
 
@@ -21,18 +20,18 @@ from .base import autocomplete_analyzer, lowercase_normalizer
 
 class FeatureDocument(Document):
     """Elasticsearch document for genomic features (genes, intergenic regions, etc.)."""
-    
+
     # ---- Identity ----
-    feature_id = Keyword()                                 # gene: locus_tag; IG: "IG-between-...-and-..."
-    feature_type = Keyword(normalizer=lowercase_normalizer) # 'gene' | 'IG' | others
-    element = Keyword(normalizer=lowercase_normalizer)      # gene, intergenic, ncRNA, ...
+    feature_id = Keyword()  # gene: locus_tag; IG: "IG-between-...-and-..."
+    feature_type = Keyword(normalizer=lowercase_normalizer)  # 'gene' | 'IG' | others
+    element = Keyword(normalizer=lowercase_normalizer)  # gene, intergenic, ncRNA, ...
 
     # For genes (convenience/compatibility)
     locus_tag = Text(
         analyzer=autocomplete_analyzer,
         search_analyzer="standard",
         fields={"keyword": Keyword()},
-    )                                 # still stored for genes
+    )  # still stored for genes
     uniprot_id = Keyword()
 
     # IG context (only meaningful when feature_type == 'IG')
@@ -41,9 +40,9 @@ class FeatureDocument(Document):
     strand = Keyword()
 
     # Genomic coordinates (region-level; for genes or IGs)
-    seq_id = Text(analyzer=autocomplete_analyzer,
-                  search_analyzer="standard",
-                  fields={"keyword": Keyword()})
+    seq_id = Text(
+        analyzer=autocomplete_analyzer, search_analyzer="standard", fields={"keyword": Keyword()}
+    )
     start = Integer()
     end = Integer()
 
@@ -83,6 +82,13 @@ class FeatureDocument(Document):
     dbxref = Nested(properties={"db": Keyword(), "ref": Keyword()})
 
     ec_number = Keyword()
+    uf_prot_rec_ecnumber = Keyword()
+
+    # dbCAN / CAZyme annotations (from merged GFF)
+    dbcan_prot_type = Keyword()
+    dbcan_prot_family = Keyword(multi=True)
+    substrate_dbcan_pul = Text(fields={"keyword": Keyword()})
+    substrate_dbcan_sub = Text(fields={"keyword": Keyword()})
 
     has_essentiality = Boolean()  # flag indicating if essentiality data is available
     essentiality = Keyword(normalizer=lowercase_normalizer)
@@ -114,10 +120,10 @@ class FeatureDocument(Document):
     # matches your CSV: TnSeq/TAs metrics + call + condition
     essentiality_data = Nested(
         properties={
-            "experimental_condition": Keyword(),       # e.g. mGAM_undefined_rich_media
+            "experimental_condition": Keyword(),  # e.g. mGAM_undefined_rich_media
             "TAs_in_locus": Integer(),
-            "TAs_hit": Float(),                        # fraction 0..1
-            "essentiality_call": Keyword(              # essential, not_essential, essential_solid, essential_liquid, not_classified, unclear
+            "TAs_hit": Float(),  # fraction 0..1
+            "essentiality_call": Keyword(  # essential, not_essential, essential_solid, essential_liquid, not_classified, unclear
                 normalizer=lowercase_normalizer
             ),
         }
@@ -153,13 +159,13 @@ class FeatureDocument(Document):
             "contrast": Keyword(),
             "lfc": Float(),
             "fdr": Float(),
-            "number_of_barcodes": Integer()  # TnSeq barcode count (reliability indicator)
+            "number_of_barcodes": Integer(),  # TnSeq barcode count (reliability indicator)
         }
     )
 
     # ---- REACTIONS / GPR / METABOLITES (new) ----
     # 1) direct gene→reaction links (many)
-    reactions = Keyword(multi=True)                    # e.g. ["ASPTA","CPPPGO",...]
+    reactions = Keyword(multi=True)  # e.g. ["ASPTA","CPPPGO",...]
     # 2) per-reaction details + GPR and metabolite edges
     reaction_details = Nested(
         properties={
@@ -176,14 +182,14 @@ class FeatureDocument(Document):
     # ---- MUTANT GROWTH (new) ----
     mutant_growth = Nested(
         properties={
-            "doubling_time": Float(),                   # Core numeric readout (hours)
-            "isdoublepicked": Boolean(),                # TRUE if mutant was picked twice (not truly independent replicates)
-            "brep": Keyword(),                          # Biological replicate identifier (brep_1, brep_2, etc.)
-            "plate384": Integer(),                      # Position in 384-well arrayed library
-            "well384": Keyword(),                       # Well position (A17, C16, etc.)
-            "percent_from_start": Float(),              # Transposon insertion position in gene (0-1)
-            "media": Keyword(),                         # Experimental media/condition (e.g., "caecal")
-            "experimental_condition": Keyword(),        # Overall experimental context
+            "doubling_time": Float(),  # Core numeric readout (hours)
+            "isdoublepicked": Boolean(),  # TRUE if mutant was picked twice (not truly independent replicates)
+            "brep": Keyword(),  # Biological replicate identifier (brep_1, brep_2, etc.)
+            "plate384": Integer(),  # Position in 384-well arrayed library
+            "well384": Keyword(),  # Well position (A17, C16, etc.)
+            "percent_from_start": Float(),  # Transposon insertion position in gene (0-1)
+            "media": Keyword(),  # Experimental media/condition (e.g., "caecal")
+            "experimental_condition": Keyword(),  # Overall experimental context
         }
     )
 
