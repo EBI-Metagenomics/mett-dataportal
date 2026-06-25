@@ -7,7 +7,7 @@ import {useFilterStore} from '../../../../stores/filterStore';
 import {createViewState} from '@jbrowse/react-app2';
 import {ZOOM_LEVELS} from '../../../../utils/common/constants';
 import {VIEWPORT_SYNC_CONSTANTS} from '../../../../utils/gene-viewer';
-import {GeneFacetResponse} from '../../../../interfaces/Gene';
+import {GeneFacetResponse, AMR} from '../../../../interfaces/Gene';
 import {compareFilterValues, normalizeFilterValue, normalizeFilterValues} from '../../../../utils/common/filterUtils';
 import {ALL_SECTION_IDS, DEFAULT_EXPANDED_SECTIONS, SectionId} from './constants';
 import {mapGeneMetaToFeatureData} from './mapGeneMetaToFeatureData';
@@ -513,6 +513,36 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
         );
     };
 
+    const renderAmrField = (label: string, value?: string | null) => {
+        if (!value) {
+            return null;
+        }
+        return (
+            <div>
+                <strong>{label}:</strong> {value}
+            </div>
+        );
+    };
+
+    const renderAmrDetails = (entries: AMR[]) => (
+        <div className={styles.linkListVertical}>
+            {entries.map((entry, idx) => (
+                <div key={idx} className={styles.dbxrefItem}>
+                    {renderAmrField('Gene symbol', entry.gene_symbol)}
+                    {renderAmrField('Sequence name', entry.sequence_name)}
+                    {renderAmrField('Scope', entry.scope)}
+                    {renderAmrField('Element type', entry.element_type)}
+                    {renderAmrField('Element subtype', entry.element_subtype)}
+                    {renderAmrField('Drug class', entry.drug_class)}
+                    {renderAmrField('Drug subclass', entry.drug_subclass)}
+                </div>
+            ))}
+        </div>
+    );
+
+    const hasAmrData =
+        (featureData.amr && featureData.amr.length > 0) || featureData.hasAmr;
+
     const hasAnnotations =
         !!featureData.essentiality ||
         featureData.pfam.length > 0 ||
@@ -521,7 +551,7 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
         featureData.cog.length > 0 ||
         featureData.cogCategories.length > 0 ||
         !!featureData.eggnog ||
-        !!featureData.hasAmr ||
+        hasAmrData ||
         !!featureData.ecNumber ||
         !!featureData.ufProtRecEcnumber ||
         !!featureData.ufProtAltEcnumber ||
@@ -679,13 +709,14 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
                                 </div>
                             </div>
                         )}
-                        {featureData.hasAmr && (
+                        {hasAmrData && (
                             <div className={styles.field}>
                                 <label>AMR:</label>
-                                <div className={styles.filterValueRow}>
+                                {featureData.amr && featureData.amr.length > 0 ? (
+                                    renderAmrDetails(featureData.amr)
+                                ) : (
                                     <span>Has AMR information</span>
-                                    {/* {renderFilterButton('has_amr_info', true)} */}
-                                </div>
+                                )}
                             </div>
                         )}
                         {featureData.pfam.length > 0 && (

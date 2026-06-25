@@ -151,7 +151,7 @@ export function mapGeneMetaToFeatureData(featureData: unknown): FeaturePanelGene
         cog: asStringArray(data.cog_id),
         cogCategories: asStringArray(data.cog_funcats),
         amr: data.amr ?? [],
-        hasAmr: data.has_amr_info || false,
+        hasAmr: data.has_amr_info || (Array.isArray(data.amr) && data.amr.length > 0),
         dbxref: data.dbxref ?? [],
         inference: data.inference || '',
         productSource: data.product_source || '',
