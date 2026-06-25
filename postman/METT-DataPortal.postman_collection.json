@@ -2,15 +2,16 @@
   "info": {
     "_postman_id": "8b555c56-1b63-4a3c-a302-06921a6e5a8d",
     "name": "METT-DataPortal",
+    "description": "sample **collection** description...",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "19420352"
   },
   "item": [
     {
-      "name": "ME TT - API Integration Tests",
+      "name": "api-tests",
       "item": [
         {
-          "name": "Core APIs",
+          "name": "CoreAPIs",
           "item": [
             {
               "name": "Health",
@@ -127,6 +128,87 @@
                         "api",
                         "species",
                         ""
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Species-Enable",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Species enabled is true\", function () {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.expect(jsonData.data.enabled).to.equal(true); ",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/species/AT/enable",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "species",
+                        "AT",
+                        "enable"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Species-Disable",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Species enabled is false\", function () {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.expect(jsonData.data.enabled).to.equal(false); ",
+                          "});",
+                          ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/species/AT/disable",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "species",
+                        "AT",
+                        "disable"
                       ]
                     }
                   },
@@ -2766,6 +2848,140 @@
                   "response": []
                 },
                 {
+                  "name": "Genes-by-LocusTag-Enzyme-03",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Results array contains exactly 1 record\", function () {",
+                          "    const jsonData = pm.response.json(); ",
+                          "    pm.expect(jsonData.data).to.be.an('array').with.lengthOf(1);",
+                          "});",
+                          "",
+                          "pm.test(\"First record has dbcan prot_type as CAZyme\", function () {",
+                          "    const jsonData = pm.response.json(); ",
+                          "    pm.expect(jsonData.data[0].dbcan.prot_type).to.equal('CAZyme');",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/search/advanced?query=BU_ATCC8492_00069&page=1&per_page=10&sort_field=locus_tag&sort_order=asc",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "search",
+                        "advanced"
+                      ],
+                      "query": [
+                        {
+                          "key": "query",
+                          "value": "BU_ATCC8492_00069"
+                        },
+                        {
+                          "key": "page",
+                          "value": "1"
+                        },
+                        {
+                          "key": "per_page",
+                          "value": "10"
+                        },
+                        {
+                          "key": "sort_field",
+                          "value": "locus_tag"
+                        },
+                        {
+                          "key": "sort_order",
+                          "value": "asc"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Genes-by-LocusTag-EC-Number-04",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Results array contains exactly 1 record\", function () {",
+                          "    const jsonData = pm.response.json(); ",
+                          "    pm.expect(jsonData.data).to.be.an('array').with.lengthOf(1);",
+                          "});",
+                          "",
+                          "pm.test(\"First record has ec_number\", function () {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.expect(jsonData.data[0].ec_number).to.not.be.null; ",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/search/advanced?query=BU_ATCC8492_00068&page=1&per_page=10&sort_field=locus_tag&sort_order=asc",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "search",
+                        "advanced"
+                      ],
+                      "query": [
+                        {
+                          "key": "query",
+                          "value": "BU_ATCC8492_00068"
+                        },
+                        {
+                          "key": "page",
+                          "value": "1"
+                        },
+                        {
+                          "key": "per_page",
+                          "value": "10"
+                        },
+                        {
+                          "key": "sort_field",
+                          "value": "locus_tag"
+                        },
+                        {
+                          "key": "sort_order",
+                          "value": "asc"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
                   "name": "Genes-by-LocusTag-EXACT",
                   "event": [
                     {
@@ -3349,917 +3565,6 @@
                   "response": []
                 }
               ]
-            },
-            {
-              "name": "Pyhmmer",
-              "item": [
-                {
-                  "name": "Meta-data",
-                  "item": [
-                    {
-                      "name": "databases-list",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              ""
-                            ],
-                            "type": "text/javascript",
-                            "packages": {}
-                          }
-                        }
-                      ],
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/search/databases",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "search",
-                            "databases"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "mxchoices-list",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              ""
-                            ],
-                            "type": "text/javascript",
-                            "packages": {}
-                          }
-                        }
-                      ],
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/search/mx-choices",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "search",
-                            "mx-choices"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    }
-                  ]
-                },
-                {
-                  "name": "Search",
-                  "item": [
-                    {
-                      "name": "pyhmmer-search-req Copy",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "let json = pm.response.json();",
-                              "if (json.id) {",
-                              "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                              "}"
-                            ],
-                            "type": "text/javascript",
-                            "packages": {}
-                          }
-                        }
-                      ],
-                      "request": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/search",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "search"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "pyhmmer-search-req",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "let json = pm.response.json();",
-                              "if (json.id) {",
-                              "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                              "}"
-                            ],
-                            "type": "text/javascript",
-                            "packages": {}
-                          }
-                        }
-                      ],
-                      "request": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/search",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "search"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "pyhmmer-search-varied-seq",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "let json = pm.response.json();",
-                              "if (json.id) {",
-                              "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                              "}"
-                            ],
-                            "type": "text/javascript",
-                            "packages": {}
-                          }
-                        }
-                      ],
-                      "request": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVKQVP\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/search",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "search"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "pyhmmer-search-long",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "let json = pm.response.json();",
-                              "if (json.id) {",
-                              "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                              "}"
-                            ],
-                            "type": "text/javascript",
-                            "packages": {}
-                          }
-                        }
-                      ],
-                      "request": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">test_long_sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVYQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKER\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/search",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "search"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "pyhmmer-search-invalid",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "let json = pm.response.json();",
-                              "if (json.id) {",
-                              "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                              "}"
-                            ],
-                            "type": "text/javascript",
-                            "packages": {}
-                          }
-                        }
-                      ],
-                      "request": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \"MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/search",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "search"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "pyhmmer-search-dna",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "let json = pm.response.json();",
-                              "if (json.id) {",
-                              "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                              "}"
-                            ],
-                            "type": "text/javascript",
-                            "packages": {}
-                          }
-                        }
-                      ],
-                      "request": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"database\": \"bu_type_strains\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">test_dna\\nATGAGTGAAATAGATCATGTCGGGCTGTGGAACCGCTGTCTTGAAATCATCAG\",\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/search",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "search"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "Query-Search-Results",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "{{hmmer_job_id}}"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "download-fasta-debug",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/dfef7a0e-38f0-4568-8e10-5f7333ed2c13/debug-fasta",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "dfef7a0e-38f0-4568-8e10-5f7333ed2c13",
-                            "debug-fasta"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "debug-aligned-fasta",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/debug-pyhmmer-msa",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "{{hmmer_job_id}}",
-                            "debug-pyhmmer-msa"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "Query-Domain-Results",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/domains?target=BU_CLA-JM-H26-B_04207",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "{{hmmer_job_id}}",
-                            "domains"
-                          ],
-                          "query": [
-                            {
-                              "key": "target",
-                              "value": "BU_CLA-JM-H26-B_04207"
-                            }
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "test-Query-Domain",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/851eb6cd-0852-4f63-967b-5130fe7129d6/domains?target=BU_CLA-JM-H26-B_04207",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "851eb6cd-0852-4f63-967b-5130fe7129d6",
-                            "domains"
-                          ],
-                          "query": [
-                            {
-                              "key": "target",
-                              "value": "BU_CLA-JM-H26-B_04207"
-                            }
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "test-Search-Results",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/94da93bb-624a-4a3e-a8cb-947ac92390b3",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "94da93bb-624a-4a3e-a8cb-947ac92390b3"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "test-task",
-                      "request": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n  \"input\": \">query1\\nMSEQNNTEMTFQIQRIYTKDISFEAPNAPHVFQKDWRAKQ\",\n  \"database\": \"bu_all\",\n  \"threshold\": \"evalue\",\n  \"threshold_value\": 1e-5\n}\n",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/testtask",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "testtask"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "debug-task",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/debug/task/2a6f5b95-9c43-46a6-ab80-9762b00db8aa",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "debug",
-                            "task",
-                            "2a6f5b95-9c43-46a6-ab80-9762b00db8aa"
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    }
-                  ]
-                },
-                {
-                  "name": "Downloads",
-                  "item": [
-                    {
-                      "name": "Download-TSV",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=tab",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "{{hmmer_job_id}}",
-                            "download"
-                          ],
-                          "query": [
-                            {
-                              "key": "format",
-                              "value": "tab"
-                            }
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "Download-Fasta",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=fasta",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "{{hmmer_job_id}}",
-                            "download"
-                          ],
-                          "query": [
-                            {
-                              "key": "format",
-                              "value": "fasta"
-                            }
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "Download-Aligned-Fasta",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=aligned_fasta",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "{{hmmer_job_id}}",
-                            "download"
-                          ],
-                          "query": [
-                            {
-                              "key": "format",
-                              "value": "aligned_fasta"
-                            }
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "Download-Invalid-Format",
-                      "protocolProfileBehavior": {
-                        "disableBodyPruning": true
-                      },
-                      "request": {
-                        "method": "GET",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=csv",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "pyhmmer",
-                            "result",
-                            "{{hmmer_job_id}}",
-                            "download"
-                          ],
-                          "query": [
-                            {
-                              "key": "format",
-                              "value": "csv"
-                            }
-                          ]
-                        },
-                        "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-                      },
-                      "response": []
-                    }
-                  ]
-                }
-              ]
             }
           ]
         },
@@ -4280,7 +3585,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -4310,7 +3615,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -4346,7 +3651,7 @@
                           "bearer": [
                             {
                               "key": "token",
-                              "value": "{{bearer-token-exp+int-dev}}",
+                              "value": "{{bearer-token-current}}",
                               "type": "string"
                             }
                           ]
@@ -7108,16 +6413,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7153,16 +6448,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7198,16 +6483,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7248,16 +6523,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7298,16 +6563,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7348,16 +6603,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7398,16 +6643,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7456,16 +6691,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7491,6 +6716,40 @@
                     }
                   },
                   "response": []
+                }
+              ],
+              "auth": {
+                "type": "bearer",
+                "bearer": [
+                  {
+                    "key": "token",
+                    "value": "{{bearer-token-current}}",
+                    "type": "string"
+                  }
+                ]
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      ""
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      ""
+                    ]
+                  }
                 }
               ]
             },
@@ -7550,16 +6809,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7667,7 +6916,7 @@
                 "bearer": [
                   {
                     "key": "token",
-                    "value": "{{bearer-token-exp+int-dev}}",
+                    "value": "{{bearer-token-current}}",
                     "type": "string"
                   }
                 ]
@@ -7706,6 +6955,1147 @@
               "name": "PPI Interactions",
               "item": [
                 {
+                  "name": "Neighborhood",
+                  "item": [
+                    {
+                      "name": "PPI-Interactions - Neighborhood - A6KXK8",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/neighborhood?protein_id=A6KXK8&species_acronym=PV&n=50",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "neighborhood"
+                          ],
+                          "query": [
+                            {
+                              "key": "protein_id",
+                              "value": "A6KXK8"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "n",
+                              "value": "50"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - Neighborhood - A7V2E8",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});",
+                              "",
+                              ""
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/neighborhood?protein_id=A7V2E8&species_acronym=BU&n=50",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "neighborhood"
+                          ],
+                          "query": [
+                            {
+                              "key": "protein_id",
+                              "value": "A7V2E8"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "BU"
+                            },
+                            {
+                              "key": "n",
+                              "value": "50"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - Neighborhood - BU_ATCC8492_01788",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/neighborhood?locus_tag=BU_ATCC8492_01788&species_acronym=BU&n=3",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "neighborhood"
+                          ],
+                          "query": [
+                            {
+                              "key": "locus_tag",
+                              "value": "BU_ATCC8492_01788"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "BU"
+                            },
+                            {
+                              "key": "n",
+                              "value": "3"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - Neighborhood - A6L7C0",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?protein_id=A6L7C0&species_acronym=PV&per_page=10000",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "protein_id",
+                              "value": "A6L7C0"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "per_page",
+                              "value": "10000"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    }
+                  ]
+                },
+                {
+                  "name": "Interactions",
+                  "item": [
+                    {
+                      "name": "PPI-Interactions - String Score",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&score_type=string_score&score_threshold=0.7&per_page=5",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "score_type",
+                              "value": "string_score"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "0.7"
+                            },
+                            {
+                              "key": "per_page",
+                              "value": "5"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - XL-MS evidence",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&has_xlms=true&per_page=5",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "has_xlms",
+                              "value": "true"
+                            },
+                            {
+                              "key": "per_page",
+                              "value": "5"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - STRING evidence",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&has_string=true&per_page=5",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "has_string",
+                              "value": "true"
+                            },
+                            {
+                              "key": "per_page",
+                              "value": "5"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - Network properties",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/network-properties?score_type=ds_score&score_threshold=0.8&species_acronym=PV",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "network-properties"
+                          ],
+                          "query": [
+                            {
+                              "key": "score_type",
+                              "value": "ds_score"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "0.8"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - PV Species - Paginated",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&page=1&per_page=10",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "page",
+                              "value": "1"
+                            },
+                            {
+                              "key": "per_page",
+                              "value": "10"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions -  BU_ATCC8492_01788",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU&per_page=5",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "locus_tag",
+                              "value": "BU_ATCC8492_01788"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "BU"
+                            },
+                            {
+                              "key": "per_page",
+                              "value": "5"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions with score Filters -  BU_ATCC8492_01788",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU&score_type=ds_score&score_threshold=0.1&per_page=3",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "locus_tag",
+                              "value": "BU_ATCC8492_01788"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "BU"
+                            },
+                            {
+                              "key": "score_type",
+                              "value": "ds_score"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "0.1"
+                            },
+                            {
+                              "key": "per_page",
+                              "value": "3"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - A6KXK8",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?protein_id=A6KXK8&species_acronym=PV",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "protein_id",
+                              "value": "A6KXK8"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - BU_ATCC8492_01788",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "locus_tag",
+                              "value": "BU_ATCC8492_01788"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "BU"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - BU_ATCC8492_02176",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_02176",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "locus_tag",
+                              "value": "BU_ATCC8492_02176"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - Neighbors - A6KXK8",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/neighbors?protein_id=A6KXK8&n=5&species_acronym=PV",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "neighbors"
+                          ],
+                          "query": [
+                            {
+                              "key": "protein_id",
+                              "value": "A6KXK8"
+                            },
+                            {
+                              "key": "n",
+                              "value": "5"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - Neighbors - BU_ATCC8492_01788",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/neighbors?locus_tag=BU_ATCC8492_01788&species_acronym=BU",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "neighbors"
+                          ],
+                          "query": [
+                            {
+                              "key": "locus_tag",
+                              "value": "BU_ATCC8492_01788"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "BU"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - DS score",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?score_type=ds_score&score_threshold=0.8&per_page=10&page=9000",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "species_acronym",
+                              "value": "BU",
+                              "disabled": true
+                            },
+                            {
+                              "key": "score_type",
+                              "value": "ds_score"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "0.8"
+                            },
+                            {
+                              "key": "per_page",
+                              "value": "10"
+                            },
+                            {
+                              "key": "page",
+                              "value": "9000"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - TEST",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/network/ds_score?score_threshold=0.6&species_acronym=BU&isolate_name=BU_ATCC8492&locus_tag=A7V720&include_properties=true",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "network",
+                            "ds_score"
+                          ],
+                          "query": [
+                            {
+                              "key": "score_threshold",
+                              "value": "0.6"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "BU"
+                            },
+                            {
+                              "key": "isolate_name",
+                              "value": "BU_ATCC8492"
+                            },
+                            {
+                              "key": "locus_tag",
+                              "value": "A7V720"
+                            },
+                            {
+                              "key": "include_properties",
+                              "value": "true"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - Melt Score",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&score_type=melt_score&score_threshold=0.9",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "score_type",
+                              "value": "melt_score"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "0.9"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - Bayesian Score",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&score_type=bayesian_score&score_threshold=0.9",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "interactions"
+                          ],
+                          "query": [
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "score_type",
+                              "value": "bayesian_score"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "0.9"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    }
+                  ]
+                },
+                {
+                  "name": "Network",
+                  "item": [
+                    {
+                      "name": "PPI-Network properties - Abundance Score",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/network-properties?score_type=abundance_score&score_threshold=0.95&species_acronym=PV",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "network-properties"
+                          ],
+                          "query": [
+                            {
+                              "key": "score_type",
+                              "value": "abundance_score"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "0.95"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Network properties - Bayesian Score",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/network-properties?score_type=bayesian_score&score_threshold=0.95&species_acronym=PV",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "network-properties"
+                          ],
+                          "query": [
+                            {
+                              "key": "score_type",
+                              "value": "bayesian_score"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "0.95"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Interactions - XLMS Peptides",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/network-properties?score_type=xlms_peptides&score_threshold=1&species_acronym=PV",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "network-properties"
+                          ],
+                          "query": [
+                            {
+                              "key": "score_type",
+                              "value": "xlms_peptides"
+                            },
+                            {
+                              "key": "score_threshold",
+                              "value": "1"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Network - DS Score",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/network/ds_score?score_threshold=0.8&species_acronym=PV&include_properties=true",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "network",
+                            "ds_score"
+                          ],
+                          "query": [
+                            {
+                              "key": "score_threshold",
+                              "value": "0.8"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "include_properties",
+                              "value": "true"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Network - Bayesian Score",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/network/bayesian_score?score_threshold=0.8&species_acronym=PV&isolate_name=PV_ATCC8482&include_properties=true",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "network",
+                            "bayesian_score"
+                          ],
+                          "query": [
+                            {
+                              "key": "score_threshold",
+                              "value": "0.8"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "isolate_name",
+                              "value": "PV_ATCC8482"
+                            },
+                            {
+                              "key": "include_properties",
+                              "value": "true"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "PPI-Network - Bayesian Score  - LocusTag",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/network/bayesian_score?score_threshold=0.8&species_acronym=PV&isolate_name=PV_ATCC8482&locus_tag=PV_ATCC8482_00001&include_properties=true",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "network",
+                            "bayesian_score"
+                          ],
+                          "query": [
+                            {
+                              "key": "score_threshold",
+                              "value": "0.8"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "PV"
+                            },
+                            {
+                              "key": "isolate_name",
+                              "value": "PV_ATCC8482"
+                            },
+                            {
+                              "key": "locus_tag",
+                              "value": "PV_ATCC8482_00001"
+                            },
+                            {
+                              "key": "include_properties",
+                              "value": "true"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    }
+                  ]
+                },
+                {
+                  "name": "StringDB",
+                  "item": [
+                    {
+                      "name": "StringDB-PPI-Req",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/ppi/string-network?pair_id=BU%3AA7V2E8__A7VAF1&locus_tag=BU_ATCC8492_00001&species_acronym=BU&required_score=460&network_type=physical",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "ppi",
+                            "string-network"
+                          ],
+                          "query": [
+                            {
+                              "key": "pair_id",
+                              "value": "BU%3AA7V2E8__A7VAF1"
+                            },
+                            {
+                              "key": "locus_tag",
+                              "value": "BU_ATCC8492_00001"
+                            },
+                            {
+                              "key": "species_acronym",
+                              "value": "BU"
+                            },
+                            {
+                              "key": "required_score",
+                              "value": "460"
+                            },
+                            {
+                              "key": "network_type",
+                              "value": "physical"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    }
+                  ]
+                },
+                {
                   "name": "PPI-Available Score Types",
                   "event": [
                     {
@@ -7723,16 +8113,6 @@
                     }
                   ],
                   "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
                     "method": "GET",
                     "header": [],
                     "url": {
@@ -7745,1271 +8125,6 @@
                         "ppi",
                         "scores",
                         "available"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - PV Species - Paginated",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&page=1&per_page=10",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "page",
-                          "value": "1"
-                        },
-                        {
-                          "key": "per_page",
-                          "value": "10"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions -  BU_ATCC8492_01788",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU&per_page=5",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "locus_tag",
-                          "value": "BU_ATCC8492_01788"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "BU"
-                        },
-                        {
-                          "key": "per_page",
-                          "value": "5"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions with score Filters -  BU_ATCC8492_01788",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU&score_type=ds_score&score_threshold=0.1&per_page=3",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "locus_tag",
-                          "value": "BU_ATCC8492_01788"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "BU"
-                        },
-                        {
-                          "key": "score_type",
-                          "value": "ds_score"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "0.1"
-                        },
-                        {
-                          "key": "per_page",
-                          "value": "3"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - A6KXK8",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?protein_id=A6KXK8&species_acronym=PV",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "protein_id",
-                          "value": "A6KXK8"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - BU_ATCC8492_01788",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_01788&species_acronym=BU",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "locus_tag",
-                          "value": "BU_ATCC8492_01788"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "BU"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - BU_ATCC8492_02176",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?locus_tag=BU_ATCC8492_02176",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "locus_tag",
-                          "value": "BU_ATCC8492_02176"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - Neighbors - A6KXK8",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/neighbors?protein_id=A6KXK8&n=5&species_acronym=PV",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "neighbors"
-                      ],
-                      "query": [
-                        {
-                          "key": "protein_id",
-                          "value": "A6KXK8"
-                        },
-                        {
-                          "key": "n",
-                          "value": "5"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - Neighbors - BU_ATCC8492_01788",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/neighbors?locus_tag=BU_ATCC8492_01788&species_acronym=BU",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "neighbors"
-                      ],
-                      "query": [
-                        {
-                          "key": "locus_tag",
-                          "value": "BU_ATCC8492_01788"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "BU"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - Neighborhood - A6KXK8",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/neighborhood?protein_id=A6KXK8&species_acronym=PV&n=5",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "neighborhood"
-                      ],
-                      "query": [
-                        {
-                          "key": "protein_id",
-                          "value": "A6KXK8"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "n",
-                          "value": "5"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - Neighborhood - BU_ATCC8492_01788",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/neighborhood?locus_tag=BU_ATCC8492_01788&species_acronym=BU&n=3",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "neighborhood"
-                      ],
-                      "query": [
-                        {
-                          "key": "locus_tag",
-                          "value": "BU_ATCC8492_01788"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "BU"
-                        },
-                        {
-                          "key": "n",
-                          "value": "3"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - Neighborhood - A6L7C0",
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ],
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?protein_id=A6L7C0&species_acronym=PV&per_page=10000",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "protein_id",
-                          "value": "A6L7C0"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "per_page",
-                          "value": "10000"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - DS score",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?score_type=ds_score&score_threshold=0.8&per_page=10&page=9000",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "species_acronym",
-                          "value": "BU",
-                          "disabled": true
-                        },
-                        {
-                          "key": "score_type",
-                          "value": "ds_score"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "0.8"
-                        },
-                        {
-                          "key": "per_page",
-                          "value": "10"
-                        },
-                        {
-                          "key": "page",
-                          "value": "9000"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - TEST",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/network/ds_score?score_threshold=0.6&species_acronym=BU&isolate_name=BU_ATCC8492&locus_tag=A7V720&include_properties=true",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "network",
-                        "ds_score"
-                      ],
-                      "query": [
-                        {
-                          "key": "score_threshold",
-                          "value": "0.6"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "BU"
-                        },
-                        {
-                          "key": "isolate_name",
-                          "value": "BU_ATCC8492"
-                        },
-                        {
-                          "key": "locus_tag",
-                          "value": "A7V720"
-                        },
-                        {
-                          "key": "include_properties",
-                          "value": "true"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - Melt Score",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&score_type=melt_score&score_threshold=0.9",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "score_type",
-                          "value": "melt_score"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "0.9"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - Bayesian Score",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&score_type=bayesian_score&score_threshold=0.9",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "score_type",
-                          "value": "bayesian_score"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "0.9"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Network properties - Abundance Score",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/network-properties?score_type=abundance_score&score_threshold=0.95&species_acronym=PV",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "network-properties"
-                      ],
-                      "query": [
-                        {
-                          "key": "score_type",
-                          "value": "abundance_score"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "0.95"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Network properties - Bayesian Score",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/network-properties?score_type=bayesian_score&score_threshold=0.95&species_acronym=PV",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "network-properties"
-                      ],
-                      "query": [
-                        {
-                          "key": "score_type",
-                          "value": "bayesian_score"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "0.95"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - XLMS Peptides",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/network-properties?score_type=xlms_peptides&score_threshold=1&species_acronym=PV",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "network-properties"
-                      ],
-                      "query": [
-                        {
-                          "key": "score_type",
-                          "value": "xlms_peptides"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "1"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - String Score",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&score_type=string_score&score_threshold=0.7&per_page=5",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "score_type",
-                          "value": "string_score"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "0.7"
-                        },
-                        {
-                          "key": "per_page",
-                          "value": "5"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - XL-MS evidence",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&has_xlms=true&per_page=5",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "has_xlms",
-                          "value": "true"
-                        },
-                        {
-                          "key": "per_page",
-                          "value": "5"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - STRING evidence",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/interactions?species_acronym=PV&has_string=true&per_page=5",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "interactions"
-                      ],
-                      "query": [
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "has_string",
-                          "value": "true"
-                        },
-                        {
-                          "key": "per_page",
-                          "value": "5"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Interactions - Network properties",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/network-properties?score_type=ds_score&score_threshold=0.8&species_acronym=PV",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "network-properties"
-                      ],
-                      "query": [
-                        {
-                          "key": "score_type",
-                          "value": "ds_score"
-                        },
-                        {
-                          "key": "score_threshold",
-                          "value": "0.8"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Network - DS Score",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/network/ds_score?score_threshold=0.8&species_acronym=PV&include_properties=true",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "network",
-                        "ds_score"
-                      ],
-                      "query": [
-                        {
-                          "key": "score_threshold",
-                          "value": "0.8"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "include_properties",
-                          "value": "true"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Network - Bayesian Score",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/network/bayesian_score?score_threshold=0.8&species_acronym=PV&isolate_name=PV_ATCC8482&include_properties=true",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "network",
-                        "bayesian_score"
-                      ],
-                      "query": [
-                        {
-                          "key": "score_threshold",
-                          "value": "0.8"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "isolate_name",
-                          "value": "PV_ATCC8482"
-                        },
-                        {
-                          "key": "include_properties",
-                          "value": "true"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "PPI-Network - Bayesian Score  - LocusTag",
-                  "request": {
-                    "auth": {
-                      "type": "bearer",
-                      "bearer": [
-                        {
-                          "key": "token",
-                          "value": "{{bearer-token-current}}",
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "method": "GET",
-                    "header": [],
-                    "url": {
-                      "raw": "{{mett-current}}/api/ppi/network/bayesian_score?score_threshold=0.8&species_acronym=PV&isolate_name=PV_ATCC8482&locus_tag=PV_ATCC8482_00001&include_properties=true",
-                      "host": [
-                        "{{mett-current}}"
-                      ],
-                      "path": [
-                        "api",
-                        "ppi",
-                        "network",
-                        "bayesian_score"
-                      ],
-                      "query": [
-                        {
-                          "key": "score_threshold",
-                          "value": "0.8"
-                        },
-                        {
-                          "key": "species_acronym",
-                          "value": "PV"
-                        },
-                        {
-                          "key": "isolate_name",
-                          "value": "PV_ATCC8482"
-                        },
-                        {
-                          "key": "locus_tag",
-                          "value": "PV_ATCC8482_00001"
-                        },
-                        {
-                          "key": "include_properties",
-                          "value": "true"
-                        }
                       ]
                     }
                   },
@@ -9628,6 +8743,951 @@
                         "operons"
                       ]
                     }
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ],
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              {
+                "key": "token",
+                "value": "{{bearer-token-current}}",
+                "type": "string"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PyHmmer",
+          "item": [
+            {
+              "name": "Meta-data",
+              "item": [
+                {
+                  "name": "databases-list",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search/databases",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search",
+                        "databases"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "mxchoices-list",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search/mx-choices",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search",
+                        "mx-choices"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "item": [
+                {
+                  "name": "pyhmmer-search-req Copy",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "let json = pm.response.json();",
+                          "if (json.id) {",
+                          "    pm.globals.set(\"hmmer_job_id\", json.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "pyhmmer-search-req",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "let json = pm.response.json();",
+                          "if (json.id) {",
+                          "    pm.globals.set(\"hmmer_job_id\", json.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "pyhmmer-search-varied-seq",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "let json = pm.response.json();",
+                          "if (json.id) {",
+                          "    pm.globals.set(\"hmmer_job_id\", json.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVKQVP\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "pyhmmer-search-long",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "let json = pm.response.json();",
+                          "if (json.id) {",
+                          "    pm.globals.set(\"hmmer_job_id\", json.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">test_long_sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVYQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKER\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "pyhmmer-search-invalid",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "let json = pm.response.json();",
+                          "if (json.id) {",
+                          "    pm.globals.set(\"hmmer_job_id\", json.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \"MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "pyhmmer-search-dna",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "let json = pm.response.json();",
+                          "if (json.id) {",
+                          "    pm.globals.set(\"hmmer_job_id\", json.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"bu_type_strains\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">test_dna\\nATGAGTGAAATAGATCATGTCGGGCTGTGGAACCGCTGTCTTGAAATCATCAG\",\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Query-Search-Results",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{hmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "download-fasta-debug",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/dfef7a0e-38f0-4568-8e10-5f7333ed2c13/debug-fasta",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "dfef7a0e-38f0-4568-8e10-5f7333ed2c13",
+                        "debug-fasta"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "debug-aligned-fasta",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/debug-pyhmmer-msa",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{hmmer_job_id}}",
+                        "debug-pyhmmer-msa"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Query-Domain-Results",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/domains?target=BU_CLA-JM-H26-B_04207",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{hmmer_job_id}}",
+                        "domains"
+                      ],
+                      "query": [
+                        {
+                          "key": "target",
+                          "value": "BU_CLA-JM-H26-B_04207"
+                        }
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "test-Query-Domain",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/851eb6cd-0852-4f63-967b-5130fe7129d6/domains?target=BU_CLA-JM-H26-B_04207",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "851eb6cd-0852-4f63-967b-5130fe7129d6",
+                        "domains"
+                      ],
+                      "query": [
+                        {
+                          "key": "target",
+                          "value": "BU_CLA-JM-H26-B_04207"
+                        }
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "test-Search-Results",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/94da93bb-624a-4a3e-a8cb-947ac92390b3",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "94da93bb-624a-4a3e-a8cb-947ac92390b3"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "test-task",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"input\": \">query1\\nMSEQNNTEMTFQIQRIYTKDISFEAPNAPHVFQKDWRAKQ\",\n  \"database\": \"bu_all\",\n  \"threshold\": \"evalue\",\n  \"threshold_value\": 1e-5\n}\n",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/testtask",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "testtask"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "debug-task",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/debug/task/2a6f5b95-9c43-46a6-ab80-9762b00db8aa",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "debug",
+                        "task",
+                        "2a6f5b95-9c43-46a6-ab80-9762b00db8aa"
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Downloads",
+              "item": [
+                {
+                  "name": "Download-TSV",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=tab",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{hmmer_job_id}}",
+                        "download"
+                      ],
+                      "query": [
+                        {
+                          "key": "format",
+                          "value": "tab"
+                        }
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Download-Fasta",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=fasta",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{hmmer_job_id}}",
+                        "download"
+                      ],
+                      "query": [
+                        {
+                          "key": "format",
+                          "value": "fasta"
+                        }
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Download-Aligned-Fasta",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=aligned_fasta",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{hmmer_job_id}}",
+                        "download"
+                      ],
+                      "query": [
+                        {
+                          "key": "format",
+                          "value": "aligned_fasta"
+                        }
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Download-Invalid-Format",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=csv",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{hmmer_job_id}}",
+                        "download"
+                      ],
+                      "query": [
+                        {
+                          "key": "format",
+                          "value": "csv"
+                        }
+                      ]
+                    },
+                    "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
                   },
                   "response": []
                 }
@@ -10264,7 +10324,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "https://string-db.org/api/tsv/interaction_evidence?identifiers=820.ERS852554_01920,820.ERS852554_03539&species=820",
+              "raw": "https://string-db.org/api/tsv/interaction_evidence?identifiers=820.ERS852554_01920%0D820.ERS852554_03539&species=820",
               "protocol": "https",
               "host": [
                 "string-db",
@@ -10278,7 +10338,7 @@
               "query": [
                 {
                   "key": "identifiers",
-                  "value": "820.ERS852554_01920,820.ERS852554_03539"
+                  "value": "820.ERS852554_01920%0D820.ERS852554_03539"
                 },
                 {
                   "key": "species",
@@ -10296,7 +10356,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "https://string-db.org/api/tsv/network?identifiers=820.ERS852554_01920&species=820&escore=0.4",
+              "raw": "https://string-db.org/api/tsv/network?identifiers=820.ERS852554_01920%0D820.ERS852554_03539&species=820&escore=0.4",
               "protocol": "https",
               "host": [
                 "string-db",
@@ -10310,7 +10370,7 @@
               "query": [
                 {
                   "key": "identifiers",
-                  "value": "820.ERS852554_01920"
+                  "value": "820.ERS852554_01920%0D820.ERS852554_03539"
                 },
                 {
                   "key": "species",
