@@ -564,16 +564,16 @@ $ python manage.py import_fitness_correlations \
 ```bash
 # Basic import
 $ python manage.py import_ppi_with_genes \
-    --index ppi_index \
-    --pattern "*.csv" \
-    --csv-folder ../data-generators/Sub-Projects-Data/SP2/ \
+    --index ppi_index-2026.07.07 \
+    --pattern "*.tsv" \
+    --csv-folder ../data-generators/Sub-Projects-Data/PPI-RankAvg \
     --string-mapping-dir data-generators/stringdb-mapper/output/uniprot_mapped
 
 # With refresh optimization (recommended for large datasets)
 $ python manage.py import_ppi_with_genes \
-  --index ppi_index \
-  --pattern "*.csv" \
-  --csv-folder ../data-generators/Sub-Projects-Data/SP2/ \
+  --index ppi_index-2026.07.07 \
+  --pattern "*.tsv" \
+  --csv-folder ../data-generators/Sub-Projects-Data/PPI-RankAvg \
   --string-mapping-dir data-generators/stringdb-mapper/output/uniprot_mapped \
   --refresh-every-rows 500000
   # Alternative: --refresh-every-secs 120

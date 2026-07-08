@@ -2,8 +2,9 @@ from __future__ import annotations
 import csv
 import glob
 import os
+import re
 import logging
-from typing import Dict, Iterator, List, Optional
+from typing import Dict, Iterator, List, Optional, Tuple
 from .gff_parser import GFFParser, GeneInfo
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,37 @@ PPI_CSV_COLUMNS = [
     "xlms_peptides",
     "xlms_files",
 ]
+
+# Consensus RankAvg TSV: Weight_* column -> internal field name
+CONSENSUS_WEIGHT_COLUMN_MAP: Dict[str, str] = {
+    "Weight_Coexp": "weight_coexp",
+    "Weight_Operons-ANNOgesic": "weight_operons_annogesic",
+    "Weight_Operons-OpDetect": "weight_operons_opdetect",
+    "Weight_Operons-OpMapper": "weight_operons_opmapper",
+    "Weight_PhenoCorr-neg": "weight_phenocorr_neg",
+    "Weight_PhenoCorr-pos": "weight_phenocorr_pos",
+    "Weight_PMI-GSMs": "weight_pmi_gsms",
+    "Weight_PMI": "weight_pmi",
+    "Weight_PPI-BnScore": "bayesian_score",
+    "Weight_PPI-DsScore": "ds_score",
+    "Weight_PPI-EcocycScore": "ecocyc_score",
+    "Weight_PPI-GpScore-neg": "weight_ppi_gp_score_neg",
+    "Weight_PPI-GpScore-pos": "weight_ppi_gp_score_pos",
+    "Weight_PPI-MeltScore": "melt_score",
+    "Weight_PPI-OperonScore": "operon_score",
+    "Weight_PPI-PerturbScore-neg": "weight_ppi_perturb_score_neg",
+    "Weight_PPI-PerturbScore-pos": "weight_ppi_perturb_score_pos",
+    "Weight_PPI-SecScore": "secondary_score",
+    "Weight_PPI-StringPhysicalScore": "string_score",
+    "Weight_PPI-TtScore": "tt_score",
+    "Weight_PPI-XlmsFiles": "weight_ppi_xlms_files",
+    "Weight_PPI-XlmsPeptides": "weight_ppi_xlms_peptides",
+}
+
+LOCUS_TAG_SPECIES_MAP: Dict[str, Tuple[str, str]] = {
+    "BU": ("Bacteroides uniformis", "BU"),
+    "PV": ("Phocaeicola vulgatus", "PV"),
+}
 
 
 def load_string_mapping(path: str) -> Dict[str, str]:
@@ -100,15 +132,25 @@ def load_string_mapping(path: str) -> Dict[str, str]:
                     continue
                 mapping[uni] = sid
 
-        logger.info(
-            f"[ppi] Loaded {len(mapping)} UniProt→STRING mappings from {path} (headerless)"
-        )
+        logger.info(f"[ppi] Loaded {len(mapping)} UniProt→STRING mappings from {path} (headerless)")
     except Exception as e:
         logger.warning(
             f"[ppi] Failed to parse STRING mapping file {path} as headerless mapping: {e}"
         )
 
     return mapping
+
+
+def _int(v: Optional[str]) -> Optional[int]:
+    if v is None:
+        return None
+    v = str(v).strip()
+    if not v or v.lower() in {"na", "nan", "none"}:
+        return None
+    try:
+        return int(float(v))
+    except Exception:
+        return None
 
 
 def _flt(v: Optional[str]) -> Optional[float]:
@@ -131,68 +173,149 @@ def _split_list(v: Optional[str]) -> Optional[List[str]]:
     return parts or None
 
 
+def _infer_species_from_locus_tag(locus_tag: str) -> Tuple[Optional[str], Optional[str]]:
+    """Infer (species_scientific_name, species_acronym) from locus tag prefix."""
+    if not locus_tag:
+        return None, None
+    match = re.match(r"^([A-Z]+)_", locus_tag)
+    if not match:
+        return None, None
+    acronym = match.group(1)
+    return LOCUS_TAG_SPECIES_MAP.get(acronym, (None, acronym))
+
+
+def _infer_species_from_filename(path: str) -> Tuple[Optional[str], Optional[str]]:
+    basename = os.path.basename(path).upper()
+    for acronym, (scientific_name, _) in LOCUS_TAG_SPECIES_MAP.items():
+        if basename.startswith(f"{acronym}_"):
+            return scientific_name, acronym
+    return None, None
+
+
+def _parse_consensus_row(
+    row: Dict[str, str],
+    path: str,
+    gff_parser: Optional[GFFParser] = None,
+) -> Dict:
+    """Parse a single consensus RankAvg TSV row into normalized PPI row dict."""
+    locus_a = (row.get("GeneA") or "").strip()
+    locus_b = (row.get("GeneB") or "").strip()
+    species_name, species_acronym = _infer_species_from_locus_tag(locus_a)
+    if not species_name:
+        species_name, species_acronym = _infer_species_from_filename(path)
+
+    base_row: Dict = {
+        "species": species_name,
+        "species_acronym": species_acronym,
+        "csv_id": row.get("EdgeID"),
+        "edge_id": row.get("EdgeID"),
+        "protein_a_locus_tag": locus_a,
+        "protein_b_locus_tag": locus_b,
+        "consensus_score": _flt(row.get("Score")),
+        "consensus_rank": _int(row.get("Rank")),
+        "consensus_avg_rank": _flt(row.get("AvgRank")),
+    }
+
+    # Map evidence channel weights
+    for tsv_col, field_name in CONSENSUS_WEIGHT_COLUMN_MAP.items():
+        base_row[field_name] = _flt(row.get(tsv_col))
+
+    # Legacy abundance/perturbation scores: use positive weight when available
+    gp_pos = base_row.get("weight_ppi_gp_score_pos")
+    gp_neg = base_row.get("weight_ppi_gp_score_neg")
+    base_row["abundance_score"] = gp_pos if gp_pos is not None else gp_neg
+
+    perturb_pos = base_row.get("weight_ppi_perturb_score_pos")
+    perturb_neg = base_row.get("weight_ppi_perturb_score_neg")
+    base_row["perturbation_score"] = perturb_pos if perturb_pos is not None else perturb_neg
+
+    # Resolve protein IDs and gene metadata from GFF (locus-tag keyed)
+    if gff_parser and species_name:
+        gene_a, gene_b = gff_parser.get_gene_info_for_proteins(species_name, locus_a, locus_b)
+        base_row.update(_add_gene_info_to_row(gene_a, gene_b))
+        base_row["protein_a"] = (
+            gene_a.uniprot_id if gene_a and gene_a.uniprot_id else None
+        ) or locus_a
+        base_row["protein_b"] = (
+            gene_b.uniprot_id if gene_b and gene_b.uniprot_id else None
+        ) or locus_b
+    else:
+        base_row["protein_a"] = locus_a
+        base_row["protein_b"] = locus_b
+
+    return base_row
+
+
+def _parse_legacy_csv_row(
+    row: Dict[str, str],
+    gff_parser: Optional[GFFParser] = None,
+) -> Dict:
+    """Parse a legacy PPI CSV row."""
+    base_row = {
+        "species": row.get("species"),
+        "csv_id": row.get("id"),
+        "protein_a": row.get("protein_a"),
+        "protein_b": row.get("protein_b"),
+        "ds_score": _flt(row.get("ds_score")),
+        "tt_score": _flt(row.get("tt_score")),
+        "perturbation_score": _flt(row.get("perturb_score")),
+        "abundance_score": _flt(row.get("gp_score")),
+        "melt_score": _flt(row.get("melt_score")),
+        "secondary_score": _flt(row.get("sec_score")),
+        "bayesian_score": _flt(row.get("bn_score")),
+        "string_score": _flt(row.get("string_physical_score")),
+        "operon_score": _flt(row.get("operon_score")),
+        "ecocyc_score": _flt(row.get("ecocyc_score")),
+        "xlms_peptides": (row.get("xlms_peptides") or None),
+        "xlms_files": _split_list(row.get("xlms_files")),
+    }
+
+    if gff_parser:
+        species = base_row["species"]
+        protein_a = base_row["protein_a"]
+        protein_b = base_row["protein_b"]
+
+        if species:
+            gene_a, gene_b = gff_parser.get_gene_info_for_proteins(species, protein_a, protein_b)
+            base_row.update(_add_gene_info_to_row(gene_a, gene_b))
+
+    return base_row
+
+
+def _is_consensus_format(fieldnames: Optional[List[str]]) -> bool:
+    return bool(fieldnames and "GeneA" in fieldnames and "Score" in fieldnames)
+
+
 def iter_ppi_rows(
     folder: str, pattern: str = "*.csv", gff_parser: Optional[GFFParser] = None
 ) -> Iterator[Dict]:
-    """Yield raw rows from all CSVs in `folder` matching pattern with optional gene information."""
+    """Yield normalized rows from PPI CSV/TSV files in `folder` matching pattern."""
     for path in sorted(glob.glob(os.path.join(folder, pattern))):
         with open(path, "r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            # optional: verify header superset
-            missing = set(["species", "protein_a", "protein_b"]) - set(
-                reader.fieldnames or []
-            )
-            if missing:
-                raise ValueError(f"PPI CSV missing columns {missing} in {path}")
-            for row in reader:
-                base_row = {
-                    "species": row.get("species"),
-                    "csv_id": row.get(
-                        "id"
-                    ),  # may be None; not trusted for canonicalization
-                    "protein_a": row.get("protein_a"),
-                    "protein_b": row.get("protein_b"),
-                    "ds_score": _flt(row.get("ds_score")),
-                    "tt_score": _flt(row.get("tt_score")),
-                    "perturbation_score": _flt(row.get("perturb_score")),
-                    "abundance_score": _flt(row.get("gp_score")),
-                    "melt_score": _flt(row.get("melt_score")),
-                    "secondary_score": _flt(row.get("sec_score")),
-                    "bayesian_score": _flt(row.get("bn_score")),
-                    "string_score": _flt(row.get("string_physical_score")),
-                    "operon_score": _flt(row.get("operon_score")),
-                    "ecocyc_score": _flt(row.get("ecocyc_score")),
-                    "xlms_peptides": (row.get("xlms_peptides") or None),
-                    "xlms_files": _split_list(row.get("xlms_files")),
-                }
+            sample = f.read(4096)
+            f.seek(0)
+            try:
+                dialect = csv.Sniffer().sniff(sample, delimiters="\t,")
+            except csv.Error:
+                dialect = csv.excel_tab if "\t" in sample.splitlines()[0] else csv.excel
 
-                # Add gene information if GFF parser is provided
-                if gff_parser:
-                    species = base_row["species"]
-                    protein_a = base_row["protein_a"]
-                    protein_b = base_row["protein_b"]
+            reader = csv.DictReader(f, dialect=dialect)
+            fieldnames = reader.fieldnames or []
 
-                    # logger.info(f"Looking up gene info for species: {species}, protein_a: {protein_a}, protein_b: {protein_b}")
-
-                    if species:
-                        gene_a, gene_b = gff_parser.get_gene_info_for_proteins(
-                            species, protein_a, protein_b
-                        )
-
-                        # logger.info(f"Gene lookup results - gene_a: {gene_a}, gene_b: {gene_b}")
-
-                        base_row.update(_add_gene_info_to_row(gene_a, gene_b))
-                    else:
-                        logger.info("No species found in row, skipping gene lookup")
-                else:
-                    logger.info("No GFF parser provided, skipping gene lookup")
-
-                yield base_row
+            if _is_consensus_format(fieldnames):
+                logger.info(f"[ppi] Parsing consensus TSV format: {path}")
+                for row in reader:
+                    yield _parse_consensus_row(row, path, gff_parser)
+            else:
+                missing = set(["species", "protein_a", "protein_b"]) - set(fieldnames)
+                if missing:
+                    raise ValueError(f"PPI file missing columns {missing} in {path}")
+                logger.info(f"[ppi] Parsing legacy CSV format: {path}")
+                for row in reader:
+                    yield _parse_legacy_csv_row(row, gff_parser)
 
 
-def _add_gene_info_to_row(
-    gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]
-) -> Dict:
+def _add_gene_info_to_row(gene_a: Optional[GeneInfo], gene_b: Optional[GeneInfo]) -> Dict:
     """Add gene information to a PPI row."""
     gene_info = {}
 
