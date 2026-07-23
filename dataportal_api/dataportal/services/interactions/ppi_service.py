@@ -25,6 +25,9 @@ from dataportal.utils.constants import (
     INDEX_PPI,
     PPI_VALID_FILTER_FIELDS,
     PPI_SCORE_FIELDS,
+    PPI_EVIDENCE_WEIGHT_FIELDS,
+    PPI_EVIDENCE_SCORE_FIELDS,
+    PPI_DEFAULT_SCORE_TYPE,
 )
 from dataportal.utils.exceptions import ServiceError, ValidationError
 from dataportal.services.service_factory import ServiceFactory
@@ -259,6 +262,10 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         if include_scores:
             base_fields.extend(
                 [
+                    "consensus_score",
+                    "consensus_rank",
+                    "consensus_avg_rank",
+                    "edge_id",
                     "ds_score",
                     "string_score",
                     "melt_score",
@@ -271,6 +278,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                     "operon_score",
                     "ecocyc_score",
                     "tt_score",
+                    *PPI_EVIDENCE_WEIGHT_FIELDS,
                     "has_xlms",
                     "has_string",
                     "has_operon",
@@ -280,6 +288,39 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             )
 
         return base_fields
+
+    def _extract_evidence_scores(self, hit) -> Dict[str, float]:
+        """Extract non-zero per-channel evidence scores from an ES hit."""
+        scores: Dict[str, float] = {}
+        for field in PPI_EVIDENCE_SCORE_FIELDS:
+            value = getattr(hit, field, None)
+            if value is None:
+                continue
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                continue
+            if numeric != 0:
+                scores[field] = numeric
+        return scores
+
+    def _edge_from_hit(self, hit, score_field: str) -> PPINetworkEdgeSchema:
+        """Build a network edge with consensus/selected weight plus evidence details."""
+        score = getattr(hit, score_field, None)
+        try:
+            weight = float(score) if score is not None else None
+        except (TypeError, ValueError):
+            weight = None
+        if weight == 0:
+            weight = None
+
+        return PPINetworkEdgeSchema(
+            source=hit.protein_a,
+            target=hit.protein_b,
+            weight=weight,
+            pair_id=getattr(hit, "pair_id", None),
+            evidence_scores=self._extract_evidence_scores(hit) or None,
+        )
 
     @lru_cache(maxsize=50)
     def _validate_and_normalize_score_field(self, score_type: str) -> str:
@@ -551,10 +592,11 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             max_fetch = min(total_matches, 10000000)
             s = s[:max_fetch]
 
-            # Use standard source fields
+            # Use standard source fields + selected score + evidence channels for detail panel
             score_field = self._validate_and_normalize_score_field(score_type)
-            source_fields = self._get_standard_source_fields(include_scores=False)
-            source_fields.append(score_field)
+            source_fields = self._get_standard_source_fields(include_scores=True)
+            if score_field not in source_fields:
+                source_fields.append(score_field)
             s = s.source(source_fields)
 
             # Log the final query for debugging
@@ -570,7 +612,6 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             for hit in response.hits:
                 protein_a = hit.protein_a
                 protein_b = hit.protein_b
-                score = getattr(hit, score_field, 0)
 
                 # Collect metadata for protein_a
                 if protein_a not in nodes_dict:
@@ -614,14 +655,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         hit, "protein_b_product", None
                     )
 
-                # Add edge using schema
-                edges.append(
-                    PPINetworkEdgeSchema(
-                        source=protein_a,
-                        target=protein_b,
-                        weight=score if score else None,
-                    )
-                )
+                edges.append(self._edge_from_hit(hit, score_field))
 
             # Convert nodes dict to list of schema objects
             node_list = [PPINetworkNodeSchema(**node_data) for node_data in nodes_dict.values()]
@@ -774,6 +808,8 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                     {
                         "protein_a": hit.protein_a,
                         "protein_b": hit.protein_b,
+                        "pair_id": getattr(hit, "pair_id", None),
+                        "consensus_score": getattr(hit, "consensus_score", None),
                         "ds_score": getattr(hit, "ds_score", None),
                         "string_score": getattr(hit, "string_score", None),
                         "melt_score": getattr(hit, "melt_score", None),
@@ -783,6 +819,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         "protein_b_locus_tag": getattr(hit, "protein_b_locus_tag", None),
                         "protein_b_name": getattr(hit, "protein_b_name", None),
                         "protein_b_product": getattr(hit, "protein_b_product", None),
+                        "evidence_scores": self._extract_evidence_scores(hit) or None,
                     }
                 )
 
@@ -797,7 +834,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         protein_id: str,
         n: int = 5,
         species_acronym: Optional[str] = None,
-        score_type: str = "ds_score",
+        score_type: str = PPI_DEFAULT_SCORE_TYPE,
         score_threshold: float = 0.0,
     ) -> PPINeighborhoodSchema:
         """Get neighborhood data for a specific protein using Dijkstra's algorithm.
@@ -866,8 +903,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 protein_a = hit.protein_a
                 protein_b = hit.protein_b
                 if protein_a in neighborhood_nodes and protein_b in neighborhood_nodes:
-                    w = getattr(hit, score_field, None) or 0
-                    edges.append({"source": protein_a, "target": protein_b, "weight": w})
+                    edges.append(self._edge_from_hit(hit, score_field))
 
             # Neighbor-to-neighbor edges: same score filter and score field
             if len(nearest_neighbors) > 1:
@@ -885,9 +921,10 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                     neighbor_search = neighbor_search.filter(
                         "terms", participants=nearest_neighbors
                     )
-                    neighbor_search = neighbor_search.source(
-                        ["protein_a", "protein_b", score_field]
-                    )
+                    neighbor_source = self._get_standard_source_fields(include_scores=True)
+                    if score_field not in neighbor_source:
+                        neighbor_source = list(neighbor_source) + [score_field]
+                    neighbor_search = neighbor_search.source(neighbor_source)
 
                     neighbor_response = await self._execute_search(neighbor_search)
                     logger.info(
@@ -895,8 +932,8 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                     )
 
                     # Add any new interactions between neighbors
-                    existing_edges = {(edge["source"], edge["target"]) for edge in edges}
-                    existing_edges.update({(edge["target"], edge["source"]) for edge in edges})
+                    existing_edges = {(edge.source, edge.target) for edge in edges}
+                    existing_edges.update({(edge.target, edge.source) for edge in edges})
 
                     new_edges_count = 0
                     for hit in neighbor_response.hits:
@@ -910,9 +947,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                             and (protein_a, protein_b) not in existing_edges
                             and (protein_b, protein_a) not in existing_edges
                         ):
-
-                            w = getattr(hit, score_field, None) or 0
-                            edges.append({"source": protein_a, "target": protein_b, "weight": w})
+                            edges.append(self._edge_from_hit(hit, score_field))
                             new_edges_count += 1
                             logger.info(
                                 f"Added neighbor-to-neighbor edge: {protein_a} -> {protein_b}"
@@ -1045,6 +1080,26 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             # STRING DB ids
             "string_protein_a_id": getattr(hit, "string_protein_a_id", None),
             "string_protein_b_id": getattr(hit, "string_protein_b_id", None),
+            # Consensus network
+            "consensus_score": getattr(hit, "consensus_score", None),
+            "consensus_rank": getattr(hit, "consensus_rank", None),
+            "consensus_avg_rank": getattr(hit, "consensus_avg_rank", None),
+            "edge_id": getattr(hit, "edge_id", None),
+            # Evidence channel weights
+            "weight_coexp": getattr(hit, "weight_coexp", None),
+            "weight_operons_annogesic": getattr(hit, "weight_operons_annogesic", None),
+            "weight_operons_opdetect": getattr(hit, "weight_operons_opdetect", None),
+            "weight_operons_opmapper": getattr(hit, "weight_operons_opmapper", None),
+            "weight_phenocorr_neg": getattr(hit, "weight_phenocorr_neg", None),
+            "weight_phenocorr_pos": getattr(hit, "weight_phenocorr_pos", None),
+            "weight_pmi_gsms": getattr(hit, "weight_pmi_gsms", None),
+            "weight_pmi": getattr(hit, "weight_pmi", None),
+            "weight_ppi_gp_score_neg": getattr(hit, "weight_ppi_gp_score_neg", None),
+            "weight_ppi_gp_score_pos": getattr(hit, "weight_ppi_gp_score_pos", None),
+            "weight_ppi_perturb_score_neg": getattr(hit, "weight_ppi_perturb_score_neg", None),
+            "weight_ppi_perturb_score_pos": getattr(hit, "weight_ppi_perturb_score_pos", None),
+            "weight_ppi_xlms_files": getattr(hit, "weight_ppi_xlms_files", None),
+            "weight_ppi_xlms_peptides": getattr(hit, "weight_ppi_xlms_peptides", None),
             # Scores
             "dl_score": getattr(hit, "dl_score", None),
             "comelt_score": getattr(hit, "comelt_score", None),

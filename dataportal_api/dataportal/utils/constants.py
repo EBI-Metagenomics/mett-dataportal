@@ -258,6 +258,32 @@ PPI_EVIDENCE_WEIGHT_FIELDS = [
     "weight_ppi_xlms_peptides",
 ]
 
+# Fields returned in edge/detail evidence_scores (exclude consensus — that is edge weight)
+PPI_EVIDENCE_SCORE_FIELDS = [
+    "weight_coexp",
+    "weight_operons_annogesic",
+    "weight_operons_opdetect",
+    "weight_operons_opmapper",
+    "weight_phenocorr_neg",
+    "weight_phenocorr_pos",
+    "weight_pmi_gsms",
+    "weight_pmi",
+    "bayesian_score",
+    "ds_score",
+    "ecocyc_score",
+    "weight_ppi_gp_score_neg",
+    "weight_ppi_gp_score_pos",
+    "melt_score",
+    "operon_score",
+    "weight_ppi_perturb_score_neg",
+    "weight_ppi_perturb_score_pos",
+    "secondary_score",
+    "string_score",
+    "tt_score",
+    "weight_ppi_xlms_files",
+    "weight_ppi_xlms_peptides",
+]
+
 # Display labels for evidence channels (used by API / UI)
 PPI_EVIDENCE_CHANNEL_LABELS = {
     "consensus_score": "Consensus",
@@ -283,7 +309,13 @@ PPI_EVIDENCE_CHANNEL_LABELS = {
     "tt_score": "Thermal tolerance",
     "weight_ppi_xlms_files": "XL-MS (files)",
     "weight_ppi_xlms_peptides": "XL-MS (peptides)",
+    "comelt_score": "Co-melting",
+    "perturbation_score": "Perturbation",
+    "abundance_score": "Global proteomics",
 }
+
+# Default score used for network edge weight / ranking
+PPI_DEFAULT_SCORE_TYPE = "consensus_score"
 
 # --- PPI Non-Score Filter Fields ---
 PPI_NON_SCORE_FIELDS = [

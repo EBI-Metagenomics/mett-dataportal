@@ -55,6 +55,42 @@ export const STRING_EVIDENCE_SCORE_FIELDS: Record<StringEvidenceChannel, string>
   textmining: 'tscore',
 } as const;
 
+/** Default score type for local ES network (consensus RankAvg). */
+export const DEFAULT_LOCAL_SCORE_TYPE = 'consensus_score';
+
+/**
+ * Display labels for local consensus / evidence channel fields.
+ * Used in edge detail panel and score-type filter.
+ */
+export const LOCAL_EVIDENCE_CHANNEL_LABELS: Record<string, string> = {
+  consensus_score: 'Consensus',
+  weight_coexp: 'Co-expression',
+  weight_operons_annogesic: 'Operons (ANNOgesic)',
+  weight_operons_opdetect: 'Operons (OpDetect)',
+  weight_operons_opmapper: 'Operons (OpMapper)',
+  weight_phenocorr_neg: 'Phenotype correlation (−)',
+  weight_phenocorr_pos: 'Phenotype correlation (+)',
+  weight_pmi_gsms: 'PMI (GSMs)',
+  weight_pmi: 'PMI',
+  bayesian_score: 'Bayesian network',
+  ds_score: 'Deep learning',
+  ecocyc_score: 'EcoCyc',
+  weight_ppi_gp_score_neg: 'Global proteomics (−)',
+  weight_ppi_gp_score_pos: 'Global proteomics (+)',
+  melt_score: 'Thermal proteome profiling',
+  operon_score: 'Operon',
+  weight_ppi_perturb_score_neg: 'Perturbation (−)',
+  weight_ppi_perturb_score_pos: 'Perturbation (+)',
+  secondary_score: 'Secondary structure',
+  string_score: 'STRING physical',
+  tt_score: 'Thermal tolerance',
+  weight_ppi_xlms_files: 'XL-MS (files)',
+  weight_ppi_xlms_peptides: 'XL-MS (peptides)',
+  comelt_score: 'Co-melting',
+  perturbation_score: 'Perturbation',
+  abundance_score: 'Global proteomics',
+};
+
 /** Fallback edge color for expansion levels when no specific color is defined (Cytoscape styles). */
 export const EDGE_FALLBACK_COLOR = '#999';
 

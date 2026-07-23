@@ -45,7 +45,7 @@ export const useNetworkData = ({
   speciesAcronym,
   isolateName,
   locusTag,
-  scoreType = 'ds_score',
+  scoreType = 'consensus_score',
   scoreThreshold = 0.9,
   topN = 10,
   limitMode = 'threshold',
@@ -75,7 +75,7 @@ export const useNetworkData = ({
     orthologMapRef.current = orthologMap;
   }, [orthologMap]);
 
-  // Fetch available score types on mount
+  // Fetch available score types on mount; prefer API default when present
   useEffect(() => {
     const fetchScoreTypes = async () => {
       try {

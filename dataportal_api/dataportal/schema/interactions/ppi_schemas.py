@@ -228,8 +228,8 @@ class PPINeighborhoodQuerySchema(BaseModel):
     n: int = Field(5, ge=1, le=50, description="Number of neighbors to retrieve")
     species_acronym: Optional[str] = Field(None, description="Species acronym filter")
     score_type: Optional[str] = Field(
-        "ds_score",
-        description="Score type used to rank and filter interactions (e.g. ds_score, string_score). Determines which interactions are considered and their order for 'top N'.",
+        "consensus_score",
+        description="Score type used to rank and filter interactions (default: consensus_score). Determines which interactions are considered and their order for 'top N'.",
     )
     score_threshold: Optional[float] = Field(
         0.0,
@@ -298,7 +298,20 @@ class PPINetworkPropertiesQuerySchema(BaseModel):
 class PPIScoreTypesResponseSchema(SuccessResponseSchema):
     """Response schema for available score types."""
 
-    data: Dict[str, List[str]] = Field(..., description="Available score types")
+    data: Dict[str, Any] = Field(
+        ...,
+        description=(
+            "Available score types and evidence channel metadata. "
+            "Example: {'score_types': [...], 'default': 'consensus_score', "
+            "'evidence_channels': {'ds_score': 'Deep learning', ...}}."
+        ),
+    )
+
+
+class PPIInteractionDetailResponseSchema(SuccessResponseSchema):
+    """Response schema for a single PPI interaction by pair_id."""
+
+    data: PPIInteractionSchema
 
 
 class PPIDataSourcesResponseSchema(SuccessResponseSchema):

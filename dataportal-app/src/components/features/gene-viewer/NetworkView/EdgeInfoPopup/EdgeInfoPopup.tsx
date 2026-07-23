@@ -1,16 +1,34 @@
 import React, { useMemo } from 'react';
-import { PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
-import { EVIDENCE_DISPLAY_LABELS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS } from '../constants';
+import { LocalEvidenceScores, PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
+import {
+  EVIDENCE_DISPLAY_LABELS,
+  LOCAL_EVIDENCE_CHANNEL_LABELS,
+  STRING_EVIDENCE_CHANNELS,
+  STRING_EVIDENCE_SCORE_FIELDS,
+} from '../constants';
 import { useClampPopupToViewport } from '../utils/useClampPopupToViewport';
 import styles from './EdgeInfoPopup.module.scss';
 
 interface EdgeInfoPopupProps {
-  edge: PPINetworkEdge & { edgeType?: string; orthology_type?: string; expansionLevel?: number; string_score_breakdown?: StringScoreBreakdown };
+  edge: PPINetworkEdge & {
+    edgeType?: string;
+    orthology_type?: string;
+    expansionLevel?: number;
+    string_score_breakdown?: StringScoreBreakdown;
+    evidence_scores?: LocalEvidenceScores;
+  };
   sourceNode?: { locus_tag?: string; name?: string; product?: string };
   targetNode?: { locus_tag?: string; name?: string; product?: string };
   x: number;
   y: number;
   onClose: () => void;
+}
+
+function formatScoreLabel(field: string): string {
+  return (
+    LOCAL_EVIDENCE_CHANNEL_LABELS[field] ||
+    field.replace(/_score$/, '').replace(/^weight_/, '').replace(/_/g, ' ')
+  );
 }
 
 export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
@@ -21,6 +39,20 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
   y,
   onClose,
 }) => {
+  /** Local consensus evidence channels (from ES network edges). */
+  const localEvidenceScores = useMemo(() => {
+    const scores = edge.evidence_scores;
+    if (!scores || typeof scores !== 'object') return [];
+    return Object.entries(scores)
+      .filter(([, value]) => typeof value === 'number' && !Number.isNaN(value) && value !== 0)
+      .map(([field, score]) => ({
+        field,
+        label: formatScoreLabel(field),
+        score: score as number,
+      }))
+      .sort((a, b) => b.score - a.score);
+  }, [edge]);
+
   /** For STRING edges with string_score_breakdown, collect all evidence scores > 0 */
   const stringEvidenceScores = useMemo(() => {
     const breakdown = (edge as { string_score_breakdown?: StringScoreBreakdown }).string_score_breakdown;
@@ -48,8 +80,17 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
     if (evidenceType) {
       return `STRING: ${evidenceType}`;
     }
+    if (localEvidenceScores.length > 0) {
+      return 'Consensus Interaction';
+    }
     return 'PPI Interaction';
   };
+
+  const scoreTypeLabel = edge.score_type
+    ? formatScoreLabel(edge.score_type)
+    : localEvidenceScores.length > 0
+      ? 'Consensus'
+      : null;
 
   const { popupRef, shift } = useClampPopupToViewport(x, y);
 
@@ -121,21 +162,36 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
 
           {/* Edge Properties */}
           <div className={styles.edgeProperties}>
-            {edge.weight !== undefined && stringEvidenceScores.length === 0 && (
+            {edge.weight !== undefined && edge.weight !== null && (
               <div className={styles.infoRow}>
-                <span className={styles.label}>Score/Weight:</span>
-                <span className={styles.value}>{edge.weight.toFixed(4)}</span>
+                <span className={styles.label}>
+                  {scoreTypeLabel ? `${scoreTypeLabel} score:` : 'Score/Weight:'}
+                </span>
+                <span className={styles.value}>{Number(edge.weight).toFixed(4)}</span>
               </div>
             )}
-            {edge.score_type && (
+            {edge.score_type && localEvidenceScores.length === 0 && stringEvidenceScores.length === 0 && (
               <div className={styles.infoRow}>
                 <span className={styles.label}>Score Type:</span>
                 <span className={styles.value}>{edge.score_type}</span>
               </div>
             )}
-            {stringEvidenceScores.length > 0 ? (
+
+            {localEvidenceScores.length > 0 && (
               <>
-                <div className={styles.sectionTitle}>Evidence scores</div>
+                <div className={styles.sectionTitle}>Evidence channels</div>
+                {localEvidenceScores.map(({ field, label, score }) => (
+                  <div key={field} className={styles.infoRow}>
+                    <span className={styles.label}>{label}:</span>
+                    <span className={styles.value}>{score.toFixed(4)}</span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {stringEvidenceScores.length > 0 && (
+              <>
+                <div className={styles.sectionTitle}>STRING evidence scores</div>
                 {stringEvidenceScores.map(({ label, score }) => (
                   <div key={label} className={styles.infoRow}>
                     <span className={styles.label}>{label}:</span>
@@ -143,12 +199,19 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
                   </div>
                 ))}
               </>
-            ) : (edge as { evidence_type?: string }).evidence_type ? (
-              <div className={styles.infoRow}>
-                <span className={styles.label}>Evidence Type:</span>
-                <span className={styles.value}>{(edge as { evidence_type?: string }).evidence_type}</span>
-              </div>
-            ) : null}
+            )}
+
+            {localEvidenceScores.length === 0 &&
+              stringEvidenceScores.length === 0 &&
+              (edge as { evidence_type?: string }).evidence_type && (
+                <div className={styles.infoRow}>
+                  <span className={styles.label}>Evidence Type:</span>
+                  <span className={styles.value}>
+                    {(edge as { evidence_type?: string }).evidence_type}
+                  </span>
+                </div>
+              )}
+
             {edge.orthology_type && (
               <div className={styles.infoRow}>
                 <span className={styles.label}>Orthology Type:</span>
@@ -161,4 +224,3 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
     </div>
   );
 };
-

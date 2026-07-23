@@ -86,6 +86,20 @@ export class PPIService extends BaseService {
   }
 
   /**
+   * Get a single PPI interaction by pair_id (full consensus + evidence channel detail).
+   */
+  static async getInteractionByPairId(pairId: string): Promise<PPIInteraction> {
+    try {
+      return await this.getWithRetry<PPIInteraction>(
+        `${this.BASE_ENDPOINT}/interactions/${encodeURIComponent(pairId)}`
+      );
+    } catch (error) {
+      console.error("Error fetching PPI interaction by pair_id:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get PPI network data for a specific score type and threshold
    */
   static async getNetworkData(query: PPINetworkQuery): Promise<PPINetworkData> {
@@ -184,7 +198,7 @@ export class PPIService extends BaseService {
         string_id: params.string_id ?? undefined,
         species_acronym: params.species_acronym ?? undefined,
         n: params.n ?? 5,
-        score_type: params.score_type ?? "ds_score",
+        score_type: params.score_type ?? "consensus_score",
         score_threshold: params.score_threshold ?? 0,
       });
 
