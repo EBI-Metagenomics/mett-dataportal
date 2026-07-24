@@ -6,6 +6,21 @@ const GT = NETWORK_VIEW_CONSTANTS.GRAPH_THEME;
 const EW = NETWORK_VIEW_CONSTANTS.EDGE_WIDTH;
 const EX = NETWORK_VIEW_CONSTANTS.EXPANSION;
 
+/** Stable +1/−1 so adjacent hub spokes don't all curve the same direction. */
+const curveSignForEdge = (edge: cytoscape.EdgeSingular): 1 | -1 => {
+    const a = String(edge.data('source') ?? '');
+    const b = String(edge.data('target') ?? '');
+    const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+    let hash = 0;
+    for (let i = 0; i < key.length; i += 1) {
+        hash = (hash * 31 + key.charCodeAt(i)) | 0;
+    }
+    return hash % 2 === 0 ? 1 : -1;
+};
+
+const localControlPointDistance = (edge: cytoscape.EdgeSingular): number =>
+    curveSignForEdge(edge) * GT.EDGE.LOCAL_CONTROL_POINT_DISTANCE;
+
 interface UseCytoscapeStylesProps {
     showOrthologs: boolean;
     scoreRange: { min: number; max: number };
@@ -24,19 +39,13 @@ export const useCytoscapeStyles = ({
     return useMemo(() => {
         const styles = [
             {
+                // Local / default edges: mild curve with alternating bow direction
                 selector: 'edge',
                 style: {
-                    'curve-style': 'bezier',
-                    'control-point-step-size': GT.EDGE.CONTROL_POINT_STEP_SIZE,
-                    'line-color': (edge: cytoscape.EdgeSingular) => {
-                        const dataSource = edge.data('dataSource') as string | undefined;
-                        const evidenceChannel = edge.data('evidence_channel') as StringEvidenceChannel | undefined;
-                        if (dataSource === 'stringdb' && evidenceChannel && evidenceChannel in STRING_EVIDENCE_COLORS) {
-                            return STRING_EVIDENCE_COLORS[evidenceChannel];
-                        }
-                        if (dataSource === 'stringdb') return GT.EDGE.STRINGDB_EDGE_COLOR;
-                        return GT.EDGE.LOCAL_EDGE_COLOR;
-                    },
+                    'curve-style': 'unbundled-bezier',
+                    'control-point-distances': localControlPointDistance,
+                    'control-point-weights': GT.EDGE.LOCAL_CONTROL_POINT_WEIGHT,
+                    'line-color': GT.EDGE.LOCAL_EDGE_COLOR,
                     opacity: GT.EDGE.OPACITY,
                     width: (edge: cytoscape.EdgeSingular) => {
                         const w = edge.data('weight') ?? 0;
@@ -51,8 +60,26 @@ export const useCytoscapeStyles = ({
                 },
             },
             {
+                // STRING multi-evidence edges: bezier so parallel channels fan out
+                selector: 'edge[dataSource = "stringdb"]',
+                style: {
+                    'curve-style': 'bezier',
+                    'control-point-step-size': GT.EDGE.CONTROL_POINT_STEP_SIZE,
+                    'line-color': (edge: cytoscape.EdgeSingular) => {
+                        const evidenceChannel = edge.data('evidence_channel') as StringEvidenceChannel | undefined;
+                        if (evidenceChannel && evidenceChannel in STRING_EVIDENCE_COLORS) {
+                            return STRING_EVIDENCE_COLORS[evidenceChannel];
+                        }
+                        return GT.EDGE.STRINGDB_EDGE_COLOR;
+                    },
+                },
+            },
+            {
                 selector: 'edge[edgeType = "ortholog"]',
                 style: {
+                    'curve-style': 'unbundled-bezier',
+                    'control-point-distances': localControlPointDistance,
+                    'control-point-weights': GT.EDGE.LOCAL_CONTROL_POINT_WEIGHT,
                     'line-color': GT.EDGE.ORTHOLOG_LINE_COLOR,
                     opacity: GT.EDGE.ORTHOLOG_OPACITY,
                     'line-style': 'dashed',
@@ -142,6 +169,9 @@ export const useCytoscapeStyles = ({
             {
                 selector: 'edge[expansionLevel]',
                 style: {
+                    'curve-style': 'unbundled-bezier',
+                    'control-point-distances': localControlPointDistance,
+                    'control-point-weights': GT.EDGE.LOCAL_CONTROL_POINT_WEIGHT,
                     'line-color': (edge: cytoscape.EdgeSingular) => {
                         const dataSource = edge.data('dataSource') as string | undefined;
                         const evidenceChannel = edge.data('evidence_channel') as StringEvidenceChannel | undefined;
@@ -149,7 +179,8 @@ export const useCytoscapeStyles = ({
                             return STRING_EVIDENCE_COLORS[evidenceChannel];
                         }
                         if (dataSource === 'stringdb') return GT.EDGE.STRINGDB_EDGE_COLOR;
-                        if (dataSource === 'local') return GT.EDGE.LOCAL_EDGE_COLOR;
+                        // Local expanded edges keep the single consensus color
+                        if (dataSource === 'local' || dataSource == null) return GT.EDGE.LOCAL_EDGE_COLOR;
                         const level = edge.data('expansionLevel') as number | undefined;
                         if (level === undefined || level === 0) return EDGE_FALLBACK_COLOR;
                         const colors = EX.LEVEL_COLORS;
@@ -157,6 +188,14 @@ export const useCytoscapeStyles = ({
                     },
                     'line-width': GT.EXPANSION_EDGE.LINE_WIDTH,
                     opacity: GT.EXPANSION_EDGE.OPACITY,
+                },
+            },
+            {
+                // Keep STRING expanded edges as bezier so parallel channels still fan out
+                selector: 'edge[dataSource = "stringdb"][expansionLevel]',
+                style: {
+                    'curve-style': 'bezier',
+                    'control-point-step-size': GT.EDGE.CONTROL_POINT_STEP_SIZE,
                 },
             },
             {

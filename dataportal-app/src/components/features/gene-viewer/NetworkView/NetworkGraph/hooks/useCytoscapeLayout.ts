@@ -2,6 +2,10 @@ import cytoscape from 'cytoscape';
 import { NETWORK_VIEW_CONSTANTS } from '../../constants';
 import { applyPositions } from '../utils/positionPreservation';
 import { PreparedNode } from '../utils/prepareElements';
+import { registerCytoscapeExtensions } from '../utils/registerCytoscapeExtensions';
+import { getFcoseLayoutOptions } from '../utils/getFcoseLayoutOptions';
+
+registerCytoscapeExtensions();
 
 interface UseCytoscapeLayoutProps {
     cy: cytoscape.Core;
@@ -9,10 +13,11 @@ interface UseCytoscapeLayoutProps {
     existingPositions: Map<string, { x: number; y: number }>;
     hasExpansionLevels: boolean;
     layoutRunningRef: { current: boolean };
+    focalNodeId?: string | null;
 }
 
 /**
- * Apply layout to Cytoscape instance
+ * Apply layout to Cytoscape instance (fCoSE for full layouts).
  */
 export const useCytoscapeLayout = ({
     cy,
@@ -20,18 +25,19 @@ export const useCytoscapeLayout = ({
     existingPositions,
     hasExpansionLevels,
     layoutRunningRef,
+    focalNodeId,
 }: UseCytoscapeLayoutProps): void => {
     if (!cy) return;
 
     if (hasExpansionLevels) {
         // Set node positions and lock existing ones
         applyPositions(cy, preparedNodes, existingPositions);
-        
-        const hasNewNodes = preparedNodes.some(n => !existingPositions.has(n.data.id));
-        
+
+        const hasNewNodes = preparedNodes.some((n) => !existingPositions.has(n.data.id));
+
         if (hasNewNodes) {
             setTimeout(() => {
-                const newNodes = cy.nodes().filter(node => {
+                const newNodes = cy.nodes().filter((node) => {
                     return !existingPositions.has(node.id());
                 });
                 if (newNodes.length > 0) {
@@ -43,25 +49,13 @@ export const useCytoscapeLayout = ({
             layoutRunningRef.current = false;
         }
     } else {
-        const L = NETWORK_VIEW_CONSTANTS.COSE_LAYOUT;
-        const layoutOptions: cytoscape.CoseLayoutOptions = {
-            name: 'cose',
-            animate: true,
-            animationDuration: L.ANIMATION_DURATION_IN_PLACE,
-            fit: true,
-            padding: L.PADDING_IN_PLACE,
-            idealEdgeLength: (edge: cytoscape.EdgeSingular) => {
-                const w = edge.data('weight') ?? 1;
-                const len = 140 - Math.min(w, 1) * 60;
-                return Math.max(70, len);
-            },
-            nodeRepulsion: L.NODE_REPULSION_IN_PLACE,
-            nodeOverlap: L.NODE_OVERLAP_IN_PLACE,
-            gravity: L.GRAVITY_IN_PLACE,
-            numIter: L.NUM_ITER_IN_PLACE,
-        };
+        const L = NETWORK_VIEW_CONSTANTS.FCOSE_LAYOUT;
+        const layoutOptions = getFcoseLayoutOptions({
+            focalNodeId,
+            inPlace: true,
+        });
 
-        const layout = cy.layout(layoutOptions);
+        const layout = cy.layout(layoutOptions as unknown as cytoscape.LayoutOptions);
 
         layout.one('layoutstop', () => {
             cy.fit(undefined, L.FIT_PADDING_IN_PLACE);
@@ -71,4 +65,3 @@ export const useCytoscapeLayout = ({
         layout.run();
     }
 };
-

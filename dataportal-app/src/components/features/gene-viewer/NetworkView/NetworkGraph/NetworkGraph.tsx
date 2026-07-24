@@ -12,7 +12,11 @@ import { useCytoscapeStyles } from './hooks/useCytoscapeStyles';
 import { useGraphFading } from './hooks/useGraphFading';
 import { prepareNodes, prepareEdges } from './utils/prepareElements';
 import { preservePositions } from './utils/positionPreservation';
+import { registerCytoscapeExtensions } from './utils/registerCytoscapeExtensions';
+import { getFcoseLayoutOptions } from './utils/getFcoseLayoutOptions';
 import styles from './NetworkGraph.module.scss';
+
+registerCytoscapeExtensions();
 
 /**
  * NetworkGraph component - Cytoscape.js graph visualization
@@ -231,26 +235,15 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     // Trigger initial label visibility
                     cy.trigger('zoom');
 
-                    // Apply layout: always use force-directed (cose) for organic look, including expanded graphs
-                    // Nodes already have initial positions from prepareNodes (radial or preserved); don't lock so cose can rearrange all
+                    // Apply fCoSE layout (better spacing than built-in cose).
+                    // Pin the focal gene when known so neighborhood graphs stay hub-centered.
                     cy.nodes().unlock();
-                    const L = NETWORK_VIEW_CONSTANTS.COSE_LAYOUT;
-                    const coseOptions: cytoscape.CoseLayoutOptions = {
-                        name: 'cose',
-                        fit: true,
-                        padding: L.PADDING,
-                        animate: true,
-                        animationDuration: L.ANIMATION_DURATION,
-                        avoidOverlap: L.AVOID_OVERLAP,
-                        nodeDimensionsIncludeLabels: true,
-                        idealEdgeLength: L.IDEAL_EDGE_LENGTH,
-                        nodeRepulsion: L.NODE_REPULSION,
-                        nodeOverlap: L.NODE_OVERLAP,
-                        gravity: L.GRAVITY,
-                        numIter: L.NUM_ITER,
-                        randomize: L.RANDOMIZE,
-                    };
-                    const layout = cy.layout(coseOptions);
+                    const L = NETWORK_VIEW_CONSTANTS.FCOSE_LAYOUT;
+                    const layoutOptions = getFcoseLayoutOptions({
+                        focalNodeId,
+                        inPlace: false,
+                    });
+                    const layout = cy.layout(layoutOptions as unknown as cytoscape.LayoutOptions);
                     layout.one('layoutstop', () => {
                         cy.fit(undefined, L.FIT_PADDING);
                         layoutRunningRef.current = false;

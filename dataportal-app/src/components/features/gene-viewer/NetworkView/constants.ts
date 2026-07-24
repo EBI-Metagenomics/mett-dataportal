@@ -118,12 +118,13 @@ export const NETWORK_VIEW_CONSTANTS = {
   MAX_EXPANSION_DEPTH: 5,
 
   /**
-   * Edge width configuration (weight-based thickness, reference-style visibility)
+   * Edge width configuration (weight-based thickness).
+   * Keep the range modest so high-score edges don't become opaque ribbons.
    */
   EDGE_WIDTH: {
-    MIN: 1, // Minimum edge width in pixels (weak interactions)
-    MAX: 14, // Maximum edge width in pixels (strong interactions)
-    BASE_SCALE: 1, // Use full range for clear weight differences
+    MIN: 1.5,
+    MAX: 6,
+    BASE_SCALE: 1,
   },
 
   /**
@@ -133,14 +134,21 @@ export const NETWORK_VIEW_CONSTANTS = {
     EDGE: {
       LINE_COLOR: '#5B8DEE',
       OPACITY: 0.65,
-      /** Local ES edges (default PPI) */
+      /** Local ES edges (default PPI) — single color */
       LOCAL_EDGE_COLOR: '#5B8DEE',
       /** STRING DB edges – distinct color so "both" view shows two edge types clearly */
       STRINGDB_EDGE_COLOR: '#E65100',
       ORTHOLOG_LINE_COLOR: '#FF9800',
       ORTHOLOG_OPACITY: 0.6,
       ORTHOLOG_WIDTH: 2,
+      /** Parallel-edge spacing when using bezier (STRING multi-evidence edges) */
       CONTROL_POINT_STEP_SIZE: 18,
+      /**
+       * Mild forced curve for single local edges (unbundled-bezier).
+       * Sign is alternated per edge in the stylesheet so hub spokes don't all bow the same way.
+       */
+      LOCAL_CONTROL_POINT_DISTANCE: 22,
+      LOCAL_CONTROL_POINT_WEIGHT: 0.5,
     },
     NODE: {
       PPI_COLOR: '#4A90E2',
@@ -179,7 +187,35 @@ export const NETWORK_VIEW_CONSTANTS = {
   },
 
   /**
-   * Cose (force-directed) layout options. Used in NetworkGraph and useCytoscapeLayout.
+   * fCoSE layout options (preferred). Used in NetworkGraph and useCytoscapeLayout.
+   * Better spacing/aesthetics than built-in cose for neighborhood graphs.
+   */
+  FCOSE_LAYOUT: {
+    QUALITY: 'proof' as const,
+    RANDOMIZE: true,
+    PADDING: 80,
+    PADDING_IN_PLACE: 50,
+    ANIMATION_DURATION: 600,
+    ANIMATION_DURATION_IN_PLACE: 700,
+    FIT_PADDING: 80,
+    FIT_PADDING_IN_PLACE: 50,
+    SAMPLE_SIZE: 25,
+    NODE_SEPARATION: 85,
+    NODE_REPULSION: 4500,
+    IDEAL_EDGE_LENGTH: 110,
+    MIN_EDGE_LENGTH: 70,
+    /** How much high weight shortens ideal edge length (0–1 score scale). */
+    WEIGHT_LENGTH_FACTOR: 40,
+    EDGE_ELASTICITY: 0.45,
+    NUM_ITER: 2500,
+    NUM_ITER_IN_PLACE: 2000,
+    GRAVITY: 0.25,
+    GRAVITY_RANGE: 3.8,
+    INITIAL_ENERGY_ON_INCREMENTAL: 0.3,
+  },
+
+  /**
+   * Legacy cose layout options (kept for reference / fallback).
    */
   COSE_LAYOUT: {
     PADDING: 80,
