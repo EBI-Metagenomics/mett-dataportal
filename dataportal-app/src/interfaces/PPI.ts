@@ -29,6 +29,10 @@ export interface PPIInteraction {
   consensus_rank?: number | null;
   consensus_avg_rank?: number | null;
   edge_id?: string | null;
+  /** PPI-v1 Score/Weight composite (distinct from consensus_score). */
+  interaction_weight?: number | null;
+  /** Number of evidence sources contributing to the interaction. */
+  n_sources?: number | null;
 
   // Evidence channel weights (consensus network)
   weight_coexp?: number | null;
@@ -110,6 +114,8 @@ export interface PPINetworkEdge {
   score_type?: string;
   /** Canonical interaction pair ID for detail lookups. */
   pair_id?: string;
+  /** Number of evidence sources (PPI-v1 n_sources). */
+  n_sources?: number;
   evidence_types?: string[];
   /** Per-channel evidence weights for the interaction details panel. */
   evidence_scores?: LocalEvidenceScores;

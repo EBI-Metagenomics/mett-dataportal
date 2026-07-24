@@ -301,7 +301,7 @@ PPI_EVIDENCE_CHANNEL_LABELS = {
     "weight_ppi_gp_score_neg": "Global proteomics (negative)",
     "weight_ppi_gp_score_pos": "Global proteomics (positive)",
     "melt_score": "Thermal proteome profiling",
-    "operon_score": "Operon",
+    "operon_score": "Operon score",
     "weight_ppi_perturb_score_neg": "Perturbation (negative)",
     "weight_ppi_perturb_score_pos": "Perturbation (positive)",
     "secondary_score": "Secondary structure",
@@ -312,6 +312,8 @@ PPI_EVIDENCE_CHANNEL_LABELS = {
     "comelt_score": "Co-melting",
     "perturbation_score": "Perturbation",
     "abundance_score": "Global proteomics",
+    "interaction_weight": "Interaction weight",
+    "n_sources": "Evidence sources",
 }
 
 # Default score used for network edge weight / ranking

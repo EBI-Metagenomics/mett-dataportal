@@ -130,6 +130,7 @@ export const prepareEdges = (
             evidence_type?: string;
             evidence_channel?: string;
             pair_id?: string;
+            n_sources?: number;
             evidence_scores?: Record<string, number>;
             score_type?: string;
         };
@@ -155,6 +156,7 @@ export const prepareEdges = (
                 evidence_type: edgeData.evidence_type,
                 evidence_channel: edgeData.evidence_channel,
                 pair_id: edgeData.pair_id,
+                n_sources: edgeData.n_sources,
                 evidence_scores: edgeData.evidence_scores,
                 score_type: edgeData.score_type,
                 inPath: edgeInPath ? 'true' : 'false',

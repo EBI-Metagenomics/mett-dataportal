@@ -55,7 +55,6 @@ def _flags_and_rollups(src: Dict) -> None:
     src["has_ecocyc"] = (src.get("ecocyc_score") or 0) > 0
 
     score_keys = [
-        "consensus_score",
         "weight_coexp",
         "weight_operons_annogesic",
         "weight_operons_opdetect",
@@ -81,7 +80,12 @@ def _flags_and_rollups(src: Dict) -> None:
         "operon_score",
         "ecocyc_score",
     ]
-    src["evidence_count"] = sum(1 for k in score_keys if src.get(k) is not None and src.get(k) != 0)
+    if src.get("n_sources") is not None:
+        src["evidence_count"] = int(src["n_sources"])
+    else:
+        src["evidence_count"] = sum(
+            1 for k in score_keys if src.get(k) is not None and src.get(k) != 0
+        )
 
 
 @dataclass
@@ -139,6 +143,8 @@ class PPICSVFlow:
             "consensus_rank": row.get("consensus_rank"),
             "consensus_avg_rank": row.get("consensus_avg_rank"),
             "edge_id": row.get("edge_id"),
+            "interaction_weight": row.get("interaction_weight"),
+            "n_sources": row.get("n_sources"),
             # evidence channel weights (non-PPI)
             "weight_coexp": row.get("weight_coexp"),
             "weight_operons_annogesic": row.get("weight_operons_annogesic"),

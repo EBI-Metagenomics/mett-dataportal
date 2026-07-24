@@ -39,6 +39,8 @@ class PPIInteractionSchema(BaseModel):
     consensus_rank: Optional[int] = None
     consensus_avg_rank: Optional[float] = None
     edge_id: Optional[str] = None
+    interaction_weight: Optional[float] = None
+    n_sources: Optional[int] = None
 
     # Evidence channel weights (consensus network)
     weight_coexp: Optional[float] = None
@@ -139,6 +141,9 @@ class PPINetworkEdgeSchema(BaseModel):
     target: str = Field(..., description="Target node ID")
     weight: Optional[float] = Field(None, description="Edge weight (consensus score on graph)")
     pair_id: Optional[str] = Field(None, description="Canonical interaction pair ID")
+    n_sources: Optional[int] = Field(
+        None, description="Number of evidence sources contributing to this interaction"
+    )
     evidence_scores: Optional[Dict[str, float]] = Field(
         None, description="Per-channel evidence weights (detail panel only)"
     )

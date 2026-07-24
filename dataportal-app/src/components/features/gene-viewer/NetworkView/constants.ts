@@ -64,6 +64,8 @@ export const DEFAULT_LOCAL_SCORE_TYPE = 'consensus_score';
  */
 export const LOCAL_EVIDENCE_CHANNEL_LABELS: Record<string, string> = {
   consensus_score: 'Consensus',
+  interaction_weight: 'Interaction weight',
+  n_sources: 'Evidence sources',
   weight_coexp: 'Co-expression',
   weight_operons_annogesic: 'Operons (ANNOgesic)',
   weight_operons_opdetect: 'Operons (OpDetect)',
@@ -78,7 +80,7 @@ export const LOCAL_EVIDENCE_CHANNEL_LABELS: Record<string, string> = {
   weight_ppi_gp_score_neg: 'Global proteomics (−)',
   weight_ppi_gp_score_pos: 'Global proteomics (+)',
   melt_score: 'Thermal proteome profiling',
-  operon_score: 'Operon',
+  operon_score: 'Operon score',
   weight_ppi_perturb_score_neg: 'Perturbation (−)',
   weight_ppi_perturb_score_pos: 'Perturbation (+)',
   secondary_score: 'Secondary structure',

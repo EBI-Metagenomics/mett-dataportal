@@ -266,6 +266,8 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                     "consensus_rank",
                     "consensus_avg_rank",
                     "edge_id",
+                    "interaction_weight",
+                    "n_sources",
                     "ds_score",
                     "string_score",
                     "melt_score",
@@ -319,6 +321,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             target=hit.protein_b,
             weight=weight,
             pair_id=getattr(hit, "pair_id", None),
+            n_sources=getattr(hit, "n_sources", None),
             evidence_scores=self._extract_evidence_scores(hit) or None,
         )
 
@@ -1085,6 +1088,8 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             "consensus_rank": getattr(hit, "consensus_rank", None),
             "consensus_avg_rank": getattr(hit, "consensus_avg_rank", None),
             "edge_id": getattr(hit, "edge_id", None),
+            "interaction_weight": getattr(hit, "interaction_weight", None),
+            "n_sources": getattr(hit, "n_sources", None),
             # Evidence channel weights
             "weight_coexp": getattr(hit, "weight_coexp", None),
             "weight_operons_annogesic": getattr(hit, "weight_operons_annogesic", None),

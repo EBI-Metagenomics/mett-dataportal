@@ -170,6 +170,12 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
                 <span className={styles.value}>{Number(edge.weight).toFixed(4)}</span>
               </div>
             )}
+            {edge.n_sources != null && (
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Evidence sources:</span>
+                <span className={styles.value}>{edge.n_sources}</span>
+              </div>
+            )}
             {edge.score_type && localEvidenceScores.length === 0 && stringEvidenceScores.length === 0 && (
               <div className={styles.infoRow}>
                 <span className={styles.label}>Score Type:</span>
