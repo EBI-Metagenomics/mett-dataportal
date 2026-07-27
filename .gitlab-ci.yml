@@ -1,6 +1,9 @@
 #
 # Build and publish images to this project's GitLab container registry.
 #
+# Requires a Docker executor with privileged mode (or DinD-capable runners)
+# so docker:24 + docker:24-dind can build and push.
+#
 # Run pipeline (CI/CD → Pipelines → Run pipeline):
 #   1. Set "image_tag" (or leave empty to use the branch/tag you run from)
 #   2. Run build-and-push-api / build-and-push-react-app
@@ -43,6 +46,14 @@ variables:
 
 .docker-build:
   <<: *build-image-rules
+  image: docker:24
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   before_script:
     - |
       _tag="$(printf '%s' "${IMAGE_TAG_INPUT}" | tr -d '[:space:]')"
