@@ -564,7 +564,7 @@ $ python manage.py import_fitness_correlations \
 ```bash
 # Basic import
 $ python manage.py import_ppi_with_genes \
-    --index ppi_index-2026.07.07 \
+    --index ppi_index \
     --pattern "*.tsv" \
     --csv-folder ../data-generators/Sub-Projects-Data/PPI-v1 \
     --string-mapping-dir data-generators/stringdb-mapper/output/uniprot_mapped

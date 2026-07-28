@@ -34,6 +34,53 @@ class ExternalDBXRef(Flow):
         super().__init__(index_name=index_name)
         self.db_name = db_name
 
+    def _read_mapping_chunks(self, tsv_path: str, chunksize: int):
+        """
+        Yield DataFrame chunks with normalized ``locus_tag`` and ``external_db_id`` columns.
+
+        Supports both:
+        - raw DIAMOND-like TSVs with no header: locus_tag, external_db_id, ...
+        - converted TSVs with header: locus_tag, uniprot_id, string_protein_id
+
+        For converted files we intentionally use ``string_protein_id`` as the external id,
+        never ``uniprot_id``.
+        """
+        preview = pd.read_csv(tsv_path, sep="\t", nrows=5, dtype=str)
+        normalized_cols = {str(col).strip().lower(): col for col in preview.columns}
+
+        if "locus_tag" in normalized_cols and "string_protein_id" in normalized_cols:
+            locus_col = normalized_cols["locus_tag"]
+            external_col = normalized_cols["string_protein_id"]
+            df_iterator = pd.read_csv(
+                tsv_path,
+                sep="\t",
+                chunksize=chunksize,
+                dtype=str,
+            )
+            for chunk in df_iterator:
+                yield pd.DataFrame(
+                    {
+                        "locus_tag": chunk[locus_col],
+                        "external_db_id": chunk[external_col],
+                    }
+                )
+            return
+
+        df_iterator = pd.read_csv(
+            tsv_path,
+            sep="\t",
+            header=None,
+            chunksize=chunksize,
+            dtype={0: str, 1: str},
+        )
+        for chunk in df_iterator:
+            yield pd.DataFrame(
+                {
+                    "locus_tag": chunk.iloc[:, 0],
+                    "external_db_id": chunk.iloc[:, 1],
+                }
+            )
+
     def run(self, tsv_path: str, chunksize: int = 10000):
         """
         Process TSV file and update feature documents with dbxref entries.
@@ -47,27 +94,16 @@ class ExternalDBXRef(Flow):
 
         print(f"[ExternalDBXRef] Processing {tsv_path} for database '{self.db_name}'")
 
-        # Read TSV file - assume first column is locus_tag, second is external_db_id
-        # Use header=None to handle files without headers
         try:
-            df_iterator = pd.read_csv(
-                tsv_path,
-                sep="\t",
-                header=None,
-                chunksize=chunksize,
-                dtype={0: str, 1: str},  # Ensure locus_tag and external_db_id are strings
-            )
+            df_iterator = self._read_mapping_chunks(tsv_path, chunksize)
         except Exception as e:
             print(f"[ExternalDBXRef] Error reading file {tsv_path}: {e}")
             return
 
         for chunk in df_iterator:
             for _, row in chunk.iterrows():
-                # Column 0: locus_tag (qseqid in DIAMOND output)
-                locus_tag = str(row.iloc[0]).strip() if len(row) > 0 else None
-
-                # Column 1: external_db_id (sseqid in DIAMOND output)
-                external_db_id = str(row.iloc[1]).strip() if len(row) > 1 else None
+                locus_tag = str(row.get("locus_tag", "")).strip()
+                external_db_id = str(row.get("external_db_id", "")).strip()
 
                 # Skip rows with missing data
                 if (

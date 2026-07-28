@@ -88,7 +88,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             s = s.filter("term", species_acronym=species_acronym.strip().lower())
         locus_to_string_all: Dict[str, str] = {}
         string_to_locus_all: Dict[str, str] = {}
+        ambiguous_string_refs_all: Dict[str, set[str]] = {}
         per_species: Dict[str, Tuple[Dict[str, str], Dict[str, str]]] = {}
+        per_species_ambiguous: Dict[str, Dict[str, set[str]]] = {}
         try:
             for hit in s.scan():
                 locus = (
@@ -118,18 +120,37 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     species = species[0] if species else ""
                 species = str(species).strip().lower() if species else _LOCUS_STRING_CACHE_KEY_ALL
                 locus_to_string_all[locus] = string_ref
-                string_to_locus_all[string_ref] = locus
+                existing_locus = string_to_locus_all.get(string_ref)
+                if existing_locus and existing_locus != locus:
+                    ambiguous_string_refs_all.setdefault(string_ref, {existing_locus}).add(locus)
+                    string_to_locus_all.pop(string_ref, None)
+                elif string_ref not in ambiguous_string_refs_all:
+                    string_to_locus_all[string_ref] = locus
                 if species and species != _LOCUS_STRING_CACHE_KEY_ALL:
                     if species not in per_species:
                         per_species[species] = ({}, {})
+                        per_species_ambiguous[species] = {}
                     per_species[species][0][locus] = string_ref
-                    per_species[species][1][string_ref] = locus
+                    species_existing_locus = per_species[species][1].get(string_ref)
+                    if species_existing_locus and species_existing_locus != locus:
+                        per_species_ambiguous[species].setdefault(
+                            string_ref, {species_existing_locus}
+                        ).add(locus)
+                        per_species[species][1].pop(string_ref, None)
+                    elif string_ref not in per_species_ambiguous[species]:
+                        per_species[species][1][string_ref] = locus
             self._locus_string_cache[_LOCUS_STRING_CACHE_KEY_ALL] = (
                 locus_to_string_all,
                 string_to_locus_all,
             )
             for sp, pair in per_species.items():
                 self._locus_string_cache[sp] = pair
+            if ambiguous_string_refs_all:
+                logger.warning(
+                    "Skipped %s ambiguous STRING→locus reverse mappings in feature index (species=%s)",
+                    len(ambiguous_string_refs_all),
+                    species_acronym or "all",
+                )
             logger.info(
                 "Loaded locus↔STRING mapping from feature index: %s locus tags (species=%s)",
                 len(locus_to_string_all),
