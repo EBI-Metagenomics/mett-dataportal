@@ -24,6 +24,8 @@ export interface PreparedEdge {
         orthology_type?: string;
         expansionLevel?: number;
         inPath: string;
+        pair_id?: string;
+        evidence_scores?: Record<string, number>;
     };
 }
 
@@ -127,6 +129,10 @@ export const prepareEdges = (
             dataSource?: string;
             evidence_type?: string;
             evidence_channel?: string;
+            pair_id?: string;
+            n_sources?: number;
+            evidence_scores?: Record<string, number>;
+            score_type?: string;
         };
 
         const sourceInPath = pathNodeIds.has(edge.source);
@@ -141,6 +147,7 @@ export const prepareEdges = (
                 id: edgeId,
                 source: edge.source,
                 target: edge.target,
+                // Graph uses only this weight (typically consensus_score from API)
                 weight: edge.weight ?? 1,
                 edgeType: edgeData.edgeType || 'ppi',
                 orthology_type: edgeData.orthology_type,
@@ -148,6 +155,10 @@ export const prepareEdges = (
                 dataSource,
                 evidence_type: edgeData.evidence_type,
                 evidence_channel: edgeData.evidence_channel,
+                pair_id: edgeData.pair_id,
+                n_sources: edgeData.n_sources,
+                evidence_scores: edgeData.evidence_scores,
+                score_type: edgeData.score_type,
                 inPath: edgeInPath ? 'true' : 'false',
             },
         };

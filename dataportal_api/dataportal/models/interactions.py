@@ -35,9 +35,7 @@ class ProteinProteinDocument(Document):
     protein_a = Keyword()
     protein_b = Keyword()
     participants = Keyword(multi=True)  # [protein_a, protein_b] (order does not matter)
-    participants_sorted = Keyword(
-        multi=True
-    )  # [min(a,b), max(a,b)] for symmetric queries
+    participants_sorted = Keyword(multi=True)  # [min(a,b), max(a,b)] for symmetric queries
     # Optional locus-tag level participants (for locus-centric queries/aggregations)
     participants_locus_tag = Keyword(multi=True)
     participants_locus_tag_sorted = Keyword(multi=True)
@@ -77,16 +75,38 @@ class ProteinProteinDocument(Document):
     string_protein_a_id = Keyword()
     string_protein_b_id = Keyword()
 
+    # ---- Consensus network scores (RankAvg / PPI-v1 traced TSV) ----
+    consensus_score = ScaledFloat(scaling_factor=1_000_000)
+    consensus_rank = Integer()
+    consensus_avg_rank = ScaledFloat(scaling_factor=1_000_000)
+    edge_id = Keyword()
+    # PPI-v1: Score/Weight composite (distinct from ConsensusScore)
+    interaction_weight = ScaledFloat(scaling_factor=1_000_000)
+    # PPI-v1: number of evidence sources contributing to the edge
+    n_sources = Integer()
+
+    # Non-PPI evidence channel weights from consensus network
+    weight_coexp = ScaledFloat(scaling_factor=1_000_000)
+    weight_operons_annogesic = ScaledFloat(scaling_factor=1_000_000)
+    weight_operons_opdetect = ScaledFloat(scaling_factor=1_000_000)
+    weight_operons_opmapper = ScaledFloat(scaling_factor=1_000_000)
+    weight_phenocorr_neg = ScaledFloat(scaling_factor=1_000_000)
+    weight_phenocorr_pos = ScaledFloat(scaling_factor=1_000_000)
+    weight_pmi_gsms = ScaledFloat(scaling_factor=1_000_000)
+    weight_pmi = ScaledFloat(scaling_factor=1_000_000)
+    weight_ppi_gp_score_neg = ScaledFloat(scaling_factor=1_000_000)
+    weight_ppi_gp_score_pos = ScaledFloat(scaling_factor=1_000_000)
+    weight_ppi_perturb_score_neg = ScaledFloat(scaling_factor=1_000_000)
+    weight_ppi_perturb_score_pos = ScaledFloat(scaling_factor=1_000_000)
+    weight_ppi_xlms_files = ScaledFloat(scaling_factor=1_000_000)
+    weight_ppi_xlms_peptides = ScaledFloat(scaling_factor=1_000_000)
+
     # ---- Scores / evidence (ScaledFloat keeps storage compact & sortable) ----
     # Use scaling_factor=1e6 to preserve up to ~6 decimal places and allow negatives.
     dl_score = ScaledFloat(scaling_factor=1_000_000)  # "ds_score" in CSV?
-    comelt_score = ScaledFloat(
-        scaling_factor=1_000_000
-    )  # "melt_score" / "comelt" variants
+    comelt_score = ScaledFloat(scaling_factor=1_000_000)  # "melt_score" / "comelt" variants
     perturbation_score = ScaledFloat(scaling_factor=1_000_000)  # "perturb_score"
-    abundance_score = ScaledFloat(
-        scaling_factor=1_000_000
-    )  # "gp_score" (global proteomics)
+    abundance_score = ScaledFloat(scaling_factor=1_000_000)  # "gp_score" (global proteomics)
     melt_score = ScaledFloat(scaling_factor=1_000_000)  # "melt_score" (if distinct)
     secondary_score = ScaledFloat(scaling_factor=1_000_000)  # "sec_score"
     bayesian_score = ScaledFloat(scaling_factor=1_000_000)  # "bn_score"
@@ -94,9 +114,7 @@ class ProteinProteinDocument(Document):
     operon_score = ScaledFloat(scaling_factor=1_000_000)
     ecocyc_score = ScaledFloat(scaling_factor=1_000_000)
     tt_score = ScaledFloat(scaling_factor=1_000_000)  # "tt_score" in CSV
-    ds_score = ScaledFloat(
-        scaling_factor=1_000_000
-    )  # "ds_score" in CSV (keep both if needed)
+    ds_score = ScaledFloat(scaling_factor=1_000_000)  # "ds_score" in CSV (keep both if needed)
 
     # ---- Experimental context ----
     experimental_condition_id = Integer()  # from SP2_ppi_interaction
@@ -142,26 +160,51 @@ class ProteinProteinDocument(Document):
         self.meta.id = self.pair_id
 
         # Convenience flags
-        self.has_xlms = bool(self.xlms_peptides or self.xlms_files)
-        self.has_string = self.string_score is not None
-        self.has_operon = self.operon_score is not None
-        self.has_ecocyc = self.ecocyc_score is not None
+        self.has_string = self.string_score is not None and self.string_score > 0
+        self.has_operon = self.operon_score is not None and self.operon_score > 0
+        self.has_ecocyc = self.ecocyc_score is not None and self.ecocyc_score > 0
 
-        # Rollup counts
-        numeric_scores = [
-            self.dl_score,
-            self.comelt_score,
-            self.perturbation_score,
-            self.abundance_score,
-            self.melt_score,
-            self.secondary_score,
-            self.bayesian_score,
-            self.string_score,
-            self.operon_score,
-            self.ecocyc_score,
-            self.tt_score,
-            self.ds_score,
-        ]
-        self.evidence_count = sum(1 for v in numeric_scores if v is not None)
+        # Prefer file-provided n_sources (PPI-v1); otherwise roll up non-zero scores
+        if self.n_sources is not None:
+            self.evidence_count = int(self.n_sources)
+        else:
+            numeric_scores = [
+                self.consensus_score,
+                self.weight_coexp,
+                self.weight_operons_annogesic,
+                self.weight_operons_opdetect,
+                self.weight_operons_opmapper,
+                self.weight_phenocorr_neg,
+                self.weight_phenocorr_pos,
+                self.weight_pmi_gsms,
+                self.weight_pmi,
+                self.weight_ppi_gp_score_neg,
+                self.weight_ppi_gp_score_pos,
+                self.weight_ppi_perturb_score_neg,
+                self.weight_ppi_perturb_score_pos,
+                self.weight_ppi_xlms_files,
+                self.weight_ppi_xlms_peptides,
+                self.dl_score,
+                self.comelt_score,
+                self.perturbation_score,
+                self.abundance_score,
+                self.melt_score,
+                self.secondary_score,
+                self.bayesian_score,
+                self.string_score,
+                self.operon_score,
+                self.ecocyc_score,
+                self.tt_score,
+                self.ds_score,
+            ]
+            self.evidence_count = sum(1 for v in numeric_scores if v is not None and v != 0)
+
+        # XL-MS evidence from legacy text fields or consensus weights
+        self.has_xlms = bool(
+            self.xlms_peptides
+            or self.xlms_files
+            or (self.weight_ppi_xlms_files and self.weight_ppi_xlms_files > 0)
+            or (self.weight_ppi_xlms_peptides and self.weight_ppi_xlms_peptides > 0)
+        )
 
         return super().save(**kwargs)

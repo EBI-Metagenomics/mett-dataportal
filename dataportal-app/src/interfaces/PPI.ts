@@ -24,6 +24,32 @@ export interface PPIInteraction {
   protein_b_name?: string | null;
   protein_b_product?: string | null;
   
+  // Consensus network scores
+  consensus_score?: number | null;
+  consensus_rank?: number | null;
+  consensus_avg_rank?: number | null;
+  edge_id?: string | null;
+  /** PPI-v1 Score/Weight composite (distinct from consensus_score). */
+  interaction_weight?: number | null;
+  /** Number of evidence sources contributing to the interaction. */
+  n_sources?: number | null;
+
+  // Evidence channel weights (consensus network)
+  weight_coexp?: number | null;
+  weight_operons_annogesic?: number | null;
+  weight_operons_opdetect?: number | null;
+  weight_operons_opmapper?: number | null;
+  weight_phenocorr_neg?: number | null;
+  weight_phenocorr_pos?: number | null;
+  weight_pmi_gsms?: number | null;
+  weight_pmi?: number | null;
+  weight_ppi_gp_score_neg?: number | null;
+  weight_ppi_gp_score_pos?: number | null;
+  weight_ppi_perturb_score_neg?: number | null;
+  weight_ppi_perturb_score_pos?: number | null;
+  weight_ppi_xlms_files?: number | null;
+  weight_ppi_xlms_peptides?: number | null;
+
   // Scores
   dl_score?: number | null;
   comelt_score?: number | null;
@@ -61,6 +87,9 @@ export interface StringScoreBreakdown {
   ncbiTaxonId?: number | string;
 }
 
+/** Per-channel evidence weights from local consensus network (detail panel). */
+export type LocalEvidenceScores = Record<string, number>;
+
 export interface PPINetworkNode {
   id: string;
   label?: string;
@@ -80,9 +109,16 @@ export interface PPINetworkNode {
 export interface PPINetworkEdge {
   source: string;
   target: string;
+  /** Edge weight shown on the graph (typically consensus_score). */
   weight?: number;
   score_type?: string;
+  /** Canonical interaction pair ID for detail lookups. */
+  pair_id?: string;
+  /** Number of evidence sources (PPI-v1 n_sources). */
+  n_sources?: number;
   evidence_types?: string[];
+  /** Per-channel evidence weights for the interaction details panel. */
+  evidence_scores?: LocalEvidenceScores;
   [key: string]: any;
 }
 
@@ -146,6 +182,8 @@ export interface PPINetworkQuery {
 
 export interface PPIScoreType {
   score_types: string[];
+  default?: string;
+  evidence_channels?: Record<string, string>;
 }
 
 /** Response from /ppi/neighborhood (top N interactors by graph distance). */
@@ -154,4 +192,3 @@ export interface PPINeighborhoodData {
   neighbors: Array<{ id: string; label?: string; locus_tag?: string; name?: string; product?: string }>;
   network_data: PPINetworkData;
 }
-

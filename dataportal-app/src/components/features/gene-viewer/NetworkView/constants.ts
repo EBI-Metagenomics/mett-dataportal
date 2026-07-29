@@ -55,6 +55,44 @@ export const STRING_EVIDENCE_SCORE_FIELDS: Record<StringEvidenceChannel, string>
   textmining: 'tscore',
 } as const;
 
+/** Default score type for local ES network (consensus RankAvg). */
+export const DEFAULT_LOCAL_SCORE_TYPE = 'consensus_score';
+
+/**
+ * Display labels for local consensus / evidence channel fields.
+ * Used in edge detail panel and score-type filter.
+ */
+export const LOCAL_EVIDENCE_CHANNEL_LABELS: Record<string, string> = {
+  consensus_score: 'Consensus',
+  interaction_weight: 'Interaction weight',
+  n_sources: 'Evidence sources',
+  weight_coexp: 'Co-expression',
+  weight_operons_annogesic: 'Operons (ANNOgesic)',
+  weight_operons_opdetect: 'Operons (OpDetect)',
+  weight_operons_opmapper: 'Operons (OpMapper)',
+  weight_phenocorr_neg: 'Phenotype correlation (−)',
+  weight_phenocorr_pos: 'Phenotype correlation (+)',
+  weight_pmi_gsms: 'PMI (GSMs)',
+  weight_pmi: 'PMI',
+  bayesian_score: 'Bayesian network',
+  ds_score: 'Deep learning',
+  ecocyc_score: 'EcoCyc',
+  weight_ppi_gp_score_neg: 'Global proteomics (−)',
+  weight_ppi_gp_score_pos: 'Global proteomics (+)',
+  melt_score: 'Thermal proteome profiling',
+  operon_score: 'Operon score',
+  weight_ppi_perturb_score_neg: 'Perturbation (−)',
+  weight_ppi_perturb_score_pos: 'Perturbation (+)',
+  secondary_score: 'Secondary structure',
+  string_score: 'STRING physical',
+  tt_score: 'Thermal tolerance',
+  weight_ppi_xlms_files: 'XL-MS (files)',
+  weight_ppi_xlms_peptides: 'XL-MS (peptides)',
+  comelt_score: 'Co-melting',
+  perturbation_score: 'Perturbation',
+  abundance_score: 'Global proteomics',
+};
+
 /** Fallback edge color for expansion levels when no specific color is defined (Cytoscape styles). */
 export const EDGE_FALLBACK_COLOR = '#999';
 
@@ -82,12 +120,13 @@ export const NETWORK_VIEW_CONSTANTS = {
   MAX_EXPANSION_DEPTH: 5,
 
   /**
-   * Edge width configuration (weight-based thickness, reference-style visibility)
+   * Edge width configuration (weight-based thickness).
+   * Keep the range modest so high-score edges don't become opaque ribbons.
    */
   EDGE_WIDTH: {
-    MIN: 1, // Minimum edge width in pixels (weak interactions)
-    MAX: 14, // Maximum edge width in pixels (strong interactions)
-    BASE_SCALE: 1, // Use full range for clear weight differences
+    MIN: 1.5,
+    MAX: 6,
+    BASE_SCALE: 1,
   },
 
   /**
@@ -97,14 +136,21 @@ export const NETWORK_VIEW_CONSTANTS = {
     EDGE: {
       LINE_COLOR: '#5B8DEE',
       OPACITY: 0.65,
-      /** Local ES edges (default PPI) */
+      /** Local ES edges (default PPI) — single color */
       LOCAL_EDGE_COLOR: '#5B8DEE',
       /** STRING DB edges – distinct color so "both" view shows two edge types clearly */
       STRINGDB_EDGE_COLOR: '#E65100',
       ORTHOLOG_LINE_COLOR: '#FF9800',
       ORTHOLOG_OPACITY: 0.6,
       ORTHOLOG_WIDTH: 2,
+      /** Parallel-edge spacing when using bezier (STRING multi-evidence edges) */
       CONTROL_POINT_STEP_SIZE: 18,
+      /**
+       * Mild forced curve for single local edges (unbundled-bezier).
+       * Sign is alternated per edge in the stylesheet so hub spokes don't all bow the same way.
+       */
+      LOCAL_CONTROL_POINT_DISTANCE: 22,
+      LOCAL_CONTROL_POINT_WEIGHT: 0.5,
     },
     NODE: {
       PPI_COLOR: '#4A90E2',
@@ -143,7 +189,35 @@ export const NETWORK_VIEW_CONSTANTS = {
   },
 
   /**
-   * Cose (force-directed) layout options. Used in NetworkGraph and useCytoscapeLayout.
+   * fCoSE layout options (preferred). Used in NetworkGraph and useCytoscapeLayout.
+   * Better spacing/aesthetics than built-in cose for neighborhood graphs.
+   */
+  FCOSE_LAYOUT: {
+    QUALITY: 'proof' as const,
+    RANDOMIZE: true,
+    PADDING: 80,
+    PADDING_IN_PLACE: 50,
+    ANIMATION_DURATION: 600,
+    ANIMATION_DURATION_IN_PLACE: 700,
+    FIT_PADDING: 80,
+    FIT_PADDING_IN_PLACE: 50,
+    SAMPLE_SIZE: 25,
+    NODE_SEPARATION: 85,
+    NODE_REPULSION: 4500,
+    IDEAL_EDGE_LENGTH: 110,
+    MIN_EDGE_LENGTH: 70,
+    /** How much high weight shortens ideal edge length (0–1 score scale). */
+    WEIGHT_LENGTH_FACTOR: 40,
+    EDGE_ELASTICITY: 0.45,
+    NUM_ITER: 2500,
+    NUM_ITER_IN_PLACE: 2000,
+    GRAVITY: 0.25,
+    GRAVITY_RANGE: 3.8,
+    INITIAL_ENERGY_ON_INCREMENTAL: 0.3,
+  },
+
+  /**
+   * Legacy cose layout options (kept for reference / fallback).
    */
   COSE_LAYOUT: {
     PADDING: 80,

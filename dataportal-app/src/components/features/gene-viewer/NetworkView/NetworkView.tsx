@@ -53,7 +53,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   onViewInJBrowse,
 }) => {
   const { isAuthenticated } = useAuth();
-  const [scoreType, setScoreType] = useState<string>('ds_score');
+  const [scoreType, setScoreType] = useState<string>('consensus_score');
   const [scoreThreshold, setScoreThreshold] = useState<number>(0.9);
   const [displayThreshold, setDisplayThreshold] = useState<number>(0.9);
   const [limitMode, setLimitMode] = useState<NetworkLimitMode>('topN');
@@ -428,7 +428,15 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   // Combine local ES and STRING DB networks based on selected data source
   const baseNetwork: PPINetworkData | null = useMemo(() => {
     if (dataSource === 'local' || !stringNetwork) {
-      return networkData ?? null;
+      if (!networkData) return null;
+      return {
+        ...networkData,
+        edges: networkData.edges.map((e) => ({
+          ...e,
+          dataSource: e.dataSource ?? 'local',
+          score_type: e.score_type ?? scoreType,
+        })),
+      };
     }
     if (dataSource === 'stringdb' || !networkData) {
       return stringNetwork ?? null;
@@ -461,7 +469,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         const key = edgeKey(e.source, e.target, 'local');
         if (seenEdgeKeys.has(key)) return;
         seenEdgeKeys.add(key);
-        edgesList.push({ ...e, dataSource: 'local' });
+        edgesList.push({
+          ...e,
+          dataSource: 'local',
+          score_type: e.score_type ?? scoreType,
+        });
       });
     }
 
@@ -499,7 +511,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       edges: edgesList,
       properties: networkData?.properties ?? stringNetwork?.properties,
     };
-  }, [dataSource, networkData, stringNetwork, stringFocalPreferredName, stringFocalStringId, selectedLocusTag]);
+  }, [dataSource, networkData, stringNetwork, stringFocalPreferredName, stringFocalStringId, selectedLocusTag, scoreType]);
 
   const hasData = baseNetwork && baseNetwork.nodes.length > 0;
 

@@ -57,6 +57,10 @@ export const useCytoscapeHandlers = ({
             edgeType?: string;
             orthology_type?: string;
             expansionLevel?: number;
+            pair_id?: string;
+            evidence_scores?: Record<string, number>;
+            score_type?: string;
+            dataSource?: string;
         };
 
         cy.batch(() => {
@@ -64,12 +68,34 @@ export const useCytoscapeHandlers = ({
             tapped.addClass('selected');
         });
 
-        const originalEdge = edges.find((e) => 
-            e.source === edgeData.source && e.target === edgeData.target
-        );
+        // Prefer exact pair_id / dataSource match so consensus evidence is preserved
+        let originalEdge = edges.find((e) => {
+            const sameEndpoints =
+                (e.source === edgeData.source && e.target === edgeData.target) ||
+                (e.source === edgeData.target && e.target === edgeData.source);
+            if (!sameEndpoints) return false;
+            if (edgeData.pair_id && e.pair_id) return e.pair_id === edgeData.pair_id;
+            if (edgeData.dataSource && e.dataSource) return e.dataSource === edgeData.dataSource;
+            return true;
+        });
+
+        if (!originalEdge) {
+            originalEdge = edges.find(
+                (e) => e.source === edgeData.source && e.target === edgeData.target
+            );
+        }
+
         if (originalEdge) {
             const originalEvent = event.originalEvent as MouseEvent | undefined;
-            onEdgeClick(originalEdge, originalEvent);
+            // Ensure evidence_scores from cytoscape data are available if missing on original
+            const enrichedEdge = {
+                ...originalEdge,
+                evidence_scores: originalEdge.evidence_scores ?? edgeData.evidence_scores,
+                pair_id: originalEdge.pair_id ?? edgeData.pair_id,
+                score_type: originalEdge.score_type ?? edgeData.score_type,
+                weight: originalEdge.weight ?? edgeData.weight,
+            };
+            onEdgeClick(enrichedEdge, originalEvent);
         }
     }, [cy, edges, onEdgeClick]);
 

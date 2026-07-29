@@ -36,9 +36,7 @@ def _species_key(species_name: Optional[str], species_map: Dict[str, str]) -> st
     return "NA"
 
 
-def _get_isolate_name(
-    species_name: Optional[str], species_map: Dict[str, str]
-) -> Optional[str]:
+def _get_isolate_name(species_name: Optional[str], species_map: Dict[str, str]) -> Optional[str]:
     """Get isolate name from species name using the mapping."""
     if species_name and species_name in species_map:
         return species_map[species_name]
@@ -46,38 +44,48 @@ def _get_isolate_name(
 
 
 def _flags_and_rollups(src: Dict) -> None:
-    src["has_xlms"] = bool(src.get("xlms_peptides") or src.get("xlms_files"))
-    src["has_string"] = src.get("string_score") is not None
-    src["has_operon"] = src.get("operon_score") is not None
-    src["has_ecocyc"] = src.get("ecocyc_score") is not None
-    # src["has_experimental"] = any(
-    #     src.get(k) is not None for k in [
-    #         "melt_score", "perturbation_score", "abundance_score",
-    #         "secondary_score", "bayesian_score", "tt_score", "ds_score"
-    #     ]
-    # )
-    # keys = [
-    #     "ds_score",
-    #     "tt_score",
-    #     "perturbation_score",
-    #     "abundance_score",
-    #     "melt_score",
-    #     "secondary_score",
-    #     "bayesian_score",
-    #     "string_score",
-    #     "operon_score",
-    #     "ecocyc_score",
-    # ]
-    # cnt = sum(1 for k in keys if src.get(k) is not None)
-    # src["evidence_count"] = cnt
+    src["has_xlms"] = bool(
+        src.get("xlms_peptides")
+        or src.get("xlms_files")
+        or (src.get("weight_ppi_xlms_files") or 0) > 0
+        or (src.get("weight_ppi_xlms_peptides") or 0) > 0
+    )
+    src["has_string"] = (src.get("string_score") or 0) > 0
+    src["has_operon"] = (src.get("operon_score") or 0) > 0
+    src["has_ecocyc"] = (src.get("ecocyc_score") or 0) > 0
 
-    # s = src.get("string_score")
-    # if (s is not None and s >= 0.7) or cnt >= 4:
-    #     src["confidence_bin"] = "high"
-    # elif (s is not None and s >= 0.4) or cnt >= 2:
-    #     src["confidence_bin"] = "medium"
-    # else:
-    #     src["confidence_bin"] = "low"
+    score_keys = [
+        "weight_coexp",
+        "weight_operons_annogesic",
+        "weight_operons_opdetect",
+        "weight_operons_opmapper",
+        "weight_phenocorr_neg",
+        "weight_phenocorr_pos",
+        "weight_pmi_gsms",
+        "weight_pmi",
+        "weight_ppi_gp_score_neg",
+        "weight_ppi_gp_score_pos",
+        "weight_ppi_perturb_score_neg",
+        "weight_ppi_perturb_score_pos",
+        "weight_ppi_xlms_files",
+        "weight_ppi_xlms_peptides",
+        "ds_score",
+        "tt_score",
+        "perturbation_score",
+        "abundance_score",
+        "melt_score",
+        "secondary_score",
+        "bayesian_score",
+        "string_score",
+        "operon_score",
+        "ecocyc_score",
+    ]
+    if src.get("n_sources") is not None:
+        src["evidence_count"] = int(src["n_sources"])
+    else:
+        src["evidence_count"] = sum(
+            1 for k in score_keys if src.get(k) is not None and src.get(k) != 0
+        )
 
 
 @dataclass
@@ -94,7 +102,7 @@ class PPICSVFlow:
             return None
 
         sp_name = row.get("species")
-        sp_key = _species_key(sp_name, self.species_map)
+        sp_key = row.get("species_acronym") or _species_key(sp_name, self.species_map)
         isolate_name = _get_isolate_name(sp_name, self.species_map)
 
         aa, bb = canonical_pair(a, b)
@@ -104,8 +112,45 @@ class PPICSVFlow:
         locus_a = row.get("protein_a_locus_tag")
         locus_b = row.get("protein_b_locus_tag")
         locus_participants = [x for x in (locus_a, locus_b) if x]
-        locus_participants_sorted = (
-            sorted(locus_participants) if locus_participants else None
+        locus_participants_sorted = sorted(locus_participants) if locus_participants else None
+
+        participant_a = {
+            "protein": a,
+            "locus_tag": row.get("protein_a_locus_tag"),
+            "uniprot_id": row.get("protein_a_uniprot_id"),
+            "name": row.get("protein_a_name"),
+            "seqid": row.get("protein_a_seqid"),
+            "source": row.get("protein_a_source"),
+            "type": row.get("protein_a_type"),
+            "start": row.get("protein_a_start"),
+            "end": row.get("protein_a_end"),
+            "score": row.get("protein_a_score"),
+            "strand": row.get("protein_a_strand"),
+            "phase": row.get("protein_a_phase"),
+            "product": row.get("protein_a_product"),
+        }
+        participant_b = {
+            "protein": b,
+            "locus_tag": row.get("protein_b_locus_tag"),
+            "uniprot_id": row.get("protein_b_uniprot_id"),
+            "name": row.get("protein_b_name"),
+            "seqid": row.get("protein_b_seqid"),
+            "source": row.get("protein_b_source"),
+            "type": row.get("protein_b_type"),
+            "start": row.get("protein_b_start"),
+            "end": row.get("protein_b_end"),
+            "score": row.get("protein_b_score"),
+            "strand": row.get("protein_b_strand"),
+            "phase": row.get("protein_b_phase"),
+            "product": row.get("protein_b_product"),
+        }
+
+        # Canonicalize the participant order together with its attached metadata.
+        # Without this, a sorted protein ID can be paired with the other gene's locus/UniProt/STRING ids.
+        left, right = (
+            (participant_a, participant_b)
+            if participant_a["protein"] <= participant_b["protein"]
+            else (participant_b, participant_a)
         )
 
         # Optional STRING protein ids from mapping file (UniProt → STRING).
@@ -114,10 +159,10 @@ class PPICSVFlow:
         string_protein_a_id = None
         string_protein_b_id = None
         if self.string_map:
-            uniprot_a = row.get("protein_a_uniprot_id") or a
-            uniprot_b = row.get("protein_b_uniprot_id") or b
-            string_protein_a_id = self.string_map.get(uniprot_a)
-            string_protein_b_id = self.string_map.get(uniprot_b)
+            left_uniprot = left.get("uniprot_id") or left["protein"]
+            right_uniprot = right.get("uniprot_id") or right["protein"]
+            string_protein_a_id = self.string_map.get(left_uniprot)
+            string_protein_b_id = self.string_map.get(right_uniprot)
 
         src = {
             # identity
@@ -125,14 +170,36 @@ class PPICSVFlow:
             "species_scientific_name": sp_name,
             "species_acronym": sp_key,
             "isolate_name": isolate_name,
-            "protein_a": aa,
-            "protein_b": bb,
+            "protein_a": left["protein"],
+            "protein_b": right["protein"],
             "participants": [a, b],
             "participants_sorted": [aa, bb],
             "is_self_interaction": (aa == bb),
             "participants_locus_tag": locus_participants or None,
             "participants_locus_tag_sorted": locus_participants_sorted,
-            # scores
+            # consensus network scores
+            "consensus_score": row.get("consensus_score"),
+            "consensus_rank": row.get("consensus_rank"),
+            "consensus_avg_rank": row.get("consensus_avg_rank"),
+            "edge_id": row.get("edge_id"),
+            "interaction_weight": row.get("interaction_weight"),
+            "n_sources": row.get("n_sources"),
+            # evidence channel weights (non-PPI)
+            "weight_coexp": row.get("weight_coexp"),
+            "weight_operons_annogesic": row.get("weight_operons_annogesic"),
+            "weight_operons_opdetect": row.get("weight_operons_opdetect"),
+            "weight_operons_opmapper": row.get("weight_operons_opmapper"),
+            "weight_phenocorr_neg": row.get("weight_phenocorr_neg"),
+            "weight_phenocorr_pos": row.get("weight_phenocorr_pos"),
+            "weight_pmi_gsms": row.get("weight_pmi_gsms"),
+            "weight_pmi": row.get("weight_pmi"),
+            "weight_ppi_gp_score_neg": row.get("weight_ppi_gp_score_neg"),
+            "weight_ppi_gp_score_pos": row.get("weight_ppi_gp_score_pos"),
+            "weight_ppi_perturb_score_neg": row.get("weight_ppi_perturb_score_neg"),
+            "weight_ppi_perturb_score_pos": row.get("weight_ppi_perturb_score_pos"),
+            "weight_ppi_xlms_files": row.get("weight_ppi_xlms_files"),
+            "weight_ppi_xlms_peptides": row.get("weight_ppi_xlms_peptides"),
+            # PPI scores (legacy + consensus-mapped)
             "ds_score": row.get("ds_score"),
             "tt_score": row.get("tt_score"),
             "perturbation_score": row.get("perturbation_score"),
@@ -147,31 +214,31 @@ class PPICSVFlow:
             "xlms_peptides": row.get("xlms_peptides"),
             "xlms_files": row.get("xlms_files"),
             # gene information for protein_a
-            "protein_a_locus_tag": row.get("protein_a_locus_tag"),
-            "protein_a_uniprot_id": row.get("protein_a_uniprot_id"),
-            "protein_a_name": row.get("protein_a_name"),
-            "protein_a_seqid": row.get("protein_a_seqid"),
-            "protein_a_source": row.get("protein_a_source"),
-            "protein_a_type": row.get("protein_a_type"),
-            "protein_a_start": row.get("protein_a_start"),
-            "protein_a_end": row.get("protein_a_end"),
-            "protein_a_score": row.get("protein_a_score"),
-            "protein_a_strand": row.get("protein_a_strand"),
-            "protein_a_phase": row.get("protein_a_phase"),
-            "protein_a_product": row.get("protein_a_product"),
+            "protein_a_locus_tag": left.get("locus_tag"),
+            "protein_a_uniprot_id": left.get("uniprot_id"),
+            "protein_a_name": left.get("name"),
+            "protein_a_seqid": left.get("seqid"),
+            "protein_a_source": left.get("source"),
+            "protein_a_type": left.get("type"),
+            "protein_a_start": left.get("start"),
+            "protein_a_end": left.get("end"),
+            "protein_a_score": left.get("score"),
+            "protein_a_strand": left.get("strand"),
+            "protein_a_phase": left.get("phase"),
+            "protein_a_product": left.get("product"),
             # gene information for protein_b
-            "protein_b_locus_tag": row.get("protein_b_locus_tag"),
-            "protein_b_uniprot_id": row.get("protein_b_uniprot_id"),
-            "protein_b_name": row.get("protein_b_name"),
-            "protein_b_seqid": row.get("protein_b_seqid"),
-            "protein_b_source": row.get("protein_b_source"),
-            "protein_b_type": row.get("protein_b_type"),
-            "protein_b_start": row.get("protein_b_start"),
-            "protein_b_end": row.get("protein_b_end"),
-            "protein_b_score": row.get("protein_b_score"),
-            "protein_b_strand": row.get("protein_b_strand"),
-            "protein_b_phase": row.get("protein_b_phase"),
-            "protein_b_product": row.get("protein_b_product"),
+            "protein_b_locus_tag": right.get("locus_tag"),
+            "protein_b_uniprot_id": right.get("uniprot_id"),
+            "protein_b_name": right.get("name"),
+            "protein_b_seqid": right.get("seqid"),
+            "protein_b_source": right.get("source"),
+            "protein_b_type": right.get("type"),
+            "protein_b_start": right.get("start"),
+            "protein_b_end": right.get("end"),
+            "protein_b_score": right.get("score"),
+            "protein_b_strand": right.get("strand"),
+            "protein_b_phase": right.get("phase"),
+            "protein_b_product": right.get("product"),
             # External ids
             "string_protein_a_id": string_protein_a_id,
             "string_protein_b_id": string_protein_b_id,
@@ -248,34 +315,26 @@ class PPICSVFlow:
                 rows_since_refresh += 1
 
                 if len(buffer) >= batch_size:
-                    success, _ = self.repo.bulk_index(
-                        buffer, chunk_size=batch_size, refresh=None
-                    )
+                    success, _ = self.repo.bulk_index(buffer, chunk_size=batch_size, refresh=None)
                     total += success
                     buffer.clear()
                     if log_every and (i % log_every == 0):
                         print(f"[ppi] processed rows: {i:,} | indexed: {total:,}")
 
                     should_refresh = (
-                        refresh_every_rows is not None
-                        and rows_since_refresh >= refresh_every_rows
+                        refresh_every_rows is not None and rows_since_refresh >= refresh_every_rows
                     ) or (
                         refresh_every_secs is not None
-                        and (now() - last_refresh_ts).total_seconds()
-                        >= refresh_every_secs
+                        and (now() - last_refresh_ts).total_seconds() >= refresh_every_secs
                     )
                     if should_refresh:
                         es.indices.refresh(index=self.repo.concrete_index)
                         rows_since_refresh = 0
                         last_refresh_ts = now()
-                        print(
-                            f"[ppi] periodic refresh after {i:,} rows; total indexed: {total:,}"
-                        )
+                        print(f"[ppi] periodic refresh after {i:,} rows; total indexed: {total:,}")
 
             if buffer:
-                success, _ = self.repo.bulk_index(
-                    buffer, chunk_size=batch_size, refresh=refresh
-                )
+                success, _ = self.repo.bulk_index(buffer, chunk_size=batch_size, refresh=refresh)
                 total += success
         finally:
             if optimize_indexing and old_settings:
@@ -285,9 +344,7 @@ class PPICSVFlow:
                         body={
                             "index": {
                                 "refresh_interval": old_settings["refresh_interval"],
-                                "number_of_replicas": old_settings[
-                                    "number_of_replicas"
-                                ],
+                                "number_of_replicas": old_settings["number_of_replicas"],
                             }
                         },
                     )

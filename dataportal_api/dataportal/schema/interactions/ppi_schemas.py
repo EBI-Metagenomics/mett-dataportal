@@ -34,6 +34,30 @@ class PPIInteractionSchema(BaseModel):
     string_protein_a_id: Optional[str] = None
     string_protein_b_id: Optional[str] = None
 
+    # Consensus network scores
+    consensus_score: Optional[float] = None
+    consensus_rank: Optional[int] = None
+    consensus_avg_rank: Optional[float] = None
+    edge_id: Optional[str] = None
+    interaction_weight: Optional[float] = None
+    n_sources: Optional[int] = None
+
+    # Evidence channel weights (consensus network)
+    weight_coexp: Optional[float] = None
+    weight_operons_annogesic: Optional[float] = None
+    weight_operons_opdetect: Optional[float] = None
+    weight_operons_opmapper: Optional[float] = None
+    weight_phenocorr_neg: Optional[float] = None
+    weight_phenocorr_pos: Optional[float] = None
+    weight_pmi_gsms: Optional[float] = None
+    weight_pmi: Optional[float] = None
+    weight_ppi_gp_score_neg: Optional[float] = None
+    weight_ppi_gp_score_pos: Optional[float] = None
+    weight_ppi_perturb_score_neg: Optional[float] = None
+    weight_ppi_perturb_score_pos: Optional[float] = None
+    weight_ppi_xlms_files: Optional[float] = None
+    weight_ppi_xlms_peptides: Optional[float] = None
+
     # Scores
     dl_score: Optional[float] = None
     comelt_score: Optional[float] = None
@@ -115,7 +139,14 @@ class PPINetworkEdgeSchema(BaseModel):
 
     source: str = Field(..., description="Source node ID")
     target: str = Field(..., description="Target node ID")
-    weight: Optional[float] = Field(None, description="Edge weight (score)")
+    weight: Optional[float] = Field(None, description="Edge weight (consensus score on graph)")
+    pair_id: Optional[str] = Field(None, description="Canonical interaction pair ID")
+    n_sources: Optional[int] = Field(
+        None, description="Number of evidence sources contributing to this interaction"
+    )
+    evidence_scores: Optional[Dict[str, float]] = Field(
+        None, description="Per-channel evidence weights (detail panel only)"
+    )
 
 
 class PPINetworkSchema(BaseModel):
@@ -202,8 +233,8 @@ class PPINeighborhoodQuerySchema(BaseModel):
     n: int = Field(5, ge=1, le=50, description="Number of neighbors to retrieve")
     species_acronym: Optional[str] = Field(None, description="Species acronym filter")
     score_type: Optional[str] = Field(
-        "ds_score",
-        description="Score type used to rank and filter interactions (e.g. ds_score, string_score). Determines which interactions are considered and their order for 'top N'.",
+        "consensus_score",
+        description="Score type used to rank and filter interactions (default: consensus_score). Determines which interactions are considered and their order for 'top N'.",
     )
     score_threshold: Optional[float] = Field(
         0.0,
@@ -272,7 +303,20 @@ class PPINetworkPropertiesQuerySchema(BaseModel):
 class PPIScoreTypesResponseSchema(SuccessResponseSchema):
     """Response schema for available score types."""
 
-    data: Dict[str, List[str]] = Field(..., description="Available score types")
+    data: Dict[str, Any] = Field(
+        ...,
+        description=(
+            "Available score types and evidence channel metadata. "
+            "Example: {'score_types': [...], 'default': 'consensus_score', "
+            "'evidence_channels': {'ds_score': 'Deep learning', ...}}."
+        ),
+    )
+
+
+class PPIInteractionDetailResponseSchema(SuccessResponseSchema):
+    """Response schema for a single PPI interaction by pair_id."""
+
+    data: PPIInteractionSchema
 
 
 class PPIDataSourcesResponseSchema(SuccessResponseSchema):

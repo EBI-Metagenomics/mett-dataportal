@@ -6,6 +6,7 @@ import {
   STRING_NETWORK_TYPES,
   STRING_EVIDENCE_CHANNELS,
   EVIDENCE_DISPLAY_LABELS,
+  LOCAL_EVIDENCE_CHANNEL_LABELS,
   type StringNetworkType,
   type StringEvidenceChannel,
 } from '../constants';
@@ -13,6 +14,13 @@ import styles from './InteractionFilters.module.scss';
 
 const SLIDER = NETWORK_VIEW_CONSTANTS.SLIDER;
 const STRING_SCORE = NETWORK_VIEW_CONSTANTS.STRING_REQUIRED_SCORE;
+
+function formatScoreTypeLabel(type: string): string {
+  if (LOCAL_EVIDENCE_CHANNEL_LABELS[type]) {
+    return LOCAL_EVIDENCE_CHANNEL_LABELS[type];
+  }
+  return type.replace(/_score$/, '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 interface InteractionFiltersProps {
   dataSource: PPIDataSource;
@@ -172,7 +180,7 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
           >
             {availableScoreTypes.map((type) => (
               <option key={type} value={type}>
-                {type.replace('_score', '').replace('_', ' ').toUpperCase()}
+                {formatScoreTypeLabel(type)}
               </option>
             ))}
           </select>

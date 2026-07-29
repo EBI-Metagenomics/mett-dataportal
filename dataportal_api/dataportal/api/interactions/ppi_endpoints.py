@@ -16,6 +16,8 @@ from dataportal.schema.interactions.ppi_schemas import (
     PPINetworkPropertiesQuerySchema,
     PPIScoreTypesResponseSchema,
     PPIDataSourcesResponseSchema,
+    PPIInteractionDetailResponseSchema,
+    PPIInteractionSchema,
 )
 from dataportal.schema.response_schemas import create_success_response, ErrorCode
 from dataportal.services.interactions.ppi_service import PPIService
@@ -29,6 +31,10 @@ from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_suc
 from dataportal.utils.constants import (
     PPI_DATA_SOURCES,
     PPI_DATA_SOURCE_LOCAL_ES,
+    PPI_SCORE_FIELDS,
+    PPI_DEFAULT_SCORE_TYPE,
+    PPI_EVIDENCE_CHANNEL_LABELS,
+    PPI_EVIDENCE_SCORE_FIELDS,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,29 +50,28 @@ ppi_service = PPIService()
     "/scores/available",
     response=PPIScoreTypesResponseSchema,
     summary="Get available score types",
-    description="Get list of available score types for PPI filtering",
+    description=(
+        "Get list of available score types for PPI filtering. "
+        "Also returns evidence channel labels for interaction detail panels. "
+        "Network graphs use the selected score type as edge weight (default: consensus_score); "
+        "per-channel evidence scores are available when an edge is selected."
+    ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
 )
 @wrap_success_response
 async def get_available_score_types(request):
     """Get list of available score types for PPI filtering."""
     try:
-        score_types = [
-            "ds_score",
-            "comelt_score",
-            "perturbation_score",
-            "abundance_score",
-            "melt_score",
-            "secondary_score",
-            "bayesian_score",
-            "string_score",
-            "operon_score",
-            "ecocyc_score",
-            "tt_score",
-        ]
-
+        evidence_channels = {
+            field: PPI_EVIDENCE_CHANNEL_LABELS.get(field, field)
+            for field in PPI_EVIDENCE_SCORE_FIELDS
+        }
         return create_success_response(
-            data={"score_types": score_types},
+            data={
+                "score_types": list(PPI_SCORE_FIELDS),
+                "default": PPI_DEFAULT_SCORE_TYPE,
+                "evidence_channels": evidence_channels,
+            },
             message="Available score types retrieved successfully",
         )
     except Exception as e:
@@ -94,6 +99,42 @@ async def get_ppi_data_sources(request):
             message="Available PPI data sources retrieved successfully",
         )
     except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise_internal_server_error("Internal server error")
+
+
+@ppi_router.get(
+    "/interactions/{pair_id}",
+    response=PPIInteractionDetailResponseSchema,
+    summary="Get PPI interaction by pair ID",
+    description=(
+        "Fetch a single protein-protein interaction including consensus score "
+        "and all evidence-channel weights for the interaction details panel."
+    ),
+    auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
+)
+@wrap_success_response
+async def get_ppi_interaction_by_pair_id(request, pair_id: str):
+    """Get a single PPI interaction by canonical pair_id."""
+    try:
+        interaction = await ppi_service.get_interaction_by_pair_id(pair_id)
+        if not interaction:
+            raise_not_found_error(
+                message=f"PPI interaction '{pair_id}' not found",
+                error_code=ErrorCode.PPI_NOT_FOUND,
+            )
+        return create_success_response(
+            data=PPIInteractionSchema(**interaction),
+            message=f"Interaction '{pair_id}' retrieved successfully",
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise_internal_server_error(f"Failed to get PPI interaction: {str(e)}")
+    except Exception as e:
+        from ninja.errors import HttpError
+
+        if isinstance(e, HttpError):
+            raise
         logger.error(f"Unexpected error: {e}")
         raise_internal_server_error("Internal server error")
 
@@ -210,7 +251,7 @@ async def get_protein_neighborhood(request, query: PPINeighborhoodQuerySchema = 
             protein_id=actual_protein_id,
             n=query.n,
             species_acronym=query.species_acronym,
-            score_type=query.score_type or "ds_score",
+            score_type=query.score_type or PPI_DEFAULT_SCORE_TYPE,
             score_threshold=query.score_threshold if query.score_threshold is not None else 0.0,
         )
 
