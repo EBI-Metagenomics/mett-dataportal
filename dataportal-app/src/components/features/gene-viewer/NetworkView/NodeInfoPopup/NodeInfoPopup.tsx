@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { PPINetworkNode, PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
+import { GeneService } from '../../../../../services/gene/geneService';
 import { STRING_SCORE_LABELS } from '../constants';
 import { canExpandNode, getNodeExpansionLevel } from '../utils/expansionUtils';
 import { ExpansionState } from '../types/expansion';
 import { useClampPopupToViewport } from '../utils/useClampPopupToViewport';
+import { getNodeDisplayLabel } from '../NetworkGraph/utils/prepareElements';
 import styles from './NodeInfoPopup.module.scss';
 
 interface NodeInfoPopupProps {
@@ -22,6 +24,9 @@ interface NodeInfoPopupProps {
   onViewInJBrowse?: (locusTag: string) => void;
 }
 
+const hasText = (value?: string | null): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
+
 export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({ 
   node, 
   x, 
@@ -35,6 +40,40 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
   isExpanding = false,
   onViewInJBrowse,
 }) => {
+  const [enrichedNode, setEnrichedNode] = useState<PPINetworkNode>(node);
+
+  useEffect(() => {
+    setEnrichedNode(node);
+  }, [node]);
+
+  // Fill missing name/product from feature index when PPI payload is incomplete
+  // (common for Top-N focal nodes before backend fix, or genes without GFF Name).
+  useEffect(() => {
+    const locusTag = node.locus_tag?.trim();
+    if (!locusTag) return;
+    if (hasText(node.name) && hasText(node.product)) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const gene = await GeneService.fetchGeneByLocusTag(locusTag);
+        if (cancelled || !gene) return;
+        setEnrichedNode((prev) => ({
+          ...prev,
+          name: hasText(prev.name) ? prev.name : (gene.gene_name || gene.uf_gene_name || undefined),
+          product: hasText(prev.product) ? prev.product : (gene.product || undefined),
+          uniprot_id: prev.uniprot_id || gene.uniprot_id || undefined,
+        }));
+      } catch (err) {
+        console.warn('Failed to enrich node popup from gene API:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [node]);
+
   const canExpand = expansionState && canExpandNode(expansionState.path.currentLevel);
   const expansionLevel = expansionState ? getNodeExpansionLevel(expansionState, node.id) : undefined;
   const isExpanded = expansionLevel !== undefined;
@@ -53,6 +92,10 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
   };
 
   const { popupRef, shift } = useClampPopupToViewport(x, y);
+  const title = getNodeDisplayLabel(enrichedNode);
+  const showLocusUnderTitle =
+    hasText(enrichedNode.locus_tag) &&
+    enrichedNode.locus_tag !== title;
 
   return (
     <div className={styles.popupOverlay} onClick={onClose}>
@@ -67,7 +110,10 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
       >
         <div className={styles.popupHeader}>
           <div className={styles.popupHeaderText}>
-            <h3>{node.locus_tag || node.label || node.id}</h3>
+            <h3>{title}</h3>
+            {showLocusUnderTitle && (
+              <div className={styles.subtitle}>{enrichedNode.locus_tag}</div>
+            )}
             {isExpanded && (
               <span className={styles.expandedBadge}>Expanded (Level {expansionLevel})</span>
             )}
@@ -78,58 +124,58 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
         </div>
         <div className={styles.popupScroll}>
         <div className={styles.popupBody}>
-          {node.name && (
+          {hasText(enrichedNode.name) && (
             <div className={styles.infoRow}>
               <span className={styles.label}>Name:</span>
-              <span className={styles.value}>{node.name}</span>
+              <span className={styles.value}>{enrichedNode.name}</span>
             </div>
           )}
-          {node.product && (
+          {hasText(enrichedNode.product) && (
             <div className={styles.infoRow}>
               <span className={styles.label}>Product:</span>
-              <span className={styles.value}>{node.product}</span>
+              <span className={styles.value}>{enrichedNode.product}</span>
             </div>
           )}
-          {node.id && (
+          {(enrichedNode.uniprot_id || enrichedNode.id) && (
             <div className={styles.infoRow}>
               <span className={styles.label}>UniProt ID:</span>
-              <span className={styles.value}>{node.id}</span>
+              <span className={styles.value}>{enrichedNode.uniprot_id || enrichedNode.id}</span>
             </div>
           )}
-          {node.locus_tag && (
+          {hasText(enrichedNode.locus_tag) && (
             <div className={styles.infoRow}>
               <span className={styles.label}>Locus Tag:</span>
-              <span className={styles.value}>{node.locus_tag}</span>
+              <span className={styles.value}>{enrichedNode.locus_tag}</span>
             </div>
           )}
 
           {/* STRING DB section: show when node has STRING API data */}
-          {(node.string_id || node.string_preferred_name) && (
+          {(enrichedNode.string_id || enrichedNode.string_preferred_name) && (
             <div className={styles.stringSection}>
               <div className={styles.sectionTitle}>STRING DB</div>
-              {node.string_id && (
+              {enrichedNode.string_id && (
                 <div className={styles.infoRow}>
                   <span className={styles.label}>STRING protein ID:</span>
-                  <span className={styles.value}>{node.string_id}</span>
+                  <span className={styles.value}>{enrichedNode.string_id}</span>
                 </div>
               )}
-              {node.string_preferred_name && (
+              {enrichedNode.string_preferred_name && (
                 <div className={styles.infoRow}>
                   <span className={styles.label}>Preferred name:</span>
-                  <span className={styles.value}>{node.string_preferred_name}</span>
+                  <span className={styles.value}>{enrichedNode.string_preferred_name}</span>
                 </div>
               )}
-              {!node.locus_tag && (node.string_id || node.string_preferred_name) && (
+              {!enrichedNode.locus_tag && (enrichedNode.string_id || enrichedNode.string_preferred_name) && (
                 <div className={styles.infoRow}>
                   <span className={styles.label}>Locus tag:</span>
                   <span className={styles.valueMuted}>Not in feature index mapping</span>
                 </div>
               )}
-              {node.string_score_breakdown && (
+              {enrichedNode.string_score_breakdown && (
                 <div className={styles.scoreBreakdown}>
                   <div className={styles.groupTitle}>Score breakdown (from STRING)</div>
                   {(Object.keys(STRING_SCORE_LABELS) as (keyof StringScoreBreakdown)[]).map((key) => {
-                    const val = node.string_score_breakdown![key];
+                    const val = enrichedNode.string_score_breakdown![key];
                     if (val === undefined || val === null || val === '') return null;
                     const num = typeof val === 'string' ? parseFloat(val) : val;
                     const display = typeof num === 'number' && !Number.isNaN(num) ? num.toFixed(3) : String(val);
@@ -159,7 +205,9 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
                   {ppiInteractions.slice(0, 10).map((edge, idx) => {
                     const connectedNodeId = edge.source === node.id ? edge.target : edge.source;
                     const connectedNode = connectedNodes.get(connectedNodeId);
-                    const connectedLabel = connectedNode?.locus_tag || connectedNode?.name || connectedNodeId;
+                    const connectedLabel = connectedNode
+                      ? getNodeDisplayLabel(connectedNode)
+                      : connectedNodeId;
                     
                     return (
                       <div key={idx} className={styles.interactionItem}>
@@ -188,7 +236,9 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
                   {orthologInteractions.slice(0, 10).map((edge, idx) => {
                     const connectedNodeId = edge.source === node.id ? edge.target : edge.source;
                     const connectedNode = connectedNodes.get(connectedNodeId);
-                    const connectedLabel = connectedNode?.locus_tag || connectedNode?.name || connectedNodeId;
+                    const connectedLabel = connectedNode
+                      ? getNodeDisplayLabel(connectedNode)
+                      : connectedNodeId;
                     
                     return (
                       <div key={idx} className={styles.interactionItem}>
@@ -211,15 +261,15 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
         )}
         </div>
 
-        {((onViewInJBrowse && !isOrthologNode && node.locus_tag) || (onExpand && !isOrthologNode)) && (
+        {((onViewInJBrowse && !isOrthologNode && enrichedNode.locus_tag) || (onExpand && !isOrthologNode)) && (
           <div className={styles.popupFooter}>
-            {onViewInJBrowse && !isOrthologNode && node.locus_tag && (
+            {onViewInJBrowse && !isOrthologNode && enrichedNode.locus_tag && (
               <button
                 type="button"
                 className={styles.viewInJBrowseButton}
                 onClick={() => {
                   onClose();
-                  onViewInJBrowse(node.locus_tag!);
+                  onViewInJBrowse(enrichedNode.locus_tag!);
                 }}
                 title="Scroll JBrowse viewer to show this gene"
               >
@@ -248,4 +298,3 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
     </div>
   );
 };
-

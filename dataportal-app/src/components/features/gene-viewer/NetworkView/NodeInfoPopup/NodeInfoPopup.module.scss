@@ -21,7 +21,8 @@
   min-width: 250px;
   z-index: 1001;
   overflow: hidden;
-  transform: translate(-50%, calc(-100% - 10px));
+  /* Offset to the right of the click so the selected node stays visible */
+  transform: translate(18px, -24px);
 }
 
 .popupHeader {
@@ -42,6 +43,13 @@
     font-weight: 600;
     color: #333;
   }
+}
+
+.subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #666;
+  word-break: break-word;
 }
 
 .popupHeaderText {
