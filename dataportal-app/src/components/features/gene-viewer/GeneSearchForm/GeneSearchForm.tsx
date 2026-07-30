@@ -80,9 +80,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         console.log(`GeneSearchForm render #${renderCount.current}`);
     }
 
-    const [searchInput, setSearchInput] = useState<string>('');
+    const [searchInput, setSearchInput] = useState<string>(searchQuery || '');
     const [query, setQuery] = useState<string>(searchQuery || '');
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(searchQuery || '');
     const [suggestions, setSuggestions] = useState<GeneSuggestion[]>([]);
     const [geneName, setGeneName] = useState<string>('');
     const [results, setResults] = useState<GeneMeta[]>([]);
@@ -95,6 +95,16 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [isProcessingSuggestion, setIsProcessingSuggestion] = useState<boolean>(false);
     const [currentLocusTag, setCurrentLocusTag] = useState<string>('');
     const lastPageSizeRef = useRef<number>(DEFAULT_PER_PAGE_CNT);
+
+    // Keep the visible search box in sync with store/URL-driven query
+    useEffect(() => {
+        if (searchQuery !== query && searchQuery !== searchInput) {
+            setSearchInput(searchQuery || '');
+            setQuery(searchQuery || '');
+            setDebouncedSearchQuery(searchQuery || '');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchQuery]);
 
     useEffect(() => {
         if (resultsProp && resultsProp.length > 0) {
@@ -127,6 +137,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const setGeneSearchQuery = useFilterStore(state => state.setGeneSearchQuery);
     const setGeneSortField = useFilterStore(state => state.setGeneSortField);
     const setGeneSortOrder = useFilterStore(state => state.setGeneSortOrder);
+    const clearFacetedFilters = useFilterStore(state => state.clearFacetedFilters);
     const selectedSpeciesFromStore = useFilterStore(state => state.selectedSpecies);
 
     const {
@@ -608,16 +619,9 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         setGeneName('');
 
         if (!isProcessingSuggestion && !looksLikeDisplayText) {
-            // console.log('Calling debounced functions for input:', newInput);
-            
-            // Special handling for empty input - trigger HomePage initial load
-            if (newInput.trim() === '' && onResultsUpdate) {
-                // console.log('GeneSearchForm - Empty input detected, triggering HomePage initial load');
-                // Reset to initial state for HomePage
-                setQuery('');
-                setDebouncedSearchQuery('');
-                setGeneSearchQuery('');
-                setSuggestions([]);
+            // Clearing the box should restore the unfiltered gene list
+            if (newInput.trim() === '') {
+                handleClearSearch();
                 return;
             }
             
@@ -630,6 +634,98 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             console.log('Skipping debounced functions - processing suggestion or display text detected');
         }
     };
+
+    const handleClearSearch = useCallback(() => {
+        setSearchInput('');
+        setQuery('');
+        setDebouncedSearchQuery('');
+        setGeneName('');
+        setCurrentLocusTag('');
+        setSuggestions([]);
+        setIsProcessingSuggestion(false);
+        setGeneSearchQuery('');
+
+        const genomeFilter = selectedGenomes?.length
+            ? selectedGenomes.map((genome) => ({
+                isolate_name: genome.isolate_name,
+                type_strain: genome.type_strain
+            }))
+            : undefined;
+        const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+
+        const reloadAll = async () => {
+            try {
+                setLoading(true);
+                const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                    '',
+                    1,
+                    pageSize,
+                    sortField,
+                    sortOrder,
+                    genomeFilter,
+                    speciesFilter,
+                    getLegacyFilters(),
+                    getLegacyOperators(),
+                    undefined
+                );
+                if (response && response.data && response.pagination) {
+                    if (onResultsUpdate) {
+                        onResultsUpdate(response.data, response.pagination);
+                    } else {
+                        setResults(response.data);
+                        setCurrentPage(response.pagination.page_number);
+                        setTotalPages(response.pagination.num_pages);
+                        setHasPrevious(response.pagination.has_previous);
+                        setHasNext(response.pagination.has_next);
+                    }
+                } else if (onResultsUpdate) {
+                    onResultsUpdate([], null);
+                } else {
+                    setResults([]);
+                    setCurrentPage(1);
+                    setTotalPages(1);
+                    setHasPrevious(false);
+                    setHasNext(false);
+                }
+            } catch (error) {
+                console.error('Error clearing gene search:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        reloadAll();
+    }, [
+        selectedGenomes,
+        selectedSpecies,
+        pageSize,
+        sortField,
+        sortOrder,
+        getLegacyFilters,
+        getLegacyOperators,
+        onResultsUpdate,
+        setGeneSearchQuery,
+        setLoading,
+    ]);
+
+    const handleClearAllFacets = useCallback(() => {
+        clearFacetedFilters();
+        // Explicit refetch: clearing makes filters "initial", so the facet-change effect would skip.
+        setTimeout(() => {
+            fetchSearchResults(1, sortField, sortOrder, {}, {});
+        }, 0);
+    }, [clearFacetedFilters, fetchSearchResults, sortField, sortOrder]);
+
+    const activeSearchLabel = useMemo(() => {
+        if (searchInput.trim()) return searchInput.trim();
+        if (query.trim()) return query.trim();
+        return '';
+    }, [searchInput, query]);
+
+    const hasActiveFacets = useMemo(
+        () => Object.values(facetedFilters).some((values) => Array.isArray(values) && values.length > 0),
+        [facetedFilters]
+    );
 
     const handleSuggestionClick = (suggestion: GeneSuggestion) => {
         const selectedValue = suggestion.locus_tag;
@@ -822,12 +918,31 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             <div className={styles.leftPane}>
                 <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
 
+                {activeSearchLabel && (
+                    <div className={styles.activeSearchSection}>
+                        <h3 className={`vf-section-header__subheading ${styles.leftPaneHeading}`}>Active Search</h3>
+                        <div className={styles.activeSearchChips}>
+                            <button
+                                type="button"
+                                className={styles.searchChip}
+                                onClick={handleClearSearch}
+                                aria-label={`Clear search for ${activeSearchLabel}`}
+                                title="Clear search and show all genes"
+                            >
+                                <span className={styles.searchChipLabel}>{activeSearchLabel}</span>
+                                <span className={styles.searchChipRemove} aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <GeneFacetedFilter
                     facets={facets}
                     onToggleFacet={handleToggleFacet}
                     initialVisibleCount={FACET_INITIAL_VISIBLE_CNT}
                     loadMoreStep={FACET_STEP_CNT}
                     onOperatorChange={handleOperatorChange}
+                    onClearAll={hasActiveFacets ? handleClearAllFacets : undefined}
                 />
             </div>
             <div className={styles.rightPane}>
@@ -844,6 +959,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                         onSuggestionClick={handleSuggestionClick}
                         onSuggestionsClear={() => setSuggestions([])}
                         onSearch={handleSearch}
+                        onClear={handleClearSearch}
                     />
                 </form>
                 <div>

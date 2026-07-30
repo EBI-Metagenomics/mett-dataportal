@@ -10,6 +10,7 @@ interface GeneSearchInputProps {
     onSuggestionClick: (suggestion: GeneSuggestion) => void;
     onSuggestionsClear: () => void;
     onSearch: () => void;
+    onClear?: () => void;
 }
 
 const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
@@ -19,6 +20,7 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                                                              onSuggestionClick,
                                                              onSuggestionsClear,
                                                              onSearch,
+                                                             onClear,
                                                          }) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const [isSelecting, setIsSelecting] = useState(false);
@@ -54,57 +56,73 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
         }
     };
 
+    const hasQuery = Boolean(query?.trim());
+
     return (
         <div ref={wrapperRef} className={`vf-form__item ${styles.vfFormItem}`}>
-            <Autocomplete
-                disablePortal
-                freeSolo
-                options={suggestions || []}
-                style={{zIndex: 1000}}
-                getOptionLabel={(option) => {
-                    if (typeof option === 'string') return option;
-                    const strainName = option.isolate_name || 'Unknown strain';
-                    const product = option.product || 'Unknown product';
-                    const locusTag = option.locus_tag || 'Unknown locus tag';
-                    const geneNamePart = option.gene_name ? ` - ${option.gene_name}` : '';
-                    const uniprot_id = option.uniprot_id ? ` - ${option.uniprot_id}` : '';
-                    const alias =
-                        Array.isArray(option.alias) && option.alias.some(a => a.trim())
-                            ? ` - ${option.alias.filter(a => a.trim()).join(', ')}`
-                            : '';
+            <div className={styles.inputWithClear}>
+                <Autocomplete
+                    disablePortal
+                    freeSolo
+                    options={suggestions || []}
+                    style={{zIndex: 1000, flex: 1}}
+                    getOptionLabel={(option) => {
+                        if (typeof option === 'string') return option;
+                        const strainName = option.isolate_name || 'Unknown strain';
+                        const product = option.product || 'Unknown product';
+                        const locusTag = option.locus_tag || 'Unknown locus tag';
+                        const geneNamePart = option.gene_name ? ` - ${option.gene_name}` : '';
+                        const uniprot_id = option.uniprot_id ? ` - ${option.uniprot_id}` : '';
+                        const alias =
+                            Array.isArray(option.alias) && option.alias.some(a => a.trim())
+                                ? ` - ${option.alias.filter(a => a.trim()).join(', ')}`
+                                : '';
 
-                    return `${strainName}${geneNamePart}${alias} (${product} - ${locusTag}${uniprot_id})`;
-                }}
-                inputValue={query || ''}
-                onInputChange={handleInputChange}
-                onChange={(event, value) => {
-                    if (value && typeof value !== 'string') {
-                        console.log('GeneSearchInput onChange - suggestion selected:', value);
-                        setIsSelecting(true);
-                        // Don't call onInputChange here - let onSuggestionClick handle it
-                        onSuggestionClick(value);
+                        return `${strainName}${geneNamePart}${alias} (${product} - ${locusTag}${uniprot_id})`;
+                    }}
+                    inputValue={query || ''}
+                    onInputChange={handleInputChange}
+                    onChange={(event, value) => {
+                        if (value && typeof value !== 'string') {
+                            console.log('GeneSearchInput onChange - suggestion selected:', value);
+                            setIsSelecting(true);
+                            // Don't call onInputChange here - let onSuggestionClick handle it
+                            onSuggestionClick(value);
+                        }
+                    }}
+                    isOptionEqualToValue={(option, value) =>
+                        option &&
+                        value &&
+                        typeof option !== 'string' &&
+                        typeof value !== 'string' &&
+                        option.locus_tag === value.locus_tag
                     }
-                }}
-                isOptionEqualToValue={(option, value) =>
-                    option &&
-                    value &&
-                    typeof option !== 'string' &&
-                    typeof value !== 'string' &&
-                    option.locus_tag === value.locus_tag
-                }
-                renderInput={(params) => (
-                    <TextField
-                        {...params}
-                        placeholder="Try Vitamin B12 transporter or a gene locus as dnaA ..."
-                        variant="outlined"
-                        sx={{
-                            '& .MuiInputBase-root': {
-                                height: '41px',
-                            },
-                        }}
-                    />
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            placeholder="Try Vitamin B12 transporter or a gene locus as dnaA ..."
+                            variant="outlined"
+                            sx={{
+                                '& .MuiInputBase-root': {
+                                    height: '41px',
+                                    paddingRight: hasQuery ? '40px' : undefined,
+                                },
+                            }}
+                        />
+                    )}
+                />
+                {hasQuery && onClear && (
+                    <button
+                        type="button"
+                        className={styles.clearInputButton}
+                        onClick={onClear}
+                        aria-label="Clear search"
+                        title="Clear search and show all genes"
+                    >
+                        ×
+                    </button>
                 )}
-            />
+            </div>
 
             <button
                 type="button"

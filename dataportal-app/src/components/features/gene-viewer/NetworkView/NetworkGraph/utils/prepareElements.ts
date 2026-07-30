@@ -3,7 +3,6 @@ import type { NetworkGraphProps } from '../types';
 
 /**
  * Prefer a short gene name on the graph; fall back to locus tag when name is blank.
- * Avoids overcrowding filters with a label-mode control.
  */
 export const getNodeDisplayLabel = (node: {
     id?: string;

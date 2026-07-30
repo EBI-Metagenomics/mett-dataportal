@@ -67,6 +67,7 @@ export interface FilterState {
   updateFacetedFilter: (filterType: keyof FacetedFilters, values: any[]) => void
   setFacetOperators: (operators: FacetOperators) => void
   updateFacetOperator: (filterType: keyof FacetOperators, operator: 'AND' | 'OR') => void
+  clearFacetedFilters: () => void
   resetFilters: () => void
 }
 
@@ -137,6 +138,7 @@ export const useFilterStore = create<FilterState>()(
           }
         });
       },
+      clearFacetedFilters: () => set({ facetedFilters: {}, facetOperators: {} }),
       resetFilters: () => set(initialState),
     }),
     { name: 'filter-store' }

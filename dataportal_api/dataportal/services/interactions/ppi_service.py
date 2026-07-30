@@ -423,7 +423,6 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             "product": focal.get("product") or None,
         }
 
-        # Create network data for the neighborhood
         network_data = PPINetworkSchema(
             nodes=[focal_node] + neighbor_list,
             edges=[],  # Will be populated by caller
