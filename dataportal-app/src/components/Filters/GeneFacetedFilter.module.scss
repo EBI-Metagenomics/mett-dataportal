@@ -2,10 +2,34 @@
   position: relative;
 }
 
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
 .title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
+  font-size: 1.2em;
+  font-weight: 500;
+  margin: 0;
+}
+
+.clearAllButton {
+  border: none;
+  background: transparent;
+  color: #3b6fb6;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: #2a4f85;
+  }
 }
 
 .facetGroup {

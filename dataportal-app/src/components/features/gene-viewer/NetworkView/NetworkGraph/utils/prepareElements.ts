@@ -1,6 +1,34 @@
 import { NETWORK_VIEW_CONSTANTS } from '../../constants';
 import type { NetworkGraphProps } from '../types';
 
+/**
+ * Prefer a short gene name on the graph; fall back to locus tag when name is blank.
+ */
+export const getNodeDisplayLabel = (node: {
+    id?: string;
+    name?: string | null;
+    string_preferred_name?: string | null;
+    locus_tag?: string | null;
+    label?: string | null;
+}): string => {
+    const name = typeof node.name === 'string' ? node.name.trim() : '';
+    if (name) return name;
+
+    const preferred =
+        typeof node.string_preferred_name === 'string'
+            ? node.string_preferred_name.trim()
+            : '';
+    if (preferred) return preferred;
+
+    const locus = typeof node.locus_tag === 'string' ? node.locus_tag.trim() : '';
+    if (locus) return locus;
+
+    const label = typeof node.label === 'string' ? node.label.trim() : '';
+    if (label) return label;
+
+    return String(node.id ?? '');
+};
+
 export interface PreparedNode {
     data: {
         id: string;
@@ -94,19 +122,30 @@ export const prepareNodes = (
         }
         
         const inPath = pathNodeIds.has(id);
-        const fullLabel = node.locus_tag || node.label || id;
-        const displayLabel = typeof fullLabel === 'string' ? fullLabel : String(fullLabel ?? id);
+        const displayLabel = getNodeDisplayLabel({
+            id,
+            name: node.name as string | undefined,
+            string_preferred_name: node.string_preferred_name as string | undefined,
+            locus_tag: node.locus_tag,
+            label: node.label,
+        });
+        const locus = typeof node.locus_tag === 'string' ? node.locus_tag.trim() : '';
+        const fullLabel =
+            displayLabel && locus && displayLabel !== locus
+                ? `${displayLabel} (${locus})`
+                : displayLabel || locus || id;
 
         return {
             data: {
                 id,
-                label: displayLabel,
-                fullLabel,
                 nodeType: nodeType || 'ppi',
                 hasOrthologs: hasOrthologs || false,
                 expansionLevel: expansionLevel,
                 inPath: inPath ? 'true' : 'false',
                 ...nodeData,
+                // Keep computed display label last so source `label` cannot overwrite it
+                label: displayLabel,
+                fullLabel,
             },
             position: initialPosition,
         };

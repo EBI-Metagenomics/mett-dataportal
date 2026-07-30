@@ -40,6 +40,10 @@ jest.mock('../../services/metadataService', () => ({
 // Mock the filter store to provide proper facetOperators
 jest.mock('../../stores/filterStore', () => ({
   useFilterStore: jest.fn(() => ({
+    facetedFilters: {
+      essentiality: ['nonessential'],
+      cog_funcats: ['C'],
+    },
     facetOperators: {
       cog_funcats: 'OR' // This will make the toggle visible
     },
@@ -171,6 +175,28 @@ describe('GeneFacetedFilter', () => {
       // Since the COG categories group is collapsed, we might not see the filtering effect
       // Let's just verify the input value changed
       expect(filterInput).toHaveValue('j')
+    })
+  })
+
+  test('calls onClearAll when Clear all is clicked', async () => {
+    const onClearAll = jest.fn()
+
+    await act(async () => {
+      render(
+        <GeneFacetedFilter
+          facets={mockFacets}
+          onToggleFacet={jest.fn()}
+          onOperatorChange={jest.fn()}
+          onClearAll={onClearAll}
+        />
+      )
+    })
+
+    await waitFor(() => {
+      const clearButton = screen.getByRole('button', { name: /clear all facet filters/i })
+      expect(clearButton).toBeInTheDocument()
+      fireEvent.click(clearButton)
+      expect(onClearAll).toHaveBeenCalledTimes(1)
     })
   })
 })

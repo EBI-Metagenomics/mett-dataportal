@@ -21,6 +21,7 @@ interface GeneFacetedFilterProps {
     initialVisibleCount?: number;
     loadMoreStep?: number;
     onOperatorChange?: (facetGroup: string, operator: 'AND' | 'OR') => void;
+    onClearAll?: () => void;
 }
 
 const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
@@ -29,6 +30,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                                  initialVisibleCount = 10,
                                                                  loadMoreStep = 10,
                                                                  onOperatorChange,
+                                                                 onClearAll,
                                                              }) => {
 
     const filterStore = useFilterStore();
@@ -37,6 +39,12 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
     const [cogCategoryDefs, setCogCategoryDefs] = useState<Record<string, string>>({});
     const [manualCollapsedGroups, setManualCollapsedGroups] = useState<Record<string, boolean>>({});
+
+    const selectedFacetCount = useMemo(() => {
+        return Object.values(filterStore.facetedFilters).reduce((sum, values) => {
+            return sum + (Array.isArray(values) ? values.length : 0);
+        }, 0);
+    }, [filterStore.facetedFilters]);
 
     const handleOperatorChange = useCallback((facetGroup: string, operator: 'AND' | 'OR') => {
         onOperatorChange?.(facetGroup, operator);
@@ -130,7 +138,20 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
 
     return (
         <div className={styles.facetedFilter}>
-            <h3 className={styles.title}>Filter by Facets</h3>
+            <div className={styles.header}>
+                <h3 className={styles.title}>Filter by Facets</h3>
+                {onClearAll && selectedFacetCount > 0 && (
+                    <button
+                        type="button"
+                        className={styles.clearAllButton}
+                        onClick={onClearAll}
+                        aria-label="Clear all facet filters"
+                        title="Clear all selected facet filters"
+                    >
+                        Clear all ({selectedFacetCount})
+                    </button>
+                )}
+            </div>
 
             {orderedFacetEntries.map(([facetGroup, values]) => {
                 if (facetGroup === 'total_hits' || !Array.isArray(values)) return null;

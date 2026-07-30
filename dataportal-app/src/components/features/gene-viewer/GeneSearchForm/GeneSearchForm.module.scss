@@ -21,6 +21,70 @@
   float: right;
 }
 
+.leftPaneHeading {
+  font-size: 1.2em;
+  font-weight: 500;
+  width: 100%;
+  margin: 0 0 0.35rem;
+}
+
+.activeSearchSection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+
+.activeSearchChips {
+  float: left;
+  width: 100%;
+}
+
+.searchChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  margin: 4px;
+  padding: 0.2rem 0.35rem 0.2rem 0.65rem;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 16px;
+  background: #fff;
+  color: #333;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+}
+
+.searchChipLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.searchChipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  color: #666;
+
+  .searchChip:hover & {
+    background: #e0e0e0;
+    color: #222;
+  }
+}
+
 .noFiltersMessage {
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;

@@ -395,6 +395,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         nearest_neighbors: List[str],
         gene_mapping: Dict[str, Dict],
         species_acronym: Optional[str] = None,
+        focal_gene_info: Optional[Dict[str, Any]] = None,
     ) -> PPINeighborhoodSchema:
         """Helper method to build neighborhood data from neighbors and gene mapping."""
         # Build neighbor list with gene annotations
@@ -402,24 +403,28 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         for neighbor in nearest_neighbors:
             gene_info = gene_mapping.get(neighbor, {})
             locus_tag = gene_info.get("locus_tag", neighbor)
-            name = gene_info.get("name", "")
-
-            # Create label like old implementation: "locus_tag\nname"
-            label = f"{locus_tag}\n{name}" if name else neighbor
+            name = gene_info.get("name") or ""
 
             neighbor_list.append(
                 {
                     "id": neighbor,
-                    "label": label,
-                    "locus_tag": locus_tag,
-                    "name": name,
-                    "product": gene_info.get("product", ""),
+                    "locus_tag": locus_tag or None,
+                    "name": name or None,
+                    "product": gene_info.get("product") or None,
                 }
             )
 
-        # Create network data for the neighborhood
+        # Focal node must carry the same metadata as neighbors (name/product/locus_tag).
+        focal = focal_gene_info or {}
+        focal_node = {
+            "id": protein_id,
+            "locus_tag": focal.get("locus_tag") or None,
+            "name": focal.get("name") or None,
+            "product": focal.get("product") or None,
+        }
+
         network_data = PPINetworkSchema(
-            nodes=[{"id": protein_id, "label": protein_id}] + neighbor_list,
+            nodes=[focal_node] + neighbor_list,
             edges=[],  # Will be populated by caller
             properties={},
         )
@@ -867,6 +872,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             # Build a NetworkX graph; edge weight = chosen score (higher = closer for Dijkstra)
             G = nx.Graph()
             gene_mapping = {}
+            focal_gene_info: Dict[str, Any] = {}
 
             for hit in response.hits:
                 protein_a = hit.protein_a
@@ -882,12 +888,24 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         "name": hit.protein_b_name,
                         "product": hit.protein_b_product,
                     }
+                    if not focal_gene_info.get("locus_tag"):
+                        focal_gene_info["locus_tag"] = getattr(hit, "protein_a_locus_tag", None)
+                    if not focal_gene_info.get("name"):
+                        focal_gene_info["name"] = getattr(hit, "protein_a_name", None)
+                    if not focal_gene_info.get("product"):
+                        focal_gene_info["product"] = getattr(hit, "protein_a_product", None)
                 elif protein_b == protein_id:
                     gene_mapping[protein_a] = {
                         "locus_tag": hit.protein_a_locus_tag,
                         "name": hit.protein_a_name,
                         "product": hit.protein_a_product,
                     }
+                    if not focal_gene_info.get("locus_tag"):
+                        focal_gene_info["locus_tag"] = getattr(hit, "protein_b_locus_tag", None)
+                    if not focal_gene_info.get("name"):
+                        focal_gene_info["name"] = getattr(hit, "protein_b_name", None)
+                    if not focal_gene_info.get("product"):
+                        focal_gene_info["product"] = getattr(hit, "protein_b_product", None)
 
             if protein_id in G:
                 distances = nx.single_source_dijkstra_path_length(G, protein_id, weight="weight")
@@ -896,7 +914,11 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 nearest_neighbors = []
 
             neighborhood_data = await self._build_neighborhood_data(
-                protein_id, nearest_neighbors, gene_mapping, species_acronym
+                protein_id,
+                nearest_neighbors,
+                gene_mapping,
+                species_acronym,
+                focal_gene_info=focal_gene_info,
             )
 
             neighborhood_nodes = [protein_id] + nearest_neighbors
