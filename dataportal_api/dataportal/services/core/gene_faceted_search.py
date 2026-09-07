@@ -1,5 +1,4 @@
 import logging
-import json
 
 from elasticsearch_dsl import A, FacetedSearch, TermsFacet, Q
 
@@ -17,12 +16,14 @@ from dataportal.utils.constants import (
     GENE_FIELD_GO_TERM,
     GENE_FIELD_LOCUS_TAG,
     GENE_SEARCH_FIELDS,
+    INDEX_FEATURES,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class GeneFacetedSearch(FacetedSearch):
+    index = INDEX_FEATURES
     fields = GENE_SEARCH_FIELDS + [
         SPECIES_FIELD_ACRONYM_SHORT,
         GENE_FIELD_ESSENTIALITY,
@@ -50,6 +51,8 @@ class GeneFacetedSearch(FacetedSearch):
         has_amr_info=None,
         limit=DEFAULT_FACET_LIMIT,
         operators=None,
+        index=None,
+        annotation_run_ids=None,
     ):
         self.species_acronym = species_acronym
         self.essentiality = essentiality
@@ -62,6 +65,9 @@ class GeneFacetedSearch(FacetedSearch):
         self.interpro = interpro
         self.has_amr_info = has_amr_info
         self.operators = operators or {}
+        self.annotation_run_ids = annotation_run_ids
+        if index:
+            self.index = index
 
         self.facets = {
             GENE_FIELD_ESSENTIALITY: TermsFacet(field=GENE_FIELD_ESSENTIALITY, size=limit),
@@ -84,7 +90,7 @@ class GeneFacetedSearch(FacetedSearch):
         # Context filters (always applied)
         # Always filter for genes only in feature_index
         must_clauses.append(Q("term", feature_type="gene"))
-        
+
         if self.species_acronym:
             must_clauses.append(Q("term", species_acronym=self.species_acronym))
         if self.has_amr_info is not None:
@@ -93,6 +99,8 @@ class GeneFacetedSearch(FacetedSearch):
             must_clauses.append(Q("terms", isolate_name=self.isolates))
         if self.essentiality:
             must_clauses.append(Q("term", essentiality=self.essentiality))
+        if self.annotation_run_ids:
+            must_clauses.append(Q("terms", annotation_run_id=self.annotation_run_ids))
 
         # Facet filters: split AND (query) vs OR (post_filter)
         facet_fields = [
@@ -141,9 +149,7 @@ class GeneFacetedSearch(FacetedSearch):
                     else:
                         agg_must_clauses.append(Q("terms", **{other_field: values}))
 
-            filtered_agg = A(
-                "filter", bool={"must": [q.to_dict() for q in agg_must_clauses]}
-            )
+            filtered_agg = A("filter", bool={"must": [q.to_dict() for q in agg_must_clauses]})
             filtered_agg.bucket(facet_field, terms_agg)
             s.aggs.bucket(f"{facet_field}_filtered", filtered_agg)
 

@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand
-from pathlib import Path
-from dataportal.ingest.operon.flows.operons import Operons
+from dataportal.ingest.operon.operons import Operons
 from dataportal.ingest.gff.parser import GFFParser
 from dataportal.ingest.utils import list_csv_files
 
@@ -10,8 +9,14 @@ class Command(BaseCommand):
 
     def add_arguments(self, p):
         p.add_argument("--index", default="operon_index")
-        p.add_argument("--operons-dir", required=True, help="Folder containing operon tables (CSV/TSV).")
-        p.add_argument("--preload-gff", action="store_true", help="Preload GFF files inferred from operon TSVs.")
+        p.add_argument(
+            "--operons-dir", required=True, help="Folder containing operon tables (CSV/TSV)."
+        )
+        p.add_argument(
+            "--preload-gff",
+            action="store_true",
+            help="Preload GFF files inferred from operon TSVs.",
+        )
         p.add_argument(
             "--ftp-server",
             type=str,
@@ -32,18 +37,24 @@ class Command(BaseCommand):
         gff_parser = None
         if o.get("preload_gff"):
             # Infer species->isolate mapping from operon files by sampling locus tags
-            from dataportal.ingest.ortholog.flows.orthologs import _extract_species_from_locus
+            from dataportal.ingest.ortholog.orthologs import _extract_species_from_locus
+
             species_isolate_map = {}
             # sample first file to infer mapping
             for fpath in files[:3]:
                 try:
                     import pandas as pd
+
                     df = pd.read_csv(fpath, sep="\t", nrows=200)
                     for col in ("gene1", "gene2", "gene_a_locus_tag", "gene_b_locus_tag"):
                         if col in df.columns:
                             for v in df[col].dropna().astype(str).head(100).tolist():
                                 acr, species_name, isolate = _extract_species_from_locus(v)
-                                if species_name and isolate and species_name not in species_isolate_map:
+                                if (
+                                    species_name
+                                    and isolate
+                                    and species_name not in species_isolate_map
+                                ):
                                     species_isolate_map[species_name] = isolate
                 except Exception:
                     pass

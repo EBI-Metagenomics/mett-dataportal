@@ -60,7 +60,8 @@ export class GeneService extends BaseService {
         locusTag?: string,
         seqId?: string | null,
         startPosition?: number | null,
-        endPosition?: number | null
+        endPosition?: number | null,
+        annotationRunId?: number | string | null,
     ): Promise<PaginatedApiResponse<GeneMeta>> {
         try {
             // console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
@@ -81,7 +82,8 @@ export class GeneService extends BaseService {
                 locusTag,
                 seqId,
                 startPosition,
-                endPosition
+                endPosition,
+                annotationRunId,
             );
 
             const response = await BaseService.getRawResponse<GeneMeta[]>("/genes/search/advanced", params);
@@ -132,9 +134,15 @@ export class GeneService extends BaseService {
     /**
      * Fetch a specific gene by its ID.
      */
-    static async fetchGeneByLocusTag(locus_tag: string): Promise<GeneMeta> {
+    static async fetchGeneByLocusTag(
+        locus_tag: string,
+        annotationRunId?: number | string | null,
+    ): Promise<GeneMeta> {
         try {
-            return await this.getWithRetry<GeneMeta>(`/genes/${locus_tag}`);
+            const params = annotationRunId
+                ? this.buildParams({ annotation_run_id: annotationRunId })
+                : undefined;
+            return await this.getWithRetry<GeneMeta>(`/genes/${locus_tag}`, params);
         } catch (error) {
             console.error("Error fetching gene with locus tag %s", locus_tag, error);
             throw error;
@@ -319,7 +327,8 @@ export class GeneService extends BaseService {
         locusTag?: string,
         seqId?: string | null,
         startPosition?: number | null,
-        endPosition?: number | null
+        endPosition?: number | null,
+        annotationRunId?: number | string | null,
     ): URLSearchParams {
         const params = this.buildParams({
             query,
@@ -371,6 +380,10 @@ export class GeneService extends BaseService {
             params.append("seq_id", seqId);
             params.append("start_position", startPosition.toString());
             params.append("end_position", endPosition.toString());
+        }
+
+        if (annotationRunId) {
+            params.append("annotation_run_id", String(annotationRunId));
         }
 
         return params;

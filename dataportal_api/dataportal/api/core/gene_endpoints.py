@@ -122,9 +122,13 @@ async def get_gene_by_locus_tag(
         description="Unique locus tag identifier for the gene (e.g., 'ABC_123').",
         example="BU_ATCC8492_00001",
     ),
+    annotation_run_id: int | None = Query(
+        None,
+        description="Optional archived annotation run id. Default is the current annotation.",
+    ),
 ):
     try:
-        result = await gene_service.get_gene_by_locus_tag(locus_tag)
+        result = await gene_service.get_gene_by_locus_tag(locus_tag, annotation_run_id)
         return create_success_response(
             data=result, message=f"Gene {locus_tag} retrieved successfully"
         )

@@ -5,6 +5,8 @@ from dataportal.models import (
     SpeciesDocument,
     StrainDocument,
     FeatureDocument,
+    StrainExperimentDocument,
+    GeneExperimentDocument,
     ProteinProteinDocument,
     OperonDocument,
     OrthologDocument,
@@ -17,6 +19,8 @@ AVAILABLE_MODELS = {
     "SpeciesDocument": SpeciesDocument,
     "StrainDocument": StrainDocument,
     "FeatureDocument": FeatureDocument,
+    "StrainExperimentDocument": StrainExperimentDocument,
+    "GeneExperimentDocument": GeneExperimentDocument,
     "ProteinProteinDocument": ProteinProteinDocument,
     "OperonDocument": OperonDocument,
     "OrthologDocument": OrthologDocument,
@@ -33,7 +37,7 @@ class Command(BaseCommand):
             type=str,
             default=None,
             help=f"Specific model to create index for (e.g., GeneFitnessCorrelationDocument). "
-                 f"If not provided, creates all indices. Available models: {', '.join(AVAILABLE_MODELS.keys())}",
+            f"If not provided, creates all indices. Available models: {', '.join(AVAILABLE_MODELS.keys())}",
         )
         parser.add_argument(
             "--es-version",
@@ -65,15 +69,11 @@ class Command(BaseCommand):
                     f"Available models: {', '.join(AVAILABLE_MODELS.keys())}"
                 )
             models_to_create = [AVAILABLE_MODELS[model_name]]
-            self.stdout.write(
-                self.style.SUCCESS(f"Creating index for {model_name}...")
-            )
+            self.stdout.write(self.style.SUCCESS(f"Creating index for {model_name}..."))
         else:
             # Create all models
             models_to_create = list(AVAILABLE_MODELS.values())
-            self.stdout.write(
-                self.style.SUCCESS("Creating all Elasticsearch indexes...")
-            )
+            self.stdout.write(self.style.SUCCESS("Creating all Elasticsearch indexes..."))
 
         # Create the indexes
         pim = ProjectIndexManager(models_to_create)
@@ -84,9 +84,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"  ✓ {base} -> {concrete}"))
 
         if model_name:
-            self.stdout.write(
-                self.style.SUCCESS(f"\nIndex creation for {model_name} completed.")
-            )
+            self.stdout.write(self.style.SUCCESS(f"\nIndex creation for {model_name} completed."))
         else:
             self.stdout.write(
                 self.style.SUCCESS(f"\nAll {len(created)} index(es) created successfully.")

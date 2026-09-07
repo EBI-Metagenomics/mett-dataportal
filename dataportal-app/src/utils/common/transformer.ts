@@ -28,6 +28,11 @@ export function transformGenomeMeta(rawGenome: any): GenomeMeta {
                 length: contig.length ?? undefined,
             }))
             : [],
+        current_annotation_run_id: rawGenome.current_annotation_run_id ?? null,
+        current_annotation_release: rawGenome.current_annotation_release ?? null,
+        annotation_doc_link: rawGenome.annotation_doc_link ?? null,
+        mettannotator_version: rawGenome.mettannotator_version ?? null,
+        pipeline_version: rawGenome.pipeline_version ?? null,
     };
 }
 

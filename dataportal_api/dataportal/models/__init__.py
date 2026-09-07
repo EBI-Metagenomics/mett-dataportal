@@ -15,29 +15,35 @@ from .base import (
 from .species import SpeciesDocument
 from .strains import StrainDocument
 from .features import FeatureDocument
+from .strain_experiments import StrainExperimentDocument
+from .gene_experiments import GeneExperimentDocument
 from .interactions import ProteinProteinDocument
 from .operons import OperonDocument
 from .orthologs import OrthologDocument
 from .fitness_correlation import GeneFitnessCorrelationDocument
+from .annotation_run import AnnotationRun
 from .role import Role
 from .api_token import APIToken
 
 __all__ = [
     # Base utilities
     "edge_ngram_tokenizer",
-    "autocomplete_analyzer", 
+    "autocomplete_analyzer",
     "lowercase_normalizer",
     "canonical_pair",
     "build_pair_id",
     # Document models
     "SpeciesDocument",
-    "StrainDocument", 
+    "StrainDocument",
     "FeatureDocument",
+    "StrainExperimentDocument",
+    "GeneExperimentDocument",
     "ProteinProteinDocument",
     "OperonDocument",
     "OrthologDocument",
     "GeneFitnessCorrelationDocument",
     # Database models
+    "AnnotationRun",
     "Role",
     "APIToken",
 ]

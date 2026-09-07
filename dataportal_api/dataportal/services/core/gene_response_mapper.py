@@ -132,6 +132,8 @@ def hit_dict_to_gene_response(hit_dict: Dict[str, Any]) -> GeneResponseSchema:
         has_mutant_growth=hit_dict.get("has_mutant_growth", False),
         has_reactions=hit_dict.get("has_reactions", False),
         feature_type=hit_dict.get("feature_type", "gene"),
+        annotation_run_id=hit_dict.get("annotation_run_id"),
+        annotation_release=hit_dict.get("annotation_release"),
         unifire=unifire,
         dbcan=dbcan,
         bgc=bgc,

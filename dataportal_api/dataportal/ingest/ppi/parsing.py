@@ -5,7 +5,7 @@ import os
 import re
 import logging
 from typing import Dict, Iterator, List, Optional, Tuple
-from .gff_parser import GFFParser, GeneInfo
+from dataportal.ingest.gff.parser import GFFParser, GeneInfo
 
 logger = logging.getLogger(__name__)
 

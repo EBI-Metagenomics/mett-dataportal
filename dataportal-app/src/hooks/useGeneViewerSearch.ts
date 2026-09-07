@@ -5,6 +5,7 @@ import {APP_CONSTANTS} from '../utils/common/constants';
 import {useFilterStore} from '../stores/filterStore';
 import {GeneMeta} from "../interfaces/Gene";
 import {convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy} from '../utils/common/filterUtils';
+import {getAnnotationRunIdFromSearch} from '../utils/common/annotationContext';
 
 interface UseGeneViewerSearchProps {
     genomeMeta: GenomeMeta | null;
@@ -71,7 +72,11 @@ export const useGeneViewerSearch = ({
                     undefined, // speciesFilter
                     convertFacetedFiltersToLegacy(facetedFilters), // Convert facet filters to legacy format
                     convertFacetOperatorsToLegacy(facetOperators), // Convert facet operators to legacy format
-                    undefined // No locus_tag for gene viewer search
+                    undefined, // No locus_tag for gene viewer search
+                    undefined,
+                    undefined,
+                    undefined,
+                    getAnnotationRunIdFromSearch(),
                 );
                 // console.log('useGeneViewerSearch - Search results received:', {
                 //     query: geneSearchQuery,

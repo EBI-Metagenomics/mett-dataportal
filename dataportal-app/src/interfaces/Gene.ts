@@ -84,6 +84,8 @@ export interface GeneMeta {
     has_mutant_growth?: boolean | null;
     has_reactions?: boolean | null;
     feature_type?: string;
+    annotation_run_id?: string | null;
+    annotation_release?: string | null;
     unifire?: GeneUnifireAnnotations | null;
     dbcan?: GeneDbcanAnnotations | null;
     bgc?: GeneBgcAnnotations | null;

@@ -1,43 +1,45 @@
 """
 Django management command to import mutant growth data.
 
-This command processes CSV files containing mutant growth data (doubling times,
-plate positions, etc.) and imports them into the FeatureDocument mutant_growth
-nested field.
+This command processes mutant growth CSVs into gene_experiment_index.
 """
 
 from django.core.management.base import BaseCommand
 from pathlib import Path
 
-from dataportal.ingest.feature.flows.mutant_growth import MutantGrowthFlow
+from dataportal.ingest.gene_experiment.mutant_growth import MutantGrowthFlow
 from dataportal.ingest.utils import list_csv_files
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
 
 
 class Command(BaseCommand):
-    help = "Import mutant growth data from a directory into feature_index"
+    help = "Import mutant growth data into gene_experiment_index"
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--mutant-growth-dir",
             type=str,
             required=True,
-            help="Path to directory containing mutant growth CSV files"
+            help="Path to directory containing mutant growth CSV files",
         )
         parser.add_argument(
             "--index",
-            default="feature_index",
-            help="Elasticsearch index name (default: feature_index)"
+            default=INDEX_GENE_EXPERIMENTS,
+            help="Elasticsearch gene experiment index (default: gene_experiment_index)",
         )
         parser.add_argument(
-            "--media",
-            default="caecal",
-            help="Media type for the experiment (default: caecal)"
+            "--feature-index",
+            default=INDEX_FEATURES,
+            help="Feature index for denormalized has_mutant_growth flags",
+        )
+        parser.add_argument(
+            "--media", default="caecal", help="Media type for the experiment (default: caecal)"
         )
         parser.add_argument(
             "--experimental-condition",
             type=str,
             default=None,
-            help="Experimental condition context (default: {media}_growth)"
+            help="Experimental condition context (default: {media}_growth)",
         )
 
     def handle(self, *args, **options):
@@ -48,18 +50,14 @@ class Command(BaseCommand):
 
         # Validate directory exists
         if not Path(mutant_growth_dir).exists():
-            self.stdout.write(
-                self.style.ERROR(f"✗ Directory not found: {mutant_growth_dir}")
-            )
+            self.stdout.write(self.style.ERROR(f"✗ Directory not found: {mutant_growth_dir}"))
             return
 
         # Get all CSV files from directory
         files = list_csv_files(mutant_growth_dir)
 
         if not files:
-            self.stdout.write(
-                self.style.WARNING(f"⚠ No CSV files found in: {mutant_growth_dir}")
-            )
+            self.stdout.write(self.style.WARNING(f"⚠ No CSV files found in: {mutant_growth_dir}"))
             return
 
         self.stdout.write(
@@ -72,7 +70,8 @@ class Command(BaseCommand):
         flow = MutantGrowthFlow(
             index_name=index,
             media=media,
-            experimental_condition=experimental_condition
+            experimental_condition=experimental_condition,
+            feature_flag_index=options["feature_index"],
         )
 
         # Process each file
@@ -85,20 +84,17 @@ class Command(BaseCommand):
             try:
                 flow.run(csv_path)
                 success_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f"    ✓ Successfully imported: {filename}")
-                )
+                self.stdout.write(self.style.SUCCESS(f"    ✓ Successfully imported: {filename}"))
             except Exception as e:
                 error_count += 1
-                self.stdout.write(
-                    self.style.ERROR(f"    ✗ Error processing {filename}: {e}")
-                )
+                self.stdout.write(self.style.ERROR(f"    ✗ Error processing {filename}: {e}"))
                 import traceback
-                if options.get('verbosity', 1) >= 2:
+
+                if options.get("verbosity", 1) >= 2:
                     self.stdout.write(traceback.format_exc())
 
         # Summary
-        self.stdout.write("\n" + "="*60)
+        self.stdout.write("\n" + "=" * 60)
         self.stdout.write(
             self.style.SUCCESS(
                 f"[import_mutant_growth] Completed!\n"
@@ -109,4 +105,4 @@ class Command(BaseCommand):
                 f"  Experimental condition: {flow.experimental_condition}"
             )
         )
-        self.stdout.write("="*60)
+        self.stdout.write("=" * 60)

@@ -17,6 +17,7 @@ from dataportal.schema.response_schemas import (
     create_success_response,
 )
 from dataportal.services.core.gene_service import GeneService
+from dataportal.services.core.annotation_run_service import AnnotationRunService
 from dataportal.services.experimental.drug_service import DrugService
 from dataportal.services.experimental.essentiality_service import EssentialityService
 from dataportal.services.service_factory import ServiceFactory
@@ -25,9 +26,14 @@ from dataportal.utils.constants import (
     GENOME_FIELD_ISOLATE_NAME,
     SCROLL_MAX_RESULTS,
 )
-from dataportal.utils.errors import raise_http_error, raise_internal_server_error
+from dataportal.utils.errors import (
+    raise_http_error,
+    raise_internal_server_error,
+    raise_not_found_error,
+)
 from dataportal.utils.exceptions import (
     ServiceError,
+    GenomeNotFoundError,
 )
 from dataportal.utils.response_wrappers import wrap_paginated_response, wrap_success_response
 
@@ -35,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 genome_service = ServiceFactory.get_genome_service()
 gene_service = GeneService()
+annotation_run_service = AnnotationRunService()
 essentiality_service = EssentialityService()
 drug_service = DrugService()
 
@@ -143,6 +150,36 @@ async def get_all_genomes(request, query: GetAllGenomesQuerySchema = Query(...))
 
 # API Endpoint to retrieve genes filtered by a single genome ID
 @genome_router.get(
+    "/{isolate_name}/annotations",
+    response=SuccessResponseSchema,
+    summary="List annotation runs for a genome",
+    description="Returns the current and previous annotation processing runs for an isolate.",
+)
+@wrap_success_response
+async def get_genome_annotations(
+    request,
+    isolate_name: str = Path(
+        ...,
+        description="Unique isolate name identifying the genome.",
+        example="BU_ATCC8492",
+    ),
+):
+    try:
+        result = await annotation_run_service.list_for_isolate_async(isolate_name)
+        return create_success_response(
+            data=result,
+            message=f"Retrieved annotation runs for {isolate_name}",
+        )
+    except GenomeNotFoundError:
+        raise_not_found_error(
+            f"No annotation runs found for isolate '{isolate_name}'",
+            error_code="ANNOTATION_RUNS_NOT_FOUND",
+        )
+    except ServiceError as e:
+        raise_http_error(500, f"An error occurred: {str(e)}")
+
+
+@genome_router.get(
     "/{isolate_name}/genes",
     response=GenePaginatedResponseSchema,
     summary="Get genes by genome isolate",
@@ -171,6 +208,7 @@ async def get_genes_by_genome(
             query.per_page,
             query.sort_field,
             query.sort_order,
+            query.annotation_run_id,
         )
         return result
     except ServiceError as e:

@@ -17,6 +17,7 @@ from dataportal.schema.core.gene_schemas import (
 )
 from dataportal.services.base_service import BaseService
 from dataportal.services.core.gene_faceted_search import GeneFacetedSearch
+from dataportal.services.core.feature_index_resolver import FeatureIndexResolver
 from dataportal.utils.constants import (
     GENE_DEFAULT_SORT_FIELD,
     DEFAULT_SORT_DIRECTION,
@@ -65,9 +66,20 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
     def __init__(self):
         super().__init__(INDEX_FEATURES)
+        self._resolver = FeatureIndexResolver()
         # Locus tag ↔ STRING protein ID from feature index (dbxref.db=STRING). Loaded at startup.
         # Key: species_acronym (lower) or _LOCUS_STRING_CACHE_KEY_ALL. Value: (locus_to_string, string_to_locus).
         self._locus_string_cache: Dict[str, Tuple[Dict[str, str], Dict[str, str]]] = {}
+
+    def _feature_search(self, annotation_run_id: Optional[int | str] = None) -> Search:
+        index, run_ids = self._resolver.resolve(annotation_run_id)
+        s = Search(index=index)
+        if run_ids:
+            s = s.filter("terms", annotation_run_id=run_ids)
+        return s
+
+    def _create_search(self) -> Search:
+        return self._feature_search()
 
     def load_locus_string_mapping_sync(self, species_acronym: Optional[str] = None) -> None:
         """
@@ -75,7 +87,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         Call at startup for quick processing. One scan; populates both global and per-species cache.
         """
         s = (
-            Search(index=self.index_name)
+            self._feature_search()
             .filter("term", feature_type="gene")
             .filter(
                 "nested",
@@ -261,7 +273,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     ) -> List[Dict]:
         """Internal implementation of gene autocomplete."""
         try:
-            s = Search(index=self.index_name)
+            s = self._feature_search()
             # Always filter for genes only in feature_index
             s = s.filter("term", feature_type="gene")
             s = s.query(
@@ -315,10 +327,12 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             logger.error(f"Error in autocomplete implementation: {e}")
             raise ServiceError(e)
 
-    async def get_gene_by_locus_tag(self, locus_tag: str) -> GeneResponseSchema:
+    async def get_gene_by_locus_tag(
+        self, locus_tag: str, annotation_run_id: Optional[int] = None
+    ) -> GeneResponseSchema:
         try:
             gene = await sync_to_async(self.fetch_gene_by_locus_tag, thread_sensitive=False)(
-                locus_tag
+                locus_tag, annotation_run_id
             )
             return self._convert_hit_to_gene_schema(gene)
         except ServiceError:
@@ -328,9 +342,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             logger.error(f"Error in get_gene_by_locus_tag: {e}")
             raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
 
-    def fetch_gene_by_locus_tag(self, locus_tag: str):
+    def fetch_gene_by_locus_tag(self, locus_tag: str, annotation_run_id: Optional[int] = None):
         s = (
-            Search(index=self.index_name)
+            self._feature_search(annotation_run_id)
             .filter("term", feature_type="gene")
             .query("match", locus_tag=locus_tag)
         )
@@ -396,6 +410,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         per_page: int = DEFAULT_PAGE_SIZE,
         sort_field: Optional[str] = None,
         sort_order: Optional[str] = SORT_DIRECTION_ASC,
+        annotation_run_id: Optional[int] = None,
     ) -> GenePaginationSchema:
         try:
             filter_criteria = {"isolate_name": isolate_name}
@@ -418,6 +433,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 per_page=per_page,
                 sort_field=sort_field,
                 sort_order=sort_order,
+                annotation_run_id=annotation_run_id,
             )
 
             return self._create_pagination_schema(genes, page, per_page, total_results)
@@ -490,6 +506,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                     per_page=params.per_page,
                     sort_field=params.sort_field,
                     sort_order=params.sort_order,
+                    annotation_run_id=getattr(params, "annotation_run_id", None),
                 )
 
             return self._create_pagination_schema(
@@ -700,6 +717,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         per_page: int = DEFAULT_PAGE_SIZE,
         sort_field: Optional[str] = None,
         sort_order: Optional[str] = DEFAULT_SORT_DIRECTION,
+        annotation_run_id: Optional[int] = None,
     ) -> Tuple[List[GeneResponseSchema], int]:
         start = (page - 1) * per_page
         order_prefix = "desc" if sort_order == SORT_DIRECTION_DESC else "asc"
@@ -729,7 +747,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
         try:
             s = (
-                Search(index=self.index_name)
+                self._feature_search(annotation_run_id)
                 .filter("term", feature_type="gene")
                 .query(query)
                 .sort({sort_by: {"order": order_prefix}})[start : start + per_page]
@@ -899,6 +917,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     ):
         """Internal implementation of faceted search."""
         try:
+            index, run_ids = self._resolver.resolve()
             gs = GeneFacetedSearch(
                 query=query or "",
                 species_acronym=species_acronym,
@@ -913,6 +932,8 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 has_amr_info=has_amr_info,
                 limit=limit,
                 operators=operators,
+                index=index,
+                annotation_run_ids=run_ids or None,
             )
 
             # logger.info(
@@ -1046,7 +1067,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def get_gene_protein_seq(self, locus_tag: str) -> GeneProteinSeqSchema:
         """Fetch protein sequence information for a gene by its locus tag."""
         try:
-            s = Search(index=self.index_name)
+            s = self._feature_search()
             s = s.filter("term", feature_type="gene")
             s = s.query("match", locus_tag=locus_tag)
             s = s.source([GENE_FIELD_LOCUS_TAG, "protein_sequence"])

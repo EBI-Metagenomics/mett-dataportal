@@ -8,8 +8,8 @@ extracted from GFF files, with in-memory caching to avoid re-downloading the sam
 import os
 import logging
 from django.core.management.base import BaseCommand, CommandError
-from dataportal.ingest.ppi.gff_parser import GFFParser
-from dataportal.ingest.ppi.flows.ppi_csv import PPICSVFlow
+from dataportal.ingest.gff.parser import GFFParser
+from dataportal.ingest.ppi.ppi_csv import PPICSVFlow
 from dataportal.ingest.ppi.parsing import load_string_mapping
 from dataportal.ingest.es_repo import PPIIndexRepository
 from dataportal.ingest.utils import list_csv_files

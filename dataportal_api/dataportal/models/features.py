@@ -161,73 +161,8 @@ class FeatureDocument(Document):
     has_mutant_growth = Boolean()
     has_reactions = Boolean()
 
-    # ---- PROTEIN ↔ COMPOUND interactions (new) ----
-    protein_compound = Nested(
-        properties={
-            "compound": Keyword(),
-            "ttp_score": Float(),
-            "fdr": Float(),
-            "hit_calling": Boolean(),
-            "experimental_condition": Keyword(),
-            "notes": Text(fields={"keyword": Keyword()}),
-            "assay": Keyword(),
-            "poolA": Keyword(),
-            "poolB": Keyword(),
-        }
-    )
-
-    # ---- GENE FITNESS (new, structured) ----
-    # You already had a simpler fitness_data; we supersede/extend it here
-    fitness = Nested(
-        properties={
-            "experimental_condition": Keyword(),
-            "media": Keyword(),
-            "contrast": Keyword(),
-            "lfc": Float(),
-            "fdr": Float(),
-            "number_of_barcodes": Integer(),  # TnSeq barcode count (reliability indicator)
-        }
-    )
-
-    # ---- REACTIONS / GPR / METABOLITES (new) ----
-    # 1) direct gene→reaction links (many)
-    reactions = Keyword(multi=True)  # e.g. ["ASPTA","CPPPGO",...]
-    # 2) per-reaction details + GPR and metabolite edges
-    reaction_details = Nested(
-        properties={
-            "reaction": Keyword(),
-            "gpr": Text(fields={"keyword": Keyword()}),  # e.g. "BU_... or BU_..."
-            # reaction graph edges (optional but useful for UI filters)
-            "substrates": Keyword(multi=True),
-            "products": Keyword(multi=True),
-            # convenience fields for searching metabolite involvement
-            "metabolites": Keyword(multi=True),
-        }
-    )
-
-    # ---- MUTANT GROWTH (new) ----
-    mutant_growth = Nested(
-        properties={
-            "doubling_time": Float(),  # Core numeric readout (hours)
-            "isdoublepicked": Boolean(),  # TRUE if mutant was picked twice (not truly independent replicates)
-            "brep": Keyword(),  # Biological replicate identifier (brep_1, brep_2, etc.)
-            "plate384": Integer(),  # Position in 384-well arrayed library
-            "well384": Keyword(),  # Well position (A17, C16, etc.)
-            "percent_from_start": Float(),  # Transposon insertion position in gene (0-1)
-            "media": Keyword(),  # Experimental media/condition (e.g., "caecal")
-            "experimental_condition": Keyword(),  # Overall experimental context
-        }
-    )
-
-    # ---- PROTEOMICS (new) ----
-    proteomics = Nested(
-        properties={
-            "coverage": Float(),
-            "unique_peptides": Integer(),
-            "unique_intensity": Float(),
-            "evidence": Boolean(),
-        }
-    )
+    annotation_run_id = Keyword()
+    annotation_release = Keyword()
 
     # ---- Sequences (existing) ----
     protein_sequence = Text(fields={"keyword": Keyword()})  # only for 'gene'

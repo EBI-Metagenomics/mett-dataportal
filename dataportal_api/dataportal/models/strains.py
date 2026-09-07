@@ -1,8 +1,7 @@
 """
 Strain document model for Elasticsearch.
 
-This module defines the StrainDocument class for indexing strain information
-including drug MIC data, drug metabolism, and contig information.
+Identity, assembly, and current-annotation pointers. Strain-level assays live in strain_experiment_index.
 """
 
 from elasticsearch_dsl import (
@@ -13,15 +12,14 @@ from elasticsearch_dsl import (
     Boolean,
     Long,
     Nested,
-    ScaledFloat,
 )
 
 from .base import autocomplete_analyzer, lowercase_normalizer
 
 
 class StrainDocument(Document):
-    """Elasticsearch document for strain information."""
-    
+    """Elasticsearch document for strain / genome listing."""
+
     strain_id = Keyword()
 
     species_scientific_name = Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)})
@@ -32,7 +30,7 @@ class StrainDocument(Document):
         search_analyzer="standard",
         fields={"keyword": Keyword(normalizer=lowercase_normalizer)},
     )
-    isolate_key = Keyword()  # data cleanup resolver attribute
+    isolate_key = Keyword()
 
     assembly_name = Text(
         analyzer=autocomplete_analyzer,
@@ -42,60 +40,19 @@ class StrainDocument(Document):
     assembly_accession = Keyword()
 
     fasta_file = Keyword()
-    gff_file = Keyword()  # Nullable
+    gff_file = Keyword()
     type_strain = Boolean()
 
-    # Rollups for UI / sorting
     contig_count = Integer()
     genome_size = Long()
 
-    # Contigs
-    contigs = Nested(properties={
-        "seq_id": Keyword(),
-        "length": Integer()
-    })
+    contigs = Nested(properties={"seq_id": Keyword(), "length": Integer()})
 
-    # ---- Drug MIC (growth inhibition / MIC-like) ----
-    drug_mic = Nested(properties={
-        # drug metadata (all optional)
-        "drug_name": Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)}),
-        "drug_class": Keyword(normalizer=lowercase_normalizer),
-        "drug_subclass": Keyword(normalizer=lowercase_normalizer),
-        "compound_name": Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)}),
-        "pubchem_id": Keyword(),
-
-        # measurements
-        "relation": Keyword(),  # '=', '>', '<=', etc.
-        "mic_value": ScaledFloat(scaling_factor=1000),  # 0.001 precision (e.g., µM or mg/L)
-        "unit": Keyword(),  # 'uM', 'mg/L'
-
-        # experimental context (if/when available)
-        "experimental_condition_id": Integer(),
-        "experimental_condition_name": Keyword(normalizer=lowercase_normalizer)
-    })
-
-    # ---- Drug Metabolism ----
-    drug_metabolism = Nested(properties={
-        # drug metadata (all optional)
-        "drug_name": Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)}),
-        "drug_class": Keyword(normalizer=lowercase_normalizer),
-        "drug_subclass": Keyword(normalizer=lowercase_normalizer),
-        "compound_name": Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)}),
-        "pubchem_id": Keyword(),
-
-        # measurements
-        "degr_percent": ScaledFloat(scaling_factor=10000),  # 0.0001 precision
-        "pval": ScaledFloat(scaling_factor=1000000),
-        "fdr": ScaledFloat(scaling_factor=1000000),
-        "metabolizer_classification": Keyword(normalizer=lowercase_normalizer),
-
-        # convenience flags for filtering
-        "is_significant": Boolean(),  # e.g., fdr < 0.05
-
-        # experimental context (optional)
-        "experimental_condition_id": Integer(),
-        "experimental_condition_name": Keyword(normalizer=lowercase_normalizer)
-    })
+    current_annotation_run_id = Keyword()
+    current_annotation_release = Keyword()
+    annotation_doc_link = Keyword()
+    mettannotator_version = Keyword()
+    pipeline_version = Keyword()
 
     class Index:
         name = "strain_index"
@@ -108,6 +65,5 @@ class StrainDocument(Document):
         }
 
     def save(self, **kwargs):
-        """Set `_id` as `isolate_name`."""
         self.meta.id = self.isolate_name
         return super().save(**kwargs)

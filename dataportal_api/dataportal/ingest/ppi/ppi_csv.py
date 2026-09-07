@@ -1,0 +1,356 @@
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
+
+from django.utils.timezone import now
+
+from dataportal.ingest.ppi.parsing import iter_ppi_rows
+from dataportal.ingest.gff.parser import GFFParser
+from dataportal.ingest.es_repo import PPIIndexRepository
+
+
+# Keep helpers consistent with your model
+def canonical_pair(a: str, b: str) -> Tuple[str, str]:
+    return tuple(sorted([a, b]))
+
+
+def build_pair_id(species_key: str, a: str, b: str) -> str:
+    aa, bb = canonical_pair(a, b)
+    return f"{species_key}:{aa}__{bb}"
+
+
+def _species_key(species_name: Optional[str], species_map: Dict[str, str]) -> str:
+    """Extract species acronym from species name or isolate name."""
+    if species_name and species_name in species_map:
+        # If we have a mapping, extract acronym from the isolate name
+        isolate_name = species_map[species_name]
+        # Extract species acronym from isolate name (e.g., "BU_ATCC8492" -> "BU")
+        if "_" in isolate_name:
+            return isolate_name.split("_")[0]
+        return isolate_name
+    if species_name:
+        # Fallback: generate acronym from species name
+        parts = species_name.split()
+        if len(parts) >= 2:
+            return (parts[0][0] + parts[1][0]).upper()
+    return "NA"
+
+
+def _get_isolate_name(species_name: Optional[str], species_map: Dict[str, str]) -> Optional[str]:
+    """Get isolate name from species name using the mapping."""
+    if species_name and species_name in species_map:
+        return species_map[species_name]
+    return None
+
+
+def _flags_and_rollups(src: Dict) -> None:
+    src["has_xlms"] = bool(
+        src.get("xlms_peptides")
+        or src.get("xlms_files")
+        or (src.get("weight_ppi_xlms_files") or 0) > 0
+        or (src.get("weight_ppi_xlms_peptides") or 0) > 0
+    )
+    src["has_string"] = (src.get("string_score") or 0) > 0
+    src["has_operon"] = (src.get("operon_score") or 0) > 0
+    src["has_ecocyc"] = (src.get("ecocyc_score") or 0) > 0
+
+    score_keys = [
+        "weight_coexp",
+        "weight_operons_annogesic",
+        "weight_operons_opdetect",
+        "weight_operons_opmapper",
+        "weight_phenocorr_neg",
+        "weight_phenocorr_pos",
+        "weight_pmi_gsms",
+        "weight_pmi",
+        "weight_ppi_gp_score_neg",
+        "weight_ppi_gp_score_pos",
+        "weight_ppi_perturb_score_neg",
+        "weight_ppi_perturb_score_pos",
+        "weight_ppi_xlms_files",
+        "weight_ppi_xlms_peptides",
+        "ds_score",
+        "tt_score",
+        "perturbation_score",
+        "abundance_score",
+        "melt_score",
+        "secondary_score",
+        "bayesian_score",
+        "string_score",
+        "operon_score",
+        "ecocyc_score",
+    ]
+    if src.get("n_sources") is not None:
+        src["evidence_count"] = int(src["n_sources"])
+    else:
+        src["evidence_count"] = sum(
+            1 for k in score_keys if src.get(k) is not None and src.get(k) != 0
+        )
+
+
+@dataclass
+class PPICSVFlow:
+    repo: PPIIndexRepository
+    species_map: Dict[str, str]
+    gff_parser: Optional[GFFParser] = None
+    # Optional mapping from UniProt → STRING protein id
+    string_map: Optional[Dict[str, str]] = None
+
+    def _row_to_action(self, row: Dict) -> Optional[Dict]:
+        a, b = row.get("protein_a"), row.get("protein_b")
+        if not a or not b:
+            return None
+
+        sp_name = row.get("species")
+        sp_key = row.get("species_acronym") or _species_key(sp_name, self.species_map)
+        isolate_name = _get_isolate_name(sp_name, self.species_map)
+
+        aa, bb = canonical_pair(a, b)
+        pair_id = build_pair_id(sp_key, aa, bb)
+
+        # Optional locus-tag participants (if gene info was populated)
+        locus_a = row.get("protein_a_locus_tag")
+        locus_b = row.get("protein_b_locus_tag")
+        locus_participants = [x for x in (locus_a, locus_b) if x]
+        locus_participants_sorted = sorted(locus_participants) if locus_participants else None
+
+        participant_a = {
+            "protein": a,
+            "locus_tag": row.get("protein_a_locus_tag"),
+            "uniprot_id": row.get("protein_a_uniprot_id"),
+            "name": row.get("protein_a_name"),
+            "seqid": row.get("protein_a_seqid"),
+            "source": row.get("protein_a_source"),
+            "type": row.get("protein_a_type"),
+            "start": row.get("protein_a_start"),
+            "end": row.get("protein_a_end"),
+            "score": row.get("protein_a_score"),
+            "strand": row.get("protein_a_strand"),
+            "phase": row.get("protein_a_phase"),
+            "product": row.get("protein_a_product"),
+        }
+        participant_b = {
+            "protein": b,
+            "locus_tag": row.get("protein_b_locus_tag"),
+            "uniprot_id": row.get("protein_b_uniprot_id"),
+            "name": row.get("protein_b_name"),
+            "seqid": row.get("protein_b_seqid"),
+            "source": row.get("protein_b_source"),
+            "type": row.get("protein_b_type"),
+            "start": row.get("protein_b_start"),
+            "end": row.get("protein_b_end"),
+            "score": row.get("protein_b_score"),
+            "strand": row.get("protein_b_strand"),
+            "phase": row.get("protein_b_phase"),
+            "product": row.get("protein_b_product"),
+        }
+
+        # Canonicalize the participant order together with its attached metadata.
+        # Without this, a sorted protein ID can be paired with the other gene's locus/UniProt/STRING ids.
+        left, right = (
+            (participant_a, participant_b)
+            if participant_a["protein"] <= participant_b["protein"]
+            else (participant_b, participant_a)
+        )
+
+        # Optional STRING protein ids from mapping file (UniProt → STRING).
+        # Use convert_to_uniprot_mapping.py to produce UniProt-keyed mappings from
+        # raw locus_tag-based DIAMOND output.
+        string_protein_a_id = None
+        string_protein_b_id = None
+        if self.string_map:
+            left_uniprot = left.get("uniprot_id") or left["protein"]
+            right_uniprot = right.get("uniprot_id") or right["protein"]
+            string_protein_a_id = self.string_map.get(left_uniprot)
+            string_protein_b_id = self.string_map.get(right_uniprot)
+
+        src = {
+            # identity
+            "pair_id": pair_id,
+            "species_scientific_name": sp_name,
+            "species_acronym": sp_key,
+            "isolate_name": isolate_name,
+            "protein_a": left["protein"],
+            "protein_b": right["protein"],
+            "participants": [a, b],
+            "participants_sorted": [aa, bb],
+            "is_self_interaction": (aa == bb),
+            "participants_locus_tag": locus_participants or None,
+            "participants_locus_tag_sorted": locus_participants_sorted,
+            # consensus network scores
+            "consensus_score": row.get("consensus_score"),
+            "consensus_rank": row.get("consensus_rank"),
+            "consensus_avg_rank": row.get("consensus_avg_rank"),
+            "edge_id": row.get("edge_id"),
+            "interaction_weight": row.get("interaction_weight"),
+            "n_sources": row.get("n_sources"),
+            # evidence channel weights (non-PPI)
+            "weight_coexp": row.get("weight_coexp"),
+            "weight_operons_annogesic": row.get("weight_operons_annogesic"),
+            "weight_operons_opdetect": row.get("weight_operons_opdetect"),
+            "weight_operons_opmapper": row.get("weight_operons_opmapper"),
+            "weight_phenocorr_neg": row.get("weight_phenocorr_neg"),
+            "weight_phenocorr_pos": row.get("weight_phenocorr_pos"),
+            "weight_pmi_gsms": row.get("weight_pmi_gsms"),
+            "weight_pmi": row.get("weight_pmi"),
+            "weight_ppi_gp_score_neg": row.get("weight_ppi_gp_score_neg"),
+            "weight_ppi_gp_score_pos": row.get("weight_ppi_gp_score_pos"),
+            "weight_ppi_perturb_score_neg": row.get("weight_ppi_perturb_score_neg"),
+            "weight_ppi_perturb_score_pos": row.get("weight_ppi_perturb_score_pos"),
+            "weight_ppi_xlms_files": row.get("weight_ppi_xlms_files"),
+            "weight_ppi_xlms_peptides": row.get("weight_ppi_xlms_peptides"),
+            # PPI scores (legacy + consensus-mapped)
+            "ds_score": row.get("ds_score"),
+            "tt_score": row.get("tt_score"),
+            "perturbation_score": row.get("perturbation_score"),
+            "abundance_score": row.get("abundance_score"),
+            "melt_score": row.get("melt_score"),
+            "secondary_score": row.get("secondary_score"),
+            "bayesian_score": row.get("bayesian_score"),
+            "string_score": row.get("string_score"),
+            "operon_score": row.get("operon_score"),
+            "ecocyc_score": row.get("ecocyc_score"),
+            # xlms
+            "xlms_peptides": row.get("xlms_peptides"),
+            "xlms_files": row.get("xlms_files"),
+            # gene information for protein_a
+            "protein_a_locus_tag": left.get("locus_tag"),
+            "protein_a_uniprot_id": left.get("uniprot_id"),
+            "protein_a_name": left.get("name"),
+            "protein_a_seqid": left.get("seqid"),
+            "protein_a_source": left.get("source"),
+            "protein_a_type": left.get("type"),
+            "protein_a_start": left.get("start"),
+            "protein_a_end": left.get("end"),
+            "protein_a_score": left.get("score"),
+            "protein_a_strand": left.get("strand"),
+            "protein_a_phase": left.get("phase"),
+            "protein_a_product": left.get("product"),
+            # gene information for protein_b
+            "protein_b_locus_tag": right.get("locus_tag"),
+            "protein_b_uniprot_id": right.get("uniprot_id"),
+            "protein_b_name": right.get("name"),
+            "protein_b_seqid": right.get("seqid"),
+            "protein_b_source": right.get("source"),
+            "protein_b_type": right.get("type"),
+            "protein_b_start": right.get("start"),
+            "protein_b_end": right.get("end"),
+            "protein_b_score": right.get("score"),
+            "protein_b_strand": right.get("strand"),
+            "protein_b_phase": right.get("phase"),
+            "protein_b_product": right.get("product"),
+            # External ids
+            "string_protein_a_id": string_protein_a_id,
+            "string_protein_b_id": string_protein_b_id,
+        }
+
+        _flags_and_rollups(src)
+
+        # For a fresh load, 'index' is fine (idempotent). Use 'create' if you want to error on dup IDs.
+        return {
+            "_op_type": "index",
+            "_index": self.repo.concrete_index,
+            "_id": pair_id,
+            "_source": src,
+        }
+
+    def run(
+        self,
+        folder: str,
+        pattern: str = "*.csv",
+        batch_size: int = 5000,
+        refresh: Optional[str | bool] = None,  # set "wait_for" at the end if needed
+        log_every: int = 100_000,
+        optimize_indexing: bool = True,
+        refresh_every_rows: int | None = None,
+        refresh_every_secs: float | None = None,
+    ) -> int:
+        """
+        Stream CSVs and bulk-index in chunks. No Painless, no large in-memory merge.
+        Returns number of actions indexed.
+        """
+        es = self.repo._conn()
+        self.repo.ensure_index()
+
+        # Pre-load GFF files if GFF parser is available
+        if self.gff_parser:
+            print("[ppi] Pre-loading GFF files...")
+            self.gff_parser.set_species_mapping(self.species_map)
+            # Use species from mapping (avoids full CSV scan)
+            species_list = list(self.species_map.keys())
+            if species_list:
+                self.gff_parser.preload_gff_files(species_list)
+                print(f"[ppi] Pre-loaded GFF files for {len(species_list)} species")
+            else:
+                print("[ppi] No species in mapping")
+
+        # Optional: speed up big initial loads
+        old_settings = {}
+        if optimize_indexing:
+            try:
+                # capture current settings to restore later
+                old = es.indices.get_settings(index=self.repo.concrete_index)
+                cur = next(iter(old.values()))["settings"]["index"]
+                old_settings["refresh_interval"] = cur.get("refresh_interval", "1s")
+                old_settings["number_of_replicas"] = cur.get("number_of_replicas", "1")
+
+                es.indices.put_settings(
+                    index=self.repo.concrete_index,
+                    body={"index": {"refresh_interval": "-1", "number_of_replicas": 0}},
+                )
+            except Exception as e:
+                print(f"[ppi] warn: could not apply fast-index settings: {e}")
+
+        buffer: List[Dict] = []
+        total = 0
+        rows_since_refresh = 0
+        last_refresh_ts = now()
+
+        try:
+            for i, row in enumerate(iter_ppi_rows(folder, pattern, self.gff_parser), 1):
+                act = self._row_to_action(row)
+                if act is None:
+                    continue
+                buffer.append(act)
+                rows_since_refresh += 1
+
+                if len(buffer) >= batch_size:
+                    success, _ = self.repo.bulk_index(buffer, chunk_size=batch_size, refresh=None)
+                    total += success
+                    buffer.clear()
+                    if log_every and (i % log_every == 0):
+                        print(f"[ppi] processed rows: {i:,} | indexed: {total:,}")
+
+                    should_refresh = (
+                        refresh_every_rows is not None and rows_since_refresh >= refresh_every_rows
+                    ) or (
+                        refresh_every_secs is not None
+                        and (now() - last_refresh_ts).total_seconds() >= refresh_every_secs
+                    )
+                    if should_refresh:
+                        es.indices.refresh(index=self.repo.concrete_index)
+                        rows_since_refresh = 0
+                        last_refresh_ts = now()
+                        print(f"[ppi] periodic refresh after {i:,} rows; total indexed: {total:,}")
+
+            if buffer:
+                success, _ = self.repo.bulk_index(buffer, chunk_size=batch_size, refresh=refresh)
+                total += success
+        finally:
+            if optimize_indexing and old_settings:
+                try:
+                    es.indices.put_settings(
+                        index=self.repo.concrete_index,
+                        body={
+                            "index": {
+                                "refresh_interval": old_settings["refresh_interval"],
+                                "number_of_replicas": old_settings["number_of_replicas"],
+                            }
+                        },
+                    )
+                    if refresh:
+                        es.indices.refresh(index=self.repo.concrete_index)
+                except Exception as e:
+                    print(f"[ppi] warn: restore index settings failed: {e}")
+
+        return total

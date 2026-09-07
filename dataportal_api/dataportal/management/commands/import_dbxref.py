@@ -12,7 +12,7 @@ Usage:
 
 from django.core.management.base import BaseCommand, CommandError
 
-from dataportal.ingest.feature.flows.external_dbxref import ExternalDBXRef
+from dataportal.ingest.feature.external_dbxref import ExternalDBXRef
 from dataportal.ingest.utils import list_csv_files
 
 

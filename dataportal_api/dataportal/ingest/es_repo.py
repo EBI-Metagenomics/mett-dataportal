@@ -11,7 +11,11 @@ from dataportal.models import (
     StrainDocument,
     FeatureDocument,
     SpeciesDocument,
-    ProteinProteinDocument, OperonDocument, OrthologDocument,
+    StrainExperimentDocument,
+    GeneExperimentDocument,
+    ProteinProteinDocument,
+    OperonDocument,
+    OrthologDocument,
     GeneFitnessCorrelationDocument,
 )
 
@@ -20,12 +24,14 @@ from dataportal.models import (
 # Repositories
 # -----------------------------
 
+
 @dataclass
 class SpeciesIndexRepository:
     """
     Read/write SpeciesDocument to a specific *concrete* ES index
     (e.g., 'species_index' or versioned).
     """
+
     concrete_index: str
 
     def get(self, acronym: str) -> Optional[SpeciesDocument]:
@@ -44,6 +50,7 @@ class StrainIndexRepository:
     Read/write StrainDocument to a specific *concrete* ES index.
     Use this if you need to bypass an alias and write to a versioned index.
     """
+
     concrete_index: str
 
     def get(self, isolate_name: str) -> Optional[StrainDocument]:
@@ -62,11 +69,52 @@ class StrainIndexRepository:
 
 
 @dataclass
+class StrainExperimentIndexRepository:
+    """Read/write StrainExperimentDocument to a concrete strain-experiment index."""
+
+    concrete_index: str
+
+    def get(self, isolate_name: str) -> Optional[StrainExperimentDocument]:
+        try:
+            return StrainExperimentDocument.get(
+                id=isolate_name,
+                index=self.concrete_index,
+                ignore=404,
+            )
+        except NotFoundError:
+            return None
+
+    def save(self, doc: StrainExperimentDocument) -> None:
+        doc.save(index=self.concrete_index)
+
+
+@dataclass
+class GeneExperimentIndexRepository:
+    """Read/write GeneExperimentDocument to a concrete experiment index."""
+
+    concrete_index: str
+
+    def get(self, feature_id: str) -> Optional[GeneExperimentDocument]:
+        try:
+            return GeneExperimentDocument.get(
+                id=feature_id,
+                index=self.concrete_index,
+                ignore=404,
+            )
+        except NotFoundError:
+            return None
+
+    def save(self, doc: GeneExperimentDocument) -> None:
+        doc.save(index=self.concrete_index)
+
+
+@dataclass
 class FeatureIndexRepository:
     """
     Read/write FeatureDocument to a specific *concrete* ES index.
     Use this for versioned feature indices (e.g., feature_index_vX).
     """
+
     concrete_index: str
 
     def get(self, feature_id: str) -> Optional[FeatureDocument]:
@@ -89,6 +137,7 @@ class PPIIndexRepository:
     Read/bulk-write ProteinProteinDocument to a specific *concrete* ES index.
     Use with your PPI CSV flow. Accepts raw bulk actions or DSL docs.
     """
+
     concrete_index: str
     client: Optional[Elasticsearch] = None
 
@@ -106,7 +155,9 @@ class PPIIndexRepository:
 
     def get(self, pair_id: str) -> Optional[ProteinProteinDocument]:
         try:
-            return ProteinProteinDocument.get(id=pair_id, index=self.concrete_index, using=self._conn(), ignore=404)
+            return ProteinProteinDocument.get(
+                id=pair_id, index=self.concrete_index, using=self._conn(), ignore=404
+            )
         except NotFoundError:
             return None
 
@@ -116,12 +167,12 @@ class PPIIndexRepository:
         doc.save(index=self.concrete_index, using=self._conn())
 
     def bulk_index(
-            self,
-            actions: Iterable[Dict[str, Any]],
-            *,
-            chunk_size: int = 2000,
-            refresh: Optional[str | bool] = None,  # e.g. "wait_for"
-            raise_on_error: bool = False,
+        self,
+        actions: Iterable[Dict[str, Any]],
+        *,
+        chunk_size: int = 2000,
+        refresh: Optional[str | bool] = None,  # e.g. "wait_for"
+        raise_on_error: bool = False,
     ) -> Tuple[int, List[Dict[str, Any]]]:
         """
         Bulk index raw actions. Automatically sets _index if missing and ensures mapping.
@@ -161,27 +212,34 @@ class PPIIndexRepository:
                 print(f"  -> {f}")
             return 0, errs
 
+
 @dataclass
 class OperonIndexRepository:
     concrete_index: str
+
     def get(self, doc_id: str) -> Optional[OperonDocument]:
         try:
             return OperonDocument.get(id=doc_id, index=self.concrete_index, ignore=404)
         except NotFoundError:
             return None
+
     def save(self, doc: OperonDocument) -> None:
         doc.save(index=self.concrete_index)
+
 
 @dataclass
 class OrthologIndexRepository:
     concrete_index: str
+
     def get(self, pair_id: str) -> Optional[OrthologDocument]:
         try:
             return OrthologDocument.get(id=pair_id, index=self.concrete_index, ignore=404)
         except NotFoundError:
             return None
+
     def save(self, doc: OrthologDocument) -> None:
         doc.save(index=self.concrete_index)
+
 
 @dataclass
 class GeneFitnessCorrelationIndexRepository:
@@ -189,6 +247,7 @@ class GeneFitnessCorrelationIndexRepository:
     Read/bulk-write GeneFitnessCorrelationDocument to a specific *concrete* ES index.
     Similar to PPIIndexRepository but for gene fitness correlations.
     """
+
     concrete_index: str
     client: Optional[Elasticsearch] = None
 
@@ -215,12 +274,12 @@ class GeneFitnessCorrelationIndexRepository:
         doc.save(index=self.concrete_index, using=self._conn())
 
     def bulk_index(
-            self,
-            actions: Iterable[Dict[str, Any]],
-            *,
-            chunk_size: int = 2000,
-            refresh: Optional[str | bool] = None,
-            raise_on_error: bool = False,
+        self,
+        actions: Iterable[Dict[str, Any]],
+        *,
+        chunk_size: int = 2000,
+        refresh: Optional[str | bool] = None,
+        raise_on_error: bool = False,
     ) -> Tuple[int, List[Dict[str, Any]]]:
         """
         Bulk index raw actions for gene fitness correlations.
@@ -247,23 +306,29 @@ class GeneFitnessCorrelationIndexRepository:
                 refresh=refresh,
             )
             if failures:
-                print(f"[es_repo] GeneFitnessCorrelation bulk failures: {len(failures)} (first 3 shown)")
+                print(
+                    f"[es_repo] GeneFitnessCorrelation bulk failures: {len(failures)} (first 3 shown)"
+                )
                 for f in failures[:3]:
                     print(f"  -> {f}")
             return success, failures
         except BulkIndexError as e:
             errs = getattr(e, "errors", [])
-            print(f"[es_repo] GeneFitnessCorrelation BulkIndexError with {len(errs)} errors (first 3 shown)")
+            print(
+                f"[es_repo] GeneFitnessCorrelation BulkIndexError with {len(errs)} errors (first 3 shown)"
+            )
             for f in errs[:3]:
                 print(f"  -> {f}")
             return 0, errs
+
 
 # -----------------------------
 # Bulk utilities
 # -----------------------------
 
+
 def bulk_exec(
-        actions: Iterable[Dict[str, Any]],
+    actions: Iterable[Dict[str, Any]],
 ) -> Tuple[int, List[Dict[str, Any]]]:
     """
     Execute a bulk request using the default elasticsearch_dsl connection.

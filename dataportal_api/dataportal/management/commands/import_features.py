@@ -1,62 +1,69 @@
-import ftplib
-import logging
-
 from django.core.management.base import BaseCommand
 
-from dataportal.ingest.feature.flows.essentiality import Essentiality
-from dataportal.ingest.feature.flows.external_dbxref import ExternalDBXRef
-from dataportal.ingest.feature.flows.fitness import Fitness
-from dataportal.ingest.feature.flows.gff_features import GFFGenes
-from dataportal.ingest.feature.flows.mutant_growth import MutantGrowthFlow
-from dataportal.ingest.feature.flows.pooled_ttp import PooledTTP
-from dataportal.ingest.feature.flows.protein_compound import ProteinCompound
-from dataportal.ingest.feature.flows.proteomics import Proteomics
-from dataportal.ingest.feature.flows.reactions import Reactions
-from dataportal.ingest.utils import read_tsv_mapping, list_csv_files
+from dataportal.ingest.feature.runner import (
+    ingest_dbxref,
+    ingest_essentiality,
+    ingest_gff_features,
+    list_ftp_isolates,
+    load_assembly_mapping,
+)
+from dataportal.ingest.gene_experiment.runner import ingest_gene_experiments
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
 
-log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s:%(message)s")
+_EXPERIMENT_DIR_KEYS = (
+    "fitness_dir",
+    "proteomics_dir",
+    "protein_compound_dir",
+    "pooled_ttp_dir",
+    "mutant_growth_dir",
+    "gene_rx_dir",
+    "met_rx_dir",
+    "rx_gpr_dir",
+)
 
 
 class Command(BaseCommand):
-    help = "Import features (genes + IG + analytics) into a versioned feature_index."
+    help = (
+        "Import annotation into a versioned feature_index (GFF, essentiality, dbxref). "
+        "Gene-level assays belong in import_gene_experiments; those flags still work here."
+    )
 
     def add_arguments(self, p):
         p.add_argument(
-            "--index", default="feature_index", help="Target ES index (e.g. feature_index_v1)"
+            "--index",
+            default=INDEX_FEATURES,
+            help="Target ES feature index (e.g. feature_index-1.0)",
+        )
+        p.add_argument(
+            "--experiment-index",
+            default=INDEX_GENE_EXPERIMENTS,
+            help="Used only if gene-experiment directories are also passed",
+        )
+        p.add_argument(
+            "--annotation-run-id",
+            default=None,
+            help="Optional annotation_run id to stamp onto ingested feature documents",
+        )
+        p.add_argument(
+            "--annotation-release",
+            default=None,
+            help="Optional annotation release label (e.g. 1.0, 2.0)",
         )
 
         p.add_argument("--ftp-server", default="ftp.ebi.ac.uk")
         p.add_argument("--ftp-root", default="/pub/databases/mett/annotations/v1_2024-04-15")
         p.add_argument("--isolates", nargs="*", help="If omitted, list from FTP")
-
-        # NEW: mapping file for assembly prefixes
         p.add_argument(
             "--mapping-task-file",
             help="Path to gff-assembly-prefixes.tsv mapping file (prefix -> assembly)",
         )
-
         p.add_argument(
             "--skip-core-genes",
             action="store_true",
             help="Skip importing core gene features from GFFs",
         )
 
-        # Switch single-file inputs to directories so we can ingest *all* CSVs found
         p.add_argument("--essentiality-dir", help="Folder containing essentiality CSVs")
-        p.add_argument("--fitness-dir", help="Folder containing fitness CSVs")
-        p.add_argument("--proteomics-dir", help="Folder containing proteomics CSVs")
-        p.add_argument("--protein-compound-dir", help="Folder with protein-compound CSVs")
-        p.add_argument("--pooled-ttp-dir", help="Folder with pooled TTP CSVs")
-        p.add_argument("--pool-metadata", help="Path to pool metadata CSV file")
-        p.add_argument("--mutant-growth-dir", help="Folder with mutant growth CSVs")
-
-        # Reactions need 3 sources; pass folders and we'll iterate all CSVs in each
-        p.add_argument("--gene-rx-dir", help="Folder with Gene→Reaction CSVs")
-        p.add_argument("--met-rx-dir", help="Folder with Metabolite↔Reaction CSVs")
-        p.add_argument("--rx-gpr-dir", help="Folder with Reaction→GPR CSVs")
-
-        # External database cross-references (dbxref)
         p.add_argument(
             "--dbxref-dir", help="Folder with TSV files for external DB mappings (e.g., STRING DB)"
         )
@@ -66,100 +73,63 @@ class Command(BaseCommand):
             help="Database name for dbxref entries (default: STRING)",
         )
 
+        p.add_argument("--fitness-dir", help="Deprecated here; prefer import_gene_experiments")
+        p.add_argument("--proteomics-dir", help="Deprecated here; prefer import_gene_experiments")
+        p.add_argument(
+            "--protein-compound-dir", help="Deprecated here; prefer import_gene_experiments"
+        )
+        p.add_argument("--pooled-ttp-dir", help="Deprecated here; prefer import_gene_experiments")
+        p.add_argument("--pool-metadata", help="Path to pool metadata CSV file")
+        p.add_argument(
+            "--mutant-growth-dir", help="Deprecated here; prefer import_gene_experiments"
+        )
+        p.add_argument("--gene-rx-dir", help="Deprecated here; prefer import_gene_experiments")
+        p.add_argument("--met-rx-dir", help="Deprecated here; prefer import_gene_experiments")
+        p.add_argument("--rx-gpr-dir", help="Deprecated here; prefer import_gene_experiments")
+
     def handle(self, *args, **o):
         index_name = o["index"]
+        mapping = load_assembly_mapping(o.get("mapping_task_file"))
+        isolates = o["isolates"] or list_ftp_isolates(o["ftp_server"], o["ftp_root"])
 
-        # Mapping file (optional, but available for flows that may need it)
-        mapping = {}
-        if o.get("mapping_task_file"):
-            mapping = read_tsv_mapping(
-                o["mapping_task_file"],
-                key_col="prefix",
-                val_col="assembly",
-                strip_suffix=".fa",
-            )
-
-        # isolates
-        isolates = o["isolates"]
-        if not isolates:
-            ftp = ftplib.FTP(o["ftp_server"])
-            ftp.login()
-            ftp.cwd(o["ftp_root"])
-            # raw names from FTP
-            raw_isolates = [n for n in ftp.nlst() if not n.startswith(".")]
-            ftp.quit()
-        else:
-            raw_isolates = isolates
-
-        # Use raw isolate names directly
-        # 1) core genes (GFF) — can be skipped
         if not o.get("skip_core_genes"):
-            # Pass raw names only
-            GFFGenes(o["ftp_server"], o["ftp_root"], index_name=index_name, mapping=mapping).run(
-                raw_isolates=raw_isolates, norm_isolates=None
+            ingest_gff_features(
+                ftp_server=o["ftp_server"],
+                ftp_root=o["ftp_root"],
+                index_name=index_name,
+                raw_isolates=isolates,
+                mapping=mapping,
+                annotation_run_id=o.get("annotation_run_id"),
+                annotation_release=o.get("annotation_release"),
             )
         else:
-            print("[import_features] Skipping core gene (GFF) import as requested.")
+            self.stdout.write("[import_features] Skipping core gene (GFF) import as requested.")
 
-        # 2) Essentiality (process all CSVs in folder)
-        ess_files = list_csv_files(o.get("essentiality_dir"))
-        # print(f"[import_features] Essentiality CSVs found: {len(ess_files)}")
-        for csv_path in ess_files:
-            print(f"  - {csv_path}")
-            Essentiality(index_name=index_name).run(csv_path)
+        for csv_path in ingest_essentiality(index_name, o.get("essentiality_dir")):
+            self.stdout.write(f"  - {csv_path}")
 
-        # 3) Fitness
-        for csv_path in list_csv_files(o.get("fitness_dir")):
-            Fitness(index_name=index_name).run(csv_path)
+        for tsv_path in ingest_dbxref(
+            index_name, o.get("dbxref_dir"), o.get("dbxref_db_name", "STRING")
+        ):
+            self.stdout.write(f"  - {tsv_path}")
 
-        # 4) Proteomics
-        proteomics_files = list_csv_files(o.get("proteomics_dir"))
-        # print(f"[import_features] Proteomics files found: {len(proteomics_files)}")
-        for csv_path in proteomics_files:
-            print(f"  - {csv_path}")
-            Proteomics(index_name=index_name).run(csv_path)
-
-        # 5) Protein–compound
-        for csv_path in list_csv_files(o.get("protein_compound_dir")):
-            ProteinCompound(index_name=index_name).run(csv_path)
-
-        # 6) Pooled TTP
-        for csv_path in list_csv_files(o.get("pooled_ttp_dir")):
-            print(f"  - {csv_path}")
-            PooledTTP(index_name=index_name, pool_metadata_path=o.get("pool_metadata")).run(
-                csv_path
+        if any(o.get(k) for k in _EXPERIMENT_DIR_KEYS):
+            self.stdout.write(
+                self.style.WARNING(
+                    "Gene-experiment directories were passed to import_features. "
+                    "Prefer: python manage.py import_gene_experiments"
+                )
             )
-
-        # 7) Reactions (cross-product of the three folders)
-        gene_rx_files = list_csv_files(o.get("gene_rx_dir"))
-        met_rx_files = list_csv_files(o.get("met_rx_dir"))
-        rx_gpr_files = list_csv_files(o.get("rx_gpr_dir"))
-        # print(f"[import_features] gene_rx: {len(gene_rx_files)} files")
-        for f in gene_rx_files:
-            print("  -", f)
-        # print(f"[import_features] met_rx:  {len(met_rx_files)} files")
-        for f in met_rx_files:
-            print("  -", f)
-        # print(f"[import_features] rx_gpr:  {len(rx_gpr_files)} files")
-        for f in rx_gpr_files:
-            print("  -", f)
-        # run all combinations so you don't depend on strict naming;
-        # if you prefer pairing by filename stem, we can add that too.
-        for gr in gene_rx_files:
-            for mr in met_rx_files:
-                for gp in rx_gpr_files:
-                    Reactions(index_name=index_name).run(gr, mr, gp)
-
-        # 8) Mutant growth
-        for csv_path in list_csv_files(o.get("mutant_growth_dir")):
-            MutantGrowthFlow(index_name=index_name).run(csv_path)
-
-        # 9) External database cross-references (dbxref)
-        dbxref_dir = o.get("dbxref_dir")
-        db_name = o.get("dbxref_db_name", "STRING")
-        if dbxref_dir:
-            dbxref_files = list_csv_files(dbxref_dir, exts=(".tsv", ".tab"))
-            print(f"[import_features] External DBXRef TSV files found: {len(dbxref_files)}")
-            for tsv_path in dbxref_files:
-                print(f"  - {tsv_path}")
-                ExternalDBXRef(index_name=index_name, db_name=db_name).run(tsv_path)
+            ingest_gene_experiments(
+                experiment_index=o["experiment_index"],
+                feature_index=index_name,
+                fitness_dir=o.get("fitness_dir"),
+                proteomics_dir=o.get("proteomics_dir"),
+                protein_compound_dir=o.get("protein_compound_dir"),
+                pooled_ttp_dir=o.get("pooled_ttp_dir"),
+                pool_metadata=o.get("pool_metadata"),
+                mutant_growth_dir=o.get("mutant_growth_dir"),
+                gene_rx_dir=o.get("gene_rx_dir"),
+                met_rx_dir=o.get("met_rx_dir"),
+                rx_gpr_dir=o.get("rx_gpr_dir"),
+            )

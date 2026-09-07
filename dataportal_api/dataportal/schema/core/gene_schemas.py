@@ -162,6 +162,10 @@ class GeneAdvancedSearchQuerySchema(BaseModel):
     end_position: Optional[int] = Field(
         None, description="End position for coordinate range filtering."
     )
+    annotation_run_id: Optional[int] = Field(
+        None,
+        description="Optional archived annotation run id. Default is the current annotation.",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={"example": GENE_ADVANCED_SEARCH_QUERY_EXAMPLE},
@@ -442,6 +446,8 @@ class GeneResponseSchema(BaseModel):
     has_mutant_growth: Optional[bool] = None
     has_reactions: Optional[bool] = None
     feature_type: Optional[str] = "gene"
+    annotation_run_id: Optional[str] = None
+    annotation_release: Optional[str] = None
 
     # Optional grouped GFF blocks (additive; omitted from JSON when empty)
     unifire: Optional[GeneUnifireAnnotationSchema] = None

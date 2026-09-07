@@ -95,6 +95,11 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             ),
             type_strain=hit_dict.get("type_strain", False),
             contigs=contigs,
+            current_annotation_run_id=hit_dict.get("current_annotation_run_id"),
+            current_annotation_release=hit_dict.get("current_annotation_release"),
+            annotation_doc_link=hit_dict.get("annotation_doc_link"),
+            mettannotator_version=hit_dict.get("mettannotator_version"),
+            pipeline_version=hit_dict.get("pipeline_version"),
         )
 
     @log_execution_time
@@ -449,6 +454,8 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             "assembly_name",
             "assembly_accession",
             "type_strain",
+            "current_annotation_release",
+            "annotation_doc_link",
         ]
 
         # Create header row
