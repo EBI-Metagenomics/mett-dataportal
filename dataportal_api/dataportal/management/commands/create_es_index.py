@@ -44,7 +44,7 @@ class Command(BaseCommand):
             dest="es_version",
             type=str,
             default=None,
-            help="Optional suffix appended as {base}-{version}. Omit to create the base name (feature_index, …).",
+            help="Concrete index version suffix (e.g., 2025.09.03). Defaults to today's UTC date.",
         )
         parser.add_argument(
             "--if-exists",
@@ -52,7 +52,7 @@ class Command(BaseCommand):
             type=str,
             choices=["skip", "recreate", "fail"],
             default="skip",
-            help="Behavior if the index already exists.",
+            help="Behavior if the concrete index already exists.",
         )
 
     def handle(self, *args, **kwargs):

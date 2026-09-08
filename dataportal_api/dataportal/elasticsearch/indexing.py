@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, List, Optional, Type
 
 from elasticsearch_dsl import Document, Index, connections
@@ -25,8 +26,8 @@ class IndexNameBuilder:
         self.version_fmt = version_fmt
 
     def build(self, version: Optional[str] = None) -> str:
-        if not version:
-            return self.base
+        if version is None:
+            version = datetime.utcnow().strftime(self.version_fmt)
         return f"{self.base}-{version}"
 
 
