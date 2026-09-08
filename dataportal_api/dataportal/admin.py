@@ -9,26 +9,8 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
 from django import forms
-from dataportal.models import APIToken, Role, AnnotationRun
+from dataportal.models import APIToken, Role
 from dataportal.authentication import generate_jwt_token, RolePresets
-
-
-@admin.register(AnnotationRun)
-class AnnotationRunAdmin(admin.ModelAdmin):
-    list_display = [
-        "id",
-        "isolate_name",
-        "release_label",
-        "is_current",
-        "status",
-        "mettannotator_version",
-        "pipeline_version",
-        "es_feature_index",
-        "processed_at",
-    ]
-    list_filter = ["is_current", "status", "release_label"]
-    search_fields = ["isolate_name", "strain_id", "release_label"]
-    readonly_fields = ["created_at"]
 
 
 @admin.register(Role)

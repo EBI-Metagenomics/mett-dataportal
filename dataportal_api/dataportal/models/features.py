@@ -162,9 +162,6 @@ class FeatureDocument(Document):
     has_mutant_growth = Boolean()
     has_reactions = Boolean()
 
-    annotation_run_id = Keyword()
-    annotation_release = Keyword()
-
     # ---- Sequences (existing) ----
     protein_sequence = Text(fields={"keyword": Keyword()})  # only for 'gene'
 

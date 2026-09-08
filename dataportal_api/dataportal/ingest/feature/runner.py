@@ -1,4 +1,4 @@
-"""Run annotation ingest into a versioned feature_index."""
+"""Run annotation ingest into feature_index."""
 
 from __future__ import annotations
 
@@ -27,16 +27,12 @@ def ingest_gff_features(
     index_name: str,
     raw_isolates: Iterable[str],
     mapping: Optional[dict] = None,
-    annotation_run_id=None,
-    annotation_release=None,
 ) -> None:
     GFFGenes(
         ftp_server,
         ftp_root,
         index_name=index_name,
         mapping=mapping or {},
-        annotation_run_id=annotation_run_id,
-        annotation_release=annotation_release,
     ).run(raw_isolates=list(raw_isolates), norm_isolates=None)
 
 

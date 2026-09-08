@@ -19,15 +19,11 @@ class GFFGenes(Flow):
         ftp_root,
         index_name="feature_index",
         mapping=None,
-        annotation_run_id=None,
-        annotation_release=None,
     ):
         super().__init__(index_name)
         self.ftp_server = ftp_server
         self.ftp_root = ftp_root
         self.mapping = mapping or {}
-        self.annotation_run_id = annotation_run_id
-        self.annotation_release = annotation_release
 
     def run(self, raw_isolates: list[str], norm_isolates: list[str] | None = None):
         """
@@ -172,8 +168,6 @@ class GFFGenes(Flow):
                         ontology_terms=ontology_terms,
                         uf_ontology_terms=uf_ontology_terms,
                         uf_prot_rec_fullname=uf_prot_rec_fullname,
-                        annotation_run_id=self.annotation_run_id,
-                        annotation_release=self.annotation_release,
                     )
                     doc.meta.index = self.index
                     self.add(doc.to_dict(include_meta=True))

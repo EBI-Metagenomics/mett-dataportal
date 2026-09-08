@@ -24,7 +24,7 @@ _EXPERIMENT_DIR_KEYS = (
 
 class Command(BaseCommand):
     help = (
-        "Import annotation into a versioned feature_index (GFF, essentiality, dbxref). "
+        "Import annotation into feature_index (GFF, essentiality, dbxref). "
         "Gene-level assays belong in import_gene_experiments; those flags still work here."
     )
 
@@ -32,22 +32,12 @@ class Command(BaseCommand):
         p.add_argument(
             "--index",
             default=INDEX_FEATURES,
-            help="Target ES feature index (e.g. feature_index-1.0)",
+            help="Target ES feature index (default: feature_index)",
         )
         p.add_argument(
             "--experiment-index",
             default=INDEX_GENE_EXPERIMENTS,
             help="Used only if gene-experiment directories are also passed",
-        )
-        p.add_argument(
-            "--annotation-run-id",
-            default=None,
-            help="Optional annotation_run id to stamp onto ingested feature documents",
-        )
-        p.add_argument(
-            "--annotation-release",
-            default=None,
-            help="Optional annotation release label (e.g. 1.0, 2.0)",
         )
 
         p.add_argument("--ftp-server", default="ftp.ebi.ac.uk")
@@ -99,8 +89,6 @@ class Command(BaseCommand):
                 index_name=index_name,
                 raw_isolates=isolates,
                 mapping=mapping,
-                annotation_run_id=o.get("annotation_run_id"),
-                annotation_release=o.get("annotation_release"),
             )
         else:
             self.stdout.write("[import_features] Skipping core gene (GFF) import as requested.")

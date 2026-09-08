@@ -135,8 +135,6 @@ def hit_dict_to_gene_response(hit_dict: Dict[str, Any]) -> GeneResponseSchema:
         ig_locus_tag_a=hit_dict.get("ig_locus_tag_a"),
         ig_locus_tag_b=hit_dict.get("ig_locus_tag_b"),
         flanking_locus_tags=hit_dict.get("flanking_locus_tags"),
-        annotation_run_id=hit_dict.get("annotation_run_id"),
-        annotation_release=hit_dict.get("annotation_release"),
         unifire=unifire,
         dbcan=dbcan,
         bgc=bgc,

@@ -50,11 +50,6 @@ INDEX_OPERONS = "operon_index"
 INDEX_STRAIN_EXPERIMENTS = "strain_experiment_index"
 INDEX_GENE_EXPERIMENTS = "gene_experiment_index"
 
-DEFAULT_ANNOTATION_RELEASE = "1.0"
-DEFAULT_METTANNOTATOR_VERSION = "1.0"
-DEFAULT_PIPELINE_VERSION = "1.0"
-DEFAULT_ANNOTATION_DOC_LINK = "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/README_annotation_release_v1.txt"
-
 # ============================================================================
 # 3. FIELD NAMES - CORE ENTITIES
 # ============================================================================
@@ -113,11 +108,6 @@ GENOME_FIELD_GFF_URL = "gff_url"
 GENOME_FIELD_SPECIES = "species"
 GENOME_FIELD_CONTIGS = "contigs"
 GENOME_FIELD_TYPE_STRAIN = "type_strain"
-GENOME_FIELD_CURRENT_ANNOTATION_RUN_ID = "current_annotation_run_id"
-GENOME_FIELD_CURRENT_ANNOTATION_RELEASE = "current_annotation_release"
-GENOME_FIELD_ANNOTATION_DOC_LINK = "annotation_doc_link"
-GENE_FIELD_ANNOTATION_RUN_ID = "annotation_run_id"
-GENE_FIELD_ANNOTATION_RELEASE = "annotation_release"
 
 # Genome - Contig Fields
 GENOME_CONTIG_FIELD_SEQ_ID = "seq_id"

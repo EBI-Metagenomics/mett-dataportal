@@ -104,10 +104,6 @@ class GenesByGenomeQuerySchema(BaseModel):
     sort_order: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
-    annotation_run_id: Optional[int] = Field(
-        None,
-        description="Optional archived annotation run id. Default is the current annotation.",
-    )
 
     model_config = ConfigDict(
         json_schema_extra={"example": GENES_BY_GENOME_QUERY_EXAMPLE},
@@ -168,11 +164,6 @@ class GenomeResponseSchema(BaseModel):
     gff_url: str
     type_strain: bool
     contigs: List[ContigSchema]
-    current_annotation_run_id: Optional[str] = None
-    current_annotation_release: Optional[str] = None
-    annotation_doc_link: Optional[str] = None
-    mettannotator_version: Optional[str] = None
-    pipeline_version: Optional[str] = None
 
     model_config = ConfigDict(
         from_attributes=True,

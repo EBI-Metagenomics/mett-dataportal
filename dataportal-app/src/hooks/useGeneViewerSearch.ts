@@ -5,7 +5,6 @@ import {APP_CONSTANTS} from '../utils/common/constants';
 import {useFilterStore} from '../stores/filterStore';
 import {GeneMeta} from "../interfaces/Gene";
 import {convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy} from '../utils/common/filterUtils';
-import {getAnnotationRunIdFromSearch} from '../utils/common/annotationContext';
 
 interface UseGeneViewerSearchProps {
     genomeMeta: GenomeMeta | null;
@@ -76,7 +75,6 @@ export const useGeneViewerSearch = ({
                     undefined,
                     undefined,
                     undefined,
-                    getAnnotationRunIdFromSearch(),
                 );
                 // console.log('useGeneViewerSearch - Search results received:', {
                 //     query: geneSearchQuery,

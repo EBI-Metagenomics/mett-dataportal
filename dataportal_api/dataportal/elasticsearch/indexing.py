@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, List, Optional, Type
 
 from elasticsearch_dsl import Document, Index, connections
@@ -12,6 +11,7 @@ DEFAULT_VERSION_FMT = "%Y.%m.%d"
 @dataclass(frozen=True)
 class IndexConfig:
     """Configuration for a single ES index family (one Document model)."""
+
     model: Type[Document]
     base_name: str  # e.g. "strain_index"
     settings: Optional[dict]  # mapping/analysis settings copied from model.Index.settings
@@ -25,8 +25,8 @@ class IndexNameBuilder:
         self.version_fmt = version_fmt
 
     def build(self, version: Optional[str] = None) -> str:
-        if version is None:
-            version = datetime.utcnow().strftime(self.version_fmt)
+        if not version:
+            return self.base
         return f"{self.base}-{version}"
 
 
@@ -87,9 +87,9 @@ class ProjectIndexManager:
         return self._managers
 
     def create_all(
-            self,
-            version: Optional[str] = None,
-            if_exists: str = "skip",  # "skip" | "recreate" | "fail"
+        self,
+        version: Optional[str] = None,
+        if_exists: str = "skip",  # "skip" | "recreate" | "fail"
     ) -> Dict[str, str]:
         """
         Create concrete indexes for all models.

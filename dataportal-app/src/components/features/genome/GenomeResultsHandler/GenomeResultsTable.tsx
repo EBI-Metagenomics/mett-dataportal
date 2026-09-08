@@ -88,8 +88,6 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                     </th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Assembly</th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Annotations</th>
-                    <th className={`vf-table__heading ${styles.vfTableHeading}`}>Annotation release</th>
-                    <th className={`vf-table__heading ${styles.vfTableHeading}`}>Processing details</th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Actions</th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Add to Gene Search</th>
                 </tr>
@@ -111,18 +109,6 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                             <a href={result.gff_url || '#'} target="_blank" rel="noreferrer">GFF<span
                                 className={`icon icon-common icon-download ${styles.iconBlack}`}
                                 style={{paddingLeft: '5px'}}></span></a>
-                        </td>
-                        <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                            {result.current_annotation_release || '—'}
-                        </td>
-                        <td className={`vf-table__cell ${styles.vfTableCell}`}>
-                            {result.annotation_doc_link ? (
-                                <a href={result.annotation_doc_link} target="_blank" rel="noreferrer">
-                                    README
-                                    <span className={`icon icon-common icon-external-link-alt ${styles.externalIcon}`}
-                                          style={{paddingLeft: '5px'}}></span>
-                                </a>
-                            ) : '—'}
                         </td>
                         <td className={`vf-table__cell ${styles.vfTableCell}`}>
                             <a href={generateLink(linkData.template, result)} target="_blank" rel="noreferrer">

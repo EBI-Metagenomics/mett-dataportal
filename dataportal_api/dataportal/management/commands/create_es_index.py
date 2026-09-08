@@ -29,7 +29,7 @@ AVAILABLE_MODELS = {
 
 
 class Command(BaseCommand):
-    help = "Create versioned Elasticsearch indexes (no aliases)."
+    help = "Create Elasticsearch indexes from document models (unversioned base names)."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -44,7 +44,7 @@ class Command(BaseCommand):
             dest="es_version",
             type=str,
             default=None,
-            help="Concrete index version suffix (e.g., 2025.09.03). Defaults to today's UTC date.",
+            help="Optional suffix appended as {base}-{version}. Omit to create the base name (feature_index, …).",
         )
         parser.add_argument(
             "--if-exists",
@@ -52,7 +52,7 @@ class Command(BaseCommand):
             type=str,
             choices=["skip", "recreate", "fail"],
             default="skip",
-            help="Behavior if the concrete index already exists.",
+            help="Behavior if the index already exists.",
         )
 
     def handle(self, *args, **kwargs):

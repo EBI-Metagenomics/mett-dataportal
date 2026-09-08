@@ -87,8 +87,6 @@ export interface GeneMeta {
     ig_locus_tag_a?: string | null;
     ig_locus_tag_b?: string | null;
     flanking_locus_tags?: string[] | null;
-    annotation_run_id?: string | null;
-    annotation_release?: string | null;
     unifire?: GeneUnifireAnnotations | null;
     dbcan?: GeneDbcanAnnotations | null;
     bgc?: GeneBgcAnnotations | null;

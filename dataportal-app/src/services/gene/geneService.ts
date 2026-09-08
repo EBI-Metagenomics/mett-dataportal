@@ -61,7 +61,6 @@ export class GeneService extends BaseService {
         seqId?: string | null,
         startPosition?: number | null,
         endPosition?: number | null,
-        annotationRunId?: number | string | null,
     ): Promise<PaginatedApiResponse<GeneMeta>> {
         try {
             // console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
@@ -83,7 +82,6 @@ export class GeneService extends BaseService {
                 seqId,
                 startPosition,
                 endPosition,
-                annotationRunId,
             );
 
             const response = await BaseService.getRawResponse<GeneMeta[]>("/genes/search/advanced", params);
@@ -136,13 +134,9 @@ export class GeneService extends BaseService {
      */
     static async fetchGeneByLocusTag(
         locus_tag: string,
-        annotationRunId?: number | string | null,
     ): Promise<GeneMeta> {
         try {
-            const params = annotationRunId
-                ? this.buildParams({ annotation_run_id: annotationRunId })
-                : undefined;
-            return await this.getWithRetry<GeneMeta>(`/genes/${locus_tag}`, params);
+            return await this.getWithRetry<GeneMeta>(`/genes/${locus_tag}`);
         } catch (error) {
             console.error("Error fetching gene with locus tag %s", locus_tag, error);
             throw error;
@@ -328,7 +322,6 @@ export class GeneService extends BaseService {
         seqId?: string | null,
         startPosition?: number | null,
         endPosition?: number | null,
-        annotationRunId?: number | string | null,
     ): URLSearchParams {
         const params = this.buildParams({
             query,
@@ -380,10 +373,6 @@ export class GeneService extends BaseService {
             params.append("seq_id", seqId);
             params.append("start_position", startPosition.toString());
             params.append("end_position", endPosition.toString());
-        }
-
-        if (annotationRunId) {
-            params.append("annotation_run_id", String(annotationRunId));
         }
 
         return params;

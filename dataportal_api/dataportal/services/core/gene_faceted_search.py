@@ -52,7 +52,6 @@ class GeneFacetedSearch(FacetedSearch):
         limit=DEFAULT_FACET_LIMIT,
         operators=None,
         index=None,
-        annotation_run_ids=None,
     ):
         self.species_acronym = species_acronym
         self.essentiality = essentiality
@@ -65,7 +64,6 @@ class GeneFacetedSearch(FacetedSearch):
         self.interpro = interpro
         self.has_amr_info = has_amr_info
         self.operators = operators or {}
-        self.annotation_run_ids = annotation_run_ids
         if index:
             self.index = index
 
@@ -99,8 +97,6 @@ class GeneFacetedSearch(FacetedSearch):
             must_clauses.append(Q("terms", isolate_name=self.isolates))
         if self.essentiality:
             must_clauses.append(Q("term", essentiality=self.essentiality))
-        if self.annotation_run_ids:
-            must_clauses.append(Q("terms", annotation_run_id=self.annotation_run_ids))
 
         # Facet filters: split AND (query) vs OR (post_filter)
         facet_fields = [

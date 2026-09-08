@@ -1,7 +1,7 @@
 """
 Strain document model for Elasticsearch.
 
-Identity, assembly, and current-annotation pointers. Strain-level assays live in strain_experiment_index.
+Identity, assembly, and contig stats. Strain-level assays live in strain_experiment_index.
 """
 
 from elasticsearch_dsl import (
@@ -47,12 +47,6 @@ class StrainDocument(Document):
     genome_size = Long()
 
     contigs = Nested(properties={"seq_id": Keyword(), "length": Integer()})
-
-    current_annotation_run_id = Keyword()
-    current_annotation_release = Keyword()
-    annotation_doc_link = Keyword()
-    mettannotator_version = Keyword()
-    pipeline_version = Keyword()
 
     class Index:
         name = "strain_index"

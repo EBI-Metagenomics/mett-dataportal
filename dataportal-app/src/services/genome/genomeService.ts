@@ -1,5 +1,5 @@
 import { BaseService } from "../common/BaseService";
-import { AutocompleteResponse, GenomeMeta, GenomeAnnotationsResponse } from "../../interfaces/Genome";
+import { AutocompleteResponse, GenomeMeta } from "../../interfaces/Genome";
 import { PaginatedApiResponse } from "../../interfaces/ApiResponse";
 import { transformAutocompleteResponse, transformGenomeMeta } from "../../utils/common/transformer";
 import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../../utils/common/constants";
@@ -178,11 +178,5 @@ export class GenomeService extends BaseService {
             console.error('Error downloading genomes TSV:', error);
             throw error;
         }
-    }
-
-    static async fetchGenomeAnnotations(isolateName: string): Promise<GenomeAnnotationsResponse> {
-        return await this.getWithRetry<GenomeAnnotationsResponse>(
-            `/genomes/${isolateName}/annotations`
-        );
     }
 }

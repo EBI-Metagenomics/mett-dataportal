@@ -58,8 +58,6 @@ const GeneViewerPage: React.FC = () => {
 
     // Custom hooks for data management
     const geneViewerData = useGeneViewerData();
-    const annotationRunId = geneViewerData.annotationRunId;
-    const isArchivedAnnotation = Boolean(annotationRunId);
     
     // State for essentiality toggle - only available for type strains
     const [includeEssentiality, setIncludeEssentiality] = useState(() => {
@@ -353,8 +351,6 @@ const GeneViewerPage: React.FC = () => {
                     {/* Header with breadcrumbs and metadata */}
                     <GeneViewerHeader
                         genomeMeta={geneViewerData.genomeMeta}
-                        annotationRunId={annotationRunId}
-                        locusTag={geneViewerData.geneMeta?.locus_tag}
                     />
 
                     {/* Controls */}
@@ -412,7 +408,7 @@ const GeneViewerPage: React.FC = () => {
                                         tabs={[
                                             { id: 'search', label: 'Search View' },
                                             { id: 'sync', label: 'Genomic Context' },
-                                            ...(NETWORK_VIEW_ENABLED && !isArchivedAnnotation ? [{ id: 'network' as const, label: 'Network View' }] : []),
+                                            ...(NETWORK_VIEW_ENABLED ? [{ id: 'network' as const, label: 'Network View' }] : []),
                                         ]}
                                         activeTab={activeTab}
                                         onTabClick={(tabId) => {
@@ -516,12 +512,6 @@ const GeneViewerPage: React.FC = () => {
                                 onToggleFacet={handleToggleFacet}
                                 facets={facets}
                             />
-                            {isArchivedAnnotation && (
-                                <p style={{marginTop: '0.75rem', color: '#856404'}}>
-                                    Experimental datasets (fitness, proteomics, TPP, and others) are not shown
-                                    for archived annotations; they belong to the current release only.
-                                </p>
-                            )}
                         </div>
                     </div>
                 </section>

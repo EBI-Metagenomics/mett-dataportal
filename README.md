@@ -39,11 +39,10 @@
     - [1. Species](#1-species)
     - [2. Strains (identity and contigs)](#2-strains-identity-and-contigs)
     - [3. Strain experiments (MIC, metabolism)](#3-strain-experiments-mic-metabolism)
-    - [4. Annotation runs (PostgreSQL)](#4-annotation-runs-postgresql)
-    - [5. Features (annotation)](#5-features-annotation)
-    - [6. Gene experiments](#6-gene-experiments)
-    - [7. Fitness correlations](#7-fitness-correlations)
-    - [8. Network data](#8-network-data)
+    - [4. Features (annotation)](#4-features-annotation)
+    - [5. Gene experiments](#5-gene-experiments)
+    - [6. Fitness correlations](#6-fitness-correlations)
+    - [7. Network data](#7-network-data)
       - [Protein-protein interactions (PPI)](#protein-protein-interactions-ppi)
       - [Operons](#operons)
       - [Ortholog pairs](#ortholog-pairs)
@@ -182,8 +181,8 @@ cd dataportal_api
 uv pip install -r uv.lock
 python manage.py migrate
 
-# 3. Set up Elasticsearch (creates species/strain/feature/experiment indexes, versioned)
-python manage.py create_es_index --es-version 1.0
+# 3. Set up Elasticsearch (creates species/strain/feature/experiment indexes)
+python manage.py create_es_index
 
 # 4. Set up Frontend
 cd ../dataportal-app
@@ -358,51 +357,44 @@ python manage.py migrate django_celery_beat
 
 ### Elasticsearch Indices
 
-`create_es_index` writes **concrete** indexes named `{base}-{version}` (hyphen, not underscore). If you omit `--es-version`, the version is today's UTC date (`YYYY.MM.DD`).
+`create_es_index` creates indexes at the document base names (`feature_index`, `gene_experiment_index`, …). Optional `--es-version` appends a suffix for one-off copies; the portal reads the unversioned names.
 
-Feature indexes are versioned by **annotation release** (for example `feature_index-1.0`). Other families are usually date-versioned, or given the same suffix as a coordinated cutover. Point ingest and search at the concrete name, or alias the base name (`strain_index`, `gene_experiment_index`, …) to it.
-
-| Document | Base index | Typical `--es-version` |
-|---|---|---|
-| `SpeciesDocument` | `species_index` | date or `1.0` |
-| `StrainDocument` | `strain_index` | date or `1.0` |
-| `StrainExperimentDocument` | `strain_experiment_index` | date or `1.0` |
-| `FeatureDocument` | `feature_index` | annotation release (`1.0`, `2.0`) |
-| `GeneExperimentDocument` | `gene_experiment_index` | date or `1.0` |
-| `ProteinProteinDocument` | `ppi_index` | date |
-| `OperonDocument` | `operon_index` | date |
-| `OrthologDocument` | `ortholog_index` | date |
-| `GeneFitnessCorrelationDocument` | `fitness_correlation_index` | date |
+| Document | Index |
+|---|---|
+| `SpeciesDocument` | `species_index` |
+| `StrainDocument` | `strain_index` |
+| `StrainExperimentDocument` | `strain_experiment_index` |
+| `FeatureDocument` | `feature_index` |
+| `GeneExperimentDocument` | `gene_experiment_index` |
+| `ProteinProteinDocument` | `ppi_index` |
+| `OperonDocument` | `operon_index` |
+| `OrthologDocument` | `ortholog_index` |
+| `GeneFitnessCorrelationDocument` | `fitness_correlation_index` |
 
 ```bash
 cd dataportal_api
 
-# All families, version suffix 1.0 (species_index-1.0, feature_index-1.0, …)
-python manage.py create_es_index --es-version 1.0
-
-# Today's date as the version suffix
+# All families at their base names
 python manage.py create_es_index
 
-# One family (annotation 2.0 feature index)
-python manage.py create_es_index --model FeatureDocument --es-version 2.0
+# One family
+python manage.py create_es_index --model FeatureDocument
+python manage.py create_es_index --model StrainExperimentDocument
+python manage.py create_es_index --model GeneExperimentDocument
 
-# Strain- and gene-level experiment indexes
-python manage.py create_es_index --model StrainExperimentDocument --es-version 1.0
-python manage.py create_es_index --model GeneExperimentDocument --es-version 1.0
-
-# Recreate if the concrete index already exists
-python manage.py create_es_index --es-version 1.0 --if-exists recreate
+# Recreate if the index already exists
+python manage.py create_es_index --if-exists recreate
 ```
 
 `--if-exists` is `skip` (default), `recreate`, or `fail`.
 
-The examples below use base names (`strain_index`) or annotation-versioned feature names (`feature_index-1.0`). Substitute the concrete names printed by `create_es_index` if you are not using aliases.
+The import examples below use these base names.
 
 ---
 
 ## Data Import
 
-Run from `dataportal_api`. Import in this order: species → strains → annotation metadata → features → experiments → networks.
+Run from `dataportal_api`. Import in this order: species → strains → strain experiments → features → gene experiments → networks.
 
 ### 1. Species
 
@@ -463,54 +455,13 @@ python manage.py import_strain_experiments \
   --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
 ```
 
-### 4. Annotation runs (PostgreSQL)
+### 4. Features (annotation)
 
-Register the current annotation release after strains exist. Then stamp ES docs.
-
-```bash
-python manage.py migrate
-python manage.py seed_annotation_runs \
-  --strain-index strain_index \
-  --es-feature-index feature_index-1.0 \
-  --release-label 1.0
-
-python manage.py backfill_annotation_run_es \
-  --strain-index strain_index \
-  --current-only
-
-# Before GFF ingest, stamp strains only (missing feature indexes are skipped either way):
-
-python manage.py backfill_annotation_run_es \
-  --strain-index strain_index \ 
-  --skip-features \ 
-  --current-only
-
-# After GFF ingest, stamp features as well:
-
-python manage.py backfill_annotation_run_es \
-  --strain-index strain_index \
-  --feature-index feature_index-1.0 \
-  --current-only
-
-```
-
-A later release for one isolate:
-
-```bash
-python manage.py register_annotation_run \
-  --isolate-name BU_ATCC8492 \
-  --release-label 2.0 \
-  --es-feature-index feature_index-2.0
-```
-
-### 5. Features (annotation)
-
-Writes GFF genes, essentiality, and STRING dbxref to a versioned **feature** index. Do not pass fitness, proteomics, TPP, or reactions here.
+Writes GFF genes, essentiality, and STRING dbxref to `feature_index`. Do not pass fitness, proteomics, TPP, or reactions here.
 
 ```bash
 python manage.py import_features \
-  --index feature_index-1.0 \
-  --annotation-release 1.0 \
+  --index feature_index \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
@@ -523,7 +474,7 @@ Essentiality only (GFF already loaded):
 
 ```bash
 python manage.py import_features \
-  --index feature_index-1.0 \
+  --index feature_index \
   --skip-core-genes \
   --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/
 ```
@@ -532,7 +483,7 @@ STRING dbxref only:
 
 ```bash
 python manage.py import_dbxref \
-  --index feature_index-1.0 \
+  --index feature_index \
   --tsv ../data-generators/stringdb-mapper/output/bu_to_string_raw.tsv \
   --db-name STRING
 ```
@@ -541,21 +492,21 @@ Directory of TSV mappings:
 
 ```bash
 python manage.py import_dbxref \
-  --index feature_index-1.0 \
+  --index feature_index \
   --tsv-dir ../data-generators/stringdb-mapper/output/raw \
   --db-name STRING
 ```
 
-### 6. Gene experiments
+### 5. Gene experiments
 
-Writes fitness, proteomics, TPP, reactions, and mutant growth to `gene_experiment_index`, and sets `has_*` flags on the **same feature index you used for GFF/essentiality** (e.g. `feature_index-1.0`). Do not point `--feature-index` at the dated `create_es_index` alias if your genes live in `feature_index-1.0`.
+Writes fitness, proteomics, TPP, reactions, and mutant growth to `gene_experiment_index`, and sets `has_*` flags on `feature_index`.
 
 Fitness CSVs include intergenic (`IG-between-…`) rows. Those become interval IGs (`IG:A__B`) on `gene_experiment_index` and a slim searchable stub on the feature index. IG docs store `ig_locus_tag_a` / `ig_locus_tag_b` (CSV flank order when available) plus `flanking_locus_tags` so biologists can jump to the neighboring genes without parsing the compound id. Re-run `import_gene_experiments` to backfill those fields on existing IG assay docs.
 
 ```bash
 python manage.py import_gene_experiments \
   --experiment-index gene_experiment_index \
-  --feature-index feature_index-1.0 \
+  --feature-index feature_index \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/ \
   --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal \
@@ -571,27 +522,27 @@ One-off commands (same indexes):
 ```bash
 python manage.py import_fitness_lfc \
   --index gene_experiment_index \
-  --feature-index feature_index-1.0 \
+  --feature-index feature_index \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
 
 python manage.py import_mutant_growth \
   --index gene_experiment_index \
-  --feature-index feature_index-1.0 \
+  --feature-index feature_index \
   --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal
 
 python manage.py ingest_pooled_ttp \
   --index gene_experiment_index \
-  --feature-index feature_index-1.0 \
+  --feature-index feature_index \
   --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pooled_TPP.csv \
   --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv
 ```
 
-### 7. Fitness correlations
+### 6. Fitness correlations
 
 Own index (not `gene_experiment_index`).
 
 ```bash
-python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 1.0
+python manage.py create_es_index --model GeneFitnessCorrelationDocument
 
 python manage.py import_fitness_correlations \
   --index fitness_correlation_index \
@@ -601,14 +552,14 @@ python manage.py import_fitness_correlations \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
-### 8. Network data
+### 7. Network data
 
 Create the indexes first if they are not already present:
 
 ```bash
-python manage.py create_es_index --model ProteinProteinDocument --es-version 1.0
-python manage.py create_es_index --model OperonDocument --es-version 1.0
-python manage.py create_es_index --model OrthologDocument --es-version 1.0
+python manage.py create_es_index --model ProteinProteinDocument
+python manage.py create_es_index --model OperonDocument
+python manage.py create_es_index --model OrthologDocument
 ```
 
 #### Protein-protein interactions (PPI)
