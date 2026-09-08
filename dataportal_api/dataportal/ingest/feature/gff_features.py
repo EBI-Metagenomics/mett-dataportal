@@ -2,8 +2,8 @@ import tempfile
 import os
 from dataportal.ingest.flow import Flow
 from dataportal.ingest.feature.sources import ftp_connect, load_protein_seqs
-from dataportal.ingest.feature.parsing import parse_dbxref, parse_gene_gff_annotations
-from dataportal.ingest.utils import species_name_for_isolate, strain_prefix
+from dataportal.ingest.feature.parsing import parse_gene_gff_annotations
+from dataportal.ingest.utils import parse_dbxref, species_name_for_isolate, strain_prefix
 from dataportal.models import FeatureDocument  # your ES DSL document
 
 

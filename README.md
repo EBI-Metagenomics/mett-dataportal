@@ -35,24 +35,18 @@
   - [Database Setup](#database-setup)
     - [PostgreSQL Migrations](#postgresql-migrations)
     - [Elasticsearch Indices](#elasticsearch-indices)
-      - [Create Indices](#create-indices)
-      - [Index Naming Convention](#index-naming-convention)
   - [Data Import](#data-import)
-    - [Core Data Import](#core-data-import)
-      - [1. Species Data](#1-species-data)
-      - [2. Strain Data](#2-strain-data)
-    - [Feature Annotations](#feature-annotations)
-      - [Core Genes Features Import](#core-genes-features-import)
-      - [Incremental Feature Updates](#incremental-feature-updates)
-    - [Experimental Data](#experimental-data)
-      - [Fitness Data](#fitness-data)
-      - [Mutant Growth Data](#mutant-growth-data)
-      - [Thermal Proteome Profiling (TPP)](#thermal-proteome-profiling-tpp)
-      - [Fitness Correlation Data](#fitness-correlation-data)
-    - [Network Data](#network-data)
-      - [Protein-Protein Interactions (PPI)](#protein-protein-interactions-ppi)
+    - [1. Species](#1-species)
+    - [2. Strains (identity and contigs)](#2-strains-identity-and-contigs)
+    - [3. Strain experiments (MIC, metabolism)](#3-strain-experiments-mic-metabolism)
+    - [4. Annotation runs (PostgreSQL)](#4-annotation-runs-postgresql)
+    - [5. Features (annotation)](#5-features-annotation)
+    - [6. Gene experiments](#6-gene-experiments)
+    - [7. Fitness correlations](#7-fitness-correlations)
+    - [8. Network data](#8-network-data)
+      - [Protein-protein interactions (PPI)](#protein-protein-interactions-ppi)
       - [Operons](#operons)
-      - [Ortholog Pairs](#ortholog-pairs)
+      - [Ortholog pairs](#ortholog-pairs)
     - [Index File Generation](#index-file-generation)
   - [Development](#development)
     - [Code Style](#code-style)
@@ -188,8 +182,8 @@ cd dataportal_api
 uv pip install -r uv.lock
 python manage.py migrate
 
-# 3. Set up Elasticsearch
-python manage.py create_es_index
+# 3. Set up Elasticsearch (creates species/strain/feature/experiment indexes, versioned)
+python manage.py create_es_index --es-version 1.0
 
 # 4. Set up Frontend
 cd ../dataportal-app
@@ -364,33 +358,53 @@ python manage.py migrate django_celery_beat
 
 ### Elasticsearch Indices
 
-#### Create Indices
+`create_es_index` writes **concrete** indexes named `{base}-{version}` (hyphen, not underscore). If you omit `--es-version`, the version is today's UTC date (`YYYY.MM.DD`).
+
+Feature indexes are versioned by **annotation release** (for example `feature_index-1.0`). Other families are usually date-versioned, or given the same suffix as a coordinated cutover. Point ingest and search at the concrete name, or alias the base name (`strain_index`, `gene_experiment_index`, …) to it.
+
+| Document | Base index | Typical `--es-version` |
+|---|---|---|
+| `SpeciesDocument` | `species_index` | date or `1.0` |
+| `StrainDocument` | `strain_index` | date or `1.0` |
+| `StrainExperimentDocument` | `strain_experiment_index` | date or `1.0` |
+| `FeatureDocument` | `feature_index` | annotation release (`1.0`, `2.0`) |
+| `GeneExperimentDocument` | `gene_experiment_index` | date or `1.0` |
+| `ProteinProteinDocument` | `ppi_index` | date |
+| `OperonDocument` | `operon_index` | date |
+| `OrthologDocument` | `ortholog_index` | date |
+| `GeneFitnessCorrelationDocument` | `fitness_correlation_index` | date |
 
 ```bash
-# Create all indices with default version
-$ python manage.py create_es_index
+cd dataportal_api
 
-# Create indices with specific version
-$ python manage.py create_es_index --es-version v6
+# All families, version suffix 1.0 (species_index-1.0, feature_index-1.0, …)
+python manage.py create_es_index --es-version 1.0
 
-# Create specific model index
-$ python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 2025.09.03
+# Today's date as the version suffix
+python manage.py create_es_index
 
-# Recreate indices (delete and create)
-$ python manage.py create_es_index --es-version 2025.09.03 --if-exists recreate
+# One family (annotation 2.0 feature index)
+python manage.py create_es_index --model FeatureDocument --es-version 2.0
+
+# Strain- and gene-level experiment indexes
+python manage.py create_es_index --model StrainExperimentDocument --es-version 1.0
+python manage.py create_es_index --model GeneExperimentDocument --es-version 1.0
+
+# Recreate if the concrete index already exists
+python manage.py create_es_index --es-version 1.0 --if-exists recreate
 ```
 
-#### Index Naming Convention
+`--if-exists` is `skip` (default), `recreate`, or `fail`.
 
-Indices use the pattern: `{index_name}_{version}` (e.g., `feature_index_2025.09.03`)
+The examples below use base names (`strain_index`) or annotation-versioned feature names (`feature_index-1.0`). Substitute the concrete names printed by `create_es_index` if you are not using aliases.
 
 ---
 
 ## Data Import
 
-### Core Data Import
+Run from `dataportal_api`. Import in this order: species → strains → annotation metadata → features → experiments → networks.
 
-#### 1. Species Data
+### 1. Species
 
 ```bash
 python manage.py import_species \
@@ -398,12 +412,12 @@ python manage.py import_species \
   --csv ../data-generators/data/species.csv
 ```
 
-#### 2. Strain Data
+### 2. Strains (identity and contigs)
 
-**Basic Strains (Contigs Only)**:
+Writes `strain_index` only. MIC and metabolism go in the next step.
 
 ```bash
-$ python manage.py import_strains \
+python manage.py import_strains \
   --es-index strain_index \
   --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
   --ftp-server ftp.ebi.ac.uk \
@@ -413,17 +427,14 @@ $ python manage.py import_strains \
   --gff-base /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
-**Complete Import (Strains + Drug Data)**:
+### 3. Strain experiments (MIC, metabolism)
+
+Writes `strain_experiment_index`. `--es-index` is the strain index used to resolve isolate names.
 
 ```bash
-$ python manage.py import_strains \
+python manage.py import_strain_experiments \
   --es-index strain_index \
-  --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
-  --ftp-server ftp.ebi.ac.uk \
-  --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
-  --set-type-strains BU_ATCC8492 PV_ATCC8482 \
-  --gff-server ftp.ebi.ac.uk \
-  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/ \
+  --strain-experiment-index strain_experiment_index \
   --include-mic \
   --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
   --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv \
@@ -432,123 +443,157 @@ $ python manage.py import_strains \
   --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
 ```
 
-**Incremental Updates**:
+MIC only:
 
-Add Drug MIC data only:
 ```bash
-$ python manage.py import_strains \
+python manage.py import_strain_experiments \
   --es-index strain_index \
-  --skip-strains \
   --include-mic \
   --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
   --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv
 ```
 
-Add Drug Metabolism data only:
+Metabolism only:
+
 ```bash
-$ python manage.py import_strains \
+python manage.py import_strain_experiments \
   --es-index strain_index \
-  --skip-strains \
   --include-metabolism \
   --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_BU_v0.csv \
   --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
 ```
 
-### Feature Annotations
+### 4. Annotation runs (PostgreSQL)
 
-#### Core Genes Features Import
+Register the current annotation release after strains exist. Then stamp ES docs.
 
 ```bash
-$ python manage.py import_features \
-  --index feature_index-v6 \
+python manage.py migrate
+python manage.py seed_annotation_runs \
+  --strain-index strain_index \
+  --es-feature-index feature_index-1.0 \
+  --release-label 1.0
+
+python manage.py backfill_annotation_run_es \
+  --strain-index strain_index \
+  --current-only
+
+# Before GFF ingest, stamp strains only (missing feature indexes are skipped either way):
+
+python manage.py backfill_annotation_run_es \
+  --strain-index strain_index \ 
+  --skip-features \ 
+  --current-only
+
+# After GFF ingest, stamp features as well:
+
+python manage.py backfill_annotation_run_es \
+  --strain-index strain_index \
+  --feature-index feature_index-1.0 \
+  --current-only
+
+```
+
+A later release for one isolate:
+
+```bash
+python manage.py register_annotation_run \
+  --isolate-name BU_ATCC8492 \
+  --release-label 2.0 \
+  --es-feature-index feature_index-2.0
+```
+
+### 5. Features (annotation)
+
+Writes GFF genes, essentiality, and STRING dbxref to a versioned **feature** index. Do not pass fitness, proteomics, TPP, or reactions here.
+
+```bash
+python manage.py import_features \
+  --index feature_index-1.0 \
+  --annotation-release 1.0 \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
   --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/ \
-  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
+  --dbxref-dir ../data-generators/stringdb-mapper/output/raw \
+  --dbxref-db-name STRING
 ```
 
-#### Incremental Feature Updates
+Essentiality only (GFF already loaded):
 
-**Essentiality Data (in case skipped in above step)**:
 ```bash
-$ python manage.py import_features \
-  --index feature_index \
-  --ftp-server ftp.ebi.ac.uk \
-  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
+python manage.py import_features \
+  --index feature_index-1.0 \
   --skip-core-genes \
   --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/
 ```
 
-**Proteomics Evidence (in case skipped in above step)**:
+STRING dbxref only:
+
 ```bash
-$ python manage.py import_features \
-  --index feature_index \
-  --ftp-server ftp.ebi.ac.uk \
-  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
-  --skip-core-genes \
-  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/
+python manage.py import_dbxref \
+  --index feature_index-1.0 \
+  --tsv ../data-generators/stringdb-mapper/output/bu_to_string_raw.tsv \
+  --db-name STRING
 ```
 
-**Metabolic Gene-Reaction Data**:
+Directory of TSV mappings:
+
 ```bash
-$ python manage.py import_features \
-  --index feature_index-v6 \
-  --ftp-server ftp.ebi.ac.uk \
-  --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
-  --skip-core-genes \
+python manage.py import_dbxref \
+  --index feature_index-1.0 \
+  --tsv-dir ../data-generators/stringdb-mapper/output/raw \
+  --db-name STRING
+```
+
+### 6. Gene experiments
+
+Writes fitness, proteomics, TPP, reactions, and mutant growth to `gene_experiment_index`, and sets `has_*` flags on the **same feature index you used for GFF/essentiality** (e.g. `feature_index-1.0`). Do not point `--feature-index` at the dated `create_es_index` alias if your genes live in `feature_index-1.0`.
+
+Fitness CSVs include intergenic (`IG-between-…`) rows. Those `has_fitness` stamps are skipped when the IG document was never created (GFF ingest writes genes only; essentiality writes gene–gene IGs, not IGs next to tRNA/ncRNA/TIR). The assay still lands in `gene_experiment_index`.
+
+```bash
+python manage.py import_gene_experiments \
+  --experiment-index gene_experiment_index \
+  --feature-index feature_index-1.0 \
+  --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data \
+  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/ \
+  --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal \
+  --pooled-ttp-dir ../data-generators/Sub-Projects-Data/SP2/pooled_ttp \
+  --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv \
   --gene-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
   --met-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/met_rx/ \
   --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
 ```
 
-**STRING DBXREF Data**:
-Single file
-```bash
-python manage.py import_dbxref \
-    --index feature_index \
-    --tsv ../data-generators/stringdb-mapper/output/bu_to_string_raw.tsv \
-    --db-name STRING
-```
-Directory with multiple files
-```bash
-python manage.py import_dbxref \
-    --index feature_index-v6 \
-    --tsv-dir ../data-generators/stringdb-mapper/output/raw \
-    --db-name STRING
-```
-
-### Experimental Data
-
-#### Fitness Data
+One-off commands (same indexes):
 
 ```bash
-$ python manage.py import_fitness_lfc \
-  --index feature_index-v6 \
+python manage.py import_fitness_lfc \
+  --index gene_experiment_index \
+  --feature-index feature_index-1.0 \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
-```
 
-#### Mutant Growth Data
-
-```bash
-$ python manage.py import_mutant_growth \
-  --index feature_index-v6 \
+python manage.py import_mutant_growth \
+  --index gene_experiment_index \
+  --feature-index feature_index-1.0 \
   --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal
-```
 
-#### Thermal Proteome Profiling (TPP)
-
-```bash
-$ python manage.py ingest_pooled_ttp \
-  --index feature_index-v6 \
+python manage.py ingest_pooled_ttp \
+  --index gene_experiment_index \
+  --feature-index feature_index-1.0 \
   --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pooled_TPP.csv \
   --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv
 ```
 
-#### Fitness Correlation Data
+### 7. Fitness correlations
+
+Own index (not `gene_experiment_index`).
 
 ```bash
-$ python manage.py import_fitness_correlations \
+python manage.py create_es_index --model GeneFitnessCorrelationDocument --es-version 1.0
+
+python manage.py import_fitness_correlations \
   --index fitness_correlation_index \
   --correlation-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_corr_data \
   --preload-gff \
@@ -556,33 +601,37 @@ $ python manage.py import_fitness_correlations \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
+### 8. Network data
 
-### Network Data
-
-#### Protein-Protein Interactions (PPI)
+Create the indexes first if they are not already present:
 
 ```bash
-# Basic import
-$ python manage.py import_ppi_with_genes \
-    --index ppi_index \
-    --pattern "*.tsv" \
-    --csv-folder ../data-generators/Sub-Projects-Data/PPI-v1 \
-    --string-mapping-dir data-generators/stringdb-mapper/output/uniprot_mapped
+python manage.py create_es_index --model ProteinProteinDocument --es-version 1.0
+python manage.py create_es_index --model OperonDocument --es-version 1.0
+python manage.py create_es_index --model OrthologDocument --es-version 1.0
+```
 
-# With refresh optimization (recommended for large datasets)
-$ python manage.py import_ppi_with_genes \
-  --index ppi_index-2026.07.07 \
+#### Protein-protein interactions (PPI)
+
+```bash
+python manage.py import_ppi_with_genes \
+  --index ppi_index \
   --pattern "*.tsv" \
   --csv-folder ../data-generators/Sub-Projects-Data/PPI-v1 \
-  --string-mapping-dir data-generators/stringdb-mapper/output/uniprot_mapped \
+  --string-mapping-dir ../data-generators/stringdb-mapper/output/uniprot_mapped
+
+python manage.py import_ppi_with_genes \
+  --index ppi_index-1.0 \
+  --pattern "*.tsv" \
+  --csv-folder ../data-generators/Sub-Projects-Data/PPI-v1 \
+  --string-mapping-dir ../data-generators/stringdb-mapper/output/uniprot_mapped \
   --refresh-every-rows 500000
-  # Alternative: --refresh-every-secs 120
 ```
 
 #### Operons
 
 ```bash
-$ python manage.py import_operons \
+python manage.py import_operons \
   --index operon_index \
   --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/ \
   --preload-gff \
@@ -590,10 +639,10 @@ $ python manage.py import_operons \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
 
-#### Ortholog Pairs
+#### Ortholog pairs
 
 ```bash
-$ python manage.py import_orthologs_with_genes \
+python manage.py import_orthologs_with_genes \
   --index ortholog_index \
   --ortholog-directory ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
   --ftp-server ftp.ebi.ac.uk \

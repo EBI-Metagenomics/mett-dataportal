@@ -17,7 +17,7 @@ from dataportal.ingest.strain.ftp import (
     ftp_list_gff_for_isolate,
     parse_fasta_contigs,
 )
-from dataportal.ingest.strain.resolver import StrainResolver
+from dataportal.ingest.strain.resolver import StrainResolver, isolate_lookup_key
 
 
 class BaseImporter:
@@ -79,6 +79,7 @@ class StrainContigImporter(BaseImporter):
                 gff_folder_map = None
 
         fasta_files = ftp_list_fasta(ftp, self.ftp_directory)
+        skipped_unmapped = 0
 
         # Use raw type_strains without normalization
         if self.type_strains is not None:
@@ -101,6 +102,7 @@ class StrainContigImporter(BaseImporter):
 
             raw_isolate = self.assembly_to_isolate.get(file)
             if not raw_isolate:
+                skipped_unmapped += 1
                 continue
 
             # Use raw isolate name directly
@@ -142,6 +144,7 @@ class StrainContigImporter(BaseImporter):
             # core identity (idempotent) — always canonical
             doc.strain_id = canonical_id
             doc.isolate_name = isolate_name  # Use raw isolate name
+            doc.isolate_key = isolate_lookup_key(canonical_id)
             doc.assembly_name = assembly_name
             doc.assembly_accession = f"AA{accession_counter:05d}"
             accession_counter += 1
@@ -166,6 +169,12 @@ class StrainContigImporter(BaseImporter):
 
             self.repo.save(doc)
 
+        print(
+            f"[import_strains] FTP FASTA files={len(fasta_files)}, "
+            f"imported={len(fasta_files) - skipped_unmapped}, "
+            f"skipped unmapped={skipped_unmapped} "
+            f"(not in --map-tsv)"
+        )
         ftp.quit()
         if ftp_gff:
             ftp_gff.quit()

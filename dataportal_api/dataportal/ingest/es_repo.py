@@ -327,6 +327,23 @@ class GeneFitnessCorrelationIndexRepository:
 # -----------------------------
 
 
+def _partition_bulk_failures(failures: List[Dict[str, Any]] | None):
+    missing: List[Dict[str, Any]] = []
+    real: List[Dict[str, Any]] = []
+    for item in failures or []:
+        body = item.get("update") or item.get("index") or item.get("create") or item.get("delete")
+        if not isinstance(body, dict):
+            real.append(item)
+            continue
+        err = body.get("error") or {}
+        err_type = err.get("type") if isinstance(err, dict) else None
+        if body.get("status") == 404 or err_type == "document_missing_exception":
+            missing.append(item)
+        else:
+            real.append(item)
+    return missing, real
+
+
 def bulk_exec(
     actions: Iterable[Dict[str, Any]],
 ) -> Tuple[int, List[Dict[str, Any]]]:
@@ -347,16 +364,26 @@ def bulk_exec(
             actions,
             raise_on_error=False,
         )
-        if failures:
-            print(f"[es_repo] Bulk failures: {len(failures)} (first 3 shown)")
-            for f in failures[:3]:
+        missing, real = _partition_bulk_failures(failures)
+        if missing:
+            print(
+                f"[es_repo] Skipped {len(missing)} update(s) for documents that are not in the "
+                f"feature index (expected for fitness IG rows whose neighbors are not genes)."
+            )
+        if real:
+            print(f"[es_repo] Bulk failures: {len(real)} (first 3 shown)")
+            for f in real[:3]:
                 print(f"  -> {f}")
         return success, failures
     except BulkIndexError as e:
         errs = getattr(e, "errors", [])
-        print(f"[es_repo] BulkIndexError with {len(errs)} errors (first 3 shown)")
-        for f in errs[:3]:
-            print(f"  -> {f}")
+        missing, real = _partition_bulk_failures(errs)
+        if missing:
+            print(f"[es_repo] Skipped {len(missing)} update(s) for missing feature documents.")
+        if real:
+            print(f"[es_repo] BulkIndexError with {len(real)} errors (first 3 shown)")
+            for f in real[:3]:
+                print(f"  -> {f}")
         return 0, errs
 
 

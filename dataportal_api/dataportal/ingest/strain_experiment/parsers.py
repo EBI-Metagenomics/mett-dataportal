@@ -13,6 +13,13 @@ def _safe_float(x) -> Optional[float]:
         return None
 
 
+def _strain_column(cols: dict) -> Optional[str]:
+    for name in ("strain", "isolate", "isolate_name", "genome"):
+        if name in cols:
+            return cols[name]
+    return None
+
+
 def iter_mic_rows(csv_paths: List[str], default_unit: str = "uM") -> Iterable[Tuple[str, dict]]:
     """Yields (strain, payload) from MIC CSVs: Strain, Drug, relation, drug_conc_um."""
     del default_unit  # unit is not stored on MIC docs
@@ -21,8 +28,11 @@ def iter_mic_rows(csv_paths: List[str], default_unit: str = "uM") -> Iterable[Tu
             continue
         df = pd.read_csv(p)
         cols = {c.lower(): c for c in df.columns}
+        strain_col = _strain_column(cols)
+        if not strain_col:
+            continue
         for _, row in df.iterrows():
-            yield str(row[cols.get("strain", "Strain")]).strip(), {
+            yield str(row[strain_col]).strip(), {
                 "drug_name": str(row[cols.get("drug", "Drug")]).strip(),
                 "relation": str(row[cols.get("relation", "relation")]).strip(),
                 "mic_value": _safe_float(row[cols.get("drug_conc_um", "drug_conc_um")]),
@@ -36,8 +46,11 @@ def iter_metabolism_rows(csv_paths: List[str]) -> Iterable[Tuple[str, dict]]:
             continue
         df = pd.read_csv(p)
         cols = {c.lower(): c for c in df.columns}
+        strain_col = _strain_column(cols)
+        if not strain_col:
+            continue
         for _, row in df.iterrows():
-            yield str(row[cols.get("strain", "Strain")]).strip(), {
+            yield str(row[strain_col]).strip(), {
                 "drug_name": str(row[cols.get("drug", "Drug")]).strip(),
                 "degr_percent": _safe_float(row[cols.get("degr_perc", "DEGR_PERC")]),
                 "pval": _safe_float(row[cols.get("pval", "PVAL")]),

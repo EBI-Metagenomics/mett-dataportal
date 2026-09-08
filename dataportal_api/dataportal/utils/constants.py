@@ -53,7 +53,7 @@ INDEX_GENE_EXPERIMENTS = "gene_experiment_index"
 DEFAULT_ANNOTATION_RELEASE = "1.0"
 DEFAULT_METTANNOTATOR_VERSION = "1.0"
 DEFAULT_PIPELINE_VERSION = "1.0"
-DEFAULT_ANNOTATION_DOC_LINK = "https://github.com/EBI-Metagenomics/mettannotator/releases/tag/v1.0"
+DEFAULT_ANNOTATION_DOC_LINK = "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/README_annotation_release_v1.txt"
 
 # ============================================================================
 # 3. FIELD NAMES - CORE ENTITIES
