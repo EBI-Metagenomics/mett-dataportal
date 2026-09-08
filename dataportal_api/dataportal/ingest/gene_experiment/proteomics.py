@@ -6,6 +6,9 @@ from dataportal.ingest.utils import (
     chunks_from_table,
     extract_isolate_from_locus_tag,
     get_species_metadata_from_isolate,
+    ig_neighbor_fields,
+    canonical_ig_id_from_neighbors,
+    parse_ig_neighbors,
 )
 
 
@@ -46,10 +49,16 @@ class Proteomics(Flow):
                     "evidence": evidence,
                 }
 
-                # Determine feature type
-                feature_type = (
-                    "IG" if fid.startswith("IG:") or fid.startswith("IG-between-") else "gene"
-                )
+                left = right = None
+                if fid.startswith("IG-between-"):
+                    feature_type = "IG"
+                    left, right = parse_ig_neighbors(fid)
+                    if left and right:
+                        fid = canonical_ig_id_from_neighbors(left, right) or fid
+                elif fid.startswith("IG:"):
+                    feature_type = "IG"
+                else:
+                    feature_type = "gene"
 
                 # Build upsert data
                 upsert_data = {
@@ -60,7 +69,8 @@ class Proteomics(Flow):
                     "has_proteomics": True,
                 }
 
-                # Add genome/species metadata for IG features
+                script_params = {"entry": entry}
+
                 if feature_type == "IG":
                     isolate_name = extract_isolate_from_locus_tag(fid)
                     if isolate_name:
@@ -68,6 +78,9 @@ class Proteomics(Flow):
                             isolate_name, self._species_cache
                         )
                         upsert_data.update(species_metadata)
+                    neighbors = ig_neighbor_fields(fid, left, right)
+                    upsert_data.update(neighbors)
+                    script_params.update(neighbors)
 
                 actions.append(
                     {
@@ -79,8 +92,13 @@ class Proteomics(Flow):
     if (ctx._source.proteomics == null) { ctx._source.proteomics = []; }
     ctx._source.proteomics.add(params.entry);
     ctx._source.has_proteomics = true;
+    if (params.containsKey('ig_locus_tag_a') && params.ig_locus_tag_a != null) {
+      ctx._source.ig_locus_tag_a = params.ig_locus_tag_a;
+      ctx._source.ig_locus_tag_b = params.ig_locus_tag_b;
+      ctx._source.flanking_locus_tags = [params.ig_locus_tag_a, params.ig_locus_tag_b];
+    }
     """,
-                            "params": {"entry": entry},
+                            "params": script_params,
                         },
                         "upsert": upsert_data,
                         "scripted_upsert": True,

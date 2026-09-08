@@ -37,6 +37,7 @@ class FeatureDocument(Document):
     # IG context (only meaningful when feature_type == 'IG')
     ig_locus_tag_a = Keyword()
     ig_locus_tag_b = Keyword()
+    flanking_locus_tags = Keyword(multi=True)
     strand = Keyword()
 
     # Genomic coordinates (region-level; for genes or IGs)

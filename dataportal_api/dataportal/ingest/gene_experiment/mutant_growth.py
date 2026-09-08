@@ -10,6 +10,9 @@ from dataportal.ingest.es_repo import bulk_exec
 from dataportal.ingest.utils import (
     extract_isolate_from_locus_tag,
     get_species_metadata_from_isolate,
+    ig_neighbor_fields,
+    canonical_ig_id_from_neighbors,
+    parse_ig_neighbors,
 )
 from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
 
@@ -28,6 +31,11 @@ for (item in ctx._source[params.field]) {
 }
 if (!exists) { ctx._source[params.field].add(params.entry); }
 ctx._source[params.flag_field] = true;
+if (params.containsKey('ig_locus_tag_a') && params.ig_locus_tag_a != null) {
+  ctx._source.ig_locus_tag_a = params.ig_locus_tag_a;
+  ctx._source.ig_locus_tag_b = params.ig_locus_tag_b;
+  ctx._source.flanking_locus_tags = [params.ig_locus_tag_a, params.ig_locus_tag_b];
+}
 """
 
 
@@ -81,10 +89,16 @@ class MutantGrowthFlow(Flow):
                 if not locus_tag:
                     continue
 
-                # Determine feature type
-                feature_type = (
-                    "IG" if locus_tag.startswith("IG:") or locus_tag.startswith("IG-") else "gene"
-                )
+                left = right = None
+                if locus_tag.startswith("IG-between-"):
+                    feature_type = "IG"
+                    left, right = parse_ig_neighbors(locus_tag)
+                    if left and right:
+                        locus_tag = canonical_ig_id_from_neighbors(left, right) or locus_tag
+                elif locus_tag.startswith("IG:") or locus_tag.startswith("IG-"):
+                    feature_type = "IG"
+                else:
+                    feature_type = "gene"
 
                 # Extract and validate doubling_time
                 doubling_time = rec.get("doubling_time")
@@ -160,7 +174,20 @@ class MutantGrowthFlow(Flow):
                     "has_mutant_growth": True,
                 }
 
-                # Add genome/species metadata for IG features
+                # Define dedup keys: media + experimental_condition + brep uniquely identify an entry
+                dedup_keys = ["brep"]
+                if self.media is not None:
+                    dedup_keys.append("media")
+                if self.experimental_condition is not None:
+                    dedup_keys.append("experimental_condition")
+
+                script_params = {
+                    "field": "mutant_growth",
+                    "entry": entry,
+                    "keys": dedup_keys,
+                    "flag_field": "has_mutant_growth",
+                }
+
                 if feature_type == "IG":
                     isolate_name = extract_isolate_from_locus_tag(locus_tag)
                     if isolate_name:
@@ -168,13 +195,9 @@ class MutantGrowthFlow(Flow):
                             isolate_name, self._species_cache
                         )
                         upsert_data.update(species_metadata)
-
-                # Define dedup keys: media + experimental_condition + brep uniquely identify an entry
-                dedup_keys = ["brep"]
-                if self.media is not None:
-                    dedup_keys.append("media")
-                if self.experimental_condition is not None:
-                    dedup_keys.append("experimental_condition")
+                    neighbors = ig_neighbor_fields(locus_tag, left, right)
+                    upsert_data.update(neighbors)
+                    script_params.update(neighbors)
 
                 # Create bulk action with deduplication and flag setting
                 actions.append(
@@ -184,12 +207,7 @@ class MutantGrowthFlow(Flow):
                         "_id": locus_tag,
                         "script": {
                             "source": SCRIPT_DEDUP_AND_FLAG,
-                            "params": {
-                                "field": "mutant_growth",
-                                "entry": entry,
-                                "keys": dedup_keys,
-                                "flag_field": "has_mutant_growth",
-                            },
+                            "params": script_params,
                         },
                         "scripted_upsert": True,
                         "upsert": upsert_data,

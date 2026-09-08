@@ -416,6 +416,11 @@ SCRIPT_APPEND_AND_SET_FLAG = """
 if (ctx._source[params.field] == null) { ctx._source[params.field] = []; }
 ctx._source[params.field].add(params.entry);
 ctx._source[params.flag_field] = true;
+if (params.containsKey('ig_locus_tag_a') && params.ig_locus_tag_a != null) {
+  ctx._source.ig_locus_tag_a = params.ig_locus_tag_a;
+  ctx._source.ig_locus_tag_b = params.ig_locus_tag_b;
+  ctx._source.flanking_locus_tags = [params.ig_locus_tag_a, params.ig_locus_tag_b];
+}
 """
 
 SCRIPT_APPEND_NESTED_DEDUP_BY_KEYS = """

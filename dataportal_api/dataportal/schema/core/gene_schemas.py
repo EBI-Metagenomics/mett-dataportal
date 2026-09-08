@@ -446,6 +446,9 @@ class GeneResponseSchema(BaseModel):
     has_mutant_growth: Optional[bool] = None
     has_reactions: Optional[bool] = None
     feature_type: Optional[str] = "gene"
+    ig_locus_tag_a: Optional[str] = None
+    ig_locus_tag_b: Optional[str] = None
+    flanking_locus_tags: Optional[List[str]] = None
     annotation_run_id: Optional[str] = None
     annotation_release: Optional[str] = None
 

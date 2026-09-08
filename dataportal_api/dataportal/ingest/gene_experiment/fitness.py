@@ -7,6 +7,7 @@ from dataportal.ingest.utils import (
     parse_ig_neighbors,
     extract_isolate_from_locus_tag,
     get_species_metadata_from_isolate,
+    ig_neighbor_fields,
 )
 from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
 
@@ -35,9 +36,9 @@ class Fitness(Flow):
                     continue
 
                 # Determine feature type and normalize ID for intergenic regions
+                left = right = None
                 if fid.startswith("IG-between-"):
                     feature_type = "IG"
-                    # Convert old format "IG-between-A-and-B" to canonical format "IG:A__B"
                     left, right = parse_ig_neighbors(fid)
                     if left and right:
                         fid = canonical_ig_id_from_neighbors(left, right) or fid
@@ -78,7 +79,12 @@ class Fitness(Flow):
                     "has_fitness": True,
                 }
 
-                # Add genome/species metadata for IG features
+                script_params = {
+                    "field": "fitness",
+                    "entry": entry,
+                    "flag_field": "has_fitness",
+                }
+
                 if feature_type == "IG":
                     isolate_name = extract_isolate_from_locus_tag(fid)
                     if isolate_name:
@@ -86,6 +92,9 @@ class Fitness(Flow):
                             isolate_name, self._species_cache
                         )
                         upsert_data.update(species_metadata)
+                    neighbors = ig_neighbor_fields(fid, left, right)
+                    upsert_data.update(neighbors)
+                    script_params.update(neighbors)
 
                 actions.append(
                     {
@@ -94,11 +103,7 @@ class Fitness(Flow):
                         "_id": fid,
                         "script": {
                             "source": SCRIPT_APPEND_AND_SET_FLAG,
-                            "params": {
-                                "field": "fitness",
-                                "entry": entry,
-                                "flag_field": "has_fitness",
-                            },
+                            "params": script_params,
                         },
                         "upsert": upsert_data,
                     }

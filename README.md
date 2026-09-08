@@ -550,7 +550,7 @@ python manage.py import_dbxref \
 
 Writes fitness, proteomics, TPP, reactions, and mutant growth to `gene_experiment_index`, and sets `has_*` flags on the **same feature index you used for GFF/essentiality** (e.g. `feature_index-1.0`). Do not point `--feature-index` at the dated `create_es_index` alias if your genes live in `feature_index-1.0`.
 
-Fitness CSVs include intergenic (`IG-between-…`) rows. Those `has_fitness` stamps are skipped when the IG document was never created (GFF ingest writes genes only; essentiality writes gene–gene IGs, not IGs next to tRNA/ncRNA/TIR). The assay still lands in `gene_experiment_index`.
+Fitness CSVs include intergenic (`IG-between-…`) rows. Those become interval IGs (`IG:A__B`) on `gene_experiment_index` and a slim searchable stub on the feature index. IG docs store `ig_locus_tag_a` / `ig_locus_tag_b` (CSV flank order when available) plus `flanking_locus_tags` so biologists can jump to the neighboring genes without parsing the compound id. Re-run `import_gene_experiments` to backfill those fields on existing IG assay docs.
 
 ```bash
 python manage.py import_gene_experiments \

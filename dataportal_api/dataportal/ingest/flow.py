@@ -5,6 +5,7 @@ from dataportal.ingest.es_repo import bulk_exec
 from dataportal.ingest.utils import (
     extract_isolate_from_locus_tag,
     get_species_metadata_from_isolate,
+    ig_neighbor_fields,
 )
 from dataportal.utils.constants import INDEX_FEATURES
 
@@ -51,8 +52,7 @@ class Flow(ABC):
             rest = fid[3:]
             if "__" in rest:
                 left, right = rest.split("__", 1)
-                upsert["ig_locus_tag_a"] = left
-                upsert["ig_locus_tag_b"] = right
+                upsert.update(ig_neighbor_fields(fid, left, right))
                 isolate = extract_isolate_from_locus_tag(left)
                 if isolate:
                     upsert.update(get_species_metadata_from_isolate(isolate, self._species_cache))

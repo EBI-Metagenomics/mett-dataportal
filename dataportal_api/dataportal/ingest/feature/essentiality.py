@@ -9,6 +9,7 @@ from dataportal.ingest.utils import (
     parse_ig_neighbors,
     extract_isolate_from_locus_tag,
     get_species_metadata_from_isolate,
+    ig_neighbor_fields,
 )
 
 
@@ -66,10 +67,9 @@ class Essentiality(Flow):
                             )
                             base.update(species_metadata)
 
+                        base.update(ig_neighbor_fields(fid, left, right))
                         base.update(
                             {
-                                "ig_locus_tag_a": left,
-                                "ig_locus_tag_b": right,
                                 "ig_locus_tag_a_kw": left,
                                 "ig_locus_tag_b_kw": right,
                                 "legacy_ig_label": raw_id,

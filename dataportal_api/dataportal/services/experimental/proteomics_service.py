@@ -234,6 +234,9 @@ class ProteomicsService(BaseService[ProteomicsWithGeneSchema, str]):
             "isolate_name": hit_dict.get("isolate_name"),
             "species_scientific_name": hit_dict.get("species_scientific_name"),
             "species_acronym": hit_dict.get("species_acronym"),
+            "ig_locus_tag_a": hit_dict.get("ig_locus_tag_a"),
+            "ig_locus_tag_b": hit_dict.get("ig_locus_tag_b"),
+            "flanking_locus_tags": hit_dict.get("flanking_locus_tags"),
         }
 
         # Extract proteomics data

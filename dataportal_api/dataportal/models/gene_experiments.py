@@ -38,6 +38,10 @@ class GeneExperimentDocument(Document):
     species_scientific_name = Keyword()
     species_acronym = Keyword(normalizer=lowercase_normalizer)
 
+    ig_locus_tag_a = Keyword()
+    ig_locus_tag_b = Keyword()
+    flanking_locus_tags = Keyword(multi=True)
+
     has_proteomics = Boolean()
     has_fitness = Boolean()
     has_mutant_growth = Boolean()
