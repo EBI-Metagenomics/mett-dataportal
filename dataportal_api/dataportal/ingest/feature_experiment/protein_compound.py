@@ -7,7 +7,7 @@ from dataportal.ingest.es_repo import (
 )
 from dataportal.ingest.flow import Flow
 from dataportal.ingest.utils import pick
-from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 
 class ProteinCompound(Flow):
@@ -18,7 +18,7 @@ class ProteinCompound(Flow):
 
     def __init__(
         self,
-        index_name: str = INDEX_GENE_EXPERIMENTS,
+        index_name: str = INDEX_FEATURE_EXPERIMENTS,
         feature_flag_index: str | None = INDEX_FEATURES,
     ):
         super().__init__(index_name=index_name, feature_flag_index=feature_flag_index)

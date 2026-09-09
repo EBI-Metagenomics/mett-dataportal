@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from dataportal.ingest.es_repo import bulk_exec, SCRIPT_APPEND_NESTED_DEDUP_BY_KEYS
 from dataportal.ingest.flow import Flow
 from dataportal.ingest.utils import chunks_from_table
-from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 
 def _keys_map(d: Dict[str, Any]) -> Dict[str, str]:
@@ -35,7 +35,7 @@ class Reactions(Flow):
 
     def __init__(
         self,
-        index_name: str = INDEX_GENE_EXPERIMENTS,
+        index_name: str = INDEX_FEATURE_EXPERIMENTS,
         feature_flag_index: str | None = INDEX_FEATURES,
     ):
         super().__init__(index_name=index_name, feature_flag_index=feature_flag_index)

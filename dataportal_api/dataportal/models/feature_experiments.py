@@ -1,4 +1,4 @@
-"""Elasticsearch document for gene-level experimental payloads (current annotation only)."""
+"""Elasticsearch document for feature-level experimental payloads (genes and IGs)."""
 
 from elasticsearch_dsl import (
     Document,
@@ -13,8 +13,8 @@ from elasticsearch_dsl import (
 from .base import autocomplete_analyzer, lowercase_normalizer
 
 
-class GeneExperimentDocument(Document):
-    """Experimental nested data keyed by locus_tag (stable across annotation releases)."""
+class FeatureExperimentDocument(Document):
+    """Experimental nested data keyed by feature_id / locus_tag."""
 
     feature_id = Keyword()
     feature_type = Keyword(normalizer=lowercase_normalizer)
@@ -106,7 +106,7 @@ class GeneExperimentDocument(Document):
     )
 
     class Index:
-        name = "gene_experiment_index"
+        name = "feature_experiment_index"
         settings = {
             "index": {"max_result_window": 500000},
             "analysis": {

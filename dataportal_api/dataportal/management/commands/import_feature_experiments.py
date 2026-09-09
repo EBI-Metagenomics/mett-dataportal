@@ -1,20 +1,20 @@
 from django.core.management.base import BaseCommand
 
-from dataportal.ingest.gene_experiment.runner import ingest_gene_experiments
-from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
+from dataportal.ingest.feature_experiment.runner import ingest_feature_experiments
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 
 class Command(BaseCommand):
     help = (
-        "Import gene-level assays into gene_experiment_index "
+        "Import feature-level assays into feature_experiment_index "
         "(fitness, proteomics, TPP, reactions, mutant growth) and set has_* flags on features."
     )
 
     def add_arguments(self, p):
         p.add_argument(
             "--experiment-index",
-            default=INDEX_GENE_EXPERIMENTS,
-            help="Target ES gene experiment index",
+            default=INDEX_FEATURE_EXPERIMENTS,
+            help="Target ES feature experiment index",
         )
         p.add_argument(
             "--feature-index",
@@ -32,7 +32,7 @@ class Command(BaseCommand):
         p.add_argument("--rx-gpr-dir", help="Folder with Reaction→GPR CSVs")
 
     def handle(self, *args, **o):
-        ingest_gene_experiments(
+        ingest_feature_experiments(
             experiment_index=o["experiment_index"],
             feature_index=o["feature_index"],
             fitness_dir=o.get("fitness_dir"),
@@ -45,4 +45,4 @@ class Command(BaseCommand):
             met_rx_dir=o.get("met_rx_dir"),
             rx_gpr_dir=o.get("rx_gpr_dir"),
         )
-        self.stdout.write(self.style.SUCCESS("Gene experiment ingest finished."))
+        self.stdout.write(self.style.SUCCESS("Feature experiment ingest finished."))

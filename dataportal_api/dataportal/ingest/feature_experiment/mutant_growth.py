@@ -1,4 +1,4 @@
-"""Mutant growth ingest into gene_experiment_index."""
+"""Mutant growth ingest into feature_experiment_index."""
 
 from __future__ import annotations
 from dataclasses import dataclass
@@ -14,7 +14,7 @@ from dataportal.ingest.utils import (
     canonical_ig_id_from_neighbors,
     parse_ig_neighbors,
 )
-from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 
 # Script to append with deduplication and set flag
@@ -56,7 +56,7 @@ class MutantGrowthFlow(Flow):
 
     def __init__(
         self,
-        index_name: str = INDEX_GENE_EXPERIMENTS,
+        index_name: str = INDEX_FEATURE_EXPERIMENTS,
         media: Optional[str] = None,
         experimental_condition: Optional[str] = None,
         feature_flag_index: str | None = INDEX_FEATURES,

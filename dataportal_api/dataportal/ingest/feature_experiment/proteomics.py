@@ -12,7 +12,7 @@ from dataportal.ingest.utils import (
 )
 
 
-from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 
 class Proteomics(Flow):
@@ -25,7 +25,7 @@ class Proteomics(Flow):
 
     def __init__(
         self,
-        index_name: str = INDEX_GENE_EXPERIMENTS,
+        index_name: str = INDEX_FEATURE_EXPERIMENTS,
         feature_flag_index: str | None = INDEX_FEATURES,
     ):
         super().__init__(index_name=index_name, feature_flag_index=feature_flag_index)

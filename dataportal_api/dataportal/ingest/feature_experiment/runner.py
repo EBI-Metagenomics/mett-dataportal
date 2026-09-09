@@ -1,4 +1,4 @@
-"""Run gene-level experiment ingest into gene_experiment_index."""
+"""Run feature-level experiment ingest into feature_experiment_index."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ from typing import Optional
 
 from elasticsearch_dsl.connections import connections
 
-from dataportal.ingest.gene_experiment.fitness import Fitness
-from dataportal.ingest.gene_experiment.mutant_growth import MutantGrowthFlow
-from dataportal.ingest.gene_experiment.pooled_ttp import PooledTTP
-from dataportal.ingest.gene_experiment.protein_compound import ProteinCompound
-from dataportal.ingest.gene_experiment.proteomics import Proteomics
-from dataportal.ingest.gene_experiment.reactions import Reactions
+from dataportal.ingest.feature_experiment.fitness import Fitness
+from dataportal.ingest.feature_experiment.mutant_growth import MutantGrowthFlow
+from dataportal.ingest.feature_experiment.pooled_ttp import PooledTTP
+from dataportal.ingest.feature_experiment.protein_compound import ProteinCompound
+from dataportal.ingest.feature_experiment.proteomics import Proteomics
+from dataportal.ingest.feature_experiment.reactions import Reactions
 from dataportal.ingest.utils import list_csv_files
 
 
@@ -37,7 +37,7 @@ def _describe_index(name: str) -> str:
     return name
 
 
-def ingest_gene_experiments(
+def ingest_feature_experiments(
     *,
     experiment_index: str,
     feature_index: str,
@@ -52,7 +52,7 @@ def ingest_gene_experiments(
     rx_gpr_dir: Optional[str] = None,
 ) -> None:
     print(
-        f"[import_gene_experiments] Writing assays to {_describe_index(experiment_index)}; "
+        f"[import_feature_experiments] Writing assays to {_describe_index(experiment_index)}; "
         f"stamping has_* flags on {_describe_index(feature_index)}"
     )
     for csv_path in list_csv_files(fitness_dir):

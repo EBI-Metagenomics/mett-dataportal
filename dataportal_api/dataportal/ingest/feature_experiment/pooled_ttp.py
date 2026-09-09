@@ -7,7 +7,7 @@ from dataportal.ingest.es_repo import (
     SCRIPT_APPEND_AND_SET_FLAG,
 )
 from dataportal.ingest.flow import Flow
-from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 
 class PooledTTP(Flow):
@@ -20,7 +20,7 @@ class PooledTTP(Flow):
 
     def __init__(
         self,
-        index_name: str = INDEX_GENE_EXPERIMENTS,
+        index_name: str = INDEX_FEATURE_EXPERIMENTS,
         pool_metadata_path: str = None,
         feature_flag_index: str | None = INDEX_FEATURES,
     ):
