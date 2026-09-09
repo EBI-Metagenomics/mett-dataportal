@@ -40,7 +40,7 @@
     - [2. Strains (identity and contigs)](#2-strains-identity-and-contigs)
     - [3. Strain experiments (MIC, metabolism)](#3-strain-experiments-mic-metabolism)
     - [4. Features (annotation)](#4-features-annotation)
-    - [5. Gene experiments](#5-gene-experiments)
+    - [5. Feature experiments](#5-feature-experiments)
     - [6. Fitness correlations](#6-fitness-correlations)
     - [7. Network data](#7-network-data)
       - [Protein-protein interactions (PPI)](#protein-protein-interactions-ppi)
@@ -357,7 +357,7 @@ python manage.py migrate django_celery_beat
 
 ### Elasticsearch Indices
 
-`create_es_index` creates indexes at the document base names (`feature_index`, `gene_experiment_index`, …). Optional `--es-version` appends a suffix for one-off copies; the portal reads the unversioned names.
+`create_es_index` creates indexes at the document base names (`feature_index`, `feature_experiment_index`, …). Optional `--es-version` appends a suffix for one-off copies; the portal reads the unversioned names.
 
 | Document | Index |
 |---|---|
@@ -365,7 +365,7 @@ python manage.py migrate django_celery_beat
 | `StrainDocument` | `strain_index` |
 | `StrainExperimentDocument` | `strain_experiment_index` |
 | `FeatureDocument` | `feature_index` |
-| `GeneExperimentDocument` | `gene_experiment_index` |
+| `FeatureExperimentDocument` | `feature_experiment_index` |
 | `ProteinProteinDocument` | `ppi_index` |
 | `OperonDocument` | `operon_index` |
 | `OrthologDocument` | `ortholog_index` |
@@ -380,7 +380,7 @@ python manage.py create_es_index
 # One family
 python manage.py create_es_index --model FeatureDocument
 python manage.py create_es_index --model StrainExperimentDocument
-python manage.py create_es_index --model GeneExperimentDocument
+python manage.py create_es_index --model FeatureExperimentDocument
 
 # Recreate if the index already exists
 python manage.py create_es_index --if-exists recreate
@@ -394,7 +394,7 @@ The import examples below use these base names.
 
 ## Data Import
 
-Run from `dataportal_api`. Import in this order: species → strains → strain experiments → features → gene experiments → networks.
+Run from `dataportal_api`. Import in this order: species → strains → strain experiments → features → feature experiments → networks.
 
 ### 1. Species
 
@@ -497,15 +497,15 @@ python manage.py import_dbxref \
   --db-name STRING
 ```
 
-### 5. Gene experiments
+### 5. Feature experiments
 
-Writes fitness, proteomics, TPP, reactions, and mutant growth to `gene_experiment_index`, and sets `has_*` flags on `feature_index`.
+Writes fitness, proteomics, TPP, reactions, and mutant growth to `feature_experiment_index`, and sets `has_*` flags on `feature_index`.
 
-Fitness CSVs include intergenic (`IG-between-…`) rows. Those become interval IGs (`IG:A__B`) on `gene_experiment_index` and a slim searchable stub on the feature index. IG docs store `ig_locus_tag_a` / `ig_locus_tag_b` (CSV flank order when available) plus `flanking_locus_tags` so biologists can jump to the neighboring genes without parsing the compound id. Re-run `import_gene_experiments` to backfill those fields on existing IG assay docs.
+Fitness CSVs include intergenic (`IG-between-…`) rows. Those become interval IGs (`IG:A__B`) on `feature_experiment_index` and a slim searchable stub on the feature index. IG docs store `ig_locus_tag_a` / `ig_locus_tag_b` (CSV flank order when available) plus `flanking_locus_tags` so biologists can jump to the neighboring genes without parsing the compound id. Re-run `import_feature_experiments` to backfill those fields on existing IG assay docs.
 
 ```bash
-python manage.py import_gene_experiments \
-  --experiment-index gene_experiment_index \
+python manage.py import_feature_experiments \
+  --experiment-index feature_experiment_index \
   --feature-index feature_index \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/ \
@@ -521,17 +521,17 @@ One-off commands (same indexes):
 
 ```bash
 python manage.py import_fitness_lfc \
-  --index gene_experiment_index \
+  --index feature_experiment_index \
   --feature-index feature_index \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
 
 python manage.py import_mutant_growth \
-  --index gene_experiment_index \
+  --index feature_experiment_index \
   --feature-index feature_index \
   --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal
 
 python manage.py ingest_pooled_ttp \
-  --index gene_experiment_index \
+  --index feature_experiment_index \
   --feature-index feature_index \
   --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pooled_TPP.csv \
   --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv
@@ -539,7 +539,7 @@ python manage.py ingest_pooled_ttp \
 
 ### 6. Fitness correlations
 
-Own index (not `gene_experiment_index`).
+Own index (not `feature_experiment_index`).
 
 ```bash
 python manage.py create_es_index --model GeneFitnessCorrelationDocument

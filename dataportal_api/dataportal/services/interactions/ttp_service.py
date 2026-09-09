@@ -21,7 +21,7 @@ from dataportal.schema.interactions.ttp_schemas import (
     TTPPoolSummarySchema,
     TTPMetadataSchema,
 )
-from dataportal.utils.constants import INDEX_GENE_EXPERIMENTS
+from dataportal.utils.constants import INDEX_FEATURE_EXPERIMENTS
 from dataportal.utils.exceptions import ServiceError
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class TTPService:
     """Service for handling TTP interaction data operations."""
 
-    def __init__(self, index_name: str = INDEX_GENE_EXPERIMENTS):
+    def __init__(self, index_name: str = INDEX_FEATURE_EXPERIMENTS):
         self.index_name = index_name
         self._es_client = None
 

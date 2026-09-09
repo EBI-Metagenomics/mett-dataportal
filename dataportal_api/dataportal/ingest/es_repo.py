@@ -12,7 +12,7 @@ from dataportal.models import (
     FeatureDocument,
     SpeciesDocument,
     StrainExperimentDocument,
-    GeneExperimentDocument,
+    FeatureExperimentDocument,
     ProteinProteinDocument,
     OperonDocument,
     OrthologDocument,
@@ -89,14 +89,14 @@ class StrainExperimentIndexRepository:
 
 
 @dataclass
-class GeneExperimentIndexRepository:
-    """Read/write GeneExperimentDocument to a concrete experiment index."""
+class FeatureExperimentIndexRepository:
+    """Read/write FeatureExperimentDocument to a concrete experiment index."""
 
     concrete_index: str
 
-    def get(self, feature_id: str) -> Optional[GeneExperimentDocument]:
+    def get(self, feature_id: str) -> Optional[FeatureExperimentDocument]:
         try:
-            return GeneExperimentDocument.get(
+            return FeatureExperimentDocument.get(
                 id=feature_id,
                 index=self.concrete_index,
                 ignore=404,
@@ -104,7 +104,7 @@ class GeneExperimentIndexRepository:
         except NotFoundError:
             return None
 
-    def save(self, doc: GeneExperimentDocument) -> None:
+    def save(self, doc: FeatureExperimentDocument) -> None:
         doc.save(index=self.concrete_index)
 
 

@@ -7,8 +7,8 @@ from dataportal.ingest.feature.runner import (
     list_ftp_isolates,
     load_assembly_mapping,
 )
-from dataportal.ingest.gene_experiment.runner import ingest_gene_experiments
-from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
+from dataportal.ingest.feature_experiment.runner import ingest_feature_experiments
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 _EXPERIMENT_DIR_KEYS = (
     "fitness_dir",
@@ -25,7 +25,7 @@ _EXPERIMENT_DIR_KEYS = (
 class Command(BaseCommand):
     help = (
         "Import annotation into feature_index (GFF, essentiality, dbxref). "
-        "Gene-level assays belong in import_gene_experiments; those flags still work here."
+        "Feature-level assays belong in import_feature_experiments; those flags still work here."
     )
 
     def add_arguments(self, p):
@@ -36,8 +36,8 @@ class Command(BaseCommand):
         )
         p.add_argument(
             "--experiment-index",
-            default=INDEX_GENE_EXPERIMENTS,
-            help="Used only if gene-experiment directories are also passed",
+            default=INDEX_FEATURE_EXPERIMENTS,
+            help="Used only if feature-experiment directories are also passed",
         )
 
         p.add_argument("--ftp-server", default="ftp.ebi.ac.uk")
@@ -63,19 +63,23 @@ class Command(BaseCommand):
             help="Database name for dbxref entries (default: STRING)",
         )
 
-        p.add_argument("--fitness-dir", help="Deprecated here; prefer import_gene_experiments")
-        p.add_argument("--proteomics-dir", help="Deprecated here; prefer import_gene_experiments")
+        p.add_argument("--fitness-dir", help="Deprecated here; prefer import_feature_experiments")
         p.add_argument(
-            "--protein-compound-dir", help="Deprecated here; prefer import_gene_experiments"
+            "--proteomics-dir", help="Deprecated here; prefer import_feature_experiments"
         )
-        p.add_argument("--pooled-ttp-dir", help="Deprecated here; prefer import_gene_experiments")
+        p.add_argument(
+            "--protein-compound-dir", help="Deprecated here; prefer import_feature_experiments"
+        )
+        p.add_argument(
+            "--pooled-ttp-dir", help="Deprecated here; prefer import_feature_experiments"
+        )
         p.add_argument("--pool-metadata", help="Path to pool metadata CSV file")
         p.add_argument(
-            "--mutant-growth-dir", help="Deprecated here; prefer import_gene_experiments"
+            "--mutant-growth-dir", help="Deprecated here; prefer import_feature_experiments"
         )
-        p.add_argument("--gene-rx-dir", help="Deprecated here; prefer import_gene_experiments")
-        p.add_argument("--met-rx-dir", help="Deprecated here; prefer import_gene_experiments")
-        p.add_argument("--rx-gpr-dir", help="Deprecated here; prefer import_gene_experiments")
+        p.add_argument("--gene-rx-dir", help="Deprecated here; prefer import_feature_experiments")
+        p.add_argument("--met-rx-dir", help="Deprecated here; prefer import_feature_experiments")
+        p.add_argument("--rx-gpr-dir", help="Deprecated here; prefer import_feature_experiments")
 
     def handle(self, *args, **o):
         index_name = o["index"]
@@ -104,11 +108,11 @@ class Command(BaseCommand):
         if any(o.get(k) for k in _EXPERIMENT_DIR_KEYS):
             self.stdout.write(
                 self.style.WARNING(
-                    "Gene-experiment directories were passed to import_features. "
-                    "Prefer: python manage.py import_gene_experiments"
+                    "Feature-experiment directories were passed to import_features. "
+                    "Prefer: python manage.py import_feature_experiments"
                 )
             )
-            ingest_gene_experiments(
+            ingest_feature_experiments(
                 experiment_index=o["experiment_index"],
                 feature_index=index_name,
                 fitness_dir=o.get("fitness_dir"),

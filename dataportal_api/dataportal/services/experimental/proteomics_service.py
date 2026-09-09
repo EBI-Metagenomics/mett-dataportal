@@ -9,7 +9,7 @@ from dataportal.schema.experimental.proteomics_schemas import (
     ProteomicsDataSchema,
 )
 from dataportal.services.base_service import BaseService
-from dataportal.utils.constants import INDEX_GENE_EXPERIMENTS
+from dataportal.utils.constants import INDEX_FEATURE_EXPERIMENTS
 from dataportal.utils.exceptions import ServiceError, GeneNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class ProteomicsService(BaseService[ProteomicsWithGeneSchema, str]):
     """Service for retrieving proteomics evidence data."""
 
     def __init__(self):
-        super().__init__(INDEX_GENE_EXPERIMENTS)
+        super().__init__(INDEX_FEATURE_EXPERIMENTS)
 
     async def get_by_id(self, locus_tag: str) -> Optional[ProteomicsWithGeneSchema]:
         """

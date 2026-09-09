@@ -1,18 +1,18 @@
 """
 Management command to import gene fitness LFC (Log Fold Change) data.
 
-This command imports fitness data from CSV files into gene_experiment_index.
+This command imports fitness data from CSV files into feature_experiment_index.
 """
 
 from django.core.management.base import BaseCommand
 from pathlib import Path
-from dataportal.ingest.gene_experiment.fitness import Fitness
+from dataportal.ingest.feature_experiment.fitness import Fitness
 from dataportal.ingest.utils import list_csv_files
-from dataportal.utils.constants import INDEX_GENE_EXPERIMENTS
+from dataportal.utils.constants import INDEX_FEATURE_EXPERIMENTS
 
 
 class Command(BaseCommand):
-    help = "Import gene fitness LFC data into gene_experiment_index"
+    help = "Import gene fitness LFC data into feature_experiment_index"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -23,8 +23,8 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--index",
-            default=INDEX_GENE_EXPERIMENTS,
-            help="Elasticsearch gene experiment index (default: gene_experiment_index)",
+            default=INDEX_FEATURE_EXPERIMENTS,
+            help="Elasticsearch feature experiment index (default: feature_experiment_index)",
         )
         parser.add_argument(
             "--feature-index",

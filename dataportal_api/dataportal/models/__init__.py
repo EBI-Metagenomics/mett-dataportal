@@ -16,7 +16,7 @@ from .species import SpeciesDocument
 from .strains import StrainDocument
 from .features import FeatureDocument
 from .strain_experiments import StrainExperimentDocument
-from .gene_experiments import GeneExperimentDocument
+from .feature_experiments import FeatureExperimentDocument
 from .interactions import ProteinProteinDocument
 from .operons import OperonDocument
 from .orthologs import OrthologDocument
@@ -36,7 +36,7 @@ __all__ = [
     "StrainDocument",
     "FeatureDocument",
     "StrainExperimentDocument",
-    "GeneExperimentDocument",
+    "FeatureExperimentDocument",
     "ProteinProteinDocument",
     "OperonDocument",
     "OrthologDocument",

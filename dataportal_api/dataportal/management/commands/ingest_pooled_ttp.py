@@ -1,22 +1,22 @@
 import logging
 from django.core.management.base import BaseCommand
-from dataportal.ingest.gene_experiment.pooled_ttp import PooledTTP
-from dataportal.utils.constants import INDEX_FEATURES, INDEX_GENE_EXPERIMENTS
+from dataportal.ingest.feature_experiment.pooled_ttp import PooledTTP
+from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s:%(message)s")
 
 
 class Command(BaseCommand):
-    help = "Ingest pooled TTP data into gene_experiment_index."
+    help = "Ingest pooled TTP data into feature_experiment_index."
 
     def add_arguments(self, parser):
         parser.add_argument("--csv-file", required=True, help="Path to the pooled TTP CSV file")
         parser.add_argument("--pool-metadata", help="Path to the pool metadata CSV file (optional)")
         parser.add_argument(
             "--index",
-            default=INDEX_GENE_EXPERIMENTS,
-            help="Target Elasticsearch gene experiment index (default: gene_experiment_index)",
+            default=INDEX_FEATURE_EXPERIMENTS,
+            help="Target Elasticsearch feature experiment index (default: feature_experiment_index)",
         )
         parser.add_argument(
             "--feature-index",
