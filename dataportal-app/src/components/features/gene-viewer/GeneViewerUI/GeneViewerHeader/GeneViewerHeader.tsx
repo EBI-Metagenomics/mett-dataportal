@@ -11,10 +11,13 @@ interface GeneViewerHeaderProps {
 const GeneViewerHeader: React.FC<GeneViewerHeaderProps> = ({genomeMeta}) => {
     return (
         <div className={styles.geneViewerHeader}>
+            {/* Breadcrumb Section */}
             <Breadcrumb currentPage="genome-view" />
 
+            {/* Genome Metadata Section */}
             <section className={styles.infoSection}>
                 <div className={styles.infoGrid}>
+                    {/* Left pane: Genome metadata */}
                     <div className={styles.leftPane}>
                         {genomeMeta ? (
                             <div className="genome-meta-info">
@@ -39,6 +42,7 @@ const GeneViewerHeader: React.FC<GeneViewerHeaderProps> = ({genomeMeta}) => {
                         )}
                     </div>
 
+                    {/* Right pane: Legend */}
                     <div className={styles.rightPane}>
                         {genomeMeta && (
                             <GeneViewerLegends showEssentiality={genomeMeta.type_strain === true}/>

@@ -60,7 +60,7 @@ export class GeneService extends BaseService {
         locusTag?: string,
         seqId?: string | null,
         startPosition?: number | null,
-        endPosition?: number | null,
+        endPosition?: number | null
     ): Promise<PaginatedApiResponse<GeneMeta>> {
         try {
             // console.log('GeneService.fetchGeneSearchResultsAdvanced called with:', {
@@ -81,7 +81,7 @@ export class GeneService extends BaseService {
                 locusTag,
                 seqId,
                 startPosition,
-                endPosition,
+                endPosition
             );
 
             const response = await BaseService.getRawResponse<GeneMeta[]>("/genes/search/advanced", params);
@@ -132,9 +132,7 @@ export class GeneService extends BaseService {
     /**
      * Fetch a specific gene by its ID.
      */
-    static async fetchGeneByLocusTag(
-        locus_tag: string,
-    ): Promise<GeneMeta> {
+    static async fetchGeneByLocusTag(locus_tag: string): Promise<GeneMeta> {
         try {
             return await this.getWithRetry<GeneMeta>(`/genes/${locus_tag}`);
         } catch (error) {
@@ -321,7 +319,7 @@ export class GeneService extends BaseService {
         locusTag?: string,
         seqId?: string | null,
         startPosition?: number | null,
-        endPosition?: number | null,
+        endPosition?: number | null
     ): URLSearchParams {
         const params = this.buildParams({
             query,

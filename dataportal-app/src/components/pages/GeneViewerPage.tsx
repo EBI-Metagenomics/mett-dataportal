@@ -349,9 +349,7 @@ const GeneViewerPage: React.FC = () => {
 
                 <section className={styles.geneViewerMain}>
                     {/* Header with breadcrumbs and metadata */}
-                    <GeneViewerHeader
-                        genomeMeta={geneViewerData.genomeMeta}
-                    />
+                    <GeneViewerHeader genomeMeta={geneViewerData.genomeMeta}/>
 
                     {/* Controls */}
                     <GeneViewerControls

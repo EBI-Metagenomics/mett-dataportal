@@ -25,10 +25,7 @@ from dataportal.utils.constants import (
     GENOME_FIELD_ISOLATE_NAME,
     SCROLL_MAX_RESULTS,
 )
-from dataportal.utils.errors import (
-    raise_http_error,
-    raise_internal_server_error,
-)
+from dataportal.utils.errors import raise_http_error, raise_internal_server_error
 from dataportal.utils.exceptions import (
     ServiceError,
 )

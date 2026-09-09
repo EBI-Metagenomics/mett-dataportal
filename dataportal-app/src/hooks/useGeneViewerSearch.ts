@@ -71,10 +71,7 @@ export const useGeneViewerSearch = ({
                     undefined, // speciesFilter
                     convertFacetedFiltersToLegacy(facetedFilters), // Convert facet filters to legacy format
                     convertFacetOperatorsToLegacy(facetOperators), // Convert facet operators to legacy format
-                    undefined, // No locus_tag for gene viewer search
-                    undefined,
-                    undefined,
-                    undefined,
+                    undefined // No locus_tag for gene viewer search
                 );
                 // console.log('useGeneViewerSearch - Search results received:', {
                 //     query: geneSearchQuery,
