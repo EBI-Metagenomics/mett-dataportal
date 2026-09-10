@@ -9,7 +9,14 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
 from django import forms
-from dataportal.models import APIToken, Role, MettRelease, ReleaseIndex, ReleaseChange
+from dataportal.models import (
+    APIToken,
+    Role,
+    MettRelease,
+    ReleaseIndex,
+    ReleaseChange,
+    ReleaseManifest,
+)
 from dataportal.authentication import generate_jwt_token, RolePresets
 
 
@@ -472,6 +479,17 @@ class APITokenAdmin(admin.ModelAdmin):
         css = {"all": ("admin/css/forms.css",)}
 
 
+class ReleaseManifestInline(admin.StackedInline):
+    model = ReleaseManifest
+    extra = 0
+    max_num = 1
+    can_delete = False
+    fields = ("expected_counts", "inputs", "updated_at")
+    readonly_fields = ("updated_at",)
+    verbose_name = "Release manifest (expected counts)"
+    verbose_name_plural = "Release manifest (expected counts)"
+
+
 class ReleaseIndexInline(admin.TabularInline):
     model = ReleaseIndex
     extra = 0
@@ -493,12 +511,18 @@ class ReleaseChangeInline(admin.TabularInline):
         "operation",
         "status",
         "actor",
+        "domains",
+        "payload",
+        "before_counts",
+        "after_counts",
+        "validation_result",
         "started_at",
         "finished_at",
         "error_message",
     )
     can_delete = False
     max_num = 20
+    verbose_name_plural = "Release changes (audit log — do not edit)"
 
 
 @admin.register(MettRelease)
@@ -507,4 +531,4 @@ class MettReleaseAdmin(admin.ModelAdmin):
     list_filter = ["status"]
     search_fields = ["version", "notes"]
     readonly_fields = ["created_at", "updated_at", "promoted_at", "archived_at"]
-    inlines = [ReleaseIndexInline, ReleaseChangeInline]
+    inlines = [ReleaseManifestInline, ReleaseIndexInline, ReleaseChangeInline]

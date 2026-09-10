@@ -1,0 +1,2915 @@
+{
+  "info": {
+    "_postman_id": "085fb628-e560-4c11-bf72-cf9268dddcbb",
+    "name": "METT-ElasticSearch",
+    "description": "Smoke checks against a METT Elasticsearch **release set**.\n\nPhysical indexes are `mett-v1-g001-{family}`. Queries use the **release aliases** `mett-v1-{family}` (collection variables `index-*`). Those aliases, plus legacy `*_index` names, currently point at the same v1 generation.\n\nSet `mett-release` (default `v1`) to retarget all `index-*` variables. To hit a concrete generation instead, set an `index-*` variable to `mett-v1-g001-species` (etc.). To hit legacy names, set them to `species_index`.\n\nAuth: `mett-elasticsearch-username` / `mett-elasticsearch-pass`. Host: `{{mett-elasticsearch-current}}`.\n\nExpected totals: fill collection variables (`expected_species_total`, `expected_ppi_total`, …). Leave a count variable empty to assert ≥ 1 only.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19420352"
+  },
+  "item": [
+    {
+      "name": "Species Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-species}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-species}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-species}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-species` ({{index-species}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-species}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has acronym\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field acronym\").to.have.property(\"acronym\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has enabled\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field enabled\").to.have.property(\"enabled\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all species — totals",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Total species matches expected_species_total\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits.total.value || jsonData.hits.total;",
+                  "    const expected = parseInt(pm.collectionVariables.get(\"expected_species_total\") || \"21\", 10);",
+                  "    console.log(\"species total: \" + total);",
+                  "    pm.expect(total).to.eql(expected);",
+                  "});",
+                  "",
+                  "pm.test(\"Enabled species is 2\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const enabled = jsonData.aggregations.enabled_species.doc_count;",
+                  "    const expected = parseInt(pm.collectionVariables.get(\"expected_species_enabled\") || \"2\", 10);",
+                  "    console.log(\"species enabled: \" + enabled);",
+                  "    pm.expect(enabled).to.eql(expected);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"enabled_species\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": true\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_search"
+              ]
+            },
+            "description": "Expects expected_species_total species documents (default 21 for current v1 ingest) and 2 with enabled=true (BU, PV)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Strain Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-strains}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-strains}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-strains}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-strains` ({{index-strains}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-strains}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has isolate_name\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field isolate_name\").to.have.property(\"isolate_name\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has type_strain\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field type_strain\").to.have.property(\"type_strain\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has species_acronym\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field species_acronym\").to.have.property(\"species_acronym\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count strains per species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Strains per species aggregation present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"aggregations\");",
+                  "    pm.expect(jsonData.aggregations).to.have.property(\"by_species\");",
+                  "    const buckets = jsonData.aggregations[\"by_species\"].buckets || [];",
+                  "    pm.expect(buckets.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Strains per species includes expected species\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = (jsonData.aggregations && jsonData.aggregations[\"by_species\"] && jsonData.aggregations[\"by_species\"].buckets) || [];",
+                  "    const keys = buckets.map(b => String(b.key).toLowerCase());",
+                  "    const expected = [\"bu\", \"pv\"];",
+                  "    expected.forEach(function (k) {",
+                  "        pm.expect(keys, \"missing bucket \" + k).to.include(k);",
+                  "    });",
+                  "    buckets.forEach(function (b) {",
+                  "        console.log(\"Strains per species \" + b.key + \": \" + b.doc_count);",
+                  "        pm.expect(b.doc_count).to.be.above(0);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count type strains per species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Type strains per species aggregation present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"aggregations\");",
+                  "    pm.expect(jsonData.aggregations).to.have.property(\"by_species\");",
+                  "    const buckets = jsonData.aggregations[\"by_species\"].buckets || [];",
+                  "    pm.expect(buckets.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Type strains per species includes expected species\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = (jsonData.aggregations && jsonData.aggregations[\"by_species\"] && jsonData.aggregations[\"by_species\"].buckets) || [];",
+                  "    const keys = buckets.map(b => String(b.key).toLowerCase());",
+                  "    const expected = [\"bu\", \"pv\"];",
+                  "    expected.forEach(function (k) {",
+                  "        pm.expect(keys, \"missing bucket \" + k).to.include(k);",
+                  "    });",
+                  "    buckets.forEach(function (b) {",
+                  "        console.log(\"Type strains per species \" + b.key + \": \" + b.doc_count);",
+                  "        pm.expect(b.doc_count).to.be.above(0);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"query\": {\n    \"term\": {\n      \"type_strain\": true\n    }\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_search"
+              ]
+            },
+            "description": "Type strains (typically BU_ATCC8492 and PV_ATCC8482)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Strain Experiment Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-strain-experiments}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-strain-experiments}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-strain-experiments}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-strain-experiments` ({{index-strain-experiments}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-strain-experiments}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has isolate_name\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field isolate_name\").to.have.property(\"isolate_name\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has drug_mic\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field drug_mic\").to.have.property(\"drug_mic\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has drug_metabolism\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field drug_metabolism\").to.have.property(\"drug_metabolism\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strain-experiments}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count strains with MIC data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Strains with MIC data\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Strains with MIC data: \" + count);",
+                  "    pm.expect(count, \"Strains with MIC data\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"nested\": {\n      \"path\": \"drug_mic\",\n      \"query\": {\n        \"exists\": {\n          \"field\": \"drug_mic\"\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strain-experiments}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count strains with metabolism data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Strains with metabolism data\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Strains with metabolism data: \" + count);",
+                  "    pm.expect(count, \"Strains with metabolism data\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"nested\": {\n      \"path\": \"drug_metabolism\",\n      \"query\": {\n        \"exists\": {\n          \"field\": \"drug_metabolism\"\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strain-experiments}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Feature Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-features}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-features}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-features}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-features` ({{index-features}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-features}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has feature_type\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field feature_type\").to.have.property(\"feature_type\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has locus_tag\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field locus_tag\").to.have.property(\"locus_tag\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has has_essentiality\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field has_essentiality\").to.have.property(\"has_essentiality\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has dbxref\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field dbxref\").to.have.property(\"dbxref\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Total gene count\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Total gene count: \" + count);",
+                  "    (function () {",
+                  "        const raw = pm.collectionVariables.get(\"expected_genes_total\");",
+                  "        if (raw !== undefined && raw !== null && String(raw).trim() !== \"\") {",
+                  "            const expected = parseInt(raw, 10);",
+                  "            console.log(\"Total gene count expected: \" + expected);",
+                  "            pm.expect(count, \"Total gene count\").to.eql(expected);",
+                  "        } else {",
+                  "            pm.expect(count, \"Total gene count\").to.be.at.least(1);",
+                  "        }",
+                  "    })();",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"feature_type\": \"gene\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes per species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes per species aggregation present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"aggregations\");",
+                  "    pm.expect(jsonData.aggregations).to.have.property(\"by_species\");",
+                  "    const buckets = jsonData.aggregations[\"by_species\"].buckets || [];",
+                  "    pm.expect(buckets.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes per species includes expected species\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = (jsonData.aggregations && jsonData.aggregations[\"by_species\"] && jsonData.aggregations[\"by_species\"].buckets) || [];",
+                  "    const keys = buckets.map(b => String(b.key).toLowerCase());",
+                  "    const expected = [\"bu\", \"pv\"];",
+                  "    expected.forEach(function (k) {",
+                  "        pm.expect(keys, \"missing bucket \" + k).to.include(k);",
+                  "    });",
+                  "    buckets.forEach(function (b) {",
+                  "        console.log(\"Genes per species \" + b.key + \": \" + b.doc_count);",
+                  "        pm.expect(b.doc_count).to.be.above(0);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"query\": {\n    \"term\": {\n      \"feature_type\": \"gene\"\n    }\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes per strain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes exist for multiple strains\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = jsonData.aggregations.by_strain.buckets || [];",
+                  "    const strains = jsonData.aggregations.strain_count.value;",
+                  "    console.log(\"strains with genes: \" + strains + \"; buckets: \" + buckets.length);",
+                  "    buckets.slice(0, 10).forEach(function (b) {",
+                  "        console.log(\"genes in \" + b.key + \": \" + b.doc_count);",
+                  "    });",
+                  "    pm.expect(strains).to.be.at.least(2);",
+                  "    pm.expect(buckets.length).to.be.at.least(2);",
+                  "    buckets.forEach(function (b) { pm.expect(b.doc_count).to.be.above(0); });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"query\": {\n    \"term\": {\n      \"feature_type\": \"gene\"\n    }\n  },\n  \"aggs\": {\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 500\n      }\n    },\n    \"strain_count\": {\n      \"cardinality\": {\n        \"field\": \"isolate_name\"\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with essentiality data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with essentiality\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with essentiality: \" + count);",
+                  "    pm.expect(count, \"Genes with essentiality\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        },\n        {\n          \"term\": {\n            \"has_essentiality\": true\n          }\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with STRING identifier mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with STRING dbxref\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with STRING dbxref: \" + count);",
+                  "    pm.expect(count, \"Genes with STRING dbxref\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        },\n        {\n          \"nested\": {\n            \"path\": \"dbxref\",\n            \"query\": {\n              \"term\": {\n                \"dbxref.db\": \"STRING\"\n              }\n            }\n          }\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Feature Experiment Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-feature-experiments}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-feature-experiments}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-feature-experiments}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-feature-experiments` ({{index-feature-experiments}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-feature-experiments}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has has_fitness\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field has_fitness\").to.have.property(\"has_fitness\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has has_proteomics\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field has_proteomics\").to.have.property(\"has_proteomics\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has has_mutant_growth\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field has_mutant_growth\").to.have.property(\"has_mutant_growth\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has has_reactions\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field has_reactions\").to.have.property(\"has_reactions\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has protein_compound\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field protein_compound\").to.have.property(\"protein_compound\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-feature-experiments}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with fitness data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with fitness (Fitness_data)\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with fitness (Fitness_data): \" + count);",
+                  "    pm.expect(count, \"Genes with fitness (Fitness_data)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        },\n        {\n          \"term\": {\n            \"has_fitness\": true\n          }\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-feature-experiments}}",
+                "_search"
+              ]
+            },
+            "description": "has_fitness from SP1 Fitness_data ingest."
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with proteomics evidence",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with proteomics_evidence\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with proteomics_evidence: \" + count);",
+                  "    pm.expect(count, \"Genes with proteomics_evidence\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        },\n        {\n          \"term\": {\n            \"has_proteomics\": true\n          }\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-feature-experiments}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with Pvul_caecal (mutant growth) data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with Pvul_caecal / mutant growth\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with Pvul_caecal / mutant growth: \" + count);",
+                  "    pm.expect(count, \"Genes with Pvul_caecal / mutant growth\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"has_mutant_growth\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-feature-experiments}}",
+                "_search"
+              ]
+            },
+            "description": "has_mutant_growth from SP3 Pvul_caecal ingest."
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with pooled TPP data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with pooled_ttp / protein_compound\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with pooled_ttp / protein_compound: \" + count);",
+                  "    pm.expect(count, \"Genes with pooled_ttp / protein_compound\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"nested\": {\n      \"path\": \"protein_compound\",\n      \"query\": {\n        \"exists\": {\n          \"field\": \"protein_compound\"\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-feature-experiments}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with gene_rx data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with gene_rx (reactions[])\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with gene_rx (reactions[]): \" + count);",
+                  "    pm.expect(count, \"Genes with gene_rx (reactions[])\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"exists\": {\n      \"field\": \"reactions\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-feature-experiments}}",
+                "_search"
+              ]
+            },
+            "description": "Gene→Reaction ingest writes the reactions keyword array."
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with met_rx data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with met_rx (reaction_details.metabolites)\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with met_rx (reaction_details.metabolites): \" + count);",
+                  "    pm.expect(count, \"Genes with met_rx (reaction_details.metabolites)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"nested\": {\n      \"path\": \"reaction_details\",\n      \"query\": {\n        \"exists\": {\n          \"field\": \"reaction_details.metabolites\"\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-feature-experiments}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count genes with gpr data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Genes with gpr (reaction_details.gpr)\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Genes with gpr (reaction_details.gpr): \" + count);",
+                  "    pm.expect(count, \"Genes with gpr (reaction_details.gpr)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"nested\": {\n      \"path\": \"reaction_details\",\n      \"query\": {\n        \"exists\": {\n          \"field\": \"reaction_details.gpr\"\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-feature-experiments}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PPI Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-ppi}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-ppi}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-ppi}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-ppi` ({{index-ppi}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-ppi}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has pair_id\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field pair_id\").to.have.property(\"pair_id\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has species_acronym\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field species_acronym\").to.have.property(\"species_acronym\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has protein_a\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field protein_a\").to.have.property(\"protein_a\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-ppi}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count PPI documents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"PPI total count\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"PPI total count: \" + count);",
+                  "    (function () {",
+                  "        const raw = pm.collectionVariables.get(\"expected_ppi_total\");",
+                  "        if (raw !== undefined && raw !== null && String(raw).trim() !== \"\") {",
+                  "            const expected = parseInt(raw, 10);",
+                  "            console.log(\"PPI total count expected: \" + expected);",
+                  "            pm.expect(count, \"PPI total count\").to.eql(expected);",
+                  "        } else {",
+                  "            pm.expect(count, \"PPI total count\").to.be.at.least(1);",
+                  "        }",
+                  "    })();",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-ppi}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count PPI by species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"PPI per species aggregation present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"aggregations\");",
+                  "    pm.expect(jsonData.aggregations).to.have.property(\"by_species\");",
+                  "    const buckets = jsonData.aggregations[\"by_species\"].buckets || [];",
+                  "    pm.expect(buckets.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"PPI per species includes expected species\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = (jsonData.aggregations && jsonData.aggregations[\"by_species\"] && jsonData.aggregations[\"by_species\"].buckets) || [];",
+                  "    const keys = buckets.map(b => String(b.key).toLowerCase());",
+                  "    const expected = [\"bu\", \"pv\"];",
+                  "    expected.forEach(function (k) {",
+                  "        pm.expect(keys, \"missing bucket \" + k).to.include(k);",
+                  "    });",
+                  "    buckets.forEach(function (b) {",
+                  "        console.log(\"PPI per species \" + b.key + \": \" + b.doc_count);",
+                  "        pm.expect(b.doc_count).to.be.above(0);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-ppi}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Fitness Correlation Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-fitness-correlations}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-fitness-correlations}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-fitness-correlations}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-fitness-correlations` ({{index-fitness-correlations}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-fitness-correlations}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has pair_id\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field pair_id\").to.have.property(\"pair_id\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has species_acronym\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field species_acronym\").to.have.property(\"species_acronym\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has correlation_value\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field correlation_value\").to.have.property(\"correlation_value\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-fitness-correlations}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count fitness correlation documents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Fitness correlation total count\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Fitness correlation total count: \" + count);",
+                  "    (function () {",
+                  "        const raw = pm.collectionVariables.get(\"expected_fitness_correlations_total\");",
+                  "        if (raw !== undefined && raw !== null && String(raw).trim() !== \"\") {",
+                  "            const expected = parseInt(raw, 10);",
+                  "            console.log(\"Fitness correlation total count expected: \" + expected);",
+                  "            pm.expect(count, \"Fitness correlation total count\").to.eql(expected);",
+                  "        } else {",
+                  "            pm.expect(count, \"Fitness correlation total count\").to.be.at.least(1);",
+                  "        }",
+                  "    })();",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-fitness-correlations}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count fitness correlations by species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Fitness correlations per species aggregation present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"aggregations\");",
+                  "    pm.expect(jsonData.aggregations).to.have.property(\"by_species\");",
+                  "    const buckets = jsonData.aggregations[\"by_species\"].buckets || [];",
+                  "    pm.expect(buckets.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Fitness correlations per species includes expected species\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = (jsonData.aggregations && jsonData.aggregations[\"by_species\"] && jsonData.aggregations[\"by_species\"].buckets) || [];",
+                  "    const keys = buckets.map(b => String(b.key).toLowerCase());",
+                  "    const expected = [\"bu\", \"pv\"];",
+                  "    expected.forEach(function (k) {",
+                  "        pm.expect(keys, \"missing bucket \" + k).to.include(k);",
+                  "    });",
+                  "    buckets.forEach(function (b) {",
+                  "        console.log(\"Fitness correlations per species \" + b.key + \": \" + b.doc_count);",
+                  "        pm.expect(b.doc_count).to.be.above(0);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-fitness-correlations}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Operon Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-operons}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-operons}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-operons}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-operons` ({{index-operons}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-operons}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has operon_id\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field operon_id\").to.have.property(\"operon_id\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has species_acronym\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field species_acronym\").to.have.property(\"species_acronym\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has genes\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field genes\").to.have.property(\"genes\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-operons}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count operon documents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Operon total count\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Operon total count: \" + count);",
+                  "    (function () {",
+                  "        const raw = pm.collectionVariables.get(\"expected_operons_total\");",
+                  "        if (raw !== undefined && raw !== null && String(raw).trim() !== \"\") {",
+                  "            const expected = parseInt(raw, 10);",
+                  "            console.log(\"Operon total count expected: \" + expected);",
+                  "            pm.expect(count, \"Operon total count\").to.eql(expected);",
+                  "        } else {",
+                  "            pm.expect(count, \"Operon total count\").to.be.at.least(1);",
+                  "        }",
+                  "    })();",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-operons}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count operons by species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Operons per species aggregation present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"aggregations\");",
+                  "    pm.expect(jsonData.aggregations).to.have.property(\"by_species\");",
+                  "    const buckets = jsonData.aggregations[\"by_species\"].buckets || [];",
+                  "    pm.expect(buckets.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Operons per species includes expected species\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = (jsonData.aggregations && jsonData.aggregations[\"by_species\"] && jsonData.aggregations[\"by_species\"].buckets) || [];",
+                  "    const keys = buckets.map(b => String(b.key).toLowerCase());",
+                  "    const expected = [\"bu\", \"pv\"];",
+                  "    expected.forEach(function (k) {",
+                  "        pm.expect(keys, \"missing bucket \" + k).to.include(k);",
+                  "    });",
+                  "    buckets.forEach(function (b) {",
+                  "        console.log(\"Operons per species \" + b.key + \": \" + b.doc_count);",
+                  "        pm.expect(b.doc_count).to.be.above(0);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-operons}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orthologs Index",
+      "item": [
+        {
+          "name": "Resolve release alias `{{index-orthologs}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves to at least one concrete index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length, \"concrete indexes\").to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(\"concrete: \" + idx.name + \" aliases: \" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Logs concrete generation and aliases\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices[0]).to.have.property(\"name\");",
+                  "    const aliases = indices[0].aliases || [];",
+                  "    console.log(\"resolved \" + (jsonData.aliases && jsonData.aliases[0] && jsonData.aliases[0].name || indices[0].name) + \" -> \" + indices[0].name);",
+                  "    pm.expect(aliases.length, \"concrete index should have aliases (mett-v1-* and/or *_index)\").to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/{{index-orthologs}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "{{index-orthologs}}"
+              ]
+            },
+            "description": "Confirms collection variable `index-orthologs` ({{index-orthologs}}) resolves in Elasticsearch. On the current v1 cluster this is the release alias `mett-v1-…` pointing at `mett-v1-g001-…` (legacy `*_index` aliases are also on that concrete index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch `{{index-orthologs}}` mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains mappings for the index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(Object.keys(jsonData).length).to.be.at.least(1);",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    pm.expect(jsonData[name]).to.have.property(\"mappings\");",
+                  "    pm.expect(jsonData[name].mappings).to.have.property(\"properties\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has pair_id\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field pair_id\").to.have.property(\"pair_id\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has species_a_acronym\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field species_a_acronym\").to.have.property(\"species_a_acronym\");",
+                  "});",
+                  "",
+                  "pm.test(\"Mapping has species_b_acronym\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const name = Object.keys(jsonData)[0];",
+                  "    const props = jsonData[name].mappings.properties;",
+                  "    pm.expect(props, \"missing field species_b_acronym\").to.have.property(\"species_b_acronym\");",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_mapping",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-orthologs}}",
+                "_mapping"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count ortholog documents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Ortholog total count\", function () {",
+                  "    const count = (function () { const jsonData = pm.response.json();",
+                  "    const total = jsonData.hits && jsonData.hits.total;",
+                  "    return (typeof total === \"object\" ? total.value : total) || 0; })();",
+                  "    console.log(\"Ortholog total count: \" + count);",
+                  "    (function () {",
+                  "        const raw = pm.collectionVariables.get(\"expected_orthologs_total\");",
+                  "        if (raw !== undefined && raw !== null && String(raw).trim() !== \"\") {",
+                  "            const expected = parseInt(raw, 10);",
+                  "            console.log(\"Ortholog total count expected: \" + expected);",
+                  "            pm.expect(count, \"Ortholog total count\").to.eql(expected);",
+                  "        } else {",
+                  "            pm.expect(count, \"Ortholog total count\").to.be.at.least(1);",
+                  "        }",
+                  "    })();",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-orthologs}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Count orthologs by species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Orthologs by species_a aggregation present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"aggregations\");",
+                  "    pm.expect(jsonData.aggregations).to.have.property(\"by_species_a\");",
+                  "    const buckets = jsonData.aggregations[\"by_species_a\"].buckets || [];",
+                  "    pm.expect(buckets.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Orthologs by species_a includes expected species\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = (jsonData.aggregations && jsonData.aggregations[\"by_species_a\"] && jsonData.aggregations[\"by_species_a\"].buckets) || [];",
+                  "    const keys = buckets.map(b => String(b.key).toLowerCase());",
+                  "    const expected = [\"bu\", \"pv\"];",
+                  "    expected.forEach(function (k) {",
+                  "        pm.expect(keys, \"missing bucket \" + k).to.include(k);",
+                  "    });",
+                  "    buckets.forEach(function (b) {",
+                  "        console.log(\"Orthologs by species_a \" + b.key + \": \" + b.doc_count);",
+                  "        pm.expect(b.doc_count).to.be.above(0);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Orthologs by species_b aggregation present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"aggregations\");",
+                  "    pm.expect(jsonData.aggregations).to.have.property(\"by_species_b\");",
+                  "    const buckets = jsonData.aggregations[\"by_species_b\"].buckets || [];",
+                  "    pm.expect(buckets.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Orthologs by species_b includes expected species\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const buckets = (jsonData.aggregations && jsonData.aggregations[\"by_species_b\"] && jsonData.aggregations[\"by_species_b\"].buckets) || [];",
+                  "    const keys = buckets.map(b => String(b.key).toLowerCase());",
+                  "    const expected = [\"bu\", \"pv\"];",
+                  "    expected.forEach(function (k) {",
+                  "        pm.expect(keys, \"missing bucket \" + k).to.include(k);",
+                  "    });",
+                  "    buckets.forEach(function (b) {",
+                  "        console.log(\"Orthologs by species_b \" + b.key + \": \" + b.doc_count);",
+                  "        pm.expect(b.doc_count).to.be.above(0);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"aggs\": {\n    \"by_species_a\": {\n      \"terms\": {\n        \"field\": \"species_a_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_species_b\": {\n      \"terms\": {\n        \"field\": \"species_b_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-orthologs}}",
+                "_search"
+              ]
+            },
+            "description": "Ortholog pairs are cross-species; counts are split by gene A and gene B acronyms."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{mett-elasticsearch-username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{mett-elasticsearch-pass}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "mett-elasticsearch-username",
+      "value": "{{mett-elasticsearch-username}}"
+    },
+    {
+      "key": "mett-elasticsearch-pass",
+      "value": "{{mett-elasticsearch-pass}}"
+    },
+    {
+      "key": "mett-release",
+      "value": "v1",
+      "description": "Scientist-visible METT version token (v1, v2, …). Used by index-* defaults."
+    },
+    {
+      "key": "index-species",
+      "value": "mett-{{mett-release}}-species"
+    },
+    {
+      "key": "index-strains",
+      "value": "mett-{{mett-release}}-strains"
+    },
+    {
+      "key": "index-strain-experiments",
+      "value": "mett-{{mett-release}}-strain-experiments"
+    },
+    {
+      "key": "index-features",
+      "value": "mett-{{mett-release}}-features"
+    },
+    {
+      "key": "index-feature-experiments",
+      "value": "mett-{{mett-release}}-feature-experiments"
+    },
+    {
+      "key": "index-ppi",
+      "value": "mett-{{mett-release}}-ppi"
+    },
+    {
+      "key": "index-operons",
+      "value": "mett-{{mett-release}}-operons"
+    },
+    {
+      "key": "index-orthologs",
+      "value": "mett-{{mett-release}}-orthologs"
+    },
+    {
+      "key": "index-fitness-correlations",
+      "value": "mett-{{mett-release}}-fitness-correlations"
+    },
+    {
+      "key": "expected_species_total",
+      "value": "21"
+    },
+    {
+      "key": "expected_species_enabled",
+      "value": "2"
+    },
+    {
+      "key": "expected_strains_total",
+      "value": "107"
+    },
+    {
+      "key": "expected_genes_total",
+      "value": "449621"
+    },
+    {
+      "key": "expected_ppi_total",
+      "value": "100000"
+    },
+    {
+      "key": "expected_fitness_correlations_total",
+      "value": "2019253"
+    },
+    {
+      "key": "expected_operons_total",
+      "value": "1453"
+    },
+    {
+      "key": "expected_orthologs_total",
+      "value": "17438725"
+    }
+  ]
+}

@@ -120,6 +120,9 @@ def record_change(
     actor: str = "",
     status: str = ReleaseChange.Status.SUCCEEDED,
     error_message: str = "",
+    before_counts: Optional[dict] = None,
+    after_counts: Optional[dict] = None,
+    validation_result: Optional[dict] = None,
 ) -> ReleaseChange:
     now = timezone.now() if status != ReleaseChange.Status.STARTED else None
     return ReleaseChange.objects.create(
@@ -130,6 +133,9 @@ def record_change(
         actor=actor,
         status=status,
         error_message=error_message,
+        before_counts=before_counts,
+        after_counts=after_counts,
+        validation_result=validation_result,
         finished_at=now,
     )
 
@@ -257,3 +263,110 @@ def current_aliases_exist() -> bool:
         return index_or_alias_exists(current_alias_name("species"))
     except Exception:
         return False
+
+
+def _physical_mismatch(recorded: str, concrete: list[str]) -> bool:
+    if not recorded or not concrete:
+        return bool(concrete) != bool(recorded)
+    recorded_names = {part.strip() for part in recorded.split(",") if part.strip()}
+    return recorded_names != set(concrete)
+
+
+def validate_release(
+    *,
+    release: str,
+    families: Optional[Iterable[str]] = None,
+    actor: str = "",
+    dry_run: bool = False,
+) -> dict:
+    """Compare ES counts on `mett-vN-*` aliases against the release manifest.
+
+    Writes a VALIDATE ReleaseChange. Sets status READY on pass or FAILED on
+    mismatch when the release is still building/ready/failed. Does not move
+    `mett-current-*`.
+    """
+    from dataportal.elasticsearch.validation import (
+        collect_release_counts,
+        compare_expected_counts,
+        list_skipped_checks,
+        manifest_family_key,
+    )
+
+    rel_token = normalize_release(release)
+    if rel_token == "current":
+        raise ValueError("Pass a version like v1, not 'current'")
+
+    try:
+        obj = MettRelease.objects.get(version=rel_token)
+    except MettRelease.DoesNotExist as exc:
+        raise ValueError(
+            f"Release {rel_token} not found. Run create_es_index --release {rel_token} first."
+        ) from exc
+
+    try:
+        manifest = obj.manifest
+    except ReleaseManifest.DoesNotExist as exc:
+        raise ValueError(
+            "No release manifest. In Django admin, open the release and paste expected_counts."
+        ) from exc
+
+    expected = manifest.expected_counts or {}
+    if not expected:
+        raise ValueError(
+            "Manifest expected_counts is empty. Paste inventory JSON in Django admin first."
+        )
+
+    fams = [coerce_family(f) for f in (families or INDEX_FAMILIES)]
+    actual = collect_release_counts(rel_token, families=fams, expected=expected)
+    mismatches = compare_expected_counts(expected, actual, families=fams)
+    skipped = list_skipped_checks(expected, families=fams)
+
+    indexes = {row.family: row for row in obj.indexes.all()}
+    for family in fams:
+        key = manifest_family_key(family)
+        fam_actual = actual.get(key) or {}
+        concrete = fam_actual.get("_physical") or []
+        recorded = indexes.get(family)
+        if recorded and _physical_mismatch(recorded.physical_index, list(concrete)):
+            mismatches.append(
+                {
+                    "path": f"{key}._physical",
+                    "expected": recorded.physical_index,
+                    "actual": concrete,
+                    "reason": "release alias does not point at the physical index recorded in Postgres",
+                }
+            )
+
+    ok = not mismatches
+    result = {
+        "ok": ok,
+        "release": rel_token,
+        "mismatches": mismatches,
+        "skipped": skipped,
+    }
+
+    if not dry_run:
+        if obj.status in (
+            MettRelease.Status.BUILDING,
+            MettRelease.Status.READY,
+            MettRelease.Status.FAILED,
+        ):
+            obj.status = MettRelease.Status.READY if ok else MettRelease.Status.FAILED
+            obj.save(update_fields=["status", "updated_at"])
+        record_change(
+            obj,
+            "VALIDATE",
+            domains=fams,
+            payload={"families": fams},
+            actor=actor,
+            status=ReleaseChange.Status.SUCCEEDED if ok else ReleaseChange.Status.FAILED,
+            error_message="" if ok else f"{len(mismatches)} count mismatch(es)",
+            before_counts=expected,
+            after_counts=actual,
+            validation_result=result,
+        )
+
+    result["actual"] = actual
+    result["expected"] = expected
+    result["status"] = obj.status
+    return result

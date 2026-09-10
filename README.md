@@ -389,6 +389,91 @@ Optional `--family features` (repeatable) limits the set. `--if-exists` is `skip
 
 Release metadata (status, alias→physical map, expected counts, change history) is stored in PostgreSQL (`mett_releases`, `mett_release_indexes`, `mett_release_manifests`, `mett_release_changes`). Put expected inventory counts on the manifest, not in Nextflow.
 
+In Django admin: **METT releases → v1 → Release manifest → `expected_counts`**. Paste JSON (no comments). Omit a key, or set it to `null`, to skip that check later. `by_species` keys are lowercase acronyms (`bu`, `pv`). After ingest, compare live aliases to that JSON:
+
+```bash
+python manage.py validate_release --release v1
+python manage.py validate_release --release v1 --family species --family strains
+python manage.py validate_release --release v1 --dry-run
+```
+
+That reads `mett-v1-*` (not `mett-current-*`), writes a **VALIDATE** row on the release (`before_counts` = expected, `after_counts` = actual), and sets status to `ready` on pass or `failed` on mismatch. Feature-experiment `with_*` checks count **documents** (genes/features), matching the Postman ES collection. Promotion of `mett-current-*` is a later command.
+
+```json
+{
+  "species": {
+    "total": 21,
+    "enabled": 2
+  },
+  "strains": {
+    "total": 107,
+    "by_species": {
+      "bu": 59,
+      "pv": 48
+    },
+    "type_strains": {
+      "bu": 1,
+      "pv": 1
+    }
+  },
+  "strain_experiments": {
+    "total": 100,
+    "with_mic": 96,
+    "with_metabolism": 43
+  },
+  "features": {
+    "total": 449621,
+    "genes": 449621,
+    "by_species": {
+      "bu": 235547,
+      "pv": 214074
+    },
+    "with_essentiality": 8024,
+    "with_string": 7387
+  },
+  "feature_experiments": {
+    "total": 1254670,
+    "with_fitness": 7151,
+    "with_proteomics": 245855,
+    "with_mutant_growth": 127,
+    "with_pooled_ttp": 3958,
+    "with_gene_rx": 1259,
+    "with_met_rx": 1213,
+    "with_gpr": 1213
+  },
+  "ppi": {
+    "total": 100000,
+    "by_species": {
+      "bu": 50000,
+      "pv": 50000
+    }
+  },
+  "fitness_correlations": {
+    "total": 2019253,
+    "by_species": {
+      "bu": 1004653,
+      "pv": 1014600
+    }
+  },
+  "operons": {
+    "total": 1453,
+    "by_species": {
+      "bu": 1453,
+      "pv": null
+    }
+  },
+  "orthologs": {
+    "total": 17438725,
+    "by_species": {
+      "bu": null,
+      "pv": null
+    }
+  }
+}
+```
+
+`total` values above match the Kibana doc counts on `mett-v1-g001-*`. Under `feature_experiments`, every `with_*` key is a **feature/gene document** count on `feature_experiment_index` (not distinct strains). Replace `null`s after you have those assay breakdowns. Optional sibling field `inputs` is also JSON, e.g. `{"species_csv": "../data-generators/data/species.csv", "ftp_root": "/pub/databases/mett/annotations/v1_2024-04-15"}`.
+
 The UI sends `X-METT-Release` (or `?release=v1`). Default is `current`, which follows the promoted release when one exists, otherwise the legacy names.
 
 Legacy document / index names (still valid for ingest `--index` flags):
@@ -519,7 +604,7 @@ STRING dbxref only:
 
 ```bash
 python manage.py import_dbxref \
-  --index feature_index \
+  --index mett-v1-features \
   --tsv ../data-generators/stringdb-mapper/output/bu_to_string_raw.tsv \
   --db-name STRING
 ```
@@ -528,7 +613,7 @@ Directory of TSV mappings:
 
 ```bash
 python manage.py import_dbxref \
-  --index feature_index \
+  --index mett-v1-features \
   --tsv-dir ../data-generators/stringdb-mapper/output/raw \
   --db-name STRING
 ```
@@ -541,8 +626,8 @@ Fitness CSVs include intergenic (`IG-between-…`) rows. Those become interval I
 
 ```bash
 python manage.py import_feature_experiments \
-  --experiment-index feature_experiment_index \
-  --feature-index feature_index \
+  --experiment-index mett-v1-feature-experiments \
+  --feature-index mett-v1-features \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data \
   --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/ \
   --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal \
@@ -557,18 +642,18 @@ One-off commands (same indexes):
 
 ```bash
 python manage.py import_fitness_lfc \
-  --index feature_experiment_index \
-  --feature-index feature_index \
+  --index mett-v1-feature-experiments \
+  --feature-index fmett-v1-features \
   --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
 
 python manage.py import_mutant_growth \
-  --index feature_experiment_index \
-  --feature-index feature_index \
+  --index mett-v1-feature-experiments \
+  --feature-index mett-v1-features \
   --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal
 
 python manage.py ingest_pooled_ttp \
   --index feature_experiment_index \
-  --feature-index feature_index \
+  --feature-index mett-v1-features \
   --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pooled_TPP.csv \
   --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv
 ```
@@ -581,7 +666,7 @@ Own index (not `feature_experiment_index`).
 python manage.py create_es_index --model GeneFitnessCorrelationDocument
 
 python manage.py import_fitness_correlations \
-  --index fitness_correlation_index \
+  --index mett-v1-fitness-correlations \
   --correlation-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_corr_data \
   --preload-gff \
   --ftp-server ftp.ebi.ac.uk \
@@ -602,13 +687,13 @@ python manage.py create_es_index --model OrthologDocument
 
 ```bash
 python manage.py import_ppi_with_genes \
-  --index ppi_index \
+  --index mett-v1-ppi \
   --pattern "*.tsv" \
   --csv-folder ../data-generators/Sub-Projects-Data/PPI-v1 \
   --string-mapping-dir ../data-generators/stringdb-mapper/output/uniprot_mapped
 
 python manage.py import_ppi_with_genes \
-  --index ppi_index-1.0 \
+  --index mett-v1-ppi \
   --pattern "*.tsv" \
   --csv-folder ../data-generators/Sub-Projects-Data/PPI-v1 \
   --string-mapping-dir ../data-generators/stringdb-mapper/output/uniprot_mapped \
@@ -619,7 +704,7 @@ python manage.py import_ppi_with_genes \
 
 ```bash
 python manage.py import_operons \
-  --index operon_index \
+  --index mett-v1-operons \
   --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/ \
   --preload-gff \
   --ftp-server ftp.ebi.ac.uk \
@@ -630,7 +715,7 @@ python manage.py import_operons \
 
 ```bash
 python manage.py import_orthologs_with_genes \
-  --index ortholog_index \
+  --index mett-v1-orthologs \
   --ortholog-directory ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
