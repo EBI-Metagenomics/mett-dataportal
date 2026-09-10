@@ -230,7 +230,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             if not enabled:
                 return []
 
-            search = Search(index=INDEX_STRAINS)
+            search = Search(index=self.index_name)
             search = search.query(
                 "wildcard", **{GENOME_FIELD_ISOLATE_NAME: f"*{params.query.lower()}*"}
             )
@@ -302,7 +302,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     async def _fetch_and_validate_strains(self, filter_criteria, schema, error_message):
         """Fetch and validate strains from Elasticsearch and compute additional fields."""
         try:
-            search = Search(index=INDEX_STRAINS)
+            search = Search(index=self.index_name)
 
             for field, value in filter_criteria.items():
                 if isinstance(value, list):
@@ -364,7 +364,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
     ):
         """Fetch paginated strains from Elasticsearch with optimized searching."""
         try:
-            search = Search(index=INDEX_STRAINS)
+            search = Search(index=self.index_name)
 
             # Dynamically apply filters
             for field, value in filter_criteria.items():
@@ -510,7 +510,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             # Execute initial search
             response = await sync_to_async(
                 lambda: es_client.search(
-                    index=INDEX_STRAINS, body=search_body, scroll=SCROLL_TIMEOUT
+                    index=self.index_name, body=search_body, scroll=SCROLL_TIMEOUT
                 )
             )()
 

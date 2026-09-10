@@ -7,6 +7,7 @@ from dataportal.middleware.middleware_classes import (
     RemoveCOOPHeaderMiddleware,
     LoggingMiddleware,
     SwaggerHeaderFooterMiddleware,
+    MettReleaseMiddleware,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "RemoveCOOPHeaderMiddleware",
     "LoggingMiddleware",
     "SwaggerHeaderFooterMiddleware",
+    "MettReleaseMiddleware",
 ]

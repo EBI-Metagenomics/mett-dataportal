@@ -1,7 +1,15 @@
 import logging
 from datetime import datetime
+
+from django.http import JsonResponse
 from django.middleware.common import MiddlewareMixin
 
+from dataportal.elasticsearch.names import RELEASE_HEADER, RELEASE_QUERY_PARAM, IndexNameError
+from dataportal.elasticsearch.resolver import (
+    assert_readable_release,
+    reset_request_release,
+    set_request_release,
+)
 from dataportal.middleware.swagger_templates import (
     HEADER_HTML,
     FOOTER_HTML,
@@ -10,6 +18,41 @@ from dataportal.middleware.swagger_templates import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class MettReleaseMiddleware:
+    """Bind X-METT-Release / ?release= to the request so ES reads hit the selected set."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        raw = request.headers.get(RELEASE_HEADER) or request.GET.get(RELEASE_QUERY_PARAM)
+        path = request.path.rstrip("/")
+        skip_validate = path.endswith("/releases") or path.endswith("/api/releases")
+        token = None
+        try:
+            if raw and not skip_validate:
+                rel = assert_readable_release(raw)
+                token = set_request_release(rel)
+            else:
+                token = set_request_release(None)
+            return self.get_response(request)
+        except IndexNameError as exc:
+            if request.path.startswith("/api/"):
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": str(exc),
+                        "error_code": "INVALID_RELEASE",
+                    },
+                    status=400,
+                )
+            token = set_request_release(None)
+            return self.get_response(request)
+        finally:
+            if token is not None:
+                reset_request_release(token)
 
 
 class LocusStringMappingMiddleware(MiddlewareMixin):

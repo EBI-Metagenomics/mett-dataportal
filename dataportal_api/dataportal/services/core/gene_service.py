@@ -70,7 +70,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         self._locus_string_cache: Dict[str, Tuple[Dict[str, str], Dict[str, str]]] = {}
 
     def _feature_search(self) -> Search:
-        return Search(index=INDEX_FEATURES)
+        return Search(index=self.index_name)
 
     def _create_search(self) -> Search:
         return self._feature_search()
@@ -919,6 +919,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 has_amr_info=has_amr_info,
                 limit=limit,
                 operators=operators,
+                index=self.index_name,
             )
 
             # logger.info(

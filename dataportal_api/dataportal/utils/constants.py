@@ -49,6 +49,7 @@ INDEX_ORTHOLOGS = "ortholog_index"
 INDEX_OPERONS = "operon_index"
 INDEX_STRAIN_EXPERIMENTS = "strain_experiment_index"
 INDEX_FEATURE_EXPERIMENTS = "feature_experiment_index"
+INDEX_FITNESS_CORRELATION = "fitness_correlation_index"
 
 # ============================================================================
 # 3. FIELD NAMES - CORE ENTITIES

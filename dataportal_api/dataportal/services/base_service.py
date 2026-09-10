@@ -15,8 +15,15 @@ U = TypeVar("U")
 class BaseService(ABC, Generic[T, U]):
 
     def __init__(self, index_name: str):
-        self.index_name = index_name
+        self._family = index_name
         self.logger = logging.getLogger(self.__class__.__name__)
+
+    @property
+    def index_name(self) -> str:
+        """Release-aware read alias (or legacy name until current is promoted)."""
+        from dataportal.elasticsearch.resolver import resolve_read_index
+
+        return resolve_read_index(self._family)
 
     @abstractmethod
     async def get_by_id(self, id: str) -> Optional[T]:

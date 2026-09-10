@@ -1,0 +1,17 @@
+.selector {
+    margin-left: auto;
+    min-width: 12rem;
+    color: #fff;
+}
+
+.selector :global(.vf-form__label) {
+    color: inherit;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.selector :global(.vf-form__select) {
+    width: 100%;
+    background: #fff;
+    color: #1a1a1a;
+}

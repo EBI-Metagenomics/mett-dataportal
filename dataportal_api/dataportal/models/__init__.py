@@ -23,6 +23,7 @@ from .orthologs import OrthologDocument
 from .fitness_correlation import GeneFitnessCorrelationDocument
 from .role import Role
 from .api_token import APIToken
+from .releases import MettRelease, ReleaseIndex, ReleaseManifest, ReleaseChange
 
 __all__ = [
     # Base utilities
@@ -44,4 +45,8 @@ __all__ = [
     # Database models
     "Role",
     "APIToken",
+    "MettRelease",
+    "ReleaseIndex",
+    "ReleaseManifest",
+    "ReleaseChange",
 ]

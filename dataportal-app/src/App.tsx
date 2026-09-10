@@ -9,6 +9,7 @@ import Footer from "@components/organisms/Footer/Footer";
 import NaturalQuerySearchPage from "@components/pages/NaturalQuerySearchPage";
 import {useFeatureFlags} from "./hooks/useFeatureFlags";
 import {AuthProvider} from "./hooks/useAuth";
+import {ReleaseProvider} from "./hooks/useMettRelease";
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -70,6 +71,7 @@ const App: React.FC = () => {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
+            <ReleaseProvider>
             <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
                 <Router basename={routerBasename}>
                     <UrlCleanupHandler/>
@@ -126,6 +128,7 @@ const App: React.FC = () => {
                     <Footer/>
                 </Router>
             </div>
+            </ReleaseProvider>
             </AuthProvider>
         </QueryClientProvider>
     );

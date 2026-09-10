@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, List, Optional, Type
 
 from elasticsearch_dsl import Document, Index, connections
+
+from dataportal.elasticsearch.names import (
+    INDEX_FAMILIES,
+    coerce_family,
+    physical_index_name,
+)
 
 DEFAULT_VERSION_FMT = "%Y.%m.%d"
 
@@ -26,8 +31,8 @@ class IndexNameBuilder:
         self.version_fmt = version_fmt
 
     def build(self, version: Optional[str] = None) -> str:
-        if version is None:
-            version = datetime.utcnow().strftime(self.version_fmt)
+        if not version:
+            return self.base
         return f"{self.base}-{version}"
 
 
@@ -77,11 +82,17 @@ class ProjectIndexManager:
 
     def __init__(self, models: List[Type[Document]]) -> None:
         self._managers: Dict[str, ModelIndexManager] = {}
+        self._by_family: Dict[str, ModelIndexManager] = {}
         for m in models:
             base = m.Index.name  # treat this as the base name
             settings = getattr(m.Index, "settings", None)
             cfg = IndexConfig(model=m, base_name=base, settings=settings)
-            self._managers[base] = ModelIndexManager(cfg)
+            mgr = ModelIndexManager(cfg)
+            self._managers[base] = mgr
+            try:
+                self._by_family[coerce_family(base)] = mgr
+            except Exception:
+                pass
 
     @property
     def managers(self) -> Dict[str, ModelIndexManager]:
@@ -109,4 +120,34 @@ class ProjectIndexManager:
             else:
                 mgr.create(concrete)
             results[base] = concrete
+        return results
+
+    def manager_for_family(self, family: str) -> ModelIndexManager:
+        fam = coerce_family(family)
+        if fam not in self._by_family:
+            raise KeyError(f"No document manager registered for family '{fam}'")
+        return self._by_family[fam]
+
+    def create_physical_set(
+        self,
+        release: str,
+        generation: int,
+        if_exists: str = "skip",
+        families: Optional[List[str]] = None,
+    ) -> Dict[str, str]:
+        """Create mett-vN-gNNN-{family} indexes. Does not bind aliases or current."""
+        wanted = [coerce_family(f) for f in (families or list(INDEX_FAMILIES))]
+        results: Dict[str, str] = {}
+        for fam in wanted:
+            mgr = self.manager_for_family(fam)
+            concrete = physical_index_name(release, generation, fam)
+            if mgr.exists(concrete):
+                if if_exists == "recreate":
+                    mgr.delete(concrete)
+                    mgr.create(concrete)
+                elif if_exists == "fail":
+                    raise RuntimeError(f"Index already exists: {concrete}")
+            else:
+                mgr.create(concrete)
+            results[fam] = concrete
         return results

@@ -357,7 +357,41 @@ python manage.py migrate django_celery_beat
 
 ### Elasticsearch Indices
 
-`create_es_index` creates indexes at the document base names (`feature_index`, `feature_experiment_index`, …). Optional `--es-version` appends a suffix for one-off copies; the portal reads the unversioned names.
+`create_es_index` can still create the unversioned legacy names (`feature_index`, …). The portal reads those until a METT release is **promoted**. After cutover, a scientist-visible version is a **complete set of aliases**:
+
+| Layer | Example | Role |
+|---|---|---|
+| Physical generation | `mett-v1-g001-species` | Ingest writes here |
+| Release alias | `mett-v1-species` | App when the UI selects v1 |
+| Current alias | `mett-current-species` | Default portal (after promote) |
+
+Family tokens: `species`, `strains`, `strain-experiments`, `features`, `feature-experiments`, `ppi`, `operons`, `orthologs`, `fitness-correlations`.
+
+First v1 can alias the live `*_index` names (no re-ingest):
+
+```bash
+cd dataportal_api
+python manage.py migrate
+python manage.py create_es_index --release v1 --adopt-legacy
+```
+
+That creates `mett-v1-species` pointing at the **concrete** index behind `species_index` (and the other eight families). If `species_index` is already an alias, adopt-legacy follows it; Elasticsearch cannot hang an alias off another alias. It does **not** switch `mett-current-*`. The portal keeps reading `species_index` until a later `promote_release` step. Scientists can already pick **v1** in the header (same data).
+
+To build a new physical generation instead of adopting:
+
+```bash
+python manage.py create_es_index --release v1 --generation 1
+```
+
+This creates `mett-v1-g001-*` and binds `mett-v1-*` aliases only.
+
+Optional `--family features` (repeatable) limits the set. `--if-exists` is `skip` (default), `recreate`, or `fail`.
+
+Release metadata (status, alias→physical map, expected counts, change history) is stored in PostgreSQL (`mett_releases`, `mett_release_indexes`, `mett_release_manifests`, `mett_release_changes`). Put expected inventory counts on the manifest, not in Nextflow.
+
+The UI sends `X-METT-Release` (or `?release=v1`). Default is `current`, which follows the promoted release when one exists, otherwise the legacy names.
+
+Legacy document / index names (still valid for ingest `--index` flags):
 
 | Document | Index |
 |---|---|
@@ -374,7 +408,7 @@ python manage.py migrate django_celery_beat
 ```bash
 cd dataportal_api
 
-# All families at their base names
+# Legacy unversioned names (pre-release)
 python manage.py create_es_index
 
 # One family
@@ -388,7 +422,7 @@ python manage.py create_es_index --if-exists recreate
 
 `--if-exists` is `skip` (default), `recreate`, or `fail`.
 
-The import examples below use these base names.
+The import examples below still use these legacy base names. Point them at `mett-v1-g001-features` (etc.) when ingesting into a physical generation.
 
 ---
 
@@ -400,7 +434,7 @@ Run from `dataportal_api`. Import in this order: species → strains → strain 
 
 ```bash
 python manage.py import_species \
-  --index species_index \
+  --index mett-v1-species \
   --csv ../data-generators/data/species.csv
 ```
 
@@ -410,7 +444,7 @@ Writes `strain_index` only. MIC and metabolism go in the next step.
 
 ```bash
 python manage.py import_strains \
-  --es-index strain_index \
+  --es-index mett-v1-strains \
   --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
@@ -425,8 +459,8 @@ Writes `strain_experiment_index`. `--es-index` is the strain index used to resol
 
 ```bash
 python manage.py import_strain_experiments \
-  --es-index strain_index \
-  --strain-experiment-index strain_experiment_index \
+  --es-index mett-v1-strains \
+  --strain-experiment-index mett-v1-strain-experiments \
   --include-mic \
   --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
   --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv \
@@ -439,7 +473,8 @@ MIC only:
 
 ```bash
 python manage.py import_strain_experiments \
-  --es-index strain_index \
+  --es-index mett-v1-strains \
+  --strain-experiment-index mett-v1-strain-experiments \
   --include-mic \
   --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
   --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv
@@ -449,7 +484,8 @@ Metabolism only:
 
 ```bash
 python manage.py import_strain_experiments \
-  --es-index strain_index \
+  --es-index mett-v1-strains \
+  --strain-experiment-index mett-v1-strain-experiments \
   --include-metabolism \
   --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_BU_v0.csv \
   --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
@@ -461,7 +497,7 @@ Writes GFF genes, essentiality, and STRING dbxref to `feature_index`. Do not pas
 
 ```bash
 python manage.py import_features \
-  --index feature_index \
+  --index mett-v1-features \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
   --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
@@ -474,7 +510,7 @@ Essentiality only (GFF already loaded):
 
 ```bash
 python manage.py import_features \
-  --index feature_index \
+  --index mett-v1-features \
   --skip-core-genes \
   --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/
 ```

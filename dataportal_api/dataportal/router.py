@@ -12,6 +12,7 @@ from dataportal.api.core import (
     species_router,
     metadata_router,
     health_router,
+    release_router,
 )
 
 # Experimental data API endpoints
@@ -76,6 +77,7 @@ URL_PREFIX_SPECIES = "/species"
 URL_PREFIX_GENOMES = "/genomes"
 URL_PREFIX_GENES = "/genes"
 URL_PREFIX_METADATA = "/metadata"
+URL_PREFIX_RELEASES = "/releases"
 URL_PREFIX_DRUGS = "/drugs"
 URL_PREFIX_PPI = "/ppi"
 URL_PREFIX_TTP = "/ttp"
@@ -235,6 +237,7 @@ api.add_router(URL_PREFIX_SPECIES, species_router)
 api.add_router(URL_PREFIX_GENOMES, genome_router)
 api.add_router(URL_PREFIX_GENES, gene_router)
 api.add_router(URL_PREFIX_METADATA, metadata_router)
+api.add_router(URL_PREFIX_RELEASES, release_router)
 api.add_router(URL_PREFIX_DRUGS, drug_router)
 register_string_network_routes(ppi_router)
 api.add_router(URL_PREFIX_PPI, ppi_router)

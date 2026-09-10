@@ -125,6 +125,7 @@ MIDDLEWARE = [
 
 MIDDLEWARE += [
     "dataportal.middleware.LocusStringMappingMiddleware",
+    "dataportal.middleware.MettReleaseMiddleware",
     "dataportal.middleware.SwaggerHeaderFooterMiddleware",
     "dataportal.middleware.RemoveCOOPHeaderMiddleware",
 ]

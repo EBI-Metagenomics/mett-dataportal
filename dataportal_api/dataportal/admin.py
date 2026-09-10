@@ -9,7 +9,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
 from django import forms
-from dataportal.models import APIToken, Role
+from dataportal.models import APIToken, Role, MettRelease, ReleaseIndex, ReleaseChange
 from dataportal.authentication import generate_jwt_token, RolePresets
 
 
@@ -470,3 +470,41 @@ class APITokenAdmin(admin.ModelAdmin):
 
     class Media:
         css = {"all": ("admin/css/forms.css",)}
+
+
+class ReleaseIndexInline(admin.TabularInline):
+    model = ReleaseIndex
+    extra = 0
+    readonly_fields = (
+        "family",
+        "alias",
+        "physical_index",
+        "generation",
+        "adopted_legacy",
+        "updated_at",
+    )
+    can_delete = False
+
+
+class ReleaseChangeInline(admin.TabularInline):
+    model = ReleaseChange
+    extra = 0
+    readonly_fields = (
+        "operation",
+        "status",
+        "actor",
+        "started_at",
+        "finished_at",
+        "error_message",
+    )
+    can_delete = False
+    max_num = 20
+
+
+@admin.register(MettRelease)
+class MettReleaseAdmin(admin.ModelAdmin):
+    list_display = ["version", "status", "created_at", "promoted_at", "archived_at"]
+    list_filter = ["status"]
+    search_fields = ["version", "notes"]
+    readonly_fields = ["created_at", "updated_at", "promoted_at", "archived_at"]
+    inlines = [ReleaseIndexInline, ReleaseChangeInline]

@@ -31,8 +31,14 @@ class TTPService:
     """Service for handling TTP interaction data operations."""
 
     def __init__(self, index_name: str = INDEX_FEATURE_EXPERIMENTS):
-        self.index_name = index_name
+        self._family = index_name
         self._es_client = None
+
+    @property
+    def index_name(self) -> str:
+        from dataportal.elasticsearch.resolver import resolve_read_index
+
+        return resolve_read_index(self._family)
 
     @property
     def es_client(self):

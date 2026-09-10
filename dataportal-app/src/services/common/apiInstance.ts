@@ -25,6 +25,13 @@ export class ApiClient {
                     if (token) {
                         config.headers.Authorization = `Bearer ${token}`;
                     }
+                    const release =
+                        typeof window !== "undefined"
+                            ? window.localStorage.getItem("mett_release")
+                            : null;
+                    if (release) {
+                        config.headers["X-METT-Release"] = release;
+                    }
                     return config;
                 },
                 (error) => Promise.reject(error)
