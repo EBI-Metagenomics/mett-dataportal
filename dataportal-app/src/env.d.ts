@@ -10,6 +10,8 @@ interface ImportMetaEnv {
   readonly VITE_STRING_DB_WEB_BASE?: string
   /** Enable Network View tab in Gene Viewer (default: false). Set via Kubernetes. */
   readonly VITE_NETWORK_VIEW_ENABLED?: string
+  /** Default METT release token (current | v1) when localStorage is empty. */
+  readonly VITE_METT_DEFAULT_RELEASE?: string
 }
 
 interface ImportMeta {

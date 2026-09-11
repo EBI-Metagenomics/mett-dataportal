@@ -20,11 +20,7 @@ def test_coerce_family_tokens_and_legacy_names():
 def test_resolve_read_index_current_vs_version(monkeypatch):
     from dataportal.elasticsearch import resolver
 
-    monkeypatch.setattr(resolver, "_has_current_release", lambda: False)
     monkeypatch.setattr(resolver, "selected_release", lambda: "current")
-    assert resolver.resolve_read_index("species") == "species_index"
-
-    monkeypatch.setattr(resolver, "_has_current_release", lambda: True)
     assert resolver.resolve_read_index("species") == "mett-current-species"
     assert resolver.resolve_read_index("feature_index", release="v1") == "mett-v1-features"
 
@@ -83,3 +79,29 @@ def test_concrete_names_from_resolve_payload_follows_alias():
         "aliases": [],
     }
     assert concrete_index_names_from_resolve(concrete_payload) == ["feature_index"]
+
+    alias_only_payload = {
+        "indices": [],
+        "aliases": [
+            {
+                "name": "mett-v1-species",
+                "indices": ["mett-v1-g001-species"],
+            }
+        ],
+    }
+    assert concrete_index_names_from_resolve(alias_only_payload) == ["mett-v1-g001-species"]
+
+
+def test_alias_retarget_actions_add_remove_and_noop():
+    from dataportal.elasticsearch.release_ops import alias_retarget_actions
+
+    alias = "mett-current-species"
+    physical = "mett-v1-g001-species"
+    assert alias_retarget_actions([], [physical], alias) == [
+        {"add": {"index": physical, "alias": alias}}
+    ]
+    assert alias_retarget_actions([physical], [physical], alias) == []
+    assert alias_retarget_actions(["old-idx"], [physical], alias) == [
+        {"remove": {"index": "old-idx", "alias": alias}},
+        {"add": {"index": physical, "alias": alias}},
+    ]

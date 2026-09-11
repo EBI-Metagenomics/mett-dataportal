@@ -5,6 +5,17 @@ from dataportal.elasticsearch.validation import (
 )
 
 
+def test_compare_skips_all_null_species_breakdown():
+    expected = {
+        "orthologs": {
+            "total": 4375866,
+            "by_species": {"bu": None, "pv": None},
+        }
+    }
+    actual = {"orthologs": {"total": 4375866}}
+    assert compare_expected_counts(expected, actual) == []
+
+
 def test_compare_skips_null_and_matches_ints():
     expected = {
         "species": {"total": 21, "enabled": 2},

@@ -52,6 +52,15 @@ def _skip_value(value: Any) -> bool:
     return value is None
 
 
+def _all_values_skipped(value: Any) -> bool:
+    """True for null, or a dict whose remaining values are all null (nested)."""
+    if _skip_value(value):
+        return True
+    if isinstance(value, dict):
+        return all(_all_values_skipped(v) for v in value.values())
+    return False
+
+
 def _nested_exists(path: str, field: Optional[str] = None) -> dict:
     return {
         "nested": {
@@ -270,27 +279,53 @@ def parse_family_counts(family: str, resp: dict) -> dict[str, Any]:
     return counts
 
 
+def _split_physical(value: Optional[str]) -> list[str]:
+    if not value:
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def _unique_search_targets(alias: str, concrete: list[str]) -> list[str]:
+    targets: list[str] = []
+    for name in [alias, *concrete]:
+        if name and name not in targets:
+            targets.append(name)
+    return targets
+
+
 def collect_family_counts(
     alias: str,
     family: str,
     *,
     expected_family: Optional[dict] = None,
+    physical: Optional[str] = None,
 ) -> dict[str, Any]:
+    """Count through the release alias. Physical names are metadata / fallback only."""
     from dataportal.elasticsearch.release_ops import resolve_concrete_indices
 
     concrete = resolve_concrete_indices(alias)
-    meta = {"_alias": alias, "_physical": concrete}
     if not concrete:
-        return {**meta, "error": f"alias '{alias}' does not resolve to a concrete index"}
-    try:
-        resp = _search(alias, aggs=_aggs_for_family(family, expected_family))
-    except NotFoundError:
-        return {**meta, "error": f"index '{alias}' not found"}
-    except Exception as exc:
-        return {**meta, "error": str(exc)}
-    counts = parse_family_counts(family, resp)
-    counts.update(meta)
-    return counts
+        concrete = _split_physical(physical)
+    meta = {"_alias": alias, "_physical": concrete}
+    aggs = _aggs_for_family(family, expected_family)
+    last_error: Optional[str] = None
+    for target in _unique_search_targets(alias, concrete):
+        try:
+            resp = _search(target, aggs=aggs)
+        except NotFoundError as exc:
+            last_error = str(exc)
+            continue
+        except Exception as exc:
+            last_error = str(exc)
+            continue
+        counts = parse_family_counts(family, resp)
+        counts.update(meta)
+        counts["_searched"] = target
+        return counts
+    return {
+        **meta,
+        "error": last_error or f"alias '{alias}' does not resolve to a concrete index",
+    }
 
 
 def collect_release_counts(
@@ -298,9 +333,11 @@ def collect_release_counts(
     *,
     families: Optional[Iterable[str]] = None,
     expected: Optional[dict] = None,
+    physical_by_family: Optional[dict[str, str]] = None,
 ) -> dict[str, Any]:
     fams = [coerce_family(f) for f in (families or INDEX_FAMILIES)]
     expected = expected or {}
+    physical_by_family = physical_by_family or {}
     actual: dict[str, Any] = {}
     for family in fams:
         key = manifest_family_key(family)
@@ -310,7 +347,12 @@ def collect_release_counts(
         if not isinstance(expected_family, dict):
             expected_family = None
         alias = release_alias_name(release, family)
-        actual[key] = collect_family_counts(alias, family, expected_family=expected_family)
+        actual[key] = collect_family_counts(
+            alias,
+            family,
+            expected_family=expected_family,
+            physical=physical_by_family.get(family) or physical_by_family.get(key),
+        )
     return actual
 
 
@@ -427,6 +469,8 @@ def _compare_family(
             continue
         actual_val = fam_actual.get(check)
         if isinstance(exp_val, dict):
+            if _all_values_skipped(exp_val):
+                continue
             if not isinstance(actual_val, dict):
                 mismatches.append(
                     {

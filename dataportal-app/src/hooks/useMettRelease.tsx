@@ -47,7 +47,11 @@ export const ReleaseProvider: React.FC<{children: React.ReactNode}> = ({children
         if (typeof window === 'undefined') {
             return 'current';
         }
-        return localStorage.getItem(METT_RELEASE_STORAGE_KEY) || 'current';
+        return (
+            localStorage.getItem(METT_RELEASE_STORAGE_KEY) ||
+            import.meta.env.VITE_METT_DEFAULT_RELEASE ||
+            'current'
+        );
     });
 
     const {data, isLoading} = useQuery({

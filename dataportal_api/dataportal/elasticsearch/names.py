@@ -141,11 +141,21 @@ def legacy_index_name(family: str) -> str:
 
 
 def concrete_index_names_from_resolve(payload: dict) -> list[str]:
-    """Parse Elasticsearch `_resolve/index` into concrete index names (never aliases)."""
+    """Parse Elasticsearch `_resolve/index` into concrete index names (never aliases).
+
+    Resolving an alias often returns the target only under `aliases[].indices`,
+    with `indices` empty. Follow both.
+    """
     names: list[str] = []
     for idx in (payload or {}).get("indices") or []:
         if isinstance(idx, dict) and idx.get("name"):
             names.append(idx["name"])
+    for alias in (payload or {}).get("aliases") or []:
+        if not isinstance(alias, dict):
+            continue
+        for target in alias.get("indices") or []:
+            if target:
+                names.append(target)
     seen: list[str] = []
     for name in names:
         if name and name not in seen:

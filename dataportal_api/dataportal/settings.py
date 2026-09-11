@@ -16,12 +16,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "replace-with-the-secret-key")
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
 
-# Environment variables for Elasticsearch
+# Elasticsearch connection
 ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
 ES_USER = os.getenv("ES_USER")
 ES_PASSWORD = os.getenv("ES_PASSWORD")
 ES_TIMEOUT = int(os.getenv("ES_TIMEOUT", 30))
 ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
+
+# METT release set (portal reads). Ingest still uses legacy *_index names until --release ingest.
+# METT_RELEASE: default version when X-METT-Release is absent (`current` or `v1`).
+METT_RELEASE = os.getenv("METT_RELEASE", "current")
 
 # Feature flags
 ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import os
 from contextvars import ContextVar, Token
 from typing import Optional
@@ -12,12 +11,10 @@ from dataportal.elasticsearch.names import (
     IndexNameError,
     coerce_family,
     current_alias_name,
-    legacy_index_name,
     normalize_release,
     release_alias_name,
 )
 
-logger = logging.getLogger(__name__)
 
 _request_release: ContextVar[Optional[str]] = ContextVar("mett_request_release", default=None)
 
@@ -42,15 +39,6 @@ def selected_release() -> str:
     if bound:
         return bound
     return default_release()
-
-
-def _has_current_release() -> bool:
-    try:
-        from dataportal.models.releases import MettRelease
-
-        return MettRelease.objects.filter(status=MettRelease.Status.CURRENT).exists()
-    except Exception:
-        return False
 
 
 def readable_release_versions() -> list[str]:
@@ -86,15 +74,13 @@ def assert_readable_release(release: str) -> str:
 
 
 def resolve_read_index(family: str, release: Optional[str] = None) -> str:
-    """Alias (or legacy name) the portal should query for this family.
+    """Alias the portal should query for this family.
 
-    Until a release is promoted (`status=current`), `current` falls back to
-    the pre-release `*_index` names so the app keeps working after adopt-legacy.
+    `current` → `mett-current-{family}` (set by promote_release).
+    `v1` → `mett-v1-{family}`.
     """
     fam = coerce_family(family)
     rel = normalize_release(release) if release is not None else selected_release()
     if rel == CURRENT_TOKEN:
-        if _has_current_release():
-            return current_alias_name(fam)
-        return legacy_index_name(fam)
+        return current_alias_name(fam)
     return release_alias_name(rel, fam)

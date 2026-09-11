@@ -40,6 +40,9 @@ SCROLL_TIMEOUT = "5m"
 # ============================================================================
 # 2. ELASTICSEARCH INDEXES
 # ============================================================================
+# Legacy / ingest default names. Portal reads go through
+# dataportal.elasticsearch.resolver.resolve_read_index (mett-current-* or mett-vN-*).
+# Do not point API services at these strings except as family tokens to the resolver.
 
 INDEX_FEATURES = "feature_index"
 INDEX_STRAINS = "strain_index"

@@ -333,8 +333,28 @@ The project uses [Pydantic](https://pydantic-docs.helpmanual.io/) for configurat
 
 ### Environment Files
 
-- **Development**: `config/local.env`
-- **Production**: Environment variables should be set via Kubernetes secrets or Docker environment
+- **Development**: `config/local.env` or `dataportal_api/set-env-dev.sh`
+- **Production**: Kubernetes ConfigMaps / secrets (`mett-app-config-*`)
+
+### METT release (API / Celery)
+
+Portal Elasticsearch **reads** (not ingest) honour `METT_RELEASE`. Restart the API after changing it.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `METT_RELEASE` | `current` | Default version when `X-METT-Release` / `?release=` is absent. Use `current` or `v1`. |
+
+`current` always reads `mett-current-*` (pointed at the promoted physical set). The UI picker still sends `v1` to hit `mett-v1-*`. Ingest commands still default to legacy `*_index` names until ingest `--release` exists.
+
+```bash
+export METT_RELEASE=current
+```
+
+### Frontend
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `VITE_METT_DEFAULT_RELEASE` | `current` | Initial header selection when localStorage is empty. |
 
 ---
 
@@ -357,7 +377,7 @@ python manage.py migrate django_celery_beat
 
 ### Elasticsearch Indices
 
-`create_es_index` can still create the unversioned legacy names (`feature_index`, …). The portal reads those until a METT release is **promoted**. After cutover, a scientist-visible version is a **complete set of aliases**:
+`create_es_index` can still create the unversioned legacy names (`feature_index`, …). After **promote**, portal default reads use `mett-current-*`. A scientist-visible version is a **complete set of aliases**:
 
 | Layer | Example | Role |
 |---|---|---|
@@ -375,7 +395,7 @@ python manage.py migrate
 python manage.py create_es_index --release v1 --adopt-legacy
 ```
 
-That creates `mett-v1-species` pointing at the **concrete** index behind `species_index` (and the other eight families). If `species_index` is already an alias, adopt-legacy follows it; Elasticsearch cannot hang an alias off another alias. It does **not** switch `mett-current-*`. The portal keeps reading `species_index` until a later `promote_release` step. Scientists can already pick **v1** in the header (same data).
+That creates `mett-v1-species` pointing at the **concrete** index behind `species_index` (and the other eight families). If `species_index` is already an alias, adopt-legacy follows it; Elasticsearch cannot hang an alias off another alias. It does **not** switch `mett-current-*`. The portal default reads `mett-current-*` only after `promote_release`. Scientists can pick **v1** in the header as soon as the release aliases exist.
 
 To build a new physical generation instead of adopting:
 
@@ -397,7 +417,16 @@ python manage.py validate_release --release v1 --family species --family strains
 python manage.py validate_release --release v1 --dry-run
 ```
 
-That reads `mett-v1-*` (not `mett-current-*`), writes a **VALIDATE** row on the release (`before_counts` = expected, `after_counts` = actual), and sets status to `ready` on pass or `failed` on mismatch. Feature-experiment `with_*` checks count **documents** (genes/features), matching the Postman ES collection. Promotion of `mett-current-*` is a later command.
+That reads the **release aliases** `mett-v1-*` (which point at physical `mett-v1-g001-*`). It does not switch `mett-current-*`. It writes a **VALIDATE** row (`before_counts` = expected, `after_counts` = actual) and sets status to `ready` on pass or `failed` on mismatch. Feature-experiment `with_*` checks count **documents** (genes/features), matching the Postman ES collection.
+
+When validation passes, promote. **This is the only step that moves `mett-current-*`.** The portal default (`current`) then reads those aliases. A previous current release is archived (not deleted).
+
+```bash
+python manage.py promote_release --release v1 --dry-run
+python manage.py promote_release --release v1
+```
+
+Requires status `ready` (or already `current` / `archived`) and a successful VALIDATE row. `--force` skips those checks. Idempotent if `mett-current-*` already points at this version.
 
 ```json
 {
@@ -422,7 +451,7 @@ That reads `mett-v1-*` (not `mett-current-*`), writes a **VALIDATE** row on the 
     "with_metabolism": 43
   },
   "features": {
-    "total": 449621,
+    "total": null,
     "genes": 449621,
     "by_species": {
       "bu": 235547,
@@ -432,7 +461,7 @@ That reads `mett-v1-*` (not `mett-current-*`), writes a **VALIDATE** row on the 
     "with_string": 7387
   },
   "feature_experiments": {
-    "total": 1254670,
+    "total": null,
     "with_fitness": 7151,
     "with_proteomics": 245855,
     "with_mutant_growth": 127,
@@ -474,9 +503,9 @@ That reads `mett-v1-*` (not `mett-current-*`), writes a **VALIDATE** row on the 
 
 `total` values above match the Kibana doc counts on `mett-v1-g001-*`. Under `feature_experiments`, every `with_*` key is a **feature/gene document** count on `feature_experiment_index` (not distinct strains). Replace `null`s after you have those assay breakdowns. Optional sibling field `inputs` is also JSON, e.g. `{"species_csv": "../data-generators/data/species.csv", "ftp_root": "/pub/databases/mett/annotations/v1_2024-04-15"}`.
 
-The UI sends `X-METT-Release` (or `?release=v1`). Default is `current`, which follows the promoted release when one exists, otherwise the legacy names.
+The UI sends `X-METT-Release` (or `?release=v1`). Default is `current`, which reads `mett-current-*`.
 
-Legacy document / index names (still valid for ingest `--index` flags):
+Document / ingest default names (`--index` flags; not used by the portal):
 
 | Document | Index |
 |---|---|

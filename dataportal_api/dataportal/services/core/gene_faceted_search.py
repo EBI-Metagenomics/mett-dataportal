@@ -66,6 +66,10 @@ class GeneFacetedSearch(FacetedSearch):
         self.operators = operators or {}
         if index:
             self.index = index
+        else:
+            from dataportal.elasticsearch.resolver import resolve_read_index
+
+            self.index = resolve_read_index("features")
 
         self.facets = {
             GENE_FIELD_ESSENTIALITY: TermsFacet(field=GENE_FIELD_ESSENTIALITY, size=limit),

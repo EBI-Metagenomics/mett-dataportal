@@ -25,7 +25,11 @@ def _load() -> None:
         if _loaded:
             return
         try:
-            search = SpeciesDocument.search().filter("term", enabled=True)
+            from dataportal.elasticsearch.resolver import resolve_read_index
+
+            search = SpeciesDocument.search(index=resolve_read_index("species")).filter(
+                "term", enabled=True
+            )
             search = search.source(["acronym"])
             response = search.execute()
             _enabled_acronyms = {hit.acronym for hit in response if getattr(hit, "acronym", None)}

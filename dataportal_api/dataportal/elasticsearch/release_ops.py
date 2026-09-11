@@ -1,6 +1,7 @@
-"""Create physical release indexes, bind version aliases, adopt legacy indexes.
+"""Create physical release indexes, bind version aliases, validate, and promote.
 
-Does not switch `mett-current-*`. Promotion is a later command.
+`create_es_index` / `validate_release` do not switch `mett-current-*`.
+Only `promote_release` retargets those aliases.
 """
 
 from __future__ import annotations
@@ -40,26 +41,69 @@ def _es():
 def _as_dict(resp) -> dict:
     if resp is None:
         return {}
-    if hasattr(resp, "body"):
-        return resp.body
     if isinstance(resp, dict):
         return resp
-    return dict(resp)
+    body = getattr(resp, "body", None)
+    if isinstance(body, dict):
+        return body
+    try:
+        return dict(resp)
+    except Exception:
+        return {}
+
+
+def _is_not_found(exc: Exception) -> bool:
+    if isinstance(exc, NotFoundError):
+        return True
+    msg = str(exc).lower()
+    return "404" in msg or "not_found" in msg or "not found" in msg
+
+
+def _unique_names(names: Iterable[str]) -> list[str]:
+    seen: list[str] = []
+    for name in names:
+        if name and name not in seen:
+            seen.append(name)
+    return seen
 
 
 def resolve_concrete_indices(name: str) -> list[str]:
-    """Follow aliases to concrete index names. Empty if `name` does not exist."""
+    """Follow an alias (or concrete name) to concrete index names. Empty if missing.
+
+    `mett-v1-species` is an alias. Prefer GET `_alias/{name}` (keys are concrete
+    indexes). `_resolve/index` is a fallback and often lists targets only under
+    `aliases[].indices`.
+    """
     es = _es()
+
+    try:
+        payload = _as_dict(es.indices.get_alias(name=name))
+        found = [key for key in payload.keys() if key and key not in ("aliases", "error")]
+        if found:
+            return _unique_names(found)
+    except Exception as exc:
+        if not _is_not_found(exc):
+            raise
+
     try:
         payload = _as_dict(es.indices.resolve_index(name=name))
-    except NotFoundError:
-        return []
+        found = concrete_index_names_from_resolve(payload)
+        if found:
+            return found
     except Exception as exc:
-        msg = str(exc).lower()
-        if "404" in msg or "not_found" in msg or "not found" in msg:
+        if not _is_not_found(exc):
+            raise
+
+    try:
+        if es.indices.exists_alias(name=name):
             return []
-        raise
-    return concrete_index_names_from_resolve(payload)
+        if es.indices.exists(index=name):
+            return [name]
+    except Exception as exc:
+        if not _is_not_found(exc):
+            raise
+
+    return []
 
 
 def index_or_alias_exists(name: str) -> bool:
@@ -75,16 +119,12 @@ def add_alias(index_name: str, alias: str) -> None:
             f"Cannot add alias '{alias}': '{index_name}' does not resolve to a concrete index"
         )
     try:
-        existing = es.indices.get_alias(name=alias)
-        current = list(existing.keys()) if existing else []
-    except NotFoundError:
-        current = []
+        existing = _as_dict(es.indices.get_alias(name=alias))
+        current = [key for key in existing.keys() if key and key not in ("aliases", "error")]
     except Exception as exc:
-        msg = str(exc).lower()
-        if "404" in msg or "not_found" in msg or "not found" in msg:
-            current = []
-        else:
+        if not _is_not_found(exc):
             raise
+        current = []
     if set(current) == set(wanted):
         return
     if current and set(current) != set(wanted):
@@ -95,6 +135,175 @@ def add_alias(index_name: str, alias: str) -> None:
     es.indices.update_aliases(
         body={"actions": [{"add": {"index": target, "alias": alias}} for target in wanted]}
     )
+
+
+def alias_retarget_actions(
+    previous: Iterable[str],
+    wanted: Iterable[str],
+    alias: str,
+) -> list[dict]:
+    """ES `update_aliases` actions to move `alias` from previous indexes to wanted."""
+    prev = set(_unique_names(previous))
+    want = set(_unique_names(wanted))
+    actions: list[dict] = []
+    for old in sorted(prev - want):
+        actions.append({"remove": {"index": old, "alias": alias}})
+    for target in sorted(want - prev):
+        actions.append({"add": {"index": target, "alias": alias}})
+    return actions
+
+
+MAX_ARCHIVED_RELEASES = 3
+
+
+def _require_successful_validate(release: MettRelease) -> ReleaseChange:
+    last = release.changes.filter(operation="VALIDATE").order_by("-started_at").first()
+    if last is None:
+        raise ValueError(
+            f"Release {release.version} has no VALIDATE row. "
+            "Run `python manage.py validate_release --release "
+            f"{release.version}` first, or pass --force."
+        )
+    if last.status != ReleaseChange.Status.SUCCEEDED:
+        raise ValueError(
+            f"Last VALIDATE for {release.version} is {last.status}. "
+            "Re-run validate_release until it passes, or pass --force."
+        )
+    return last
+
+
+def promote_release(
+    *,
+    release: str,
+    actor: str = "",
+    dry_run: bool = False,
+    force: bool = False,
+) -> dict:
+    """Point `mett-current-*` at this version's concrete indexes and mark it current.
+
+    Archives any previous `status=current` release. Does not prune old indexes.
+    The whole set is promoted together (all index families).
+    """
+    rel_token = normalize_release(release)
+    if rel_token == "current":
+        raise ValueError("Pass a version like v1, not 'current'")
+
+    try:
+        obj = MettRelease.objects.get(version=rel_token)
+    except MettRelease.DoesNotExist as exc:
+        raise ValueError(
+            f"Release {rel_token} not found. Run create_es_index --release {rel_token} first."
+        ) from exc
+
+    if not force:
+        if obj.status not in (
+            MettRelease.Status.READY,
+            MettRelease.Status.CURRENT,
+            MettRelease.Status.ARCHIVED,
+        ):
+            raise ValueError(
+                f"Release {rel_token} is {obj.status}; promote requires ready "
+                "(or current/archived to re-point). Pass --force to override."
+            )
+        _require_successful_validate(obj)
+
+    fams = list(INDEX_FAMILIES)
+    indexes = {row.family: row for row in obj.indexes.all()}
+    missing_pg = [fam for fam in fams if fam not in indexes]
+    if missing_pg:
+        raise ValueError(
+            f"Release {rel_token} is missing ReleaseIndex rows for: {', '.join(missing_pg)}"
+        )
+
+    mapping: dict[str, dict] = {}
+    actions: list[dict] = []
+    unresolved: list[str] = []
+    for family in fams:
+        release_alias = release_alias_name(rel_token, family)
+        current_alias = current_alias_name(family)
+        wanted = resolve_concrete_indices(release_alias)
+        if not wanted:
+            wanted = [
+                part.strip()
+                for part in (indexes[family].physical_index or "").split(",")
+                if part.strip()
+            ]
+        if not wanted:
+            unresolved.append(family)
+            continue
+        previous = resolve_concrete_indices(current_alias)
+        mapping[family] = {
+            "release_alias": release_alias,
+            "current_alias": current_alias,
+            "physical": wanted,
+            "previous": previous,
+            "changed": set(previous) != set(wanted),
+        }
+        actions.extend(alias_retarget_actions(previous, wanted, current_alias))
+
+    if unresolved:
+        raise ValueError(
+            "Cannot promote; these release aliases do not resolve to a concrete index: "
+            + ", ".join(unresolved)
+        )
+
+    previous_current = list(
+        MettRelease.objects.filter(status=MettRelease.Status.CURRENT).exclude(pk=obj.pk)
+    )
+    archived_n = MettRelease.objects.filter(status=MettRelease.Status.ARCHIVED).count()
+    warning = None
+    if previous_current and archived_n + len(previous_current) > MAX_ARCHIVED_RELEASES:
+        warning = (
+            f"After promote there will be more than {MAX_ARCHIVED_RELEASES} archived "
+            "releases. Prune old physical indexes in a later step."
+        )
+
+    result = {
+        "release": rel_token,
+        "mapping": mapping,
+        "actions": actions,
+        "archived": [rel.version for rel in previous_current],
+        "dry_run": dry_run,
+        "warning": warning,
+        "status": obj.status,
+    }
+
+    if dry_run:
+        return result
+
+    if actions:
+        _es().indices.update_aliases(body={"actions": actions})
+
+    now = timezone.now()
+    with transaction.atomic():
+        for old in previous_current:
+            old.status = MettRelease.Status.ARCHIVED
+            old.archived_at = now
+            old.save(update_fields=["status", "archived_at", "updated_at"])
+        obj.status = MettRelease.Status.CURRENT
+        obj.promoted_at = now
+        obj.save(update_fields=["status", "promoted_at", "updated_at"])
+        record_change(
+            obj,
+            "PROMOTE",
+            domains=fams,
+            payload={
+                "current_aliases": {
+                    fam: {
+                        "alias": row["current_alias"],
+                        "physical": row["physical"],
+                        "previous": row["previous"],
+                    }
+                    for fam, row in mapping.items()
+                },
+                "archived": result["archived"],
+            },
+            actor=actor,
+            status=ReleaseChange.Status.SUCCEEDED,
+        )
+
+    result["status"] = obj.status
+    return result
 
 
 def get_or_create_release(version: str, *, actor: str = "") -> MettRelease:
@@ -317,17 +526,23 @@ def validate_release(
         )
 
     fams = [coerce_family(f) for f in (families or INDEX_FAMILIES)]
-    actual = collect_release_counts(rel_token, families=fams, expected=expected)
+    indexes = {row.family: row for row in obj.indexes.all()}
+    physical_by_family = {fam: row.physical_index for fam, row in indexes.items()}
+    actual = collect_release_counts(
+        rel_token,
+        families=fams,
+        expected=expected,
+        physical_by_family=physical_by_family,
+    )
     mismatches = compare_expected_counts(expected, actual, families=fams)
     skipped = list_skipped_checks(expected, families=fams)
 
-    indexes = {row.family: row for row in obj.indexes.all()}
     for family in fams:
         key = manifest_family_key(family)
         fam_actual = actual.get(key) or {}
         concrete = fam_actual.get("_physical") or []
         recorded = indexes.get(family)
-        if recorded and _physical_mismatch(recorded.physical_index, list(concrete)):
+        if recorded and concrete and _physical_mismatch(recorded.physical_index, list(concrete)):
             mismatches.append(
                 {
                     "path": f"{key}._physical",

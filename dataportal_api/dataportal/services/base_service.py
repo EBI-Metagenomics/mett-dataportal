@@ -20,7 +20,7 @@ class BaseService(ABC, Generic[T, U]):
 
     @property
     def index_name(self) -> str:
-        """Release-aware read alias (or legacy name until current is promoted)."""
+        """Release-aware read alias (`mett-current-*` or `mett-vN-*`)."""
         from dataportal.elasticsearch.resolver import resolve_read_index
 
         return resolve_read_index(self._family)
