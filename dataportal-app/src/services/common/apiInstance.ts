@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "../../utils/common/constants";
 import { TokenStorage } from "../../utils/auth";
+import { RELEASE_SELECTOR_ENABLED } from "../../config/featureFlags";
 
 export class ApiClient {
     private static instance: AxiosInstance | null = null;
@@ -25,12 +26,11 @@ export class ApiClient {
                     if (token) {
                         config.headers.Authorization = `Bearer ${token}`;
                     }
-                    const release =
-                        typeof window !== "undefined"
-                            ? window.localStorage.getItem("mett_release")
-                            : null;
-                    if (release) {
-                        config.headers["X-METT-Release"] = release;
+                    if (RELEASE_SELECTOR_ENABLED && typeof window !== "undefined") {
+                        const release = window.localStorage.getItem("mett_release");
+                        if (release) {
+                            config.headers["X-METT-Release"] = release;
+                        }
                     }
                     return config;
                 },

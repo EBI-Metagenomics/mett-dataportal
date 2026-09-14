@@ -354,6 +354,7 @@ export METT_RELEASE=current
 
 | Variable | Default | Meaning |
 |---|---|---|
+| `VITE_METT_RELEASE_SELECTOR_ENABLED` | `false` | Show the data-release dropdown on the Home \| API Docs bar. |
 | `VITE_METT_DEFAULT_RELEASE` | `current` | Initial header selection when localStorage is empty. |
 
 ---

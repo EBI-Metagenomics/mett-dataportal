@@ -1,5 +1,6 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {RELEASE_SELECTOR_ENABLED} from '../config/featureFlags';
 import {ApiService} from '../services/common/api';
 
 export const METT_RELEASE_STORAGE_KEY = 'mett_release';
@@ -44,8 +45,8 @@ async function fetchReleases(): Promise<MettReleaseList> {
 export const ReleaseProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
     const queryClient = useQueryClient();
     const [selected, setSelectedState] = useState(() => {
-        if (typeof window === 'undefined') {
-            return 'current';
+        if (!RELEASE_SELECTOR_ENABLED || typeof window === 'undefined') {
+            return import.meta.env.VITE_METT_DEFAULT_RELEASE || 'current';
         }
         return (
             localStorage.getItem(METT_RELEASE_STORAGE_KEY) ||
@@ -59,6 +60,7 @@ export const ReleaseProvider: React.FC<{children: React.ReactNode}> = ({children
         queryFn: fetchReleases,
         staleTime: 60 * 1000,
         retry: 1,
+        enabled: RELEASE_SELECTOR_ENABLED,
     });
 
     useEffect(() => {

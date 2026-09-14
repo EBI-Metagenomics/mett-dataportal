@@ -1,5 +1,4 @@
 import React from 'react';
-import ReleaseSelector from './ReleaseSelector';
 
 const Header: React.FC = () => {
     return (
@@ -15,11 +14,9 @@ const Header: React.FC = () => {
                     style={{
                         display: 'flex',
                         justifyContent: 'flex-start',
-                        alignItems: 'flex-start',
                         padding: '0 1rem',
                         maxWidth: '80em',
                         margin: '0 auto',
-                        gap: '1.5rem',
                     }}
                 >
                     <div
@@ -60,7 +57,6 @@ const Header: React.FC = () => {
                             </a>
                         </div>
                     </div>
-                    <ReleaseSelector />
                 </div>
             </section>
         </header>

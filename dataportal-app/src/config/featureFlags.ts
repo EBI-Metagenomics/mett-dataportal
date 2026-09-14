@@ -18,5 +18,17 @@ export const NETWORK_VIEW_ENABLED = parseBool(
   import.meta.env.VITE_NETWORK_VIEW_ENABLED
 );
 
+/**
+ * Data-release dropdown on the Home | API Docs bar.
+ * When false (default), the selector is hidden and requests use the API default (`METT_RELEASE`).
+ * Set VITE_METT_RELEASE_SELECTOR_ENABLED=true in Kubernetes to show it.
+ */
+export const RELEASE_SELECTOR_ENABLED = parseBool(
+  import.meta.env.VITE_METT_RELEASE_SELECTOR_ENABLED
+);
+
 /** Helper for checking if Network View tab is enabled. */
 export const isNetworkViewEnabled = (): boolean => NETWORK_VIEW_ENABLED;
+
+/** Helper for checking if the METT release selector is shown. */
+export const isReleaseSelectorEnabled = (): boolean => RELEASE_SELECTOR_ENABLED;

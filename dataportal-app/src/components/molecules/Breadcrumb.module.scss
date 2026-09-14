@@ -1,3 +1,29 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  width: 100%;
+  margin: 0 0 0.75rem;
+
+  :global(.vf-breadcrumbs) {
+    max-width: none !important;
+    width: auto !important;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  :global(.vf-breadcrumbs__list) {
+    max-width: none !important;
+    width: auto !important;
+  }
+}
+
+:global(.home-page) .bar {
+  padding-right: 20px;
+}
+
 .breadcrumbList {
   display: flex;
   flex-wrap: wrap;

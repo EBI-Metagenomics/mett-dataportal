@@ -1,17 +1,25 @@
 .selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     margin-left: auto;
-    min-width: 12rem;
-    color: #fff;
+    flex-shrink: 0;
 }
 
-.selector :global(.vf-form__label) {
-    color: inherit;
+.label {
     font-size: 0.875rem;
-    margin-bottom: 0.25rem;
+    font-weight: 700;
+    color: #333;
+    white-space: nowrap;
+    margin: 0;
 }
 
-.selector :global(.vf-form__select) {
-    width: 100%;
+.select {
+    min-width: 10rem;
     background: #fff;
     color: #1a1a1a;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
 }
