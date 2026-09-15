@@ -15,6 +15,43 @@ export const createInitialExpansionState = (): ExpansionState => ({
 });
 
 /**
+ * Seed expansion state from the current neighborhood (PPI only).
+ * Ortholog overlay is derived at display time and must not be stored here.
+ */
+export const buildInitialExpansionState = (
+  nodes: PPINetworkNode[],
+  edges: PPINetworkEdge[],
+  selectedLocusTag: string
+): ExpansionState => {
+  const ppiNodes = nodes.filter((node) => (node as { nodeType?: string }).nodeType !== 'ortholog');
+  const ppiEdges = edges.filter((edge) => (edge as { edgeType?: string }).edgeType !== 'ortholog');
+  const startingNode = ppiNodes.find(
+    (node) => node.locus_tag === selectedLocusTag || node.id === selectedLocusTag
+  );
+  const initialState = createInitialExpansionState();
+  if (!startingNode) {
+    return initialState;
+  }
+
+  initialState.allExpandedNodes = new Map(
+    ppiNodes.map((node) => [node.id, { ...node, expansionLevel: 0 }])
+  );
+  initialState.allExpandedEdges = ppiEdges.map((edge) => ({
+    ...edge,
+    expansionLevel: 0,
+  }));
+  initialState.path.nodes = [{
+    locusTag: startingNode.locus_tag || startingNode.id,
+    nodeId: startingNode.id,
+    node: startingNode,
+    expandedAt: Date.now(),
+    level: 0,
+  }];
+  initialState.path.currentLevel = 0;
+  return initialState;
+};
+
+/**
  * Check if a node can be expanded (within depth limit)
  */
 export const canExpandNode = (currentLevel: number): boolean => {

@@ -4,6 +4,7 @@ import cytoscape from 'cytoscape';
 export interface NetworkGraphRef {
     resetView: () => void;
     fitToNodes: () => void;
+    relayout: () => void;
     getCytoscapeInstance: () => cytoscape.Core | null;
 }
 
@@ -27,5 +28,7 @@ export interface NetworkGraphProps {
     onNodeClick: (node: PPINetworkNode, event?: MouseEvent) => void;
     onEdgeClick?: (edge: PPINetworkEdge & { edgeType?: string; orthology_type?: string; expansionLevel?: number }, event?: MouseEvent) => void;
     selectedNode: PPINetworkNode | null;
+    /** Increment to force a full layout + fit (Reset). */
+    layoutRevision?: number;
 }
 

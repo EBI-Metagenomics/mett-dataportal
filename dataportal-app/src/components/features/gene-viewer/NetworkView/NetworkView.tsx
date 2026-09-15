@@ -13,18 +13,18 @@ import { EdgeInfoPopup } from './EdgeInfoPopup';
 import { ExpansionBreadcrumb } from './ExpansionBreadcrumb';
 import { enrichNetworkData } from './utils/enrichNodes';
 import { 
-  createInitialExpansionState, 
+  createInitialExpansionState,
+  buildInitialExpansionState,
   canExpandNode, 
   isNodeExpanded,
   mergeExpansionData,
-  clearExpansions,
   navigateToPathLevel,
 } from './utils/expansionUtils';
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
 import { SourceOverlapDebug } from './SourceOverlapDebug';
 import { NetworkViewThemeProvider } from './NetworkViewThemeProvider';
-import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, type StringEvidenceChannel } from './constants';
+import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, DEFAULT_LOCAL_SCORE_TYPE, type StringEvidenceChannel } from './constants';
 import styles from './NetworkView.module.scss';
 
 interface NetworkViewProps {
@@ -58,6 +58,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [displayThreshold, setDisplayThreshold] = useState<number>(0.9);
   const [limitMode, setLimitMode] = useState<NetworkLimitMode>('topN');
   const [topN, setTopN] = useState<number>(10);
+  const [displayTopN, setDisplayTopN] = useState<number>(10);
   const [speciesScope, setSpeciesScope] = useState<SpeciesScope>('current');
   const [dataSource, setDataSource] = useState<PPIDataSource>('local');
   const [stringNetworkType, setStringNetworkType] = useState<'physical' | 'functional'>('physical');
@@ -71,6 +72,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [maxOrthologsPerNode, setMaxOrthologsPerNode] = useState<number>(
     NETWORK_VIEW_CONSTANTS.ORTHOLOGS_PER_NODE.DEFAULT
   );
+  const [layoutRevision, setLayoutRevision] = useState(0);
   const [selectedNode, setSelectedNode] = useState<PPINetworkNode | null>(null);
   const [popupNode, setPopupNode] = useState<{ node: PPINetworkNode; x: number; y: number } | null>(null);
   const [popupEdge, setPopupEdge] = useState<{ 
@@ -81,6 +83,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   const [expansionState, setExpansionState] = useState<ExpansionState>(createInitialExpansionState());
   const [expandingNodeId, setExpandingNodeId] = useState<string | null>(null);
   const thresholdDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const topNDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const graphRef = useRef<NetworkGraphRef>(null);
   const originalNodesRef = useRef<PPINetworkNode[]>([]);
   const originalEdgesRef = useRef<PPINetworkEdge[]>([]);
@@ -365,68 +368,22 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     }
   }, [dataSource]);
 
-  // Store original nodes/edges and init expansion path when base network changes only.
-  // Only run when we're using local data (local or both) so STRING-only view is not overwritten by local expansion.
+  // Store original PPI nodes/edges and init expansion path when the neighborhood changes.
+  // Orthologs are overlaid at display time and must not be baked into expansion state.
   useEffect(() => {
     if (dataSource === 'stringdb') return;
     if (networkData && selectedLocusTag) {
-      const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs, maxOrthologsPerNode);
-      originalNodesRef.current = enriched.enrichedNodes;
-      originalEdgesRef.current = enriched.enrichedEdges;
-
-      const startingNode = enriched.enrichedNodes.find(
-        node => node.locus_tag === selectedLocusTag || node.id === selectedLocusTag
-      );
-
-      if (startingNode) {
-        const initialState = createInitialExpansionState();
-        initialState.allExpandedNodes = new Map(
-          enriched.enrichedNodes.map(node => [node.id, { ...node, expansionLevel: 0 }])
-        );
-        initialState.allExpandedEdges = enriched.enrichedEdges.map(edge => ({
-          ...edge,
-          expansionLevel: 0,
-        }));
-        initialState.path.nodes = [{
-          locusTag: startingNode.locus_tag || startingNode.id,
-          nodeId: startingNode.id,
-          node: startingNode,
-          expandedAt: Date.now(),
-          level: 0,
-        }];
-        initialState.path.currentLevel = 0;
-        setExpansionState(initialState);
-      } else {
-        setExpansionState(createInitialExpansionState());
-      }
+      originalNodesRef.current = networkData.nodes;
+      originalEdgesRef.current = networkData.edges;
+      setExpansionState(buildInitialExpansionState(networkData.nodes, networkData.edges, selectedLocusTag));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [networkData, dataSource]);
+  }, [networkData, dataSource, selectedLocusTag]);
 
-  // When path is still empty but we have networkData + selectedLocusTag (e.g. selectedLocusTag set after load), set initial path with starting node
+  // When path is still empty but we have networkData + selectedLocusTag (e.g. Reset, or locus set after load)
   useEffect(() => {
     if (dataSource === 'stringdb' || !networkData || !selectedLocusTag || expansionState.path.nodes.length > 0) return;
-    const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs, maxOrthologsPerNode);
-    const startingNode = enriched.enrichedNodes.find(
-      node => node.locus_tag === selectedLocusTag || node.id === selectedLocusTag
-    );
-    if (!startingNode) return;
-    const initialState = createInitialExpansionState();
-    initialState.allExpandedNodes = new Map(
-      enriched.enrichedNodes.map(node => [node.id, { ...node, expansionLevel: 0 }])
-    );
-    initialState.allExpandedEdges = enriched.enrichedEdges.map(edge => ({ ...edge, expansionLevel: 0 }));
-    initialState.path.nodes = [{
-      locusTag: startingNode.locus_tag || startingNode.id,
-      nodeId: startingNode.id,
-      node: startingNode,
-      expandedAt: Date.now(),
-      level: 0,
-    }];
-    initialState.path.currentLevel = 0;
-    setExpansionState(initialState);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [networkData, selectedLocusTag, expansionState.path.nodes.length]);
+    setExpansionState(buildInitialExpansionState(networkData.nodes, networkData.edges, selectedLocusTag));
+  }, [networkData, selectedLocusTag, expansionState.path.nodes.length, dataSource]);
 
   // Combine local ES and STRING DB networks based on selected data source
   const baseNetwork: PPINetworkData | null = useMemo(() => {
@@ -532,23 +489,25 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       return enrichNetworkData(baseNetwork, orthologMap, showOrthologs, maxOrthologsPerNode);
     }
 
-    // Merge base + expanded: PPI nodes only for enrichment (enrichNetworkData overwrites nodeType)
+    // Merge current neighborhood with user expansions only.
+    // Level-0 copies in expansion state are stale when top-N changes; orthologs are always re-derived.
     const mergedPpiNodes = new Map<string, PPINetworkNode & { expansionLevel?: number }>();
     baseNodes.forEach(n => mergedPpiNodes.set(n.id, { ...n, expansionLevel: 0 }));
     expansionState.allExpandedNodes.forEach((node, id) => {
       const n = node as PPINetworkNode & { nodeType?: string; expansionLevel?: number };
-      if (n.nodeType !== 'ortholog') {
+      if (n.nodeType === 'ortholog') return;
+      if ((n.expansionLevel ?? 0) > 0) {
         mergedPpiNodes.set(id, n);
       }
     });
 
-    // Keep all base edges (for "both" there can be multiple edges per pair: local + STRING).
     const mergedPpiEdges: (PPINetworkEdge & { expansionLevel?: number })[] = baseEdges.map(e => ({ ...e, expansionLevel: 0 }));
     expansionState.allExpandedEdges.forEach(e => {
-      mergedPpiEdges.push({
-        ...e,
-        expansionLevel: (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0,
-      });
+      if ((e as { edgeType?: string }).edgeType === 'ortholog') return;
+      const level = (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0;
+      if (level > 0) {
+        mergedPpiEdges.push({ ...e, expansionLevel: level });
+      }
     });
 
     const mergedNetwork = {
@@ -557,16 +516,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     };
     const fullEnriched = enrichNetworkData(mergedNetwork, orthologMap, showOrthologs, maxOrthologsPerNode);
 
-    // Preserve expansionLevel from state and expansion ortholog nodes (from previous expand with showOrthologs on)
     const nodeMap = new Map<string, PPINetworkNode & { expansionLevel?: number }>();
     fullEnriched.enrichedNodes.forEach(n => {
       const expanded = expansionState.allExpandedNodes.get(n.id) as (PPINetworkNode & { expansionLevel?: number }) | undefined;
       const level = expanded?.expansionLevel ?? (n as PPINetworkNode & { expansionLevel?: number }).expansionLevel;
       nodeMap.set(n.id, { ...n, expansionLevel: level });
-    });
-    expansionState.allExpandedNodes.forEach((node, id) => {
-      const n = node as PPINetworkNode & { nodeType?: string; expansionLevel?: number };
-      if (n.nodeType === 'ortholog') nodeMap.set(id, n);
     });
 
     // Use a unique key per edge so we keep multiple edges per pair (e.g. local + STRING when dataSource is 'both').
@@ -581,6 +535,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       edgeMap.set(key, { ...e, expansionLevel: level });
     });
     expansionState.allExpandedEdges.forEach((e, i) => {
+      if ((e as { edgeType?: string }).edgeType === 'ortholog') return;
       const key = `expansion-${e.source}-${e.target}-${i}`;
       if (!edgeMap.has(key)) {
         edgeMap.set(key, { ...e, expansionLevel: (e as PPINetworkEdge & { expansionLevel?: number }).expansionLevel ?? 0 });
@@ -646,23 +601,59 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     []
   );
 
-  // Handle reset expansions
-  const handleResetExpansions = useCallback(() => {
-    setExpansionState(clearExpansions());
-    // Defer resetView to next tick so it runs after React applies the state update and re-renders the graph
-    setTimeout(() => {
-      graphRef.current?.resetView();
-    }, 0);
-  }, []);
+  // Restore the original neighborhood and re-run layout (does not turn orthologs off).
+  const restoreInitialNeighborhood = useCallback(() => {
+    if (dataSource === 'stringdb') {
+      setExpansionState(createInitialExpansionState());
+      return;
+    }
+    const source = dataSource === 'both' ? baseNetwork : networkData;
+    if (source?.nodes && selectedLocusTag) {
+      originalNodesRef.current = source.nodes;
+      originalEdgesRef.current = source.edges || [];
+      setExpansionState(buildInitialExpansionState(source.nodes, source.edges || [], selectedLocusTag));
+    } else {
+      setExpansionState(createInitialExpansionState());
+    }
+  }, [baseNetwork, dataSource, networkData, selectedLocusTag]);
 
-  // Handle reset view (also resets expansions)
+  const handleResetExpansions = useCallback(() => {
+    restoreInitialNeighborhood();
+    setLayoutRevision((n) => n + 1);
+  }, [restoreInitialNeighborhood]);
+
   const handleResetView = useCallback(() => {
-    handleResetExpansions();
-  }, [handleResetExpansions]);
+    if (thresholdDebounceRef.current) {
+      clearTimeout(thresholdDebounceRef.current);
+    }
+    if (topNDebounceRef.current) {
+      clearTimeout(topNDebounceRef.current);
+    }
+
+    setDataSource('local');
+    setScoreType(DEFAULT_LOCAL_SCORE_TYPE);
+    setScoreThreshold(0.9);
+    setDisplayThreshold(0.9);
+    setLimitMode('topN');
+    setTopN(10);
+    setDisplayTopN(10);
+    setSpeciesScope('current');
+    setStringNetworkType('physical');
+    setStringRequiredScore(NETWORK_VIEW_CONSTANTS.STRING_REQUIRED_SCORE.DEFAULT);
+    setStringEvidenceChannels(STRING_EVIDENCE_CHANNELS.map((c) => c.value));
+    setShowOrthologs(false);
+    setMaxOrthologsPerNode(NETWORK_VIEW_CONSTANTS.ORTHOLOGS_PER_NODE.DEFAULT);
+    setSelectedNode(null);
+    setPopupNode(null);
+    setPopupEdge(null);
+    restoreInitialNeighborhood();
+    setLayoutRevision((n) => n + 1);
+  }, [restoreInitialNeighborhood]);
 
   // Handle score type change
   const handleScoreTypeChange = useCallback((newScoreType: string) => {
     setScoreType(newScoreType);
+    setExpansionState(createInitialExpansionState());
   }, []);
 
   // Handle threshold change with debounce
@@ -684,6 +675,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       if (thresholdDebounceRef.current) {
         clearTimeout(thresholdDebounceRef.current);
       }
+      if (topNDebounceRef.current) {
+        clearTimeout(topNDebounceRef.current);
+      }
     };
   }, []);
 
@@ -694,10 +688,17 @@ const NetworkView: React.FC<NetworkViewProps> = ({
 
   const handleLimitModeChange = useCallback((mode: NetworkLimitMode) => {
     setLimitMode(mode);
+    setExpansionState(createInitialExpansionState());
   }, []);
 
   const handleTopNChange = useCallback((n: number) => {
-    setTopN(n);
+    setDisplayTopN(n);
+    if (topNDebounceRef.current) {
+      clearTimeout(topNDebounceRef.current);
+    }
+    topNDebounceRef.current = setTimeout(() => {
+      setTopN(n);
+    }, 350);
   }, []);
 
   const handleSpeciesScopeChange = useCallback((scope: SpeciesScope) => {
@@ -866,7 +867,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           scoreType={scoreType}
           displayThreshold={displayThreshold}
           limitMode={limitMode}
-          topN={topN}
+          topN={displayTopN}
           speciesScope={speciesScope}
           showOrthologs={showOrthologs}
           maxOrthologsPerNode={maxOrthologsPerNode}
@@ -983,10 +984,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             showOrthologs={showOrthologs}
             currentExpansionLevel={expansionState.path.currentLevel}
             expansionPath={expansionPath}
-            focalNodeId={expansionState.path.nodes[0]?.nodeId ?? null}
+            focalNodeId={expansionState.path.nodes[0]?.nodeId ?? selectedLocusTag ?? null}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
             selectedNode={selectedNode}
+            layoutRevision={layoutRevision}
           />
         </div>
       )}

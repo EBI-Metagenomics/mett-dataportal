@@ -96,7 +96,7 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
           <button
             onClick={onResetView}
             className={styles.resetButton}
-            title="Reset view to fit all nodes"
+            title="Reset filters, expansions, and graph layout to defaults"
           >
             Reset
           </button>
