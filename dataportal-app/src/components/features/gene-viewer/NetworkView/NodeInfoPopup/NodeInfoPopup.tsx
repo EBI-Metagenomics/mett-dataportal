@@ -233,7 +233,7 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
               <div className={styles.interactionGroup}>
                 <div className={styles.groupTitle}>Ortholog Relationships ({orthologInteractions.length})</div>
                 <div className={styles.interactionList}>
-                  {orthologInteractions.slice(0, 10).map((edge, idx) => {
+                  {orthologInteractions.map((edge, idx) => {
                     const connectedNodeId = edge.source === node.id ? edge.target : edge.source;
                     const connectedNode = connectedNodes.get(connectedNodeId);
                     const connectedLabel = connectedNode
@@ -249,11 +249,6 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
                       </div>
                     );
                   })}
-                  {orthologInteractions.length > 10 && (
-                    <div className={styles.moreItems}>
-                      + {orthologInteractions.length - 10} more...
-                    </div>
-                  )}
                 </div>
               </div>
             )}

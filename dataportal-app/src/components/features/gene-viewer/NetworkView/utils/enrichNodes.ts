@@ -1,13 +1,16 @@
 import { PPINetworkNode, PPINetworkEdge } from '../../../../../interfaces/PPI';
 import { OrthologRelationship } from '../../../../../interfaces/Ortholog';
+import { NETWORK_VIEW_CONSTANTS } from '../constants';
 
 /**
- * Enrich network nodes with ortholog information and create ortholog nodes/edges
+ * Enrich network nodes with ortholog information and create ortholog nodes/edges.
+ * Extra (non-PPI) ortholog nodes are capped per gene so the graph stays readable.
  */
 export const enrichNetworkData = (
   networkData: { nodes: PPINetworkNode[]; edges: PPINetworkEdge[] } | null,
   orthologMap: Map<string, OrthologRelationship[]>,
-  showOrthologs: boolean
+  showOrthologs: boolean,
+  maxOrthologsPerNode: number = NETWORK_VIEW_CONSTANTS.ORTHOLOGS_PER_NODE.DEFAULT
 ): { enrichedNodes: Array<PPINetworkNode & { nodeType: 'ppi' | 'ortholog'; hasOrthologs?: boolean; orthologCount?: number }>; enrichedEdges: PPINetworkEdge[] } => {
   if (!networkData?.nodes) {
     return { enrichedNodes: [], enrichedEdges: networkData?.edges || [] };
@@ -74,7 +77,8 @@ export const enrichNetworkData = (
       const sourceNode = ppiNodes.find(n => n.locus_tag === sourceLocusTag);
       if (!sourceNode) return;
 
-      // Filter and sort orthologs: prefer 1:1, then by confidence, limit to top 3 per node
+      // Filter and sort orthologs: prefer shared connections, then 1:1, then confidence
+      const perNodeLimit = Math.max(0, maxOrthologsPerNode);
       const filteredOrthologs = [...orthologs]
         .filter(ortholog => {
           const orthologLocusTag = ortholog.locus_tag_b;
@@ -99,7 +103,7 @@ export const enrichNetworkData = (
           }
           return (b.confidence_score || 0) - (a.confidence_score || 0);
         })
-        .slice(0, 3); // Limit to top 3 per PPI node
+        .slice(0, perNodeLimit);
 
       filteredOrthologs.forEach((ortholog) => {
         const orthologLocusTag = ortholog.locus_tag_b;

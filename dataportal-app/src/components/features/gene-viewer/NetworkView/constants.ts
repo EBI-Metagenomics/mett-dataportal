@@ -262,6 +262,17 @@ export const NETWORK_VIEW_CONSTANTS = {
   },
 
   /**
+   * Extra ortholog diamond nodes drawn per PPI gene.
+   * Ranked by shared network connections, then 1:1 orthology, then confidence.
+   * The batch API can return more; this only limits what is drawn.
+   */
+  ORTHOLOGS_PER_NODE: {
+    MIN: 1,
+    MAX: 50,
+    DEFAULT: 3,
+  } as const,
+
+  /**
    * Node expansion visual styling
    */
   EXPANSION: {

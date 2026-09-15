@@ -14,6 +14,7 @@ import styles from './InteractionFilters.module.scss';
 
 const SLIDER = NETWORK_VIEW_CONSTANTS.SLIDER;
 const STRING_SCORE = NETWORK_VIEW_CONSTANTS.STRING_REQUIRED_SCORE;
+const ORTHOLOGS = NETWORK_VIEW_CONSTANTS.ORTHOLOGS_PER_NODE;
 
 function formatScoreTypeLabel(type: string): string {
   if (LOCAL_EVIDENCE_CHANNEL_LABELS[type]) {
@@ -30,6 +31,7 @@ interface InteractionFiltersProps {
   topN: number;
   speciesScope: SpeciesScope;
   showOrthologs: boolean;
+  maxOrthologsPerNode: number;
   stringNetworkType: StringNetworkType;
   stringRequiredScore: number;
   stringEvidenceChannels: StringEvidenceChannel[];
@@ -42,6 +44,7 @@ interface InteractionFiltersProps {
   onTopNChange: (n: number) => void;
   onSpeciesScopeChange: (scope: SpeciesScope) => void;
   onOrthologToggle: (enabled: boolean) => void;
+  onMaxOrthologsPerNodeChange: (n: number) => void;
   onStringNetworkTypeChange?: (networkType: StringNetworkType) => void;
   onStringEvidenceChannelsChange?: (channels: StringEvidenceChannel[]) => void;
   onResetView?: () => void;
@@ -55,6 +58,7 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
   topN,
   speciesScope,
   showOrthologs,
+  maxOrthologsPerNode,
   stringNetworkType,
   stringRequiredScore,
   stringEvidenceChannels,
@@ -67,6 +71,7 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
   onTopNChange,
   onSpeciesScopeChange,
   onOrthologToggle,
+  onMaxOrthologsPerNodeChange,
   onStringNetworkTypeChange,
   onStringEvidenceChannelsChange,
   onResetView,
@@ -278,6 +283,42 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
             Show orthologs
           </label>
         </div>
+
+        {showOrthologs && (
+          <div className={styles.filterItem}>
+            <label
+              htmlFor="max-orthologs"
+              className={styles.filterLabel}
+              title="Maximum extra ortholog nodes shown per gene. Ranked by shared connections, then 1:1, then confidence."
+            >
+              Orthologs per gene
+            </label>
+            <div className={styles.sliderWrap}>
+              <span
+                className={styles.valueBox}
+                style={{
+                  left: `${((maxOrthologsPerNode - ORTHOLOGS.MIN) / (ORTHOLOGS.MAX - ORTHOLOGS.MIN)) * 100}%`,
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                {maxOrthologsPerNode}
+              </span>
+              <input
+                id="max-orthologs"
+                type="range"
+                min={ORTHOLOGS.MIN}
+                max={ORTHOLOGS.MAX}
+                step="1"
+                value={maxOrthologsPerNode}
+                onChange={(e) => onMaxOrthologsPerNodeChange(parseInt(e.target.value, 10))}
+                className={styles.slider}
+                style={{
+                  ['--slider-fill' as string]: `${((maxOrthologsPerNode - ORTHOLOGS.MIN) / (ORTHOLOGS.MAX - ORTHOLOGS.MIN)) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Evidence Channels - when STRING selected */}
         {showStringEvidence && (

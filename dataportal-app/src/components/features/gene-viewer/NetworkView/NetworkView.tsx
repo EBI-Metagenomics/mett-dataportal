@@ -68,6 +68,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     STRING_EVIDENCE_CHANNELS.map((c) => c.value)
   );
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
+  const [maxOrthologsPerNode, setMaxOrthologsPerNode] = useState<number>(
+    NETWORK_VIEW_CONSTANTS.ORTHOLOGS_PER_NODE.DEFAULT
+  );
   const [selectedNode, setSelectedNode] = useState<PPINetworkNode | null>(null);
   const [popupNode, setPopupNode] = useState<{ node: PPINetworkNode; x: number; y: number } | null>(null);
   const [popupEdge, setPopupEdge] = useState<{ 
@@ -367,7 +370,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   useEffect(() => {
     if (dataSource === 'stringdb') return;
     if (networkData && selectedLocusTag) {
-      const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs);
+      const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs, maxOrthologsPerNode);
       originalNodesRef.current = enriched.enrichedNodes;
       originalEdgesRef.current = enriched.enrichedEdges;
 
@@ -403,7 +406,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   // When path is still empty but we have networkData + selectedLocusTag (e.g. selectedLocusTag set after load), set initial path with starting node
   useEffect(() => {
     if (dataSource === 'stringdb' || !networkData || !selectedLocusTag || expansionState.path.nodes.length > 0) return;
-    const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs);
+    const enriched = enrichNetworkData(networkData, orthologMap, showOrthologs, maxOrthologsPerNode);
     const startingNode = enriched.enrichedNodes.find(
       node => node.locus_tag === selectedLocusTag || node.id === selectedLocusTag
     );
@@ -526,7 +529,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     const baseEdges = baseNetwork.edges || [];
 
     if (dataSource === 'stringdb' || expansionState.allExpandedNodes.size === 0) {
-      return enrichNetworkData(baseNetwork, orthologMap, showOrthologs);
+      return enrichNetworkData(baseNetwork, orthologMap, showOrthologs, maxOrthologsPerNode);
     }
 
     // Merge base + expanded: PPI nodes only for enrichment (enrichNetworkData overwrites nodeType)
@@ -552,7 +555,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       nodes: Array.from(mergedPpiNodes.values()),
       edges: mergedPpiEdges,
     };
-    const fullEnriched = enrichNetworkData(mergedNetwork, orthologMap, showOrthologs);
+    const fullEnriched = enrichNetworkData(mergedNetwork, orthologMap, showOrthologs, maxOrthologsPerNode);
 
     // Preserve expansionLevel from state and expansion ortholog nodes (from previous expand with showOrthologs on)
     const nodeMap = new Map<string, PPINetworkNode & { expansionLevel?: number }>();
@@ -605,7 +608,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       enrichedNodes: Array.from(nodeMap.values()),
       enrichedEdges: dedupedEdges,
     };
-  }, [baseNetwork, orthologMap, showOrthologs, expansionState, dataSource]);
+  }, [baseNetwork, orthologMap, showOrthologs, maxOrthologsPerNode, expansionState, dataSource]);
 
   // Stable expansion path so NetworkGraph does not re-create on every render (e.g. when only selectedNode changes)
   const expansionPath = useMemo(
@@ -759,7 +762,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         const enriched = enrichNetworkData(
           { nodes: expansionData.nodes, edges: expansionData.edges },
           orthologMap,
-          showOrthologs
+          showOrthologs,
+          maxOrthologsPerNode
         );
 
         // Filter to only include nodes DIRECTLY connected to the expanding node (1-hop neighbors)
@@ -825,7 +829,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     } finally {
       setExpandingNodeId(null);
     }
-  }, [expansionState, limitMode, topN, scoreType, scoreThreshold, speciesAcronym, speciesScope, isolateName, orthologMap, showOrthologs]);
+  }, [expansionState, limitMode, topN, scoreType, scoreThreshold, speciesAcronym, speciesScope, isolateName, orthologMap, showOrthologs, maxOrthologsPerNode]);
 
 
   // Early returns for edge cases
@@ -865,6 +869,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           topN={topN}
           speciesScope={speciesScope}
           showOrthologs={showOrthologs}
+          maxOrthologsPerNode={maxOrthologsPerNode}
           stringNetworkType={stringNetworkType}
           stringRequiredScore={stringRequiredScore}
           stringEvidenceChannels={stringEvidenceChannels}
@@ -876,6 +881,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           onTopNChange={handleTopNChange}
           onSpeciesScopeChange={handleSpeciesScopeChange}
           onOrthologToggle={handleOrthologToggle}
+          onMaxOrthologsPerNodeChange={setMaxOrthologsPerNode}
           onStringNetworkTypeChange={setStringNetworkType}
           onStringRequiredScoreChange={setStringRequiredScore}
           onStringEvidenceChannelsChange={setStringEvidenceChannels}
