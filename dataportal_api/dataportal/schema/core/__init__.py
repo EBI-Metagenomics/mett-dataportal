@@ -21,6 +21,7 @@ from dataportal.schema.core.genome_schemas import (
     GetAllGenomesQuerySchema,
     GenesByGenomeQuerySchema,
     GenomeDownloadTSVQuerySchema,
+    StrainAnnotationSchema,
     StrainSuggestionSchema,
 )
 from dataportal.schema.core.species_schemas import (
@@ -42,6 +43,7 @@ __all__ = [
     "NaturalLanguageGeneQuery",
     # Genome schemas
     "GenomeResponseSchema",
+    "StrainAnnotationSchema",
     "GenomeAutocompleteQuerySchema",
     "GenomeSearchQuerySchema",
     "GenomesByIsolateNamesQuerySchema",
@@ -52,4 +54,3 @@ __all__ = [
     # Species schemas
     "SpeciesSchema",
 ]
-

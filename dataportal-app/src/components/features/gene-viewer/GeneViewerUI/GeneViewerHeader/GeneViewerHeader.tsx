@@ -2,22 +2,34 @@ import React from 'react';
 import {GenomeMeta} from '../../../../../interfaces/Genome';
 import GeneViewerLegends from '@components/molecules/GeneViewerLegends';
 import Breadcrumb from '@components/molecules/Breadcrumb';
+import ReleaseHistoryLink from '@components/molecules/ReleaseHistoryLink';
+import {RELEASE_SELECTOR_ENABLED} from '../../../../../config/featureFlags';
 import styles from './GeneViewerHeader.module.scss';
 
 interface GeneViewerHeaderProps {
     genomeMeta: GenomeMeta | null;
 }
 
+const pipelineLabel = (genomeMeta: GenomeMeta): string | null => {
+    const annotation = genomeMeta.annotation;
+    if (!annotation) {
+        return null;
+    }
+    const parts = [annotation.pipeline, annotation.pipeline_version].filter(Boolean);
+    return parts.length ? parts.join(' ') : null;
+};
+
 const GeneViewerHeader: React.FC<GeneViewerHeaderProps> = ({genomeMeta}) => {
+    const pipeline = genomeMeta ? pipelineLabel(genomeMeta) : null;
+    const processingUrl = genomeMeta?.annotation?.processing_document_url;
+    const processingRef = genomeMeta?.annotation?.processing_reference;
+
     return (
         <div className={styles.geneViewerHeader}>
-            {/* Breadcrumb Section */}
             <Breadcrumb currentPage="genome-view" />
 
-            {/* Genome Metadata Section */}
             <section className={styles.infoSection}>
                 <div className={styles.infoGrid}>
-                    {/* Left pane: Genome metadata */}
                     <div className={styles.leftPane}>
                         {genomeMeta ? (
                             <div className="genome-meta-info">
@@ -36,13 +48,27 @@ const GeneViewerHeader: React.FC<GeneViewerHeaderProps> = ({genomeMeta}) => {
                                               style={{paddingLeft: '5px'}}></span>
                                     </a>
                                 </p>
+                                {pipeline && (
+                                    <p><strong>Annotation pipeline:&nbsp;</strong>{pipeline}</p>
+                                )}
+                                {processingUrl && (
+                                    <p><strong>Processing document:&nbsp;</strong>
+                                        <a href={processingUrl} target="_blank" rel="noopener noreferrer">
+                                            {processingRef || processingUrl}
+                                        </a>
+                                    </p>
+                                )}
+                                {RELEASE_SELECTOR_ENABLED && (
+                                    <p>
+                                        <ReleaseHistoryLink kind="genome" id={genomeMeta.isolate_name} />
+                                    </p>
+                                )}
                             </div>
                         ) : (
                             <p>Loading genome meta information...</p>
                         )}
                     </div>
 
-                    {/* Right pane: Legend */}
                     <div className={styles.rightPane}>
                         {genomeMeta && (
                             <GeneViewerLegends showEssentiality={genomeMeta.type_strain === true}/>

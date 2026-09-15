@@ -5,6 +5,13 @@ export interface Contig {
     length: number;
 }
 
+export interface StrainAnnotation {
+    pipeline?: string | null;
+    pipeline_version?: string | null;
+    processing_reference?: string | null;
+    processing_document_url?: string | null;
+}
+
 export interface GenomeMeta {
     species_scientific_name?: string;
     species_acronym: string;
@@ -17,6 +24,22 @@ export interface GenomeMeta {
     gff_url: string;
     type_strain: boolean;
     contigs: Contig[];
+    annotation?: StrainAnnotation | null;
+}
+
+export interface ReleaseAppearance {
+    version: string;
+    status: string;
+    is_current: boolean;
+    annotation?: StrainAnnotation | null;
+    isolate_name?: string | null;
+    product?: string | null;
+}
+
+export interface ReleaseHistory {
+    isolate_name?: string;
+    locus_tag?: string;
+    appearances: ReleaseAppearance[];
 }
 
 export interface BaseGenome {

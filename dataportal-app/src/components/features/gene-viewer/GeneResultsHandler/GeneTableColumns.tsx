@@ -1,5 +1,7 @@
 import React from 'react';
 import {GeneMeta} from '../../../../interfaces/Gene';
+import ReleaseHistoryLink from '@components/molecules/ReleaseHistoryLink';
+import {RELEASE_SELECTOR_ENABLED} from '../../../../config/featureFlags';
 import {
     getBacinteractomeUniprotUrl,
     getIconForEssentiality,
@@ -15,10 +17,26 @@ export interface ColumnDefinition {
     sortable?: boolean;
     defaultVisible?: boolean;
     onlyForTypeStrain?: boolean;
+    hideHeader?: boolean;
     render: (gene: GeneMeta) => React.ReactNode;
 }
 
 export const GENE_TABLE_COLUMNS: ColumnDefinition[] = [
+    ...(RELEASE_SELECTOR_ENABLED
+        ? [
+              {
+                  key: 'releases',
+                  label: 'Releases',
+                  sortable: false,
+                  defaultVisible: true,
+                  hideHeader: true,
+                  render: (gene: GeneMeta) =>
+                      gene.locus_tag ? (
+                          <ReleaseHistoryLink kind="gene" id={gene.locus_tag} iconOnly />
+                      ) : null,
+              } as ColumnDefinition,
+          ]
+        : []),
     {
         key: 'locus_tag',
         label: 'Locus Tag',

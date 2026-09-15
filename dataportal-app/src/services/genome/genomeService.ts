@@ -1,5 +1,5 @@
 import { BaseService } from "../common/BaseService";
-import { AutocompleteResponse, GenomeMeta } from "../../interfaces/Genome";
+import { AutocompleteResponse, GenomeMeta, ReleaseHistory } from "../../interfaces/Genome";
 import { PaginatedApiResponse } from "../../interfaces/ApiResponse";
 import { transformAutocompleteResponse, transformGenomeMeta } from "../../utils/common/transformer";
 import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../../utils/common/constants";
@@ -147,6 +147,16 @@ export class GenomeService extends BaseService {
             console.error("Error fetching type strains:", error);
             throw error;
         }
+    }
+
+    static async fetchReleaseHistory(isolateName: string): Promise<ReleaseHistory> {
+        const rawResponse = await this.getWithRetry<ReleaseHistory>(
+            `/genomes/${encodeURIComponent(isolateName)}/release-history`
+        );
+        return {
+            isolate_name: rawResponse.isolate_name,
+            appearances: Array.isArray(rawResponse.appearances) ? rawResponse.appearances : [],
+        };
     }
 
     /**

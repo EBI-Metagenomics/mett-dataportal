@@ -1,0 +1,765 @@
+{
+  "info": {
+    "_postman_id": "5083ab52-8350-4e45-af76-cd3f4d766b45",
+    "name": "METT-DataPortal-Extended",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19420352"
+  },
+  "item": [
+    {
+      "name": "POC",
+      "item": [
+        {
+          "name": "Deepseek",
+          "item": [
+            {
+              "name": "basic-request",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"prompt\": \"Return ONLY valid JSON without any markdown or explanation.\\n\\nQuery: Show essential genes in PV involved in AMR\\n\\nFormat:\\n{\\n  \\\"species\\\": \\\"<species acronym or name>\\\",\\n  \\\"essentiality\\\": \\\"<essential/non-essential>\\\",\\n  \\\"amr\\\": <true/false>\\n}\",\n    \"n_predict\": 300,\n    \"temperature\": 0.1\n  }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/completion",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "completion"
+                  ]
+                },
+                "description": "Generated from cURL: curl -X POST http://localhost:8080/completion \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"prompt\": \"What is Bacteroides uniformis?\",\n    \"n_predict\": 50,\n    \"temperature\": 0.2\n  }'"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "NaturalSearchQuery",
+          "item": [
+            {
+              "name": "NL-Squery-to-backend",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json, text/plain, */*"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "en-GB,en;q=0.9"
+                  },
+                  {
+                    "key": "Cache-Control",
+                    "value": "no-cache"
+                  },
+                  {
+                    "key": "Connection",
+                    "value": "keep-alive"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "http://localhost:3000"
+                  },
+                  {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                  },
+                  {
+                    "key": "Referer",
+                    "value": "http://localhost:3000/natural-query"
+                  },
+                  {
+                    "key": "Sec-Fetch-Dest",
+                    "value": "empty"
+                  },
+                  {
+                    "key": "Sec-Fetch-Mode",
+                    "value": "cors"
+                  },
+                  {
+                    "key": "Sec-Fetch-Site",
+                    "value": "same-origin"
+                  },
+                  {
+                    "key": "User-Agent",
+                    "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+                  },
+                  {
+                    "key": "sec-ch-ua",
+                    "value": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\""
+                  },
+                  {
+                    "key": "sec-ch-ua-mobile",
+                    "value": "?0"
+                  },
+                  {
+                    "key": "sec-ch-ua-platform",
+                    "value": "\"macOS\""
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "csrftoken=nmo9n6vCxtn6hRlS95Cg0KzKt6KKgiUH"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "Show essential genes in PV involved in AMR",
+                    "variables": ""
+                  }
+                },
+                "url": {
+                  "raw": "{{mett-current}}/api/nq/query?query=Show%20essential%20genes%20in%20Bacteroides%20uniformis",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "nq",
+                    "query"
+                  ],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "Show%20essential%20genes%20in%20Bacteroides%20uniformis"
+                    }
+                  ]
+                },
+                "description": "Generated from cURL: curl 'http://localhost:3000/api/query/interpret' \\\n  -H 'Accept: application/json, text/plain, */*' \\\n  -H 'Accept-Language: en-GB,en;q=0.9' \\\n  -H 'Cache-Control: no-cache' \\\n  -H 'Connection: keep-alive' \\\n  -H 'Content-Type: application/json' \\\n  -b 'csrftoken=nmo9n6vCxtn6hRlS95Cg0KzKt6KKgiUH' \\\n  -H 'Origin: http://localhost:3000' \\\n  -H 'Pragma: no-cache' \\\n  -H 'Referer: http://localhost:3000/natural-query' \\\n  -H 'Sec-Fetch-Dest: empty' \\\n  -H 'Sec-Fetch-Mode: cors' \\\n  -H 'Sec-Fetch-Site: same-origin' \\\n  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36' \\\n  -H 'sec-ch-ua: \"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"macOS\"' \\\n  --data-raw '{\"query\":\"Show essential genes in PV involved in AMR\"}'"
+              },
+              "response": []
+            },
+            {
+              "name": "interpret-query",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json, text/plain, */*"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "en-GB,en;q=0.9"
+                  },
+                  {
+                    "key": "Cache-Control",
+                    "value": "no-cache"
+                  },
+                  {
+                    "key": "Connection",
+                    "value": "keep-alive"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "http://localhost:3000"
+                  },
+                  {
+                    "key": "Pragma",
+                    "value": "no-cache"
+                  },
+                  {
+                    "key": "Referer",
+                    "value": "http://localhost:3000/natural-query"
+                  },
+                  {
+                    "key": "Sec-Fetch-Dest",
+                    "value": "empty"
+                  },
+                  {
+                    "key": "Sec-Fetch-Mode",
+                    "value": "cors"
+                  },
+                  {
+                    "key": "Sec-Fetch-Site",
+                    "value": "same-origin"
+                  },
+                  {
+                    "key": "User-Agent",
+                    "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+                  },
+                  {
+                    "key": "sec-ch-ua",
+                    "value": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\""
+                  },
+                  {
+                    "key": "sec-ch-ua-mobile",
+                    "value": "?0"
+                  },
+                  {
+                    "key": "sec-ch-ua-platform",
+                    "value": "\"macOS\""
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "csrftoken=nmo9n6vCxtn6hRlS95Cg0KzKt6KKgiUH"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-current}}/api/nq/interpret?query=Show%20essential%20genes%20in%20Bacteroides%20uniformis",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "nq",
+                    "interpret"
+                  ],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "Show%20essential%20genes%20in%20Bacteroides%20uniformis"
+                    }
+                  ]
+                },
+                "description": "Generated from cURL: curl 'http://localhost:3000/api/query/interpret' \\\n  -H 'Accept: application/json, text/plain, */*' \\\n  -H 'Accept-Language: en-GB,en;q=0.9' \\\n  -H 'Cache-Control: no-cache' \\\n  -H 'Connection: keep-alive' \\\n  -H 'Content-Type: application/json' \\\n  -b 'csrftoken=nmo9n6vCxtn6hRlS95Cg0KzKt6KKgiUH' \\\n  -H 'Origin: http://localhost:3000' \\\n  -H 'Pragma: no-cache' \\\n  -H 'Referer: http://localhost:3000/natural-query' \\\n  -H 'Sec-Fetch-Dest: empty' \\\n  -H 'Sec-Fetch-Mode: cors' \\\n  -H 'Sec-Fetch-Site: same-origin' \\\n  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36' \\\n  -H 'sec-ch-ua: \"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"macOS\"' \\\n  --data-raw '{\"query\":\"Show essential genes in PV involved in AMR\"}'"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "test-random",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"prompt\": \"Return ONLY valid JSON without any markdown or explanation.\\n\\nQuery: Show essential genes in PV involved in AMR\\n\\nFormat:\\n{\\n  \\\"species\\\": \\\"<species acronym or name>\\\",\\n  \\\"essentiality\\\": \\\"<essential/non-essential>\\\",\\n  \\\"amr\\\": <true/false>\\n}\",\n    \"n_predict\": 300,\n    \"temperature\": 0.1\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://{{testme}}:8080/completion",
+              "protocol": "http",
+              "host": [
+                "{{testme}}"
+              ],
+              "port": "8080",
+              "path": [
+                "completion"
+              ]
+            },
+            "description": "Generated from cURL: curl -X POST http://localhost:8080/completion \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"prompt\": \"What is Bacteroides uniformis?\",\n    \"n_predict\": 50,\n    \"temperature\": 0.2\n  }'"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pyhmmer-Management-Requests",
+      "item": [
+        {
+          "name": "Tasks-Status",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search/tasks-status?threshold_days=1",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search",
+                "tasks-status"
+              ],
+              "query": [
+                {
+                  "key": "threshold_days",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Cleanup-Old-Tasks",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search/cleanup-tasks?threshold_days=1",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search",
+                "cleanup-tasks"
+              ],
+              "query": [
+                {
+                  "key": "threshold_days",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "StringDB-APIs",
+      "item": [
+        {
+          "name": "UniParc Request",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://rest.uniprot.org/uniparc/search?fields=upi%2Ccommon_taxons%2Clength%2Caccession%2Cfirst_seen%2Clast_seen&query=CUP55842",
+              "protocol": "https",
+              "host": [
+                "rest",
+                "uniprot",
+                "org"
+              ],
+              "path": [
+                "uniparc",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fields",
+                  "value": "upi%2Ccommon_taxons%2Clength%2Caccession%2Cfirst_seen%2Clast_seen"
+                },
+                {
+                  "key": "query",
+                  "value": "CUP55842"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "searchProtein-UniprotId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/tsv/get_string_ids?identifiers=CUP55842&species=820&echo_query=1&limit=5&caller_identity=mett-portal",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "tsv",
+                "get_string_ids"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "CUP55842"
+                },
+                {
+                  "key": "species",
+                  "value": "820"
+                },
+                {
+                  "key": "echo_query",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "caller_identity",
+                  "value": "mett-portal"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "searchProtein-functional-annotations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/tsv/functional_annotation?identifiers=BACUNI_01739",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "tsv",
+                "functional_annotation"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "BACUNI_01739"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "StringDb-ProteinSearch",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "type": "text",
+                  "key": "sequence",
+                  "value": "MDKIAVVILNWNGCDMLRSFLPSVVRFSEADGAVVYVADNGSTDASVAMLRREFPSVHLILLEENHGFADGYNLALKQVEAEYVVLLNSDVEVTEHWLVPLAEYMDAYPETAACQPKIRSWRNKGQFEYAGAAGGFIDRYGYPFCRGRIMGVVEEDKGQYDTVIPIFWATGAALFIRLADYREAGGLDGRFFAHMEEIDLCWRLRARGRQLACIPQSVVFHVGGATLKKENPRKTFLNFRNNLVMLYKNLPQEDLASVMRVRAVLDYVAAFSFMLKGQLPNALAVFRARRAYHSLRTSLAASRKENLKKTTLAVIPERTKNSILAQFYLHGKKFFSQL"
+                }
+              ]
+            },
+            "url": {
+              "raw": "https://string-db.org/api/tsv/get_string_ids?species=820",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "tsv",
+                "get_string_ids"
+              ],
+              "query": [
+                {
+                  "key": "species",
+                  "value": "820"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 1 - Interaction Network Retrieval",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/tsv/network?identifiers=820.ERS852554_01920&species=820&required_score=700&limit=20",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "tsv",
+                "network"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "820.ERS852554_01920"
+                },
+                {
+                  "key": "species",
+                  "value": "820"
+                },
+                {
+                  "key": "required_score",
+                  "value": "700"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "### **network**\n\n**Use-case:** Retrieve the **full interaction network** for one or more proteins.\n\n```\nhttps://string-db.org/api/tsv/network\n    ?identifiers=STRING_ID\n    &species=TAXID\n    &required_score=700\n    &limit=20\n\n ```\n\n✔ Returns edges  \n✔ Includes combined scores + evidence channels  \n✔ You will use this for the “graph visualization”"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 1a -Best similarity hits between species",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/tsv/homology_best?identifiers=820.ERS852554_01920&species=820",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "tsv",
+                "homology_best"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "820.ERS852554_01920"
+                },
+                {
+                  "key": "species",
+                  "value": "820"
+                },
+                {
+                  "key": "species_b",
+                  "value": "435590",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "## Retrieving best similarity hits between species\n\nSTRING internally uses the Smith–Waterman bit scores as a proxy for protein homology. The original scores are computed by [SIMILARITY MATRIX OF PROTEINS](http://cube.univie.ac.at/resources/simap) (SIMAP) project. Using this API you can retrieve these similarity scores between your input proteins and proteins in all of the STRING's organisms. Only the best hit per organism for each protein will be retrieved.\n\nThere are many organisms in STRING, so expect thousands hits for each protein, however you can filter the results to the list of organisms of interest by using 'species_b' parameter.\n\n#### Call:\n\n```\nhttps://string-db.org/api/[output-format]/homology_best?identifiers=[your_identifiers]\n\n ```\n\n#### Available output formats:\n\n| Format | Description |\n| --- | --- |\n| tsv | tab separated values, with a header line |\n| tsv-no-header | tab separated values, without header line |\n| json | JSON format |\n| xml | XML format |\n\n#### Available parameters:\n\n| Parameter | Description |\n| --- | --- |\n| identifiers | required parameter for multiple items, e.g. DRD1_HUMAN DRD2_HUMAN |\n| species | NCBI/STRING taxon (e.g. 9606 for human, or STRG0AXXXXX see: [STRING organisms](https://string-db.org/cgi/input.pl?input_page_active_form=organisms)). |\n| species_b | a list of NCBI taxon identifiers seperated by \" \" (e.g. human, fly and yeast would be \"9606 7227 4932\" see: [STRING organisms](https://string-db.org/cgi/input.pl?input_page_active_form=organisms)). |\n| caller_identity | your identifier for us. |"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 2 - direct neighbours / interaction_partners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/tsv/interaction_partners?identifiers=820.ERS852554_01920&species=820&limit=200",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "tsv",
+                "interaction_partners"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "820.ERS852554_01920"
+                },
+                {
+                  "key": "species",
+                  "value": "820"
+                },
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            },
+            "description": "### **interaction_partners**\n\n**Use-case:** Retrieve only **direct neighbors** of the protein (simpler, faster).\n\n```\nhttps://string-db.org/api/tsv/interaction_partners\n    ?identifier=STRING_ID\n    &species=TAXID\n    &limit=100\n\n ```\n\n✔ Best for “1-hop neighborhood visualizations”  \n✔ Great for simple side panels (list of partners)"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 3 - Interaction Evidence / Detailed Interaction View",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/tsv/interaction_evidence?identifiers=820.ERS852554_01920%0D820.ERS852554_03539&species=820",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "tsv",
+                "interaction_evidence"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "820.ERS852554_01920%0D820.ERS852554_03539"
+                },
+                {
+                  "key": "species",
+                  "value": "820"
+                }
+              ]
+            },
+            "description": "### **interaction_evidence**\n\n**Use-case:** Retrieve evidence categories for a specific pair.\n\n```\nhttps://string-db.org/api/tsv/interaction_evidence\n    ?identifiers=ID1\nID2\n    &species=TAXID\n\n ```\n\nReturns columns like:\n\n- experiments\n    \n- curated databases\n    \n- text mining\n    \n- co-occurrence\n    \n- co-expression\n    \n- homology\n    \n\n✔ Use this to populate the “Evidence breakdown” panel  \n✔ Perfect for edge tooltips or info popovers"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 3 - Interaction Evidence / Experimental - Not Working",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/tsv/network?identifiers=820.ERS852554_01920%0D820.ERS852554_03539&species=820&escore=0.4",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "tsv",
+                "network"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "820.ERS852554_01920%0D820.ERS852554_03539"
+                },
+                {
+                  "key": "species",
+                  "value": "820"
+                },
+                {
+                  "key": "escore",
+                  "value": "0.4"
+                }
+              ]
+            },
+            "description": "### **interaction_evidence**\n\n**Use-case:** Retrieve evidence categories for a specific pair.\n\n```\nhttps://string-db.org/api/tsv/interaction_evidence\n    ?identifiers=ID1\nID2\n    &species=TAXID\n\n ```\n\nReturns columns like:\n\n- experiments\n    \n- curated databases\n    \n- text mining\n    \n- co-occurrence\n    \n- co-expression\n    \n- homology\n    \n\n✔ Use this to populate the “Evidence breakdown” panel  \n✔ Perfect for edge tooltips or info popovers"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 4 - Visual API - Network Image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/image/network?identifiers=820.ERS852554_01920&species=820",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "image",
+                "network"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "820.ERS852554_01920"
+                },
+                {
+                  "key": "species",
+                  "value": "820"
+                }
+              ]
+            },
+            "description": "### **interaction_evidence**\n\n**Use-case:** Retrieve evidence categories for a specific pair.\n\n```\nhttps://string-db.org/api/tsv/interaction_evidence\n    ?identifiers=ID1\nID2\n    &species=TAXID\n\n ```\n\nReturns columns like:\n\n- experiments\n    \n- curated databases\n    \n- text mining\n    \n- co-occurrence\n    \n- co-expression\n    \n- homology\n    \n\n✔ Use this to populate the “Evidence breakdown” panel  \n✔ Perfect for edge tooltips or info popovers"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 4 - Visual API - Retrieving enrichment figure",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://string-db.org/api/image/enrichmentfigure?identifiers=820.ERS852554_01920&species=820",
+              "protocol": "https",
+              "host": [
+                "string-db",
+                "org"
+              ],
+              "path": [
+                "api",
+                "image",
+                "enrichmentfigure"
+              ],
+              "query": [
+                {
+                  "key": "identifiers",
+                  "value": "820.ERS852554_01920"
+                },
+                {
+                  "key": "species",
+                  "value": "820"
+                }
+              ]
+            },
+            "description": "### **interaction_evidence**\n\n**Use-case:** Retrieve evidence categories for a specific pair.\n\n```\nhttps://string-db.org/api/tsv/interaction_evidence\n    ?identifiers=ID1\nID2\n    &species=TAXID\n\n ```\n\nReturns columns like:\n\n- experiments\n    \n- curated databases\n    \n- text mining\n    \n- co-occurrence\n    \n- co-expression\n    \n- homology\n    \n\n✔ Use this to populate the “Evidence breakdown” panel  \n✔ Perfect for edge tooltips or info popovers"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -17,6 +17,7 @@ from dataportal.ingest.strain.ftp import (
     ftp_list_gff_for_isolate,
     parse_fasta_contigs,
 )
+from dataportal.ingest.strain.provenance import apply_annotation, isolate_allowed
 from dataportal.ingest.strain.resolver import StrainResolver, isolate_lookup_key
 
 
@@ -38,6 +39,8 @@ class StrainContigImporter(BaseImporter):
     gff_base: Optional[str] = None
     # ✅ resolver for canonicalizing isolate ids
     resolver: Optional[StrainResolver] = None
+    isolates: Optional[List[str]] = None
+    annotation: Optional[dict] = None
 
     def _connect(self) -> ftplib.FTP:
         retries = 3
@@ -80,6 +83,8 @@ class StrainContigImporter(BaseImporter):
 
         fasta_files = ftp_list_fasta(ftp, self.ftp_directory)
         skipped_unmapped = 0
+        skipped_not_in_allowlist = 0
+        allowlist = set(self.isolates) if self.isolates else None
 
         # Use raw type_strains without normalization
         if self.type_strains is not None:
@@ -113,6 +118,10 @@ class StrainContigImporter(BaseImporter):
                 canonical_id, _ = self.resolver.canonicalize(isolate_name)
             else:
                 canonical_id = isolate_name
+
+            if not isolate_allowed(isolate_name, allowlist, canonical_id):
+                skipped_not_in_allowlist += 1
+                continue
 
             # species based on canonical id (prefix is the same BU/PV...)
             species_name = species_name_for_isolate(canonical_id)
@@ -167,13 +176,15 @@ class StrainContigImporter(BaseImporter):
                 if chosen:
                     doc.gff_file = chosen  # filename only
 
+            apply_annotation(doc, self.annotation)
+
             self.repo.save(doc)
 
         print(
             f"[import_strains] FTP FASTA files={len(fasta_files)}, "
-            f"imported={len(fasta_files) - skipped_unmapped}, "
+            f"imported={len(fasta_files) - skipped_unmapped - skipped_not_in_allowlist}, "
             f"skipped unmapped={skipped_unmapped} "
-            f"(not in --map-tsv)"
+            f"(not in --map-tsv), skipped isolates filter={skipped_not_in_allowlist}"
         )
         ftp.quit()
         if ftp_gff:

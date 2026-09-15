@@ -8,12 +8,14 @@ from elasticsearch_dsl import Search, connections
 
 from dataportal.models import StrainDocument
 from dataportal.schema.core.genome_schemas import (
+    ContigSchema,
     GenomePaginationSchema,
     GenomeResponseSchema,
     GenomeSearchQuerySchema,
     GetAllGenomesQuerySchema,
     GenomesByIsolateNamesQuerySchema,
     GenomeAutocompleteQuerySchema,
+    StrainAnnotationSchema,
     StrainSuggestionSchema,
 )
 from dataportal.services.base_service import BaseService
@@ -33,6 +35,24 @@ from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.species_registry import get_enabled_species_acronyms
 
 logger = logging.getLogger(__name__)
+
+
+def _annotation_schema(raw) -> Optional[StrainAnnotationSchema]:
+    if not raw:
+        return None
+    if hasattr(raw, "to_dict"):
+        raw = raw.to_dict()
+    if not isinstance(raw, dict):
+        return None
+    payload = {
+        "pipeline": raw.get("pipeline"),
+        "pipeline_version": raw.get("pipeline_version"),
+        "processing_reference": raw.get("processing_reference"),
+        "processing_document_url": raw.get("processing_document_url"),
+    }
+    if not any(payload.values()):
+        return None
+    return StrainAnnotationSchema(**payload)
 
 
 class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
@@ -67,8 +87,6 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         contigs_raw = hit_dict.get("contigs", [])
         contigs = []
         if contigs_raw:
-            from dataportal.schema.core.genome_schemas import ContigSchema
-
             for contig in contigs_raw:
                 if isinstance(contig, dict):
                     contigs.append(
@@ -95,6 +113,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             ),
             type_strain=hit_dict.get("type_strain", False),
             contigs=contigs,
+            annotation=_annotation_schema(hit_dict.get("annotation")),
         )
 
     @log_execution_time

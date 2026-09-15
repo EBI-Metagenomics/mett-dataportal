@@ -11,6 +11,8 @@ import {GeneFacetResponse, AMR} from '../../../../interfaces/Gene';
 import {compareFilterValues, normalizeFilterValue, normalizeFilterValues} from '../../../../utils/common/filterUtils';
 import {ALL_SECTION_IDS, DEFAULT_EXPANDED_SECTIONS, SectionId} from './constants';
 import {mapGeneMetaToFeatureData} from './mapGeneMetaToFeatureData';
+import ReleaseHistoryLink from '@components/molecules/ReleaseHistoryLink';
+import {RELEASE_SELECTOR_ENABLED} from '../../../../config/featureFlags';
 
 type ViewModel = ReturnType<typeof createViewState>;
 
@@ -634,6 +636,14 @@ const FeaturePanel: React.FC<FeaturePanelProps> = ({ feature, viewState, setLoad
                             {featureData.locusTag}
                         </span>
                     </div>
+                    {RELEASE_SELECTOR_ENABLED && featureData.locusTag && featureData.locusTag !== 'N/A' && (
+                        <div className={styles.field}>
+                            <label>Releases:</label>
+                            <span>
+                                <ReleaseHistoryLink kind="gene" id={featureData.locusTag} label="View history" />
+                            </span>
+                        </div>
+                    )}
                     {featureData.gene && (
                         <div className={styles.field}>
                             <label>Name:</label>

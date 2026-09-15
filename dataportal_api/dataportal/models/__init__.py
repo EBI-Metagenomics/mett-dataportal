@@ -13,7 +13,7 @@ from .base import (
     build_pair_id,
 )
 from .species import SpeciesDocument
-from .strains import StrainDocument
+from .strains import StrainAnnotation, StrainDocument
 from .features import FeatureDocument
 from .strain_experiments import StrainExperimentDocument
 from .feature_experiments import FeatureExperimentDocument
@@ -34,6 +34,7 @@ __all__ = [
     "build_pair_id",
     # Document models
     "SpeciesDocument",
+    "StrainAnnotation",
     "StrainDocument",
     "FeatureDocument",
     "StrainExperimentDocument",

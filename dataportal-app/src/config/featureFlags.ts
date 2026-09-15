@@ -19,9 +19,11 @@ export const NETWORK_VIEW_ENABLED = parseBool(
 );
 
 /**
- * Data-release dropdown on the Home | API Docs bar.
- * When false (default), the selector is hidden and requests use the API default (`METT_RELEASE`).
- * Set VITE_METT_RELEASE_SELECTOR_ENABLED=true in Kubernetes to show it.
+ * Data-release dropdown on the Home | API Docs bar, plus per-row/gene
+ * release-history links (tables, genome header, feature panel).
+ * When false (default), the selector and history UI are hidden and requests
+ * use the API default (`METT_RELEASE`).
+ * Set VITE_METT_RELEASE_SELECTOR_ENABLED=true in Kubernetes to show them.
  */
 export const RELEASE_SELECTOR_ENABLED = parseBool(
   import.meta.env.VITE_METT_RELEASE_SELECTOR_ENABLED

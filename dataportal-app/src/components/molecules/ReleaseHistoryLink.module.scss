@@ -1,0 +1,111 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #005ea5;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+    color: #193f90;
+  }
+}
+
+.triggerIconOnly {
+  padding: 0.2rem 0.35rem;
+  line-height: 1;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.icon {
+  font-size: 0.85rem;
+}
+
+.triggerIconOnly .icon {
+  font-size: 1rem;
+}
+
+.overlay {
+  background-color: rgba(0, 0, 0, 0.4);
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}
+
+.content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  z-index: 1000;
+  width: 90%;
+  max-width: 28rem;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.status,
+.error {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #a94442;
+}
+
+.list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.item {
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.version {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.close {
+  width: 100%;
+  background: #eee;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+
+  &:hover {
+    background: #ddd;
+  }
+}

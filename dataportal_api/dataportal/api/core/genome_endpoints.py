@@ -17,6 +17,7 @@ from dataportal.schema.response_schemas import (
     create_success_response,
 )
 from dataportal.services.core.gene_service import GeneService
+from dataportal.services.core.release_history_service import ReleaseHistoryService
 from dataportal.services.experimental.drug_service import DrugService
 from dataportal.services.experimental.essentiality_service import EssentialityService
 from dataportal.services.service_factory import ServiceFactory
@@ -35,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 genome_service = ServiceFactory.get_genome_service()
 gene_service = GeneService()
+release_history_service = ReleaseHistoryService()
 essentiality_service = EssentialityService()
 drug_service = DrugService()
 
@@ -139,6 +141,37 @@ async def get_all_genomes(request, query: GetAllGenomesQuerySchema = Query(...))
     except Exception as e:
         logger.error(f"Unexpected error in get all genomes: {e}")
         raise_internal_server_error("Failed to fetch genomes")
+
+
+# Isolate processing provenance across METT data releases
+@genome_router.get(
+    "/{isolate_name}/release-history",
+    response=SuccessResponseSchema,
+    summary="Releases that contain this genome",
+    description=(
+        "Searches readable METT strain aliases (mett-vN-strains) for this isolate. "
+        "Does not query mett-current-strains, which would duplicate the promoted version. "
+        "Each appearance includes that snapshot's annotation pipeline provenance."
+    ),
+)
+@wrap_success_response
+async def get_genome_release_history(
+    request,
+    isolate_name: str = Path(
+        ...,
+        description="Unique isolate name identifying the genome.",
+        example="BU_ATCC8492",
+    ),
+):
+    try:
+        result = await release_history_service.get_genome_history(isolate_name)
+        return create_success_response(
+            data=result.model_dump(),
+            message=f"Release history for {isolate_name} retrieved successfully",
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise_internal_server_error(f"Failed to fetch release history for genome {isolate_name}")
 
 
 # API Endpoint to retrieve genes filtered by a single genome ID

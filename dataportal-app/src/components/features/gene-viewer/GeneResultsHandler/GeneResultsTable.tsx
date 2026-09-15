@@ -357,19 +357,27 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                         <th
                             key={col.key}
                             onClick={() => col.sortable && handleSort(col.key)}
-                            className={`vf-table__heading ${styles.vfTableHeading} ${col.sortable && tableSource !== 'sync-table' ? styles.clickableHeader : ''}`}
+                            className={`vf-table__heading ${styles.vfTableHeading} ${col.hideHeader ? styles.iconHeading : ''} ${col.sortable && tableSource !== 'sync-table' ? styles.clickableHeader : ''}`}
+                            aria-label={col.hideHeader ? col.label : undefined}
+                            scope="col"
                         >
-                            {col.label}
-                            {/* Hide sorting icons in Genomic Context view (sync-table) */}
-                            {tableSource !== 'sync-table' && (
+                            {col.hideHeader ? (
+                                <span className={styles.visuallyHidden}>{col.label}</span>
+                            ) : (
                                 <>
-                                    {sortField === col.key ? (
-                                        <span
-                                            className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
-                                            style={{paddingLeft: '5px'}}/>
-                                    ) : col.sortable ? (
-                                        <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}/>
-                                    ) : null}
+                                    {col.label}
+                                    {/* Hide sorting icons in Genomic Context view (sync-table) */}
+                                    {tableSource !== 'sync-table' && (
+                                        <>
+                                            {sortField === col.key ? (
+                                                <span
+                                                    className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                                                    style={{paddingLeft: '5px'}}/>
+                                            ) : col.sortable ? (
+                                                <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}/>
+                                            ) : null}
+                                        </>
+                                    )}
                                 </>
                             )}
                         </th>
@@ -416,7 +424,10 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                             style={{ cursor: hideActionsColumn && viewState ? 'pointer' : 'default' }}
                         >
                             {GENE_TABLE_COLUMNS.filter(col => visibleColumns.includes(col.key)).map(col => (
-                                <td key={col.key} className={`vf-table__cell ${styles.vfTableCell}`}>
+                                <td
+                                    key={col.key}
+                                    className={`vf-table__cell ${styles.vfTableCell} ${col.hideHeader ? styles.iconCell : ''}`}
+                                >
                                     {col.render(geneMeta)}
                                 </td>
                             ))}

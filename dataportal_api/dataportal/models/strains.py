@@ -6,15 +6,26 @@ Identity, assembly, and contig stats. Strain-level assays live in strain_experim
 
 from elasticsearch_dsl import (
     Document,
+    InnerDoc,
     Text,
     Keyword,
     Integer,
     Boolean,
     Long,
     Nested,
+    Object,
 )
 
 from .base import autocomplete_analyzer, lowercase_normalizer
+
+
+class StrainAnnotation(InnerDoc):
+    """How this isolate was annotated. One block per strain; genes inherit via isolate_name."""
+
+    pipeline = Keyword()
+    pipeline_version = Keyword()
+    processing_reference = Keyword()
+    processing_document_url = Keyword()
 
 
 class StrainDocument(Document):
@@ -47,6 +58,8 @@ class StrainDocument(Document):
     genome_size = Long()
 
     contigs = Nested(properties={"seq_id": Keyword(), "length": Integer()})
+
+    annotation = Object(StrainAnnotation)
 
     class Index:
         name = "strain_index"

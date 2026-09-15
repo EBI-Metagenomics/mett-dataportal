@@ -152,6 +152,15 @@ class ContigSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class StrainAnnotationSchema(BaseModel):
+    pipeline: Optional[str] = None
+    pipeline_version: Optional[str] = None
+    processing_reference: Optional[str] = None
+    processing_document_url: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class GenomeResponseSchema(BaseModel):
     species_scientific_name: Optional[str] = None
     species_acronym: Optional[str] = None
@@ -164,6 +173,7 @@ class GenomeResponseSchema(BaseModel):
     gff_url: str
     type_strain: bool
     contigs: List[ContigSchema]
+    annotation: Optional[StrainAnnotationSchema] = None
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -178,6 +188,7 @@ class GenomePaginationSchema(BasePaginationSchema):
 __all__ = [
     "StrainSuggestionSchema",
     "ContigSchema",
+    "StrainAnnotationSchema",
     "GenomeResponseSchema",
     "GenomePaginationSchema",
 ]

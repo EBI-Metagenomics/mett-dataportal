@@ -63,6 +63,16 @@ class ModelIndexManager:
             idx.create()
         return name
 
+    def put_mapping(self, name: str) -> None:
+        """Additively update mappings on an existing index from the document class."""
+        if not self.exists(name):
+            return
+        mapping = self.config.model._index.to_dict().get("mappings") or {}
+        properties = mapping.get("properties") or {}
+        if not properties:
+            return
+        connections.get_connection().indices.put_mapping(index=name, properties=properties)
+
     def delete(self, name: str) -> None:
         idx = Index(name)
         if idx.exists():
@@ -116,7 +126,8 @@ class ProjectIndexManager:
                     mgr.create(concrete)
                 elif if_exists == "fail":
                     raise RuntimeError(f"Index already exists: {concrete}")
-                # else: skip
+                else:
+                    mgr.put_mapping(concrete)
             else:
                 mgr.create(concrete)
             results[base] = concrete
@@ -147,6 +158,8 @@ class ProjectIndexManager:
                     mgr.create(concrete)
                 elif if_exists == "fail":
                     raise RuntimeError(f"Index already exists: {concrete}")
+                else:
+                    mgr.put_mapping(concrete)
             else:
                 mgr.create(concrete)
             results[fam] = concrete

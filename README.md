@@ -354,7 +354,7 @@ export METT_RELEASE=current
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `VITE_METT_RELEASE_SELECTOR_ENABLED` | `false` | Show the data-release dropdown on the Home \| API Docs bar. |
+| `VITE_METT_RELEASE_SELECTOR_ENABLED` | `false` | Show the data-release dropdown and per-row/gene release-history UI. |
 | `VITE_METT_DEFAULT_RELEASE` | `current` | Initial header selection when localStorage is empty. |
 
 ---
@@ -565,8 +565,25 @@ python manage.py import_strains \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
   --set-type-strains BU_ATCC8492 PV_ATCC8482 \
   --gff-server ftp.ebi.ac.uk \
-  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/
+  --gff-base /pub/databases/mett/annotations/v1_2024-04-15/ \
+  --pipeline mettannotator \
+  --pipeline-version 1.0 \
+  --processing-reference annotation_release_v1.0 \
+  --processing-document-url https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/README_annotation_release_v1.txt
 ```
+
+A data release can mix pipeline versions. Import each batch separately with `--isolates` (or `--isolates-file`) so later flags do not overwrite earlier strains. Omit the pipeline flags to refresh contigs without touching provenance.
+
+Processing provenance lives on the **strain** document (`annotation`). Genes inherit it via `isolate_name`; it is not copied onto `FeatureDocument`.
+
+Cross-release presence (detail pages only) queries readable version aliases from Postgres, never `mett-current-*` (that would duplicate the promoted `vN`):
+
+```
+GET /api/genomes/{isolate_name}/release-history
+GET /api/genes/{locus_tag}/release-history
+```
+
+Locus tags are not a stable ID across re-annotation.
 
 ### 3. Strain experiments (MIC, metabolism)
 

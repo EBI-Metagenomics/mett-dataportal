@@ -15,6 +15,12 @@ GENOME_RESPONSE_EXAMPLE = {
         {"seq_id": "contig_1", "length": 4200000},
         {"seq_id": "contig_2", "length": 600000},
     ],
+    "annotation": {
+        "pipeline": "mettannotator",
+        "pipeline_version": "2.0",
+        "processing_reference": "processing-v2.0",
+        "processing_document_url": "https://example.org/processing-v2.0.md",
+    },
 }
 
 GENOME_SEARCH_QUERY_EXAMPLE = {

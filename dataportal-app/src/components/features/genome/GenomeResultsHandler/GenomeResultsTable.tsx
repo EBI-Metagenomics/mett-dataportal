@@ -2,6 +2,8 @@ import React, {useEffect, useState} from 'react';
 import styles from './GenomeResultsTable.module.scss';
 import {LinkData} from "../../../../interfaces/Auxiliary";
 import {BaseGenome} from "../../../../interfaces/Genome";
+import ReleaseHistoryLink from '@components/molecules/ReleaseHistoryLink';
+import {RELEASE_SELECTOR_ENABLED} from '../../../../config/featureFlags';
 
 interface GenomeResultsTableProps {
     results: any[];
@@ -64,6 +66,15 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
             <table className="vf-table vf-table--sortable">
                 <thead className="vf-table__header">
                 <tr className="vf-table__row">
+                    {RELEASE_SELECTOR_ENABLED && (
+                    <th
+                        className={`vf-table__heading ${styles.vfTableHeading} ${styles.iconHeading}`}
+                        scope="col"
+                        aria-label="Releases"
+                    >
+                        <span className={styles.visuallyHidden}>Releases</span>
+                    </th>
+                    )}
                     <th onClick={() => handleSort('species')}
                         className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
                         Species
@@ -95,6 +106,13 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                 <tbody className="vf-table__body">
                 {results.map((result, index) => (
                     <tr key={index} className="vf-table__row">
+                        {RELEASE_SELECTOR_ENABLED && (
+                        <td className={`vf-table__cell ${styles.vfTableCell} ${styles.iconCell}`}>
+                            {result.isolate_name ? (
+                                <ReleaseHistoryLink kind="genome" id={result.isolate_name} iconOnly />
+                            ) : null}
+                        </td>
+                        )}
                         <td className={`vf-table__cell ${styles.vfTableCell}`}>
                             <i>{result.species_scientific_name || 'Unknown Species'}</i>
                         </td>

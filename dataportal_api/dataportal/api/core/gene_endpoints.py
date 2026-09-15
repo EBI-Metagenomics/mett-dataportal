@@ -15,6 +15,7 @@ from dataportal.schema.response_schemas import (
     GenePaginatedResponseSchema,
     create_success_response,
 )
+from dataportal.services.core.release_history_service import ReleaseHistoryService
 from dataportal.services.service_factory import ServiceFactory
 from dataportal.utils.constants import (
     GENE_FIELD_PFAM,
@@ -50,6 +51,7 @@ from dataportal.utils.response_wrappers import wrap_success_response, wrap_pagin
 logger = logging.getLogger(__name__)
 
 gene_service = ServiceFactory.get_gene_service()
+release_history_service = ReleaseHistoryService()
 
 ROUTER_GENE = "Genes"
 gene_router = Router(tags=[ROUTER_GENE])
@@ -101,6 +103,39 @@ async def get_faceted_search(request, query: GeneFacetedSearchQuerySchema = Quer
     except ServiceError as e:
         logger.error(f"Service error in faceted search: {e}")
         raise_internal_server_error(f"Failed to perform faceted search: {str(e)}")
+
+
+# API Endpoint to retrieve gene by locus tag
+@gene_router.get(
+    "/{locus_tag}/release-history",
+    response=SuccessResponseSchema,
+    summary="Releases that contain this locus tag",
+    description=(
+        "Searches readable METT feature aliases (mett-vN-features) for this locus tag. "
+        "Does not query mett-current-features, which would duplicate the promoted version. "
+        "Processing provenance is inherited from the strain document in the same release. "
+        "Locus tags are not a stable ID across re-annotation: absence in an older release "
+        "may mean the gene was merged or split, not that the strain was missing."
+    ),
+)
+@wrap_success_response
+async def get_gene_release_history(
+    request,
+    locus_tag: str = Path(
+        ...,
+        description="Unique locus tag identifier for the gene (e.g., 'ABC_123').",
+        example="BU_ATCC8492_00001",
+    ),
+):
+    try:
+        result = await release_history_service.get_gene_history(locus_tag)
+        return create_success_response(
+            data=result.model_dump(),
+            message=f"Release history for {locus_tag} retrieved successfully",
+        )
+    except ServiceError as e:
+        logger.error(f"Service error: {e}")
+        raise_internal_server_error(f"Failed to fetch release history for locus tag '{locus_tag}'")
 
 
 # API Endpoint to retrieve gene by locus tag

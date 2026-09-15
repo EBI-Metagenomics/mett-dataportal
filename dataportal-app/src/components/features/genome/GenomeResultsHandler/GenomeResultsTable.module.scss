@@ -23,6 +23,27 @@
   line-height: 1.3;
 }
 
+.iconHeading,
+.iconCell {
+  width: 2.25rem;
+  max-width: 2.25rem;
+  padding-left: 0.5rem !important;
+  padding-right: 0.25rem !important;
+  text-align: center !important;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .vfTableFooter {
   background-color: #ffffff !important;
 }

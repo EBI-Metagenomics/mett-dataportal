@@ -22,6 +22,14 @@ export function transformGenomeMeta(rawGenome: any): GenomeMeta {
         fasta_url: rawGenome.fasta_url,
         gff_url: rawGenome.gff_url,
         type_strain: Boolean(rawGenome.type_strain),
+        annotation: rawGenome.annotation
+            ? {
+                pipeline: rawGenome.annotation.pipeline ?? null,
+                pipeline_version: rawGenome.annotation.pipeline_version ?? null,
+                processing_reference: rawGenome.annotation.processing_reference ?? null,
+                processing_document_url: rawGenome.annotation.processing_document_url ?? null,
+            }
+            : null,
         contigs: Array.isArray(rawGenome.contigs)
             ? rawGenome.contigs.map((contig: any) => ({
                 seq_id: contig.seq_id,

@@ -1,6 +1,7 @@
 import { BaseService } from "../common/BaseService";
 import { Gene, GeneFacetResponse, GeneMeta, GeneProteinSeq, GeneSuggestion } from "../../interfaces/Gene";
 import { PaginatedApiResponse } from "../../interfaces/ApiResponse";
+import { ReleaseHistory } from "../../interfaces/Genome";
 import { cacheResponse } from "../common/cachingDecorator";
 import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../../utils/common/constants";
 import apiInstance from "../common/apiInstance";
@@ -139,6 +140,16 @@ export class GeneService extends BaseService {
             console.error("Error fetching gene with locus tag %s", locus_tag, error);
             throw error;
         }
+    }
+
+    static async fetchReleaseHistory(locusTag: string): Promise<ReleaseHistory> {
+        const rawResponse = await this.getWithRetry<ReleaseHistory>(
+            `/genes/${encodeURIComponent(locusTag)}/release-history`
+        );
+        return {
+            locus_tag: rawResponse.locus_tag,
+            appearances: Array.isArray(rawResponse.appearances) ? rawResponse.appearances : [],
+        };
     }
 
     /**

@@ -5,21 +5,24 @@ from django.core.management.base import BaseCommand
 from dataportal.ingest.es_repo import StrainIndexRepository
 from dataportal.ingest.strain.contig_importer import StrainContigImporter
 from dataportal.ingest.strain.mapping import read_mapping_tsv
+from dataportal.ingest.strain.provenance import build_annotation_payload, parse_isolate_allowlist
 from dataportal.ingest.strain_experiment.runner import ingest_strain_experiments
+from dataportal.models import StrainDocument
 from dataportal.utils.constants import INDEX_STRAIN_EXPERIMENTS
 
 
 class Command(BaseCommand):
     help = (
         "Import isolate identity/contigs into strain_index. "
-        "Optional MIC/metabolism flags still work; prefer import_strain_experiments."
+        "Optional MIC/metabolism flags still work; prefer import_strain_experiments. "
+        "Optional --pipeline/--pipeline-version stamp processing provenance on written strains."
     )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--es-index",
             required=True,
-            help="Concrete ES strain index (e.g., strain_index-2025.09.03)",
+            help="Concrete ES strain index (e.g., mett-v1-g001-strains)",
         )
         parser.add_argument(
             "--strain-experiment-index",
@@ -47,6 +50,42 @@ class Command(BaseCommand):
             nargs="*",
             help="If provided, set only these isolates to type_strain=True; others False. If omitted, preserve existing flags.",
         )
+        parser.add_argument(
+            "--isolates",
+            type=str,
+            default=None,
+            help="Comma-separated isolate names to import/stamp (mixed-pipeline batches).",
+        )
+        parser.add_argument(
+            "--isolates-file",
+            type=str,
+            default=None,
+            help="File of isolate names (one per line or comma-separated). Combined with --isolates.",
+        )
+        parser.add_argument(
+            "--pipeline",
+            type=str,
+            default=None,
+            help="Annotation pipeline name stamped on imported strains (e.g. mettannotator).",
+        )
+        parser.add_argument(
+            "--pipeline-version",
+            type=str,
+            default=None,
+            help="Annotation pipeline version (e.g. 2.0).",
+        )
+        parser.add_argument(
+            "--processing-reference",
+            type=str,
+            default=None,
+            help="Short processing recipe id (e.g. processing-v2.0).",
+        )
+        parser.add_argument(
+            "--processing-document-url",
+            type=str,
+            default=None,
+            help="URL of the processing README / recipe document.",
+        )
 
         parser.add_argument("--include-mic", action="store_true")
         parser.add_argument("--mic-bu-file", type=str)
@@ -62,8 +101,16 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         es_index = opts["es_index"]
         repo = StrainIndexRepository(concrete_index=es_index)
+        allowlist = parse_isolate_allowlist(opts.get("isolates"), opts.get("isolates_file"))
+        annotation = build_annotation_payload(
+            pipeline=opts.get("pipeline"),
+            pipeline_version=opts.get("pipeline_version"),
+            processing_reference=opts.get("processing_reference"),
+            processing_document_url=opts.get("processing_document_url"),
+        )
 
         if not opts["skip_strains"]:
+            self._ensure_annotation_mapping(es_index)
             self.stdout.write(self.style.SUCCESS("Importing strains/contigs from FTP..."))
             mapping = read_mapping_tsv(opts["map_tsv"])
             StrainContigImporter(
@@ -74,6 +121,8 @@ class Command(BaseCommand):
                 type_strains=opts.get("set_type_strains", None),
                 gff_server=opts.get("gff_server"),
                 gff_base=opts.get("gff_base"),
+                isolates=sorted(allowlist) if allowlist else None,
+                annotation=annotation,
             ).run()
             self.stdout.write(self.style.SUCCESS("Strains/contigs import complete."))
         else:
@@ -98,3 +147,14 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(self.style.SUCCESS("All tasks finished."))
+
+    def _ensure_annotation_mapping(self, es_index: str) -> None:
+        try:
+            from dataportal.elasticsearch.indexing import ProjectIndexManager
+
+            mgr = ProjectIndexManager([StrainDocument]).manager_for_family("strains")
+            mgr.put_mapping(es_index)
+        except Exception as exc:
+            self.stdout.write(
+                self.style.WARNING(f"Could not PUT strain annotation mapping on {es_index}: {exc}")
+            )
