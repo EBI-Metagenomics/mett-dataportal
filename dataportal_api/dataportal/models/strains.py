@@ -33,7 +33,9 @@ class StrainDocument(Document):
 
     strain_id = Keyword()
 
-    species_scientific_name = Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)})
+    species_scientific_name = Text(
+        fields={"keyword": Keyword(normalizer=lowercase_normalizer)}
+    )
     species_acronym = Keyword(normalizer=lowercase_normalizer)
 
     isolate_name = Text(
@@ -52,6 +54,8 @@ class StrainDocument(Document):
 
     fasta_file = Keyword()
     gff_file = Keyword()
+    fasta_url = Keyword()
+    gff_url = Keyword()
     type_strain = Boolean()
 
     contig_count = Integer()

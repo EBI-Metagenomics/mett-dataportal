@@ -14,18 +14,19 @@ from bs4 import BeautifulSoup
 def retry_with_backoff(max_retries=5, base_delay=2, max_delay=120, backoff_factor=2):
     """
     Decorator for retrying functions with exponential backoff.
-    
+
     Args:
         max_retries: Maximum number of retry attempts
         base_delay: Initial delay in seconds
         max_delay: Maximum delay in seconds
         backoff_factor: Multiplier for delay after each retry
     """
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             last_exception = None
             delay = base_delay
-            
+
             for attempt in range(max_retries + 1):
                 try:
                     return func(*args, **kwargs)
@@ -34,29 +35,39 @@ def retry_with_backoff(max_retries=5, base_delay=2, max_delay=120, backoff_facto
                     if attempt == max_retries:
                         print(f"✗ Failed after {max_retries + 1} attempts: {e}")
                         raise last_exception
-                    
+
                     # Determine if this is a connection error that needs longer delays
                     error_str = str(e).lower()
-                    is_connection_error = any(term in error_str for term in [
-                        'connection refused', 'connection reset', 'timeout', 
-                        'max retries exceeded', 'newconnectionerror'
-                    ])
-                    
+                    is_connection_error = any(
+                        term in error_str
+                        for term in [
+                            "connection refused",
+                            "connection reset",
+                            "timeout",
+                            "max retries exceeded",
+                            "newconnectionerror",
+                        ]
+                    )
+
                     if is_connection_error:
                         # Use longer delays for connection issues
                         delay = min(delay * backoff_factor, max_delay)
-                        print(f"⚠️  Attempt {attempt + 1} failed (connection issue): {e}")
+                        print(
+                            f"⚠️  Attempt {attempt + 1} failed (connection issue): {e}"
+                        )
                         print(f"🔄 Retrying in {delay} seconds...")
                     else:
                         # Use shorter delays for other errors
                         delay = min(delay * backoff_factor, max_delay // 2)
                         print(f"⚠️  Attempt {attempt + 1} failed: {e}")
                         print(f"🔄 Retrying in {delay} seconds...")
-                    
+
                     time.sleep(delay)
-            
+
             return None
+
         return wrapper
+
     return decorator
 
 
@@ -79,7 +90,7 @@ class FtpFaaSource(FaaSource):
         # Configure session with retry strategy
         from requests.adapters import HTTPAdapter
         from urllib3.util.retry import Retry
-        
+
         retry_strategy = Retry(
             total=3,
             backoff_factor=1,
@@ -212,7 +223,7 @@ class FaaConsolidator:
                 return None
         except Exception as e:
             error_str = str(e).lower()
-            if 'connection refused' in error_str or 'max retries exceeded' in error_str:
+            if "connection refused" in error_str or "max retries exceeded" in error_str:
                 print(f"✗ Connection failed for {name} after all retries, skipping...")
             else:
                 print(f"✗ Failed to fetch {name} from {path}: {e}")
@@ -249,19 +260,23 @@ class FaaConsolidator:
 
         # Count total files attempted (this is approximate since we don't track individual failures)
         for source in self.sources:
-            if hasattr(source, 'strain_ids'):
+            if hasattr(source, "strain_ids"):
                 total_attempted += len(source.strain_ids)
-            elif hasattr(source, 'faa_files'):
+            elif hasattr(source, "faa_files"):
                 total_attempted += len(source.faa_files)
 
         total_successful = len(all_results)
         failed_count = total_attempted - total_successful
 
-        print(f"📊 Processing Summary:")
+        print("📊 Processing Summary:")
         print(f"   • Total files attempted: {total_attempted}")
         print(f"   • Successfully processed: {total_successful}")
         print(f"   • Failed/skipped: {failed_count}")
-        print(f"   • Success rate: {(total_successful/total_attempted*100):.1f}%" if total_attempted > 0 else "   • Success rate: N/A")
+        print(
+            f"   • Success rate: {(total_successful/total_attempted*100):.1f}%"
+            if total_attempted > 0
+            else "   • Success rate: N/A"
+        )
 
         print(f"\nWriting {len(all_results)} .faa entries to output")
         with open(self.output_file, "w") as outfile:

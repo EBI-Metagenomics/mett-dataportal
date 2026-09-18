@@ -107,7 +107,7 @@ class Command(BaseCommand):
             help=(
                 "Directory containing UniProt→STRING mapping TSVs (from convert_to_uniprot_mapping.py). "
                 "Prefers files with 'uniprot' and 'string' in the name (e.g. bu_uniprot_to_string.tsv). "
-                "Use path relative to cwd, e.g. ../data-generators/stringdb-mapper/output"
+                "Use path relative to cwd, e.g. ../data-generators/data/generated/string-mapping/uniprot_mapped"
             ),
         )
 
@@ -148,7 +148,9 @@ class Command(BaseCommand):
             if string_mapping_tsv:
                 paths = [string_mapping_tsv]
             elif string_mapping_dir:
-                all_files = list_csv_files(string_mapping_dir, exts=(".tsv", ".tab", ".csv"))
+                all_files = list_csv_files(
+                    string_mapping_dir, exts=(".tsv", ".tab", ".csv")
+                )
                 # Prefer converted files (locus_tag, uniprot_id, string_protein_id)
                 paths = [
                     f
@@ -173,7 +175,9 @@ class Command(BaseCommand):
                     string_map.update(part)
                 except Exception as e:
                     self.stdout.write(
-                        self.style.WARNING(f"Warning: failed to load STRING mapping from {p}: {e}")
+                        self.style.WARNING(
+                            f"Warning: failed to load STRING mapping from {p}: {e}"
+                        )
                     )
 
         # Initialize GFF parser if gene information is requested
@@ -185,7 +189,9 @@ class Command(BaseCommand):
             gff_parser = GFFParser(ftp_server=ftp_server, ftp_directory=ftp_directory)
             self.stdout.write(self.style.SUCCESS("GFF parser initialized successfully"))
         else:
-            self.stdout.write(self.style.WARNING("Skipping gene information extraction"))
+            self.stdout.write(
+                self.style.WARNING("Skipping gene information extraction")
+            )
 
         # Initialize PPI repository
         self.stdout.write("Initializing PPI repository...")
@@ -210,11 +216,15 @@ class Command(BaseCommand):
         self.stdout.write(f"Pattern: {pattern}")
         self.stdout.write(f"Batch size: {batch_size}")
         self.stdout.write(f"Refresh policy: {refresh}")
-        self.stdout.write(f"Gene information: {'Enabled' if gff_parser else 'Disabled'}")
+        self.stdout.write(
+            f"Gene information: {'Enabled' if gff_parser else 'Disabled'}"
+        )
         if gff_parser:
             self.stdout.write(f"FTP Server: {ftp_server}")
             self.stdout.write(f"FTP Directory: {ftp_directory}")
-        self.stdout.write(f"Index optimization: {'Enabled' if optimize_indexing else 'Disabled'}")
+        self.stdout.write(
+            f"Index optimization: {'Enabled' if optimize_indexing else 'Disabled'}"
+        )
 
         if refresh_every_rows:
             self.stdout.write(f"Refresh every {refresh_every_rows} rows")

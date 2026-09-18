@@ -35,6 +35,18 @@ class StrainFactory(factory.Factory):
             "PV_ATCC8482_annotations.gff",
         ]
     )
+    fasta_url = factory.LazyAttribute(
+        lambda o: (
+            "https://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/"
+            f"deduplicated_assemblies/{o.fasta_file}"
+        )
+    )
+    gff_url = factory.LazyAttribute(
+        lambda o: (
+            "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/"
+            f"{o.isolate_name}/functional_annotation/merged_gff/{o.gff_file}"
+        )
+    )
     type_strain = factory.Iterator([True, False, False, True])
     species_scientific_name = factory.LazyAttribute(
         lambda _: SpeciesFactory().scientific_name

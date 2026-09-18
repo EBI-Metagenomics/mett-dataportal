@@ -28,19 +28,23 @@ import json
 import sys
 from pathlib import Path
 
-# Strain configuration: strain_id -> (mett_faa, string_faa, raw_tsv)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _paths import STRING_INPUT_DIR, STRING_OUT
+
+# Strain configuration: strain_id -> (mett_faa, string_faa, raw_tsv) relative to
+# STRING_INPUT_DIR (mett/string FASTA) and STRING_OUT (raw TSV).
 STRAIN_CONFIG = {
     "BU": {
         "mett_faa": "mett-faa-files/bu_typestrains.faa",
         "string_faa": "bu820_string.faa",
-        "raw_tsv": "output/raw/bu_to_string_raw.tsv",
+        "raw_tsv": "raw/bu_to_string_raw.tsv",
         "taxon": 820,
         "species": "Bacteroides uniformis",
     },
     "PV": {
         "mett_faa": "mett-faa-files/pv_typestrains.faa",
         "string_faa": "pv435590_string.faa",
-        "raw_tsv": "output/raw/pv_to_string_raw.tsv",
+        "raw_tsv": "raw/pv_to_string_raw.tsv",
         "taxon": 435590,
         "species": "Bacteroides vulgatus",
     },
@@ -194,12 +198,12 @@ def draw_venn(
     return out_path
 
 
-def run_strain(base_dir: Path, strain: str, draw: bool) -> dict:
+def run_strain(input_dir: Path, mapping_dir: Path, strain: str, draw: bool) -> dict:
     """Run analysis for one strain."""
     cfg = STRAIN_CONFIG[strain]
-    mett_path = base_dir / cfg["mett_faa"]
-    string_path = base_dir / cfg["string_faa"]
-    tsv_path = base_dir / cfg["raw_tsv"]
+    mett_path = input_dir / cfg["mett_faa"]
+    string_path = input_dir / cfg["string_faa"]
+    tsv_path = mapping_dir / cfg["raw_tsv"]
 
     for p, name in [
         (mett_path, "METT FASTA"),
@@ -222,7 +226,7 @@ def run_strain(base_dir: Path, strain: str, draw: bool) -> dict:
     mett_only = set(result["mett_only_ids"])
     string_only = set(result["string_only_ids"])
 
-    out_dir = base_dir / "output" / "mapping_coverage"
+    out_dir = mapping_dir / "mapping_coverage"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # JSON (summary, no ID lists)
@@ -304,8 +308,8 @@ def main() -> None:
     parser.add_argument(
         "--base-dir",
         type=Path,
-        default=Path(__file__).resolve().parent,
-        help="Base directory (default: script dir)",
+        default=None,
+        help="data-generators root (overrides default input/output locations)",
     )
     args = parser.parse_args()
 
@@ -315,11 +319,18 @@ def main() -> None:
     strains = list(STRAIN_CONFIG) if args.all else [args.strain]
     draw = not args.no_venn
 
+    if args.base_dir:
+        input_dir = args.base_dir / "data" / "inputs" / "stringdb"
+        mapping_dir = args.base_dir / "data" / "generated" / "string-mapping"
+    else:
+        input_dir = STRING_INPUT_DIR
+        mapping_dir = STRING_OUT
+
     for strain in strains:
         print(
             f"\n=== {strain} ({STRAIN_CONFIG[strain]['species']}, taxon {STRAIN_CONFIG[strain]['taxon']}) ==="
         )
-        r = run_strain(args.base_dir, strain, draw)
+        r = run_strain(input_dir, mapping_dir, strain, draw)
         print(f"  METT proteins:        {r['mett_proteins']}")
         print(f"  STRING proteins:      {r['string_proteins']}")
         print(
@@ -330,7 +341,7 @@ def main() -> None:
             f"  STRING matched:      {r['string_proteins_matched']} ({100*r['string_proteins_matched']/r['string_proteins']:.1f}% of STRING)"
         )
         print(f"  STRING only:         {r['string_only_unmatched']}")
-        print("  Output: output/mapping_coverage/")
+        print(f"  Output: {mapping_dir / 'mapping_coverage'}")
 
 
 if __name__ == "__main__":

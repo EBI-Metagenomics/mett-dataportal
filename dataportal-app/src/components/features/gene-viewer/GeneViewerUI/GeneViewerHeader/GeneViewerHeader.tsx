@@ -48,21 +48,21 @@ const GeneViewerHeader: React.FC<GeneViewerHeaderProps> = ({genomeMeta}) => {
                                               style={{paddingLeft: '5px'}}></span>
                                     </a>
                                 </p>
-                                {pipeline && (
-                                    <p><strong>Annotation pipeline:&nbsp;</strong>{pipeline}</p>
-                                )}
-                                {processingUrl && (
-                                    <p><strong>Processing document:&nbsp;</strong>
-                                        <a href={processingUrl} target="_blank" rel="noopener noreferrer">
-                                            {processingRef || processingUrl}
-                                        </a>
-                                    </p>
-                                )}
-                                {RELEASE_SELECTOR_ENABLED && (
-                                    <p>
-                                        <ReleaseHistoryLink kind="genome" id={genomeMeta.isolate_name} />
-                                    </p>
-                                )}
+                                {/*{pipeline && (*/}
+                                {/*    <p><strong>Annotation pipeline:&nbsp;</strong>{pipeline}</p>*/}
+                                {/*)}*/}
+                                {/*{processingUrl && (*/}
+                                {/*    <p><strong>Processing document:&nbsp;</strong>*/}
+                                {/*        <a href={processingUrl} target="_blank" rel="noopener noreferrer">*/}
+                                {/*            {processingRef || processingUrl}*/}
+                                {/*        </a>*/}
+                                {/*    </p>*/}
+                                {/*)}*/}
+                                {/*{RELEASE_SELECTOR_ENABLED && (*/}
+                                {/*    <p>*/}
+                                {/*        <ReleaseHistoryLink kind="genome" id={genomeMeta.isolate_name} />*/}
+                                {/*    </p>*/}
+                                {/*)}*/}
                             </div>
                         ) : (
                             <p>Loading genome meta information...</p>

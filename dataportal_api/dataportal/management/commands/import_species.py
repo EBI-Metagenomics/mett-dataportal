@@ -12,7 +12,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--csv",
             type=str,
-            default="../data-generators/data/species.csv",
+            default="../data-generators/data/reference/species.csv",
             help="Path to the CSV file containing species data",
         )
         parser.add_argument(
@@ -42,13 +42,19 @@ class Command(BaseCommand):
         except BulkIndexError as e:
             errs = getattr(e, "errors", [])
             self.stderr.write(
-                self.style.ERROR(f"{len(errs)} document(s) failed to index. Showing up to 5:")
+                self.style.ERROR(
+                    f"{len(errs)} document(s) failed to index. Showing up to 5:"
+                )
             )
             for i, err in enumerate(errs[:5], 1):
                 self.stderr.write(self.style.ERROR(f"[{i}] {err}"))
             raise
 
         self.stdout.write(f"Loaded {loaded} records.")
-        self.stdout.write(self.style.SUCCESS(f"Indexed {ok} records into '{index_name}'"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Indexed {ok} records into '{index_name}'")
+        )
         if errors:
-            self.stdout.write(self.style.WARNING(f"Bulk completed with {len(errors)} errors."))
+            self.stdout.write(
+                self.style.WARNING(f"Bulk completed with {len(errors)} errors.")
+            )

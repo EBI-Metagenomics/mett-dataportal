@@ -5,6 +5,8 @@ import getDefaultSessionConfig from '@components/features/gene-viewer/GeneViewer
 import { ZOOM_LEVELS } from '../common/constants';
 import { GenomeMeta } from '../../interfaces/Genome';
 import { GeneMeta } from '../../interfaces/Gene';
+import { useMettRelease } from '../../hooks/useMettRelease';
+import { buildJbrowseIndexDirs } from './jbrowseIndexPaths';
 
 export interface GeneViewerConfig {
   assembly: any;
@@ -22,25 +24,42 @@ export const useGeneViewerConfig = (
   geneMeta: GeneMeta | null,
   includeEssentiality: boolean
 ): GeneViewerConfig => {
+  const { selected, catalog } = useMettRelease();
+
+  const indexDirs = useMemo(() => {
+    if (!genomeMeta) {
+      return { fastaDir: '', gffDir: '' };
+    }
+    return buildJbrowseIndexDirs({
+      basePath: import.meta.env.VITE_JBROWSE_INDEXES_PATH || '',
+      selectedRelease: selected,
+      catalog,
+      isolateName: genomeMeta.isolate_name,
+      speciesAcronym: genomeMeta.species_acronym,
+      fastaFile: genomeMeta.fasta_file,
+      assemblyName: genomeMeta.assembly_name,
+    });
+  }, [genomeMeta, selected, catalog]);
+
   const assembly = useMemo(() => {
     if (genomeMeta) {
       return getAssembly(
         genomeMeta, 
-        import.meta.env.VITE_ASSEMBLY_INDEXES_PATH || ''
+        indexDirs.fastaDir
       );
     }
     return null;
-  }, [genomeMeta]);
+  }, [genomeMeta, indexDirs.fastaDir]);
 
   const tracks = useMemo(() => {
     return genomeMeta
       ? getTracks(
           genomeMeta,
-          import.meta.env.VITE_GFF_INDEXES_PATH || '',
+          indexDirs.gffDir,
           includeEssentiality
         )
       : [];
-  }, [genomeMeta, includeEssentiality]);
+  }, [genomeMeta, includeEssentiality, indexDirs.gffDir]);
 
   const selectedGenomes = useMemo(() => {
     return genomeMeta

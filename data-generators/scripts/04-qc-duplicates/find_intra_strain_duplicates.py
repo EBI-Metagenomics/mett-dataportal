@@ -1,11 +1,16 @@
 import csv
 import re
+import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _paths import QC_OUT
 
 
 class IntraStrainDuplicateFinder:
@@ -127,8 +132,10 @@ class IntraStrainDuplicateFinder:
         return results
 
 
-def write_csv_outputs(results, out_dir="output"):
+def write_csv_outputs(results, out_dir=None):
     import os
+
+    out_dir = str(out_dir or QC_OUT)
 
     os.makedirs(out_dir, exist_ok=True)
 

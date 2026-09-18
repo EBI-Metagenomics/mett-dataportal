@@ -14,8 +14,9 @@ from dataportal.ingest.strain.ftp import (
     ftp_connect,
     ftp_download,
     ftp_list_fasta,
-    ftp_list_gff_for_isolate,
+    ftp_resolve_gff_for_isolate,
     parse_fasta_contigs,
+    public_https_url,
 )
 from dataportal.ingest.strain.provenance import apply_annotation, isolate_allowed
 from dataportal.ingest.strain.resolver import StrainResolver, isolate_lookup_key
@@ -76,7 +77,9 @@ class StrainContigImporter(BaseImporter):
             try:
                 ftp_gff = self._connect_gff()
                 if ftp_gff:
-                    gff_folder_map = ftp_build_isolate_folder_map(ftp_gff, self.gff_base)
+                    gff_folder_map = ftp_build_isolate_folder_map(
+                        ftp_gff, self.gff_base
+                    )
             except ftplib.all_errors:
                 ftp_gff = None
                 gff_folder_map = None
@@ -158,7 +161,8 @@ class StrainContigImporter(BaseImporter):
             doc.assembly_accession = f"AA{accession_counter:05d}"
             accession_counter += 1
             doc.fasta_file = file
-            # leave existing gff_file intact unless we find a new match below
+            doc.fasta_url = public_https_url(self.ftp_server, self.ftp_directory, file)
+            # leave existing gff_file/gff_url intact unless we find a new match below
             doc.species_scientific_name = species_name
             doc.species_acronym = strain_prefix(canonical_id)
 
@@ -167,14 +171,19 @@ class StrainContigImporter(BaseImporter):
                 doc.type_strain = canonical_id in type_set
             # else: preserve existing value
 
-            # GFF filename lookup (via folder map + canonical id)
+            # GFF filename + public URL (via folder map + canonical id)
             if ftp_gff is not None:
-                gffs = ftp_list_gff_for_isolate(
+                resolved = ftp_resolve_gff_for_isolate(
                     ftp_gff, self.gff_base, canonical_id, folder_map=gff_folder_map
                 )
-                chosen = choose_primary_gff(gffs)
-                if chosen:
-                    doc.gff_file = chosen  # filename only
+                if resolved:
+                    gff_dir, gffs = resolved
+                    chosen = choose_primary_gff(gffs)
+                    if chosen:
+                        doc.gff_file = chosen
+                        doc.gff_url = public_https_url(
+                            self.gff_server or self.ftp_server, gff_dir, chosen
+                        )
 
             apply_annotation(doc, self.annotation)
 

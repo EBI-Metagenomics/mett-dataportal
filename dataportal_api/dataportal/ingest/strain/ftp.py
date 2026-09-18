@@ -14,6 +14,23 @@ def ftp_connect(server: str) -> ftplib.FTP:
     return ftp
 
 
+def public_https_url(server: str, *parts: str) -> str:
+    """Build a browser-facing HTTPS URL from an FTP host and path segments."""
+    host = (
+        server.strip()
+        .removeprefix("https://")
+        .removeprefix("http://")
+        .removeprefix("ftp://")
+        .strip("/")
+    )
+    chunks: List[str] = []
+    for part in parts:
+        if not part:
+            continue
+        chunks.extend(p for p in str(part).replace("\\", "/").split("/") if p)
+    return "https://" + "/".join([host, *chunks])
+
+
 def ftp_list_fasta(ftp: ftplib.FTP, directory: str) -> List[str]:
     ftp.cwd(directory)
     return [f for f in ftp.nlst() if f.endswith(".fa")]
@@ -80,6 +97,19 @@ def ftp_list_gff_for_isolate(
     isolate: str,
     folder_map: Optional[Dict[str, str]] = None,
 ) -> List[str]:
+    resolved = ftp_resolve_gff_for_isolate(
+        ftp, gff_base, isolate, folder_map=folder_map
+    )
+    return resolved[1] if resolved else []
+
+
+def ftp_resolve_gff_for_isolate(
+    ftp: ftplib.FTP,
+    gff_base: str,
+    isolate: str,
+    folder_map: Optional[Dict[str, str]] = None,
+) -> Optional[tuple[str, List[str]]]:
+    """Return (remote_dir, gff filenames) for the isolate, or None if missing."""
     folder_name: Optional[str] = None
     if folder_map:
         folder_name = folder_map.get(_folder_key(isolate))
@@ -99,9 +129,9 @@ def ftp_list_gff_for_isolate(
             continue
         files = [os.path.basename(p) for p in lst if p.endswith(".gff")]
         if files:
-            return files
+            return gff_dir, files
 
-    return []
+    return None
 
 
 def choose_primary_gff(gff_files: List[str]) -> Optional[str]:

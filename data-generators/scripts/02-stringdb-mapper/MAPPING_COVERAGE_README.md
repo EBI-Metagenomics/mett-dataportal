@@ -14,7 +14,7 @@ This workflow quantifies how many METT proteins successfully map to STRING ident
 ## Quick Start
 
 ```bash
-cd data-generators/stringdb-mapper
+cd data-generators/scripts/02-stringdb-mapper
 
 # Run for BU and PV
 python mapping_coverage_venn.py --all
@@ -26,7 +26,7 @@ python mapping_coverage_venn.py --strain PV
 
 ## Output Files
 
-All outputs go to `output/mapping_coverage/`:
+All outputs go to `data/generated/string-mapping/mapping_coverage/`:
 
 | File | Description |
 |------|-------------|
@@ -71,7 +71,7 @@ All outputs go to `output/mapping_coverage/`:
 ```bash
 pip install matplotlib
 python mapping_coverage_venn.py --strain BU
-# Produces output/mapping_coverage/venn_bu.png
+# Produces data/generated/string-mapping/mapping_coverage/venn_bu.png
 ```
 
 ### Option 2: InteractiVenn (web)
@@ -94,19 +94,19 @@ Use the JSON counts to draw a custom diagram, or export counts for any tool.
 
 ### Step 1: Verify METT protein count
 ```bash
-grep -c "^>" mett-faa-files/bu_typestrains.faa
+grep -c "^>" ../../data/inputs/stringdb/mett-faa-files/bu_typestrains.faa
 # Expected: 3844 (BU) or 4193 (PV)
 ```
 
 ### Step 2: Verify STRING protein count
 ```bash
-grep -c "^>" bu820_string.faa
+grep -c "^>" ../../data/inputs/stringdb/bu820_string.faa
 # Expected: 3899 (BU) or 4065 for pv435590_string.faa (PV)
 ```
 
 ### Step 3: Verify mapping count
 ```bash
-wc -l output/raw/bu_to_string_raw.tsv
+wc -l ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv
 # Expected: 3444 (BU) or 3943 (PV)
 # Note: no header row in raw TSV
 ```
@@ -114,7 +114,7 @@ wc -l output/raw/bu_to_string_raw.tsv
 ### Step 4: Verify set disjointness
 ```bash
 # METT = mapped ∪ unmapped, and these are disjoint
-cd output/mapping_coverage
+cd ../../data/generated/string-mapping/mapping_coverage
 
 # Count lines in unmapped
 wc -l unmapped_mett_BU.txt
@@ -133,7 +133,7 @@ head -1 unmapped_mett_BU.txt
 # e.g. BU_ATCC8492_00XXX
 
 # Verify it's not in the mapping
-grep "BU_ATCC8492_00XXX" output/raw/bu_to_string_raw.tsv
+grep "BU_ATCC8492_00XXX" ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv
 # Should return nothing
 ```
 
@@ -141,26 +141,26 @@ grep "BU_ATCC8492_00XXX" output/raw/bu_to_string_raw.tsv
 Pick a few IDs from the raw TSV and verify they **do** appear in the METT FASTA:
 ```bash
 # Pick first mapped METT ID from raw output
-cut -f1 output/raw/bu_to_string_raw.tsv | head -1
+cut -f1 ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv | head -1
 # e.g. BU_ATCC8492_00001
 
 # Verify it's in METT FASTA
-grep "BU_ATCC8492_00001" mett-faa-files/bu_typestrains.faa
+grep "BU_ATCC8492_00001" ../../data/inputs/stringdb/mett-faa-files/bu_typestrains.faa
 # Should return the header line
 ```
 
 ### Step 7: Verify STRING IDs in mapping exist in STRING FASTA
 ```bash
 # Get unique STRING IDs from mapping
-cut -f2 output/raw/bu_to_string_raw.tsv | sort -u | wc -l
+cut -f2 ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv | sort -u | wc -l
 # This may be less than 3444 if multiple METT map to same STRING (many-to-one)
 
 # Spot-check: first STRING ID from mapping
-cut -f2 output/raw/bu_to_string_raw.tsv | head -1
+cut -f2 ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv | head -1
 # e.g. 820.ERS852554_01920
 
 # Verify it exists in STRING FASTA
-grep "820.ERS852554_01920" bu820_string.faa
+grep "820.ERS852554_01920" ../../data/inputs/stringdb/bu820_string.faa
 # Should return the header line
 ```
 
@@ -181,7 +181,7 @@ Edit `mapping_coverage_venn.py` and add to `STRAIN_CONFIG`:
 "NEW_STRAIN": {
     "mett_faa": "mett-faa-files/new_typestrains.faa",
     "string_faa": "new_taxon_string.faa",
-    "raw_tsv": "output/raw/new_to_string_raw.tsv",
+    "raw_tsv": "raw/new_to_string_raw.tsv",
     "taxon": 12345,
     "species": "Species name",
 },
@@ -189,5 +189,5 @@ Edit `mapping_coverage_venn.py` and add to `STRAIN_CONFIG`:
 
 Then:
 1. Ensure STRING FASTA is prepared (see main README)
-2. Run DIAMOND blastp to produce `output/raw/new_to_string_raw.tsv`
+2. Run DIAMOND blastp to produce `data/generated/string-mapping/raw/new_to_string_raw.tsv`
 3. Run: `python mapping_coverage_venn.py --strain NEW_STRAIN`

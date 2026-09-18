@@ -10,17 +10,19 @@ See [MAPPING_COVERAGE_README.md](MAPPING_COVERAGE_README.md) for output files, v
 
 ---
 
+Inputs live in `data-generators/data/inputs/stringdb/`. Mapping outputs go to `data-generators/data/generated/string-mapping/` (override with `STRING_INPUT_DIR` / `STRING_OUT`).
+
 ### Convert the STRING DB FASTA for DIAMOND:
 ```bash
-$ zcat ./stringdb-protein-files/820.protein.sequences.v12.0.fa.gz \
+$ zcat ../../data/inputs/stringdb/stringdb-protein-files/820.protein.sequences.v12.0.fa.gz \
   | awk '{print ">" $1 "\n" $2}' \
-  > bu820_string.faa
+  > ../../data/inputs/stringdb/bu820_string.faa
 ```
 
 ```bash
-$ zcat ./stringdb-protein-files/435590.protein.sequences.v12.0.fa.gz \
+$ zcat ../../data/inputs/stringdb/stringdb-protein-files/435590.protein.sequences.v12.0.fa.gz \
   | awk '{print ">" $1 "\n" $2}' \
-  > pv435590_string.faa
+  > ../../data/inputs/stringdb/pv435590_string.faa
 ```
 
 #### sanity-check:
@@ -46,13 +48,13 @@ $ conda create -n diamond -c conda-forge -c bioconda python=3.11 diamond
 #### Then build the DB:
 ```bash
 $ diamond makedb \
-  --in bu820_string.faa \
-  -d bu820_string
+  --in ../../data/inputs/stringdb/bu820_string.faa \
+  -d ../../data/inputs/stringdb/bu820_string
 ```
 ```bash
 $ diamond makedb \
-  --in pv435590_string.faa \
-  -d pv435590_string
+  --in ../../data/inputs/stringdb/pv435590_string.faa \
+  -d ../../data/inputs/stringdb/pv435590_string
 ```
 This will create bu820_string.dmnd.
 
@@ -73,9 +75,9 @@ Run a blastp-like search:
 Basic best-hit mapping:
 ```bash
 $ diamond blastp \
-  -q ./mett-faa-files/bu_typestrains.faa \
-  -d bu820_string \
-  -o ./output/raw/bu_to_string_raw.tsv \
+  -q ../../data/inputs/stringdb/mett-faa-files/bu_typestrains.faa \
+  -d ../../data/inputs/stringdb/bu820_string \
+  -o ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv \
   -f 6 qseqid sseqid pident length qcovhsp scovhsp evalue bitscore \
   --max-target-seqs 1  \
   --evalue 1e-3 \
@@ -83,9 +85,9 @@ $ diamond blastp \
 ```
 ```bash
 $ diamond blastp \
-  -q ./mett-faa-files/pv_typestrains.faa \
-  -d pv435590_string \
-  -o ./output/raw/pv_to_string_raw.tsv \
+  -q ../../data/inputs/stringdb/mett-faa-files/pv_typestrains.faa \
+  -d ../../data/inputs/stringdb/pv435590_string \
+  -o ../../data/generated/string-mapping/raw/pv_to_string_raw.tsv \
   -f 6 qseqid sseqid pident length qcovhsp scovhsp evalue bitscore \
   --max-target-seqs 1  \
   --evalue 1e-3 \
@@ -138,30 +140,30 @@ PPI data uses UniProt IDs; the raw DIAMOND output uses locus_tags. Run the conve
 ```bash
 # BU (downloads GFF from FTP)
 python convert_to_uniprot_mapping.py \
-  --raw-tsv output/raw/bu_to_string_raw.tsv \
+  --raw-tsv ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv \
   --download-gff BU_ATCC8492 \
-  --output output/uniprot_mapped/bu_uniprot_to_string.tsv
+  --output ../../data/generated/string-mapping/uniprot_mapped/bu_uniprot_to_string.tsv
 
 # PV
 python convert_to_uniprot_mapping.py \
-  --raw-tsv output/raw/pv_to_string_raw.tsv \
+  --raw-tsv ../../data/generated/string-mapping/raw/pv_to_string_raw.tsv \
   --download-gff PV_ATCC8482 \
-  --output output/uniprot_mapped/pv_uniprot_to_string.tsv
+  --output ../../data/generated/string-mapping/uniprot_mapped/pv_uniprot_to_string.tsv
 ```
 
 Or with a local GFF file:
 ```bash
 python convert_to_uniprot_mapping.py \
-  --raw-tsv output/raw/bu_to_string_raw.tsv \
+  --raw-tsv ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv \
   --gff-file /path/to/BU_ATCC8492/.../merged_annotations.gff \
-  --output output/uniprot_mapped/bu_uniprot_to_string.tsv
+  --output ../../data/generated/string-mapping/uniprot_mapped/bu_uniprot_to_string.tsv
 ```
 
 Then point PPI import at the output directory:
 ```bash
 python manage.py import_ppi_with_genes \
   --csv-folder /path/to/ppi_csvs \
-  --string-mapping-dir output/uniprot_mapped/
+  --string-mapping-dir ../../data/generated/string-mapping/uniprot_mapped/
 ```
 
 The output TSV has columns: `locus_tag`, `uniprot_id`, `string_protein_id`.

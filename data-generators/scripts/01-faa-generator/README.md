@@ -41,20 +41,22 @@ $ cd /hps/nobackup/rdf/metagenomics/service-team/users/tgurbich/Misc/Flagship/MA
 
 #### Import and consolidate the sequence data
 ```bash
-$ cd ./data-generators/faa-generator
+$ cd ./data-generators/scripts/01-faa-generator
 $ python ./run_pipeline.py
 ```
+
+Outputs go to `data-generators/data/generated/faa/` (override with `FAA_OUT`).
 
 #### Copy deduplicated files on NFS dev
 ##### Spwan the test pod
 ```bash
-$ cd ./data-generators/faa-generator
+$ cd ./data-generators/scripts/01-faa-generator
 $ kubectl apply -f file-copy-pod.yml
 ```
 
 ##### Copy the files
 ```bash
-$ cd ./data-generators/faa-generator
+$ cd ./data-generators/scripts/01-faa-generator
 $ ./copy-files-to-nfs.sh
 ```
 

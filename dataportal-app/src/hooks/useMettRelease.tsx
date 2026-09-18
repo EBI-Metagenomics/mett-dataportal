@@ -60,7 +60,6 @@ export const ReleaseProvider: React.FC<{children: React.ReactNode}> = ({children
         queryFn: fetchReleases,
         staleTime: 60 * 1000,
         retry: 1,
-        enabled: RELEASE_SELECTOR_ENABLED,
     });
 
     useEffect(() => {

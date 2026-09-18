@@ -1,8 +1,9 @@
 import {GenomeMeta} from "../../../../interfaces/Genome";
 import {JBROWSE_TRACK_HEIGHTS} from "../../../../utils/common/constants";
+import {joinIndexFile} from "../../../../utils/gene-viewer/jbrowseIndexPaths";
 
 const getTracks
-        = (genomeMeta: GenomeMeta, gffBaseUrl: string, includeEssentiality: boolean) => {
+        = (genomeMeta: GenomeMeta, gffDir: string, includeEssentiality: boolean) => {
         const tracks = [];
 
         // Structural Annotation Track
@@ -16,7 +17,7 @@ const getTracks
             adapter: {
                 type: 'EnhancedGeneFeatureAdapter',
                 gffGzLocation: {
-                    uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz`,
+                    uri: joinIndexFile(gffDir, `${genomeMeta.gff_file}.gz`),
                 },
                 isolateName: genomeMeta.isolate_name,
                 isTypeStrain: genomeMeta.type_strain,
@@ -24,7 +25,7 @@ const getTracks
                 speciesName: genomeMeta.species_scientific_name || genomeMeta.species_acronym,
                 index: {
                     location: {
-                        uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/${genomeMeta.gff_file}.gz.tbi`,
+                        uri: joinIndexFile(gffDir, `${genomeMeta.gff_file}.gz.tbi`),
                     },
                 },
             },
@@ -34,13 +35,13 @@ const getTracks
                     type: 'TrixTextSearchAdapter',
                     textSearchAdapterId: 'gff3tabix_genes-index',
                     ixFilePath: {
-                        uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz.ix`,
+                        uri: joinIndexFile(gffDir, `trix/${genomeMeta.gff_file}.gz.ix`),
                     },
                     ixxFilePath: {
-                        uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz.ixx`,
+                        uri: joinIndexFile(gffDir, `trix/${genomeMeta.gff_file}.gz.ixx`),
                     },
                     metaFilePath: {
-                        uri: `${gffBaseUrl}/${genomeMeta.isolate_name}/trix/${genomeMeta.gff_file}.gz_meta.json`,
+                        uri: joinIndexFile(gffDir, `trix/${genomeMeta.gff_file}.gz_meta.json`),
                     },
                     assemblyNames: [genomeMeta.assembly_name],
                 },

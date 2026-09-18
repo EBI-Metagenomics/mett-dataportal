@@ -4,9 +4,14 @@ These scripts are to generate the indexed files for testing and later can be uti
 
 Run below scripts to have the indexes generated -
 ```bash
+$ cd data-generators/scripts/03-browser-indexes
 $ ./process_fasta.sh
 $ ./process_gff3.sh
 ```
+
+Outputs go to `data-generators/data/generated/browser-indexes/` (override with `BROWSER_INDEX_OUT`).
+
+`process_gff3.sh` used to call `process_essentiality.sh`; that script is not in the repo, so the GFF step skips it if missing.
 
 
 ### Process Brief

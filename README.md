@@ -32,6 +32,8 @@
   - [Configuration](#configuration)
     - [Pydantic Configuration](#pydantic-configuration)
     - [Environment Files](#environment-files)
+    - [METT release (API / Celery)](#mett-release-api--celery)
+    - [Frontend](#frontend)
   - [Database Setup](#database-setup)
     - [PostgreSQL Migrations](#postgresql-migrations)
     - [Elasticsearch Indices](#elasticsearch-indices)
@@ -502,7 +504,7 @@ Requires status `ready` (or already `current` / `archived`) and a successful VAL
 }
 ```
 
-`total` values above match the Kibana doc counts on `mett-v1-g001-*`. Under `feature_experiments`, every `with_*` key is a **feature/gene document** count on `feature_experiment_index` (not distinct strains). Replace `null`s after you have those assay breakdowns. Optional sibling field `inputs` is also JSON, e.g. `{"species_csv": "../data-generators/data/species.csv", "ftp_root": "/pub/databases/mett/annotations/v1_2024-04-15"}`.
+`total` values above match the Kibana doc counts on `mett-v1-g001-*`. Under `feature_experiments`, every `with_*` key is a **feature/gene document** count on `feature_experiment_index` (not distinct strains). Replace `null`s after you have those assay breakdowns. Optional sibling field `inputs` is also JSON, e.g. `{"species_csv": "../data-generators/data/reference/species.csv", "ftp_root": "/pub/databases/mett/annotations/v1_2024-04-15"}`.
 
 The UI sends `X-METT-Release` (or `?release=v1`). Default is `current`, which reads `mett-current-*`.
 
@@ -543,6 +545,8 @@ The import examples below still use these legacy base names. Point them at `mett
 
 ## Data Import
 
+Generator scripts and local data layout: [data-generators/README.md](data-generators/README.md).
+
 Run from `dataportal_api`. Import in this order: species → strains → strain experiments → features → feature experiments → networks.
 
 ### 1. Species
@@ -550,7 +554,7 @@ Run from `dataportal_api`. Import in this order: species → strains → strain 
 ```bash
 python manage.py import_species \
   --index mett-v1-species \
-  --csv ../data-generators/data/species.csv
+  --csv ../data-generators/data/reference/species.csv
 ```
 
 ### 2. Strains (identity and contigs)
@@ -560,7 +564,7 @@ Writes `strain_index` only. MIC and metabolism go in the next step.
 ```bash
 python manage.py import_strains \
   --es-index mett-v1-strains \
-  --map-tsv ../data-generators/data/gff-assembly-prefixes.tsv \
+  --map-tsv ../data-generators/data/reference/gff-assembly-prefixes.tsv \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/all_hd_isolates/deduplicated_assemblies/ \
   --set-type-strains BU_ATCC8492 PV_ATCC8482 \
@@ -571,6 +575,8 @@ python manage.py import_strains \
   --processing-reference annotation_release_v1.0 \
   --processing-document-url https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/README_annotation_release_v1.txt
 ```
+
+Each strain document stores `fasta_url` and `gff_url` from `--ftp-server`/`--ftp-directory` and `--gff-server`/`--gff-base` (HTTPS). Isolates on a different FTP root need a separate `import_strains` run with `--isolates` (or `--isolates-file`). JBrowse index URLs are built from `VITE_JBROWSE_INDEXES_PATH` plus the selected release and species (`…/mett/{release}/{species}/fasta/{assembly}` and `…/gff3/{isolate}`).
 
 A data release can mix pipeline versions. Import each batch separately with `--isolates` (or `--isolates-file`) so later flags do not overwrite earlier strains. Omit the pipeline flags to refresh contigs without touching provenance.
 
@@ -594,11 +600,11 @@ python manage.py import_strain_experiments \
   --es-index mett-v1-strains \
   --strain-experiment-index mett-v1-strain-experiments \
   --include-mic \
-  --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
-  --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv \
+  --mic-bu-file ../data-generators/data/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
+  --mic-pv-file ../data-generators/data/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv \
   --include-metabolism \
-  --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_BU_v0.csv \
-  --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
+  --metab-bu-file ../data-generators/data/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file ../data-generators/data/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
 ```
 
 MIC only:
@@ -608,8 +614,8 @@ python manage.py import_strain_experiments \
   --es-index mett-v1-strains \
   --strain-experiment-index mett-v1-strain-experiments \
   --include-mic \
-  --mic-bu-file ../data-generators/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
-  --mic-pv-file ../data-generators/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv
+  --mic-bu-file ../data-generators/data/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
+  --mic-pv-file ../data-generators/data/Sub-Projects-Data/SP5/mic/PV_growth_inhibition.csv
 ```
 
 Metabolism only:
@@ -619,8 +625,8 @@ python manage.py import_strain_experiments \
   --es-index mett-v1-strains \
   --strain-experiment-index mett-v1-strain-experiments \
   --include-metabolism \
-  --metab-bu-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_BU_v0.csv \
-  --metab-pv-file ../data-generators/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
+  --metab-bu-file ../data-generators/data/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_BU_v0.csv \
+  --metab-pv-file ../data-generators/data/Sub-Projects-Data/SP5/metobolism/SP5_drug_metabolism_PV_v0.csv
 ```
 
 ### 4. Features (annotation)
@@ -632,9 +638,9 @@ python manage.py import_features \
   --index mett-v1-features \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-root /pub/databases/mett/annotations/v1_2024-04-15 \
-  --mapping-task-file ../data-generators/data/gff-assembly-prefixes.tsv \
-  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/ \
-  --dbxref-dir ../data-generators/stringdb-mapper/output/raw \
+  --mapping-task-file ../data-generators/data/reference/gff-assembly-prefixes.tsv \
+  --essentiality-dir ../data-generators/data/Sub-Projects-Data/SP1/essentiality/ \
+  --dbxref-dir ../data-generators/data/generated/string-mapping/raw \
   --dbxref-db-name STRING
 ```
 
@@ -644,7 +650,7 @@ Essentiality only (GFF already loaded):
 python manage.py import_features \
   --index mett-v1-features \
   --skip-core-genes \
-  --essentiality-dir ../data-generators/Sub-Projects-Data/SP1/essentiality/
+  --essentiality-dir ../data-generators/data/Sub-Projects-Data/SP1/essentiality/
 ```
 
 STRING dbxref only:
@@ -652,7 +658,7 @@ STRING dbxref only:
 ```bash
 python manage.py import_dbxref \
   --index mett-v1-features \
-  --tsv ../data-generators/stringdb-mapper/output/bu_to_string_raw.tsv \
+  --tsv ../data-generators/data/generated/string-mapping/raw/bu_to_string_raw.tsv \
   --db-name STRING
 ```
 
@@ -661,7 +667,7 @@ Directory of TSV mappings:
 ```bash
 python manage.py import_dbxref \
   --index mett-v1-features \
-  --tsv-dir ../data-generators/stringdb-mapper/output/raw \
+  --tsv-dir ../data-generators/data/generated/string-mapping/raw \
   --db-name STRING
 ```
 
@@ -675,14 +681,14 @@ Fitness CSVs include intergenic (`IG-between-…`) rows. Those become interval I
 python manage.py import_feature_experiments \
   --experiment-index mett-v1-feature-experiments \
   --feature-index mett-v1-features \
-  --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data \
-  --proteomics-dir ../data-generators/Sub-Projects-Data/proteomics_evidence/ \
-  --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal \
-  --pooled-ttp-dir ../data-generators/Sub-Projects-Data/SP2/pooled_ttp \
-  --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv \
-  --gene-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
-  --met-rx-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/met_rx/ \
-  --rx-gpr-dir ../data-generators/Sub-Projects-Data/SP3/GEMs/gpr/
+  --fitness-dir ../data-generators/data/Sub-Projects-Data/SP1/Fitness_data \
+  --proteomics-dir ../data-generators/data/Sub-Projects-Data/proteomics_evidence/ \
+  --mutant-growth-dir ../data-generators/data/Sub-Projects-Data/SP3/Pvul_caecal \
+  --pooled-ttp-dir ../data-generators/data/Sub-Projects-Data/SP2/pooled_ttp \
+  --pool-metadata ../data-generators/data/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv \
+  --gene-rx-dir ../data-generators/data/Sub-Projects-Data/SP3/GEMs/gene_rx/ \
+  --met-rx-dir ../data-generators/data/Sub-Projects-Data/SP3/GEMs/met_rx/ \
+  --rx-gpr-dir ../data-generators/data/Sub-Projects-Data/SP3/GEMs/gpr/
 ```
 
 One-off commands (same indexes):
@@ -691,18 +697,18 @@ One-off commands (same indexes):
 python manage.py import_fitness_lfc \
   --index mett-v1-feature-experiments \
   --feature-index fmett-v1-features \
-  --fitness-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_data
+  --fitness-dir ../data-generators/data/Sub-Projects-Data/SP1/Fitness_data
 
 python manage.py import_mutant_growth \
   --index mett-v1-feature-experiments \
   --feature-index mett-v1-features \
-  --mutant-growth-dir ../data-generators/Sub-Projects-Data/SP3/Pvul_caecal
+  --mutant-growth-dir ../data-generators/data/Sub-Projects-Data/SP3/Pvul_caecal
 
 python manage.py ingest_pooled_ttp \
   --index feature_experiment_index \
   --feature-index mett-v1-features \
-  --csv-file ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pooled_TPP.csv \
-  --pool-metadata ../data-generators/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv
+  --csv-file ../data-generators/data/Sub-Projects-Data/SP2/pooled_ttp/pooled_TPP.csv \
+  --pool-metadata ../data-generators/data/Sub-Projects-Data/SP2/pooled_ttp/pool_metadata.csv
 ```
 
 ### 6. Fitness correlations
@@ -714,7 +720,7 @@ python manage.py create_es_index --model GeneFitnessCorrelationDocument
 
 python manage.py import_fitness_correlations \
   --index mett-v1-fitness-correlations \
-  --correlation-dir ../data-generators/Sub-Projects-Data/SP1/Fitness_corr_data \
+  --correlation-dir ../data-generators/data/Sub-Projects-Data/SP1/Fitness_corr_data \
   --preload-gff \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
@@ -736,14 +742,14 @@ python manage.py create_es_index --model OrthologDocument
 python manage.py import_ppi_with_genes \
   --index mett-v1-ppi \
   --pattern "*.tsv" \
-  --csv-folder ../data-generators/Sub-Projects-Data/PPI-v1 \
-  --string-mapping-dir ../data-generators/stringdb-mapper/output/uniprot_mapped
+  --csv-folder ../data-generators/data/Sub-Projects-Data/PPI-v1 \
+  --string-mapping-dir ../data-generators/data/generated/string-mapping/uniprot_mapped
 
 python manage.py import_ppi_with_genes \
   --index mett-v1-ppi \
   --pattern "*.tsv" \
-  --csv-folder ../data-generators/Sub-Projects-Data/PPI-v1 \
-  --string-mapping-dir ../data-generators/stringdb-mapper/output/uniprot_mapped \
+  --csv-folder ../data-generators/data/Sub-Projects-Data/PPI-v1 \
+  --string-mapping-dir ../data-generators/data/generated/string-mapping/uniprot_mapped \
   --refresh-every-rows 500000
 ```
 
@@ -752,7 +758,7 @@ python manage.py import_ppi_with_genes \
 ```bash
 python manage.py import_operons \
   --index mett-v1-operons \
-  --operons-dir ../data-generators/Sub-Projects-Data/SP3/Operons/ \
+  --operons-dir ../data-generators/data/Sub-Projects-Data/SP3/Operons/ \
   --preload-gff \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
@@ -763,7 +769,7 @@ python manage.py import_operons \
 ```bash
 python manage.py import_orthologs_with_genes \
   --index mett-v1-orthologs \
-  --ortholog-directory ../data-generators/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
+  --ortholog-directory ../data-generators/data/Sub-Projects-Data/SP3/Orthologs/PairwiseOrthologs/ \
   --ftp-server ftp.ebi.ac.uk \
   --ftp-directory /pub/databases/mett/annotations/v1_2024-04-15/
 ```
@@ -773,7 +779,7 @@ python manage.py import_orthologs_with_genes \
 Generate index files for FASTA and GFF3 files:
 
 ```bash
-cd data-generators/index-scripts
+cd data-generators/scripts/03-browser-indexes
 
 # Process FASTA files
 ./process_fasta.sh
@@ -782,7 +788,7 @@ cd data-generators/index-scripts
 ./process_gff3.sh
 ```
 
-See [Index Scripts README](data-generators/index-scripts/README.md) for details.
+See [Index Scripts README](data-generators/scripts/03-browser-indexes/README.md) for details.
 
 ---
 

@@ -1,11 +1,17 @@
 #!/bin/bash
 
-FTP_URL="http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=../_paths.sh
+source "$SCRIPT_DIR/../_paths.sh"
 
-mkdir -p fasta_files
+FTP_URL="http://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/"
+FASTA_OUT="${BROWSER_INDEX_OUT}/fasta_files"
+LIST_FILE="${BROWSER_INDEX_OUT}/fasta_files_list.txt"
+
+mkdir -p "$FASTA_OUT"
 
 echo "Fetching list of FASTA files from FTP server..."
-curl -s $FTP_URL | grep -o 'href="[^"]*.fa"' | sed 's/href="//' > fasta_files_list.txt
+curl -s $FTP_URL | grep -o 'href="[^"]*.fa"' | sed 's/href="//' > "$LIST_FILE"
 
 # process FASTA files
 while read -r fasta_file; do
@@ -14,12 +20,12 @@ while read -r fasta_file; do
   retries=3  # Number of retry attempts
 
   echo "Processing $fasta_file for isolate $isolate_name..."
-  mkdir -p "fasta_files/$isolate_name"
+  mkdir -p "$FASTA_OUT/$isolate_name"
 
   # Attempt to download with retries
   for attempt in $(seq 1 $retries); do
-    wget -q "${FTP_URL}${fasta_file}" -O "fasta_files/$isolate_name/$fasta_file"
-    if [ -s "fasta_files/$isolate_name/$fasta_file" ]; then
+    wget -q "${FTP_URL}${fasta_file}" -O "$FASTA_OUT/$isolate_name/$fasta_file"
+    if [ -s "$FASTA_OUT/$isolate_name/$fasta_file" ]; then
       echo "Downloaded $fasta_file successfully on attempt $attempt."
       break
     else
@@ -29,44 +35,42 @@ while read -r fasta_file; do
   done
 
   # Final check to skip if download failed after retries
-  if [ ! -s "fasta_files/$isolate_name/$fasta_file" ]; then
+  if [ ! -s "$FASTA_OUT/$isolate_name/$fasta_file" ]; then
     echo "Error: $fasta_file could not be downloaded after $retries attempts. Skipping."
     continue
   fi
 
   # Generate compressed version of the FASTA file using bgzip
-  bgzip -c "fasta_files/$isolate_name/$fasta_file" > "fasta_files/$isolate_name/${fasta_file}.gz"
+  bgzip -c "$FASTA_OUT/$isolate_name/$fasta_file" > "$FASTA_OUT/$isolate_name/${fasta_file}.gz"
 
   # Verify the gzipped FASTA file
-  if [ ! -s "fasta_files/$isolate_name/${fasta_file}.gz" ]; then
+  if [ ! -s "$FASTA_OUT/$isolate_name/${fasta_file}.gz" ]; then
     echo "Error: Failed to create ${fasta_file}.gz. Skipping this isolate."
     continue
   fi
 
   # Generate FASTA index file (.fai)
-  samtools faidx "fasta_files/$isolate_name/${fasta_file}.gz"
+  samtools faidx "$FASTA_OUT/$isolate_name/${fasta_file}.gz"
 
   # Verify the index file
-  if [ ! -s "fasta_files/$isolate_name/${fasta_file}.gz.fai" ]; then
+  if [ ! -s "$FASTA_OUT/$isolate_name/${fasta_file}.gz.fai" ]; then
     echo "Error: Failed to create ${fasta_file}.gz.fai. Skipping this isolate."
     continue
   fi
 
   # Generate bgzipped version of FASTA index file (.fai.gz)
-  bgzip -c "fasta_files/$isolate_name/${fasta_file}.gz.fai" > "fasta_files/$isolate_name/${fasta_file}.gz.fai.gz"
+  bgzip -c "$FASTA_OUT/$isolate_name/${fasta_file}.gz.fai" > "$FASTA_OUT/$isolate_name/${fasta_file}.gz.fai.gz"
 
   # Verify the bgzipped index file
-  if [ ! -s "fasta_files/$isolate_name/${fasta_file}.gz.fai.gz" ]; then
+  if [ ! -s "$FASTA_OUT/$isolate_name/${fasta_file}.gz.fai.gz" ]; then
     echo "Error: Failed to create ${fasta_file}.gz.fai.gz. Skipping this isolate."
     continue
   fi
 
   echo "Processed $fasta_file for isolate $isolate_name successfully."
-#  echo "Files created:"
-#  ls -lh "fasta_files/$isolate_name"
 
   sleep 2
 
-done < fasta_files_list.txt
+done < "$LIST_FILE"
 
-echo "FASTA processing completed."
+echo "FASTA processing completed. Output: $FASTA_OUT"

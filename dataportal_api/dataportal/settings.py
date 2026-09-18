@@ -28,7 +28,9 @@ ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 METT_RELEASE = os.getenv("METT_RELEASE", "current")
 
 # Feature flags
-ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+ENABLE_PYHMMER_SEARCH = (
+    os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+)
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
@@ -271,16 +273,6 @@ CORS_ALLOW_PRIVATE_NETWORK = True
 APPEND_SLASH = False
 
 DEFAULT_LIMIT = 10
-
-ASSEMBLY_FTP_PATH = os.environ.get(
-    "ASSEMBLY_FTP_PATH",
-    "https://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
-)
-
-GFF_FTP_PATH = os.environ.get(
-    "GFF_FTP_PATH",
-    "https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/{}/functional_annotation/merged_gff/",
-)
 
 CELERY_BEAT_SCHEDULE = {
     "cleanup-task-results-weekly": {

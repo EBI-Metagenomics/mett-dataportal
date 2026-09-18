@@ -24,8 +24,12 @@ from dataportal.utils.constants import (
 class GenomeAutocompleteQuerySchema(BaseModel):
     """Schema for genome autocomplete endpoint."""
 
-    query: str = Field(..., description="Search term for isolate/genome name autocomplete.")
-    limit: int = Field(DEFAULT_PAGE_SIZE, description="Maximum number of suggestions to return.")
+    query: str = Field(
+        ..., description="Search term for isolate/genome name autocomplete."
+    )
+    limit: int = Field(
+        DEFAULT_PAGE_SIZE, description="Maximum number of suggestions to return."
+    )
     species_acronym: Optional[str] = Field(
         None, description="Optional species acronym (BU or PV) to filter suggestions."
     )
@@ -38,9 +42,13 @@ class GenomeAutocompleteQuerySchema(BaseModel):
 class GenomeSearchQuerySchema(BaseModel):
     """Schema for searching genomes using a free-text query with pagination and sorting."""
 
-    query: str = Field("", description="Search term to match against genome names or metadata.")
+    query: str = Field(
+        "", description="Search term to match against genome names or metadata."
+    )
     page: int = Field(1, description="Page number to retrieve.")
-    per_page: int = Field(DEFAULT_PAGE_SIZE, description="Number of genomes to return per page.")
+    per_page: int = Field(
+        DEFAULT_PAGE_SIZE, description="Number of genomes to return per page."
+    )
     sortField: Optional[str] = Field(
         GENOME_FIELD_ISOLATE_NAME, description="Field to sort results by."
     )
@@ -77,7 +85,9 @@ class GetAllGenomesQuerySchema(BaseModel):
 
     page: int = Field(1, description="Page number to retrieve.")
     per_page: int = Field(DEFAULT_PAGE_SIZE, description="Number of items per page.")
-    sortField: Optional[str] = Field(GENOME_FIELD_ISOLATE_NAME, description="Field to sort by.")
+    sortField: Optional[str] = Field(
+        GENOME_FIELD_ISOLATE_NAME, description="Field to sort by."
+    )
     sortOrder: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
@@ -99,7 +109,9 @@ class GenesByGenomeQuerySchema(BaseModel):
         description="Logical operators (AND/OR) per facet, e.g., 'pfam:AND;interpro:OR'.",
     )
     page: int = Field(1, description="Page number to retrieve.")
-    per_page: int = Field(DEFAULT_PAGE_SIZE, description="Number of genes to return per page.")
+    per_page: int = Field(
+        DEFAULT_PAGE_SIZE, description="Number of genes to return per page."
+    )
     sort_field: Optional[str] = Field(None, description="Field to sort results by.")
     sort_order: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
@@ -113,15 +125,21 @@ class GenesByGenomeQuerySchema(BaseModel):
 class GenomeDownloadTSVQuerySchema(BaseModel):
     """Schema for downloading genomes as TSV with filtering and sorting."""
 
-    query: str = Field("", description="Search term to match against genome names or metadata.")
+    query: str = Field(
+        "", description="Search term to match against genome names or metadata."
+    )
     sortField: Optional[str] = Field(
         GENOME_FIELD_ISOLATE_NAME, description="Field to sort results by."
     )
     sortOrder: Optional[str] = Field(
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
-    isolates: Optional[List[str]] = Field(None, description="List of isolate names to filter.")
-    species_acronym: Optional[str] = Field(None, description="Optional species acronym filter.")
+    isolates: Optional[List[str]] = Field(
+        None, description="List of isolate names to filter."
+    )
+    species_acronym: Optional[str] = Field(
+        None, description="Optional species acronym filter."
+    )
 
     model_config = ConfigDict(
         json_schema_extra={"example": GENOME_DOWNLOAD_TSV_QUERY_EXAMPLE},
@@ -169,8 +187,8 @@ class GenomeResponseSchema(BaseModel):
     assembly_accession: Optional[str]
     fasta_file: str
     gff_file: str
-    fasta_url: str
-    gff_url: str
+    fasta_url: Optional[str] = ""
+    gff_url: Optional[str] = ""
     type_strain: bool
     contigs: List[ContigSchema]
     annotation: Optional[StrainAnnotationSchema] = None

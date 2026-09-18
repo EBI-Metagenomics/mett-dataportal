@@ -9,18 +9,18 @@ a mapping that PPI import can use directly.
 Usage:
   # With local GFF file:
   python convert_to_uniprot_mapping.py \
-    --raw-tsv output/bu_to_string_raw.tsv \
+    --raw-tsv ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv \
     --gff-file /path/to/merged_annotations.gff \
-    --output output/bu_uniprot_to_string.tsv
+    --output ../../data/generated/string-mapping/uniprot_mapped/bu_uniprot_to_string.tsv
 
   # Or download GFF from FTP (default: ftp.ebi.ac.uk):
   python convert_to_uniprot_mapping.py \
-    --raw-tsv output/bu_to_string_raw.tsv \
+    --raw-tsv ../../data/generated/string-mapping/raw/bu_to_string_raw.tsv \
     --download-gff BU_ATCC8492 \
-    --output output/bu_uniprot_to_string.tsv
+    --output ../../data/generated/string-mapping/uniprot_mapped/bu_uniprot_to_string.tsv
 
 Then point PPI import at the output directory:
-  --string-mapping-dir output/
+  --string-mapping-dir ../../data/generated/string-mapping/uniprot_mapped
 
 The output TSV has columns: locus_tag, uniprot_id, string_protein_id
 """

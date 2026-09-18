@@ -5,7 +5,10 @@ from django.core.management.base import BaseCommand
 from dataportal.ingest.es_repo import StrainIndexRepository
 from dataportal.ingest.strain.contig_importer import StrainContigImporter
 from dataportal.ingest.strain.mapping import read_mapping_tsv
-from dataportal.ingest.strain.provenance import build_annotation_payload, parse_isolate_allowlist
+from dataportal.ingest.strain.provenance import (
+    build_annotation_payload,
+    parse_isolate_allowlist,
+)
 from dataportal.ingest.strain_experiment.runner import ingest_strain_experiments
 from dataportal.models import StrainDocument
 from dataportal.utils.constants import INDEX_STRAIN_EXPERIMENTS
@@ -15,7 +18,9 @@ class Command(BaseCommand):
     help = (
         "Import isolate identity/contigs into strain_index. "
         "Optional MIC/metabolism flags still work; prefer import_strain_experiments. "
-        "Optional --pipeline/--pipeline-version stamp processing provenance on written strains."
+        "Optional --pipeline/--pipeline-version stamp processing provenance on written strains. "
+        "FASTA and GFF public HTTPS URLs are stored per strain from --ftp-server/--ftp-directory "
+        "and --gff-server/--gff-base (re-run with --isolates for mixed FTP roots)."
     )
 
     def add_arguments(self, parser):
@@ -39,10 +44,11 @@ class Command(BaseCommand):
         parser.add_argument(
             "--ftp-directory",
             default="/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
+            help="FTP directory of FASTA assemblies. Stored as https://{ftp-server}{directory}/{fasta} on each strain.",
         )
         parser.add_argument(
             "--map-tsv",
-            default="../data-generators/data/gff-assembly-prefixes.tsv",
+            default="../data-generators/data/reference/gff-assembly-prefixes.tsv",
             help="TSV with columns: assembly, prefix",
         )
         parser.add_argument(
@@ -93,15 +99,24 @@ class Command(BaseCommand):
         parser.add_argument("--include-metabolism", action="store_true")
         parser.add_argument("--metab-bu-file", type=str)
         parser.add_argument("--metab-pv-file", type=str)
-        parser.add_argument("--gff-server", type=str, help="FTP server for GFFs (optional)")
         parser.add_argument(
-            "--gff-base", type=str, help="Base directory for GFFs on the GFF server (optional)"
+            "--gff-server", type=str, help="FTP server for GFFs (optional)"
+        )
+        parser.add_argument(
+            "--gff-base",
+            type=str,
+            help=(
+                "Base directory for GFFs on the GFF server (optional). "
+                "Each strain stores https://{gff-server}{gff-base}/{isolate}/functional_annotation/merged_gff/{gff}."
+            ),
         )
 
     def handle(self, *args, **opts):
         es_index = opts["es_index"]
         repo = StrainIndexRepository(concrete_index=es_index)
-        allowlist = parse_isolate_allowlist(opts.get("isolates"), opts.get("isolates_file"))
+        allowlist = parse_isolate_allowlist(
+            opts.get("isolates"), opts.get("isolates_file")
+        )
         annotation = build_annotation_payload(
             pipeline=opts.get("pipeline"),
             pipeline_version=opts.get("pipeline_version"),
@@ -111,7 +126,9 @@ class Command(BaseCommand):
 
         if not opts["skip_strains"]:
             self._ensure_annotation_mapping(es_index)
-            self.stdout.write(self.style.SUCCESS("Importing strains/contigs from FTP..."))
+            self.stdout.write(
+                self.style.SUCCESS("Importing strains/contigs from FTP...")
+            )
             mapping = read_mapping_tsv(opts["map_tsv"])
             StrainContigImporter(
                 repo=repo,
@@ -126,7 +143,9 @@ class Command(BaseCommand):
             ).run()
             self.stdout.write(self.style.SUCCESS("Strains/contigs import complete."))
         else:
-            self.stdout.write(self.style.WARNING("Skipped strains/contigs (--skip-strains)."))
+            self.stdout.write(
+                self.style.WARNING("Skipped strains/contigs (--skip-strains).")
+            )
 
         if opts["include_mic"] or opts["include_metabolism"]:
             self.stdout.write(
@@ -156,5 +175,7 @@ class Command(BaseCommand):
             mgr.put_mapping(es_index)
         except Exception as exc:
             self.stdout.write(
-                self.style.WARNING(f"Could not PUT strain annotation mapping on {es_index}: {exc}")
+                self.style.WARNING(
+                    f"Could not PUT strain annotation mapping on {es_index}: {exc}"
+                )
             )

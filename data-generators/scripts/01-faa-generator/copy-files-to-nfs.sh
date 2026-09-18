@@ -5,10 +5,14 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=../_paths.sh
+source "$SCRIPT_DIR/../_paths.sh"
+
 # Configuration
 POD_NAME="file-copy-pod"
 NAMESPACE="mett-dataportal-hl-dev"
-LOCAL_OUTPUT_DIR="./output"
+LOCAL_OUTPUT_DIR="$FAA_OUT"
 NFS_DEST_DIR="/data/pyhmmer/output"
 
 echo "🚀 Starting file copy process..."
@@ -17,7 +21,7 @@ echo "🚀 Starting file copy process..."
 echo "📋 Checking if pod $POD_NAME is running..."
 if ! kubectl get pod $POD_NAME -n $NAMESPACE | grep -q "Running"; then
     echo "❌ Pod $POD_NAME is not running. Please start it first:"
-    echo "   kubectl apply -f k8s/mett-app/file-copy-pod.yml"
+    echo "   kubectl apply -f $SCRIPT_DIR/file-copy-pod.yml"
     exit 1
 fi
 

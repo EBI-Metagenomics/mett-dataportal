@@ -1,6 +1,7 @@
 import {GenomeMeta} from "../../../../interfaces/Genome";
+import {joinIndexFile} from "../../../../utils/gene-viewer/jbrowseIndexPaths";
 
-const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
+const getAssembly = (genomeMeta: GenomeMeta, fastaDir: string) => ({
     name: genomeMeta.assembly_name,
     sequence: {
         type: 'ReferenceSequenceTrack',
@@ -12,13 +13,13 @@ const getAssembly = (genomeMeta: GenomeMeta, fastaBaseUrl: string) => ({
                 length: contig.length,
             })),
             fastaLocation: {
-                uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz`,
+                uri: joinIndexFile(fastaDir, `${genomeMeta.fasta_file}.gz`),
             },
             faiLocation: {
-                uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz.fai`,
+                uri: joinIndexFile(fastaDir, `${genomeMeta.fasta_file}.gz.fai`),
             },
             gziLocation: {
-                uri: `${fastaBaseUrl}/${genomeMeta.assembly_name}/${genomeMeta.fasta_file}.gz.gzi`,
+                uri: joinIndexFile(fastaDir, `${genomeMeta.fasta_file}.gz.gzi`),
             },
         }
     },

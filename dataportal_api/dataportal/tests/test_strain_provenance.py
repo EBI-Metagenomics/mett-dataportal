@@ -16,7 +16,8 @@ from dataportal.ingest.strain.provenance import (
 from dataportal.models.strains import StrainAnnotation, StrainDocument
 from dataportal.schema.core.genome_schemas import StrainAnnotationSchema
 from dataportal.schema.core.release_history_schemas import GeneReleaseAppearanceSchema
-from dataportal.services.core.genome_service import _annotation_schema
+from dataportal.services.core.genome_service import GenomeService, _annotation_schema
+from dataportal.ingest.strain.ftp import public_https_url
 
 
 def test_strain_document_mapping_includes_annotation():
@@ -30,6 +31,41 @@ def test_strain_document_mapping_includes_annotation():
         "processing_reference",
         "processing_document_url",
     }
+
+
+def test_strain_document_mapping_includes_file_urls():
+    properties = StrainDocument._index.to_dict()["mappings"]["properties"]
+    assert "fasta_url" in properties
+    assert "gff_url" in properties
+
+
+def test_public_https_url_joins_ftp_host_and_paths():
+    assert (
+        public_https_url(
+            "ftp.ebi.ac.uk",
+            "/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
+            "BU_ATCC8492.fa",
+        )
+        == "https://ftp.ebi.ac.uk/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/BU_ATCC8492.fa"
+    )
+
+
+def test_genome_schema_uses_stored_fasta_and_gff_urls():
+    class Hit:
+        def to_dict(self):
+            return {
+                "isolate_name": "BU_ATCC8492",
+                "fasta_file": "x.fa",
+                "gff_file": "x.gff",
+                "fasta_url": "https://example.org/custom/x.fa",
+                "gff_url": "https://example.org/other/x.gff",
+                "type_strain": True,
+                "contigs": [],
+            }
+
+    genome = GenomeService()._convert_hit_to_genome_schema(Hit())
+    assert genome.fasta_url == "https://example.org/custom/x.fa"
+    assert genome.gff_url == "https://example.org/other/x.gff"
 
 
 def test_strain_annotation_inner_doc_round_trip():
@@ -144,7 +180,9 @@ def test_aliases_from_releases_skips_current_alias():
 
 def test_map_physical_index_to_release():
     rows = [
-        ReleaseAlias("v1", "archived", "mett-v1-strains", "mett-v1-g001-strains", False),
+        ReleaseAlias(
+            "v1", "archived", "mett-v1-strains", "mett-v1-g001-strains", False
+        ),
         ReleaseAlias("v3", "current", "mett-v3-strains", "mett-v3-g002-strains", True),
     ]
     mapped = map_index_name_to_release("mett-v1-g001-strains", rows, "strains")
