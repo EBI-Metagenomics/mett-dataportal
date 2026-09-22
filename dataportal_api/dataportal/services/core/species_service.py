@@ -6,7 +6,7 @@ from asgiref.sync import sync_to_async
 from dataportal.models.species import SpeciesDocument
 from dataportal.schema.core.species_schemas import SpeciesSchema
 from dataportal.services.base_service import BaseService
-from dataportal.utils.constants import INDEX_SPECIES
+from dataportal.utils.constants import INDEX_SPECIES, MAX_RESULTS_PER_PAGE
 from dataportal.utils.errors import raise_exception
 from dataportal.utils.exceptions import SpeciesNotFoundError
 from dataportal.utils.species_registry import update_species_enabled
@@ -73,7 +73,12 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
     async def get_all(self, **kwargs) -> List[SpeciesSchema]:
         """Retrieve all enabled species from Elasticsearch."""
         try:
-            search = self._create_search().query("match_all").filter("term", enabled=True)
+            search = (
+                self._create_search()
+                .query("match_all")
+                .filter("term", enabled=True)
+                .extra(size=MAX_RESULTS_PER_PAGE)
+            )
             response = await self._execute_search(search)
 
             return [self._convert_hit_to_entity(hit) for hit in response]
@@ -94,7 +99,7 @@ class SpeciesService(BaseService[SpeciesSchema, dict]):
                 search = search.query("match_all")
 
             # Always filter to only enabled species
-            search = search.filter("term", enabled=True)
+            search = search.filter("term", enabled=True).extra(size=MAX_RESULTS_PER_PAGE)
 
             response = await self._execute_search(search)
             return [self._convert_hit_to_entity(hit) for hit in response]

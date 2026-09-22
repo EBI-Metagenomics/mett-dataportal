@@ -588,6 +588,9 @@ python manage.py import_strains \
   --ftp-directory /pub/databases/metagenomics/temp/mett/20hm/v1/assemblies/ \
   --gff-server ftp.ebi.ac.uk \
   --gff-base /pub/databases/metagenomics/temp/mett/20hm/v1/annotations/ \
+  --set-type-strains EL_DSM2243 BF_NCTC9343 BT_ATCC29148 TR_ATCC25582 AR_VPI0990 RI_L1-82 VP_DSM2008 \
+      FN_ATCC25586 EB_ATCCBAA-613 CP_ATCC13124 LS_WM1 SS_NCTC8618 MG_ATCC29149 BC_ATCC27758 PM_ATCC43184 \
+      SP_ATCC15912 CA_ATCC25986 DF_ATCC27755 MS_ATCC35061 PD_ATCC8503 \
   --pipeline mettannotator \
   --pipeline-version 1.0 \
   --processing-reference annotation_release_v1.0 \

@@ -6,10 +6,7 @@ from typing import Optional
 
 import pandas as pd
 
-SPECIES_NAME_BY_ACRONYM = {
-    "BU": "Bacteroides uniformis",
-    "PV": "Phocaeicola vulgatus",
-}
+_scientific_name_by_acronym: dict[str, str] | None = None
 
 
 def list_csv_files(
@@ -44,9 +41,53 @@ def strain_prefix(isolate_name: str) -> Optional[str]:
     return isolate_name.split("_", 1)[0] if "_" in isolate_name else None
 
 
+def reset_species_name_cache() -> None:
+    """Drop the cached acronym → scientific-name map (tests / after import_species)."""
+    global _scientific_name_by_acronym
+    _scientific_name_by_acronym = None
+
+
+def _fetch_species_name_map() -> dict[str, str]:
+    from dataportal.elasticsearch.resolver import resolve_read_index
+    from dataportal.models.species import SpeciesDocument
+    from dataportal.utils.constants import MAX_RESULTS_PER_PAGE
+
+    search = (
+        SpeciesDocument.search(index=resolve_read_index("species"))
+        .source(["acronym", "scientific_name"])
+        .extra(size=MAX_RESULTS_PER_PAGE)
+    )
+    names: dict[str, str] = {}
+    for hit in search.execute():
+        acr = (getattr(hit, "acronym", None) or getattr(hit.meta, "id", "") or "").strip()
+        name = getattr(hit, "scientific_name", None)
+        if acr and name:
+            names[acr.upper()] = str(name)
+    return names
+
+
+def load_scientific_names_by_acronym(*, force: bool = False) -> dict[str, str]:
+    """All species in the current species index, keyed by uppercase acronym."""
+    global _scientific_name_by_acronym
+    if _scientific_name_by_acronym is not None and not force:
+        return _scientific_name_by_acronym
+    try:
+        _scientific_name_by_acronym = _fetch_species_name_map()
+    except Exception as exc:
+        print(f"Warning: could not load species names from Elasticsearch: {exc}")
+        _scientific_name_by_acronym = {}
+    return _scientific_name_by_acronym
+
+
+def species_name_for_acronym(acronym: Optional[str]) -> Optional[str]:
+    if not acronym:
+        return None
+    names = load_scientific_names_by_acronym()
+    return names.get(str(acronym).strip().upper())
+
+
 def species_name_for_isolate(isolate_name: str) -> Optional[str]:
-    acr = strain_prefix(isolate_name)
-    return SPECIES_NAME_BY_ACRONYM.get(acr)
+    return species_name_for_acronym(strain_prefix(isolate_name))
 
 
 def canonical_ig_id_from_neighbors(left: str | None, right: str | None) -> str | None:
@@ -141,8 +182,8 @@ def get_species_metadata_from_isolate(isolate_name: str, species_cache: dict = N
 
     Uses a multi-tier approach:
     1. Check cache
-    2. Try Elasticsearch strain_index lookup
-    3. Fallback to simple acronym-based mapping
+    2. Scientific name from the Elasticsearch species index (by isolate prefix)
+    3. Strain document lookup if that isolate is already ingested
 
     Args:
         isolate_name: The isolate name to look up (e.g., "BU_ATCC8492")
@@ -160,20 +201,19 @@ def get_species_metadata_from_isolate(isolate_name: str, species_cache: dict = N
 
     result = {
         "isolate_name": isolate_name,
-        "species_scientific_name": (
-            SPECIES_NAME_BY_ACRONYM.get(species_acronym) if species_acronym else None
-        ),
+        "species_scientific_name": species_name_for_acronym(species_acronym),
         "species_acronym": species_acronym,
     }
 
-    # Try to get more accurate data from Elasticsearch if available
+    # Prefer names already stamped on the strain document when present
     try:
         from elasticsearch_dsl import Search
         from elasticsearch_dsl.connections import connections
+        from dataportal.elasticsearch.resolver import resolve_read_index
 
         client = connections.get_connection()
         s = (
-            Search(using=client, index="strain_index")
+            Search(using=client, index=resolve_read_index("strains"))
             .filter("term", isolate_name=isolate_name)
             .extra(size=1)
         )
@@ -187,10 +227,8 @@ def get_species_metadata_from_isolate(isolate_name: str, species_cache: dict = N
             if hit.get("species_acronym"):
                 result["species_acronym"] = hit.get("species_acronym")
     except Exception as e:
-        # Fallback to simple mapping is already set above
-        print(
-            f"Warning: Could not lookup species from ES for {isolate_name}, using fallback mapping: {e}"
-        )
+        # Strain lookup is optional; species-index name is already set above
+        print(f"Warning: Could not lookup strain metadata from ES for {isolate_name}: {e}")
 
     # Cache the result
     if species_cache is not None:

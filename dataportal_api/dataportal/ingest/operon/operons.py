@@ -3,12 +3,10 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any, Dict, List, Optional
 
-from dataportal.ingest.constants import SPECIES_BY_ACRONYM
 from dataportal.ingest.es_repo import bulk_exec
 from dataportal.ingest.flow import Flow
 from dataportal.ingest.gff.parser import GFFParser
-from dataportal.ingest.utils import canonical_pair_id
-from dataportal.ingest.utils import chunks_from_table
+from dataportal.ingest.utils import canonical_pair_id, chunks_from_table, species_name_for_acronym
 
 
 # ---------- helpers (module-level) ----------
@@ -52,9 +50,7 @@ def parse_isolate_name(locus: str) -> str | None:
 
 
 def species_name_from_acronym(acr: str) -> str | None:
-    if not acr:
-        return None
-    return SPECIES_BY_ACRONYM.get(str(acr).strip())
+    return species_name_for_acronym(acr)
 
 
 # ---------- flow ----------

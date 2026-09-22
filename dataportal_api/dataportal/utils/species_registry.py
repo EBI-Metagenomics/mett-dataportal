@@ -10,6 +10,7 @@ import threading
 from typing import Set
 
 from dataportal.models.species import SpeciesDocument
+from dataportal.utils.constants import MAX_RESULTS_PER_PAGE
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +28,12 @@ def _load() -> None:
         try:
             from dataportal.elasticsearch.resolver import resolve_read_index
 
-            search = SpeciesDocument.search(index=resolve_read_index("species")).filter(
-                "term", enabled=True
+            search = (
+                SpeciesDocument.search(index=resolve_read_index("species"))
+                .filter("term", enabled=True)
+                .source(["acronym"])
+                .extra(size=MAX_RESULTS_PER_PAGE)
             )
-            search = search.source(["acronym"])
             response = search.execute()
             _enabled_acronyms = {hit.acronym for hit in response if getattr(hit, "acronym", None)}
             _loaded = True

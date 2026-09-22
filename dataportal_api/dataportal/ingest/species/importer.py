@@ -5,6 +5,8 @@ from typing import Any, Dict, Optional
 import pandas as pd
 from elasticsearch.helpers import bulk
 
+from dataportal.ingest.utils import reset_species_name_cache
+
 
 def load_species_rows(csv_path: str) -> pd.DataFrame:
     species_df = pd.read_csv(
@@ -66,4 +68,5 @@ def ingest_species(
         request_timeout=120,
         refresh="wait_for" if refresh else False,
     )
+    reset_species_name_cache()
     return ok, errors if errors else None, len(species_df)
