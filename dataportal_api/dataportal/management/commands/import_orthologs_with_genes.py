@@ -11,6 +11,7 @@ import ftplib
 import re
 from django.core.management.base import BaseCommand, CommandError
 from dataportal.ingest.gff.parser import GFFParser
+from dataportal.ingest.ftp_paths import add_gff_dir_template_argument
 from dataportal.ingest.ortholog.orthologs import Orthologs
 
 logger = logging.getLogger(__name__)
@@ -21,9 +22,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         group = parser.add_mutually_exclusive_group(required=True)
-        group.add_argument("--ortholog-file", type=str, help="Path to ortholog TSV file")
         group.add_argument(
-            "--ortholog-directory", type=str, help="Path to directory containing ortholog TSV files"
+            "--ortholog-file", type=str, help="Path to ortholog TSV file"
+        )
+        group.add_argument(
+            "--ortholog-directory",
+            type=str,
+            help="Path to directory containing ortholog TSV files",
         )
         parser.add_argument(
             "--ftp-server",
@@ -37,6 +42,7 @@ class Command(BaseCommand):
             default="/pub/databases/mett/annotations/v1_2024-04-15/",
             help="FTP directory for GFF files",
         )
+        add_gff_dir_template_argument(parser)
         parser.add_argument(
             "--chunksize",
             type=int,
@@ -66,7 +72,9 @@ class Command(BaseCommand):
             help="Maximum number of GFF files to load at once (default: 50, set to 0 for all)",
         )
 
-    def _get_available_isolates_from_ftp(self, ftp_server: str, ftp_directory: str) -> set:
+    def _get_available_isolates_from_ftp(
+        self, ftp_server: str, ftp_directory: str
+    ) -> set:
         """Get list of available isolates from FTP server directory listing."""
         isolates = set()
 
@@ -94,7 +102,9 @@ class Command(BaseCommand):
 
             ftp.quit()
 
-            self.stdout.write(f"Found {len(isolates)} isolates on FTP server: {sorted(isolates)}")
+            self.stdout.write(
+                f"Found {len(isolates)} isolates on FTP server: {sorted(isolates)}"
+            )
 
         except Exception as e:
             self.stdout.write(f"Error accessing FTP server {ftp_server}: {e}")
@@ -122,7 +132,9 @@ class Command(BaseCommand):
             files_to_process = [ortholog_file]
         elif ortholog_directory:
             if not os.path.exists(ortholog_directory):
-                raise CommandError(f"Ortholog directory not found: {ortholog_directory}")
+                raise CommandError(
+                    f"Ortholog directory not found: {ortholog_directory}"
+                )
 
             # Find all .txt files in the directory
             import glob
@@ -131,9 +143,13 @@ class Command(BaseCommand):
             files_to_process = glob.glob(pattern)
 
             if not files_to_process:
-                raise CommandError(f"No .txt files found in directory: {ortholog_directory}")
+                raise CommandError(
+                    f"No .txt files found in directory: {ortholog_directory}"
+                )
 
-            self.stdout.write(f"Found {len(files_to_process)} ortholog files to process")
+            self.stdout.write(
+                f"Found {len(files_to_process)} ortholog files to process"
+            )
 
         # Initialize GFF parser if gene information is requested
         gff_parser = None
@@ -141,10 +157,16 @@ class Command(BaseCommand):
             self.stdout.write("Initializing GFF parser...")
             self.stdout.write(f"FTP Server: {ftp_server}")
             self.stdout.write(f"FTP Directory: {ftp_directory}")
-            gff_parser = GFFParser(ftp_server=ftp_server, ftp_directory=ftp_directory)
+            gff_parser = GFFParser(
+                ftp_server=ftp_server,
+                ftp_directory=ftp_directory,
+                gff_dir_template=options.get("gff_dir_template"),
+            )
             self.stdout.write(self.style.SUCCESS("GFF parser initialized successfully"))
         else:
-            self.stdout.write(self.style.WARNING("Skipping gene information extraction"))
+            self.stdout.write(
+                self.style.WARNING("Skipping gene information extraction")
+            )
 
         # Pre-load all GFF files if gene information is requested
         if gff_parser and not no_gene_info:
@@ -170,7 +192,13 @@ class Command(BaseCommand):
                         for isolate in sorted(available_isolates):
                             if any(
                                 common in isolate
-                                for common in ["ATCC", "AN67", "CL11T00C01", "61", "909"]
+                                for common in [
+                                    "ATCC",
+                                    "AN67",
+                                    "CL11T00C01",
+                                    "61",
+                                    "909",
+                                ]
                             ):
                                 priority_isolates.append(isolate)
 
@@ -182,7 +210,9 @@ class Command(BaseCommand):
                         ]
                         selected_isolates = (
                             priority_isolates
-                            + remaining_isolates[: max_gff_files - len(priority_isolates)]
+                            + remaining_isolates[
+                                : max_gff_files - len(priority_isolates)
+                            ]
                         )
                         available_isolates = set(selected_isolates)
                         self.stdout.write(
@@ -206,7 +236,9 @@ class Command(BaseCommand):
                         unique_species_name = f"{species_name}_{isolate}"
                         species_isolate_mapping[unique_species_name] = isolate
 
-                    self.stdout.write("Species-isolate mapping (with unique species names):")
+                    self.stdout.write(
+                        "Species-isolate mapping (with unique species names):"
+                    )
                     for species, isolate in species_isolate_mapping.items():
                         self.stdout.write(f"  {species} -> {isolate}")
 
@@ -214,12 +246,16 @@ class Command(BaseCommand):
                     gff_parser.set_species_mapping(species_isolate_mapping)
                     species_list = list(species_isolate_mapping.keys())
                     gff_parser.preload_gff_files(species_list)
-                    self.stdout.write(f"Pre-loaded GFF files for {len(species_list)} species")
+                    self.stdout.write(
+                        f"Pre-loaded GFF files for {len(species_list)} species"
+                    )
 
                     # Store all isolates for later use in gene lookup
                     gff_parser._all_isolates = available_isolates
                 else:
-                    self.stdout.write("No isolates found on FTP server, skipping GFF preload")
+                    self.stdout.write(
+                        "No isolates found on FTP server, skipping GFF preload"
+                    )
 
             except Exception as e:
                 self.stdout.write(f"Error getting isolates from FTP server: {e}")
@@ -238,7 +274,9 @@ class Command(BaseCommand):
                     )
                     # ... rest of the fallback logic would go here
                 else:
-                    self.stdout.write("No isolates found in any files, skipping GFF preload")
+                    self.stdout.write(
+                        "No isolates found in any files, skipping GFF preload"
+                    )
 
         # Initialize ortholog flow
         self.stdout.write("Initializing ortholog flow...")
@@ -251,10 +289,14 @@ class Command(BaseCommand):
         self.stdout.write(f"Using index: {index_name}")
 
         # Run the import process
-        self.stdout.write(f"Starting ortholog import from {len(files_to_process)} file(s)")
+        self.stdout.write(
+            f"Starting ortholog import from {len(files_to_process)} file(s)"
+        )
         self.stdout.write(f"Chunk size: {chunksize}")
         self.stdout.write(f"Flush every: {flush_every}")
-        self.stdout.write(f"Gene information: {'Enabled' if gff_parser else 'Disabled'}")
+        self.stdout.write(
+            f"Gene information: {'Enabled' if gff_parser else 'Disabled'}"
+        )
         if gff_parser:
             self.stdout.write(f"FTP Server: {ftp_server}")
             self.stdout.write(f"FTP Directory: {ftp_directory}")
@@ -271,7 +313,9 @@ class Command(BaseCommand):
 
                 try:
                     # Reuse the same flow instance to benefit from GFF cache
-                    ortholog_flow.run(path=file_path, chunksize=chunksize, flush_every=flush_every)
+                    ortholog_flow.run(
+                        path=file_path, chunksize=chunksize, flush_every=flush_every
+                    )
 
                     successful_files += 1
                     self.stdout.write(
@@ -283,7 +327,9 @@ class Command(BaseCommand):
                 except Exception as e:
                     failed_files += 1
                     self.stdout.write(
-                        self.style.ERROR(f"✗ Failed to process {os.path.basename(file_path)}: {e}")
+                        self.style.ERROR(
+                            f"✗ Failed to process {os.path.basename(file_path)}: {e}"
+                        )
                     )
                     # Continue with other files instead of stopping
                     continue
@@ -304,7 +350,9 @@ class Command(BaseCommand):
 
             if failed_files > 0:
                 self.stdout.write(
-                    self.style.WARNING(f"Warning: {failed_files} file(s) failed to process")
+                    self.style.WARNING(
+                        f"Warning: {failed_files} file(s) failed to process"
+                    )
                 )
 
         except Exception as e:

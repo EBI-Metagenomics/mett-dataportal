@@ -1,9 +1,22 @@
 import tempfile
 import os
 from dataportal.ingest.flow import Flow
-from dataportal.ingest.feature.sources import ftp_connect, load_protein_seqs
+from dataportal.ingest.feature.sources import (
+    ftp_connect,
+    list_isolates_from_ftp_session,
+    load_protein_seqs,
+)
 from dataportal.ingest.feature.parsing import parse_gene_gff_annotations
-from dataportal.ingest.utils import parse_dbxref, species_name_for_isolate, strain_prefix
+from dataportal.ingest.ftp_paths import (
+    DEFAULT_FAA_PATH_TEMPLATE,
+    DEFAULT_GFF_DIR_TEMPLATE,
+    format_ftp_path,
+)
+from dataportal.ingest.utils import (
+    parse_dbxref,
+    species_name_for_isolate,
+    strain_prefix,
+)
 from dataportal.models import FeatureDocument  # your ES DSL document
 
 
@@ -19,11 +32,15 @@ class GFFGenes(Flow):
         ftp_root,
         index_name="feature_index",
         mapping=None,
+        gff_dir_template=DEFAULT_GFF_DIR_TEMPLATE,
+        faa_path_template=DEFAULT_FAA_PATH_TEMPLATE,
     ):
         super().__init__(index_name)
         self.ftp_server = ftp_server
         self.ftp_root = ftp_root
         self.mapping = mapping or {}
+        self.gff_dir_template = gff_dir_template or DEFAULT_GFF_DIR_TEMPLATE
+        self.faa_path_template = faa_path_template or DEFAULT_FAA_PATH_TEMPLATE
 
     def run(self, raw_isolates: list[str], norm_isolates: list[str] | None = None):
         """
@@ -35,35 +52,89 @@ class GFFGenes(Flow):
 
         ftp = ftp_connect(self.ftp_server)
         try:
+            isolates = [raw for raw, _ in pairs]
+            if not isolates:
+                print(
+                    f"[import_features] listing isolate folders under {self.ftp_root}"
+                )
+                isolates = list_isolates_from_ftp_session(ftp, self.ftp_root)
+                pairs = [(raw_isolate, raw_isolate) for raw_isolate in isolates]
+            print(f"[import_features] {len(pairs)} isolate(s) to ingest")
+            if not pairs:
+                raise RuntimeError(
+                    f"No isolate folders found under {self.ftp_root}. "
+                    "Pass --isolates NAME ... or check --ftp-root."
+                )
+            ingested = 0
+            skipped = 0
             for raw_isolate, norm_isolate in pairs:
-                self._ingest_isolate(ftp, raw_isolate, norm_isolate)
+                if self._ingest_isolate(ftp, raw_isolate, norm_isolate):
+                    ingested += 1
+                else:
+                    skipped += 1
+            pending = len(self.buffer)
             self.flush()
+            print(
+                f"[import_features] finished: {ingested} with GFF, {skipped} skipped "
+                f"(flushed last {pending} features)"
+            )
         finally:
-            ftp.quit()
+            try:
+                ftp.quit()
+            except Exception:
+                try:
+                    ftp.close()
+                except Exception:
+                    pass
 
-    def _ingest_isolate(self, ftp, raw_isolate: str, norm_isolate: str):
-        # FTP paths must use the raw directory name
-        gff_dir = f"{self.ftp_root}/{raw_isolate}/functional_annotation/merged_gff/"
+    def _ingest_isolate(self, ftp, raw_isolate: str, norm_isolate: str) -> bool:
+        gff_dir = format_ftp_path(
+            self.gff_dir_template, base=self.ftp_root, isolate=raw_isolate
+        )
         try:
-            gffs = [p for p in ftp.nlst(gff_dir) if p.endswith("_annotations.gff")]
-        except Exception:
-            return
+            listed = ftp.nlst(gff_dir)
+        except Exception as exc:
+            print(
+                f"[import_features] skip {raw_isolate}: cannot list {gff_dir} ({exc})"
+            )
+            return False
 
-        faa = f"{self.ftp_root}/{raw_isolate}/functional_annotation/prokka/{raw_isolate}.faa"
+        gffs = [
+            p
+            for p in listed
+            if os.path.basename(p).endswith("_annotations.gff")
+            and "with_descriptions" not in os.path.basename(p)
+        ]
+        if not gffs:
+            print(
+                f"[import_features] skip {raw_isolate}: no *_annotations.gff in {gff_dir}"
+            )
+            return False
+
+        faa = format_ftp_path(
+            self.faa_path_template, base=self.ftp_root, isolate=raw_isolate
+        )
         protein_seqs = {}
         try:
             protein_seqs = load_protein_seqs(ftp, faa)
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[import_features] {raw_isolate}: no protein FASTA at {faa} ({exc})")
 
-        # taxonomy from raw isolate id
         sp_name = species_name_for_isolate(raw_isolate)
         sp_acronym = strain_prefix(raw_isolate)
+        print(f"[import_features] {raw_isolate}: {os.path.basename(gffs[0])}")
 
         for remote in gffs:
             self._ingest_gff_file(
-                ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, protein_seqs
+                ftp,
+                remote,
+                raw_isolate,
+                norm_isolate,
+                sp_acronym,
+                sp_name,
+                protein_seqs,
             )
+        return True
 
     def parse_amr_attributes(self, attr_dict):
         """Extract AMR-related fields from GFF attributes dict and return a list of AMR dicts."""
@@ -80,7 +151,9 @@ class GFFGenes(Flow):
             "drug_class": attr_dict.get("drug_class"),
             "drug_subclass": attr_dict.get("drug_subclass"),
             "uf_keyword": [
-                kw.strip() for kw in attr_dict.get("uf_keyword", "").split(",") if kw.strip()
+                kw.strip()
+                for kw in attr_dict.get("uf_keyword", "").split(",")
+                if kw.strip()
             ],
             "uf_ecnumber": attr_dict.get("uf_prot_rec_ecnumber"),
         }
@@ -91,6 +164,7 @@ class GFFGenes(Flow):
         self, ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, prot_seqs
     ):
         local = tempfile.NamedTemporaryFile(delete=False)
+        gene_count = 0
         try:
             with open(local.name, "wb") as out:
                 ftp.retrbinary(f"RETR {remote}", out.write)
@@ -102,7 +176,11 @@ class GFFGenes(Flow):
                     if len(cols) != 9 or cols[2] != "gene":
                         continue
                     seq_id, _, _, start, end, _, strand, _, attributes = cols
-                    attr = dict(item.split("=", 1) for item in attributes.split(";") if "=" in item)
+                    attr = dict(
+                        item.split("=", 1)
+                        for item in attributes.split(";")
+                        if "=" in item
+                    )
 
                     locus_tag = attr.get("locus_tag")
                     if not locus_tag:
@@ -171,6 +249,14 @@ class GFFGenes(Flow):
                     )
                     doc.meta.index = self.index
                     self.add(doc.to_dict(include_meta=True))
+                    gene_count += 1
+            if gene_count == 0:
+                print(
+                    f"[import_features] {raw_isolate}: 0 gene rows in "
+                    f"{os.path.basename(remote)} (CDS-only GFFs need gene features added first)"
+                )
+            else:
+                print(f"[import_features] {raw_isolate}: indexed {gene_count} genes")
         finally:
             try:
                 os.unlink(local.name)

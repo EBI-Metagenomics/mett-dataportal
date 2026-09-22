@@ -4,10 +4,13 @@ from dataportal.ingest.feature.runner import (
     ingest_dbxref,
     ingest_essentiality,
     ingest_gff_features,
-    list_ftp_isolates,
     load_assembly_mapping,
 )
 from dataportal.ingest.feature_experiment.runner import ingest_feature_experiments
+from dataportal.ingest.ftp_paths import (
+    add_faa_path_template_argument,
+    add_gff_dir_template_argument,
+)
 from dataportal.utils.constants import INDEX_FEATURES, INDEX_FEATURE_EXPERIMENTS
 
 _EXPERIMENT_DIR_KEYS = (
@@ -41,7 +44,11 @@ class Command(BaseCommand):
         )
 
         p.add_argument("--ftp-server", default="ftp.ebi.ac.uk")
-        p.add_argument("--ftp-root", default="/pub/databases/mett/annotations/v1_2024-04-15")
+        p.add_argument(
+            "--ftp-root", default="/pub/databases/mett/annotations/v1_2024-04-15"
+        )
+        add_gff_dir_template_argument(p)
+        add_faa_path_template_argument(p)
         p.add_argument("--isolates", nargs="*", help="If omitted, list from FTP")
         p.add_argument(
             "--mapping-task-file",
@@ -55,7 +62,8 @@ class Command(BaseCommand):
 
         p.add_argument("--essentiality-dir", help="Folder containing essentiality CSVs")
         p.add_argument(
-            "--dbxref-dir", help="Folder with TSV files for external DB mappings (e.g., STRING DB)"
+            "--dbxref-dir",
+            help="Folder with TSV files for external DB mappings (e.g., STRING DB)",
         )
         p.add_argument(
             "--dbxref-db-name",
@@ -63,28 +71,47 @@ class Command(BaseCommand):
             help="Database name for dbxref entries (default: STRING)",
         )
 
-        p.add_argument("--fitness-dir", help="Deprecated here; prefer import_feature_experiments")
         p.add_argument(
-            "--proteomics-dir", help="Deprecated here; prefer import_feature_experiments"
+            "--fitness-dir", help="Deprecated here; prefer import_feature_experiments"
         )
         p.add_argument(
-            "--protein-compound-dir", help="Deprecated here; prefer import_feature_experiments"
+            "--proteomics-dir",
+            help="Deprecated here; prefer import_feature_experiments",
         )
         p.add_argument(
-            "--pooled-ttp-dir", help="Deprecated here; prefer import_feature_experiments"
+            "--protein-compound-dir",
+            help="Deprecated here; prefer import_feature_experiments",
+        )
+        p.add_argument(
+            "--pooled-ttp-dir",
+            help="Deprecated here; prefer import_feature_experiments",
         )
         p.add_argument("--pool-metadata", help="Path to pool metadata CSV file")
         p.add_argument(
-            "--mutant-growth-dir", help="Deprecated here; prefer import_feature_experiments"
+            "--mutant-growth-dir",
+            help="Deprecated here; prefer import_feature_experiments",
         )
-        p.add_argument("--gene-rx-dir", help="Deprecated here; prefer import_feature_experiments")
-        p.add_argument("--met-rx-dir", help="Deprecated here; prefer import_feature_experiments")
-        p.add_argument("--rx-gpr-dir", help="Deprecated here; prefer import_feature_experiments")
+        p.add_argument(
+            "--gene-rx-dir", help="Deprecated here; prefer import_feature_experiments"
+        )
+        p.add_argument(
+            "--met-rx-dir", help="Deprecated here; prefer import_feature_experiments"
+        )
+        p.add_argument(
+            "--rx-gpr-dir", help="Deprecated here; prefer import_feature_experiments"
+        )
 
     def handle(self, *args, **o):
         index_name = o["index"]
         mapping = load_assembly_mapping(o.get("mapping_task_file"))
-        isolates = o["isolates"] or list_ftp_isolates(o["ftp_server"], o["ftp_root"])
+        isolates = o["isolates"] or []
+        self.stdout.write(
+            f"Importing GFF genes into {index_name} from {o['ftp_server']}:{o['ftp_root']}"
+        )
+        if isolates:
+            self.stdout.write(f"  --isolates {len(isolates)}: {', '.join(isolates)}")
+        else:
+            self.stdout.write("  listing isolate folders from FTP")
 
         if not o.get("skip_core_genes"):
             ingest_gff_features(
@@ -93,9 +120,13 @@ class Command(BaseCommand):
                 index_name=index_name,
                 raw_isolates=isolates,
                 mapping=mapping,
+                gff_dir_template=o.get("gff_dir_template"),
+                faa_path_template=o.get("faa_path_template"),
             )
         else:
-            self.stdout.write("[import_features] Skipping core gene (GFF) import as requested.")
+            self.stdout.write(
+                "[import_features] Skipping core gene (GFF) import as requested."
+            )
 
         for csv_path in ingest_essentiality(index_name, o.get("essentiality_dir")):
             self.stdout.write(f"  - {csv_path}")

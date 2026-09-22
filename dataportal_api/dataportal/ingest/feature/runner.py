@@ -2,22 +2,35 @@
 
 from __future__ import annotations
 
-import ftplib
 from typing import Iterable, Optional
 
 from dataportal.ingest.feature.essentiality import Essentiality
 from dataportal.ingest.feature.external_dbxref import ExternalDBXRef
 from dataportal.ingest.feature.gff_features import GFFGenes
+from dataportal.ingest.feature.sources import (
+    ftp_connect,
+    list_isolates_from_ftp_session,
+)
+from dataportal.ingest.ftp_paths import (
+    DEFAULT_FAA_PATH_TEMPLATE,
+    DEFAULT_GFF_DIR_TEMPLATE,
+    strip_fasta_extension,
+)
 from dataportal.ingest.utils import list_csv_files, read_tsv_mapping
 
 
 def list_ftp_isolates(ftp_server: str, ftp_root: str) -> list[str]:
-    ftp = ftplib.FTP(ftp_server)
-    ftp.login()
-    ftp.cwd(ftp_root)
-    raw_isolates = [n for n in ftp.nlst() if not n.startswith(".")]
-    ftp.quit()
-    return raw_isolates
+    ftp = ftp_connect(ftp_server)
+    try:
+        return list_isolates_from_ftp_session(ftp, ftp_root)
+    finally:
+        try:
+            ftp.quit()
+        except Exception:
+            try:
+                ftp.close()
+            except Exception:
+                pass
 
 
 def ingest_gff_features(
@@ -27,12 +40,16 @@ def ingest_gff_features(
     index_name: str,
     raw_isolates: Iterable[str],
     mapping: Optional[dict] = None,
+    gff_dir_template: str = DEFAULT_GFF_DIR_TEMPLATE,
+    faa_path_template: str = DEFAULT_FAA_PATH_TEMPLATE,
 ) -> None:
     GFFGenes(
         ftp_server,
         ftp_root,
         index_name=index_name,
         mapping=mapping or {},
+        gff_dir_template=gff_dir_template,
+        faa_path_template=faa_path_template,
     ).run(raw_isolates=list(raw_isolates), norm_isolates=None)
 
 
@@ -43,7 +60,9 @@ def ingest_essentiality(index_name: str, essentiality_dir: Optional[str]) -> lis
     return files
 
 
-def ingest_dbxref(index_name: str, dbxref_dir: Optional[str], db_name: str = "STRING") -> list[str]:
+def ingest_dbxref(
+    index_name: str, dbxref_dir: Optional[str], db_name: str = "STRING"
+) -> list[str]:
     if not dbxref_dir:
         return []
     files = list_csv_files(dbxref_dir, exts=(".tsv", ".tab"))
@@ -55,9 +74,10 @@ def ingest_dbxref(index_name: str, dbxref_dir: Optional[str], db_name: str = "ST
 def load_assembly_mapping(mapping_task_file: Optional[str]) -> dict:
     if not mapping_task_file:
         return {}
-    return read_tsv_mapping(
+    mapping = read_tsv_mapping(
         mapping_task_file,
         key_col="prefix",
         val_col="assembly",
-        strip_suffix=".fa",
+        strip_suffix="",
     )
+    return {key: strip_fasta_extension(value) for key, value in mapping.items()}

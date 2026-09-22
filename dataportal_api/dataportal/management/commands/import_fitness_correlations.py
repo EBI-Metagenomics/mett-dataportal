@@ -10,13 +10,12 @@ from pathlib import Path
 from dataportal.ingest.fitness_correlation.flow import FitnessCorrelationFlow
 from dataportal.ingest.es_repo import GeneFitnessCorrelationIndexRepository
 from dataportal.ingest.gff.parser import GFFParser
+from dataportal.ingest.ftp_paths import add_gff_dir_template_argument
 from dataportal.ingest.utils import list_csv_files
 
 
 class Command(BaseCommand):
-    help = (
-        "Import gene-gene fitness correlation data from a directory into fitness_correlation_index"
-    )
+    help = "Import gene-gene fitness correlation data from a directory into fitness_correlation_index"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -47,6 +46,7 @@ class Command(BaseCommand):
             default="/pub/databases/mett/annotations/v1_2024-04-15/",
             help="FTP directory for GFF files (default: /pub/databases/mett/annotations/v1_2024-04-15/)",
         )
+        add_gff_dir_template_argument(parser)
         parser.add_argument(
             "--chunk-size",
             type=int,
@@ -66,14 +66,18 @@ class Command(BaseCommand):
 
         # Validate directory exists
         if not Path(correlation_dir).exists():
-            self.stdout.write(self.style.ERROR(f"✗ Directory not found: {correlation_dir}"))
+            self.stdout.write(
+                self.style.ERROR(f"✗ Directory not found: {correlation_dir}")
+            )
             return
 
         # Get all CSV files from directory
         files = list_csv_files(correlation_dir)
 
         if not files:
-            self.stdout.write(self.style.WARNING(f"⚠ No CSV files found in: {correlation_dir}"))
+            self.stdout.write(
+                self.style.WARNING(f"⚠ No CSV files found in: {correlation_dir}")
+            )
             return
 
         self.stdout.write(
@@ -92,6 +96,7 @@ class Command(BaseCommand):
             gff_parser = GFFParser(
                 ftp_server=options["ftp_server"],
                 ftp_directory=options["ftp_directory"],
+                gff_dir_template=options.get("gff_dir_template"),
             )
 
             # Infer species from file names or locus tags
@@ -136,7 +141,9 @@ class Command(BaseCommand):
                 )
             except Exception as e:
                 error_count += 1
-                self.stdout.write(self.style.ERROR(f"    ✗ Error processing {filename}: {e}"))
+                self.stdout.write(
+                    self.style.ERROR(f"    ✗ Error processing {filename}: {e}")
+                )
                 import traceback
 
                 if options.get("verbosity", 1) >= 2:

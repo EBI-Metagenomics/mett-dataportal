@@ -8,6 +8,11 @@ import time
 from typing import Dict, Optional, Tuple, List
 from dataclasses import dataclass
 
+from dataportal.ingest.ftp_paths import (
+    DEFAULT_GFF_DIR_TEMPLATE,
+    format_ftp_path,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,10 +41,14 @@ class GFFParser:
         self,
         ftp_server: str = "ftp.ebi.ac.uk",
         ftp_directory: str = "/pub/databases/mett/annotations/v1_2024-04-15/",
+        gff_dir_template: str = DEFAULT_GFF_DIR_TEMPLATE,
     ):
         self.ftp_server = ftp_server
         self.ftp_directory = ftp_directory
-        self._gene_cache: Dict[str, Dict[str, GeneInfo]] = {}  # isolate -> {locus_tag -> GeneInfo}
+        self.gff_dir_template = gff_dir_template or DEFAULT_GFF_DIR_TEMPLATE
+        self._gene_cache: Dict[str, Dict[str, GeneInfo]] = (
+            {}
+        )  # isolate -> {locus_tag -> GeneInfo}
         self._uniprot_cache: Dict[str, Dict[str, GeneInfo]] = (
             {}
         )  # isolate -> {uniprot_id -> GeneInfo}
@@ -64,7 +73,9 @@ class GFFParser:
                     )
                     time.sleep(delay)
                 else:
-                    logger.error(f"Failed to connect to FTP after {retries} attempts: {e}")
+                    logger.error(
+                        f"Failed to connect to FTP after {retries} attempts: {e}"
+                    )
                     raise
 
     def _get_gff_file_for_isolate(self, isolate: str) -> Optional[str]:
@@ -78,7 +89,11 @@ class GFFParser:
         try:
             # logger.info(f"Connecting to FTP server: {self.ftp_server}")
             ftp = self._reconnect_ftp()
-            isolate_path = f"{self.ftp_directory}/{isolate}/functional_annotation/merged_gff/"
+            isolate_path = format_ftp_path(
+                self.gff_dir_template,
+                base=self.ftp_directory,
+                isolate=isolate,
+            )
             # logger.info(f"Looking for GFF files in path: {isolate_path}")
 
             gff_files = ftp.nlst(isolate_path)
@@ -131,7 +146,9 @@ class GFFParser:
 
         try:
             ftp = self._reconnect_ftp()
-            local_gff_path = os.path.join(tempfile.gettempdir(), os.path.basename(gff_file))
+            local_gff_path = os.path.join(
+                tempfile.gettempdir(), os.path.basename(gff_file)
+            )
             # logger.debug(f"Local GFF path: {local_gff_path}")
 
             # Check if file exists on FTP
@@ -304,7 +321,9 @@ class GFFParser:
                 # Add longer delay after failures to give the server time to recover
                 time.sleep(2.0)  # 2 second delay after failures
 
-        logger.info(f"GFF preload complete: {successful_loads} successful, {failed_loads} failed")
+        logger.info(
+            f"GFF preload complete: {successful_loads} successful, {failed_loads} failed"
+        )
 
     def _load_isolate_gff_data(self, isolate: str) -> None:
         """Load GFF data for a specific isolate."""
@@ -386,7 +405,9 @@ class GFFParser:
                     # Map the unique key to this isolate for subsequent calls
                     self._species_to_isolate[species] = parsed_isolate
                     isolate = parsed_isolate
-                    logger.info(f"Dynamically mapped '{species}' to isolate '{parsed_isolate}'")
+                    logger.info(
+                        f"Dynamically mapped '{species}' to isolate '{parsed_isolate}'"
+                    )
                 except Exception as e:
                     logger.warning(
                         f"Unable to dynamically load isolate for species key '{species}': {e}"
@@ -425,7 +446,9 @@ class GFFParser:
             logger.warning(f"No gene cache found for isolate: {isolate}")
             return None
 
-    def get_gene_info_by_uniprot(self, species: str, uniprot_id: str) -> Optional[GeneInfo]:
+    def get_gene_info_by_uniprot(
+        self, species: str, uniprot_id: str
+    ) -> Optional[GeneInfo]:
         """Get gene information for a specific UniProt ID from a species.
 
         Mirrors get_gene_info's behavior for dynamically mapping unique species keys.
@@ -446,7 +469,9 @@ class GFFParser:
                         self._loaded_isolates.add(parsed_isolate)
                     self._species_to_isolate[species] = parsed_isolate
                     isolate = parsed_isolate
-                    logger.info(f"Dynamically mapped '{species}' to isolate '{parsed_isolate}'")
+                    logger.info(
+                        f"Dynamically mapped '{species}' to isolate '{parsed_isolate}'"
+                    )
                 except Exception as e:
                     logger.warning(
                         f"Unable to dynamically load isolate for species key '{species}': {e}"
@@ -493,7 +518,9 @@ class GFFParser:
         gene_b = self._get_gene_info_by_protein_id(species, protein_b)
         return gene_a, gene_b
 
-    def _get_gene_info_by_protein_id(self, species: str, protein_id: str) -> Optional[GeneInfo]:
+    def _get_gene_info_by_protein_id(
+        self, species: str, protein_id: str
+    ) -> Optional[GeneInfo]:
         """Resolve protein_id (UniProt or locus_tag) to GeneInfo. Tries UniProt first for PPI."""
         if not protein_id:
             return None

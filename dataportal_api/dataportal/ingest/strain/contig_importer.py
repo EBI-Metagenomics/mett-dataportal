@@ -7,6 +7,11 @@ from typing import Dict, List, Optional
 
 from dataportal.models import StrainDocument
 from dataportal.ingest.es_repo import StrainIndexRepository
+from dataportal.ingest.ftp_paths import (
+    DEFAULT_FASTA_EXTENSIONS,
+    DEFAULT_GFF_DIR_TEMPLATE,
+    mapping_lookup,
+)
 from dataportal.ingest.utils import species_name_for_isolate, strain_prefix
 from dataportal.ingest.strain.ftp import (
     choose_primary_gff,
@@ -42,6 +47,8 @@ class StrainContigImporter(BaseImporter):
     resolver: Optional[StrainResolver] = None
     isolates: Optional[List[str]] = None
     annotation: Optional[dict] = None
+    gff_dir_template: str = DEFAULT_GFF_DIR_TEMPLATE
+    fasta_extensions: tuple = DEFAULT_FASTA_EXTENSIONS
 
     def _connect(self) -> ftplib.FTP:
         retries = 3
@@ -84,7 +91,9 @@ class StrainContigImporter(BaseImporter):
                 ftp_gff = None
                 gff_folder_map = None
 
-        fasta_files = ftp_list_fasta(ftp, self.ftp_directory)
+        fasta_files = ftp_list_fasta(
+            ftp, self.ftp_directory, extensions=self.fasta_extensions
+        )
         skipped_unmapped = 0
         skipped_not_in_allowlist = 0
         allowlist = set(self.isolates) if self.isolates else None
@@ -108,7 +117,9 @@ class StrainContigImporter(BaseImporter):
         for file in fasta_files:
             assembly_name = os.path.splitext(file)[0]
 
-            raw_isolate = self.assembly_to_isolate.get(file)
+            raw_isolate = mapping_lookup(
+                self.assembly_to_isolate, file, self.fasta_extensions
+            )
             if not raw_isolate:
                 skipped_unmapped += 1
                 continue
@@ -127,9 +138,10 @@ class StrainContigImporter(BaseImporter):
                 continue
 
             # species based on canonical id (prefix is the same BU/PV...)
-            species_name = species_name_for_isolate(canonical_id)
-            if not species_name:
+            species_acronym = strain_prefix(canonical_id)
+            if not species_acronym:
                 continue
+            species_name = species_name_for_isolate(canonical_id) or ""
 
             # Download FASTA and extract contigs
             local = f"/tmp/{file}"
@@ -164,7 +176,7 @@ class StrainContigImporter(BaseImporter):
             doc.fasta_url = public_https_url(self.ftp_server, self.ftp_directory, file)
             # leave existing gff_file/gff_url intact unless we find a new match below
             doc.species_scientific_name = species_name
-            doc.species_acronym = strain_prefix(canonical_id)
+            doc.species_acronym = species_acronym
 
             # only touch type_strain if list supplied
             if type_set is not None:
@@ -174,7 +186,11 @@ class StrainContigImporter(BaseImporter):
             # GFF filename + public URL (via folder map + canonical id)
             if ftp_gff is not None:
                 resolved = ftp_resolve_gff_for_isolate(
-                    ftp_gff, self.gff_base, canonical_id, folder_map=gff_folder_map
+                    ftp_gff,
+                    self.gff_base,
+                    canonical_id,
+                    folder_map=gff_folder_map,
+                    gff_dir_template=self.gff_dir_template,
                 )
                 if resolved:
                     gff_dir, gffs = resolved

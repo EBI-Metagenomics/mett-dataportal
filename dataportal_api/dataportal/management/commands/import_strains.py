@@ -3,6 +3,11 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand
 
 from dataportal.ingest.es_repo import StrainIndexRepository
+from dataportal.ingest.ftp_paths import (
+    add_fasta_extensions_argument,
+    add_gff_dir_template_argument,
+    parse_fasta_extensions,
+)
 from dataportal.ingest.strain.contig_importer import StrainContigImporter
 from dataportal.ingest.strain.mapping import read_mapping_tsv
 from dataportal.ingest.strain.provenance import (
@@ -20,7 +25,10 @@ class Command(BaseCommand):
         "Optional MIC/metabolism flags still work; prefer import_strain_experiments. "
         "Optional --pipeline/--pipeline-version stamp processing provenance on written strains. "
         "FASTA and GFF public HTTPS URLs are stored per strain from --ftp-server/--ftp-directory "
-        "and --gff-server/--gff-base (re-run with --isolates for mixed FTP roots)."
+        "and --gff-server/--gff-base. GFF folders use --gff-dir-template "
+        "({base}/{isolate}/functional_annotation/merged_gff by default). "
+        "Assemblies may be .fa/.fna/.fasta (--fasta-extensions). "
+        "Re-run with --isolates for mixed FTP roots."
     )
 
     def add_arguments(self, parser):
@@ -46,6 +54,7 @@ class Command(BaseCommand):
             default="/pub/databases/mett/all_hd_isolates/deduplicated_assemblies/",
             help="FTP directory of FASTA assemblies. Stored as https://{ftp-server}{directory}/{fasta} on each strain.",
         )
+        add_fasta_extensions_argument(parser)
         parser.add_argument(
             "--map-tsv",
             default="../data-generators/data/reference/gff-assembly-prefixes.tsv",
@@ -106,10 +115,11 @@ class Command(BaseCommand):
             "--gff-base",
             type=str,
             help=(
-                "Base directory for GFFs on the GFF server (optional). "
-                "Each strain stores https://{gff-server}{gff-base}/{isolate}/functional_annotation/merged_gff/{gff}."
+                "Annotation root for GFFs on the GFF server (optional). "
+                "Combined with --gff-dir-template to locate each isolate's GFF."
             ),
         )
+        add_gff_dir_template_argument(parser)
 
     def handle(self, *args, **opts):
         es_index = opts["es_index"]
@@ -138,6 +148,8 @@ class Command(BaseCommand):
                 type_strains=opts.get("set_type_strains", None),
                 gff_server=opts.get("gff_server"),
                 gff_base=opts.get("gff_base"),
+                gff_dir_template=opts.get("gff_dir_template"),
+                fasta_extensions=parse_fasta_extensions(opts.get("fasta_extensions")),
                 isolates=sorted(allowlist) if allowlist else None,
                 annotation=annotation,
             ).run()

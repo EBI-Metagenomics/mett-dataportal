@@ -25,3 +25,6 @@ BROWSER_INDEX_OUT = _env_path(
     DATA_GENERATORS_ROOT / "data" / "generated" / "browser-indexes",
 )
 QC_OUT = _env_path("QC_OUT", DATA_GENERATORS_ROOT / "data" / "generated" / "qc")
+GFF_GENE_OUT = _env_path(
+    "GFF_GENE_OUT", DATA_GENERATORS_ROOT / "data" / "generated" / "gff-with-genes"
+)

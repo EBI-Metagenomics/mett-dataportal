@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from dataportal.ingest.operon.operons import Operons
 from dataportal.ingest.gff.parser import GFFParser
+from dataportal.ingest.ftp_paths import add_gff_dir_template_argument
 from dataportal.ingest.utils import list_csv_files
 
 
@@ -10,7 +11,9 @@ class Command(BaseCommand):
     def add_arguments(self, p):
         p.add_argument("--index", default="operon_index")
         p.add_argument(
-            "--operons-dir", required=True, help="Folder containing operon tables (CSV/TSV)."
+            "--operons-dir",
+            required=True,
+            help="Folder containing operon tables (CSV/TSV).",
         )
         p.add_argument(
             "--preload-gff",
@@ -29,6 +32,7 @@ class Command(BaseCommand):
             default="/pub/databases/mett/annotations/v1_2024-04-15/",
             help="FTP directory for GFF files",
         )
+        add_gff_dir_template_argument(p)
 
     def handle(self, *args, **o):
         index = o["index"]
@@ -46,10 +50,17 @@ class Command(BaseCommand):
                     import pandas as pd
 
                     df = pd.read_csv(fpath, sep="\t", nrows=200)
-                    for col in ("gene1", "gene2", "gene_a_locus_tag", "gene_b_locus_tag"):
+                    for col in (
+                        "gene1",
+                        "gene2",
+                        "gene_a_locus_tag",
+                        "gene_b_locus_tag",
+                    ):
                         if col in df.columns:
                             for v in df[col].dropna().astype(str).head(100).tolist():
-                                acr, species_name, isolate = _extract_species_from_locus(v)
+                                acr, species_name, isolate = (
+                                    _extract_species_from_locus(v)
+                                )
                                 if (
                                     species_name
                                     and isolate
@@ -62,6 +73,7 @@ class Command(BaseCommand):
                 gff_parser = GFFParser(
                     ftp_server=o.get("ftp_server"),
                     ftp_directory=o.get("ftp_directory"),
+                    gff_dir_template=o.get("gff_dir_template"),
                 )
                 gff_parser.set_species_mapping(species_isolate_map)
                 gff_parser.preload_gff_files(list(species_isolate_map.keys()))

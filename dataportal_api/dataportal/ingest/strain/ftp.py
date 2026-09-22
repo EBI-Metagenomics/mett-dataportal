@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 import ftplib
 from Bio import SeqIO
+
+from dataportal.ingest.ftp_paths import (
+    DEFAULT_FASTA_EXTENSIONS,
+    DEFAULT_GFF_DIR_TEMPLATE,
+    format_ftp_path,
+    is_fasta_filename,
+    template_has_isolate,
+)
 
 
 def ftp_connect(server: str) -> ftplib.FTP:
@@ -31,9 +39,13 @@ def public_https_url(server: str, *parts: str) -> str:
     return "https://" + "/".join([host, *chunks])
 
 
-def ftp_list_fasta(ftp: ftplib.FTP, directory: str) -> List[str]:
+def ftp_list_fasta(
+    ftp: ftplib.FTP,
+    directory: str,
+    extensions: Sequence[str] = DEFAULT_FASTA_EXTENSIONS,
+) -> List[str]:
     ftp.cwd(directory)
-    return [f for f in ftp.nlst() if f.endswith(".fa")]
+    return [f for f in ftp.nlst() if is_fasta_filename(f, extensions)]
 
 
 def ftp_download(ftp: ftplib.FTP, remote: str, local: str) -> None:
@@ -96,9 +108,14 @@ def ftp_list_gff_for_isolate(
     gff_base: str,
     isolate: str,
     folder_map: Optional[Dict[str, str]] = None,
+    gff_dir_template: str = DEFAULT_GFF_DIR_TEMPLATE,
 ) -> List[str]:
     resolved = ftp_resolve_gff_for_isolate(
-        ftp, gff_base, isolate, folder_map=folder_map
+        ftp,
+        gff_base,
+        isolate,
+        folder_map=folder_map,
+        gff_dir_template=gff_dir_template,
     )
     return resolved[1] if resolved else []
 
@@ -108,19 +125,24 @@ def ftp_resolve_gff_for_isolate(
     gff_base: str,
     isolate: str,
     folder_map: Optional[Dict[str, str]] = None,
+    gff_dir_template: str = DEFAULT_GFF_DIR_TEMPLATE,
 ) -> Optional[tuple[str, List[str]]]:
     """Return (remote_dir, gff filenames) for the isolate, or None if missing."""
-    folder_name: Optional[str] = None
-    if folder_map:
-        folder_name = folder_map.get(_folder_key(isolate))
-
-    if folder_name:
-        candidates = [folder_name]
+    template = gff_dir_template or DEFAULT_GFF_DIR_TEMPLATE
+    if not template_has_isolate(template):
+        candidates = [isolate]
     else:
-        candidates = candidate_isolate_folder_names(isolate)
+        folder_name: Optional[str] = None
+        if folder_map:
+            folder_name = folder_map.get(_folder_key(isolate))
+        candidates = (
+            [folder_name] if folder_name else candidate_isolate_folder_names(isolate)
+        )
 
     for cand in candidates:
-        gff_dir = f"{gff_base.rstrip('/')}/{cand}/functional_annotation/merged_gff"
+        if not cand:
+            continue
+        gff_dir = format_ftp_path(template, base=gff_base, isolate=cand)
         try:
             lst = ftp.nlst(gff_dir)
         except Exception:

@@ -38,6 +38,7 @@ Numbering follows generator dependencies, not Django ingest order. Steps 03 and 
 | 02 | `scripts/02-stringdb-mapper/` | `data/inputs/stringdb/` (STRING proteomes + type-strain FASTA from 01) | `data/generated/string-mapping/{raw,uniprot_mapped,mapping_coverage}` |
 | 03 | `scripts/03-browser-indexes/` | EBI FTP FASTA + GFF | `data/generated/browser-indexes/` |
 | 04 | `scripts/04-qc-duplicates/` | EBI FTP `.faa` | `data/generated/qc/` |
+| 05 | `scripts/05-gff-add-gene-rows/` | CDS-only GFFs (20HM) | `data/generated/gff-with-genes/` (`gene` rows derived from CDS) |
 
 ```bash
 # 01 — protein FASTAs (long-running)
@@ -57,6 +58,10 @@ cd ../03-browser-indexes
 # 04 — duplicate QC
 cd ../04-qc-duplicates
 python find_intra_strain_duplicates.py
+
+# 05 — add gene rows to CDS-only GFFs (20HM)
+cd ../05-gff-add-gene-rows
+python add_gene_rows.py --input-dir /path/to/20hm-gffs
 ```
 
 `process_gff3.sh` skips essentiality-track generation when `process_essentiality.sh` is absent (that helper is not in the repo).

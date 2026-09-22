@@ -9,6 +9,7 @@ import os
 import logging
 from django.core.management.base import BaseCommand, CommandError
 from dataportal.ingest.gff.parser import GFFParser
+from dataportal.ingest.ftp_paths import add_gff_dir_template_argument
 from dataportal.ingest.ppi.ppi_csv import PPICSVFlow
 from dataportal.ingest.ppi.parsing import load_string_mapping
 from dataportal.ingest.es_repo import PPIIndexRepository
@@ -45,6 +46,7 @@ class Command(BaseCommand):
             default="/pub/databases/mett/annotations/v1_2024-04-15/",
             help="FTP directory for GFF files",
         )
+        add_gff_dir_template_argument(parser)
         parser.add_argument(
             "--batch-size",
             type=int,
@@ -186,7 +188,11 @@ class Command(BaseCommand):
             self.stdout.write("Initializing GFF parser...")
             self.stdout.write(f"FTP Server: {ftp_server}")
             self.stdout.write(f"FTP Directory: {ftp_directory}")
-            gff_parser = GFFParser(ftp_server=ftp_server, ftp_directory=ftp_directory)
+            gff_parser = GFFParser(
+                ftp_server=ftp_server,
+                ftp_directory=ftp_directory,
+                gff_dir_template=options.get("gff_dir_template"),
+            )
             self.stdout.write(self.style.SUCCESS("GFF parser initialized successfully"))
         else:
             self.stdout.write(

@@ -576,7 +576,25 @@ python manage.py import_strains \
   --processing-document-url https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/README_annotation_release_v1.txt
 ```
 
-Each strain document stores `fasta_url` and `gff_url` from `--ftp-server`/`--ftp-directory` and `--gff-server`/`--gff-base` (HTTPS). Isolates on a different FTP root need a separate `import_strains` run with `--isolates` (or `--isolates-file`). JBrowse index URLs are built from `VITE_JBROWSE_INDEXES_PATH` plus the selected release and species (`…/mett/{release}/{species}/fasta/{assembly}` and `…/gff3/{isolate}`).
+Each strain document stores `fasta_url` and `gff_url` from `--ftp-server`/`--ftp-directory` and `--gff-server`/`--gff-base` (HTTPS). GFF folders default to `{gff-base}/{isolate}/functional_annotation/merged_gff`; override with `--gff-dir-template` if a batch uses a different layout. Assembly ingest accepts `.fa`, `.fna`, and `.fasta` (`--fasta-extensions`). Isolates on a different FTP root need a separate `import_strains` run with `--isolates` (or `--isolates-file`). JBrowse index URLs are built from `VITE_JBROWSE_INDEXES_PATH` plus the selected release and species (`…/mett/{release}/{species}/fasta/{assembly}` and `…/gff3/{isolate}`).
+
+Example: 20hm isolates still in the temporary FTP tree. `--ftp-directory` is the assembly folder; `--gff-base` is the annotation root. `--map-tsv` must list those 20hm FASTAs (the HD `gff-assembly-prefixes.tsv` will skip them). `--isolates-file` is optional here because that assemblies directory is already 20hm-only.
+
+```bash
+python manage.py import_strains \
+  --es-index mett-v1-strains \
+  --map-tsv ../data-generators/data/reference/gff-assembly-prefixes-20hm.tsv \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-directory /pub/databases/metagenomics/temp/mett/20hm/v1/assemblies/ \
+  --gff-server ftp.ebi.ac.uk \
+  --gff-base /pub/databases/metagenomics/temp/mett/20hm/v1/annotations/ \
+  --pipeline mettannotator \
+  --pipeline-version 1.0 \
+  --processing-reference annotation_release_v1.0 \
+  --processing-document-url https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/README_annotation_release_v1.txt
+```
+
+Then `import_features` with `--ftp-root /pub/databases/metagenomics/temp/mett/20hm/v1/annotations`. Two GFF folders use hyphens (`EB_ATCCBAA-613`, `RI_L1-82`) while the FASTAs do not; the 20hm mapping TSV records that.
 
 A data release can mix pipeline versions. Import each batch separately with `--isolates` (or `--isolates-file`) so later flags do not overwrite earlier strains. Omit the pipeline flags to refresh contigs without touching provenance.
 
@@ -597,7 +615,7 @@ Writes `strain_experiment_index`. `--es-index` is the strain index used to resol
 
 ```bash
 python manage.py import_strain_experiments \
-  --es-index mett-v1-strains \
+  --es-index mett-v1-strains \`
   --strain-experiment-index mett-v1-strain-experiments \
   --include-mic \
   --mic-bu-file ../data-generators/data/Sub-Projects-Data/SP5/mic/BU_growth_inhibition.csv \
@@ -642,6 +660,14 @@ python manage.py import_features \
   --essentiality-dir ../data-generators/data/Sub-Projects-Data/SP1/essentiality/ \
   --dbxref-dir ../data-generators/data/generated/string-mapping/raw \
   --dbxref-db-name STRING
+```
+
+20HM example --
+```bash
+python manage.py import_features \
+  --index mett-v1-features-temp \
+  --ftp-server ftp.ebi.ac.uk \
+  --ftp-root /pub/databases/metagenomics/temp/mett/20hm/v1/annotations/
 ```
 
 Essentiality only (GFF already loaded):
