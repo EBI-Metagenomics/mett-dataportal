@@ -15,6 +15,51 @@ def isolate_names_from_ftp_entries(entries) -> list[str]:
     return names
 
 
+def list_isolates_from_local(root: str) -> list[str]:
+    if not root or not os.path.isdir(root):
+        raise RuntimeError(f"Local annotation root is not a directory: {root}")
+    names = []
+    for name in sorted(os.listdir(root)):
+        if name in _SKIP_FTP_DIR_NAMES or name.startswith("."):
+            continue
+        if os.path.isdir(os.path.join(root, name)):
+            names.append(name)
+    return names
+
+
+def is_primary_annotations_gff(name: str) -> bool:
+    base = os.path.basename(name)
+    return (
+        base.endswith("_annotations.gff")
+        and "with_descriptions" not in base
+        and not base.endswith("_annotations-orig.gff")
+    )
+
+
+def parse_protein_fasta(handle) -> dict:
+    seqs, cur, buf = {}, None, []
+    for raw in handle:
+        if isinstance(raw, bytes):
+            line = raw.decode("utf-8").strip()
+        else:
+            line = raw.strip()
+        if line.startswith(">"):
+            if cur:
+                seqs[cur] = "".join(buf)
+                buf = []
+            cur = line.split()[0][1:]
+        elif line:
+            buf.append(line)
+    if cur:
+        seqs[cur] = "".join(buf)
+    return seqs
+
+
+def load_protein_seqs_from_file(path: str) -> dict:
+    with open(path, "r", encoding="utf-8") as handle:
+        return parse_protein_fasta(handle)
+
+
 def ftp_connect(host, retries=6, delay=5):
     """Login to anonymous FTP. Back off on 4xx (including EBI 421 capacity)."""
     last = None
@@ -55,21 +100,10 @@ def list_isolates_from_ftp_session(ftp, ftp_root: str) -> list[str]:
 
 
 def load_protein_seqs(ftp, faa_path):
-    seqs, cur, buf = {}, None, []
     with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as tmp:
         ftp.retrbinary(f"RETR {faa_path}", tmp.write)
         tmp.flush()
         tmp.seek(0)
-        for raw in tmp:
-            line = raw.decode("utf-8").strip()
-            if line.startswith(">"):
-                if cur:
-                    seqs[cur] = "".join(buf)
-                    buf = []
-                cur = line.split()[0][1:]
-            elif line:
-                buf.append(line)
-        if cur:
-            seqs[cur] = "".join(buf)
+        seqs = parse_protein_fasta(tmp)
     os.unlink(tmp.name)
     return seqs

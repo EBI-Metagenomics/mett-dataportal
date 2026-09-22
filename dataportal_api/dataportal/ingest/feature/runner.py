@@ -42,6 +42,7 @@ def ingest_gff_features(
     mapping: Optional[dict] = None,
     gff_dir_template: str = DEFAULT_GFF_DIR_TEMPLATE,
     faa_path_template: str = DEFAULT_FAA_PATH_TEMPLATE,
+    local_root: Optional[str] = None,
 ) -> None:
     GFFGenes(
         ftp_server,
@@ -50,6 +51,7 @@ def ingest_gff_features(
         mapping=mapping or {},
         gff_dir_template=gff_dir_template,
         faa_path_template=faa_path_template,
+        local_root=local_root,
     ).run(raw_isolates=list(raw_isolates), norm_isolates=None)
 
 

@@ -32,6 +32,18 @@
 			"enabled": true
 		},
 		{
+			"key": "mett-elasticsearch-username",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "mett-elasticsearch-pass",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
 			"key": "mett-elasticsearch-prod-pass",
 			"value": "",
 			"type": "default",

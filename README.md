@@ -662,12 +662,12 @@ python manage.py import_features \
   --dbxref-db-name STRING
 ```
 
-20HM example --
+20HM from a local mettannotator tree (no FTP upload). Run `prep_mettannotator.py --apply` first so each GFF has `gene` rows; ingest indexes `gene` only and loads protein sequence from `functional_annotation/prokka/{isolate}.faa`.
+
 ```bash
 python manage.py import_features \
   --index mett-v1-features-temp \
-  --ftp-server ftp.ebi.ac.uk \
-  --ftp-root /pub/databases/metagenomics/temp/mett/20hm/v1/annotations/
+  --local-root ../data-generators/data/generated/mettannotator
 ```
 
 Essentiality only (GFF already loaded):

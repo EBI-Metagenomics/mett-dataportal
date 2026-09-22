@@ -13,6 +13,7 @@ data-generators/
     02-stringdb-mapper/     # METT → STRING mapping (Diamond + UniProt)
     03-browser-indexes/     # JBrowse FASTA/GFF indexes
     04-qc-duplicates/       # intra-strain duplicate QC
+    05-mettannotator-prep/  # prune mettannotator results + add gene rows
   data/
     reference/              # species.csv, gff-assembly-prefixes.tsv
     assays/Sub-Projects-Data/  # SP1–SP5 assay dumps (gitignored)
@@ -24,7 +25,7 @@ data-generators/
     schema/                 # extended model (dbml/json)
 ```
 
-Default paths are relative to this folder. Override with `FAA_OUT`, `STRING_INPUT_DIR`, `STRING_OUT`, `BROWSER_INDEX_OUT`, or `QC_OUT`.
+Default paths are relative to this folder. Override with `FAA_OUT`, `STRING_INPUT_DIR`, `STRING_OUT`, `BROWSER_INDEX_OUT`, `QC_OUT`, or `METTANNOTATOR_OUT`.
 
 Local PyHMMER env vars should point at `data/generated/faa/` and `data/generated/faa/isolates-db/` (not the old `faa-generator/output/` path).
 
@@ -38,7 +39,7 @@ Numbering follows generator dependencies, not Django ingest order. Steps 03 and 
 | 02 | `scripts/02-stringdb-mapper/` | `data/inputs/stringdb/` (STRING proteomes + type-strain FASTA from 01) | `data/generated/string-mapping/{raw,uniprot_mapped,mapping_coverage}` |
 | 03 | `scripts/03-browser-indexes/` | EBI FTP FASTA + GFF | `data/generated/browser-indexes/` |
 | 04 | `scripts/04-qc-duplicates/` | EBI FTP `.faa` | `data/generated/qc/` |
-| 05 | `scripts/05-gff-add-gene-rows/` | CDS-only GFFs (20HM) | `data/generated/gff-with-genes/` (`gene` rows derived from CDS) |
+| 05 | `scripts/05-mettannotator-prep/` | local `data/generated/mettannotator/` | pruned tree: `*_annotations.gff` with gene rows (`*-orig.gff` backup) + `prokka/{isolate}.faa` |
 
 ```bash
 # 01 — protein FASTAs (long-running)
@@ -59,9 +60,10 @@ cd ../03-browser-indexes
 cd ../04-qc-duplicates
 python find_intra_strain_duplicates.py
 
-# 05 — add gene rows to CDS-only GFFs (20HM)
-cd ../05-gff-add-gene-rows
-python add_gene_rows.py --input-dir /path/to/20hm-gffs
+# 05 — prune mettannotator results and add gene rows (dry-run first)
+cd ../05-mettannotator-prep
+python prep_mettannotator.py
+python prep_mettannotator.py --apply
 ```
 
 `process_gff3.sh` skips essentiality-track generation when `process_essentiality.sh` is absent (that helper is not in the repo).

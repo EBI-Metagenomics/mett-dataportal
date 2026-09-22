@@ -1,4 +1,8 @@
-from dataportal.ingest.feature.sources import isolate_names_from_ftp_entries
+from dataportal.ingest.feature.sources import (
+    isolate_names_from_ftp_entries,
+    is_primary_annotations_gff,
+    list_isolates_from_local,
+)
 from dataportal.ingest.ftp_paths import (
     DEFAULT_GFF_DIR_TEMPLATE,
     format_ftp_path,
@@ -88,3 +92,31 @@ def test_isolate_names_from_ftp_entries_strip_noise_and_paths():
         "AR_VPI0990",
         "EB_ATCCBAA-613",
     ]
+
+
+def test_is_primary_annotations_gff_skips_orig_and_descriptions():
+    assert is_primary_annotations_gff("AR_VPI0990_annotations.gff")
+    assert not is_primary_annotations_gff("AR_VPI0990_annotations-orig.gff")
+    assert not is_primary_annotations_gff(
+        "AR_VPI0990_annotations_with_descriptions.gff"
+    )
+
+
+def test_list_isolates_from_local(tmp_path):
+    (tmp_path / "AR_VPI0990").mkdir()
+    (tmp_path / "EB_ATCCBAA-613").mkdir()
+    (tmp_path / "multiqc").mkdir()
+    (tmp_path / "readme.txt").write_text("x")
+    assert list_isolates_from_local(str(tmp_path)) == [
+        "AR_VPI0990",
+        "EB_ATCCBAA-613",
+    ]
+
+
+def test_format_ftp_path_for_local_mettannotator_root():
+    path = format_ftp_path(
+        DEFAULT_GFF_DIR_TEMPLATE,
+        base="/Users/me/data-generators/data/generated/mettannotator",
+        isolate="AR_VPI0990",
+    )
+    assert path.endswith("/mettannotator/AR_VPI0990/functional_annotation/merged_gff")

@@ -14,6 +14,7 @@
 # Exclude large output directories
 data-generators/data/generated/faa/
 data-generators/data/generated/browser-indexes/
+data-generators/data/generated/mettannotator/
 data-generators/scripts/**/__pycache__/
 
 # Exclude sub-projects data (too large)

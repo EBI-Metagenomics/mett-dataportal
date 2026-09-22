@@ -3,8 +3,11 @@ import os
 from dataportal.ingest.flow import Flow
 from dataportal.ingest.feature.sources import (
     ftp_connect,
+    is_primary_annotations_gff,
     list_isolates_from_ftp_session,
+    list_isolates_from_local,
     load_protein_seqs,
+    load_protein_seqs_from_file,
 )
 from dataportal.ingest.feature.parsing import parse_gene_gff_annotations
 from dataportal.ingest.ftp_paths import (
@@ -34,13 +37,18 @@ class GFFGenes(Flow):
         mapping=None,
         gff_dir_template=DEFAULT_GFF_DIR_TEMPLATE,
         faa_path_template=DEFAULT_FAA_PATH_TEMPLATE,
+        local_root=None,
     ):
         super().__init__(index_name)
         self.ftp_server = ftp_server
         self.ftp_root = ftp_root
+        self.local_root = (local_root or "").rstrip("/") or None
         self.mapping = mapping or {}
         self.gff_dir_template = gff_dir_template or DEFAULT_GFF_DIR_TEMPLATE
         self.faa_path_template = faa_path_template or DEFAULT_FAA_PATH_TEMPLATE
+
+    def _source_root(self) -> str:
+        return self.local_root or self.ftp_root
 
     def run(self, raw_isolates: list[str], norm_isolates: list[str] | None = None):
         """
@@ -49,21 +57,24 @@ class GFFGenes(Flow):
         """
         # Use raw isolate names directly
         pairs = [(raw_isolate, raw_isolate) for raw_isolate in raw_isolates]
-
-        ftp = ftp_connect(self.ftp_server)
+        source_root = self._source_root()
+        ftp = None
+        if not self.local_root:
+            ftp = ftp_connect(self.ftp_server)
         try:
             isolates = [raw for raw, _ in pairs]
             if not isolates:
-                print(
-                    f"[import_features] listing isolate folders under {self.ftp_root}"
-                )
-                isolates = list_isolates_from_ftp_session(ftp, self.ftp_root)
+                print(f"[import_features] listing isolate folders under {source_root}")
+                if self.local_root:
+                    isolates = list_isolates_from_local(self.local_root)
+                else:
+                    isolates = list_isolates_from_ftp_session(ftp, self.ftp_root)
                 pairs = [(raw_isolate, raw_isolate) for raw_isolate in isolates]
             print(f"[import_features] {len(pairs)} isolate(s) to ingest")
             if not pairs:
                 raise RuntimeError(
-                    f"No isolate folders found under {self.ftp_root}. "
-                    "Pass --isolates NAME ... or check --ftp-root."
+                    f"No isolate folders found under {source_root}. "
+                    "Pass --isolates NAME ... or check --local-root / --ftp-root."
                 )
             ingested = 0
             skipped = 0
@@ -79,32 +90,35 @@ class GFFGenes(Flow):
                 f"(flushed last {pending} features)"
             )
         finally:
-            try:
-                ftp.quit()
-            except Exception:
+            if ftp is not None:
                 try:
-                    ftp.close()
+                    ftp.quit()
                 except Exception:
-                    pass
+                    try:
+                        ftp.close()
+                    except Exception:
+                        pass
 
     def _ingest_isolate(self, ftp, raw_isolate: str, norm_isolate: str) -> bool:
         gff_dir = format_ftp_path(
-            self.gff_dir_template, base=self.ftp_root, isolate=raw_isolate
+            self.gff_dir_template, base=self._source_root(), isolate=raw_isolate
         )
         try:
-            listed = ftp.nlst(gff_dir)
+            if self.local_root:
+                listed = [
+                    os.path.join(gff_dir, name)
+                    for name in os.listdir(gff_dir)
+                    if os.path.isfile(os.path.join(gff_dir, name))
+                ]
+            else:
+                listed = ftp.nlst(gff_dir)
         except Exception as exc:
             print(
                 f"[import_features] skip {raw_isolate}: cannot list {gff_dir} ({exc})"
             )
             return False
 
-        gffs = [
-            p
-            for p in listed
-            if os.path.basename(p).endswith("_annotations.gff")
-            and "with_descriptions" not in os.path.basename(p)
-        ]
+        gffs = [p for p in listed if is_primary_annotations_gff(p)]
         if not gffs:
             print(
                 f"[import_features] skip {raw_isolate}: no *_annotations.gff in {gff_dir}"
@@ -112,11 +126,14 @@ class GFFGenes(Flow):
             return False
 
         faa = format_ftp_path(
-            self.faa_path_template, base=self.ftp_root, isolate=raw_isolate
+            self.faa_path_template, base=self._source_root(), isolate=raw_isolate
         )
         protein_seqs = {}
         try:
-            protein_seqs = load_protein_seqs(ftp, faa)
+            if self.local_root:
+                protein_seqs = load_protein_seqs_from_file(faa)
+            else:
+                protein_seqs = load_protein_seqs(ftp, faa)
         except Exception as exc:
             print(f"[import_features] {raw_isolate}: no protein FASTA at {faa} ({exc})")
 
@@ -163,12 +180,18 @@ class GFFGenes(Flow):
     def _ingest_gff_file(
         self, ftp, remote, raw_isolate, norm_isolate, sp_acronym, sp_name, prot_seqs
     ):
-        local = tempfile.NamedTemporaryFile(delete=False)
         gene_count = 0
+        gff_path = None
         try:
-            with open(local.name, "wb") as out:
-                ftp.retrbinary(f"RETR {remote}", out.write)
-            with open(local.name, "r") as f:
+            if self.local_root:
+                gff_path = remote
+            else:
+                tmp = tempfile.NamedTemporaryFile(delete=False)
+                gff_path = tmp.name
+                tmp.close()
+                with open(gff_path, "wb") as out:
+                    ftp.retrbinary(f"RETR {remote}", out.write)
+            with open(gff_path, "r") as f:
                 for line in f:
                     if not line or line.startswith("#"):
                         continue
@@ -258,7 +281,8 @@ class GFFGenes(Flow):
             else:
                 print(f"[import_features] {raw_isolate}: indexed {gene_count} genes")
         finally:
-            try:
-                os.unlink(local.name)
-            except Exception:
-                pass
+            if not self.local_root and gff_path:
+                try:
+                    os.unlink(gff_path)
+                except Exception:
+                    pass

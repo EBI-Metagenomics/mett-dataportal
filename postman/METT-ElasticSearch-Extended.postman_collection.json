@@ -1,0 +1,3747 @@
+{
+  "info": {
+    "_postman_id": "35bb5461-2cd3-4da0-973e-6912134563b6",
+    "name": "METT-ElasticSearch-Extended",
+    "description": "Dataset maintenance queries against a METT Elasticsearch **release set**.\n\n**Host:** `{{mett-elasticsearch-current}}` from the Postman environment (local / dev / prod files in `postman/`).\n\n**Auth:** collection-level Basic `{{mett-elasticsearch-username}}` / `{{mett-elasticsearch-pass}}` \u2014 same secret-in-environment pattern as METT-DataPortal's `{{bearer-token-current}}`. Leave those env values empty in git; fill them in Postman.\n\n**Indexes:** collection variables `index-*` default to `mett-{{mett-release}}-{family}`. Change `mett-release` or override a single `index-*` (legacy `feature_index`, or a concrete `mett-v1-g001-features`).\n\nUse **METT-ElasticSearch** for smoke expected-totals. This collection is for inventory, species visibility, and ingest quality checks.\n\nSpecies enable/disable writes Elasticsearch only; restart the API so the in-memory species registry reloads.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19420352"
+  },
+  "item": [
+    {
+      "name": "Cluster",
+      "item": [
+        {
+          "name": "Cluster health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_cluster/health?pretty=true",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_cluster",
+                "health"
+              ],
+              "query": [
+                {
+                  "key": "pretty",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Cluster status for the host in `mett-elasticsearch-current`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Cluster status is not red\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.be.oneOf([\"green\", \"yellow\"]);",
+                  "    console.log(\"status=\" + jsonData.status + \" nodes=\" + jsonData.number_of_nodes);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cat indexes (mett-*)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_cat/indices/mett-*?v=true&s=index&h=health,status,index,docs.count,store.size,pri,rep",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_cat",
+                "indices",
+                "mett-*"
+              ],
+              "query": [
+                {
+                  "key": "v",
+                  "value": "true"
+                },
+                {
+                  "key": "s",
+                  "value": "index"
+                },
+                {
+                  "key": "h",
+                  "value": "health,status,index,docs.count,store.size,pri,rep"
+                }
+              ]
+            },
+            "description": "Physical `mett-*` indexes and document counts."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cat aliases (mett-*)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_cat/aliases/mett-*?v=true&s=alias",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_cat",
+                "aliases",
+                "mett-*"
+              ],
+              "query": [
+                {
+                  "key": "v",
+                  "value": "true"
+                },
+                {
+                  "key": "s",
+                  "value": "alias"
+                }
+              ]
+            },
+            "description": "Release aliases (`mett-v1-features`) and `mett-current-*` plus any leftover `*_index` aliases."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve release aliases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/mett-{{mett-release}}-*",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "mett-{{mett-release}}-*"
+              ]
+            },
+            "description": "Shows which concrete generation each `mett-{{mett-release}}-*` alias points at."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resolves at least one index\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const indices = jsonData.indices || [];",
+                  "    pm.expect(indices.length).to.be.at.least(1);",
+                  "    indices.forEach(function (idx) {",
+                  "        console.log(idx.name + \" aliases=\" + JSON.stringify(idx.aliases || []));",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Cluster and alias inventory for the selected Elasticsearch environment."
+    },
+    {
+      "name": "Species visibility",
+      "item": [
+        {
+          "name": "List species (enabled and disabled)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_search"
+              ]
+            },
+            "description": "Portal APIs only return `enabled=true`. This lists every species document.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 50,\n  \"track_total_hits\": true,\n  \"sort\": [\n    {\n      \"acronym\": \"asc\"\n    }\n  ],\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"_source\": [\n    \"acronym\",\n    \"scientific_name\",\n    \"common_name\",\n    \"taxonomy_id\",\n    \"enabled\"\n  ],\n  \"aggs\": {\n    \"enabled\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": true\n        }\n      }\n    },\n    \"disabled\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": false\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logs hit total\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const hits = jsonData.hits || {};",
+                  "    const raw = hits.total;",
+                  "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "    console.log(\"species total=\" + total);",
+                  "    pm.expect(Number(total)).to.be.at.least(0);",
+                  "    const aggs = jsonData.aggregations || {};",
+                  "    Object.keys(aggs).forEach(function (key) {",
+                  "        const agg = aggs[key] || {};",
+                  "        if (Array.isArray(agg.buckets)) {",
+                  "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                  "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                  "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                  "            });",
+                  "        } else if (agg.doc_count != null) {",
+                  "            console.log(key + \"=\" + agg.doc_count);",
+                  "        }",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get species `{{species_acronym_toggle}}`",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_doc/{{species_acronym_toggle}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_doc",
+                "{{species_acronym_toggle}}"
+              ]
+            },
+            "description": "Species `_id` is the acronym. Defaults to `species_acronym_toggle` so BU/PV are not used for enable/disable tests."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Document id matches acronym\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.found).to.eql(true);",
+                  "    console.log(jsonData._id + \" enabled=\" + jsonData._source.enabled);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Enable one species",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update/{{species_acronym_toggle}}?refresh=true",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_update",
+                "{{species_acronym_toggle}}"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Sets `enabled=true` on one species document. This does **not** refresh the Django in-memory species registry; restart the API (or call the portal enable endpoint if available) after changing visibility.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doc\": {\n    \"enabled\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Document updated\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.result).to.be.oneOf([\"updated\", \"noop\"]);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Disable one species",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update/{{species_acronym_toggle}}?refresh=true",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_update",
+                "{{species_acronym_toggle}}"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Sets `enabled=false` on `{{species_acronym_toggle}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doc\": {\n    \"enabled\": false\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Document updated\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.result).to.be.oneOf([\"updated\", \"noop\"]);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Enable species (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update_by_query?refresh=true&conflicts=proceed",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_update_by_query"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                },
+                {
+                  "key": "conflicts",
+                  "value": "proceed"
+                }
+              ]
+            },
+            "description": "Enables every acronym in `species_acronyms_bulk` (comma-separated). Does not touch BU/PV unless those acronyms are in the list.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": {\n    \"terms\": {\n      \"acronym\": {{species_acronyms_bulk_json}}\n    }\n  },\n  \"script\": {\n    \"lang\": \"painless\",\n    \"source\": \"ctx._source.enabled = params.enabled\",\n    \"params\": {\n      \"enabled\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "const raw = pm.collectionVariables.get(\"species_acronyms_bulk\") || \"\";",
+                  "const acronyms = raw.split(\",\").map(function (s) { return s.trim(); }).filter(Boolean);",
+                  "pm.expect(acronyms.length, \"species_acronyms_bulk\").to.be.at.least(1);",
+                  "pm.variables.set(\"species_acronyms_bulk_json\", JSON.stringify(acronyms));",
+                  "console.log(\"bulk acronyms=\" + JSON.stringify(acronyms));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Update by query succeeded\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.updated).to.be.at.least(0);",
+                  "    console.log(\"updated=\" + jsonData.updated + \" total=\" + jsonData.total);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Disable species (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update_by_query?refresh=true&conflicts=proceed",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_update_by_query"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                },
+                {
+                  "key": "conflicts",
+                  "value": "proceed"
+                }
+              ]
+            },
+            "description": "Disables every acronym in `species_acronyms_bulk`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": {\n    \"terms\": {\n      \"acronym\": {{species_acronyms_bulk_json}}\n    }\n  },\n  \"script\": {\n    \"lang\": \"painless\",\n    \"source\": \"ctx._source.enabled = params.enabled\",\n    \"params\": {\n      \"enabled\": false\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "const raw = pm.collectionVariables.get(\"species_acronyms_bulk\") || \"\";",
+                  "const acronyms = raw.split(\",\").map(function (s) { return s.trim(); }).filter(Boolean);",
+                  "pm.expect(acronyms.length, \"species_acronyms_bulk\").to.be.at.least(1);",
+                  "pm.variables.set(\"species_acronyms_bulk_json\", JSON.stringify(acronyms));",
+                  "console.log(\"bulk acronyms=\" + JSON.stringify(acronyms));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Update by query succeeded\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.updated).to.be.at.least(0);",
+                  "    console.log(\"updated=\" + jsonData.updated + \" total=\" + jsonData.total);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Toggle `enabled` on species documents. Single updates use `species_acronym_toggle`; bulk updates use `species_acronyms_bulk`."
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Totals for all indexes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-ndjson"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_msearch",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_msearch"
+              ]
+            },
+            "description": "One `_msearch` for document totals across every `index-*` alias.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"index\": \"{{index-species}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Each msearch response is OK\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responses = jsonData.responses || [];",
+                  "    const labels = [\"Species\", \"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
+                  "    pm.expect(responses.length).to.eql(labels.length);",
+                  "    responses.forEach(function (resp, i) {",
+                  "        const status = resp.status == null ? 200 : resp.status;",
+                  "        pm.expect(status, labels[i] + \" status\").to.be.below(300);",
+                  "        const hits = resp.hits || {};",
+                  "        const raw = hits.total;",
+                  "        const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "        console.log(labels[i] + \" total=\" + total);",
+                  "        const aggs = resp.aggregations || {};",
+                  "        Object.keys(aggs).forEach(function (key) {",
+                  "            const agg = aggs[key] || {};",
+                  "            if (Array.isArray(agg.buckets)) {",
+                  "                console.log(\"  \" + key + \" buckets=\" + agg.buckets.length);",
+                  "                agg.buckets.slice(0, 20).forEach(function (b) {",
+                  "                    console.log(\"    \" + b.key + \"=\" + b.doc_count);",
+                  "                });",
+                  "            }",
+                  "        });",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Counts by species \u2014 all indexes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-ndjson"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_msearch",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_msearch"
+              ]
+            },
+            "description": "Terms aggregations on species (and strain where present) for every index.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"index\": \"{{index-species}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"acronym\",\"size\":50}}}}\n{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name.keyword\",\"size\":200}}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name.keyword\",\"size\":200}}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species_a\":{\"terms\":{\"field\":\"species_a_acronym\",\"size\":50}},\"by_species_b\":{\"terms\":{\"field\":\"species_b_acronym\",\"size\":50}},\"by_isolate_a\":{\"terms\":{\"field\":\"isolate_a\",\"size\":200}},\"by_isolate_b\":{\"terms\":{\"field\":\"isolate_b\",\"size\":200}}}}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Each msearch response is OK\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responses = jsonData.responses || [];",
+                  "    const labels = [\"Species\", \"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
+                  "    pm.expect(responses.length).to.eql(labels.length);",
+                  "    responses.forEach(function (resp, i) {",
+                  "        const status = resp.status == null ? 200 : resp.status;",
+                  "        pm.expect(status, labels[i] + \" status\").to.be.below(300);",
+                  "        const hits = resp.hits || {};",
+                  "        const raw = hits.total;",
+                  "        const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "        console.log(labels[i] + \" total=\" + total);",
+                  "        const aggs = resp.aggregations || {};",
+                  "        Object.keys(aggs).forEach(function (key) {",
+                  "            const agg = aggs[key] || {};",
+                  "            if (Array.isArray(agg.buckets)) {",
+                  "                console.log(\"  \" + key + \" buckets=\" + agg.buckets.length);",
+                  "                agg.buckets.slice(0, 20).forEach(function (b) {",
+                  "                    console.log(\"    \" + b.key + \"=\" + b.doc_count);",
+                  "                });",
+                  "            }",
+                  "        });",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Counts by strain \u2014 all indexes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-ndjson"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_msearch",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_msearch"
+              ]
+            },
+            "description": "Same aggregations as the species inventory, skipping the species index.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name.keyword\",\"size\":200}}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name.keyword\",\"size\":200}}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species_a\":{\"terms\":{\"field\":\"species_a_acronym\",\"size\":50}},\"by_species_b\":{\"terms\":{\"field\":\"species_b_acronym\",\"size\":50}},\"by_isolate_a\":{\"terms\":{\"field\":\"isolate_a\",\"size\":200}},\"by_isolate_b\":{\"terms\":{\"field\":\"isolate_b\",\"size\":200}}}}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Each msearch response is OK\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responses = jsonData.responses || [];",
+                  "    const labels = [\"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
+                  "    pm.expect(responses.length).to.eql(labels.length);",
+                  "    responses.forEach(function (resp, i) {",
+                  "        const status = resp.status == null ? 200 : resp.status;",
+                  "        pm.expect(status, labels[i] + \" status\").to.be.below(300);",
+                  "        const hits = resp.hits || {};",
+                  "        const raw = hits.total;",
+                  "        const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "        console.log(labels[i] + \" total=\" + total);",
+                  "        const aggs = resp.aggregations || {};",
+                  "        Object.keys(aggs).forEach(function (key) {",
+                  "            const agg = aggs[key] || {};",
+                  "            if (Array.isArray(agg.buckets)) {",
+                  "                console.log(\"  \" + key + \" buckets=\" + agg.buckets.length);",
+                  "                agg.buckets.slice(0, 20).forEach(function (b) {",
+                  "                    console.log(\"    \" + b.key + \"=\" + b.doc_count);",
+                  "                });",
+                  "            }",
+                  "        });",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Counts for selected species \u2014 all indexes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-ndjson"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_msearch",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_msearch"
+              ]
+            },
+            "description": "Filter every index to `species_acronym` (orthologs match A or B). Species index uses `acronym`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"index\": \"{{index-species}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"bool\":{\"should\":[{\"term\":{\"species_a_acronym\":\"{{species_acronym}}\"}},{\"term\":{\"species_b_acronym\":\"{{species_acronym}}\"}}],\"minimum_should_match\":1}}}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Each msearch response is OK\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responses = jsonData.responses || [];",
+                  "    const labels = [\"Species\", \"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
+                  "    pm.expect(responses.length).to.eql(labels.length);",
+                  "    responses.forEach(function (resp, i) {",
+                  "        const status = resp.status == null ? 200 : resp.status;",
+                  "        pm.expect(status, labels[i] + \" status\").to.be.below(300);",
+                  "        const hits = resp.hits || {};",
+                  "        const raw = hits.total;",
+                  "        const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "        console.log(labels[i] + \" total=\" + total);",
+                  "        const aggs = resp.aggregations || {};",
+                  "        Object.keys(aggs).forEach(function (key) {",
+                  "            const agg = aggs[key] || {};",
+                  "            if (Array.isArray(agg.buckets)) {",
+                  "                console.log(\"  \" + key + \" buckets=\" + agg.buckets.length);",
+                  "                agg.buckets.slice(0, 20).forEach(function (b) {",
+                  "                    console.log(\"    \" + b.key + \"=\" + b.doc_count);",
+                  "                });",
+                  "            }",
+                  "        });",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Counts for selected strain \u2014 all indexes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-ndjson"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_msearch",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_msearch"
+              ]
+            },
+            "description": "Filter every strain-bearing index to `isolate_name` (orthologs match isolate A or B).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name.keyword\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name.keyword\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"bool\":{\"should\":[{\"term\":{\"isolate_a\":\"{{isolate_name}}\"}},{\"term\":{\"isolate_b\":\"{{isolate_name}}\"}}],\"minimum_should_match\":1}}}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Each msearch response is OK\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responses = jsonData.responses || [];",
+                  "    const labels = [\"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
+                  "    pm.expect(responses.length).to.eql(labels.length);",
+                  "    responses.forEach(function (resp, i) {",
+                  "        const status = resp.status == null ? 200 : resp.status;",
+                  "        pm.expect(status, labels[i] + \" status\").to.be.below(300);",
+                  "        const hits = resp.hits || {};",
+                  "        const raw = hits.total;",
+                  "        const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "        console.log(labels[i] + \" total=\" + total);",
+                  "        const aggs = resp.aggregations || {};",
+                  "        Object.keys(aggs).forEach(function (key) {",
+                  "            const agg = aggs[key] || {};",
+                  "            if (Array.isArray(agg.buckets)) {",
+                  "                console.log(\"  \" + key + \" buckets=\" + agg.buckets.length);",
+                  "                agg.buckets.slice(0, 20).forEach(function (b) {",
+                  "                    console.log(\"    \" + b.key + \"=\" + b.doc_count);",
+                  "                });",
+                  "            }",
+                  "        });",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Cross-index document counts. Change `species_acronym` / `isolate_name` at collection scope."
+    },
+    {
+      "name": "Per-index inventory",
+      "item": [
+        {
+          "name": "Species",
+          "item": [
+            {
+              "name": "Species \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-species}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-species}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Species \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-species}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Species species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Species \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-species}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns the species document\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.eql(1);",
+                      "    console.log(JSON.stringify(hits[0]._source, null, 2));",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Strains",
+          "item": [
+            {
+              "name": "Strains \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strains}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-strains}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name.keyword\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Strains total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Strains \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strains}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Strains species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Strains \u2014 selected strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strains}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Strains strain total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Strains \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strains}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns at most one hit\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.be.at.most(1);",
+                      "    if (hits[0]) {",
+                      "        console.log(\"_id=\" + hits[0]._id);",
+                      "        console.log(JSON.stringify(hits[0]._source, null, 2).slice(0, 2000));",
+                      "    }",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Strain experiments",
+          "item": [
+            {
+              "name": "Strain experiments \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strain-experiments}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-strain-experiments}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name.keyword\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Strain experiments total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Strain experiments \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strain-experiments}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Strain experiments species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Strain experiments \u2014 selected strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strain-experiments}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Strain experiments strain total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Strain experiments \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strain-experiments}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns at most one hit\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.be.at.most(1);",
+                      "    if (hits[0]) {",
+                      "        console.log(\"_id=\" + hits[0]._id);",
+                      "        console.log(JSON.stringify(hits[0]._source, null, 2).slice(0, 2000));",
+                      "    }",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Features",
+          "item": [
+            {
+              "name": "Features \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-features}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-features}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Features total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Features \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-features}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Features species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Features \u2014 selected strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-features}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Features strain total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Features \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-features}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns at most one hit\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.be.at.most(1);",
+                      "    if (hits[0]) {",
+                      "        console.log(\"_id=\" + hits[0]._id);",
+                      "        console.log(JSON.stringify(hits[0]._source, null, 2).slice(0, 2000));",
+                      "    }",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Feature experiments",
+          "item": [
+            {
+              "name": "Feature experiments \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-feature-experiments}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-feature-experiments}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Feature experiments total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Feature experiments \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-feature-experiments}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Feature experiments species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Feature experiments \u2014 selected strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-feature-experiments}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Feature experiments strain total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Feature experiments \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-feature-experiments}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns at most one hit\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.be.at.most(1);",
+                      "    if (hits[0]) {",
+                      "        console.log(\"_id=\" + hits[0]._id);",
+                      "        console.log(JSON.stringify(hits[0]._source, null, 2).slice(0, 2000));",
+                      "    }",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "PPI",
+          "item": [
+            {
+              "name": "PPI \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-ppi}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-ppi}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"PPI total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "PPI \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-ppi}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"PPI species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "PPI \u2014 selected strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-ppi}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"PPI strain total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "PPI \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-ppi}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns at most one hit\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.be.at.most(1);",
+                      "    if (hits[0]) {",
+                      "        console.log(\"_id=\" + hits[0]._id);",
+                      "        console.log(JSON.stringify(hits[0]._source, null, 2).slice(0, 2000));",
+                      "    }",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Operons",
+          "item": [
+            {
+              "name": "Operons \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-operons}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-operons}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Operons total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Operons \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-operons}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Operons species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Operons \u2014 selected strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-operons}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Operons strain total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Operons \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-operons}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns at most one hit\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.be.at.most(1);",
+                      "    if (hits[0]) {",
+                      "        console.log(\"_id=\" + hits[0]._id);",
+                      "        console.log(JSON.stringify(hits[0]._source, null, 2).slice(0, 2000));",
+                      "    }",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Fitness correlations",
+          "item": [
+            {
+              "name": "Fitness correlations \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-fitness-correlations}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-fitness-correlations}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Fitness correlations total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Fitness correlations \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-fitness-correlations}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Fitness correlations species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Fitness correlations \u2014 selected strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-fitness-correlations}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Fitness correlations strain total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Fitness correlations \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-fitness-correlations}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns at most one hit\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.be.at.most(1);",
+                      "    if (hits[0]) {",
+                      "        console.log(\"_id=\" + hits[0]._id);",
+                      "        console.log(JSON.stringify(hits[0]._source, null, 2).slice(0, 2000));",
+                      "    }",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Orthologs",
+          "item": [
+            {
+              "name": "Orthologs \u2014 by species and strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-orthologs}}",
+                    "_search"
+                  ]
+                },
+                "description": "Terms aggregations for `{{index-orthologs}}`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species_a\": {\n      \"terms\": {\n        \"field\": \"species_a_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_species_b\": {\n      \"terms\": {\n        \"field\": \"species_b_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_isolate_a\": {\n      \"terms\": {\n        \"field\": \"isolate_a\",\n        \"size\": 200\n      }\n    },\n    \"by_isolate_b\": {\n      \"terms\": {\n        \"field\": \"isolate_b\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Orthologs total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Orthologs \u2014 selected species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-orthologs}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"species_a_acronym\": \"{{species_acronym}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"species_b_acronym\": \"{{species_acronym}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Orthologs species total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Orthologs \u2014 selected strain",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-orthologs}}",
+                    "_search"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"isolate_a\": \"{{isolate_name}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"isolate_b\": \"{{isolate_name}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Logs hit total\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = jsonData.hits || {};",
+                      "    const raw = hits.total;",
+                      "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                      "    console.log(\"Orthologs strain total=\" + total);",
+                      "    pm.expect(Number(total)).to.be.at.least(0);",
+                      "    const aggs = jsonData.aggregations || {};",
+                      "    Object.keys(aggs).forEach(function (key) {",
+                      "        const agg = aggs[key] || {};",
+                      "        if (Array.isArray(agg.buckets)) {",
+                      "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                      "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                      "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                      "            });",
+                      "        } else if (agg.doc_count != null) {",
+                      "            console.log(key + \"=\" + agg.doc_count);",
+                      "        }",
+                      "    });",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Orthologs \u2014 sample document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-orthologs}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"isolate_a\": \"{{isolate_name}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"isolate_b\": \"{{isolate_name}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Returns at most one hit\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    const hits = (jsonData.hits && jsonData.hits.hits) || [];",
+                      "    pm.expect(hits.length).to.be.at.most(1);",
+                      "    if (hits[0]) {",
+                      "        console.log(\"_id=\" + hits[0]._id);",
+                      "        console.log(JSON.stringify(hits[0]._source, null, 2).slice(0, 2000));",
+                      "    }",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "description": "Same counts as Inventory, one index at a time, plus a sample document."
+    },
+    {
+      "name": "Data quality",
+      "item": [
+        {
+          "name": "Strains missing fasta_url or gff_url",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_search"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 50,\n  \"track_total_hits\": true,\n  \"_source\": [\n    \"isolate_name\",\n    \"species_acronym\",\n    \"fasta_url\",\n    \"gff_url\",\n    \"fasta_file\",\n    \"gff_file\"\n  ],\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"fasta_url\"\n              }\n            }\n          }\n        },\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"gff_url\"\n              }\n            }\n          }\n        },\n        {\n          \"term\": {\n            \"fasta_url\": \"\"\n          }\n        },\n        {\n          \"term\": {\n            \"gff_url\": \"\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logs hit total\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const hits = jsonData.hits || {};",
+                  "    const raw = hits.total;",
+                  "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "    console.log(\"missing assembly urls total=\" + total);",
+                  "    pm.expect(Number(total)).to.be.at.least(0);",
+                  "    const aggs = jsonData.aggregations || {};",
+                  "    Object.keys(aggs).forEach(function (key) {",
+                  "        const agg = aggs[key] || {};",
+                  "        if (Array.isArray(agg.buckets)) {",
+                  "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                  "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                  "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                  "            });",
+                  "        } else if (agg.doc_count != null) {",
+                  "            console.log(key + \"=\" + agg.doc_count);",
+                  "        }",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Genes missing protein_sequence",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_search"
+              ]
+            },
+            "description": "Empty protein sequences usually mean the Prokka `.faa` was missing at ingest.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        }\n      ],\n      \"should\": [\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"protein_sequence\"\n              }\n            }\n          }\n        },\n        {\n          \"term\": {\n            \"protein_sequence.keyword\": \"\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logs hit total\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const hits = jsonData.hits || {};",
+                  "    const raw = hits.total;",
+                  "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "    console.log(\"genes without protein_sequence total=\" + total);",
+                  "    pm.expect(Number(total)).to.be.at.least(0);",
+                  "    const aggs = jsonData.aggregations || {};",
+                  "    Object.keys(aggs).forEach(function (key) {",
+                  "        const agg = aggs[key] || {};",
+                  "        if (Array.isArray(agg.buckets)) {",
+                  "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                  "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                  "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                  "            });",
+                  "        } else if (agg.doc_count != null) {",
+                  "            console.log(key + \"=\" + agg.doc_count);",
+                  "        }",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Genes missing isolate_name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_search"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        }\n      ],\n      \"must_not\": [\n        {\n          \"exists\": {\n            \"field\": \"isolate_name\"\n          }\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logs hit total\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const hits = jsonData.hits || {};",
+                  "    const raw = hits.total;",
+                  "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "    console.log(\"genes without isolate_name total=\" + total);",
+                  "    pm.expect(Number(total)).to.be.at.least(0);",
+                  "    const aggs = jsonData.aggregations || {};",
+                  "    Object.keys(aggs).forEach(function (key) {",
+                  "        const agg = aggs[key] || {};",
+                  "        if (Array.isArray(agg.buckets)) {",
+                  "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                  "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                  "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                  "            });",
+                  "        } else if (agg.doc_count != null) {",
+                  "            console.log(key + \"=\" + agg.doc_count);",
+                  "        }",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Type strains per species",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_search"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"type_strain\": true\n    }\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logs hit total\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const hits = jsonData.hits || {};",
+                  "    const raw = hits.total;",
+                  "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "    console.log(\"type strains total=\" + total);",
+                  "    pm.expect(Number(total)).to.be.at.least(0);",
+                  "    const aggs = jsonData.aggregations || {};",
+                  "    Object.keys(aggs).forEach(function (key) {",
+                  "        const agg = aggs[key] || {};",
+                  "        if (Array.isArray(agg.buckets)) {",
+                  "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                  "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                  "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                  "            });",
+                  "        } else if (agg.doc_count != null) {",
+                  "            console.log(key + \"=\" + agg.doc_count);",
+                  "        }",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Spot-check ingest gaps after loading a new species batch."
+    }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{mett-elasticsearch-username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{mett-elasticsearch-pass}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "mett-release",
+      "value": "v1",
+      "type": "string",
+      "description": "Scientist-visible METT version token (v1, v2, \u2026). Used by index-* defaults."
+    },
+    {
+      "key": "index-species",
+      "value": "mett-{{mett-release}}-species"
+    },
+    {
+      "key": "index-strains",
+      "value": "mett-{{mett-release}}-strains"
+    },
+    {
+      "key": "index-strain-experiments",
+      "value": "mett-{{mett-release}}-strain-experiments"
+    },
+    {
+      "key": "index-features",
+      "value": "mett-{{mett-release}}-features"
+    },
+    {
+      "key": "index-feature-experiments",
+      "value": "mett-{{mett-release}}-feature-experiments"
+    },
+    {
+      "key": "index-ppi",
+      "value": "mett-{{mett-release}}-ppi"
+    },
+    {
+      "key": "index-operons",
+      "value": "mett-{{mett-release}}-operons"
+    },
+    {
+      "key": "index-orthologs",
+      "value": "mett-{{mett-release}}-orthologs"
+    },
+    {
+      "key": "index-fitness-correlations",
+      "value": "mett-{{mett-release}}-fitness-correlations"
+    },
+    {
+      "key": "species_acronym",
+      "value": "BU",
+      "type": "string",
+      "description": "Species acronym used by filtered inventory queries (same as DataPortal)."
+    },
+    {
+      "key": "isolate_name",
+      "value": "BU_ATCC8492",
+      "type": "string",
+      "description": "Isolate used by strain-filtered inventory (same as DataPortal)."
+    },
+    {
+      "key": "species_acronym_toggle",
+      "value": "AT",
+      "type": "string",
+      "description": "Acronym used by single enable/disable so BU/PV stay untouched."
+    },
+    {
+      "key": "species_acronyms_bulk",
+      "value": "AR,AT,BT,BF",
+      "type": "string",
+      "description": "Comma-separated species acronyms for bulk enable/disable."
+    }
+  ]
+}

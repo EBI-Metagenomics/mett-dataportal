@@ -47,9 +47,20 @@ class Command(BaseCommand):
         p.add_argument(
             "--ftp-root", default="/pub/databases/mett/annotations/v1_2024-04-15"
         )
+        p.add_argument(
+            "--local-root",
+            help=(
+                "Local annotation root with the same layout as --ftp-root "
+                "({isolate}/functional_annotation/merged_gff/). Skips FTP."
+            ),
+        )
         add_gff_dir_template_argument(p)
         add_faa_path_template_argument(p)
-        p.add_argument("--isolates", nargs="*", help="If omitted, list from FTP")
+        p.add_argument(
+            "--isolates",
+            nargs="*",
+            help="If omitted, list isolate folders from --local-root or FTP",
+        )
         p.add_argument(
             "--mapping-task-file",
             help="Path to gff-assembly-prefixes.tsv mapping file (prefix -> assembly)",
@@ -105,11 +116,19 @@ class Command(BaseCommand):
         index_name = o["index"]
         mapping = load_assembly_mapping(o.get("mapping_task_file"))
         isolates = o["isolates"] or []
-        self.stdout.write(
-            f"Importing GFF genes into {index_name} from {o['ftp_server']}:{o['ftp_root']}"
-        )
+        local_root = o.get("local_root")
+        if local_root:
+            self.stdout.write(
+                f"Importing GFF genes into {index_name} from local {local_root}"
+            )
+        else:
+            self.stdout.write(
+                f"Importing GFF genes into {index_name} from {o['ftp_server']}:{o['ftp_root']}"
+            )
         if isolates:
             self.stdout.write(f"  --isolates {len(isolates)}: {', '.join(isolates)}")
+        elif local_root:
+            self.stdout.write("  listing isolate folders from local disk")
         else:
             self.stdout.write("  listing isolate folders from FTP")
 
@@ -122,6 +141,7 @@ class Command(BaseCommand):
                 mapping=mapping,
                 gff_dir_template=o.get("gff_dir_template"),
                 faa_path_template=o.get("faa_path_template"),
+                local_root=local_root,
             )
         else:
             self.stdout.write(
