@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState, useCallback} from 'react';
+import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {useLocation} from 'react-router-dom'
 import GeneSearchForm from '@components/features/gene-viewer/GeneSearchForm/GeneSearchForm';
 import GenomeSearchForm from '@components/features/genome/GenomeSearchForm/GenomeSearchForm';
@@ -7,6 +7,11 @@ import {useFeatureFlags} from '../../hooks/useFeatureFlags';
 import styles from "@components/pages/HomePage.module.scss";
 import HomePageHeadBand from "@components/organisms/HeadBand/HomePageHeadBand";
 import Breadcrumb from '@components/molecules/Breadcrumb';
+import HomepageFilterRail from '@components/Filters/HomepageFilterRail';
+import SpeciesFilter from '@components/Filters/SpeciesFilter';
+import GenomeFacetedFilter from '@components/Filters/GenomeFacetedFilter';
+import ActiveFilters, {ActiveFilterItem} from '@components/Filters/ActiveFilters';
+import {compareTypeStrainIsolates} from '../../utils/common/homePageConstants';
 
 
 import {useFilterStore} from '../../stores/filterStore';
@@ -15,6 +20,8 @@ import {useTabAwareUrlSync} from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {GeneService} from '../../services/gene';
 import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../utils/common/filterUtils';
+
+const GENE_FILTER_SLOT_ID = 'homepage-gene-filters';
 
 interface Tab {
     id: string;
@@ -47,9 +54,12 @@ const HomePage: React.FC = () => {
     const filterStore = useFilterStore();
 
     const genomeData = useGenomeData();
-    const {isFeatureEnabled} = useFeatureFlags();
+    const {isFeatureEnabled, loading: featuresLoading} = useFeatureFlags();
 
-    const [activeTab, setActiveTab] = useState('genomes');
+    const [activeTab, setActiveTab] = useState(() => {
+        const tab = new URLSearchParams(window.location.search).get('tab');
+        return tab === 'genes' || tab === 'proteinsearch' || tab === 'genomes' ? tab : 'genomes';
+    });
     const [geneResults, setGeneResults] = useState<any[]>([]);
     const [geneLoading, setGeneLoading] = useState(false);
     const [genePagination, setGenePagination] = useState<any>(null);
@@ -64,6 +74,9 @@ const HomePage: React.FC = () => {
         const tabFromUrl = searchParams.get('tab');
 
         if (tabFromUrl && ['genomes', 'genes', 'proteinsearch'].includes(tabFromUrl) && !hasUserSelectedTab.current) {
+            if (tabFromUrl === 'proteinsearch' && featuresLoading) {
+                return;
+            }
             // If proteinsearch tab is requested but not enabled, default to genomes
             if (tabFromUrl === 'proteinsearch' && !isFeatureEnabled('pyhmmer_search')) {
                 setActiveTab('genomes');
@@ -71,7 +84,7 @@ const HomePage: React.FC = () => {
                 setActiveTab(tabFromUrl);
             }
         }
-    }, [location.pathname, location.search, isFeatureEnabled]);
+    }, [location.pathname, location.search, isFeatureEnabled, featuresLoading]);
 
     // Load initial gene data when genes tab is selected
     useEffect(() => {
@@ -175,7 +188,10 @@ const HomePage: React.FC = () => {
         ...(isFeatureEnabled('pyhmmer_search') ? [{id: 'proteinsearch', label: 'Search by Protein'}] : []),
     ];
 
-    // Reset filters when switching tabs
+    // Species is shared by the genome and gene tabs.
+    // Type strains apply only to the genome table.
+    // Genomes added for gene search stay selected across those two tabs.
+    // The gene viewer does not read this homepage selection; it passes its own genome.
     const handleTabClick = (tabId: string) => {
         if (tabId !== activeTab) {
             // Reset search
@@ -264,6 +280,84 @@ const HomePage: React.FC = () => {
         }
     };
 
+    const orderedSpecies = useMemo(() => {
+        const leadIsolate = (acronym: string) => {
+            const isolates = genomeData.typeStrains
+                .filter((strain) => strain.species_acronym === acronym)
+                .map((strain) => strain.isolate_name)
+                .sort(compareTypeStrainIsolates);
+            return isolates[0];
+        };
+
+        return [...genomeData.speciesList].sort((left, right) => {
+            const leftIsolate = leadIsolate(left.acronym);
+            const rightIsolate = leadIsolate(right.acronym);
+            if (leftIsolate && rightIsolate) {
+                const byStrain = compareTypeStrainIsolates(leftIsolate, rightIsolate);
+                if (byStrain !== 0) {
+                    return byStrain;
+                }
+            } else if (leftIsolate) {
+                return -1;
+            } else if (rightIsolate) {
+                return 1;
+            }
+            return left.scientific_name.localeCompare(right.scientific_name);
+        });
+    }, [genomeData.speciesList, genomeData.typeStrains]);
+
+    const handleResetFilters = async (): Promise<void> => {
+        filterStore.setSelectedSpecies([]);
+        filterStore.setSelectedTypeStrains([]);
+        filterStore.setSelectedGenomes([]);
+        filterStore.clearFacetedFilters();
+
+        if (activeTab === 'genes') {
+            setGeneLoading(true);
+            try {
+                const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                    filterStore.geneSearchQuery,
+                    1,
+                    genePerPage,
+                    filterStore.geneSortField,
+                    filterStore.geneSortOrder,
+                    [],
+                    [],
+                    {},
+                    {}
+                );
+                setGeneResults(response.data || []);
+                setGenePagination(response.pagination || null);
+            } catch (error) {
+                console.error('Error fetching gene data after resetting filters:', error);
+            } finally {
+                setGeneLoading(false);
+            }
+        }
+    };
+
+    const activeFilterItems: ActiveFilterItem[] = [
+        ...filterStore.selectedSpecies.map((acronym) => ({
+            id: `species-${acronym}`,
+            label: genomeData.speciesList.find((species) => species.acronym === acronym)?.scientific_name || acronym,
+            onRemove: () => {
+                void handleSpeciesSelect(acronym);
+            },
+        })),
+        ...(activeTab === 'genomes'
+            ? filterStore.selectedTypeStrains.map((isolateName) => ({
+                id: `strain-${isolateName}`,
+                label: isolateName,
+                onRemove: () => genomeData.handleTypeStrainToggle(isolateName),
+            }))
+            : []),
+        ...filterStore.selectedGenomes.map((genome) => ({
+            id: `genome-${genome.isolate_name}`,
+            label: genome.isolate_name,
+            onRemove: () => filterStore.removeSelectedGenome(genome.isolate_name),
+        })),
+    ];
+
     return (
         <ErrorBoundary onError={handleError}>
             <div>
@@ -296,14 +390,34 @@ const HomePage: React.FC = () => {
                         typeStrains={genomeData.typeStrains}
                         linkTemplate="/genome/$strain_name"
                         speciesList={genomeData.speciesList}
-                        selectedSpecies={filterStore.selectedSpecies}
-                        handleSpeciesSelect={handleSpeciesSelect}
-                        activeTab={activeTab}
                     />
                 </div>
 
                 <div className="layout-container">
-                    <div>
+                    <div className={activeTab === 'proteinsearch' ? undefined : styles.browseLayout}>
+                        {activeTab !== 'proteinsearch' && (
+                            <HomepageFilterRail
+                                title={activeTab === 'genes' ? 'Filter genes' : 'Filter genomes'}
+                            >
+                                <ActiveFilters items={activeFilterItems} onClearAll={handleResetFilters} />
+                                <SpeciesFilter
+                                    speciesList={orderedSpecies}
+                                    selectedSpecies={filterStore.selectedSpecies}
+                                    onSpeciesSelect={handleSpeciesSelect}
+                                />
+                                {activeTab === 'genomes' && (
+                                    <GenomeFacetedFilter
+                                        typeStrains={genomeData.typeStrains}
+                                        selectedTypeStrains={filterStore.selectedTypeStrains}
+                                        selectedSpecies={filterStore.selectedSpecies}
+                                        onTypeStrainToggle={genomeData.handleTypeStrainToggle}
+                                        showChrome={false}
+                                    />
+                                )}
+                                {activeTab === 'genes' && <div id={GENE_FILTER_SLOT_ID} />}
+                            </HomepageFilterRail>
+                        )}
+                        <div className={activeTab === 'proteinsearch' ? undefined : styles.browseMain}>
                         <TabNavigation tabs={tabs} activeTab={activeTab} onTabClick={handleTabClick}/>
 
                         {activeTab === 'genomes' && (
@@ -325,6 +439,7 @@ const HomePage: React.FC = () => {
                                     handleRemoveGenome={genomeData.handleRemoveGenome}
                                     linkData={genomeLinkData}
                                     setLoading={genomeData.setLoading}
+                                    hideSidebar
                                 />
                             </ErrorBoundary>
                         )}
@@ -407,6 +522,7 @@ const HomePage: React.FC = () => {
                                     totalCount={genePagination?.total_count || genePagination?.total || 0}
                                     onResultsUpdate={handleGeneResultsUpdate}
                                     onPageSizeChange={handleGenePageSizeChange}
+                                    sidebarPortalId={GENE_FILTER_SLOT_ID}
                                 />
                             </ErrorBoundary>
                         )}
@@ -416,6 +532,7 @@ const HomePage: React.FC = () => {
                                 <PyhmmerSearchForm/>
                             </ErrorBoundary>
                         )}
+                        </div>
                     </div>
                 </div>
             </div>

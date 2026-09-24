@@ -291,12 +291,10 @@ const GeneViewerPage: React.FC = () => {
     }, [selectedFeature]);
 
     // Create shared handleToggleFacet for FeaturePanel to use the same mechanism as facet checkboxes
-    const selectedSpeciesFromStore = useFilterStore(state => state.selectedSpecies);
-    const geneSearchQuery = useFilterStore(state => state.geneSearchQuery);
     const { handleToggleFacet, facets } = useFacetedFilters({
-        selectedSpecies: selectedSpeciesFromStore,
+        selectedSpecies: [],
         selectedGenomes,
-        searchQuery: geneSearchQuery,
+        searchQuery: filterStore.geneSearchQuery,
     });
 
     const linkData = useMemo(() => ({

@@ -1,0 +1,33 @@
+.rail {
+  flex: 0 0 220px;
+  width: 220px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-right: 0.75rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 48px;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border-bottom: 2px solid #ccc;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: bold;
+  line-height: 1.2;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .rail {
+    flex: 1 1 auto;
+    width: 100%;
+    padding-right: 0;
+  }
+}

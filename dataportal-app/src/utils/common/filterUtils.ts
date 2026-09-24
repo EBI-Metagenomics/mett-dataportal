@@ -1,6 +1,17 @@
 import {FacetedFilters, FacetOperators} from '../../stores/filterStore';
 
 /**
+ * Join selected species acronyms for API query params.
+ * Empty/undefined lists are omitted so the backend searches all enabled species.
+ */
+export const joinSpeciesAcronyms = (species?: string[]): string | undefined => {
+    if (!species || species.length === 0) {
+        return undefined;
+    }
+    return species.join(',');
+};
+
+/**
  * Normalize a filter value for consistent comparison and storage.
  * Rules:
  * - Boolean values: returned as-is

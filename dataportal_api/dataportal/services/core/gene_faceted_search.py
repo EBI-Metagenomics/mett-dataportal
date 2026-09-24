@@ -18,6 +18,7 @@ from dataportal.utils.constants import (
     GENE_SEARCH_FIELDS,
     INDEX_FEATURES,
 )
+from dataportal.utils.utils import split_comma_param
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,9 @@ class GeneFacetedSearch(FacetedSearch):
         must_clauses.append(Q("term", feature_type="gene"))
 
         if self.species_acronym:
-            must_clauses.append(Q("term", species_acronym=self.species_acronym))
+            acronyms = split_comma_param(self.species_acronym)
+            if acronyms:
+                must_clauses.append(Q("terms", **{SPECIES_FIELD_ACRONYM_SHORT: acronyms}))
         if self.has_amr_info is not None:
             must_clauses.append(Q("term", has_amr_info=self.has_amr_info))
         if self.isolates and isinstance(self.isolates, list) and any(self.isolates):

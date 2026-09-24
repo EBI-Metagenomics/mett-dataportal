@@ -290,7 +290,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             )
 
             if species_acronym:
-                s = s.filter("term", **{SPECIES_FIELD_ACRONYM_SHORT: species_acronym})
+                acronyms = split_comma_param(species_acronym)
+                if acronyms:
+                    s = s.filter("terms", **{SPECIES_FIELD_ACRONYM_SHORT: acronyms})
 
             if isolates:
                 s = s.filter("terms", **{GENOME_FIELD_ISOLATE_NAME: isolates})
@@ -456,9 +458,11 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 )
                 logger.info(f"DEBUG - Added isolate filter: {filter_criteria['bool']['must']}")
             if params.species_acronym:
-                filter_criteria["bool"]["must"].append(
-                    {"term": {SPECIES_FIELD_ACRONYM_SHORT: params.species_acronym}}
-                )
+                acronyms = split_comma_param(params.species_acronym)
+                if acronyms:
+                    filter_criteria["bool"]["must"].append(
+                        {"terms": {SPECIES_FIELD_ACRONYM_SHORT: acronyms}}
+                    )
 
             # Apply additional filters
             parsed_filters = self._parse_filters(params.filter)
@@ -1164,9 +1168,11 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 {"terms": {GENOME_FIELD_ISOLATE_NAME: isolate_names_list}}
             )
         if species_acronym:
-            filter_criteria["bool"]["must"].append(
-                {"term": {SPECIES_FIELD_ACRONYM_SHORT: species_acronym}}
-            )
+            acronyms = split_comma_param(species_acronym)
+            if acronyms:
+                filter_criteria["bool"]["must"].append(
+                    {"terms": {SPECIES_FIELD_ACRONYM_SHORT: acronyms}}
+                )
 
         # Apply additional filters
         parsed_filters = self._parse_filters(filter)

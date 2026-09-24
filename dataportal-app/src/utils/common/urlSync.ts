@@ -89,28 +89,18 @@ export const syncUrlToStore = (
   filterStore: FilterState,
   config: UrlSyncConfig = DEFAULT_URL_SYNC_CONFIG
 ): void => {
-  // Sync species
-  const species = searchParams.getAll(config.speciesParam);
-  if (species.length > 0) {
-    filterStore.setSelectedSpecies(species);
-  }
+  // Sync species, type strains, and selected genomes from the URL.
+  // Missing params clear those selections so an older query cannot linger.
+  filterStore.setSelectedSpecies(searchParams.getAll(config.speciesParam));
 
-  // Sync type strains
   const typeStrains = searchParams.getAll(config.typeStrainsParam);
-  if (typeStrains.length > 0) {
-    filterStore.setSelectedTypeStrains(typeStrains);
-  }
+  filterStore.setSelectedTypeStrains(typeStrains);
 
-  // Sync selected genomes (as isolate names)
   const selectedGenomes = searchParams.getAll(config.selectedGenomesParam);
-  if (selectedGenomes.length > 0) {
-    // Convert isolate names back to genome objects
-    const genomeObjects = selectedGenomes.map(isolate_name => ({
-      isolate_name,
-      type_strain: false, // Default value, will be updated when actual data is loaded
-    }));
-    filterStore.setSelectedGenomes(genomeObjects);
-  }
+  filterStore.setSelectedGenomes(selectedGenomes.map(isolate_name => ({
+    isolate_name,
+    type_strain: false,
+  })));
 
   // Sync genome search query
   const searchQuery = searchParams.get(config.searchParam);

@@ -1,3 +1,53 @@
+/**
+ * Browse-link order for type strains on the homepage.
+ * Unlisted isolates follow this sequence, alphabetically.
+ * Hyphens are ignored when matching isolate names.
+ */
+export const TYPE_STRAIN_PRESENTATION_ORDER = [
+    'BU_ATCC8492',
+    'PV_ATCC8482',
+    'AR_VPI0990',
+    'BC_ATCC27758',
+    'BF_NCTC9343',
+    'BF_YCH46',
+    'BT_ATCC29148',
+    'CA_ATCC25986',
+    'CP_ATCC13124',
+    'CP_C36',
+    'DF_ATCC27755',
+    'EB_ATCCBAA-613',
+    'EL_DSM2243',
+    'FN_ATCC25586',
+    'LS_WM1',
+    'MG_ATCC29149',
+    'MS_ATCC35061',
+    'MS_DSM2374',
+    'PD_ATCC8503',
+    'PM_ATCC43184',
+    'RI_L1-82',
+    'SP_ATCC15912',
+    'SS_NCTC8618',
+    'TR_ATCC25582',
+    'VP_DSM2008',
+];
+
+const normalizeIsolateName = (isolateName: string) => isolateName.replace(/-/g, '').toUpperCase();
+
+const typeStrainOrderIndex = new Map(
+    TYPE_STRAIN_PRESENTATION_ORDER.map((name, index) => [normalizeIsolateName(name), index])
+);
+
+export const compareTypeStrainIsolates = (left: string, right: string): number => {
+    const leftIndex = typeStrainOrderIndex.get(normalizeIsolateName(left));
+    const rightIndex = typeStrainOrderIndex.get(normalizeIsolateName(right));
+    const leftRank = leftIndex === undefined ? Number.MAX_SAFE_INTEGER : leftIndex;
+    const rightRank = rightIndex === undefined ? Number.MAX_SAFE_INTEGER : rightIndex;
+    if (leftRank !== rightRank) {
+        return leftRank - rightRank;
+    }
+    return left.localeCompare(right);
+};
+
 export const HOMEPAGE_TEXT = {
     FEEDBACK: {
         MESSAGE: "We value your feedback! Help us improve by sharing your thoughts.",

@@ -33,6 +33,7 @@ from dataportal.utils.constants import (
 )
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.species_registry import get_enabled_species_acronyms
+from dataportal.utils.utils import split_comma_param
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +207,9 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         if params.isolates:
             filter_criteria["isolate_name.keyword"] = params.isolates
         if params.species_acronym:
-            filter_criteria[SPECIES_FIELD_ACRONYM_SHORT] = params.species_acronym
+            acronyms = split_comma_param(params.species_acronym)
+            if acronyms:
+                filter_criteria[SPECIES_FIELD_ACRONYM_SHORT] = acronyms
 
         self._apply_enabled_species_filter(filter_criteria)
         if filter_criteria.get(SPECIES_FIELD_ACRONYM_SHORT) == []:
@@ -248,9 +251,9 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             search = search.filter("terms", **{SPECIES_FIELD_ACRONYM_SHORT: list(enabled)})
 
             if params.species_acronym:
-                search = search.filter(
-                    "term", **{SPECIES_FIELD_ACRONYM_SHORT: params.species_acronym}
-                )
+                acronyms = split_comma_param(params.species_acronym)
+                if acronyms:
+                    search = search.filter("terms", **{SPECIES_FIELD_ACRONYM_SHORT: acronyms})
 
             search = search[: params.limit]
             response = await sync_to_async(search.execute)()

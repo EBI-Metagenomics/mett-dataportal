@@ -6,6 +6,7 @@ import { cacheResponse } from "../common/cachingDecorator";
 import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../../utils/common/constants";
 import apiInstance from "../common/apiInstance";
 import { assertSafePathSegment } from "../../utils/common/safeFetch";
+import { joinSpeciesAcronyms } from "../../utils/common/filterUtils";
 
 export class GeneService extends BaseService {
     /**
@@ -303,7 +304,7 @@ export class GeneService extends BaseService {
                 sort_field: sortField,
                 sort_order: sortOrder,
                 isolates: selectedGenomes?.map(g => g.isolate_name).join(","),
-                species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined,
+                species_acronym: joinSpeciesAcronyms(selectedSpecies),
                 filter: filterString || undefined,
                 filter_operators: filterOperatorsString || undefined
             };
@@ -339,7 +340,7 @@ export class GeneService extends BaseService {
             sort_field: sortField,
             sort_order: sortOrder,
             isolates: selectedGenomes?.map(g => g.isolate_name).join(","),
-            species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined
+            species_acronym: joinSpeciesAcronyms(selectedSpecies)
         });
 
         // Add locus_tag parameter if provided (takes precedence over query)

@@ -3,7 +3,7 @@ import {useLocation} from 'react-router-dom';
 import {useFilterStore, FacetedFilters, FacetOperators} from '../stores/filterStore';
 import {GeneService} from '../services/gene';
 import {GeneFacetResponse} from '../interfaces/Gene';
-import {normalizeFilterValue, compareFilterValues} from '../utils/common/filterUtils';
+import {normalizeFilterValue, compareFilterValues, joinSpeciesAcronyms} from '../utils/common/filterUtils';
 
 interface UseFacetedFiltersProps {
     selectedSpecies: string[];
@@ -129,7 +129,7 @@ export const useFacetedFilters = ({
             setLoading(true);
             setError(null);
 
-            const speciesAcronym = selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined;
+            const speciesAcronym = joinSpeciesAcronyms(selectedSpecies);
             const isolates = selectedGenomes.map(genome => genome.isolate_name).join(',');
             const apiFilters = getApiFilters();
 

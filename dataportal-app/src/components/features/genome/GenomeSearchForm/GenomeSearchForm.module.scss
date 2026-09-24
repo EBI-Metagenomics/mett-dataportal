@@ -15,6 +15,25 @@
   float: right;
 }
 
+.rightPaneFlush {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  float: none;
+  overflow-x: auto;
+
+  table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+  }
+
+  th,
+  td {
+    overflow-wrap: break-word;
+  }
+}
+
 
 .vfGenomeSubHeading {
   width: 100%;

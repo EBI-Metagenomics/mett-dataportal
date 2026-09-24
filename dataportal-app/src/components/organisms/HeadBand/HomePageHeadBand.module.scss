@@ -18,3 +18,145 @@
   border-radius: 4px;
   font-size: 16px;
 }
+
+.banner {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1rem;
+  gap: 1rem;
+}
+
+.bannerMessage {
+  color: #333;
+  font-weight: 500;
+}
+
+.bannerLink {
+  display: inline-flex;
+  align-items: center;
+  color: #005ea5;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  gap: 0.5rem;
+  line-height: 1;
+  overflow: visible;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.bannerIcon {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  flex-shrink: 0;
+}
+
+.catalogue {
+  box-sizing: border-box;
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+  justify-self: stretch;
+  overflow: hidden;
+  border: 1px solid #d0d0ce;
+  background: #f8f8f8;
+  border-radius: 4px;
+  padding: 1rem 1.25rem 1.15rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.catalogueSection + .catalogueSection {
+  margin-top: 1.15rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.clearButton,
+.showAllButton {
+  border: none;
+  background: transparent;
+  color: #3b6fb6;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: #2a4f85;
+  }
+}
+
+.showAllButton {
+  margin-top: 0.75rem;
+}
+
+.typeStrainGroups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.75rem;
+}
+
+.speciesGroup {
+  flex: 1 1 180px;
+  min-width: 160px;
+  max-width: 280px;
+}
+
+.speciesGroupTitle {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0 0 0.35rem;
+  color: #333;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  align-items: center;
+}
+
+.strainChip {
+  display: inline-flex;
+  align-items: center;
+  color: #005ea5;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  gap: 0.35rem;
+  line-height: 1.3;
+  overflow: visible;
+  font-size: 0.95rem;
+
+  &:hover {
+    color: #003d73;
+  }
+
+  svg {
+    vertical-align: middle;
+    display: block;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+}

@@ -1,4 +1,5 @@
-import React, {useCallback, useEffect, useMemo, useState, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect} from 'react';
+import {createPortal} from 'react-dom';
 import GeneSearchInput from './GeneSearchInput';
 import styles from "./GeneSearchForm.module.scss";
 import GeneResultsTable from "../GeneResultsHandler/GeneResultsTable";
@@ -47,6 +48,7 @@ interface GeneSearchFormProps {
     onPageChange?: (page: number) => void;
     onFeatureSelect?: (feature: any) => void;
     hideActionsColumn?: boolean; // If true, hide Actions column and make rows clickable
+    sidebarPortalId?: string;
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -71,6 +73,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            onPageChange,
                                                            onFeatureSelect,
                                                            hideActionsColumn = false,
+                                                           sidebarPortalId,
                                                        }) => {
 
     const renderCount = useRef(0);
@@ -92,6 +95,15 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const [hasNext, setHasNext] = useState<boolean>(false);
     const [pageSize, setPageSize] = useState<number>(DEFAULT_PER_PAGE_CNT);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [sidebarHost, setSidebarHost] = useState<HTMLElement | null>(null);
+
+    useLayoutEffect(() => {
+        if (!sidebarPortalId) {
+            setSidebarHost(null);
+            return;
+        }
+        setSidebarHost(document.getElementById(sidebarPortalId));
+    }, [sidebarPortalId]);
     const [isProcessingSuggestion, setIsProcessingSuggestion] = useState<boolean>(false);
     const [currentLocusTag, setCurrentLocusTag] = useState<string>('');
     const lastPageSizeRef = useRef<number>(DEFAULT_PER_PAGE_CNT);
@@ -138,7 +150,6 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     const setGeneSortField = useFilterStore(state => state.setGeneSortField);
     const setGeneSortOrder = useFilterStore(state => state.setGeneSortOrder);
     const clearFacetedFilters = useFilterStore(state => state.clearFacetedFilters);
-    const selectedSpeciesFromStore = useFilterStore(state => state.selectedSpecies);
 
     const {
         facets,
@@ -148,7 +159,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         handleOperatorChange,
         refreshFacets
     } = useFacetedFilters({
-        selectedSpecies: selectedSpeciesFromStore,
+        selectedSpecies: selectedSpecies ?? [],
         selectedGenomes,
         searchQuery: isProcessingSuggestion ? currentLocusTag : debouncedSearchQuery, // Use locus tag when processing suggestion
     });
@@ -276,7 +287,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     type_strain: genome.type_strain
                 }))
                 : undefined;
-            const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+            const speciesFilter = selectedSpecies;
 
             console.log('fetchSearchResults called with:', {
                 query,
@@ -409,7 +420,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                             type_strain: genome.type_strain
                         }))
                         : undefined;
-                    const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+                    const speciesFilter = selectedSpecies;
                                     try {
                     setLoading(true);
                     const response = await GeneService.fetchGeneSearchResultsAdvanced(
@@ -491,7 +502,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 GeneService.fetchGeneAutocompleteSuggestions(
                     input,
                     10,
-                    selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined,
+                    selectedSpecies?.join(','),
                     selectedGenomes.map(g => g.isolate_name).join(","),
                     getLegacyFilters()
                 ).then(setSuggestions).catch(console.error);
@@ -651,7 +662,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 type_strain: genome.type_strain
             }))
             : undefined;
-        const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+                    const speciesFilter = selectedSpecies;
 
         const reloadAll = async () => {
             try {
@@ -752,7 +763,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     type_strain: genome.type_strain
                 }))
                 : undefined;
-            const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+            const speciesFilter = selectedSpecies;
             try {
                 setLoading(true);
                 console.log('Making API call with locus tag:', selectedValue);
@@ -824,7 +835,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     type_strain: genome.type_strain
                 }))
                 : undefined;
-            const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+            const speciesFilter = selectedSpecies;
             try {
                 setLoading(true);
                 const response = await GeneService.fetchGeneSearchResultsAdvanced(
@@ -910,42 +921,54 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         }
     };
 
+    const sidebarContent = (
+        <>
+            {!sidebarPortalId && (
+                <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
+            )}
+
+            {activeSearchLabel && (
+                <div className={styles.activeSearchSection}>
+                    <h3 className={`vf-section-header__subheading ${styles.leftPaneHeading}`}>Active Search</h3>
+                    <div className={styles.activeSearchChips}>
+                        <button
+                            type="button"
+                            className={styles.searchChip}
+                            onClick={handleClearSearch}
+                            aria-label={`Clear search for ${activeSearchLabel}`}
+                            title="Clear search and show all genes"
+                        >
+                            <span className={styles.searchChipLabel}>{activeSearchLabel}</span>
+                            <span className={styles.searchChipRemove} aria-hidden="true">×</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <GeneFacetedFilter
+                facets={facets}
+                onToggleFacet={handleToggleFacet}
+                initialVisibleCount={FACET_INITIAL_VISIBLE_CNT}
+                loadMoreStep={FACET_STEP_CNT}
+                onOperatorChange={handleOperatorChange}
+                onClearAll={hasActiveFacets ? handleClearAllFacets : undefined}
+            />
+        </>
+    );
+
+    const sidebar = sidebarHost
+        ? createPortal(sidebarContent, sidebarHost)
+        : sidebarPortalId
+            ? null
+            : <div className={styles.leftPane}>{sidebarContent}</div>;
+
     return (
         <section id="genes">
             <div>
                 <p/>
             </div>
-            <div className={styles.leftPane}>
-                <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
-
-                {activeSearchLabel && (
-                    <div className={styles.activeSearchSection}>
-                        <h3 className={`vf-section-header__subheading ${styles.leftPaneHeading}`}>Active Search</h3>
-                        <div className={styles.activeSearchChips}>
-                            <button
-                                type="button"
-                                className={styles.searchChip}
-                                onClick={handleClearSearch}
-                                aria-label={`Clear search for ${activeSearchLabel}`}
-                                title="Clear search and show all genes"
-                            >
-                                <span className={styles.searchChipLabel}>{activeSearchLabel}</span>
-                                <span className={styles.searchChipRemove} aria-hidden="true">×</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <GeneFacetedFilter
-                    facets={facets}
-                    onToggleFacet={handleToggleFacet}
-                    initialVisibleCount={FACET_INITIAL_VISIBLE_CNT}
-                    loadMoreStep={FACET_STEP_CNT}
-                    onOperatorChange={handleOperatorChange}
-                    onClearAll={hasActiveFacets ? handleClearAllFacets : undefined}
-                />
-            </div>
-            <div className={styles.rightPane}>
+            {sidebar}
+            <div className={sidebarPortalId ? styles.rightPaneFlush : styles.rightPane}>
                 <form onSubmit={handleSubmit}
                       className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">
                     <h2 className={`vf-section-header__subheading ${styles.vfGeneSubHeading}`}>Gene Search</h2>
@@ -1039,7 +1062,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                         type_strain: genome.type_strain
                                                     }))
                                                     : undefined;
-                                                const speciesFilter = selectedSpecies?.length === 1 ? selectedSpecies : undefined;
+                                                const speciesFilter = selectedSpecies;
                                                 try {
                                                     setLoading(true);
                                                     const response = await GeneService.fetchGeneSearchResultsAdvanced(

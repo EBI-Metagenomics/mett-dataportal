@@ -9,7 +9,7 @@ describe('SpeciesFilter', () => {
     { acronym: 'PV', scientific_name: 'Parabacteroides vulgatus' },
   ]
 
-  test('renders all species checkboxes', () => {
+  test('renders wrapping species checkboxes', () => {
     render(
       <SpeciesFilter
         speciesList={speciesList}

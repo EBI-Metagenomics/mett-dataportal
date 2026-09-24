@@ -1,98 +1,100 @@
 import {useEffect, useRef} from 'react'
-import {useLocation} from 'react-router-dom'
-import {useUrlState} from './useUrlState'
+import {useSearchParams} from 'react-router-dom'
 import {useFilterStore} from '../stores/filterStore'
 import {GENE_TAB_URL_CONFIG, GENOME_TAB_URL_CONFIG, syncStoreToUrl, syncUrlToStore} from '../utils/common/urlSync'
 
-export const useTabAwareUrlSync = (activeTab: string) => {
-    const location = useLocation()
-    const {searchParams, updateUrl} = useUrlState()
-    const filterStore = useFilterStore()
-    const hasInitializedFromUrl = useRef(false)
+const configForTab = (tab: string | null) =>
+    tab === 'genes' ? GENE_TAB_URL_CONFIG : GENOME_TAB_URL_CONFIG
 
-    // Sync URL to store IMMEDIATELY on first render (not in useEffect)
-    // This ensures store is updated before child components read from it
-    if (!hasInitializedFromUrl.current) {
-        const urlSearchParams = new URLSearchParams(location.search)
-        console.log('useTabAwareUrlSync: IMMEDIATE sync on first render', {
-            activeTab,
-            urlParams: Object.fromEntries(urlSearchParams.entries())
-        })
-        
-        if (activeTab === 'genomes') {
-            syncUrlToStore(urlSearchParams, filterStore, GENOME_TAB_URL_CONFIG)
-        } else if (activeTab === 'genes') {
-            syncUrlToStore(urlSearchParams, filterStore, GENE_TAB_URL_CONFIG)
+const toQueryString = (updates: Record<string, string | string[] | null>) => {
+    const params = new URLSearchParams()
+
+    Object.entries(updates).forEach(([key, value]) => {
+        if (value === null || value === undefined) {
+            return
         }
-        hasInitializedFromUrl.current = true
+        if (Array.isArray(value)) {
+            value.forEach((entry) => params.append(key, entry))
+            return
+        }
+        params.set(key, value)
+    })
+
+    return params.toString()
+}
+
+/**
+ * Homepage tabs share one filter store. The store is the source of truth after
+ * the first load: changing tabs must not re-apply an older query string.
+ * React Router is updated from the store so back/forward stays in sync.
+ */
+export const useTabAwareUrlSync = (activeTab: string) => {
+    const filterStore = useFilterStore()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const hasHydratedFromUrl = useRef(false)
+    const skipNextUrlRead = useRef(false)
+    const isFirstSearchParamsEffect = useRef(true)
+    const previousTab = useRef(activeTab)
+    const previousSearch = useRef(searchParams.toString())
+
+    if (!hasHydratedFromUrl.current) {
+        const initialParams = new URLSearchParams(window.location.search)
+        const initialTab = initialParams.get('tab') || activeTab
+        syncUrlToStore(initialParams, filterStore, configForTab(initialTab))
+        hasHydratedFromUrl.current = true
     }
 
-    // Also sync when URL params change after mount
     useEffect(() => {
-        const urlSearchParams = new URLSearchParams(location.search)
-        
-        console.log('useTabAwareUrlSync: URL sync effect running', {
-            activeTab,
-            urlParams: Object.fromEntries(urlSearchParams.entries())
-        })
-        
-        if (activeTab === 'genomes') {
-            syncUrlToStore(urlSearchParams, filterStore, GENOME_TAB_URL_CONFIG)
-        } else if (activeTab === 'genes') {
-            syncUrlToStore(urlSearchParams, filterStore, GENE_TAB_URL_CONFIG)
+        if (isFirstSearchParamsEffect.current) {
+            isFirstSearchParamsEffect.current = false
+            return
         }
-
-    }, [activeTab, location.search])
-
+        if (skipNextUrlRead.current) {
+            skipNextUrlRead.current = false
+            return
+        }
+        syncUrlToStore(searchParams, filterStore, configForTab(searchParams.get('tab') || activeTab))
+        // Only external query changes (back/forward) should rehydrate the store.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams])
 
     useEffect(() => {
-        if (activeTab === 'genomes') {
-            const updates = syncStoreToUrl(filterStore, GENOME_TAB_URL_CONFIG)
+        const searchChanged = previousSearch.current !== searchParams.toString()
+        const tabChanged = previousTab.current !== activeTab
+        previousSearch.current = searchParams.toString()
+        previousTab.current = activeTab
 
-            const genomeUpdates: Record<string, string | string[] | null> = {}
-
-            if (updates.species) genomeUpdates.species = updates.species
-            if (updates.typeStrains) genomeUpdates.typeStrains = updates.typeStrains
-
-            // Include genome search and sort parameters
-            if (updates.genomeSearch) genomeUpdates.genomeSearch = updates.genomeSearch
-            if (updates.genomeSortField) genomeUpdates.genomeSortField = updates.genomeSortField
-            if (updates.genomeSortOrder) genomeUpdates.genomeSortOrder = updates.genomeSortOrder
-
-            if (updates.selectedGenomes) genomeUpdates.selectedGenomes = updates.selectedGenomes
-
-            genomeUpdates.tab = 'genomes'
-
-            replaceUrlParams(genomeUpdates)
-        } else if (activeTab === 'genes') { 
-            const updates = syncStoreToUrl(filterStore, GENE_TAB_URL_CONFIG)
-
-            const geneUpdates: Record<string, string | string[] | null> = {}
-
-            if (updates.species) geneUpdates.species = updates.species
-            if (updates.typeStrains) geneUpdates.typeStrains = updates.typeStrains
-
-            if (updates.geneSearch) geneUpdates.geneSearch = updates.geneSearch
-            if (updates.geneSortField) geneUpdates.geneSortField = updates.geneSortField
-            if (updates.geneSortOrder) geneUpdates.geneSortOrder = updates.geneSortOrder
-
-            if (updates.facetedFilters) geneUpdates.facetedFilters = updates.facetedFilters
-            if (updates.facetOperators) geneUpdates.facetOperators = updates.facetOperators
-
-            if (updates.selectedGenomes) geneUpdates.selectedGenomes = updates.selectedGenomes
-
-            geneUpdates.tab = 'genes'
-
-            replaceUrlParams(geneUpdates)
-        } else if (activeTab === 'proteinsearch') {
-            const proteinUpdates: Record<string, string | string[] | null> = {}
-
-            proteinUpdates.tab = 'proteinsearch'
-
-            replaceUrlParams(proteinUpdates)
+        // A new query arrived while the tab state is unchanged. That is navigation
+        // (or the echo of our own write). Leave it for the tab state to follow.
+        if (searchChanged && !tabChanged) {
+            return
         }
+
+        if (activeTab !== 'genomes' && activeTab !== 'genes') {
+            const proteinQuery = toQueryString({tab: 'proteinsearch'})
+            if (searchParams.toString() !== proteinQuery) {
+                skipNextUrlRead.current = true
+                setSearchParams(new URLSearchParams(proteinQuery), {replace: true})
+            }
+            return
+        }
+
+        const updates = syncStoreToUrl(
+            filterStore,
+            activeTab === 'genes' ? GENE_TAB_URL_CONFIG : GENOME_TAB_URL_CONFIG
+        )
+        updates.tab = activeTab
+        const nextQuery = toQueryString(updates)
+
+        if (nextQuery === searchParams.toString()) {
+            return
+        }
+
+        skipNextUrlRead.current = true
+        setSearchParams(new URLSearchParams(nextQuery), {replace: true})
     }, [
         activeTab,
+        filterStore,
         filterStore.selectedSpecies,
         filterStore.selectedTypeStrains,
         filterStore.genomeSearchQuery,
@@ -104,23 +106,7 @@ export const useTabAwareUrlSync = (activeTab: string) => {
         filterStore.facetedFilters,
         filterStore.facetOperators,
         filterStore.selectedGenomes,
+        searchParams,
+        setSearchParams,
     ])
-
-    const replaceUrlParams = (updates: Record<string, string | string[] | null>) => {
-        const newParams = new URLSearchParams()
-
-        Object.entries(updates).forEach(([key, value]) => {
-            if (value === null) {
-            } else if (Array.isArray(value)) {
-                if (value.length > 0) {
-                    value.forEach(v => newParams.append(key, v))
-                }
-            } else {
-                newParams.set(key, value)
-            }
-        })
-
-        const newUrl = `${window.location.pathname}?${newParams.toString()}`
-        window.history.replaceState({}, '', newUrl)
-    }
-} 
+}

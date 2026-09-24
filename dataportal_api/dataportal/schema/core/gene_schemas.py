@@ -36,7 +36,8 @@ class GeneAutocompleteQuerySchema(BaseModel):
         description="Maximum number of gene suggestions to return.",
     )
     species_acronym: Optional[str] = Field(
-        None, description="Optional species acronym filter (e.g., 'BU', 'PV')."
+        None,
+        description="Optional species acronym filter (e.g., 'BU', 'PV', or comma-separated 'BU,PV').",
     )
     isolates: Optional[str] = Field(
         None,
@@ -78,7 +79,7 @@ class GeneFacetedSearchQuerySchema(BaseModel):
         description="Free-text search across gene fields such as gene name and product.",
     )
     species_acronym: Optional[str] = Field(
-        None, description="Species acronym filter (e.g., 'BU', 'PV')."
+        None, description="Species acronym filter (e.g., 'BU', 'PV', or comma-separated 'BU,PV')."
     )
     essentiality: Optional[str] = Field(
         None, description="Filter by essentiality status, e.g., 'essential'."
@@ -127,7 +128,8 @@ class GeneAdvancedSearchQuerySchema(BaseModel):
 
     isolates: str = Field("", description="Comma-separated list of isolate names to filter.")
     species_acronym: Optional[str] = Field(
-        None, description="Species acronym to filter (e.g., 'BU', 'PV')."
+        None,
+        description="Species acronym to filter (e.g., 'BU', 'PV', or comma-separated 'BU,PV').",
     )
     locus_tag: Optional[str] = Field(
         None,
@@ -173,7 +175,7 @@ class GeneDownloadTSVQuerySchema(BaseModel):
 
     isolates: str = Field("", description="Comma-separated list of isolate names to filter.")
     species_acronym: Optional[str] = Field(
-        None, description="Species acronym filter (e.g., 'BU', 'PV')."
+        None, description="Species acronym filter (e.g., 'BU', 'PV', or comma-separated 'BU,PV')."
     )
     query: str = Field(
         "",
@@ -340,7 +342,7 @@ class NaturalLanguageGeneQuery(BaseModel):
         description="Free-text search term for gene names, locus tags, or annotations",
     )
     species_acronym: str | None = Field(
-        None, description="Species acronym filter (e.g., 'BU', 'PV')"
+        None, description="Species acronym filter (e.g., 'BU', 'PV', or comma-separated 'BU,PV')"
     )
     isolates: str | None = Field(None, description="Comma-separated list of isolate names")
 
