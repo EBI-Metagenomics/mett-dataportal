@@ -810,14 +810,20 @@ Generate index files for FASTA and GFF3 files:
 ```bash
 cd data-generators/scripts/03-browser-indexes
 
-# Process FASTA files
-./process_fasta.sh
+# HD assemblies (.fa) and annotations
+python3 run.py run \
+  --map-tsv ../../data/reference/gff-assembly-prefixes.tsv \
+  --fasta-dir /pub/databases/mett/all_hd_isolates/deduplicated_assemblies \
+  --gff-base /pub/databases/mett/annotations/v1_2024-04-15
 
-# Process GFF3 files
-./process_gff3.sh
+# 20hm (.fna under assemblies/, annotations under the temp tree)
+python3 run.py run \
+  --map-tsv ../../data/reference/gff-assembly-prefixes-20hm.tsv \
+  --fasta-dir /pub/databases/metagenomics/temp/mett/20hm/v1/assemblies \
+  --gff-base /pub/databases/metagenomics/temp/mett/20hm/v1/annotations
 ```
 
-See [Index Scripts README](data-generators/scripts/03-browser-indexes/README.md) for details.
+Or `nextflow run browser_indexes.nf -profile hd` / `-profile 20hm`. See [Index Scripts README](data-generators/scripts/03-browser-indexes/README.md).
 
 ---
 

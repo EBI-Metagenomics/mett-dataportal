@@ -40,7 +40,7 @@ const HAS_PLACEHOLDER_RE = /\{(release|species|isolate|assembly)\}/;
 
 export function fastaAssemblyFolder(fastaFile?: string, assemblyName?: string): string {
     if (fastaFile) {
-        return fastaFile.replace(/\.fa(sta)?$/i, '');
+        return fastaFile.replace(/\.(fa|fna|fasta)(\.gz)?$/i, '');
     }
     return assemblyName || '';
 }

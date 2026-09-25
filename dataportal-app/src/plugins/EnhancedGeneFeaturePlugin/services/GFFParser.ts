@@ -105,7 +105,14 @@ export class GFFParser {
     private async decompressBgzip(data: Uint8Array): Promise<Uint8Array> {
         // Try multiple decompression approaches for bgzip files
         
-        // Method 1: Try pako with different options
+        // bgzip is many gzip members. pako.inflate stops after the first
+        // block (~64KB), which would draw only the start of the chromosome.
+        try {
+            return await unzip(data);
+        } catch (error) {
+            // Silently try next method
+        }
+
         try {
             const decompressed = pako.inflate(data);
             return new Uint8Array(decompressed);

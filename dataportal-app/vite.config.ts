@@ -3,14 +3,19 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
 
-// Custom plugin to handle bgzip files
+// JBrowse reads bgzip itself. If the dev server marks these responses as
+// Content-Encoding: gzip, Chrome decodes them first and fails on a
+// multi-member bgzip stream (net::ERR_CONTENT_DECODING_FAILED).
+// .fna.gz is the 20hm assembly suffix; .fa.gz does not match it.
+const blockGzipPath = (url = '') =>
+  /\.(?:fa|fna|fasta|gff)\.gz(?:$|[.?#])/i.test(url.split('?')[0]);
+
 const bgzipPlugin = () => {
   return {
     name: 'bgzip-handler',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (req.url && (req.url.includes('.fa.gz') || req.url.includes('.gff.gz'))) {
-          // Set proper headers for bgzip files
+        if (req.url && blockGzipPath(req.url)) {
           res.setHeader('Content-Type', 'application/octet-stream');
           res.setHeader('Content-Encoding', 'identity');
         }

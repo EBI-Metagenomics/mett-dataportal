@@ -20,6 +20,11 @@ describe('jbrowseIndexPaths', () => {
         expect(fastaAssemblyFolder('BU_61_NT5381.1.fa', 'ignored')).toBe('BU_61_NT5381.1');
     });
 
+    it('strips .fna so 20hm assemblies share the same folder rule', () => {
+        expect(fastaAssemblyFolder('AR_VPI0990.fna')).toBe('AR_VPI0990');
+        expect(fastaAssemblyFolder('EB_ATCCBAA613.fna.gz')).toBe('EB_ATCCBAA613');
+    });
+
     it('resolves current to the catalog current_version', () => {
         expect(resolveJbrowseReleaseFolder('current', {current_version: 'v1'})).toBe('v1');
         expect(resolveJbrowseReleaseFolder('v2', {current_version: 'v1'})).toBe('v2');

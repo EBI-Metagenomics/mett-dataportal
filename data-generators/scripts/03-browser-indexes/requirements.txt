@@ -1,0 +1,13 @@
+# Runtime scripts (run.py, index_fasta.py, index_gff.py, jobs.py) use the
+# Python 3.10+ standard library only. pip install -r requirements.txt
+# installs the test runner below and nothing else.
+#
+# Commands that must be on PATH. Versions are the ones this step was run with.
+#   bgzip    1.21     htslib
+#   tabix    1.21     htslib
+#   samtools 1.21
+#   jbrowse  4.1.13   npm install -g @jbrowse/cli@4.1.13
+#                     requires node >= 18.3
+#   nextflow 25.10.4  only for browser_indexes.nf (workflow needs >= 22.10)
+
+pytest==8.3.5
