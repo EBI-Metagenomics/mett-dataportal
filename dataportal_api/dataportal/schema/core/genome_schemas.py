@@ -49,7 +49,8 @@ class GenomeSearchQuerySchema(BaseModel):
         DEFAULT_SORT_DIRECTION, description="Sort order: 'asc' or 'desc'."
     )
     isolates: Optional[List[str]] = Field(
-        None, description="Optional list of isolate names to filter."
+        None,
+        description="Isolate names to include. Comma-separated or repeated. Matches any of the names (OR).",
     )
     species_acronym: Optional[str] = Field(
         None,

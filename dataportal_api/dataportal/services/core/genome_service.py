@@ -33,7 +33,7 @@ from dataportal.utils.constants import (
 )
 from dataportal.utils.exceptions import ServiceError
 from dataportal.utils.species_registry import get_enabled_species_acronyms
-from dataportal.utils.utils import split_comma_param
+from dataportal.utils.utils import split_comma_param, split_comma_values
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +205,10 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         if params.query:
             filter_criteria[GENOME_FIELD_ISOLATE_NAME] = params.query
         if params.isolates:
-            filter_criteria["isolate_name.keyword"] = params.isolates
+            isolate_names = split_comma_values(params.isolates)
+            if isolate_names:
+                # terms query: a genome matches if its isolate is any of the selected names
+                filter_criteria["isolate_name.keyword"] = isolate_names
         if params.species_acronym:
             acronyms = split_comma_param(params.species_acronym)
             if acronyms:
