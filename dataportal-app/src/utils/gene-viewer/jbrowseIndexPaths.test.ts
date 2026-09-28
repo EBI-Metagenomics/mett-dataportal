@@ -2,6 +2,7 @@ import {
     buildJbrowseIndexDir,
     buildJbrowseIndexDirs,
     fastaAssemblyFolder,
+    jbrowseGffFileName,
     joinIndexFile,
     resolveJbrowseReleaseFolder,
 } from './jbrowseIndexPaths';
@@ -66,6 +67,26 @@ describe('jbrowseIndexPaths', () => {
         expect(joinIndexFile(dirs.gffDir, 'BU_61_annotations.gff.gz')).toBe(
             `${ROOT}/v1/BU/gff3/BU_61/BU_61_annotations.gff.gz`
         );
+    });
+
+    it('builds the annotations filename when gff_file is empty', () => {
+        expect(jbrowseGffFileName('', 'BU_ATCC8492')).toBe('BU_ATCC8492_annotations.gff');
+        expect(
+            joinIndexFile(`${ROOT}/v1/BU/gff3/BU_ATCC8492`, `${jbrowseGffFileName('', 'BU_ATCC8492')}.gz`)
+        ).toBe(`${ROOT}/v1/BU/gff3/BU_ATCC8492/BU_ATCC8492_annotations.gff.gz`);
+    });
+
+    it('keeps a stored gff filename and does not append gz twice', () => {
+        expect(jbrowseGffFileName('BU_ATCC8492_annotations.gff.gz', 'ignored')).toBe(
+            'BU_ATCC8492_annotations.gff'
+        );
+        expect(
+            jbrowseGffFileName(
+                '',
+                'BU_ATCC8492',
+                'https://ftp.ebi.ac.uk/pub/x/BU_ATCC8492_annotations.gff'
+            )
+        ).toBe('BU_ATCC8492_annotations.gff');
     });
 
     it('returns empty when the template is unset', () => {

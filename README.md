@@ -585,19 +585,19 @@ python manage.py import_strains \
   --es-index mett-v1-strains \
   --map-tsv ../data-generators/data/reference/gff-assembly-prefixes-20hm.tsv \
   --ftp-server ftp.ebi.ac.uk \
-  --ftp-directory /pub/databases/metagenomics/temp/mett/20hm/v1/assemblies/ \
+  --ftp-directory /pub/databases/metagenomics/temp/mett/annotation_release/20hm/assemblies/ \
   --gff-server ftp.ebi.ac.uk \
-  --gff-base /pub/databases/metagenomics/temp/mett/20hm/v1/annotations/ \
+  --gff-base /pub/databases/metagenomics/temp/mett/annotation_release/20hm/annotations/ \
   --set-type-strains EL_DSM2243 BF_NCTC9343 BT_ATCC29148 TR_ATCC25582 AR_VPI0990 RI_L1-82 VP_DSM2008 \
       FN_ATCC25586 EB_ATCCBAA-613 CP_ATCC13124 LS_WM1 SS_NCTC8618 MG_ATCC29149 BC_ATCC27758 PM_ATCC43184 \
       SP_ATCC15912 CA_ATCC25986 DF_ATCC27755 MS_ATCC35061 PD_ATCC8503 \
   --pipeline mettannotator \
   --pipeline-version 1.0 \
   --processing-reference annotation_release_v1.0 \
-  --processing-document-url https://ftp.ebi.ac.uk/pub/databases/mett/annotations/v1_2024-04-15/README_annotation_release_v1.txt
+  --processing-document-url https://ftp.ebi.ac.uk/pub/databases/metagenomics/temp/mett/annotation_release/20hm/annotations/README_annotation_release_20hm.txt
 ```
 
-Then `import_features` with `--ftp-root /pub/databases/metagenomics/temp/mett/20hm/v1/annotations`. Two GFF folders use hyphens (`EB_ATCCBAA-613`, `RI_L1-82`) while the FASTAs do not; the 20hm mapping TSV records that.
+Then `import_features` with `--ftp-root /pub/databases/metagenomics/temp/mett/annotation_release/20hm/annotations`. Two GFF folders use hyphens (`EB_ATCCBAA-613`, `RI_L1-82`) while the FASTAs do not; the 20hm mapping TSV records that.
 
 A data release can mix pipeline versions. Import each batch separately with `--isolates` (or `--isolates-file`) so later flags do not overwrite earlier strains. Omit the pipeline flags to refresh contigs without touching provenance.
 

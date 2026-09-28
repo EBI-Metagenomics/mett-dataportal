@@ -119,6 +119,38 @@ export function buildJbrowseIndexDirs(options: {
     };
 }
 
+/**
+ * Basename JBrowse should request for the annotations track.
+ * Strain records sometimes have an empty gff_file; the index layout is
+ * `{isolate}_annotations.gff.gz` (see the browser-index scripts).
+ */
+export function jbrowseGffFileName(
+    gffFile: string | undefined | null,
+    isolateName: string,
+    gffUrl?: string | null
+): string {
+    const fromField = gffBasename(gffFile);
+    if (fromField) {
+        return fromField;
+    }
+    const fromUrl = gffBasename(gffUrl);
+    if (fromUrl) {
+        return fromUrl;
+    }
+    return `${isolateName}_annotations.gff`;
+}
+
+function gffBasename(value: string | undefined | null): string {
+    const base = (value || '')
+        .trim()
+        .replace(/\\/g, '/')
+        .split('/')
+        .filter(Boolean)
+        .pop() || '';
+    const stripped = base.replace(/\.gz$/i, '');
+    return /\.gff$/i.test(stripped) ? stripped : '';
+}
+
 export function joinIndexFile(dir: string, filename: string): string {
     return joinUrlSegments(dir, filename);
 }
