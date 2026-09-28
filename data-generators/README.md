@@ -37,7 +37,7 @@ Numbering follows generator dependencies, not Django ingest order. Steps 03 and 
 |---|---|---|---|
 | 01 | `scripts/01-faa-generator/run_pipeline.py` | EBI FTP annotations | `data/generated/faa/` (type-strain, all-strain, per-isolate FASTAs) |
 | 02 | `scripts/02-stringdb-mapper/` | `data/inputs/stringdb/` (STRING proteomes + type-strain FASTA from 01) | `data/generated/string-mapping/{raw,uniprot_mapped,mapping_coverage}` |
-| 03 | `scripts/03-browser-indexes/` | EBI FTP FASTA + GFF | `data/generated/browser-indexes/` |
+| 03 | `scripts/03-browser-indexes/` | Local or mounted FASTA + GFF (HD or 20hm roots) | `data/generated/browser-indexes/{release}/{species}/` |
 | 04 | `scripts/04-qc-duplicates/` | EBI FTP `.faa` | `data/generated/qc/` |
 | 05 | `scripts/05-mettannotator-prep/` | local `data/generated/mettannotator/` | pruned tree: `*_annotations.gff` with gene rows (`*-orig.gff` backup) + `prokka/{isolate}.faa` |
 
@@ -51,10 +51,12 @@ cd ../02-stringdb-mapper
 python convert_to_uniprot_mapping.py --help
 python mapping_coverage_venn.py --all
 
-# 03 — browser indexes
+# 03 — browser indexes (paths required; see that folder's README)
 cd ../03-browser-indexes
-./process_fasta.sh
-./process_gff3.sh
+python3 run.py run \
+  --map-tsv ../../data/reference/gff-assembly-prefixes.tsv \
+  --fasta-dir /pub/databases/mett/all_hd_isolates/deduplicated_assemblies \
+  --gff-base /pub/databases/mett/annotations/v1_2024-04-15
 
 # 04 — duplicate QC
 cd ../04-qc-duplicates
@@ -65,7 +67,5 @@ cd ../05-mettannotator-prep
 python prep_mettannotator.py
 python prep_mettannotator.py --apply
 ```
-
-`process_gff3.sh` skips essentiality-track generation when `process_essentiality.sh` is absent (that helper is not in the repo).
 
 Ingest then reads `data/reference/`, `data/Sub-Projects-Data/`, and `data/generated/string-mapping/`. See the root README for the `manage.py` command order.

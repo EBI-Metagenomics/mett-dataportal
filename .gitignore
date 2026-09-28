@@ -10,6 +10,10 @@
 *.gff3.gz
 *.fasta.gz
 
+.nextflow*
+.nextflow/
+work/
+
 
 # Exclude large output directories
 data-generators/data/generated/faa/
