@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "a177896e-2c0d-4aff-a832-4e02bf8632f8",
+    "_postman_id": "c5588cda-f70d-4e39-b64b-d20178847cfb",
     "name": "METT-DataPortal",
-    "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** isolate names, locus tags, species acronyms, and release tokens are collection variables. Change them once at collection scope instead of editing individual requests.\n\nRun **CoreAPIs / Releases / List-Releases** first when exercising X-METT-Release scenarios; it stores `resolved_release_version`.",
+    "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** each top-level folder starts with an `00-Init-set-…-fixtures` request. Run that request first for the folder you are exercising; it writes collection variables from the `fixtures` object in its Pre-request Script. Edit values there when fixtures change.\n\nRun **CoreAPIs / Releases / List-Releases** after CoreAPIs init when exercising X-METT-Release scenarios; it stores `resolved_release_version`.\n\n**Annotation comparison:** folder `Annotation comparison / BU vs BF` compares BU_ATCC8492 gene fixtures (dnaA, rpsR, AMR, defense) against BF_NCTC9343 orthologs (run `00-Init-set-Annotation-comparison-fixtures` first).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "19420352"
   },
@@ -4058,6 +4058,1282 @@
             }
           ]
         }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// CoreAPIs fixtures (genomes, genes, species, releases)\n// Edit values here when fixtures change; run this request before the rest of the folder.\n\nconst fixtures = {\n    isolate_name: \"BU_ATCC8492\",\n    isolate_name_pv: \"PV_ATCC8482\",\n    isolate_name_alt: \"BU_909\",\n    isolate_name_bu_2243b: \"BU_2243B\",\n    isolate_name_bu_3537: \"BU_3537\",\n    isolate_name_bu_61: \"BU_61\",\n    isolate_name_unknown: \"DOES_NOT_EXIST_ISOLATE\",\n    isolate_name_pv_h4: \"PV_H4-2\",\n    locus_tag: \"BU_ATCC8492_00001\",\n    locus_tag_pv: \"PV_ATCC8482_00001\",\n    locus_tag_pv_alt: \"PV_ATCC8482_03700\",\n    locus_tag_unknown: \"DOES_NOT_EXIST_LOCUS\",\n    type_strains: \"BU_ATCC8492,PV_ATCC8482\",\n    isolates_bu_sample: \"BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492\",\n    isolates_bu_short: \"BU_2243B,BU_3537,BU_61\",\n    isolates_bu_autocomplete: \"BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527\",\n    species_acronym: \"BU\",\n    species_acronym_pv: \"PV\",\n    species_acronym_lower: \"bu\",\n    contig_id: \"contig_1\",\n    gene_query: \"dnaA\",\n    uniprot_id: \"A7V2E8\",\n    genome_search_query_pv: \"PV_H4\",\n    release_token: \"current\",\n    release_version: \"v1\",\n    resolved_release_version: \"\"\n};\n\nObject.entries(fixtures).forEach(([key, value]) => {\n    pm.collectionVariables.set(key, value);\n});\n\nconsole.log(\"[init] set\", Object.keys(fixtures).length, \"fixtures:\", Object.keys(fixtures).join(\", \"));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const expected = [\"contig_id\", \"gene_query\", \"genome_search_query_pv\", \"isolate_name\", \"isolate_name_alt\", \"isolate_name_bu_2243b\", \"isolate_name_bu_3537\", \"isolate_name_bu_61\", \"isolate_name_pv\", \"isolate_name_pv_h4\", \"isolate_name_unknown\", \"isolates_bu_autocomplete\", \"isolates_bu_sample\", \"isolates_bu_short\", \"locus_tag\", \"locus_tag_pv\", \"locus_tag_pv_alt\", \"locus_tag_unknown\", \"release_token\", \"release_version\", \"resolved_release_version\", \"species_acronym\", \"species_acronym_lower\", \"species_acronym_pv\", \"type_strains\", \"uniprot_id\"];\npm.test(\"Folder fixtures are set on the collection\", function () {\n    expected.forEach(function (key) {\n        const v = pm.collectionVariables.get(key);\n        pm.expect(v, key + \" should be set\").to.not.be.undefined;\n        pm.expect(v, key + \" should not be null\").to.not.eql(null);\n    });\n});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Annotation comparison",
+      "item": [
+        {
+          "name": "BU vs BF",
+          "item": [
+            {
+              "name": "00 Anchors",
+              "item": [
+                {
+                  "name": "Genomes-by-isolate-names-BU-and-BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const data = pm.response.json().data;",
+                          "const rows = Array.isArray(data) ? data : (data && data.results) || [];",
+                          "const names = rows.map(function (g) { return g.isolate_name; });",
+                          "console.log(\"[anchors] returned isolates:\", names.join(\", \"));",
+                          "pm.test(\"Response includes at least the BU type strain\", function () {",
+                          "    pm.expect(names).to.include(pm.collectionVariables.get(\"isolate_name\"));",
+                          "});",
+                          "if (names.indexOf(pm.collectionVariables.get(\"isolate_name_bf\")) === -1) {",
+                          "    console.warn(\"[anchors] BF_NCTC9343 not returned — 20hm genome may not be indexed yet\");",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genomes/by-isolate-names?isolates={{isolates_bu_bf}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genomes",
+                        "by-isolate-names"
+                      ],
+                      "query": [
+                        {
+                          "key": "isolates",
+                          "value": "{{isolates_bu_bf}}"
+                        }
+                      ]
+                    },
+                    "description": "Load BU_ATCC8492 and BF_NCTC9343 genome payloads together. Useful to confirm both isolates are indexed before gene comparisons."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Genome-BF-type-strain",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "const code = pm.response.code;",
+                          "if (code === 404) {",
+                          "    console.warn(\"[anchors] BF genome 404 — not indexed yet\");",
+                          "    pm.test(\"BF genome absent (expected until 20hm ingest)\", function () {",
+                          "        pm.expect(code).to.eql(404);",
+                          "    });",
+                          "} else {",
+                          "    pm.test(\"Status code is 200\", function () {",
+                          "        pm.response.to.have.status(200);",
+                          "    });",
+                          "    const genome = pm.response.json().data;",
+                          "    pm.test(\"BF isolate_name matches fixture\", function () {",
+                          "        pm.expect(genome.isolate_name).to.eql(pm.collectionVariables.get(\"isolate_name_bf\"));",
+                          "    });",
+                          "    if (genome.annotation) {",
+                          "        console.log(\"[anchors] BF annotation provenance:\", JSON.stringify(genome.annotation));",
+                          "    } else {",
+                          "        console.warn(\"[anchors] BF genome has no annotation provenance object\");",
+                          "    }",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genomes/{{isolate_name_bf}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genomes",
+                        "{{isolate_name_bf}}"
+                      ]
+                    },
+                    "description": "Single-genome fetch for the 20hm Bacteroides fragilis type strain."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "01 Core-dnaA",
+              "item": [
+                {
+                  "name": "01-BU-gene-detail",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "pm.collectionVariables.set(\"cmp_expected_locus\", pm.collectionVariables.get(\"locus_tag_cmp_dnaa\"));"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const gene = pm.response.json().data;",
+                          "const expected = pm.collectionVariables.get(\"cmp_expected_locus\");",
+                          "pm.test(\"BU locus matches fixture\", function () {",
+                          "    pm.expect(gene.locus_tag).to.eql(expected);",
+                          "    pm.expect(gene.isolate_name).to.eql(pm.collectionVariables.get(\"isolate_name\"));",
+                          "});",
+                          "",
+                          "const fields = [\"cog_id\", \"cog_funcats\", \"pfam\", \"interpro\", \"kegg\", \"uniprot_id\", \"essentiality\", \"has_amr_info\", \"amr\", \"defense\", \"mobilome\", \"dbcan\", \"bgc\", \"unifire\", \"ontology_terms\"];",
+                          "const present = [];",
+                          "const missing = [];",
+                          "fields.forEach(function (f) {",
+                          "    const v = gene[f];",
+                          "    const empty = v === null || v === undefined || v === \"\" || (Array.isArray(v) && v.length === 0)",
+                          "        || (typeof v === \"object\" && !Array.isArray(v) && Object.keys(v).length === 0);",
+                          "    if (empty) { missing.push(f); } else { present.push(f); }",
+                          "});",
+                          "console.log(\"[BU annotation] present:\", present.join(\", \") || \"(none)\");",
+                          "console.log(\"[BU annotation] missing:\", missing.join(\", \") || \"(none)\");",
+                          "pm.collectionVariables.set(\"cmp_bu_present_fields\", present.join(\",\"));",
+                          "pm.collectionVariables.set(\"cmp_bu_missing_fields\", missing.join(\",\"));",
+                          "",
+                          "pm.test(\"dnaA core annotations are populated on BU\", function () {",
+                          "    pm.expect(gene.gene_name || (gene.unifire && gene.unifire.gene_name)).to.be.ok;",
+                          "    pm.expect(gene.pfam && gene.pfam.length).to.be.above(0);",
+                          "    pm.expect(gene.interpro && gene.interpro.length).to.be.above(0);",
+                          "    pm.expect(gene.cog_id && gene.cog_id.length).to.be.above(0);",
+                          "    pm.expect(gene.uniprot_id).to.be.ok;",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_cmp_dnaa}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_cmp_dnaa}}"
+                      ]
+                    },
+                    "description": "Gold BU type-strain gene detail for fixture `{{locus_tag_cmp_dnaa}}`. Logs which annotation layers are present vs empty."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "02-Orthologs-to-BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const payload = pm.response.json().data;",
+                          "const bf = pm.collectionVariables.get(\"species_acronym_bf\");",
+                          "const isolateBf = pm.collectionVariables.get(\"isolate_name_bf\");",
+                          "const orthologs = (payload && payload.orthologs) || [];",
+                          "const hit = orthologs.find(function (o) {",
+                          "    return (o.species_acronym === bf) || (o.isolate === isolateBf)",
+                          "        || (o.locus_tag && String(o.locus_tag).startsWith(isolateBf + \"_\"));",
+                          "});",
+                          "",
+                          "pm.test(\"Ortholog payload lists results (BF may be empty until 20hm is indexed)\", function () {",
+                          "    pm.expect(payload).to.be.an(\"object\");",
+                          "    pm.expect(payload).to.have.property(\"orthologs\");",
+                          "});",
+                          "",
+                          "if (hit) {",
+                          "    pm.collectionVariables.set(\"locus_tag_bf\", hit.locus_tag);",
+                          "    console.log(\"[BF ortholog] resolved:\", hit.locus_tag, hit.gene_name || \"\", hit.product || \"\");",
+                          "} else {",
+                          "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
+                          "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
+                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_cmp_dnaa}}/orthologs?species_acronym={{species_acronym_bf}}&one_to_one_only=false&cross_species_only=true",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_cmp_dnaa}}",
+                        "orthologs"
+                      ],
+                      "query": [
+                        {
+                          "key": "species_acronym",
+                          "value": "{{species_acronym_bf}}"
+                        },
+                        {
+                          "key": "one_to_one_only",
+                          "value": "false"
+                        },
+                        {
+                          "key": "cross_species_only",
+                          "value": "true"
+                        }
+                      ]
+                    },
+                    "description": "Resolve BF ortholog(s) for the BU fixture and store `locus_tag_bf` when a hit is found."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "03-BF-gene-detail-gap-checklist",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
+                          "if (!bfLocus) {",
+                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
+                          "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
+                          "    });",
+                          "} else {",
+                          "    pm.test(\"Status code is 200\", function () {",
+                          "        pm.response.to.have.status(200);",
+                          "    });",
+                          "",
+                          "    const gene = pm.response.json().data;",
+                          "    pm.test(\"BF locus matches resolved ortholog\", function () {",
+                          "        pm.expect(gene.locus_tag).to.eql(bfLocus);",
+                          "    });",
+                          "",
+                          "    const fields = [\"cog_id\", \"cog_funcats\", \"pfam\", \"interpro\", \"kegg\", \"uniprot_id\", \"essentiality\", \"has_amr_info\", \"amr\", \"defense\", \"mobilome\", \"dbcan\", \"bgc\", \"unifire\", \"ontology_terms\"];",
+                          "    const present = [];",
+                          "    const missing = [];",
+                          "    fields.forEach(function (f) {",
+                          "        const v = gene[f];",
+                          "        const empty = v === null || v === undefined || v === \"\" || (Array.isArray(v) && v.length === 0)",
+                          "            || (typeof v === \"object\" && !Array.isArray(v) && Object.keys(v).length === 0);",
+                          "        if (empty) { missing.push(f); } else { present.push(f); }",
+                          "    });",
+                          "    console.log(\"[BF annotation] present:\", present.join(\", \") || \"(none)\");",
+                          "    console.log(\"[BF annotation] missing:\", missing.join(\", \") || \"(none)\");",
+                          "",
+                          "    const buPresent = (pm.collectionVariables.get(\"cmp_bu_present_fields\") || \"\").split(\",\").filter(Boolean);",
+                          "    const gaps = buPresent.filter(function (f) { return missing.indexOf(f) !== -1; });",
+                          "    console.log(\"[gap vs BU] fields present on BU but missing on BF:\", gaps.join(\", \") || \"(none)\");",
+                          "    pm.collectionVariables.set(\"cmp_bf_present_fields\", present.join(\",\"));",
+                          "    pm.collectionVariables.set(\"cmp_bf_missing_fields\", missing.join(\",\"));",
+                          "    pm.collectionVariables.set(\"cmp_gaps_vs_bu\", gaps.join(\",\"));",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_bf}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_bf}}"
+                      ]
+                    },
+                    "description": "Fetch the resolved BF ortholog and log annotation gaps relative to the BU fields recorded by 01-BU-gene-detail. Requires 02-Orthologs-to-BF first."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "02 Essential-rpsR",
+              "item": [
+                {
+                  "name": "01-BU-gene-detail",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "pm.collectionVariables.set(\"cmp_expected_locus\", pm.collectionVariables.get(\"locus_tag_cmp_rpsr\"));"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const gene = pm.response.json().data;",
+                          "const expected = pm.collectionVariables.get(\"cmp_expected_locus\");",
+                          "pm.test(\"BU locus matches fixture\", function () {",
+                          "    pm.expect(gene.locus_tag).to.eql(expected);",
+                          "    pm.expect(gene.isolate_name).to.eql(pm.collectionVariables.get(\"isolate_name\"));",
+                          "});",
+                          "",
+                          "const fields = [\"cog_id\", \"cog_funcats\", \"pfam\", \"interpro\", \"kegg\", \"uniprot_id\", \"essentiality\", \"has_amr_info\", \"amr\", \"defense\", \"mobilome\", \"dbcan\", \"bgc\", \"unifire\", \"ontology_terms\"];",
+                          "const present = [];",
+                          "const missing = [];",
+                          "fields.forEach(function (f) {",
+                          "    const v = gene[f];",
+                          "    const empty = v === null || v === undefined || v === \"\" || (Array.isArray(v) && v.length === 0)",
+                          "        || (typeof v === \"object\" && !Array.isArray(v) && Object.keys(v).length === 0);",
+                          "    if (empty) { missing.push(f); } else { present.push(f); }",
+                          "});",
+                          "console.log(\"[BU annotation] present:\", present.join(\", \") || \"(none)\");",
+                          "console.log(\"[BU annotation] missing:\", missing.join(\", \") || \"(none)\");",
+                          "pm.collectionVariables.set(\"cmp_bu_present_fields\", present.join(\",\"));",
+                          "pm.collectionVariables.set(\"cmp_bu_missing_fields\", missing.join(\",\"));",
+                          "",
+                          "pm.test(\"rpsR has ribosomal COG/Pfam on BU\", function () {",
+                          "    pm.expect(gene.pfam && gene.pfam.length).to.be.above(0);",
+                          "    pm.expect(gene.cog_funcats && gene.cog_funcats.length).to.be.above(0);",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_cmp_rpsr}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_cmp_rpsr}}"
+                      ]
+                    },
+                    "description": "Gold BU type-strain gene detail for fixture `{{locus_tag_cmp_rpsr}}`. Logs which annotation layers are present vs empty."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "02-Orthologs-to-BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const payload = pm.response.json().data;",
+                          "const bf = pm.collectionVariables.get(\"species_acronym_bf\");",
+                          "const isolateBf = pm.collectionVariables.get(\"isolate_name_bf\");",
+                          "const orthologs = (payload && payload.orthologs) || [];",
+                          "const hit = orthologs.find(function (o) {",
+                          "    return (o.species_acronym === bf) || (o.isolate === isolateBf)",
+                          "        || (o.locus_tag && String(o.locus_tag).startsWith(isolateBf + \"_\"));",
+                          "});",
+                          "",
+                          "pm.test(\"Ortholog payload lists results (BF may be empty until 20hm is indexed)\", function () {",
+                          "    pm.expect(payload).to.be.an(\"object\");",
+                          "    pm.expect(payload).to.have.property(\"orthologs\");",
+                          "});",
+                          "",
+                          "if (hit) {",
+                          "    pm.collectionVariables.set(\"locus_tag_bf\", hit.locus_tag);",
+                          "    console.log(\"[BF ortholog] resolved:\", hit.locus_tag, hit.gene_name || \"\", hit.product || \"\");",
+                          "} else {",
+                          "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
+                          "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
+                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_cmp_rpsr}}/orthologs?species_acronym={{species_acronym_bf}}&one_to_one_only=false&cross_species_only=true",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_cmp_rpsr}}",
+                        "orthologs"
+                      ],
+                      "query": [
+                        {
+                          "key": "species_acronym",
+                          "value": "{{species_acronym_bf}}"
+                        },
+                        {
+                          "key": "one_to_one_only",
+                          "value": "false"
+                        },
+                        {
+                          "key": "cross_species_only",
+                          "value": "true"
+                        }
+                      ]
+                    },
+                    "description": "Resolve BF ortholog(s) for the BU fixture and store `locus_tag_bf` when a hit is found."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "03-BF-gene-detail-gap-checklist",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
+                          "if (!bfLocus) {",
+                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
+                          "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
+                          "    });",
+                          "} else {",
+                          "    pm.test(\"Status code is 200\", function () {",
+                          "        pm.response.to.have.status(200);",
+                          "    });",
+                          "",
+                          "    const gene = pm.response.json().data;",
+                          "    pm.test(\"BF locus matches resolved ortholog\", function () {",
+                          "        pm.expect(gene.locus_tag).to.eql(bfLocus);",
+                          "    });",
+                          "",
+                          "    const fields = [\"cog_id\", \"cog_funcats\", \"pfam\", \"interpro\", \"kegg\", \"uniprot_id\", \"essentiality\", \"has_amr_info\", \"amr\", \"defense\", \"mobilome\", \"dbcan\", \"bgc\", \"unifire\", \"ontology_terms\"];",
+                          "    const present = [];",
+                          "    const missing = [];",
+                          "    fields.forEach(function (f) {",
+                          "        const v = gene[f];",
+                          "        const empty = v === null || v === undefined || v === \"\" || (Array.isArray(v) && v.length === 0)",
+                          "            || (typeof v === \"object\" && !Array.isArray(v) && Object.keys(v).length === 0);",
+                          "        if (empty) { missing.push(f); } else { present.push(f); }",
+                          "    });",
+                          "    console.log(\"[BF annotation] present:\", present.join(\", \") || \"(none)\");",
+                          "    console.log(\"[BF annotation] missing:\", missing.join(\", \") || \"(none)\");",
+                          "",
+                          "    const buPresent = (pm.collectionVariables.get(\"cmp_bu_present_fields\") || \"\").split(\",\").filter(Boolean);",
+                          "    const gaps = buPresent.filter(function (f) { return missing.indexOf(f) !== -1; });",
+                          "    console.log(\"[gap vs BU] fields present on BU but missing on BF:\", gaps.join(\", \") || \"(none)\");",
+                          "    pm.collectionVariables.set(\"cmp_bf_present_fields\", present.join(\",\"));",
+                          "    pm.collectionVariables.set(\"cmp_bf_missing_fields\", missing.join(\",\"));",
+                          "    pm.collectionVariables.set(\"cmp_gaps_vs_bu\", gaps.join(\",\"));",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_bf}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_bf}}"
+                      ]
+                    },
+                    "description": "Fetch the resolved BF ortholog and log annotation gaps relative to the BU fields recorded by 01-BU-gene-detail. Requires 02-Orthologs-to-BF first."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "03 AMR-per1-cblA",
+              "item": [
+                {
+                  "name": "01-BU-gene-detail",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "pm.collectionVariables.set(\"cmp_expected_locus\", pm.collectionVariables.get(\"locus_tag_cmp_amr\"));"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const gene = pm.response.json().data;",
+                          "const expected = pm.collectionVariables.get(\"cmp_expected_locus\");",
+                          "pm.test(\"BU locus matches fixture\", function () {",
+                          "    pm.expect(gene.locus_tag).to.eql(expected);",
+                          "    pm.expect(gene.isolate_name).to.eql(pm.collectionVariables.get(\"isolate_name\"));",
+                          "});",
+                          "",
+                          "const fields = [\"cog_id\", \"cog_funcats\", \"pfam\", \"interpro\", \"kegg\", \"uniprot_id\", \"essentiality\", \"has_amr_info\", \"amr\", \"defense\", \"mobilome\", \"dbcan\", \"bgc\", \"unifire\", \"ontology_terms\"];",
+                          "const present = [];",
+                          "const missing = [];",
+                          "fields.forEach(function (f) {",
+                          "    const v = gene[f];",
+                          "    const empty = v === null || v === undefined || v === \"\" || (Array.isArray(v) && v.length === 0)",
+                          "        || (typeof v === \"object\" && !Array.isArray(v) && Object.keys(v).length === 0);",
+                          "    if (empty) { missing.push(f); } else { present.push(f); }",
+                          "});",
+                          "console.log(\"[BU annotation] present:\", present.join(\", \") || \"(none)\");",
+                          "console.log(\"[BU annotation] missing:\", missing.join(\", \") || \"(none)\");",
+                          "pm.collectionVariables.set(\"cmp_bu_present_fields\", present.join(\",\"));",
+                          "pm.collectionVariables.set(\"cmp_bu_missing_fields\", missing.join(\",\"));",
+                          "",
+                          "pm.test(\"AMR fixture has_amr_info and nested amr on BU\", function () {",
+                          "    pm.expect(gene.has_amr_info).to.eql(true);",
+                          "    pm.expect(gene.amr && gene.amr.length).to.be.above(0);",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_cmp_amr}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_cmp_amr}}"
+                      ]
+                    },
+                    "description": "Gold BU type-strain gene detail for fixture `{{locus_tag_cmp_amr}}`. Logs which annotation layers are present vs empty."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "02-Orthologs-to-BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const payload = pm.response.json().data;",
+                          "const bf = pm.collectionVariables.get(\"species_acronym_bf\");",
+                          "const isolateBf = pm.collectionVariables.get(\"isolate_name_bf\");",
+                          "const orthologs = (payload && payload.orthologs) || [];",
+                          "const hit = orthologs.find(function (o) {",
+                          "    return (o.species_acronym === bf) || (o.isolate === isolateBf)",
+                          "        || (o.locus_tag && String(o.locus_tag).startsWith(isolateBf + \"_\"));",
+                          "});",
+                          "",
+                          "pm.test(\"Ortholog payload lists results (BF may be empty until 20hm is indexed)\", function () {",
+                          "    pm.expect(payload).to.be.an(\"object\");",
+                          "    pm.expect(payload).to.have.property(\"orthologs\");",
+                          "});",
+                          "",
+                          "if (hit) {",
+                          "    pm.collectionVariables.set(\"locus_tag_bf\", hit.locus_tag);",
+                          "    console.log(\"[BF ortholog] resolved:\", hit.locus_tag, hit.gene_name || \"\", hit.product || \"\");",
+                          "} else {",
+                          "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
+                          "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
+                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_cmp_amr}}/orthologs?species_acronym={{species_acronym_bf}}&one_to_one_only=false&cross_species_only=true",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_cmp_amr}}",
+                        "orthologs"
+                      ],
+                      "query": [
+                        {
+                          "key": "species_acronym",
+                          "value": "{{species_acronym_bf}}"
+                        },
+                        {
+                          "key": "one_to_one_only",
+                          "value": "false"
+                        },
+                        {
+                          "key": "cross_species_only",
+                          "value": "true"
+                        }
+                      ]
+                    },
+                    "description": "Resolve BF ortholog(s) for the BU fixture and store `locus_tag_bf` when a hit is found."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "03-BF-gene-detail-gap-checklist",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
+                          "if (!bfLocus) {",
+                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
+                          "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
+                          "    });",
+                          "} else {",
+                          "    pm.test(\"Status code is 200\", function () {",
+                          "        pm.response.to.have.status(200);",
+                          "    });",
+                          "",
+                          "    const gene = pm.response.json().data;",
+                          "    pm.test(\"BF locus matches resolved ortholog\", function () {",
+                          "        pm.expect(gene.locus_tag).to.eql(bfLocus);",
+                          "    });",
+                          "",
+                          "    const fields = [\"cog_id\", \"cog_funcats\", \"pfam\", \"interpro\", \"kegg\", \"uniprot_id\", \"essentiality\", \"has_amr_info\", \"amr\", \"defense\", \"mobilome\", \"dbcan\", \"bgc\", \"unifire\", \"ontology_terms\"];",
+                          "    const present = [];",
+                          "    const missing = [];",
+                          "    fields.forEach(function (f) {",
+                          "        const v = gene[f];",
+                          "        const empty = v === null || v === undefined || v === \"\" || (Array.isArray(v) && v.length === 0)",
+                          "            || (typeof v === \"object\" && !Array.isArray(v) && Object.keys(v).length === 0);",
+                          "        if (empty) { missing.push(f); } else { present.push(f); }",
+                          "    });",
+                          "    console.log(\"[BF annotation] present:\", present.join(\", \") || \"(none)\");",
+                          "    console.log(\"[BF annotation] missing:\", missing.join(\", \") || \"(none)\");",
+                          "",
+                          "    const buPresent = (pm.collectionVariables.get(\"cmp_bu_present_fields\") || \"\").split(\",\").filter(Boolean);",
+                          "    const gaps = buPresent.filter(function (f) { return missing.indexOf(f) !== -1; });",
+                          "    console.log(\"[gap vs BU] fields present on BU but missing on BF:\", gaps.join(\", \") || \"(none)\");",
+                          "    pm.collectionVariables.set(\"cmp_bf_present_fields\", present.join(\",\"));",
+                          "    pm.collectionVariables.set(\"cmp_bf_missing_fields\", missing.join(\",\"));",
+                          "    pm.collectionVariables.set(\"cmp_gaps_vs_bu\", gaps.join(\",\"));",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_bf}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_bf}}"
+                      ]
+                    },
+                    "description": "Fetch the resolved BF ortholog and log annotation gaps relative to the BU fields recorded by 01-BU-gene-detail. Requires 02-Orthologs-to-BF first."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "04 Defense-RnlAB",
+              "item": [
+                {
+                  "name": "01-BU-gene-detail",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "pm.collectionVariables.set(\"cmp_expected_locus\", pm.collectionVariables.get(\"locus_tag_cmp_defense\"));"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const gene = pm.response.json().data;",
+                          "const expected = pm.collectionVariables.get(\"cmp_expected_locus\");",
+                          "pm.test(\"BU locus matches fixture\", function () {",
+                          "    pm.expect(gene.locus_tag).to.eql(expected);",
+                          "    pm.expect(gene.isolate_name).to.eql(pm.collectionVariables.get(\"isolate_name\"));",
+                          "});",
+                          "",
+                          "const fields = [\"cog_id\", \"cog_funcats\", \"pfam\", \"interpro\", \"kegg\", \"uniprot_id\", \"essentiality\", \"has_amr_info\", \"amr\", \"defense\", \"mobilome\", \"dbcan\", \"bgc\", \"unifire\", \"ontology_terms\"];",
+                          "const present = [];",
+                          "const missing = [];",
+                          "fields.forEach(function (f) {",
+                          "    const v = gene[f];",
+                          "    const empty = v === null || v === undefined || v === \"\" || (Array.isArray(v) && v.length === 0)",
+                          "        || (typeof v === \"object\" && !Array.isArray(v) && Object.keys(v).length === 0);",
+                          "    if (empty) { missing.push(f); } else { present.push(f); }",
+                          "});",
+                          "console.log(\"[BU annotation] present:\", present.join(\", \") || \"(none)\");",
+                          "console.log(\"[BU annotation] missing:\", missing.join(\", \") || \"(none)\");",
+                          "pm.collectionVariables.set(\"cmp_bu_present_fields\", present.join(\",\"));",
+                          "pm.collectionVariables.set(\"cmp_bu_missing_fields\", missing.join(\",\"));",
+                          "",
+                          "pm.test(\"Defense fixture exposes defense and/or mobilome on BU\", function () {",
+                          "    const hasDefense = gene.defense && ((Array.isArray(gene.defense) && gene.defense.length) || Object.keys(gene.defense).length);",
+                          "    const hasMobilome = gene.mobilome && ((Array.isArray(gene.mobilome) && gene.mobilome.length) || Object.keys(gene.mobilome).length);",
+                          "    pm.expect(Boolean(hasDefense || hasMobilome)).to.eql(true);",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_cmp_defense}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_cmp_defense}}"
+                      ]
+                    },
+                    "description": "Gold BU type-strain gene detail for fixture `{{locus_tag_cmp_defense}}`. Logs which annotation layers are present vs empty."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "02-Orthologs-to-BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "const payload = pm.response.json().data;",
+                          "const bf = pm.collectionVariables.get(\"species_acronym_bf\");",
+                          "const isolateBf = pm.collectionVariables.get(\"isolate_name_bf\");",
+                          "const orthologs = (payload && payload.orthologs) || [];",
+                          "const hit = orthologs.find(function (o) {",
+                          "    return (o.species_acronym === bf) || (o.isolate === isolateBf)",
+                          "        || (o.locus_tag && String(o.locus_tag).startsWith(isolateBf + \"_\"));",
+                          "});",
+                          "",
+                          "pm.test(\"Ortholog payload lists results (BF may be empty until 20hm is indexed)\", function () {",
+                          "    pm.expect(payload).to.be.an(\"object\");",
+                          "    pm.expect(payload).to.have.property(\"orthologs\");",
+                          "});",
+                          "",
+                          "if (hit) {",
+                          "    pm.collectionVariables.set(\"locus_tag_bf\", hit.locus_tag);",
+                          "    console.log(\"[BF ortholog] resolved:\", hit.locus_tag, hit.gene_name || \"\", hit.product || \"\");",
+                          "} else {",
+                          "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
+                          "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
+                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_cmp_defense}}/orthologs?species_acronym={{species_acronym_bf}}&one_to_one_only=false&cross_species_only=true",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_cmp_defense}}",
+                        "orthologs"
+                      ],
+                      "query": [
+                        {
+                          "key": "species_acronym",
+                          "value": "{{species_acronym_bf}}"
+                        },
+                        {
+                          "key": "one_to_one_only",
+                          "value": "false"
+                        },
+                        {
+                          "key": "cross_species_only",
+                          "value": "true"
+                        }
+                      ]
+                    },
+                    "description": "Resolve BF ortholog(s) for the BU fixture and store `locus_tag_bf` when a hit is found."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "03-BF-gene-detail-gap-checklist",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
+                          "if (!bfLocus) {",
+                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
+                          "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
+                          "    });",
+                          "} else {",
+                          "    pm.test(\"Status code is 200\", function () {",
+                          "        pm.response.to.have.status(200);",
+                          "    });",
+                          "",
+                          "    const gene = pm.response.json().data;",
+                          "    pm.test(\"BF locus matches resolved ortholog\", function () {",
+                          "        pm.expect(gene.locus_tag).to.eql(bfLocus);",
+                          "    });",
+                          "",
+                          "    const fields = [\"cog_id\", \"cog_funcats\", \"pfam\", \"interpro\", \"kegg\", \"uniprot_id\", \"essentiality\", \"has_amr_info\", \"amr\", \"defense\", \"mobilome\", \"dbcan\", \"bgc\", \"unifire\", \"ontology_terms\"];",
+                          "    const present = [];",
+                          "    const missing = [];",
+                          "    fields.forEach(function (f) {",
+                          "        const v = gene[f];",
+                          "        const empty = v === null || v === undefined || v === \"\" || (Array.isArray(v) && v.length === 0)",
+                          "            || (typeof v === \"object\" && !Array.isArray(v) && Object.keys(v).length === 0);",
+                          "        if (empty) { missing.push(f); } else { present.push(f); }",
+                          "    });",
+                          "    console.log(\"[BF annotation] present:\", present.join(\", \") || \"(none)\");",
+                          "    console.log(\"[BF annotation] missing:\", missing.join(\", \") || \"(none)\");",
+                          "",
+                          "    const buPresent = (pm.collectionVariables.get(\"cmp_bu_present_fields\") || \"\").split(\",\").filter(Boolean);",
+                          "    const gaps = buPresent.filter(function (f) { return missing.indexOf(f) !== -1; });",
+                          "    console.log(\"[gap vs BU] fields present on BU but missing on BF:\", gaps.join(\", \") || \"(none)\");",
+                          "    pm.collectionVariables.set(\"cmp_bf_present_fields\", present.join(\",\"));",
+                          "    pm.collectionVariables.set(\"cmp_bf_missing_fields\", missing.join(\",\"));",
+                          "    pm.collectionVariables.set(\"cmp_gaps_vs_bu\", gaps.join(\",\"));",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/{{locus_tag_bf}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "{{locus_tag_bf}}"
+                      ]
+                    },
+                    "description": "Fetch the resolved BF ortholog and log annotation gaps relative to the BU fields recorded by 01-BU-gene-detail. Requires 02-Orthologs-to-BF first."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "05 Cross-isolate search",
+              "item": [
+                {
+                  "name": "Advanced-search-dnaA-pfam-across-BU-BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const rows = body.data || [];",
+                          "const byIsolate = {};",
+                          "rows.forEach(function (g) {",
+                          "    byIsolate[g.isolate_name] = (byIsolate[g.isolate_name] || 0) + 1;",
+                          "});",
+                          "console.log(\"[pfam search] hits by isolate:\", JSON.stringify(byIsolate));",
+                          "pm.test(\"BU contributes at least one Pfam hit\", function () {",
+                          "    pm.expect(byIsolate[pm.collectionVariables.get(\"isolate_name\")] || 0).to.be.above(0);",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/search/advanced?query=&page=1&per_page=20&sort_field=locus_tag&sort_order=asc&isolates={{isolates_bu_bf}}&filter=pfam:{{pfam_cmp_dnaa}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "search",
+                        "advanced"
+                      ],
+                      "query": [
+                        {
+                          "key": "query",
+                          "value": ""
+                        },
+                        {
+                          "key": "page",
+                          "value": "1"
+                        },
+                        {
+                          "key": "per_page",
+                          "value": "20"
+                        },
+                        {
+                          "key": "sort_field",
+                          "value": "locus_tag"
+                        },
+                        {
+                          "key": "sort_order",
+                          "value": "asc"
+                        },
+                        {
+                          "key": "isolates",
+                          "value": "{{isolates_bu_bf}}"
+                        },
+                        {
+                          "key": "filter",
+                          "value": "pfam:{{pfam_cmp_dnaa}}"
+                        }
+                      ]
+                    },
+                    "description": "Shared Pfam (dnaA PF00308) across BU + BF isolates — checks whether the 20hm type strain surfaces the same domain hit."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Advanced-search-AMR-across-BU-BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const rows = pm.response.json().data || [];",
+                          "const byIsolate = {};",
+                          "rows.forEach(function (g) {",
+                          "    byIsolate[g.isolate_name] = (byIsolate[g.isolate_name] || 0) + 1;",
+                          "});",
+                          "console.log(\"[AMR search] has_amr_info hits by isolate:\", JSON.stringify(byIsolate));",
+                          "pm.test(\"BU has at least one AMR gene\", function () {",
+                          "    pm.expect(byIsolate[pm.collectionVariables.get(\"isolate_name\")] || 0).to.be.above(0);",
+                          "});",
+                          "if (!(byIsolate[pm.collectionVariables.get(\"isolate_name_bf\")] > 0)) {",
+                          "    console.warn(\"[AMR search] no BF AMR hits — possible annotation gap or missing index\");",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/search/advanced?query=&page=1&per_page=50&sort_field=locus_tag&sort_order=asc&isolates={{isolates_bu_bf}}&filter=has_amr_info:true",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "search",
+                        "advanced"
+                      ],
+                      "query": [
+                        {
+                          "key": "query",
+                          "value": ""
+                        },
+                        {
+                          "key": "page",
+                          "value": "1"
+                        },
+                        {
+                          "key": "per_page",
+                          "value": "50"
+                        },
+                        {
+                          "key": "sort_field",
+                          "value": "locus_tag"
+                        },
+                        {
+                          "key": "sort_order",
+                          "value": "asc"
+                        },
+                        {
+                          "key": "isolates",
+                          "value": "{{isolates_bu_bf}}"
+                        },
+                        {
+                          "key": "filter",
+                          "value": "has_amr_info:true"
+                        }
+                      ]
+                    },
+                    "description": "Count AMR-annotated genes on BU vs BF type strains."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Faceted-search-BU-species-baseline",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/faceted-search?species_acronym={{species_acronym}}&limit=5&pfam={{pfam_cmp_dnaa}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "faceted-search"
+                      ],
+                      "query": [
+                        {
+                          "key": "species_acronym",
+                          "value": "{{species_acronym}}"
+                        },
+                        {
+                          "key": "limit",
+                          "value": "5"
+                        },
+                        {
+                          "key": "pfam",
+                          "value": "{{pfam_cmp_dnaa}}"
+                        }
+                      ]
+                    },
+                    "description": "BU faceted baseline for dnaA Pfam (control before BF comparison)."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Faceted-search-BF-species",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "const code = pm.response.code;",
+                          "if (code >= 400) {",
+                          "    console.warn(\"[faceted BF] HTTP\", code, pm.response.text());",
+                          "    pm.test(\"BF faceted search unavailable (log only)\", function () {",
+                          "        pm.expect(code).to.be.at.least(400);",
+                          "    });",
+                          "} else {",
+                          "    pm.test(\"Status code is 200\", function () {",
+                          "        pm.response.to.have.status(200);",
+                          "    });",
+                          "    console.log(\"[faceted BF] ok — inspect facets/results for dnaA Pfam coverage\");",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/genes/faceted-search?species_acronym={{species_acronym_bf}}&limit=5&pfam={{pfam_cmp_dnaa}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "genes",
+                        "faceted-search"
+                      ],
+                      "query": [
+                        {
+                          "key": "species_acronym",
+                          "value": "{{species_acronym_bf}}"
+                        },
+                        {
+                          "key": "limit",
+                          "value": "5"
+                        },
+                        {
+                          "key": "pfam",
+                          "value": "{{pfam_cmp_dnaa}}"
+                        }
+                      ]
+                    },
+                    "description": "BF faceted search for the same dnaA Pfam. Soft-logs if species is not enabled / not indexed yet."
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "description": "Compare annotation depth between the HD BU type strain (BU_ATCC8492) and a 20hm Bacteroides type strain (default BF_NCTC9343).\n\n**Fixtures:** dnaA (core), rpsR (essential ribosomal), per1/cblA (AMR), RnlAB (defense/MGE).\n\n**How to run each gene folder:** 01 → 02 → 03. Console logs list present/missing annotation layers and gaps vs BU.\n\n**Note:** BF requests soft-warn until the 20hm isolate is indexed.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Annotation comparison fixtures (BU_ATCC8492 vs BF_NCTC9343)\n// Edit values here when fixtures change; run this request before the rest of the folder.\n\nconst fixtures = {\n    isolate_name: \"BU_ATCC8492\",\n    species_acronym: \"BU\",\n    isolate_name_bf: \"BF_NCTC9343\",\n    species_acronym_bf: \"BF\",\n    isolates_bu_bf: \"BU_ATCC8492,BF_NCTC9343\",\n    locus_tag_cmp_dnaa: \"BU_ATCC8492_00001\",\n    locus_tag_cmp_rpsr: \"BU_ATCC8492_00077\",\n    locus_tag_cmp_amr: \"BU_ATCC8492_03118\",\n    locus_tag_cmp_defense: \"BU_ATCC8492_00183\",\n    pfam_cmp_dnaa: \"PF00308\",\n    locus_tag_bf: \"\",\n    cmp_expected_locus: \"\",\n    cmp_bu_present_fields: \"\",\n    cmp_bu_missing_fields: \"\",\n    cmp_bf_present_fields: \"\",\n    cmp_bf_missing_fields: \"\",\n    cmp_gaps_vs_bu: \"\"\n};\n\nObject.entries(fixtures).forEach(([key, value]) => {\n    pm.collectionVariables.set(key, value);\n});\n\nconsole.log(\"[init] set\", Object.keys(fixtures).length, \"fixtures:\", Object.keys(fixtures).join(\", \"));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const expected = [\"cmp_bf_missing_fields\", \"cmp_bf_present_fields\", \"cmp_bu_missing_fields\", \"cmp_bu_present_fields\", \"cmp_expected_locus\", \"cmp_gaps_vs_bu\", \"isolate_name\", \"isolate_name_bf\", \"isolates_bu_bf\", \"locus_tag_bf\", \"locus_tag_cmp_amr\", \"locus_tag_cmp_defense\", \"locus_tag_cmp_dnaa\", \"locus_tag_cmp_rpsr\", \"pfam_cmp_dnaa\", \"species_acronym\", \"species_acronym_bf\"];\npm.test(\"Folder fixtures are set on the collection\", function () {\n    expected.forEach(function (key) {\n        const v = pm.collectionVariables.get(key);\n        pm.expect(v, key + \" should be set\").to.not.be.undefined;\n        pm.expect(v, key + \" should not be null\").to.not.eql(null);\n    });\n});"
+            ]
+          }
+        }
       ]
     },
     {
@@ -7371,6 +8647,26 @@
             }
           ]
         }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Experimental APIs fixtures (drug, MIC, metabolism, TTP, essentiality)\n// Edit values here when fixtures change; run this request before the rest of the folder.\n\nconst fixtures = {\n    isolate_name: \"BU_ATCC8492\",\n    isolate_name_pv: \"PV_ATCC8482\",\n    isolate_name_h5: \"BU_H5\",\n    locus_tag_alt: \"BU_ATCC8492_00002\",\n    locus_tag_essentiality: \"BU_ATCC8492_02615\",\n    species_acronym: \"BU\",\n    species_acronym_pv: \"PV\",\n    drug_name: \"amoxicillin\",\n    drug_class: \"beta_lactam\",\n    drug_name_metabolism: \"amoxapine\",\n    ttp_compound: \"myo-inositol\",\n    pool_a: \"pool1\",\n    pool_b: \"pool8\",\n    bearer_token_invalid: \"invalid-token\"\n};\n\nObject.entries(fixtures).forEach(([key, value]) => {\n    pm.collectionVariables.set(key, value);\n});\n\nconsole.log(\"[init] set\", Object.keys(fixtures).length, \"fixtures:\", Object.keys(fixtures).join(\", \"));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const expected = [\"bearer_token_invalid\", \"drug_class\", \"drug_name\", \"drug_name_metabolism\", \"isolate_name\", \"isolate_name_h5\", \"isolate_name_pv\", \"locus_tag_alt\", \"locus_tag_essentiality\", \"pool_a\", \"pool_b\", \"species_acronym\", \"species_acronym_pv\", \"ttp_compound\"];\npm.test(\"Folder fixtures are set on the collection\", function () {\n    expected.forEach(function (key) {\n        const v = pm.collectionVariables.get(key);\n        pm.expect(v, key + \" should be set\").to.not.be.undefined;\n        pm.expect(v, key + \" should not be null\").to.not.eql(null);\n    });\n});"
+            ]
+          }
+        }
       ]
     },
     {
@@ -9319,10 +10615,8 @@
           "listen": "prerequest",
           "script": {
             "type": "text/javascript",
-            "packages": {},
-            "requests": {},
             "exec": [
-              ""
+              "// Interactions APIs fixtures (PPI, orthologs, operons, correlations)\n// Edit values here when fixtures change; run this request before the rest of the folder.\n\nconst fixtures = {\n    isolate_name: \"BU_ATCC8492\",\n    isolate_name_pv: \"PV_ATCC8482\",\n    isolate_name_h5: \"BU_H5\",\n    locus_tag: \"BU_ATCC8492_00001\",\n    locus_tag_pv: \"PV_ATCC8482_00001\",\n    locus_tag_ppi: \"BU_ATCC8492_01788\",\n    locus_tag_correlation: \"BU_ATCC8492_02530\",\n    locus_tag_operon: \"BU_ATCC8492_00077\",\n    locus_tag_ortholog: \"BU_WH4_00023\",\n    operon_id: \"BU_ATCC8492_00003__BU_ATCC8492_00004\",\n    species_acronym: \"BU\",\n    species_acronym_pv: \"PV\",\n    uniprot_id: \"A7V2E8\",\n    ppi_protein_id: \"A6KXK8\",\n    ppi_pair_id: \"BU%3AA7V2E8__A7VAF1\"\n};\n\nObject.entries(fixtures).forEach(([key, value]) => {\n    pm.collectionVariables.set(key, value);\n});\n\nconsole.log(\"[init] set\", Object.keys(fixtures).length, \"fixtures:\", Object.keys(fixtures).join(\", \"));"
             ]
           }
         },
@@ -9330,10 +10624,8 @@
           "listen": "test",
           "script": {
             "type": "text/javascript",
-            "packages": {},
-            "requests": {},
             "exec": [
-              ""
+              "\nconst expected = [\"isolate_name\", \"isolate_name_h5\", \"isolate_name_pv\", \"locus_tag\", \"locus_tag_correlation\", \"locus_tag_operon\", \"locus_tag_ortholog\", \"locus_tag_ppi\", \"locus_tag_pv\", \"operon_id\", \"ppi_pair_id\", \"ppi_protein_id\", \"species_acronym\", \"species_acronym_pv\", \"uniprot_id\"];\npm.test(\"Folder fixtures are set on the collection\", function () {\n    expected.forEach(function (key) {\n        const v = pm.collectionVariables.get(key);\n        pm.expect(v, key + \" should be set\").to.not.be.undefined;\n        pm.expect(v, key + \" should not be null\").to.not.eql(null);\n    });\n});"
             ]
           }
         }
@@ -10262,6 +11554,26 @@
             }
           ]
         }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// PyHmmer fixtures\n// Edit values here when fixtures change; run this request before the rest of the folder.\n\nconst fixtures = {\n    isolate_name_cla: \"BU_CLA\"\n};\n\nObject.entries(fixtures).forEach(([key, value]) => {\n    pm.collectionVariables.set(key, value);\n});\n\nconsole.log(\"[init] set\", Object.keys(fixtures).length, \"fixtures:\", Object.keys(fixtures).join(\", \"));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "\nconst expected = [\"isolate_name_cla\"];\npm.test(\"Folder fixtures are set on the collection\", function () {\n    expected.forEach(function (key) {\n        const v = pm.collectionVariables.get(key);\n        pm.expect(v, key + \" should be set\").to.not.be.undefined;\n        pm.expect(v, key + \" should not be null\").to.not.eql(null);\n    });\n});"
+            ]
+          }
+        }
       ]
     }
   ],
@@ -10278,223 +11590,107 @@
   "variable": [
     {
       "key": "isolate_name",
-      "value": "BU_ATCC8492",
-      "description": "Type-strain isolate used by most genome/gene fixtures"
+      "value": ""
     },
     {
       "key": "isolate_name_pv",
-      "value": "PV_ATCC8482",
-      "description": "P. vulgatus type-strain isolate"
+      "value": ""
     },
     {
       "key": "isolate_name_alt",
-      "value": "BU_909",
-      "description": "Secondary B. uniformis isolate for name/search tests"
-    },
-    {
-      "key": "isolate_name_h5",
-      "value": "BU_H5",
-      "description": "Additional B. uniformis isolate fixture"
-    },
-    {
-      "key": "isolate_name_cla",
-      "value": "BU_CLA",
-      "description": "Additional B. uniformis isolate fixture"
+      "value": ""
     },
     {
       "key": "isolate_name_bu_2243b",
-      "value": "BU_2243B",
-      "description": "B. uniformis isolate used in autocomplete/search"
+      "value": ""
     },
     {
       "key": "isolate_name_bu_3537",
-      "value": "BU_3537",
-      "description": "B. uniformis isolate used in autocomplete/search"
+      "value": ""
     },
     {
       "key": "isolate_name_bu_61",
-      "value": "BU_61",
-      "description": "B. uniformis isolate used in autocomplete/search"
+      "value": ""
     },
     {
       "key": "isolate_name_unknown",
-      "value": "DOES_NOT_EXIST_ISOLATE",
-      "description": "Isolate that should not appear in any release"
-    },
-    {
-      "key": "locus_tag",
-      "value": "BU_ATCC8492_00001",
-      "description": "Primary BU type-strain locus tag"
-    },
-    {
-      "key": "locus_tag_alt",
-      "value": "BU_ATCC8492_00002",
-      "description": "Secondary BU type-strain locus tag"
-    },
-    {
-      "key": "locus_tag_ppi",
-      "value": "BU_ATCC8492_01788",
-      "description": "Locus tag used by PPI fixtures"
-    },
-    {
-      "key": "locus_tag_essentiality",
-      "value": "BU_ATCC8492_02615",
-      "description": "Locus tag used by essentiality fixtures"
-    },
-    {
-      "key": "locus_tag_correlation",
-      "value": "BU_ATCC8492_02530",
-      "description": "Locus tag used by fitness-correlation fixtures"
-    },
-    {
-      "key": "locus_tag_operon",
-      "value": "BU_ATCC8492_00077",
-      "description": "Locus tag used by operon-by-gene fixtures"
-    },
-    {
-      "key": "locus_tag_pv",
-      "value": "PV_ATCC8482_00001",
-      "description": "Primary PV type-strain locus tag"
-    },
-    {
-      "key": "locus_tag_pv_alt",
-      "value": "PV_ATCC8482_03700",
-      "description": "Secondary PV type-strain locus tag"
-    },
-    {
-      "key": "locus_tag_unknown",
-      "value": "DOES_NOT_EXIST_LOCUS",
-      "description": "Locus tag that should not appear in any release"
-    },
-    {
-      "key": "operon_id",
-      "value": "BU_ATCC8492_00003__BU_ATCC8492_00004",
-      "description": "Operon identifier fixture"
-    },
-    {
-      "key": "type_strains",
-      "value": "BU_ATCC8492,PV_ATCC8482",
-      "description": "Comma-separated type-strain isolates"
-    },
-    {
-      "key": "isolates_bu_sample",
-      "value": "BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492",
-      "description": "BU isolate set used by advanced gene search"
-    },
-    {
-      "key": "isolates_bu_short",
-      "value": "BU_2243B,BU_3537,BU_61",
-      "description": "Shorter BU isolate set used by autocomplete"
-    },
-    {
-      "key": "isolates_bu_autocomplete",
-      "value": "BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527",
-      "description": "BU isolate set used by autocomplete-with-filter"
-    },
-    {
-      "key": "species_acronym",
-      "value": "BU",
-      "description": "Bacteroides uniformis species acronym"
-    },
-    {
-      "key": "species_acronym_pv",
-      "value": "PV",
-      "description": "Phocaeicola vulgatus species acronym"
-    },
-    {
-      "key": "species_acronym_lower",
-      "value": "bu",
-      "description": "Lowercase BU acronym used by some search queries"
-    },
-    {
-      "key": "contig_id",
-      "value": "contig_1",
-      "description": "Contig identifier used by essentiality-by-contig"
-    },
-    {
-      "key": "gene_query",
-      "value": "dnaA",
-      "description": "Common gene-name search term"
-    },
-    {
-      "key": "uniprot_id",
-      "value": "A7V2E8",
-      "description": "UniProt accession used by gene autocomplete and PPI"
-    },
-    {
-      "key": "ppi_protein_id",
-      "value": "A6KXK8",
-      "description": "PPI protein identifier (PV)"
-    },
-    {
-      "key": "drug_name",
-      "value": "amoxicillin",
-      "description": "Drug name used by MIC search fixtures"
-    },
-    {
-      "key": "drug_class",
-      "value": "beta_lactam",
-      "description": "Drug class used by MIC/metabolism fixtures"
-    },
-    {
-      "key": "ttp_compound",
-      "value": "myo-inositol",
-      "description": "Compound used by TTP interaction fixtures"
-    },
-    {
-      "key": "pool_a",
-      "value": "pool1",
-      "description": "TTP pool A fixture"
-    },
-    {
-      "key": "pool_b",
-      "value": "pool8",
-      "description": "TTP pool B fixture"
-    },
-    {
-      "key": "release_token",
-      "value": "current",
-      "description": "X-METT-Release / ?release= token (follows the promoted set)"
-    },
-    {
-      "key": "release_version",
-      "value": "v1",
-      "description": "Concrete release version for header/query scenarios"
-    },
-    {
-      "key": "resolved_release_version",
-      "value": "",
-      "description": "Filled by List-Releases from data.current_version when that request is run"
-    },
-    {
-      "key": "drug_name_metabolism",
-      "value": "amoxapine",
-      "description": "Drug name used by metabolism-by-drug fixtures"
-    },
-    {
-      "key": "bearer_token_invalid",
-      "value": "invalid-token",
-      "description": "Deliberately invalid Bearer token for 401 scenarios (overrides collection auth)"
-    },
-    {
-      "key": "genome_search_query_pv",
-      "value": "PV_H4",
-      "description": "Partial isolate string used by genome search"
+      "value": ""
     },
     {
       "key": "isolate_name_pv_h4",
-      "value": "PV_H4-2",
-      "description": "Expected isolate returned by the PV_H4 genome search"
+      "value": ""
     },
     {
-      "key": "ppi_pair_id",
-      "value": "BU%3AA7V2E8__A7VAF1",
-      "description": "URL-encoded STRING pair_id used by the string-network fixture"
+      "key": "locus_tag",
+      "value": ""
     },
     {
-      "key": "locus_tag_ortholog",
-      "value": "BU_WH4_00023",
-      "description": "Locus tag used by ortholog fixtures"
+      "key": "locus_tag_pv",
+      "value": ""
+    },
+    {
+      "key": "locus_tag_pv_alt",
+      "value": ""
+    },
+    {
+      "key": "locus_tag_unknown",
+      "value": ""
+    },
+    {
+      "key": "type_strains",
+      "value": ""
+    },
+    {
+      "key": "isolates_bu_sample",
+      "value": ""
+    },
+    {
+      "key": "isolates_bu_short",
+      "value": ""
+    },
+    {
+      "key": "isolates_bu_autocomplete",
+      "value": ""
+    },
+    {
+      "key": "species_acronym",
+      "value": ""
+    },
+    {
+      "key": "species_acronym_pv",
+      "value": ""
+    },
+    {
+      "key": "species_acronym_lower",
+      "value": ""
+    },
+    {
+      "key": "contig_id",
+      "value": ""
+    },
+    {
+      "key": "gene_query",
+      "value": ""
+    },
+    {
+      "key": "uniprot_id",
+      "value": ""
+    },
+    {
+      "key": "genome_search_query_pv",
+      "value": ""
+    },
+    {
+      "key": "release_token",
+      "value": ""
+    },
+    {
+      "key": "release_version",
+      "value": ""
+    },
+    {
+      "key": "resolved_release_version",
+      "value": ""
     }
   ]
 }
