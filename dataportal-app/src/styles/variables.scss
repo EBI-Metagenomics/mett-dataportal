@@ -7,6 +7,14 @@ $background-color: #ffffff;
 $text-color: #333333;
 $border-color: #e0e0e0;
 
+// Gene viewer shared chrome
+// Use focused JBrowse LGV header (secondary.main) so Feature Details matches
+// the viewer while the user is interacting with it.
+$gene-viewer-header-color: #721E63;
+$gene-viewer-header-border-color: #511446;
+$gene-viewer-accent-color: #721E63;
+$gene-viewer-header-unfocused-color: #4F1545;
+
 // Typography - Following EMBL-EBI Visual Framework
 $font-family-primary: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
 $font-family-mono: 'IBM Plex Mono', Monaco, Consolas, 'Lucida Console', monospace;

@@ -3,7 +3,7 @@
   flex-direction: column;
   background: #ffffff;
   border-left: 1px solid #dee2e6;
-  min-height: 600px;
+  min-height: 420px;
   max-height: calc(100vh - 20px);
   overflow: hidden;
 }
@@ -17,8 +17,8 @@
   min-height: 28px;
   height: 28px;
   padding: 0 12px;
-  border-bottom: 1px solid #511446;
-  background: #721E63;
+  border-bottom: 1px solid $gene-viewer-header-border-color;
+  background: $gene-viewer-header-color;
 
   h3 {
     margin: 0;
@@ -93,7 +93,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid #721E63;
+    outline: 2px solid $gene-viewer-accent-color;
     outline-offset: -2px;
   }
 

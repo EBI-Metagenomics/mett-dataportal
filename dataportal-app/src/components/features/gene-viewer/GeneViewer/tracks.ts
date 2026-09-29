@@ -61,7 +61,8 @@ const getTracks
                     onFeatureClick: null,
                     onDoubleClick: null,
                     renderer: {
-                        type: 'SvgFeatureRenderer',
+                        // JBrowse v4+: canvas renderer (SvgFeatureRenderer is an alias)
+                        type: 'CanvasFeatureRenderer',
                         color1: `jexl:getGeneColor(feature)`,
                         labels: {
                             name: `jexl:

@@ -52,7 +52,7 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
 
 // Gene Search Container
 .geneSearchContainer {
-  margin-top: 2rem;
+  margin-top: 0.75rem;
   width: 100%;
 }
 
@@ -147,7 +147,8 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
 }
 
 // Main content grid: Left column (JBrowse + Search) and Right column (Feature Panel)
-$gene-viewer-panel-height: 600px;
+// Sized to hug track content after AppBar hide / compact sequence track.
+$gene-viewer-panel-height: 420px;
 $gene-viewer-header-height: 28px;
 
 .mainContentGrid {
