@@ -4,6 +4,7 @@ import makeWorkerInstance from '@jbrowse/react-app2/esm/makeWorkerInstance';
 import Plugin from '@jbrowse/core/Plugin';
 import EnhancedGeneFeaturePlugin from '../../../../plugins/EnhancedGeneFeaturePlugin';
 import { JBROWSE_THEME } from '../../../../utils/gene-viewer/jbrowseTheme';
+import { suppressJBrowseWidgets } from './suppressJBrowseWidgets';
 
 interface Track {
   type: string;
@@ -34,6 +35,8 @@ const useGeneViewerState = (
   );
 
   useEffect(() => {
+    let disposeWidgetSuppress: (() => void) | undefined;
+
     const initialize = async () => {
       try {
         if (!assembly) {
@@ -82,18 +85,31 @@ const useGeneViewerState = (
 
           const session = state.session;
           if (session) {
-            session.showWidget = function () {
-              return undefined;
-            };
-            session.addWidget = function () {
-              return undefined;
-            };
-            session.removeView = function () {
-              return undefined;
-            };
+            // MST actions cannot be replaced by assignment; use autorun suppress.
+            disposeWidgetSuppress = suppressJBrowseWidgets(session);
+
+            // Best-effort stubs for non-MST callers / older paths.
+            try {
+              session.showWidget = function () {
+                return undefined;
+              };
+              session.addWidget = function () {
+                return undefined;
+              };
+            } catch {
+              // protected MST actions — ignore
+            }
+
+            try {
+              session.removeView = function () {
+                return undefined;
+              };
+            } catch {
+              // ignore
+            }
           }
         } catch (error) {
-          console.warn('Failed to override widget methods:', error);
+          console.warn('Failed to configure embedded JBrowse session:', error);
         }
 
         setViewState(state);
@@ -113,6 +129,10 @@ const useGeneViewerState = (
     };
 
     initialize();
+
+    return () => {
+      disposeWidgetSuppress?.();
+    };
   }, [assembly, tracks, defaultSession, initKey]);
 
   return { viewState, initializationError };

@@ -18,6 +18,8 @@ export const JBROWSE_DRAWER_SELECTORS = [
   '.MuiDrawer-docked',
   '[class*="MuiDrawer"]',
   'aside[class*="MuiDrawer"]',
+  // v4 drawer shell is Paper elevation 16 (see app-core Drawer.js)
+  '.MuiPaper-elevation16',
   '[class*="BaseFeatureDetail"]',
   '[class*="FeatureDetails"]',
   '[class*="featureDetails"]',

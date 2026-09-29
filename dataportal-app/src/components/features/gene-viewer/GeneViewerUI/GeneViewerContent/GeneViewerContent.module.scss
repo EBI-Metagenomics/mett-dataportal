@@ -78,4 +78,26 @@
   pointer-events: none !important;
 }
 
-// Gene highlighting is now handled by JBrowse's JEXL expressions in tracks.ts 
+/*
+ * JBrowse v4 feature drawer is a MuiPaper (elevation 16), not MuiDrawer.
+ * Keep it collapsed as a CSS fallback while MST autorun clears widgets.
+ */
+.jbrowseContainer :global(.MuiPaper-elevation16) {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.jbrowseContainer :global([class*='BaseFeatureDetail']),
+.jbrowseContainer :global([class*='FeatureDetails']),
+.jbrowseContainer :global([class*='DrawerWidget']),
+.jbrowseContainer :global([class*='FeatureWidget']),
+.jbrowseContainer :global([class*='BaseFeatureWidget']) {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+// Gene highlighting is now handled by JBrowse's JEXL expressions in tracks.ts
