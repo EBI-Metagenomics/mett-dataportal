@@ -11,6 +11,7 @@ interface SpeciesFilterProps {
     selectedSpecies: string[];
     onSpeciesSelect: (acronym: string) => void;
     initialVisibleCount?: number;
+    defaultCollapsed?: boolean;
 }
 
 const SpeciesFilter: React.FC<SpeciesFilterProps> = ({
@@ -18,10 +19,15 @@ const SpeciesFilter: React.FC<SpeciesFilterProps> = ({
     selectedSpecies,
     onSpeciesSelect,
     initialVisibleCount = 5,
+    defaultCollapsed = false,
 }) => {
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(defaultCollapsed);
     const [filterText, setFilterText] = useState('');
     const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
+
+    useEffect(() => {
+        setCollapsed(defaultCollapsed);
+    }, [defaultCollapsed]);
 
     useEffect(() => {
         setVisibleCount(initialVisibleCount);

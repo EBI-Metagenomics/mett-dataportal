@@ -9,6 +9,7 @@ interface UseFacetedFiltersProps {
     selectedSpecies: string[];
     selectedGenomes: Array<{ isolate_name: string }>;
     searchQuery: string;
+    extraIsolates?: string[];
 }
 
 interface UseFacetedFiltersReturn {
@@ -24,6 +25,7 @@ export const useFacetedFilters = ({
     selectedSpecies,
     selectedGenomes,
     searchQuery,
+    extraIsolates = [],
 }: UseFacetedFiltersProps): UseFacetedFiltersReturn => {
     const filterStore = useFilterStore();
     const [facets, setFacets] = useState<GeneFacetResponse>({total_hits: 0, operators: {}});
@@ -130,7 +132,11 @@ export const useFacetedFilters = ({
             setError(null);
 
             const speciesAcronym = joinSpeciesAcronyms(selectedSpecies);
-            const isolates = selectedGenomes.map(genome => genome.isolate_name).join(',');
+            const isolateNames = [
+                ...selectedGenomes.map(genome => genome.isolate_name),
+                ...extraIsolates.filter((name) => !selectedGenomes.some((genome) => genome.isolate_name === name)),
+            ];
+            const isolates = isolateNames.join(',');
             const apiFilters = getApiFilters();
 
             // Create a unique key for this API call to prevent duplicates
@@ -299,7 +305,7 @@ export const useFacetedFilters = ({
             setLoading(false);
             isLoadingFacets.current = false;
         }
-    }, [selectedSpecies, selectedGenomes, searchQuery, filterStore.facetOperators, getApiFilters]);
+    }, [selectedSpecies, selectedGenomes, extraIsolates, searchQuery, filterStore.facetOperators, getApiFilters]);
 
     // Debounced version of loadFacets for filter changes
     const debouncedLoadFacets = useCallback((delay = 500) => {
@@ -428,7 +434,10 @@ export const useFacetedFilters = ({
     const filtersAreInitial = Object.keys(filterStore.facetedFilters).length === 0 && Object.keys(filterStore.facetOperators).length === 0;
 
     useEffect(() => {
-        const currentGenomeKey = selectedGenomes.map(g => g.isolate_name).join(',');
+        const currentGenomeKey = [
+            ...selectedGenomes.map(g => g.isolate_name),
+            ...extraIsolates.filter((name) => !selectedGenomes.some((genome) => genome.isolate_name === name)),
+        ].join(',');
         const currentFiltersKey = JSON.stringify(filterStore.facetedFilters);
         const currentOperatorsKey = JSON.stringify(filterStore.facetOperators);
 
@@ -506,6 +515,10 @@ export const useFacetedFilters = ({
             shouldLoadFacets = true;
             console.log('Case 2.5: HomePage species changed');
         }
+        else if (!isGeneViewerPage && genomeChanged) {
+            shouldLoadFacets = true;
+            console.log('Case 2.6: HomePage isolate scope changed');
+        }
         // Case 3: User interaction (search query changes) - for queries >= 2 characters OR when query becomes empty
         else if (searchQueryChanged && (searchQuery.length >= 2 || searchQuery.length === 0)) {
             shouldLoadFacets = true;
@@ -538,6 +551,7 @@ export const useFacetedFilters = ({
     }, [
         selectedSpecies,
         selectedGenomes,
+        extraIsolates,
         searchQuery,
         isGeneViewerPage,
         filtersAreInitial,

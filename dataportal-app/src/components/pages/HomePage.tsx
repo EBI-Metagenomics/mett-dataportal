@@ -23,6 +23,19 @@ import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '..
 
 const GENE_FILTER_SLOT_ID = 'homepage-gene-filters';
 
+function geneQueryGenomes(
+    genomes: { isolate_name: string; type_strain: boolean }[],
+    typeStrains: string[],
+) {
+    const names = new Set(genomes.map((genome) => genome.isolate_name));
+    return [
+        ...genomes,
+        ...typeStrains
+            .filter((isolateName) => !names.has(isolateName))
+            .map((isolate_name) => ({isolate_name, type_strain: true})),
+    ];
+}
+
 interface Tab {
     id: string;
     label: string;
@@ -99,7 +112,7 @@ const HomePage: React.FC = () => {
                 genePerPage, // perPage - use state instead of hardcoded 20
                 'locus_tag',
                 'asc',
-                filterStore.selectedGenomes,
+                geneQueryGenomes(filterStore.selectedGenomes, filterStore.selectedTypeStrains),
                 filterStore.selectedSpecies,
                 convertFacetedFiltersToLegacy(filterStore.facetedFilters),
                 convertFacetOperatorsToLegacy(filterStore.facetOperators),
@@ -135,7 +148,7 @@ const HomePage: React.FC = () => {
                 genePerPage, // perPage - use state instead of hardcoded 20
                 'locus_tag',
                 'asc',
-                filterStore.selectedGenomes,
+                geneQueryGenomes(filterStore.selectedGenomes, filterStore.selectedTypeStrains),
                 filterStore.selectedSpecies,
                 legacyFilters,
                 legacyOperators,
@@ -188,8 +201,7 @@ const HomePage: React.FC = () => {
         ...(isFeatureEnabled('pyhmmer_search') ? [{id: 'proteinsearch', label: 'Search by Protein'}] : []),
     ];
 
-    // Species is shared by the genome and gene tabs.
-    // Type strains apply only to the genome table.
+    // Species and type strains stay selected across the genome and gene tabs.
     // Genomes added for gene search stay selected across those two tabs.
     // The gene viewer does not read this homepage selection; it passes its own genome.
     const handleTabClick = (tabId: string) => {
@@ -213,9 +225,6 @@ const HomePage: React.FC = () => {
             if (tabId === 'proteinsearch') {
                 filterStore.setSelectedSpecies([]);
                 filterStore.setSelectedGenomes([]);
-            } else if (tabId === 'genes') {
-                filterStore.setSelectedTypeStrains([]);
-            } else {
                 filterStore.setSelectedTypeStrains([]);
             }
 
@@ -262,7 +271,7 @@ const HomePage: React.FC = () => {
                     genePerPage,
                     filterStore.geneSortField,
                     filterStore.geneSortOrder,
-                    filterStore.selectedGenomes,
+                    geneQueryGenomes(filterStore.selectedGenomes, filterStore.selectedTypeStrains),
                     updatedSelectedSpecies,
                     convertFacetedFiltersToLegacy(filterStore.facetedFilters),
                     convertFacetOperatorsToLegacy(filterStore.facetOperators)
@@ -277,6 +286,39 @@ const HomePage: React.FC = () => {
             }
         } else {
             await genomeData.handleSpeciesSelect(species_acronym);
+        }
+    };
+
+    const handleTypeStrainToggle = async (isolateName: string): Promise<void> => {
+        if (activeTab !== 'genes') {
+            await genomeData.handleTypeStrainToggle(isolateName);
+            return;
+        }
+
+        const updatedTypeStrains = filterStore.selectedTypeStrains.includes(isolateName)
+            ? filterStore.selectedTypeStrains.filter((name) => name !== isolateName)
+            : [...filterStore.selectedTypeStrains, isolateName];
+        filterStore.setSelectedTypeStrains(updatedTypeStrains);
+
+        setGeneLoading(true);
+        try {
+            const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                filterStore.geneSearchQuery,
+                1,
+                genePerPage,
+                filterStore.geneSortField,
+                filterStore.geneSortOrder,
+                geneQueryGenomes(filterStore.selectedGenomes, updatedTypeStrains),
+                filterStore.selectedSpecies,
+                convertFacetedFiltersToLegacy(filterStore.facetedFilters),
+                convertFacetOperatorsToLegacy(filterStore.facetOperators)
+            );
+            setGeneResults(response.data || []);
+            setGenePagination(response.pagination || null);
+        } catch (error) {
+            console.error('Error fetching gene data after type strain selection:', error);
+        } finally {
+            setGeneLoading(false);
         }
     };
 
@@ -344,13 +386,13 @@ const HomePage: React.FC = () => {
                 void handleSpeciesSelect(acronym);
             },
         })),
-        ...(activeTab === 'genomes'
-            ? filterStore.selectedTypeStrains.map((isolateName) => ({
-                id: `strain-${isolateName}`,
-                label: isolateName,
-                onRemove: () => genomeData.handleTypeStrainToggle(isolateName),
-            }))
-            : []),
+        ...filterStore.selectedTypeStrains.map((isolateName) => ({
+            id: `strain-${isolateName}`,
+            label: isolateName,
+            onRemove: () => {
+                void handleTypeStrainToggle(isolateName);
+            },
+        })),
         ...filterStore.selectedGenomes.map((genome) => ({
             id: `genome-${genome.isolate_name}`,
             label: genome.isolate_name,
@@ -404,14 +446,16 @@ const HomePage: React.FC = () => {
                                     speciesList={orderedSpecies}
                                     selectedSpecies={filterStore.selectedSpecies}
                                     onSpeciesSelect={handleSpeciesSelect}
+                                    defaultCollapsed={activeTab === 'genes'}
                                 />
-                                {activeTab === 'genomes' && (
+                                {(activeTab === 'genomes' || activeTab === 'genes') && (
                                     <GenomeFacetedFilter
                                         typeStrains={genomeData.typeStrains}
                                         selectedTypeStrains={filterStore.selectedTypeStrains}
                                         selectedSpecies={filterStore.selectedSpecies}
-                                        onTypeStrainToggle={genomeData.handleTypeStrainToggle}
+                                        onTypeStrainToggle={handleTypeStrainToggle}
                                         showChrome={false}
+                                        defaultCollapsed={activeTab === 'genes'}
                                     />
                                 )}
                                 {activeTab === 'genes' && <div id={GENE_FILTER_SLOT_ID} />}
@@ -457,6 +501,7 @@ const HomePage: React.FC = () => {
                                     }}
                                     selectedSpecies={filterStore.selectedSpecies}
                                     selectedGenomes={filterStore.selectedGenomes}
+                                    extraIsolates={filterStore.selectedTypeStrains}
                                     results={geneResults} // Pass actual results
                                     onSortClick={async (field, order) => {
                                         console.log('HomePage - Sort clicked:', { field, order });
@@ -480,7 +525,7 @@ const HomePage: React.FC = () => {
                                                 genePerPage,
                                                 field,
                                                 order,
-                                                filterStore.selectedGenomes,
+                                                geneQueryGenomes(filterStore.selectedGenomes, filterStore.selectedTypeStrains),
                                                 filterStore.selectedSpecies,
                                                 convertFacetedFiltersToLegacy(filterStore.facetedFilters),
                                                 convertFacetOperatorsToLegacy(filterStore.facetOperators)

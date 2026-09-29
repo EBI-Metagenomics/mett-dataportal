@@ -3,8 +3,17 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import GeneFacetedFilter from './GeneFacetedFilter'
 import { GeneFacetResponse } from '../../interfaces/Gene'
 
+jest.mock('../../utils/common/constants', () => ({
+  AMR_DETERMINATION_TXT: 'amr',
+  ESSENTIALITY_DETERMINATION_TXT: 'essentiality',
+  EXT_LINK_AMR_DETERMINATION: 'https://example.test/amr',
+  EXT_LINK_ESSENTIALITY_JOURNAL: 'https://example.test/essentiality',
+  FACET_ORDER: ['essentiality', 'has_amr_info', 'cog_funcats'],
+  LOGICAL_OPERATOR_FACETS: ['cog_funcats'],
+}))
+
 // Mock the MetadataService to prevent real API calls
-jest.mock('../../services/metadataService', () => ({
+jest.mock('../../services/common/metadataService', () => ({
   MetadataService: {
     fetchCOGCategories: jest.fn().mockResolvedValue([
       { code: 'J', label: 'Translation, ribosomal structure and biogenesis' },
@@ -81,6 +90,23 @@ describe('GeneFacetedFilter', () => {
       expect(screen.getByText(/ESSENTIALITY/i)).toBeInTheDocument()
       expect(screen.getByText(/COG CATEGORIES/i)).toBeInTheDocument()
     })
+  })
+
+  test('hides the facet heading when the page already has a filter title', async () => {
+    await act(async () => {
+      render(
+        <GeneFacetedFilter
+          facets={mockFacets}
+          onToggleFacet={jest.fn()}
+          showChrome={false}
+        />
+      )
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/ESSENTIALITY/i)).toBeInTheDocument()
+    })
+    expect(screen.queryByText('Filter by Facets')).not.toBeInTheDocument()
   })
 
   test('renders facet items and checkboxes', async () => {

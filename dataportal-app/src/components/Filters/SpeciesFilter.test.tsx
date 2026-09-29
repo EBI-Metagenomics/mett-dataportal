@@ -37,6 +37,20 @@ describe('SpeciesFilter', () => {
     expect(checkboxes[1]).not.toBeChecked() // PV
   })
 
+  test('starts collapsed when defaultCollapsed is set', () => {
+    render(
+      <SpeciesFilter
+        speciesList={speciesList}
+        selectedSpecies={['BU']}
+        onSpeciesSelect={() => {}}
+        defaultCollapsed
+      />
+    )
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.getByText(/SPECIES/)).toBeInTheDocument()
+  })
+
   test('calls onSpeciesSelect when checkbox is toggled', () => {
     const handleSelect = jest.fn()
 

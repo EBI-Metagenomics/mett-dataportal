@@ -22,6 +22,7 @@ interface GeneFacetedFilterProps {
     loadMoreStep?: number;
     onOperatorChange?: (facetGroup: string, operator: 'AND' | 'OR') => void;
     onClearAll?: () => void;
+    showChrome?: boolean;
 }
 
 const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
@@ -31,6 +32,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                                                                  loadMoreStep = 10,
                                                                  onOperatorChange,
                                                                  onClearAll,
+                                                                 showChrome = true,
                                                              }) => {
 
     const filterStore = useFilterStore();
@@ -138,8 +140,9 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
 
     return (
         <div className={styles.facetedFilter}>
+            {(showChrome || (onClearAll && selectedFacetCount > 0)) && (
             <div className={styles.header}>
-                <h3 className={styles.title}>Filter by Facets</h3>
+                {showChrome && <h3 className={styles.title}>Filter by Facets</h3>}
                 {onClearAll && selectedFacetCount > 0 && (
                     <button
                         type="button"
@@ -152,6 +155,7 @@ const GeneFacetedFilter: React.FC<GeneFacetedFilterProps> = ({
                     </button>
                 )}
             </div>
+            )}
 
             {orderedFacetEntries.map(([facetGroup, values]) => {
                 if (facetGroup === 'total_hits' || !Array.isArray(values)) return null;

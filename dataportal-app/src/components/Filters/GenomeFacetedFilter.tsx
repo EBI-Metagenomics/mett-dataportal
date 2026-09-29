@@ -11,6 +11,7 @@ interface GenomeFacetedFilterProps {
     onClearAll?: () => void;
     showChrome?: boolean;
     initialVisibleCount?: number;
+    defaultCollapsed?: boolean;
 }
 
 const GenomeFacetedFilter: React.FC<GenomeFacetedFilterProps> = ({
@@ -21,10 +22,15 @@ const GenomeFacetedFilter: React.FC<GenomeFacetedFilterProps> = ({
     onClearAll,
     showChrome = true,
     initialVisibleCount = 10,
+    defaultCollapsed = false,
 }) => {
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(defaultCollapsed);
     const [filterText, setFilterText] = useState('');
     const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
+
+    useEffect(() => {
+        setCollapsed(defaultCollapsed);
+    }, [defaultCollapsed]);
 
     useEffect(() => {
         setVisibleCount(initialVisibleCount);

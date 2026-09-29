@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "8b555c56-1b63-4a3c-a302-06921a6e5a8d",
+    "_postman_id": "a177896e-2c0d-4aff-a832-4e02bf8632f8",
     "name": "METT-DataPortal",
     "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** isolate names, locus tags, species acronyms, and release tokens are collection variables. Change them once at collection scope instead of editing individual requests.\n\nRun **CoreAPIs / Releases / List-Releases** first when exercising X-METT-Release scenarios; it stores `resolved_release_version`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -19,23 +19,17 @@
                 {
                   "listen": "test",
                   "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
-                      "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Health is Ok\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.data.status).to.eql(\"ok\")",
-                      "});"
-                    ],
                     "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Health is Ok\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data.status).to.eql(\"ok\")\n});"
+                    ]
                   }
                 }
               ],
               "request": {
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
@@ -94,7 +88,6 @@
         },
         {
           "name": "Releases",
-          "description": "METT data-release selector and cross-release history. Host/token come from the environment (`mett-current`, `bearer-token-current`); isolate/locus fixtures and release tokens are collection variables.",
           "item": [
             {
               "name": "List-Releases",
@@ -604,7 +597,8 @@
               },
               "response": []
             }
-          ]
+          ],
+          "description": "METT data-release selector and cross-release history. Host/token come from the environment (`mett-current`, `bearer-token-current`); isolate/locus fixtures and release tokens are collection variables."
         },
         {
           "name": "species",
@@ -644,87 +638,6 @@
                     "api",
                     "species",
                     ""
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Species-Enable",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
-                      "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Species enabled is true\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.data.enabled).to.equal(true); ",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [],
-                "url": {
-                  "raw": "{{mett-current}}/api/species/AT/enable",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "species",
-                    "AT",
-                    "enable"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Species-Disable",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
-                      "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Species enabled is false\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.data.enabled).to.equal(false); ",
-                      "});",
-                      ""
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [],
-                "url": {
-                  "raw": "{{mett-current}}/api/species/AT/disable",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "species",
-                    "AT",
-                    "disable"
                   ]
                 }
               },
@@ -1151,33 +1064,17 @@
                 {
                   "listen": "test",
                   "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
-                      "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Array length is equal to 2\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.data.length).to.eql(2); ",
-                      "});",
-                      "",
-                      "pm.test(\"Isolate Name matches expected value (first or second element)\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.data.length).to.be.above(0);",
-                      "",
-                      "    const first = jsonData.data[0]?.isolate_name || \"\";",
-                      "    const second = jsonData.data[1]?.isolate_name || \"\";",
-                      "",
-                      "    pm.expect(first.includes(pm.collectionVariables.get(\"isolate_name_pv\")) || second.includes(pm.collectionVariables.get(\"isolate_name_pv\"))).to.be.true;",
-                      "});"
-                    ],
                     "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Array length is equal to 2\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data.length).to.eql(2); \n});\n\npm.test(\"Isolate Name matches expected value (first or second element)\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data.length).to.be.above(0);\n\n    const first = jsonData.data[0]?.isolate_name || \"\";\n    const second = jsonData.data[1]?.isolate_name || \"\";\n\n    pm.expect(first.includes(pm.collectionVariables.get(\"isolate_name_pv\")) || second.includes(pm.collectionVariables.get(\"isolate_name_pv\"))).to.be.true;\n});"
+                    ]
                   }
                 }
               ],
               "request": {
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
@@ -2318,12 +2215,11 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{mett-current}}//api/genes/autocomplete?query=BVU&page=1&per_page=10&isolates={{isolate_name_pv}}",
+                  "raw": "{{mett-current}}/api/genes/autocomplete?query=BVU&page=1&per_page=10&isolates={{isolate_name_pv}}",
                   "host": [
                     "{{mett-current}}"
                   ],
                   "path": [
-                    "",
                     "api",
                     "genes",
                     "autocomplete"
@@ -4175,6 +4071,17 @@
               "item": [
                 {
                   "name": "Drug-Data-BU-By-IsolateName",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Response has a data payload\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property(\"drug_mic_data\");\n});"
+                        ]
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -4191,7 +4098,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-Data-BU-By-IsolateName-TSV",
                   "event": [
                     {
                       "listen": "test",
@@ -4201,9 +4111,9 @@
                           "    pm.response.to.have.status(200);",
                           "});",
                           "",
-                          "pm.test(\"Response has a data payload\", function () {",
-                          "    const jsonData = pm.response.json();",
-                          "    pm.expect(jsonData).to.have.property(\"data\");",
+                          "pm.test(\"Response is TSV\", function () {",
+                          "    const ct = (pm.response.headers.get(\"Content-Type\") || \"\").toLowerCase();",
+                          "    pm.expect(ct).to.include(\"tab-separated\");",
                           "});"
                         ],
                         "type": "text/javascript",
@@ -4211,10 +4121,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-Data-BU-By-IsolateName-TSV",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -4237,30 +4144,21 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-Data-PV-By-IsolateName",
                   "event": [
                     {
                       "listen": "test",
                       "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});",
-                          "",
-                          "pm.test(\"Response is TSV\", function () {",
-                          "    const ct = (pm.response.headers.get(\"Content-Type\") || \"\").toLowerCase();",
-                          "    pm.expect(ct).to.include(\"tab-separated\");",
-                          "});"
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Response has a data payload\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property(\"drug_mic_data\");\n});"
+                        ]
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-Data-PV-By-IsolateName",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -4277,27 +4175,7 @@
                       ]
                     }
                   },
-                  "response": [],
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});",
-                          "",
-                          "pm.test(\"Response has a data payload\", function () {",
-                          "    const jsonData = pm.response.json();",
-                          "    pm.expect(jsonData).to.have.property(\"data\");",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ]
+                  "response": []
                 }
               ]
             },
@@ -4360,6 +4238,16 @@
                         }
                       ],
                       "request": {
+                        "auth": {
+                          "type": "bearer",
+                          "bearer": [
+                            {
+                              "key": "token",
+                              "value": "{{bearer_token_invalid}}",
+                              "type": "string"
+                            }
+                          ]
+                        },
                         "method": "GET",
                         "header": [],
                         "url": {
@@ -4372,16 +4260,6 @@
                             "genomes",
                             "{{isolate_name}}",
                             "drug-mic"
-                          ]
-                        },
-                        "auth": {
-                          "type": "bearer",
-                          "bearer": [
-                            {
-                              "key": "token",
-                              "value": "{{bearer_token_invalid}}",
-                              "type": "string"
-                            }
                           ]
                         }
                       },
@@ -4405,6 +4283,9 @@
                         }
                       ],
                       "request": {
+                        "auth": {
+                          "type": "noauth"
+                        },
                         "method": "GET",
                         "header": [],
                         "url": {
@@ -4418,9 +4299,6 @@
                             "{{isolate_name}}",
                             "drug-mic"
                           ]
-                        },
-                        "auth": {
-                          "type": "noauth"
                         }
                       },
                       "response": []
@@ -4503,24 +4381,6 @@
                     },
                     {
                       "name": "Drug-MIC-By-Drug-Name-Fuzzy",
-                      "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                          "raw": "{{mett-current}}/api/drugs/mic/by-drug/actinomycin",
-                          "host": [
-                            "{{mett-current}}"
-                          ],
-                          "path": [
-                            "api",
-                            "drugs",
-                            "mic",
-                            "by-drug",
-                            "actinomycin"
-                          ]
-                        }
-                      },
-                      "response": [],
                       "event": [
                         {
                           "listen": "test",
@@ -4540,10 +4400,48 @@
                             "requests": {}
                           }
                         }
-                      ]
+                      ],
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{mett-current}}/api/drugs/mic/by-drug/actinomycin",
+                          "host": [
+                            "{{mett-current}}"
+                          ],
+                          "path": [
+                            "api",
+                            "drugs",
+                            "mic",
+                            "by-drug",
+                            "actinomycin"
+                          ]
+                        }
+                      },
+                      "response": []
                     },
                     {
                       "name": "Drug-MIC-By-Drug-Name&Species",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {",
+                              "    pm.response.to.have.status(200);",
+                              "});",
+                              "",
+                              "pm.test(\"Response has a data payload\", function () {",
+                              "    const jsonData = pm.response.json();",
+                              "    pm.expect(jsonData).to.have.property(\"data\");",
+                              "});"
+                            ],
+                            "type": "text/javascript",
+                            "packages": {},
+                            "requests": {}
+                          }
+                        }
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -4567,7 +4465,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-MIC-By-Drug-Name-Paginated",
                       "event": [
                         {
                           "listen": "test",
@@ -4587,10 +4488,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-MIC-By-Drug-Name-Paginated",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -4625,7 +4523,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-MIC-By-Filters-MIC_Values",
                       "event": [
                         {
                           "listen": "test",
@@ -4645,10 +4546,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-MIC-By-Filters-MIC_Values",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -4683,7 +4581,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-MIC-By-Filters-Higher-MIC_Value",
                       "event": [
                         {
                           "listen": "test",
@@ -4703,10 +4604,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-MIC-By-Filters-Higher-MIC_Value",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -4741,7 +4639,15 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    }
+                  ]
+                },
+                {
+                  "name": "by-class",
+                  "item": [
+                    {
+                      "name": "Drug-MIC-By-Drug-Class",
                       "event": [
                         {
                           "listen": "test",
@@ -4761,15 +4667,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "name": "by-class",
-                  "item": [
-                    {
-                      "name": "Drug-MIC-By-Drug-Class",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -4787,7 +4685,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-MIC-By-Drug-Class-Filterby-Species",
                       "event": [
                         {
                           "listen": "test",
@@ -4807,10 +4708,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-MIC-By-Drug-Class-Filterby-Species",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -4834,7 +4732,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-MIC-By-Drug-Class-Paginated",
                       "event": [
                         {
                           "listen": "test",
@@ -4854,10 +4755,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-MIC-By-Drug-Class-Paginated",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -4885,7 +4783,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-MIC-Filter-Drug-Class&Species",
                       "event": [
                         {
                           "listen": "test",
@@ -4905,10 +4806,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-MIC-Filter-Drug-Class&Species",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -4935,27 +4833,7 @@
                           ]
                         }
                       },
-                      "response": [],
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "pm.test(\"Status code is 200\", function () {",
-                              "    pm.response.to.have.status(200);",
-                              "});",
-                              "",
-                              "pm.test(\"Response has a data payload\", function () {",
-                              "    const jsonData = pm.response.json();",
-                              "    pm.expect(jsonData).to.have.property(\"data\");",
-                              "});"
-                            ],
-                            "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
-                          }
-                        }
-                      ]
+                      "response": []
                     }
                   ]
                 },
@@ -4996,6 +4874,26 @@
                 },
                 {
                   "name": "Drug-MIC-By-Query",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Response has a data payload\", function () {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.expect(jsonData).to.have.property(\"data\");",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5018,7 +4916,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-MIC-By-Filters-MIC_Values",
                   "event": [
                     {
                       "listen": "test",
@@ -5038,10 +4939,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-MIC-By-Filters-MIC_Values",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5072,7 +4970,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-MIC-By-Filters-Higher-MIC_Values",
                   "event": [
                     {
                       "listen": "test",
@@ -5092,10 +4993,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-MIC-By-Filters-Higher-MIC_Values",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5126,7 +5024,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-MIC-Paginated",
                   "event": [
                     {
                       "listen": "test",
@@ -5146,10 +5047,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-MIC-Paginated",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5184,7 +5082,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-high-MIC-values",
                   "event": [
                     {
                       "listen": "test",
@@ -5204,10 +5105,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-high-MIC-values",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5230,7 +5128,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-low-MIC-values",
                   "event": [
                     {
                       "listen": "test",
@@ -5250,10 +5151,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-low-MIC-values",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5276,27 +5174,7 @@
                       ]
                     }
                   },
-                  "response": [],
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});",
-                          "",
-                          "pm.test(\"Response has a data payload\", function () {",
-                          "    const jsonData = pm.response.json();",
-                          "    pm.expect(jsonData).to.have.property(\"data\");",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ]
+                  "response": []
                 }
               ]
             },
@@ -5308,6 +5186,17 @@
                   "item": [
                     {
                       "name": "Drug-Metabolism-BU-By-IsolateName",
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "type": "text/javascript",
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Response has a data payload\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property(\"drug_metabolism_data\");\n});"
+                            ]
+                          }
+                        }
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5324,30 +5213,21 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-Metabolism-PV-By-IsolateName",
                       "event": [
                         {
                           "listen": "test",
                           "script": {
-                            "exec": [
-                              "pm.test(\"Status code is 200\", function () {",
-                              "    pm.response.to.have.status(200);",
-                              "});",
-                              "",
-                              "pm.test(\"Response has a data payload\", function () {",
-                              "    const jsonData = pm.response.json();",
-                              "    pm.expect(jsonData).to.have.property(\"data\");",
-                              "});"
-                            ],
                             "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
+                            "exec": [
+                              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Response has a data payload\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property(\"drug_metabolism_data\");\n});"
+                            ]
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-Metabolism-PV-By-IsolateName",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5364,7 +5244,15 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    }
+                  ]
+                },
+                {
+                  "name": "by-class",
+                  "item": [
+                    {
+                      "name": "Drug-Metabolism-Search-by-class",
                       "event": [
                         {
                           "listen": "test",
@@ -5384,15 +5272,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "name": "by-class",
-                  "item": [
-                    {
-                      "name": "Drug-Metabolism-Search-by-class",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5415,7 +5295,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-Metabolism-by-drugClass",
                       "event": [
                         {
                           "listen": "test",
@@ -5435,10 +5318,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-Metabolism-by-drugClass",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5456,7 +5336,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-Metabolism-by-drugClass&Species",
                       "event": [
                         {
                           "listen": "test",
@@ -5476,10 +5359,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-Metabolism-by-drugClass&Species",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5503,7 +5383,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-Metabolism-by-drugClass-Paginated",
                       "event": [
                         {
                           "listen": "test",
@@ -5523,10 +5406,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-Metabolism-by-drugClass-Paginated",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5554,7 +5434,15 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    }
+                  ]
+                },
+                {
+                  "name": "by-drug",
+                  "item": [
+                    {
+                      "name": "Drug-Metabolism-by-drugName",
                       "event": [
                         {
                           "listen": "test",
@@ -5574,15 +5462,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "name": "by-drug",
-                  "item": [
-                    {
-                      "name": "Drug-Metabolism-by-drugName",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5600,7 +5480,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-Metabolism-by-drugName-Fuzzy",
                       "event": [
                         {
                           "listen": "test",
@@ -5620,10 +5503,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-Metabolism-by-drugName-Fuzzy",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5641,7 +5521,10 @@
                           ]
                         }
                       },
-                      "response": [],
+                      "response": []
+                    },
+                    {
+                      "name": "Drug-Metabolism-by-drugName&Species",
                       "event": [
                         {
                           "listen": "test",
@@ -5661,10 +5544,7 @@
                             "requests": {}
                           }
                         }
-                      ]
-                    },
-                    {
-                      "name": "Drug-Metabolism-by-drugName&Species",
+                      ],
                       "request": {
                         "method": "GET",
                         "header": [],
@@ -5688,27 +5568,7 @@
                           ]
                         }
                       },
-                      "response": [],
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "pm.test(\"Status code is 200\", function () {",
-                              "    pm.response.to.have.status(200);",
-                              "});",
-                              "",
-                              "pm.test(\"Response has a data payload\", function () {",
-                              "    const jsonData = pm.response.json();",
-                              "    pm.expect(jsonData).to.have.property(\"data\");",
-                              "});"
-                            ],
-                            "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
-                          }
-                        }
-                      ]
+                      "response": []
                     }
                   ]
                 },
@@ -5749,6 +5609,26 @@
                 },
                 {
                   "name": "Drug-Metabolism-Search-Name",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Response has a data payload\", function () {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.expect(jsonData).to.have.property(\"data\");",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5771,7 +5651,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-Metabolism-Search-degradation-threshold",
                   "event": [
                     {
                       "listen": "test",
@@ -5791,10 +5674,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-Metabolism-Search-degradation-threshold",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5821,7 +5701,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "Drug-Metabolism-By-SignificantEvents",
                   "event": [
                     {
                       "listen": "test",
@@ -5841,10 +5724,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "Drug-Metabolism-By-SignificantEvents",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5871,27 +5751,7 @@
                       ]
                     }
                   },
-                  "response": [],
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});",
-                          "",
-                          "pm.test(\"Response has a data payload\", function () {",
-                          "    const jsonData = pm.response.json();",
-                          "    pm.expect(jsonData).to.have.property(\"data\");",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ]
+                  "response": []
                 }
               ]
             }
@@ -6828,12 +6688,11 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{mett-current}}//api/fitness/search?contrast=comm20_day7",
+                  "raw": "{{mett-current}}/api/fitness/search?contrast=comm20_day7",
                   "host": [
                     "{{mett-current}}"
                   ],
                   "path": [
-                    "",
                     "api",
                     "fitness",
                     "search"
@@ -7724,6 +7583,26 @@
               "item": [
                 {
                   "name": "PPI-Interactions - String Score",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Response has a data payload\", function () {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.expect(jsonData).to.have.property(\"data\");",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -7757,7 +7636,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Interactions - XL-MS evidence",
                   "event": [
                     {
                       "listen": "test",
@@ -7777,10 +7659,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Interactions - XL-MS evidence",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -7810,7 +7689,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Interactions - STRING evidence",
                   "event": [
                     {
                       "listen": "test",
@@ -7830,10 +7712,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Interactions - STRING evidence",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -7863,7 +7742,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Interactions - Network properties",
                   "event": [
                     {
                       "listen": "test",
@@ -7883,10 +7765,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Interactions - Network properties",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -7916,27 +7795,7 @@
                       ]
                     }
                   },
-                  "response": [],
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});",
-                          "",
-                          "pm.test(\"Response has a data payload\", function () {",
-                          "    const jsonData = pm.response.json();",
-                          "    pm.expect(jsonData).to.have.property(\"data\");",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ]
+                  "response": []
                 },
                 {
                   "name": "PPI-Interactions - PV Species - Paginated",
@@ -8312,6 +8171,26 @@
                 },
                 {
                   "name": "PPI-Interactions - DS score",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Response has a data payload\", function () {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.expect(jsonData).to.have.property(\"data\");",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8350,27 +8229,7 @@
                       ]
                     }
                   },
-                  "response": [],
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});",
-                          "",
-                          "pm.test(\"Response has a data payload\", function () {",
-                          "    const jsonData = pm.response.json();",
-                          "    pm.expect(jsonData).to.have.property(\"data\");",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ]
+                  "response": []
                 },
                 {
                   "name": "PPI-Interactions - TEST",
@@ -8416,6 +8275,26 @@
                 },
                 {
                   "name": "PPI-Interactions - Melt Score",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test(\"Status code is 200\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "",
+                          "pm.test(\"Response has a data payload\", function () {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.expect(jsonData).to.have.property(\"data\");",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8445,7 +8324,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Interactions - Bayesian Score",
                   "event": [
                     {
                       "listen": "test",
@@ -8465,10 +8347,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Interactions - Bayesian Score",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8498,7 +8377,15 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Network",
+              "item": [
+                {
+                  "name": "PPI-Network properties - Abundance Score",
                   "event": [
                     {
                       "listen": "test",
@@ -8518,15 +8405,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                }
-              ]
-            },
-            {
-              "name": "Network",
-              "item": [
-                {
-                  "name": "PPI-Network properties - Abundance Score",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8556,7 +8435,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Network properties - Bayesian Score",
                   "event": [
                     {
                       "listen": "test",
@@ -8576,10 +8458,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Network properties - Bayesian Score",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8609,7 +8488,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Interactions - XLMS Peptides",
                   "event": [
                     {
                       "listen": "test",
@@ -8629,10 +8511,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Interactions - XLMS Peptides",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8662,7 +8541,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Network - DS Score",
                   "event": [
                     {
                       "listen": "test",
@@ -8682,10 +8564,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Network - DS Score",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8716,7 +8595,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Network - Bayesian Score",
                   "event": [
                     {
                       "listen": "test",
@@ -8736,10 +8618,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Network - Bayesian Score",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8774,7 +8653,10 @@
                       ]
                     }
                   },
-                  "response": [],
+                  "response": []
+                },
+                {
+                  "name": "PPI-Network - Bayesian Score  - LocusTag",
                   "event": [
                     {
                       "listen": "test",
@@ -8794,10 +8676,7 @@
                         "requests": {}
                       }
                     }
-                  ]
-                },
-                {
-                  "name": "PPI-Network - Bayesian Score  - LocusTag",
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -8836,27 +8715,7 @@
                       ]
                     }
                   },
-                  "response": [],
-                  "event": [
-                    {
-                      "listen": "test",
-                      "script": {
-                        "exec": [
-                          "pm.test(\"Status code is 200\", function () {",
-                          "    pm.response.to.have.status(200);",
-                          "});",
-                          "",
-                          "pm.test(\"Response has a data payload\", function () {",
-                          "    const jsonData = pm.response.json();",
-                          "    pm.expect(jsonData).to.have.property(\"data\");",
-                          "});"
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    }
-                  ]
+                  "response": []
                 }
               ]
             },
@@ -10420,265 +10279,221 @@
     {
       "key": "isolate_name",
       "value": "BU_ATCC8492",
-      "type": "string",
       "description": "Type-strain isolate used by most genome/gene fixtures"
     },
     {
       "key": "isolate_name_pv",
       "value": "PV_ATCC8482",
-      "type": "string",
       "description": "P. vulgatus type-strain isolate"
     },
     {
       "key": "isolate_name_alt",
       "value": "BU_909",
-      "type": "string",
       "description": "Secondary B. uniformis isolate for name/search tests"
     },
     {
       "key": "isolate_name_h5",
       "value": "BU_H5",
-      "type": "string",
       "description": "Additional B. uniformis isolate fixture"
     },
     {
       "key": "isolate_name_cla",
       "value": "BU_CLA",
-      "type": "string",
       "description": "Additional B. uniformis isolate fixture"
     },
     {
       "key": "isolate_name_bu_2243b",
       "value": "BU_2243B",
-      "type": "string",
       "description": "B. uniformis isolate used in autocomplete/search"
     },
     {
       "key": "isolate_name_bu_3537",
       "value": "BU_3537",
-      "type": "string",
       "description": "B. uniformis isolate used in autocomplete/search"
     },
     {
       "key": "isolate_name_bu_61",
       "value": "BU_61",
-      "type": "string",
       "description": "B. uniformis isolate used in autocomplete/search"
     },
     {
       "key": "isolate_name_unknown",
       "value": "DOES_NOT_EXIST_ISOLATE",
-      "type": "string",
       "description": "Isolate that should not appear in any release"
     },
     {
       "key": "locus_tag",
       "value": "BU_ATCC8492_00001",
-      "type": "string",
       "description": "Primary BU type-strain locus tag"
     },
     {
       "key": "locus_tag_alt",
       "value": "BU_ATCC8492_00002",
-      "type": "string",
       "description": "Secondary BU type-strain locus tag"
     },
     {
       "key": "locus_tag_ppi",
       "value": "BU_ATCC8492_01788",
-      "type": "string",
       "description": "Locus tag used by PPI fixtures"
     },
     {
       "key": "locus_tag_essentiality",
       "value": "BU_ATCC8492_02615",
-      "type": "string",
       "description": "Locus tag used by essentiality fixtures"
     },
     {
       "key": "locus_tag_correlation",
       "value": "BU_ATCC8492_02530",
-      "type": "string",
       "description": "Locus tag used by fitness-correlation fixtures"
     },
     {
       "key": "locus_tag_operon",
       "value": "BU_ATCC8492_00077",
-      "type": "string",
       "description": "Locus tag used by operon-by-gene fixtures"
     },
     {
       "key": "locus_tag_pv",
       "value": "PV_ATCC8482_00001",
-      "type": "string",
       "description": "Primary PV type-strain locus tag"
     },
     {
       "key": "locus_tag_pv_alt",
       "value": "PV_ATCC8482_03700",
-      "type": "string",
       "description": "Secondary PV type-strain locus tag"
     },
     {
       "key": "locus_tag_unknown",
       "value": "DOES_NOT_EXIST_LOCUS",
-      "type": "string",
       "description": "Locus tag that should not appear in any release"
     },
     {
       "key": "operon_id",
       "value": "BU_ATCC8492_00003__BU_ATCC8492_00004",
-      "type": "string",
       "description": "Operon identifier fixture"
     },
     {
       "key": "type_strains",
       "value": "BU_ATCC8492,PV_ATCC8482",
-      "type": "string",
       "description": "Comma-separated type-strain isolates"
     },
     {
       "key": "isolates_bu_sample",
       "value": "BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492",
-      "type": "string",
       "description": "BU isolate set used by advanced gene search"
     },
     {
       "key": "isolates_bu_short",
       "value": "BU_2243B,BU_3537,BU_61",
-      "type": "string",
       "description": "Shorter BU isolate set used by autocomplete"
     },
     {
       "key": "isolates_bu_autocomplete",
       "value": "BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527",
-      "type": "string",
       "description": "BU isolate set used by autocomplete-with-filter"
     },
     {
       "key": "species_acronym",
       "value": "BU",
-      "type": "string",
       "description": "Bacteroides uniformis species acronym"
     },
     {
       "key": "species_acronym_pv",
       "value": "PV",
-      "type": "string",
       "description": "Phocaeicola vulgatus species acronym"
     },
     {
       "key": "species_acronym_lower",
       "value": "bu",
-      "type": "string",
       "description": "Lowercase BU acronym used by some search queries"
     },
     {
       "key": "contig_id",
       "value": "contig_1",
-      "type": "string",
       "description": "Contig identifier used by essentiality-by-contig"
     },
     {
       "key": "gene_query",
       "value": "dnaA",
-      "type": "string",
       "description": "Common gene-name search term"
     },
     {
       "key": "uniprot_id",
       "value": "A7V2E8",
-      "type": "string",
       "description": "UniProt accession used by gene autocomplete and PPI"
     },
     {
       "key": "ppi_protein_id",
       "value": "A6KXK8",
-      "type": "string",
       "description": "PPI protein identifier (PV)"
     },
     {
       "key": "drug_name",
       "value": "amoxicillin",
-      "type": "string",
       "description": "Drug name used by MIC search fixtures"
     },
     {
       "key": "drug_class",
       "value": "beta_lactam",
-      "type": "string",
       "description": "Drug class used by MIC/metabolism fixtures"
     },
     {
       "key": "ttp_compound",
       "value": "myo-inositol",
-      "type": "string",
       "description": "Compound used by TTP interaction fixtures"
     },
     {
       "key": "pool_a",
       "value": "pool1",
-      "type": "string",
       "description": "TTP pool A fixture"
     },
     {
       "key": "pool_b",
       "value": "pool8",
-      "type": "string",
       "description": "TTP pool B fixture"
     },
     {
       "key": "release_token",
       "value": "current",
-      "type": "string",
       "description": "X-METT-Release / ?release= token (follows the promoted set)"
     },
     {
       "key": "release_version",
       "value": "v1",
-      "type": "string",
       "description": "Concrete release version for header/query scenarios"
     },
     {
       "key": "resolved_release_version",
       "value": "",
-      "type": "string",
       "description": "Filled by List-Releases from data.current_version when that request is run"
     },
     {
       "key": "drug_name_metabolism",
       "value": "amoxapine",
-      "type": "string",
       "description": "Drug name used by metabolism-by-drug fixtures"
     },
     {
       "key": "bearer_token_invalid",
       "value": "invalid-token",
-      "type": "string",
       "description": "Deliberately invalid Bearer token for 401 scenarios (overrides collection auth)"
     },
     {
       "key": "genome_search_query_pv",
       "value": "PV_H4",
-      "type": "string",
       "description": "Partial isolate string used by genome search"
     },
     {
       "key": "isolate_name_pv_h4",
       "value": "PV_H4-2",
-      "type": "string",
       "description": "Expected isolate returned by the PV_H4 genome search"
     },
     {
       "key": "ppi_pair_id",
       "value": "BU%3AA7V2E8__A7VAF1",
-      "type": "string",
       "description": "URL-encoded STRING pair_id used by the string-network fixture"
     },
     {
       "key": "locus_tag_ortholog",
       "value": "BU_WH4_00023",
-      "type": "string",
       "description": "Locus tag used by ortholog fixtures"
     }
   ]

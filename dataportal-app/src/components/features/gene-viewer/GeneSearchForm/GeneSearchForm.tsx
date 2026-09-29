@@ -49,6 +49,18 @@ interface GeneSearchFormProps {
     onFeatureSelect?: (feature: any) => void;
     hideActionsColumn?: boolean; // If true, hide Actions column and make rows clickable
     sidebarPortalId?: string;
+    extraIsolates?: string[];
+}
+
+function genomesForQuery(selectedGenomes: BaseGenome[], extraIsolates: string[] = []): BaseGenome[] | undefined {
+    const names = new Set(selectedGenomes.map((genome) => genome.isolate_name));
+    const combined = [
+        ...selectedGenomes,
+        ...extraIsolates
+            .filter((isolateName) => isolateName && !names.has(isolateName))
+            .map((isolate_name) => ({isolate_name, type_strain: true})),
+    ];
+    return combined.length ? combined : undefined;
 }
 
 const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
@@ -74,6 +86,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                                            onFeatureSelect,
                                                            hideActionsColumn = false,
                                                            sidebarPortalId,
+                                                           extraIsolates = [],
                                                        }) => {
 
     const renderCount = useRef(0);
@@ -161,6 +174,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
     } = useFacetedFilters({
         selectedSpecies: selectedSpecies ?? [],
         selectedGenomes,
+        extraIsolates,
         searchQuery: isProcessingSuggestion ? currentLocusTag : debouncedSearchQuery, // Use locus tag when processing suggestion
     });
 
@@ -221,17 +235,20 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 try {
                     let response;
 
+                    const genomeIds = genomesForQuery(selectedGenomes, extraIsolates)
+                        ?.map((genome) => genome.isolate_name)
+                        .join(',');
+
                     if (selectedSpecies && selectedSpecies.length === 1) {
                         response = await GeneService.fetchGeneAutocompleteSuggestions(
                             inputQuery,
                             DEFAULT_PER_PAGE_CNT,
                             selectedSpecies[0],
-                            undefined,
+                            genomeIds,
                             getLegacyFilters()
                         );
                     }
-                    else if (selectedGenomes && selectedGenomes.length > 0) {
-                        const genomeIds = selectedGenomes.map(genome => genome.isolate_name).join(',');
+                    else if (genomeIds) {
                         response = await GeneService.fetchGeneAutocompleteSuggestions(
                             inputQuery,
                             DEFAULT_PER_PAGE_CNT,
@@ -259,7 +276,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         },
-        [selectedSpecies, selectedGenomes, getLegacyFilters]
+        [selectedSpecies, selectedGenomes, extraIsolates, getLegacyFilters]
     );
 
 
@@ -281,12 +298,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
             selectedFacetFilters: Record<string, string[]>,
             facetOperators?: Record<string, 'AND' | 'OR'>
         ) => {
-            const genomeFilter = selectedGenomes?.length
-                ? selectedGenomes.map((genome) => ({
-                    isolate_name: genome.isolate_name,
-                    type_strain: genome.type_strain
-                }))
-                : undefined;
+            const genomeFilter = genomesForQuery(selectedGenomes, extraIsolates);
             const speciesFilter = selectedSpecies;
 
             console.log('fetchSearchResults called with:', {
@@ -395,7 +407,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setLoading(false); // Stop spinner
             }
         },
-        [query, selectedGenomes, selectedSpecies, pageSize, getLegacyFilters, getLegacyOperators]
+        [query, selectedGenomes, extraIsolates, selectedSpecies, pageSize, getLegacyFilters, getLegacyOperators]
     );
 
     // Trigger new search when page size changes
@@ -414,12 +426,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 console.log('debouncedUpdateQuery called with:', newQuery);
                 setQuery(newQuery);
                 const searchWithQuery = async () => {
-                    const genomeFilter = selectedGenomes?.length
-                        ? selectedGenomes.map((genome) => ({
-                            isolate_name: genome.isolate_name,
-                            type_strain: genome.type_strain
-                        }))
-                        : undefined;
+                    const genomeFilter = genomesForQuery(selectedGenomes, extraIsolates);
                     const speciesFilter = selectedSpecies;
                                     try {
                     setLoading(true);
@@ -479,7 +486,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 console.log('debouncedUpdateQuery skipped due to suggestion processing');
             }
         }, 500), // 500ms delay
-        [selectedGenomes, selectedSpecies, pageSize, sortField, sortOrder, getLegacyFilters, getLegacyOperators, isProcessingSuggestion, onResultsUpdate]
+        [selectedGenomes, extraIsolates, selectedSpecies, pageSize, sortField, sortOrder, getLegacyFilters, getLegacyOperators, isProcessingSuggestion, onResultsUpdate]
     );
 
     // Debounced function for updating the search query used by faceted filters
@@ -503,7 +510,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                     input,
                     10,
                     selectedSpecies?.join(','),
-                    selectedGenomes.map(g => g.isolate_name).join(","),
+                    genomesForQuery(selectedGenomes, extraIsolates)?.map(g => g.isolate_name).join(",") || "",
                     getLegacyFilters()
                 ).then(setSuggestions).catch(console.error);
             } else {
@@ -511,7 +518,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 setSuggestions([]);
             }
         }, 300), // 300ms delay for suggestions
-        [selectedSpecies, selectedGenomes, getLegacyFilters, isProcessingSuggestion]
+        [selectedSpecies, selectedGenomes, extraIsolates, getLegacyFilters, isProcessingSuggestion]
     );
 
     // For GeneViewerPage: load initial data when genome changes
@@ -656,12 +663,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         setIsProcessingSuggestion(false);
         setGeneSearchQuery('');
 
-        const genomeFilter = selectedGenomes?.length
-            ? selectedGenomes.map((genome) => ({
-                isolate_name: genome.isolate_name,
-                type_strain: genome.type_strain
-            }))
-            : undefined;
+        const genomeFilter = genomesForQuery(selectedGenomes, extraIsolates);
                     const speciesFilter = selectedSpecies;
 
         const reloadAll = async () => {
@@ -708,6 +710,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         reloadAll();
     }, [
         selectedGenomes,
+        extraIsolates,
         selectedSpecies,
         pageSize,
         sortField,
@@ -757,12 +760,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
         setGeneSearchQuery(selectedValue);
 
         const searchWithLocusTag = async () => {
-            const genomeFilter = selectedGenomes?.length
-                ? selectedGenomes.map((genome) => ({
-                    isolate_name: genome.isolate_name,
-                    type_strain: genome.type_strain
-                }))
-                : undefined;
+            const genomeFilter = genomesForQuery(selectedGenomes, extraIsolates);
             const speciesFilter = selectedSpecies;
             try {
                 setLoading(true);
@@ -829,12 +827,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
 
         setGeneSearchQuery(currentSearchInput);
         const searchWithQuery = async () => {
-            const genomeFilter = selectedGenomes?.length
-                ? selectedGenomes.map((genome) => ({
-                    isolate_name: genome.isolate_name,
-                    type_strain: genome.type_strain
-                }))
-                : undefined;
+            const genomeFilter = genomesForQuery(selectedGenomes, extraIsolates);
             const speciesFilter = selectedSpecies;
             try {
                 setLoading(true);
@@ -907,7 +900,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 query,
                 sortField,
                 sortOrder,
-                selectedGenomes,
+                genomesForQuery(selectedGenomes, extraIsolates),
                 selectedSpecies,
                 getLegacyFilters(),
                 getLegacyOperators()
@@ -952,6 +945,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                 loadMoreStep={FACET_STEP_CNT}
                 onOperatorChange={handleOperatorChange}
                 onClearAll={hasActiveFacets ? handleClearAllFacets : undefined}
+                showChrome={!sidebarPortalId}
             />
         </>
     );
@@ -1056,12 +1050,7 @@ const GeneSearchForm: React.FC<GeneSearchFormProps> = ({
                                             console.log('GeneSearchForm - Pagination click for HomePage, page:', page);
 
                                             const searchWithPage = async () => {
-                                                const genomeFilter = selectedGenomes?.length
-                                                    ? selectedGenomes.map((genome) => ({
-                                                        isolate_name: genome.isolate_name,
-                                                        type_strain: genome.type_strain
-                                                    }))
-                                                    : undefined;
+                                                const genomeFilter = genomesForQuery(selectedGenomes, extraIsolates);
                                                 const speciesFilter = selectedSpecies;
                                                 try {
                                                     setLoading(true);
