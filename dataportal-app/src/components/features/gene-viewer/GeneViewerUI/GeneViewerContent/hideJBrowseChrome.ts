@@ -6,26 +6,26 @@ export const HIDDEN_JBROWSE_VIEW_CONTROL_TEST_IDS = [
   'track_menu_icon',
 ] as const;
 
-/** Selectors for JBrowse drawers / feature-detail chrome we suppress in embed mode. */
+/**
+ * Selectors for JBrowse drawers / feature-detail chrome we suppress in embed mode.
+ * Keep these scoped to JBrowse UI — never use document-wide selectors like
+ * `[role="presentation"]` or bare `.MuiBackdrop-root` (they break Radix dialogs).
+ */
 export const JBROWSE_DRAWER_SELECTORS = [
   '.MuiDrawer-root',
   '.MuiDrawer-modal',
   '.MuiDrawer-paper',
   '.MuiDrawer-docked',
   '[class*="MuiDrawer"]',
-  'div[class^="MuiDrawer"]',
   'aside[class*="MuiDrawer"]',
   '[class*="BaseFeatureDetail"]',
   '[class*="FeatureDetails"]',
   '[class*="featureDetails"]',
   '[class*="DrawerWidget"]',
   '[class*="FeatureWidget"]',
-  '.MuiBackdrop-root',
-  '[class*="MuiBackdrop"]',
-  '[role="presentation"]',
+  '[class*="BaseFeatureWidget"]',
   '[aria-label*="drawer"]',
   '[aria-label*="Drawer"]',
-  '[class*="MuiPaper-root"]:has([class*="BaseFeature"])',
 ] as const;
 
 function markHidden(element: Element): void {
@@ -45,21 +45,16 @@ export function hideJBrowseViewChrome(container: HTMLElement | null): void {
  * v4 DropDownMenu no longer uses data-testid="dropDownMenuButton", so match AppBar directly.
  */
 export function hideJBrowseMenuBar(container: HTMLElement | null): void {
-  const roots = container
-    ? [container]
-    : [document.body];
-
-  for (const root of roots) {
-    root.querySelectorAll('.MuiAppBar-root').forEach(markHidden);
-    // Floating action button (drawer / help) also belongs to app shell
-    root.querySelectorAll('.MuiFab-root').forEach(markHidden);
-  }
+  if (!container) return;
+  container.querySelectorAll('.MuiAppBar-root').forEach(markHidden);
+  container.querySelectorAll('.MuiFab-root').forEach(markHidden);
 }
 
-export function hideJBrowseDrawers(): void {
+export function hideJBrowseDrawers(container: HTMLElement | null): void {
+  if (!container) return;
   JBROWSE_DRAWER_SELECTORS.forEach(selector => {
     try {
-      document.querySelectorAll(selector).forEach(markHidden);
+      container.querySelectorAll(selector).forEach(markHidden);
     } catch {
       // Invalid selector — skip
     }
@@ -69,5 +64,5 @@ export function hideJBrowseDrawers(): void {
 export function hideEmbeddedJBrowseChrome(container: HTMLElement | null): void {
   hideJBrowseViewChrome(container);
   hideJBrowseMenuBar(container);
-  hideJBrowseDrawers();
+  hideJBrowseDrawers(container);
 }

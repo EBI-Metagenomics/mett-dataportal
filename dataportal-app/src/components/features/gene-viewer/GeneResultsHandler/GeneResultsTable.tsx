@@ -243,17 +243,42 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
     const availableColumns = GENE_TABLE_COLUMNS.filter(col =>
         isTypeStrainAvailable || !col.onlyForTypeStrain
     );
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(
-        availableColumns
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+        const defaults = availableColumns
             .filter(col => col.defaultVisible !== false)
-            .map(col => col.key)
-    );
+            .map(col => col.key);
+        try {
+            const raw = sessionStorage.getItem('gene-table-visible-columns');
+            if (!raw) return defaults;
+            const parsed = JSON.parse(raw) as unknown;
+            if (!Array.isArray(parsed) || !parsed.every(k => typeof k === 'string')) {
+                return defaults;
+            }
+            const valid = parsed.filter(key =>
+                availableColumns.some(col => col.key === key)
+            );
+            return valid.length > 0 ? valid : defaults;
+        } catch {
+            return defaults;
+        }
+    });
     
     const [columnLimitError, setColumnLimitError] = useState(false);
 
     useEffect(() => {
         if (visibleColumns.length < TABLE_MAX_COLUMNS && columnLimitError) {
             setColumnLimitError(false);
+        }
+    }, [visibleColumns]);
+
+    useEffect(() => {
+        try {
+            sessionStorage.setItem(
+                'gene-table-visible-columns',
+                JSON.stringify(visibleColumns)
+            );
+        } catch {
+            // Ignore quota / private-mode failures
         }
     }, [visibleColumns]);
 
@@ -334,7 +359,7 @@ const GeneResultsTable: React.FC<GeneResultsTableProps> = ({
                                             type="checkbox"
                                             checked={visibleColumns.includes(col.key)}
                                             onChange={() => handleCheckboxToggle(col.key)}
-                                            // disabled={!visibleColumns.includes(col.key) && visibleColumns.length >= TABLE_MAX_COLUMNS}
+                                            onClick={event => event.stopPropagation()}
                                         />
                                         {col.label}
                                     </label>

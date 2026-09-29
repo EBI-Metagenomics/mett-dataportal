@@ -195,10 +195,6 @@ export const useJBrowseViewportSync = ({
           (Date.now() - currentState.lastTableNavigationTime) < VIEWPORT_SYNC_CONSTANTS.TABLE_NAVIGATION_COOLDOWN_MS
         
         if (currentSource !== 'sync-table' && currentSource !== 'search-table' && !isInCooldown) {
-          const viewportChanged = currentState.seqId !== refName || 
-                                   currentState.start !== start || 
-                                   currentState.end !== end
-          
           if (!currentState.viewportInitialized) {
             useViewportSyncStore.getState().setViewportInitialized(true)
             setViewport(refName, start, end, 'jbrowse')
@@ -209,6 +205,39 @@ export const useJBrowseViewportSync = ({
               offsetPx: offsetPxValue,
             })
           } else {
+            const prevStart = currentState.start
+            const prevEnd = currentState.end
+            const prevBpPerPx = currentState.viewMeta?.bpPerPx
+            const coordsChanged =
+              currentState.seqId !== refName ||
+              prevStart !== start ||
+              prevEnd !== end
+
+            // Layout-only noise: pixel width changes shift start/end slightly
+            // without a real pan/zoom. Do not trip Search→Sync auto-switch.
+            let isLayoutNoise = false
+            if (
+              coordsChanged &&
+              currentState.seqId === refName &&
+              prevStart !== null &&
+              prevEnd !== null &&
+              typeof prevBpPerPx === 'number' &&
+              typeof bpPerPx === 'number' &&
+              bpPerPx > 0
+            ) {
+              const prevLen = Math.max(1, prevEnd - prevStart)
+              const nextLen = Math.max(1, end - start)
+              const prevCenter = (prevStart + prevEnd) / 2
+              const nextCenter = (start + end) / 2
+              const centerDrift = Math.abs(nextCenter - prevCenter) / prevLen
+              const zoomDrift = Math.abs(bpPerPx - prevBpPerPx) / prevBpPerPx
+              const lengthDrift = Math.abs(nextLen - prevLen) / prevLen
+              isLayoutNoise =
+                centerDrift < VIEWPORT_SYNC_CONSTANTS.VIEWPORT_NOISE_CENTER_FRACTION &&
+                zoomDrift < VIEWPORT_SYNC_CONSTANTS.VIEWPORT_NOISE_ZOOM_FRACTION &&
+                lengthDrift < VIEWPORT_SYNC_CONSTANTS.VIEWPORT_NOISE_CENTER_FRACTION * 2
+            }
+
             setViewport(refName, start, end, 'jbrowse')
             setViewMeta({
               refName,
@@ -221,7 +250,7 @@ export const useJBrowseViewportSync = ({
             const stillInCooldown = finalState.lastTableNavigationTime !== null &&
               (Date.now() - finalState.lastTableNavigationTime) < VIEWPORT_SYNC_CONSTANTS.TABLE_NAVIGATION_COOLDOWN_MS
             
-            if (viewportChanged && !stillInCooldown) {
+            if (coordsChanged && !isLayoutNoise && !stillInCooldown) {
               useViewportSyncStore.getState().setViewportChanged(true)
             }
           }

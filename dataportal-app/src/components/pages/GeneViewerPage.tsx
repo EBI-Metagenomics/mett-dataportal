@@ -153,6 +153,16 @@ const GeneViewerPage: React.FC = () => {
             return;
         }
 
+        // Column selector / other Radix dialogs can cause layout-only JBrowse
+        // width changes. Never auto-switch tabs while a dialog is open.
+        const dialogOpen = document.querySelector(
+            '[data-radix-dialog-content][data-state="open"], [role="dialog"][data-state="open"]'
+        );
+        if (dialogOpen) {
+            setViewportChanged(false);
+            return;
+        }
+
         const { lastTableNavigationTime } = useViewportSyncStore.getState();
         const isInCooldown = lastTableNavigationTime !== null &&
             (Date.now() - lastTableNavigationTime) < VIEWPORT_SYNC_CONSTANTS.TABLE_NAVIGATION_COOLDOWN_MS;

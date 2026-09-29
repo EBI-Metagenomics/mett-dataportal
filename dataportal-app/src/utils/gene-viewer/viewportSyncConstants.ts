@@ -16,6 +16,15 @@ export const VIEWPORT_SYNC_CONSTANTS = {
   
   // Viewport debounce delay (milliseconds)
   VIEWPORT_DEBOUNCE_MS: 1500,
+
+  /**
+   * Ignore layout-only viewport edge shifts (e.g. column dialog / table reflow
+   * changing JBrowse pixel width) so Search View does not auto-switch to Sync.
+   * Compared against viewport center drift as a fraction of viewport length.
+   */
+  VIEWPORT_NOISE_CENTER_FRACTION: 0.05,
+  /** bpPerPx relative change below this is treated as zoom-unchanged. */
+  VIEWPORT_NOISE_ZOOM_FRACTION: 0.01,
   
   // Viewport buffer percentage (10% on each side)
 //   VIEWPORT_BUFFER_PERCENT: 0.1,

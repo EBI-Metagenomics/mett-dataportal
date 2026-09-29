@@ -1,4 +1,8 @@
-import { hideJBrowseMenuBar, hideJBrowseViewChrome } from './hideJBrowseChrome';
+import {
+  hideJBrowseDrawers,
+  hideJBrowseMenuBar,
+  hideJBrowseViewChrome,
+} from './hideJBrowseChrome';
 
 describe('hideJBrowseChrome', () => {
   beforeEach(() => {
@@ -29,5 +33,18 @@ describe('hideJBrowseChrome', () => {
     hideJBrowseViewChrome(container);
 
     expect(trackMenu.classList.contains('jbrowse-embed-hidden')).toBe(true);
+  });
+
+  it('does not hide Radix dialog overlays outside the jbrowse container', () => {
+    const container = document.createElement('div');
+    const dialogOverlay = document.createElement('div');
+    dialogOverlay.setAttribute('role', 'presentation');
+    dialogOverlay.setAttribute('data-radix-dialog-overlay', '');
+    document.body.appendChild(container);
+    document.body.appendChild(dialogOverlay);
+
+    hideJBrowseDrawers(container);
+
+    expect(dialogOverlay.classList.contains('jbrowse-embed-hidden')).toBe(false);
   });
 });
