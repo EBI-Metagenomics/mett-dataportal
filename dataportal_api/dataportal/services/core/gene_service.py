@@ -35,6 +35,7 @@ from dataportal.utils.constants import (
     GENOME_FIELD_ISOLATE_NAME,
     GENE_SORT_FIELD_STRAIN,
     FIELD_SEQ_ID,
+    FIELD_SEQ_ID_KEYWORD,
     GENE_FIELD_UNIPROT_ID,
     GENE_FIELD_LOCUS_TAG,
     SPECIES_FIELD_ACRONYM_SHORT,
@@ -829,8 +830,8 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             viewport_start = min(params.start_position, params.end_position)
             viewport_end = max(params.start_position, params.end_position)
 
-            # Filter by seq_id
-            es_query["bool"]["must"].append({"term": {FIELD_SEQ_ID: params.seq_id}})
+            # Exact contig match (seq_id is analyzed Text; accessions like CP092643.1 need .keyword)
+            es_query["bool"]["must"].append({"term": {FIELD_SEQ_ID_KEYWORD: params.seq_id}})
 
             # Filter genes that overlap with viewport range
             # A gene overlaps if: gene_start <= viewport_end AND gene_end >= viewport_start

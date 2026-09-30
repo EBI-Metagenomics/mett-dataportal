@@ -61,6 +61,9 @@ INDEX_FITNESS_CORRELATION = "fitness_correlation_index"
 # --- Generic/Common Fields ---
 FIELD_ID = "id"
 FIELD_SEQ_ID = "seq_id"
+# Exact-match subfield: seq_id is Text (autocomplete), so term filters must use .keyword.
+# Accession-style IDs (e.g. CP092643.1) tokenize on '.' and fail term queries on the text field.
+FIELD_SEQ_ID_KEYWORD = f"{FIELD_SEQ_ID}.keyword"
 FIELD_ASSEMBLY = "assembly"
 
 # --- Gene Fields ---
