@@ -3,11 +3,13 @@ import { AutocompleteResponse, GenomeMeta, ReleaseHistory } from "../../interfac
 import { PaginatedApiResponse } from "../../interfaces/ApiResponse";
 import { transformAutocompleteResponse, transformGenomeMeta } from "../../utils/common/transformer";
 import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../../utils/common/constants";
+import { joinSpeciesAcronyms } from "../../utils/common/filterUtils";
 
 // Valid sort fields for genomes
 const VALID_GENOME_SORT_FIELDS = {
     'species': 'species',
     'isolate_name': 'isolate_name',
+    'type_strain': 'type_strain',
     'genome': 'isolate_name', // Map 'genome' to 'isolate_name'
     'strain': 'isolate_name', // Map 'strain' to 'isolate_name'
     'name': 'isolate_name', // Map 'name' to 'isolate_name'
@@ -31,7 +33,7 @@ export class GenomeService extends BaseService {
         try {
             const params = this.buildParams({
                 query: inputQuery,
-                species_acronym: selectedSpecies && selectedSpecies.length === 1 ? selectedSpecies : undefined
+                species_acronym: selectedSpecies || undefined
             });
 
             const rawResponse = await this.getWithRetry<AutocompleteResponse[]>("/genomes/autocomplete", params);
@@ -83,12 +85,11 @@ export class GenomeService extends BaseService {
                 per_page: pageSize,
                 sortField: mappedSortField,
                 sortOrder,
-                isolates: typeStrainFilter?.join(',')
+                isolates: typeStrainFilter?.join(','),
+                species_acronym: joinSpeciesAcronyms(selectedSpecies),
             });
 
-            const endpoint = (selectedSpecies && selectedSpecies.length === 1)
-                ? `/species/${selectedSpecies[0]}/genomes/search`
-                : `/genomes/search`;
+            const endpoint = `/genomes/search`;
 
             const response = await BaseService.getRawResponse<GenomeMeta[]>(endpoint, params);
             console.log('GenomeService.fetchGenomeSearchResults response:', response);
@@ -109,7 +110,7 @@ export class GenomeService extends BaseService {
         sortOrder: string
     ): Promise<PaginatedApiResponse<GenomeMeta>> {
         try {
-            const baseUrl = species.length === 1 ? `species/${species[0]}/genomes/search` : `genomes/search`;
+            const baseUrl = `genomes/search`;
 
             // Map sort field to valid backend field
             const mappedSortField = mapSortField(sortField);
@@ -119,6 +120,7 @@ export class GenomeService extends BaseService {
                 query: genome,
                 sortField: mappedSortField,
                 sortOrder,
+                species_acronym: joinSpeciesAcronyms(species),
             });
 
             const response = await BaseService.getRawResponse<GenomeMeta[]>(baseUrl, params);
@@ -179,7 +181,7 @@ export class GenomeService extends BaseService {
                 sortField: mappedSortField,
                 sortOrder,
                 isolates: selectedTypeStrains?.join(','),
-                species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined
+                species_acronym: joinSpeciesAcronyms(selectedSpecies)
             };
 
             const url = this.createDownloadUrl(`${API_BASE_URL}/genomes/download/tsv`, params);

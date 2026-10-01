@@ -1,8 +1,5 @@
 import {ConfigurationSchema} from '@jbrowse/core/configuration';
-import {types} from "mobx-state-tree";
-
-function x() {
-}
+import {types} from '@jbrowse/mobx-state-tree';
 
 const enhancedGeneFeatureAdapterConfigSchema = ConfigurationSchema('EnhancedGeneFeatureAdapter', {
         /**

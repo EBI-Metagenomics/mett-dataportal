@@ -18,6 +18,11 @@ from dataportal.utils.constants import (
     GENE_SEARCH_FIELDS,
     INDEX_FEATURES,
 )
+from dataportal.utils.enablement import (
+    gene_visibility_blocks_all,
+    resolve_enabled_isolates,
+    resolve_enabled_species,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +44,7 @@ class GeneFacetedSearch(FacetedSearch):
         self,
         query="",
         filters=None,
+        locus_tag=None,
         species_acronym=None,
         essentiality=None,
         isolates=None,
@@ -53,6 +59,7 @@ class GeneFacetedSearch(FacetedSearch):
         operators=None,
         index=None,
     ):
+        self.locus_tag = locus_tag
         self.species_acronym = species_acronym
         self.essentiality = essentiality
         self.isolates = isolates
@@ -93,12 +100,28 @@ class GeneFacetedSearch(FacetedSearch):
         # Always filter for genes only in feature_index
         must_clauses.append(Q("term", feature_type="gene"))
 
-        if self.species_acronym:
-            must_clauses.append(Q("term", species_acronym=self.species_acronym))
+        if self.locus_tag:
+            must_clauses.append(Q("term", **{f"{GENE_FIELD_LOCUS_TAG}.keyword": self.locus_tag}))
+
+        if gene_visibility_blocks_all(
+            species_acronym=self.species_acronym,
+            isolates=self.isolates if self.isolates else None,
+        ):
+            # Force empty result set when species/strain visibility excludes everything.
+            must_clauses.append(Q("match_none"))
+        else:
+            enabled_species = resolve_enabled_species(self.species_acronym)
+            must_clauses.append(Q("terms", **{SPECIES_FIELD_ACRONYM_SHORT: enabled_species}))
+            if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
+                enabled_isolates = resolve_enabled_isolates(self.isolates)
+                must_clauses.append(Q("terms", isolate_name=enabled_isolates))
+            else:
+                enabled_isolates = resolve_enabled_isolates(None)
+                if enabled_isolates:
+                    must_clauses.append(Q("terms", isolate_name=enabled_isolates))
+
         if self.has_amr_info is not None:
             must_clauses.append(Q("term", has_amr_info=self.has_amr_info))
-        if self.isolates and isinstance(self.isolates, list) and any(self.isolates):
-            must_clauses.append(Q("terms", isolate_name=self.isolates))
         if self.essentiality:
             must_clauses.append(Q("term", essentiality=self.essentiality))
 

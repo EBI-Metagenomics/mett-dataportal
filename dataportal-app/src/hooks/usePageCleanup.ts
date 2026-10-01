@@ -25,10 +25,10 @@ export const usePageCleanup = () => {
                 }]);
             }
         }
-        // Clean up when navigating back to home page
+        // Clean up when navigating back to home page with a gene-viewer deep link
         else if (location.pathname === '/' || location.pathname === '/home') {
-            if (location.search.includes('locus_tag')) {
-                // Clear any gene viewer specific state
+            const params = new URLSearchParams(location.search);
+            if (params.has('locus_tag')) {
                 filterStore.setGeneSearchQuery('');
                 filterStore.setGeneSortField('locus_tag');
                 filterStore.setGeneSortOrder('asc');

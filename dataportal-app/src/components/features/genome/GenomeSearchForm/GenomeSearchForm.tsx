@@ -8,8 +8,9 @@ import {LinkData} from "../../../../interfaces/Auxiliary";
 import {AutocompleteResponse, BaseGenome, GenomeMeta} from "../../../../interfaces/Genome";
 import {DEFAULT_PER_PAGE_CNT, API_BASE_URL} from "../../../../utils/common/constants";
 import {copyToClipboard, generateCurlRequest, generateHttpRequest} from "../../../../utils/api/apiHelpers";
-import TypeStrainsFilter from "@components/Filters/TypeStrainsFilter";
+import GenomeFacetedFilter from "@components/Filters/GenomeFacetedFilter";
 import SelectedGenomes from "@components/Filters/SelectedGenomes";
+import {useFilterStore} from "../../../../stores/filterStore";
 
 interface SearchGenomeFormProps {
     searchQuery: string;
@@ -28,6 +29,7 @@ interface SearchGenomeFormProps {
     handleTypeStrainToggle: (isolate_name: string) => void;
     linkData: LinkData;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    hideSidebar?: boolean;
 }
 
 const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
@@ -47,6 +49,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                                                                sortOrder,
                                                                linkData,
                                                                setLoading,
+                                                               hideSidebar = false,
                                                            }) => {
     const [suggestions, setSuggestions] = useState<AutocompleteResponse[]>([]);
     const [isolateName, setIsolateName] = useState<string>('');
@@ -64,6 +67,7 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
         body?: any
     } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
+    const setSelectedTypeStrains = useFilterStore(state => state.setSelectedTypeStrains);
     
     // Track if initial search has run
     const hasInitialSearchRun = React.useRef(false);
@@ -143,9 +147,11 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
                     params.append('isolates', typeStrainFilter.join(','));
                 }
 
-                const endpoint = (selectedSpecies && selectedSpecies.length === 1)
-                    ? `/species/${selectedSpecies[0]}/genomes/search`
-                    : `/genomes/search`;
+                if (speciesFilter && speciesFilter.length) {
+                    params.append('species_acronym', speciesFilter.join(','));
+                }
+
+                const endpoint = `/genomes/search`;
 
                 apiDetails.url = `${API_BASE_URL}${endpoint}`;
                 apiDetails.params = Object.fromEntries(params.entries());
@@ -268,19 +274,21 @@ const GenomeSearchForm: React.FC<SearchGenomeFormProps> = ({
             <div>
                 <p/>
             </div>
+            {!hideSidebar && (
             <div className={styles.leftPane}>
 
-                {/* Type Strains Filter */}
-                <TypeStrainsFilter
+                <GenomeFacetedFilter
                     typeStrains={typeStrains}
                     selectedTypeStrains={selectedTypeStrains}
                     selectedSpecies={selectedSpecies}
                     onTypeStrainToggle={handleTypeStrainToggle}
+                    onClearAll={() => setSelectedTypeStrains([])}
                 />
 
                 <SelectedGenomes selectedGenomes={selectedGenomes} onRemoveGenome={handleRemoveGenome}/>
             </div>
-            <div className={styles.rightPane}>
+            )}
+            <div className={hideSidebar ? styles.rightPaneFlush : styles.rightPane}>
                 <div className={`vf-grid__col--span-3 ${styles.vfGenomeSection}`}>
                     <form onSubmit={handleSubmit}
                           className="vf-form vf-form--search vf-form--search--responsive | vf-sidebar vf-sidebar--end">

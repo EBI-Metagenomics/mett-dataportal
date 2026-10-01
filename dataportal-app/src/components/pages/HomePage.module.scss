@@ -156,13 +156,36 @@ button, select, input {
 }
 
 
+.browseLayout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+.browseMain {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .browseLayout {
+    flex-direction: column;
+  }
+}
+
 .tabs-container {
   display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  height: 48px;
+  margin: 0 0 0.75rem;
   border-bottom: 2px solid #ccc;
 }
 
 .tab {
-  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
   cursor: pointer;
   border: none;
   background: none;
@@ -171,6 +194,7 @@ button, select, input {
   color: #666;
   outline: none;
   border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
   transition: color 0.3s, border-bottom 0.3s;
 }
 

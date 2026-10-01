@@ -1,6 +1,17 @@
 import {FacetedFilters, FacetOperators} from '../../stores/filterStore';
 
 /**
+ * Join selected species acronyms for API query params.
+ * Empty/undefined lists are omitted so the backend searches all enabled species.
+ */
+export const joinSpeciesAcronyms = (species?: string[]): string | undefined => {
+    if (!species || species.length === 0) {
+        return undefined;
+    }
+    return species.join(',');
+};
+
+/**
  * Normalize a filter value for consistent comparison and storage.
  * Rules:
  * - Boolean values: returned as-is
@@ -117,6 +128,60 @@ export const convertFacetedFiltersToLegacy = (filters: FacetedFilters): Record<s
     }
 
     return result;
+};
+
+const FACET_CHIP_GROUP_LABELS: Record<string, string> = {
+    essentiality: 'Essentiality',
+    has_amr_info: 'AMR',
+    pfam: 'Pfam',
+    interpro: 'InterPro',
+    kegg: 'KEGG',
+    cog_funcats: 'COG',
+    cog_id: 'COG ID',
+    go_term: 'GO',
+};
+
+/** Human-readable chip label for a selected facet value. */
+export const formatFacetFilterLabel = (
+    facetGroup: string,
+    value: string | boolean
+): string => {
+    const groupLabel = FACET_CHIP_GROUP_LABELS[facetGroup] || facetGroup;
+    if (facetGroup === 'has_amr_info') {
+        const present = value === true || value === 'true';
+        return `${groupLabel}: ${present ? 'Present' : 'Absent'}`;
+    }
+    return `${groupLabel}: ${String(value)}`;
+};
+
+export type FacetActiveFilterItem = {
+    id: string;
+    label: string;
+    facetGroup: keyof FacetedFilters;
+    value: string | boolean;
+};
+
+/** Flatten selected facet values into Active filter chip descriptors. */
+export const buildFacetActiveFilterItems = (
+    filters: FacetedFilters
+): FacetActiveFilterItem[] => {
+    const items: FacetActiveFilterItem[] = [];
+    (Object.entries(filters) as [keyof FacetedFilters, (string | boolean)[] | undefined][]).forEach(
+        ([facetGroup, values]) => {
+            if (!Array.isArray(values)) {
+                return;
+            }
+            values.forEach((value) => {
+                items.push({
+                    id: `facet-${String(facetGroup)}-${String(value)}`,
+                    label: formatFacetFilterLabel(String(facetGroup), value),
+                    facetGroup,
+                    value,
+                });
+            });
+        }
+    );
+    return items;
 };
 
 /**

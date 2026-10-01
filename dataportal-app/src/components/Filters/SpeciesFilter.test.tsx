@@ -9,7 +9,7 @@ describe('SpeciesFilter', () => {
     { acronym: 'PV', scientific_name: 'Parabacteroides vulgatus' },
   ]
 
-  test('renders all species checkboxes', () => {
+  test('renders wrapping species checkboxes', () => {
     render(
       <SpeciesFilter
         speciesList={speciesList}
@@ -21,6 +21,27 @@ describe('SpeciesFilter', () => {
     expect(screen.getByText('Bacteroides uniformis')).toBeInTheDocument()
     expect(screen.getByText('Parabacteroides vulgatus')).toBeInTheDocument()
     expect(screen.getAllByRole('checkbox')).toHaveLength(2)
+  })
+
+  test('sorts species alphabetically by scientific name', () => {
+    render(
+      <SpeciesFilter
+        speciesList={[
+          { acronym: 'PV', scientific_name: 'Phocaeicola vulgatus' },
+          { acronym: 'AR', scientific_name: 'Alistipes putredinis' },
+          { acronym: 'BU', scientific_name: 'Bacteroides uniformis' },
+        ]}
+        selectedSpecies={[]}
+        onSpeciesSelect={() => {}}
+      />
+    )
+
+    const labels = screen.getAllByRole('checkbox').map((checkbox) => checkbox.closest('label')?.textContent)
+    expect(labels).toEqual([
+      'Alistipes putredinis',
+      'Bacteroides uniformis',
+      'Phocaeicola vulgatus',
+    ])
   })
 
   test('checkboxes reflect selectedSpecies prop', () => {
@@ -35,6 +56,20 @@ describe('SpeciesFilter', () => {
     const checkboxes = screen.getAllByRole('checkbox')
     expect(checkboxes[0]).toBeChecked()   // BU
     expect(checkboxes[1]).not.toBeChecked() // PV
+  })
+
+  test('starts collapsed when defaultCollapsed is set', () => {
+    render(
+      <SpeciesFilter
+        speciesList={speciesList}
+        selectedSpecies={['BU']}
+        onSpeciesSelect={() => {}}
+        defaultCollapsed
+      />
+    )
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.getByText(/SPECIES/)).toBeInTheDocument()
   })
 
   test('calls onSpeciesSelect when checkbox is toggled', () => {

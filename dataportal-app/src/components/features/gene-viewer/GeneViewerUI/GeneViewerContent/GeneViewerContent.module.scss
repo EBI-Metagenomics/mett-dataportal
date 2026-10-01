@@ -14,10 +14,41 @@
   min-height: 0;
 }
 
-/* Suppress JBrowse app view shell controls (hamburger, minimize, close). */
+/* Applied via hideJBrowseChrome.ts instead of inline styles. */
+:global(.jbrowse-embed-hidden) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+}
+
+/*
+ * JBrowse v4 app shell: always hide FILE/ADD/TOOLS/HELP AppBar + FAB.
+ * Prefer CSS so chrome stays gone even if MutationObserver misses a paint.
+ */
+.jbrowseContainer :global(.MuiAppBar-root),
+.jbrowseContainer :global(.MuiFab-root) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Suppress JBrowse app view shell controls + per-track context menus. */
 .jbrowseContainer :global([data-testid='view_menu_icon']),
 .jbrowseContainer :global([data-testid='close_view']),
-.jbrowseContainer :global([data-testid='minimize_view']) {
+.jbrowseContainer :global([data-testid='minimize_view']),
+.jbrowseContainer :global([data-testid='track_menu_icon']) {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
@@ -47,4 +78,26 @@
   pointer-events: none !important;
 }
 
-// Gene highlighting is now handled by JBrowse's JEXL expressions in tracks.ts 
+/*
+ * JBrowse v4 feature drawer is a MuiPaper (elevation 16), not MuiDrawer.
+ * Keep it collapsed as a CSS fallback while MST autorun clears widgets.
+ */
+.jbrowseContainer :global(.MuiPaper-elevation16) {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.jbrowseContainer :global([class*='BaseFeatureDetail']),
+.jbrowseContainer :global([class*='FeatureDetails']),
+.jbrowseContainer :global([class*='DrawerWidget']),
+.jbrowseContainer :global([class*='FeatureWidget']),
+.jbrowseContainer :global([class*='BaseFeatureWidget']) {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+// Gene highlighting is now handled by JBrowse's JEXL expressions in tracks.ts

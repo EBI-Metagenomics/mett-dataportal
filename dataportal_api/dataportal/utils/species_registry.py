@@ -2,8 +2,10 @@
 In-memory cache of enabled species acronyms for fast filtering in gene/genome APIs.
 
 Loaded at first use (or on server start if ensure_loaded() is called).
-Updated when species are enabled/disabled via the admin APIs.
+Visibility is data-driven via species ingest; use rebuild() after reimport.
 """
+
+from __future__ import annotations
 
 import logging
 import threading
@@ -19,12 +21,14 @@ _lock = threading.RLock()
 _loaded = False
 
 
+def _normalize_acronym(acronym: str) -> str:
+    return str(acronym).strip().upper()
+
+
 def _load() -> None:
     """Load enabled species acronyms from Elasticsearch (sync)."""
     global _enabled_acronyms, _loaded
     with _lock:
-        if _loaded:
-            return
         try:
             from dataportal.elasticsearch.resolver import resolve_read_index
 
@@ -35,7 +39,9 @@ def _load() -> None:
                 .extra(size=MAX_RESULTS_PER_PAGE)
             )
             response = search.execute()
-            _enabled_acronyms = {hit.acronym for hit in response if getattr(hit, "acronym", None)}
+            _enabled_acronyms = {
+                _normalize_acronym(hit.acronym) for hit in response if getattr(hit, "acronym", None)
+            }
             _loaded = True
             logger.info("Species registry loaded: %d enabled species", len(_enabled_acronyms))
         except Exception as e:
@@ -49,13 +55,10 @@ def ensure_loaded() -> None:
     with _lock:
         if not _loaded:
             _load()
-            return
-    # already loaded
-    return
 
 
 def get_enabled_species_acronyms() -> Set[str]:
-    """Return a set of enabled species acronyms. Loads from ES on first call."""
+    """Return a set of enabled species acronyms (uppercase). Loads from ES on first call."""
     ensure_loaded()
     with _lock:
         return set(_enabled_acronyms)
@@ -65,18 +68,18 @@ def is_species_enabled(acronym: str) -> bool:
     """Return True if the species is enabled. Loads from ES on first call."""
     if not acronym:
         return False
-    normalized = str(acronym).strip().upper()
-    return normalized in get_enabled_species_acronyms()
+    return _normalize_acronym(acronym) in get_enabled_species_acronyms()
 
 
 def update_species_enabled(acronym: str, enabled: bool) -> None:
     """
     Update the in-memory cache after a species enable/disable in ES.
-    Call this after successfully updating the species document.
+    Prefer rebuild() after bulk ingest; this remains for targeted updates.
     """
     global _enabled_acronyms
-    normalized = str(acronym).strip().upper()
+    normalized = _normalize_acronym(acronym)
     with _lock:
+        ensure_loaded()
         if enabled:
             _enabled_acronyms.add(normalized)
         else:
@@ -89,3 +92,11 @@ def invalidate_cache() -> None:
     global _loaded
     with _lock:
         _loaded = False
+
+
+def rebuild() -> int:
+    """Force reload from Elasticsearch. Returns count of enabled species."""
+    invalidate_cache()
+    ensure_loaded()
+    with _lock:
+        return len(_enabled_acronyms)

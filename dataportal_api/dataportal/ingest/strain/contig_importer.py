@@ -84,16 +84,12 @@ class StrainContigImporter(BaseImporter):
             try:
                 ftp_gff = self._connect_gff()
                 if ftp_gff:
-                    gff_folder_map = ftp_build_isolate_folder_map(
-                        ftp_gff, self.gff_base
-                    )
+                    gff_folder_map = ftp_build_isolate_folder_map(ftp_gff, self.gff_base)
             except ftplib.all_errors:
                 ftp_gff = None
                 gff_folder_map = None
 
-        fasta_files = ftp_list_fasta(
-            ftp, self.ftp_directory, extensions=self.fasta_extensions
-        )
+        fasta_files = ftp_list_fasta(ftp, self.ftp_directory, extensions=self.fasta_extensions)
         skipped_unmapped = 0
         skipped_not_in_allowlist = 0
         allowlist = set(self.isolates) if self.isolates else None
@@ -117,9 +113,7 @@ class StrainContigImporter(BaseImporter):
         for file in fasta_files:
             assembly_name = os.path.splitext(file)[0]
 
-            raw_isolate = mapping_lookup(
-                self.assembly_to_isolate, file, self.fasta_extensions
-            )
+            raw_isolate = mapping_lookup(self.assembly_to_isolate, file, self.fasta_extensions)
             if not raw_isolate:
                 skipped_unmapped += 1
                 continue
@@ -183,6 +177,10 @@ class StrainContigImporter(BaseImporter):
                 doc.type_strain = canonical_id in type_set
             # else: preserve existing value
 
+            # Portal visibility: new strains default to enabled; preserve existing flag.
+            if existing is None or getattr(doc, "enabled", None) is None:
+                doc.enabled = True
+
             # GFF filename + public URL (via folder map + canonical id)
             if ftp_gff is not None:
                 resolved = ftp_resolve_gff_for_isolate(
@@ -211,6 +209,12 @@ class StrainContigImporter(BaseImporter):
             f"skipped unmapped={skipped_unmapped} "
             f"(not in --map-tsv), skipped isolates filter={skipped_not_in_allowlist}"
         )
+        try:
+            from dataportal.utils.strain_registry import invalidate_cache
+
+            invalidate_cache()
+        except Exception:
+            pass
         ftp.quit()
         if ftp_gff:
             ftp_gff.quit()

@@ -13,6 +13,17 @@ interface GeneSearchInputProps {
     onClear?: () => void;
 }
 
+const isAutocompletePopupTarget = (target: EventTarget | null): boolean => {
+    if (!(target instanceof Element)) {
+        return false;
+    }
+    return Boolean(
+        target.closest(
+            '.MuiAutocomplete-popper, .MuiAutocomplete-listbox, .MuiAutocomplete-option, [role="listbox"], [role="option"]'
+        )
+    );
+};
+
 const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                                                              query,
                                                              onInputChange,
@@ -23,37 +34,41 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                                                              onClear,
                                                          }) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
+    const selectingRef = useRef(false);
     const [isSelecting, setIsSelecting] = useState(false);
 
     useEffect(() => {
+        // Use click (not mousedown): clearing suggestions on mousedown unmounts the
+        // option before Autocomplete can commit the selection.
         const handleClickOutside = (event: MouseEvent) => {
+            if (selectingRef.current || isAutocompletePopupTarget(event.target)) {
+                return;
+            }
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
                 onSuggestionsClear();
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('click', handleClickOutside);
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('click', handleClickOutside);
         };
     }, [onSuggestionsClear]);
 
-    const handleInputChange = (event: any, newValue: string, reason: string) => {
-        console.log('GeneSearchInput handleInputChange:', {newValue, reason, isSelecting});
-
-        // Don't call onInputChange when selecting a suggestion or when resetting
-        if (!isSelecting && reason !== 'reset') {
-            // Create a proper synthetic event for the parent component
-            const syntheticEvent = {
-                target: {value: newValue || ''}
-            } as React.ChangeEvent<HTMLInputElement>;
-
-            onInputChange(syntheticEvent);
-        }
-
+    const handleInputChange = (_event: any, newValue: string, reason: string) => {
+        // MUI Autocomplete emits `reset` when options reload / a value is chosen.
+        // Never let that wipe the controlled input while a suggestion is being applied.
         if (reason === 'reset') {
-            setIsSelecting(false);
+            return;
         }
+        if (selectingRef.current || isSelecting || (reason !== 'input' && reason !== 'clear')) {
+            return;
+        }
+
+        const syntheticEvent = {
+            target: {value: newValue || ''},
+        } as React.ChangeEvent<HTMLInputElement>;
+        onInputChange(syntheticEvent);
     };
 
     const hasQuery = Boolean(query?.trim());
@@ -82,12 +97,16 @@ const GeneSearchInput: React.FC<GeneSearchInputProps> = ({
                     }}
                     inputValue={query || ''}
                     onInputChange={handleInputChange}
-                    onChange={(event, value) => {
+                    onChange={(_event, value) => {
                         if (value && typeof value !== 'string') {
-                            console.log('GeneSearchInput onChange - suggestion selected:', value);
+                            selectingRef.current = true;
                             setIsSelecting(true);
-                            // Don't call onInputChange here - let onSuggestionClick handle it
                             onSuggestionClick(value);
+                            // Keep the lock until after MUI's follow-up reset events settle.
+                            window.setTimeout(() => {
+                                selectingRef.current = false;
+                                setIsSelecting(false);
+                            }, 0);
                         }
                     }}
                     isOptionEqualToValue={(option, value) =>

@@ -52,13 +52,13 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
 
 // Gene Search Container
 .geneSearchContainer {
-  margin-top: 2rem;
+  margin-top: 0.75rem;
   width: 100%;
 }
 
-// ULTIMATE NUCLEAR HIDING: Remove JBrowse drawer from existence
+// Hide JBrowse drawers only — do not hide bare MuiBackdrop / [role=presentation]
+// (Radix column-selector dialog uses those and would get nuked).
 :global {
-  // Hide ALL MUI Drawer variations with maximum specificity
   .MuiDrawer-root,
   .MuiDrawer-paper,
   .MuiDrawer-modal,
@@ -66,24 +66,18 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
   [class*="MuiDrawer"],
   div[class^="MuiDrawer"],
   aside[class*="MuiDrawer"],
-  // Hide ALL feature detail variations
   [class*="BaseFeatureDetail"],
   [class*="FeatureDetails"],
   [class*="featureDetails"],
   [class*="DrawerWidget"],
   [class*="FeatureWidget"],
   [class*="BaseFeatureWidget"],
-  // Hide backdrops (but not Autocomplete popper)
-  .MuiBackdrop-root:not([aria-hidden="true"]),
-  [class*="MuiBackdrop"]:not([class*="MuiAutocomplete"]),
-  // Hide by role and aria - only JBrowse specific elements
   aside[role="presentation"],
   div[class*="Drawer"][role="presentation"],
   [role="presentation"][class*="Drawer"],
   [role="presentation"][class*="Feature"],
   [aria-label*="drawer"],
   [aria-label*="Drawer"],
-  [aria-label*="feature"],
   [data-testid*="drawer"] {
     display: none !important;
     visibility: hidden !important;
@@ -147,7 +141,8 @@ header[class*="MuiToolbar-gutters"] [class*="css-"] {
 }
 
 // Main content grid: Left column (JBrowse + Search) and Right column (Feature Panel)
-$gene-viewer-panel-height: 600px;
+// Sized to hug track content after AppBar hide / compact sequence track.
+$gene-viewer-panel-height: 420px;
 $gene-viewer-header-height: 28px;
 
 .mainContentGrid {

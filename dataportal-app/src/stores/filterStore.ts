@@ -7,6 +7,7 @@ import { normalizeFilterValues } from '../utils/common/filterUtils'
 const VALID_GENOME_SORT_FIELDS = {
     'species': 'species',
     'isolate_name': 'isolate_name',
+    'type_strain': 'type_strain',
     'genome': 'isolate_name', // Map 'genome' to 'isolate_name'
     'strain': 'isolate_name', // Map 'strain' to 'isolate_name'
     'name': 'isolate_name', // Map 'name' to 'isolate_name'
@@ -122,10 +123,12 @@ export const useFilterStore = create<FilterState>()(
         const current = get().facetedFilters;
         // Normalize all values before storing to ensure consistency and remove duplicates
         const normalizedValues = normalizeFilterValues(values);
-        const newFilters = {
-          ...current,
-          [filterType]: normalizedValues.length > 0 ? normalizedValues : undefined
-        };
+        const newFilters = { ...current };
+        if (normalizedValues.length > 0) {
+          newFilters[filterType] = normalizedValues as FacetedFilters[typeof filterType];
+        } else {
+          delete newFilters[filterType];
+        }
         set({ facetedFilters: newFilters });
       },
       setFacetOperators: (operators) => set({ facetOperators: operators }),

@@ -6,6 +6,7 @@ import { cacheResponse } from "../common/cachingDecorator";
 import { DEFAULT_PER_PAGE_CNT, API_BASE_URL } from "../../utils/common/constants";
 import apiInstance from "../common/apiInstance";
 import { assertSafePathSegment } from "../../utils/common/safeFetch";
+import { joinSpeciesAcronyms } from "../../utils/common/filterUtils";
 
 export class GeneService extends BaseService {
     /**
@@ -208,16 +209,13 @@ export class GeneService extends BaseService {
         pfam?: string,
         interpro?: string,
         hasAmrInfo?: string,
-        facetOperators?: Record<string, 'AND' | 'OR'>
+        facetOperators?: Record<string, 'AND' | 'OR'>,
+        locusTag?: string
     ): Promise<GeneFacetResponse> {
         try {
-            // console.log('GeneService.fetchGeneFacets called with:', {
-            //     query, speciesAcronym, isolates, essentiality, cogId, cogFuncats,
-            //     kegg, goTerm, pfam, interpro, hasAmrInfo, facetOperators
-            // });
-
             const params = this.buildParams({
-                query,
+                query: locusTag ? undefined : query,
+                locus_tag: locusTag,
                 species_acronym: speciesAcronym,
                 isolates,
                 essentiality,
@@ -303,7 +301,7 @@ export class GeneService extends BaseService {
                 sort_field: sortField,
                 sort_order: sortOrder,
                 isolates: selectedGenomes?.map(g => g.isolate_name).join(","),
-                species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined,
+                species_acronym: joinSpeciesAcronyms(selectedSpecies),
                 filter: filterString || undefined,
                 filter_operators: filterOperatorsString || undefined
             };
@@ -339,7 +337,7 @@ export class GeneService extends BaseService {
             sort_field: sortField,
             sort_order: sortOrder,
             isolates: selectedGenomes?.map(g => g.isolate_name).join(","),
-            species_acronym: selectedSpecies?.length === 1 ? selectedSpecies[0] : undefined
+            species_acronym: joinSpeciesAcronyms(selectedSpecies)
         });
 
         // Add locus_tag parameter if provided (takes precedence over query)
