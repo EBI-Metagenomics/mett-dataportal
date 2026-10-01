@@ -17,7 +17,7 @@ import {normalizeFilterValue} from '../../utils/common/filterUtils';
 
 interface GeneFacetedFilterProps {
     facets: GeneFacetResponse;
-    onToggleFacet: (facetGroup: string, value: string) => void;
+    onToggleFacet: (facetGroup: string, value: string | boolean) => void;
     initialVisibleCount?: number;
     loadMoreStep?: number;
     onOperatorChange?: (facetGroup: string, operator: 'AND' | 'OR') => void;

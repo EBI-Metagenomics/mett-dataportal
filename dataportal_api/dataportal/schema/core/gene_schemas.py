@@ -78,6 +78,10 @@ class GeneFacetedSearchQuerySchema(BaseModel):
         None,
         description="Free-text search across gene fields such as gene name and product.",
     )
+    locus_tag: Optional[str] = Field(
+        None,
+        description="Exact locus tag filter (takes precedence over free-text query when set).",
+    )
     species_acronym: Optional[str] = Field(
         None, description="Species acronym filter (e.g., 'BU', 'PV', or comma-separated 'BU,PV')."
     )

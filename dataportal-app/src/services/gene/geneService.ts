@@ -209,16 +209,13 @@ export class GeneService extends BaseService {
         pfam?: string,
         interpro?: string,
         hasAmrInfo?: string,
-        facetOperators?: Record<string, 'AND' | 'OR'>
+        facetOperators?: Record<string, 'AND' | 'OR'>,
+        locusTag?: string
     ): Promise<GeneFacetResponse> {
         try {
-            // console.log('GeneService.fetchGeneFacets called with:', {
-            //     query, speciesAcronym, isolates, essentiality, cogId, cogFuncats,
-            //     kegg, goTerm, pfam, interpro, hasAmrInfo, facetOperators
-            // });
-
             const params = this.buildParams({
-                query,
+                query: locusTag ? undefined : query,
+                locus_tag: locusTag,
                 species_acronym: speciesAcronym,
                 isolates,
                 essentiality,

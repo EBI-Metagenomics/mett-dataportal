@@ -896,6 +896,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
 
             result = await self._faceted_search_impl(
                 query=params.query,
+                locus_tag=params.locus_tag,
                 species_acronym=params.species_acronym,
                 isolates=isolate_list,
                 essentiality=params.essentiality,
@@ -919,6 +920,7 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     async def _faceted_search_impl(
         self,
         query: Optional[str] = None,
+        locus_tag: Optional[str] = None,
         species_acronym: Optional[str] = None,
         isolates: Optional[List[str]] = None,
         essentiality: Optional[str] = None,
@@ -934,8 +936,11 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     ):
         """Internal implementation of faceted search."""
         try:
+            # Exact locus_tag filter replaces free-text so facet buckets match the hit gene.
+            effective_query = "" if locus_tag else (query or "")
             gs = GeneFacetedSearch(
-                query=query or "",
+                query=effective_query,
+                locus_tag=locus_tag,
                 species_acronym=species_acronym,
                 essentiality=essentiality,
                 isolates=isolates,

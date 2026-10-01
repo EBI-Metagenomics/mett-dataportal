@@ -17,7 +17,12 @@ import {useGenomeData} from '../../hooks';
 import {useTabAwareUrlSync} from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {GeneService} from '../../services/gene';
-import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../utils/common/filterUtils';
+import {
+    buildFacetActiveFilterItems,
+    compareFilterValues,
+    convertFacetedFiltersToLegacy,
+    convertFacetOperatorsToLegacy,
+} from '../../utils/common/filterUtils';
 import {
     geneQueryGenomes,
     looksLikeLocusTag,
@@ -141,17 +146,19 @@ const HomePage: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, genePerPage, beginGeneFetch, applyGeneFetchIfCurrent]);
 
-    // Clean up gene viewer state when returning to home page
+    // Clean up gene-viewer deep-link state when returning home with ?locus_tag=...
+    // Do not match geneSortField=locus_tag (that substring false-positive was clearing facet selections).
     useEffect(() => {
-        // If we have locus_tag in URL, we're coming from gene viewer
-        // Clear any gene viewer specific state
-        if (location.search.includes('locus_tag')) {
-            filterStore.setGeneSearchQuery('');
-            filterStore.setGeneSortField('locus_tag');
-            filterStore.setGeneSortOrder('asc');
-            filterStore.setFacetedFilters({});
-            filterStore.setFacetOperators({});
+        const params = new URLSearchParams(location.search);
+        if (!params.has('locus_tag')) {
+            return;
         }
+        filterStore.setGeneSearchQuery('');
+        filterStore.setGeneSortField('locus_tag');
+        filterStore.setGeneSortOrder('asc');
+        filterStore.setFacetedFilters({});
+        filterStore.setFacetOperators({});
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to deep-link locus_tag param
     }, [location.search]);
 
 
@@ -335,6 +342,17 @@ const HomePage: React.FC = () => {
         filterStore.setGeneSearchQuery,
     ]);
 
+    const removeFacetValue = useCallback((facetGroup: string, value: string | boolean) => {
+        const current = filterStore.facetedFilters[facetGroup as keyof typeof filterStore.facetedFilters] || [];
+        const next = (current as (string | boolean)[]).filter(
+            (entry) => !compareFilterValues(entry, value)
+        );
+        filterStore.updateFacetedFilter(
+            facetGroup as keyof typeof filterStore.facetedFilters,
+            next
+        );
+    }, [filterStore]);
+
     const activeFilterItems: ActiveFilterItem[] = [
         ...filterStore.selectedSpecies.map((acronym) => ({
             id: `species-${acronym}`,
@@ -363,6 +381,13 @@ const HomePage: React.FC = () => {
                     void handleClearGeneSearch();
                 },
             }]
+            : []),
+        ...(activeTab === 'genes'
+            ? buildFacetActiveFilterItems(filterStore.facetedFilters).map((item) => ({
+                id: item.id,
+                label: item.label,
+                onRemove: () => removeFacetValue(String(item.facetGroup), item.value),
+            }))
             : []),
     ];
 

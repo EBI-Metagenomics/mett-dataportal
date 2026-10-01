@@ -123,10 +123,12 @@ export const useFilterStore = create<FilterState>()(
         const current = get().facetedFilters;
         // Normalize all values before storing to ensure consistency and remove duplicates
         const normalizedValues = normalizeFilterValues(values);
-        const newFilters = {
-          ...current,
-          [filterType]: normalizedValues.length > 0 ? normalizedValues : undefined
-        };
+        const newFilters = { ...current };
+        if (normalizedValues.length > 0) {
+          newFilters[filterType] = normalizedValues as FacetedFilters[typeof filterType];
+        } else {
+          delete newFilters[filterType];
+        }
         set({ facetedFilters: newFilters });
       },
       setFacetOperators: (operators) => set({ facetOperators: operators }),

@@ -44,6 +44,7 @@ class GeneFacetedSearch(FacetedSearch):
         self,
         query="",
         filters=None,
+        locus_tag=None,
         species_acronym=None,
         essentiality=None,
         isolates=None,
@@ -58,6 +59,7 @@ class GeneFacetedSearch(FacetedSearch):
         operators=None,
         index=None,
     ):
+        self.locus_tag = locus_tag
         self.species_acronym = species_acronym
         self.essentiality = essentiality
         self.isolates = isolates
@@ -97,6 +99,9 @@ class GeneFacetedSearch(FacetedSearch):
         # Context filters (always applied)
         # Always filter for genes only in feature_index
         must_clauses.append(Q("term", feature_type="gene"))
+
+        if self.locus_tag:
+            must_clauses.append(Q("term", **{f"{GENE_FIELD_LOCUS_TAG}.keyword": self.locus_tag}))
 
         if gene_visibility_blocks_all(
             species_acronym=self.species_acronym,
