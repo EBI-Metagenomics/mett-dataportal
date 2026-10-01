@@ -1,12 +1,126 @@
 {
   "info": {
-    "_postman_id": "c5588cda-f70d-4e39-b64b-d20178847cfb",
+    "_postman_id": "2c57c732-5351-4e14-8e72-0e9832efcbee",
     "name": "METT-DataPortal",
-    "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** each top-level folder starts with an `00-Init-set-\u2026-fixtures` request. Run that request first for the folder you are exercising; it writes collection variables from the `fixtures` object in its Pre-request Script. Edit values there when fixtures change.\n\nRun **CoreAPIs / Releases / List-Releases** after CoreAPIs init when exercising X-METT-Release scenarios; it stores `resolved_release_version`.\n\n**Annotation comparison:** folder `Annotation comparison / BU vs BF` compares BU_ATCC8492 gene fixtures (dnaA, rpsR, AMR, defense) against BF_NCTC9343 orthologs (run `00-Init-set-Annotation-comparison-fixtures` first).\n\n**Visibility / Admin:** species and strains use an `enabled` flag in Elasticsearch. After changing enablement via ingest, call **CoreAPIs / Admin / Cache-Rebuild-Visibility-Registries** (admin JWT) to reload in-memory registries. Disabled species (fixture `species_acronym_disabled`, default BF) must not appear in species, type-strain, genome, or gene search results.",
+    "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** each top-level folder starts with an `00-Init-set-…-fixtures` request. Run that request first for the folder you are exercising; it writes collection variables from the `fixtures` object in its Pre-request Script. Edit values there when fixtures change.\n\nRun **CoreAPIs / Releases / List-Releases** after CoreAPIs init when exercising X-METT-Release scenarios; it stores `resolved_release_version`.\n\n**Annotation comparison:** folder `Annotation comparison / BU vs BF` compares BU_ATCC8492 gene fixtures (dnaA, rpsR, AMR, defense) against BF_NCTC9343 orthologs (run `00-Init-set-Annotation-comparison-fixtures` first).\n\n**Visibility / Admin:** species and strains use an `enabled` flag in Elasticsearch. After changing enablement via ingest, call **CoreAPIs / Admin / Cache-Rebuild-Visibility-Registries** (admin JWT) to reload in-memory registries. Disabled species (fixture `species_acronym_disabled`, default BF) must not appear in species, type-strain, genome, or gene search results.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "19420352"
   },
   "item": [
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Cache-Rebuild-Visibility-Registries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Rebuild payload reports registry counts\", function () {\n    const data = pm.response.json().data;\n    pm.expect(data).to.be.an(\"object\");\n    pm.expect(data).to.have.property(\"species_enabled\");\n    pm.expect(data).to.have.property(\"strains_enabled\");\n    pm.expect(data.species_enabled).to.be.a(\"number\").and.to.be.at.least(1);\n    pm.expect(data.strains_enabled).to.be.a(\"number\").and.to.be.at.least(1);\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin-token-current}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/admin/cache/rebuild",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "cache",
+                "rebuild"
+              ]
+            },
+            "description": "Reloads in-memory enabled-species and enabled-strain registries from Elasticsearch. Requires an admin JWT (`bearer-token-current` in the environment must include the admin role). Call after species/strain ingest when enablement flags change. Does not modify ES documents."
+          },
+          "response": []
+        },
+        {
+          "name": "Cache-Rebuild-Unauthorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/admin/cache/rebuild",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "cache",
+                "rebuild"
+              ]
+            },
+            "description": "Cache rebuild without a bearer token must be rejected."
+          },
+          "response": []
+        }
+      ],
+      "description": "Operational endpoints. Visibility is data-driven (species/strain `enabled` in ES); use cache rebuild after ingest instead of mutating enablement through the portal API."
+    },
     {
       "name": "CoreAPIs",
       "item": [
@@ -85,132 +199,6 @@
               "response": []
             }
           ]
-        },
-        {
-          "name": "Admin",
-          "item": [
-            {
-              "name": "Cache-Rebuild-Visibility-Registries",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
-                      "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Rebuild payload reports registry counts\", function () {",
-                      "    const data = pm.response.json().data;",
-                      "    pm.expect(data).to.be.an(\"object\");",
-                      "    pm.expect(data).to.have.property(\"species_enabled\");",
-                      "    pm.expect(data).to.have.property(\"strains_enabled\");",
-                      "    pm.expect(data.species_enabled).to.be.a(\"number\").and.to.be.at.least(1);",
-                      "    pm.expect(data.strains_enabled).to.be.a(\"number\").and.to.be.at.least(1);",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{mett-current}}/api/admin/cache/rebuild",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "admin",
-                    "cache",
-                    "rebuild"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{bearer-token-current}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Reloads in-memory enabled-species and enabled-strain registries from Elasticsearch. Requires an admin JWT (`bearer-token-current` in the environment must include the admin role). Call after species/strain ingest when enablement flags change. Does not modify ES documents.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Cache-Rebuild-Unauthorized",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 401\", function () {",
-                      "    pm.response.to.have.status(401);",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{mett-current}}/api/admin/cache/rebuild",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "admin",
-                    "cache",
-                    "rebuild"
-                  ]
-                },
-                "auth": {
-                  "type": "noauth"
-                },
-                "description": "Cache rebuild without a bearer token must be rejected.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "response": []
-            }
-          ],
-          "description": "Operational endpoints. Visibility is data-driven (species/strain `enabled` in ES); use cache rebuild after ingest instead of mutating enablement through the portal API."
         },
         {
           "name": "Releases",
@@ -4595,7 +4583,7 @@
                           "    pm.expect(names).to.include(pm.collectionVariables.get(\"isolate_name\"));",
                           "});",
                           "if (names.indexOf(pm.collectionVariables.get(\"isolate_name_bf\")) === -1) {",
-                          "    console.warn(\"[anchors] BF_NCTC9343 not returned \u2014 20hm genome may not be indexed yet\");",
+                          "    console.warn(\"[anchors] BF_NCTC9343 not returned — 20hm genome may not be indexed yet\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -4636,7 +4624,7 @@
                         "exec": [
                           "const code = pm.response.code;",
                           "if (code === 404) {",
-                          "    console.warn(\"[anchors] BF genome 404 \u2014 not indexed yet\");",
+                          "    console.warn(\"[anchors] BF genome 404 — not indexed yet\");",
                           "    pm.test(\"BF genome absent (expected until 20hm ingest)\", function () {",
                           "        pm.expect(code).to.eql(404);",
                           "    });",
@@ -4787,7 +4775,7 @@
                           "} else {",
                           "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
                           "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
-                          "        \"\u2192 species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -4837,7 +4825,7 @@
                         "exec": [
                           "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
                           "if (!bfLocus) {",
-                          "    console.warn(\"[BF gene] skipped \u2014 run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
                           "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
                           "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
                           "    });",
@@ -5000,7 +4988,7 @@
                           "} else {",
                           "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
                           "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
-                          "        \"\u2192 species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -5050,7 +5038,7 @@
                         "exec": [
                           "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
                           "if (!bfLocus) {",
-                          "    console.warn(\"[BF gene] skipped \u2014 run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
                           "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
                           "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
                           "    });",
@@ -5213,7 +5201,7 @@
                           "} else {",
                           "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
                           "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
-                          "        \"\u2192 species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -5263,7 +5251,7 @@
                         "exec": [
                           "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
                           "if (!bfLocus) {",
-                          "    console.warn(\"[BF gene] skipped \u2014 run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
                           "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
                           "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
                           "    });",
@@ -5427,7 +5415,7 @@
                           "} else {",
                           "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
                           "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
-                          "        \"\u2192 species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -5477,7 +5465,7 @@
                         "exec": [
                           "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
                           "if (!bfLocus) {",
-                          "    console.warn(\"[BF gene] skipped \u2014 run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
                           "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
                           "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
                           "    });",
@@ -5610,7 +5598,7 @@
                         }
                       ]
                     },
-                    "description": "Shared Pfam (dnaA PF00308) across BU + BF isolates \u2014 checks whether the 20hm type strain surfaces the same domain hit."
+                    "description": "Shared Pfam (dnaA PF00308) across BU + BF isolates — checks whether the 20hm type strain surfaces the same domain hit."
                   },
                   "response": []
                 },
@@ -5634,7 +5622,7 @@
                           "    pm.expect(byIsolate[pm.collectionVariables.get(\"isolate_name\")] || 0).to.be.above(0);",
                           "});",
                           "if (!(byIsolate[pm.collectionVariables.get(\"isolate_name_bf\")] > 0)) {",
-                          "    console.warn(\"[AMR search] no BF AMR hits \u2014 possible annotation gap or missing index\");",
+                          "    console.warn(\"[AMR search] no BF AMR hits — possible annotation gap or missing index\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -5756,7 +5744,7 @@
                           "    pm.test(\"Status code is 200\", function () {",
                           "        pm.response.to.have.status(200);",
                           "    });",
-                          "    console.log(\"[faceted BF] ok \u2014 inspect facets/results for dnaA Pfam coverage\");",
+                          "    console.log(\"[faceted BF] ok — inspect facets/results for dnaA Pfam coverage\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -5801,7 +5789,7 @@
           ]
         }
       ],
-      "description": "Compare annotation depth between the HD BU type strain (BU_ATCC8492) and a 20hm Bacteroides type strain (default BF_NCTC9343).\n\n**Fixtures:** dnaA (core), rpsR (essential ribosomal), per1/cblA (AMR), RnlAB (defense/MGE).\n\n**How to run each gene folder:** 01 \u2192 02 \u2192 03. Console logs list present/missing annotation layers and gaps vs BU.\n\n**Note:** BF requests soft-warn until the 20hm isolate is indexed.",
+      "description": "Compare annotation depth between the HD BU type strain (BU_ATCC8492) and a 20hm Bacteroides type strain (default BF_NCTC9343).\n\n**Fixtures:** dnaA (core), rpsR (essential ribosomal), per1/cblA (AMR), RnlAB (defense/MGE).\n\n**How to run each gene folder:** 01 → 02 → 03. Console logs list present/missing annotation layers and gaps vs BU.\n\n**Note:** BF requests soft-warn until the 20hm isolate is indexed.",
       "event": [
         {
           "listen": "prerequest",

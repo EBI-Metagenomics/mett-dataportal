@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "35bb5461-2cd3-4da0-973e-6912134563b6",
+    "_postman_id": "5b3f6dca-5ecb-4d02-9f08-7bbe6a18b192",
     "name": "METT-ElasticSearch-Extended",
-    "description": "Dataset maintenance queries against a METT Elasticsearch **release set**.\n\n**Host:** `{{mett-elasticsearch-current}}` from the Postman environment (local / dev / prod files in `postman/`).\n\n**Auth:** collection-level Basic `{{mett-elasticsearch-username}}` / `{{mett-elasticsearch-pass}}` \u2014 same secret-in-environment pattern as METT-DataPortal's `{{bearer-token-current}}`. Leave those env values empty in git; fill them in Postman.\n\n**Indexes:** collection variables `index-*` default to `mett-{{mett-release}}-{family}`. Change `mett-release` or override a single `index-*` (legacy `feature_index`, or a concrete `mett-v1-g001-features`).\n\nUse **METT-ElasticSearch** for smoke expected-totals. This collection is for inventory, species visibility, and ingest quality checks.\n\nSpecies enable/disable writes Elasticsearch only; restart the API so the in-memory species registry reloads.",
+    "description": "Dataset maintenance queries against a METT Elasticsearch **release set**.\n\n**Host:** `{{mett-elasticsearch-current}}` from the Postman environment (local / dev / prod files in `postman/`).\n\n**Auth:** collection-level Basic `{{mett-elasticsearch-username}}` / `{{mett-elasticsearch-pass}}` — same secret-in-environment pattern as METT-DataPortal's `{{bearer-token-current}}`. Leave those env values empty in git; fill them in Postman.\n\n**Indexes:** collection variables `index-*` default to `mett-{{mett-release}}-{family}`. Change `mett-release` or override a single `index-*` (legacy `feature_index`, or a concrete `mett-v1-g001-features`).\n\nUse **METT-ElasticSearch** for smoke expected-totals. This collection is for inventory, species/strain visibility, and ingest quality checks.\n\nSpecies/strain enable/disable writes Elasticsearch only; call DataPortal `POST /api/admin/cache/rebuild` (admin JWT) so in-memory visibility registries reload.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "19420352"
   },
@@ -12,28 +12,6 @@
       "item": [
         {
           "name": "Cluster health",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/_cluster/health?pretty=true",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "_cluster",
-                "health"
-              ],
-              "query": [
-                {
-                  "key": "pretty",
-                  "value": "true"
-                }
-              ]
-            },
-            "description": "Cluster status for the host in `mett-elasticsearch-current`."
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -55,10 +33,48 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_cluster/health?pretty=true",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_cluster",
+                "health"
+              ],
+              "query": [
+                {
+                  "key": "pretty",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Cluster status for the host in `mett-elasticsearch-current`."
+          },
+          "response": []
         },
         {
           "name": "Cat indexes (mett-*)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -89,7 +105,10 @@
             },
             "description": "Physical `mett-*` indexes and document counts."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Cat aliases (mett-*)",
           "event": [
             {
               "listen": "test",
@@ -105,10 +124,7 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Cat aliases (mett-*)",
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -135,43 +151,10 @@
             },
             "description": "Release aliases (`mett-v1-features`) and `mett-current-*` plus any leftover `*_index` aliases."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {},
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  ""
-                ]
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "Resolve release aliases",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/_resolve/index/mett-{{mett-release}}-*",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "_resolve",
-                "index",
-                "mett-{{mett-release}}-*"
-              ]
-            },
-            "description": "Shows which concrete generation each `mett-{{mett-release}}-*` alias points at."
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -196,7 +179,24 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_resolve/index/mett-{{mett-release}}-*",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_resolve",
+                "index",
+                "mett-{{mett-release}}-*"
+              ]
+            },
+            "description": "Shows which concrete generation each `mett-{{mett-release}}-*` alias points at."
+          },
+          "response": []
         }
       ],
       "description": "Cluster and alias inventory for the selected Elasticsearch environment."
@@ -206,36 +206,6 @@
       "item": [
         {
           "name": "List species (enabled and disabled)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "{{index-species}}",
-                "_search"
-              ]
-            },
-            "description": "Portal APIs only return `enabled=true`. This lists every species document.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"size\": 50,\n  \"track_total_hits\": true,\n  \"sort\": [\n    {\n      \"acronym\": \"asc\"\n    }\n  ],\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"_source\": [\n    \"acronym\",\n    \"scientific_name\",\n    \"common_name\",\n    \"taxonomy_id\",\n    \"enabled\"\n  ],\n  \"aggs\": {\n    \"enabled\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": true\n        }\n      }\n    },\n    \"disabled\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": false\n        }\n      }\n    }\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -272,27 +242,40 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Get species `{{species_acronym_toggle}}`",
+          ],
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 50,\n  \"track_total_hits\": true,\n  \"sort\": [\n    {\n      \"acronym\": \"asc\"\n    }\n  ],\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"_source\": [\n    \"acronym\",\n    \"scientific_name\",\n    \"common_name\",\n    \"taxonomy_id\",\n    \"enabled\"\n  ],\n  \"aggs\": {\n    \"enabled\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": true\n        }\n      }\n    },\n    \"disabled\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": false\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_doc/{{species_acronym_toggle}}",
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
               "host": [
                 "{{mett-elasticsearch-current}}"
               ],
               "path": [
                 "{{index-species}}",
-                "_doc",
-                "{{species_acronym_toggle}}"
+                "_search"
               ]
             },
-            "description": "Species `_id` is the acronym. Defaults to `species_acronym_toggle` so BU/PV are not used for enable/disable tests."
+            "description": "Portal APIs only return `enabled=true`. This lists every species document."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Get species `{{species_acronym_toggle}}`",
           "event": [
             {
               "listen": "test",
@@ -314,10 +297,48 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_doc/{{species_acronym_toggle}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_doc",
+                "{{species_acronym_toggle}}"
+              ]
+            },
+            "description": "Species `_id` is the acronym. Defaults to `species_acronym_toggle` so BU/PV are not used for enable/disable tests."
+          },
+          "response": []
         },
         {
           "name": "Enable one species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Document updated\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.result).to.be.oneOf([\"updated\", \"noop\"]);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -326,24 +347,6 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update/{{species_acronym_toggle}}?refresh=true",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "{{index-species}}",
-                "_update",
-                "{{species_acronym_toggle}}"
-              ],
-              "query": [
-                {
-                  "key": "refresh",
-                  "value": "true"
-                }
-              ]
-            },
-            "description": "Sets `enabled=true` on one species document. This does **not** refresh the Django in-memory species registry; restart the API (or call the portal enable endpoint if available) after changing visibility.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"doc\": {\n    \"enabled\": true\n  }\n}",
@@ -352,41 +355,7 @@
                   "language": "json"
                 }
               }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {},
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Document updated\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.result).to.be.oneOf([\"updated\", \"noop\"]);",
-                  "});",
-                  ""
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Disable one species",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            },
             "url": {
               "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update/{{species_acronym_toggle}}?refresh=true",
               "host": [
@@ -404,18 +373,12 @@
                 }
               ]
             },
-            "description": "Sets `enabled=false` on `{{species_acronym_toggle}}`.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"doc\": {\n    \"enabled\": false\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Sets `enabled=true` on one species document. This does **not** refresh the Django in-memory species registry; call DataPortal `POST /api/admin/cache/rebuild` after changing visibility."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Disable one species",
           "event": [
             {
               "listen": "test",
@@ -436,10 +399,7 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Enable species (bulk)",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -448,27 +408,83 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doc\": {\n    \"enabled\": false\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update_by_query?refresh=true&conflicts=proceed",
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update/{{species_acronym_toggle}}?refresh=true",
               "host": [
                 "{{mett-elasticsearch-current}}"
               ],
               "path": [
                 "{{index-species}}",
-                "_update_by_query"
+                "_update",
+                "{{species_acronym_toggle}}"
               ],
               "query": [
                 {
                   "key": "refresh",
                   "value": "true"
-                },
-                {
-                  "key": "conflicts",
-                  "value": "proceed"
                 }
               ]
             },
-            "description": "Enables every acronym in `species_acronyms_bulk` (comma-separated). Does not touch BU/PV unless those acronyms are in the list.",
+            "description": "Sets `enabled=false` on `{{species_acronym_toggle}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "Enable species (bulk)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "const raw = pm.collectionVariables.get(\"species_acronyms_bulk\") || \"\";",
+                  "const acronyms = raw.split(\",\").map(function (s) { return s.trim(); }).filter(Boolean);",
+                  "pm.expect(acronyms.length, \"species_acronyms_bulk\").to.be.at.least(1);",
+                  "pm.variables.set(\"species_acronyms_bulk_json\", JSON.stringify(acronyms));",
+                  "console.log(\"bulk acronyms=\" + JSON.stringify(acronyms));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Update by query succeeded\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.updated).to.be.at.least(0);",
+                  "    console.log(\"updated=\" + jsonData.updated + \" total=\" + jsonData.total);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"query\": {\n    \"terms\": {\n      \"acronym\": {{species_acronyms_bulk_json}}\n    }\n  },\n  \"script\": {\n    \"lang\": \"painless\",\n    \"source\": \"ctx._source.enabled = params.enabled\",\n    \"params\": {\n      \"enabled\": true\n    }\n  }\n}",
@@ -477,57 +493,7 @@
                   "language": "json"
                 }
               }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {},
-                "exec": [
-                  "const raw = pm.collectionVariables.get(\"species_acronyms_bulk\") || \"\";",
-                  "const acronyms = raw.split(\",\").map(function (s) { return s.trim(); }).filter(Boolean);",
-                  "pm.expect(acronyms.length, \"species_acronyms_bulk\").to.be.at.least(1);",
-                  "pm.variables.set(\"species_acronyms_bulk_json\", JSON.stringify(acronyms));",
-                  "console.log(\"bulk acronyms=\" + JSON.stringify(acronyms));"
-                ]
-              }
             },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {},
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Update by query succeeded\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.updated).to.be.at.least(0);",
-                  "    console.log(\"updated=\" + jsonData.updated + \" total=\" + jsonData.total);",
-                  "});",
-                  ""
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Disable species (bulk)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
             "url": {
               "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update_by_query?refresh=true&conflicts=proceed",
               "host": [
@@ -548,18 +514,12 @@
                 }
               ]
             },
-            "description": "Disables every acronym in `species_acronyms_bulk`.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": {\n    \"terms\": {\n      \"acronym\": {{species_acronyms_bulk_json}}\n    }\n  },\n  \"script\": {\n    \"lang\": \"painless\",\n    \"source\": \"ctx._source.enabled = params.enabled\",\n    \"params\": {\n      \"enabled\": false\n    }\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Enables every acronym in `species_acronyms_bulk` (comma-separated). Does not touch BU/PV unless those acronyms are in the list."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Disable species (bulk)",
           "event": [
             {
               "listen": "prerequest",
@@ -596,16 +556,497 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": {\n    \"terms\": {\n      \"acronym\": {{species_acronyms_bulk_json}}\n    }\n  },\n  \"script\": {\n    \"lang\": \"painless\",\n    \"source\": \"ctx._source.enabled = params.enabled\",\n    \"params\": {\n      \"enabled\": false\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_update_by_query?refresh=true&conflicts=proceed",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-species}}",
+                "_update_by_query"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                },
+                {
+                  "key": "conflicts",
+                  "value": "proceed"
+                }
+              ]
+            },
+            "description": "Disables every acronym in `species_acronyms_bulk`."
+          },
+          "response": []
         }
       ],
-      "description": "Toggle `enabled` on species documents. Single updates use `species_acronym_toggle`; bulk updates use `species_acronyms_bulk`."
+      "description": "Toggle `enabled` on species documents. Single updates use `species_acronym_toggle`; bulk updates use `species_acronyms_bulk`. After ES changes, call DataPortal `POST /api/admin/cache/rebuild` (admin JWT) so in-memory species registries reload."
+    },
+    {
+      "name": "Strain visibility",
+      "item": [
+        {
+          "name": "List strains (enabled and disabled)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logs hit total\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const hits = jsonData.hits || {};",
+                  "    const raw = hits.total;",
+                  "    const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "    console.log(\"strains total=\" + total);",
+                  "    pm.expect(Number(total)).to.be.at.least(0);",
+                  "    const aggs = jsonData.aggregations || {};",
+                  "    Object.keys(aggs).forEach(function (key) {",
+                  "        const agg = aggs[key] || {};",
+                  "        if (Array.isArray(agg.buckets)) {",
+                  "            console.log(key + \" buckets=\" + agg.buckets.length);",
+                  "            agg.buckets.slice(0, 30).forEach(function (b) {",
+                  "                console.log(\"  \" + b.key + \"=\" + b.doc_count);",
+                  "            });",
+                  "        } else if (agg.doc_count != null) {",
+                  "            console.log(key + \"=\" + agg.doc_count);",
+                  "        }",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 200,\n  \"track_total_hits\": true,\n  \"sort\": [\n    {\n      \"isolate_name.keyword\": \"asc\"\n    }\n  ],\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"_source\": [\n    \"isolate_name\",\n    \"species_acronym\",\n    \"species_scientific_name\",\n    \"type_strain\",\n    \"enabled\"\n  ],\n  \"aggs\": {\n    \"enabled\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": true\n        }\n      }\n    },\n    \"disabled\": {\n      \"filter\": {\n        \"term\": {\n          \"enabled\": false\n        }\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_search"
+              ]
+            },
+            "description": "Portal genome/gene APIs hide strains with `enabled=false` (and those whose species is disabled). This lists every strain document with enablement counts."
+          },
+          "response": []
+        },
+        {
+          "name": "Get strain `{{isolate_name_toggle}}`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Document id matches isolate_name\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.found).to.eql(true);",
+                  "    console.log(jsonData._id + \" enabled=\" + jsonData._source.enabled);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_doc/{{isolate_name_toggle}}",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_doc",
+                "{{isolate_name_toggle}}"
+              ]
+            },
+            "description": "Strain `_id` is the isolate name. Defaults to `isolate_name_toggle` so BU_ATCC8492 / PV_ATCC8482 are not used for enable/disable tests."
+          },
+          "response": []
+        },
+        {
+          "name": "Enable one strain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Document updated\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.result).to.be.oneOf([\"updated\", \"noop\"]);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doc\": {\n    \"enabled\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_update/{{isolate_name_toggle}}?refresh=true",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_update",
+                "{{isolate_name_toggle}}"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Sets `enabled=true` on one strain document. This does **not** refresh the Django in-memory strain registry; call DataPortal `POST /api/admin/cache/rebuild` after changing visibility."
+          },
+          "response": []
+        },
+        {
+          "name": "Disable one strain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Document updated\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.result).to.be.oneOf([\"updated\", \"noop\"]);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doc\": {\n    \"enabled\": false\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_update/{{isolate_name_toggle}}?refresh=true",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_update",
+                "{{isolate_name_toggle}}"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Sets `enabled=false` on `{{isolate_name_toggle}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "Enable strains (bulk)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "const raw = pm.collectionVariables.get(\"isolate_names_bulk\") || \"\";",
+                  "const names = raw.split(\",\").map(function (s) { return s.trim(); }).filter(Boolean);",
+                  "pm.expect(names.length, \"isolate_names_bulk\").to.be.at.least(1);",
+                  "pm.variables.set(\"isolate_names_bulk_json\", JSON.stringify(names));",
+                  "console.log(\"bulk isolates=\" + JSON.stringify(names));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Update by query succeeded\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.updated).to.be.at.least(0);",
+                  "    console.log(\"updated=\" + jsonData.updated + \" total=\" + jsonData.total);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": {\n    \"ids\": {\n      \"values\": {{isolate_names_bulk_json}}\n    }\n  },\n  \"script\": {\n    \"lang\": \"painless\",\n    \"source\": \"ctx._source.enabled = params.enabled\",\n    \"params\": {\n      \"enabled\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_update_by_query?refresh=true&conflicts=proceed",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_update_by_query"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                },
+                {
+                  "key": "conflicts",
+                  "value": "proceed"
+                }
+              ]
+            },
+            "description": "Enables every isolate in `isolate_names_bulk` (comma-separated). Matches strain `_id` values. Does not touch BU_ATCC8492 / PV_ATCC8482 unless those names are in the list."
+          },
+          "response": []
+        },
+        {
+          "name": "Disable strains (bulk)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "const raw = pm.collectionVariables.get(\"isolate_names_bulk\") || \"\";",
+                  "const names = raw.split(\",\").map(function (s) { return s.trim(); }).filter(Boolean);",
+                  "pm.expect(names.length, \"isolate_names_bulk\").to.be.at.least(1);",
+                  "pm.variables.set(\"isolate_names_bulk_json\", JSON.stringify(names));",
+                  "console.log(\"bulk isolates=\" + JSON.stringify(names));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Update by query succeeded\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.updated).to.be.at.least(0);",
+                  "    console.log(\"updated=\" + jsonData.updated + \" total=\" + jsonData.total);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": {\n    \"ids\": {\n      \"values\": {{isolate_names_bulk_json}}\n    }\n  },\n  \"script\": {\n    \"lang\": \"painless\",\n    \"source\": \"ctx._source.enabled = params.enabled\",\n    \"params\": {\n      \"enabled\": false\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_update_by_query?refresh=true&conflicts=proceed",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_update_by_query"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "true"
+                },
+                {
+                  "key": "conflicts",
+                  "value": "proceed"
+                }
+              ]
+            },
+            "description": "Disables every isolate in `isolate_names_bulk`."
+          },
+          "response": []
+        }
+      ],
+      "description": "Toggle `enabled` on strain documents. Single updates use `isolate_name_toggle`; bulk updates use `isolate_names_bulk`. After ES changes, call DataPortal `POST /api/admin/cache/rebuild` (admin JWT) so in-memory strain registries reload."
     },
     {
       "name": "Inventory",
       "item": [
         {
           "name": "Totals for all indexes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Each msearch response is OK\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responses = jsonData.responses || [];",
+                  "    const labels = [\"Species\", \"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
+                  "    pm.expect(responses.length).to.eql(labels.length);",
+                  "    responses.forEach(function (resp, i) {",
+                  "        const status = resp.status == null ? 200 : resp.status;",
+                  "        pm.expect(status, labels[i] + \" status\").to.be.below(300);",
+                  "        const hits = resp.hits || {};",
+                  "        const raw = hits.total;",
+                  "        const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
+                  "        console.log(labels[i] + \" total=\" + total);",
+                  "        const aggs = resp.aggregations || {};",
+                  "        Object.keys(aggs).forEach(function (key) {",
+                  "            const agg = aggs[key] || {};",
+                  "            if (Array.isArray(agg.buckets)) {",
+                  "                console.log(\"  \" + key + \" buckets=\" + agg.buckets.length);",
+                  "                agg.buckets.slice(0, 20).forEach(function (b) {",
+                  "                    console.log(\"    \" + b.key + \"=\" + b.doc_count);",
+                  "                });",
+                  "            }",
+                  "        });",
+                  "    });",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -614,16 +1055,6 @@
                 "value": "application/x-ndjson"
               }
             ],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/_msearch",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "_msearch"
-              ]
-            },
-            "description": "One `_msearch` for document totals across every `index-*` alias.",
             "body": {
               "mode": "raw",
               "raw": "{\"index\": \"{{index-species}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}}}\n",
@@ -632,9 +1063,22 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_msearch",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_msearch"
+              ]
+            },
+            "description": "One `_msearch` for document totals across every `index-*` alias."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Counts by species — all indexes",
           "event": [
             {
               "listen": "test",
@@ -675,10 +1119,7 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Counts by species \u2014 all indexes",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -687,16 +1128,6 @@
                 "value": "application/x-ndjson"
               }
             ],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/_msearch",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "_msearch"
-              ]
-            },
-            "description": "Terms aggregations on species (and strain where present) for every index.",
             "body": {
               "mode": "raw",
               "raw": "{\"index\": \"{{index-species}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"acronym\",\"size\":50}}}}\n{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name.keyword\",\"size\":200}}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name.keyword\",\"size\":200}}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species_a\":{\"terms\":{\"field\":\"species_a_acronym\",\"size\":50}},\"by_species_b\":{\"terms\":{\"field\":\"species_b_acronym\",\"size\":50}},\"by_isolate_a\":{\"terms\":{\"field\":\"isolate_a\",\"size\":200}},\"by_isolate_b\":{\"terms\":{\"field\":\"isolate_b\",\"size\":200}}}}\n",
@@ -705,9 +1136,22 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_msearch",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_msearch"
+              ]
+            },
+            "description": "Terms aggregations on species (and strain where present) for every index."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Counts by strain — all indexes",
           "event": [
             {
               "listen": "test",
@@ -723,7 +1167,7 @@
                   "pm.test(\"Each msearch response is OK\", function () {",
                   "    const jsonData = pm.response.json();",
                   "    const responses = jsonData.responses || [];",
-                  "    const labels = [\"Species\", \"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
+                  "    const labels = [\"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
                   "    pm.expect(responses.length).to.eql(labels.length);",
                   "    responses.forEach(function (resp, i) {",
                   "        const status = resp.status == null ? 200 : resp.status;",
@@ -748,10 +1192,7 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Counts by strain \u2014 all indexes",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -760,16 +1201,6 @@
                 "value": "application/x-ndjson"
               }
             ],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/_msearch",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "_msearch"
-              ]
-            },
-            "description": "Same aggregations as the species inventory, skipping the species index.",
             "body": {
               "mode": "raw",
               "raw": "{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name.keyword\",\"size\":200}}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name.keyword\",\"size\":200}}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species\":{\"terms\":{\"field\":\"species_acronym\",\"size\":50}},\"by_strain\":{\"terms\":{\"field\":\"isolate_name\",\"size\":200}}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"match_all\":{}},\"aggs\":{\"by_species_a\":{\"terms\":{\"field\":\"species_a_acronym\",\"size\":50}},\"by_species_b\":{\"terms\":{\"field\":\"species_b_acronym\",\"size\":50}},\"by_isolate_a\":{\"terms\":{\"field\":\"isolate_a\",\"size\":200}},\"by_isolate_b\":{\"terms\":{\"field\":\"isolate_b\",\"size\":200}}}}\n",
@@ -778,61 +1209,7 @@
                   "language": "json"
                 }
               }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {},
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Each msearch response is OK\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    const responses = jsonData.responses || [];",
-                  "    const labels = [\"Strains\", \"Strain experiments\", \"Features\", \"Feature experiments\", \"PPI\", \"Operons\", \"Fitness correlations\", \"Orthologs\"];",
-                  "    pm.expect(responses.length).to.eql(labels.length);",
-                  "    responses.forEach(function (resp, i) {",
-                  "        const status = resp.status == null ? 200 : resp.status;",
-                  "        pm.expect(status, labels[i] + \" status\").to.be.below(300);",
-                  "        const hits = resp.hits || {};",
-                  "        const raw = hits.total;",
-                  "        const total = (raw && typeof raw === \"object\") ? (raw.value || 0) : (raw || 0);",
-                  "        console.log(labels[i] + \" total=\" + total);",
-                  "        const aggs = resp.aggregations || {};",
-                  "        Object.keys(aggs).forEach(function (key) {",
-                  "            const agg = aggs[key] || {};",
-                  "            if (Array.isArray(agg.buckets)) {",
-                  "                console.log(\"  \" + key + \" buckets=\" + agg.buckets.length);",
-                  "                agg.buckets.slice(0, 20).forEach(function (b) {",
-                  "                    console.log(\"    \" + b.key + \"=\" + b.doc_count);",
-                  "                });",
-                  "            }",
-                  "        });",
-                  "    });",
-                  "});",
-                  ""
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Counts for selected species \u2014 all indexes",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/x-ndjson"
-              }
-            ],
+            },
             "url": {
               "raw": "{{mett-elasticsearch-current}}/_msearch",
               "host": [
@@ -842,18 +1219,12 @@
                 "_msearch"
               ]
             },
-            "description": "Filter every index to `species_acronym` (orthologs match A or B). Species index uses `acronym`.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\"index\": \"{{index-species}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"bool\":{\"should\":[{\"term\":{\"species_a_acronym\":\"{{species_acronym}}\"}},{\"term\":{\"species_b_acronym\":\"{{species_acronym}}\"}}],\"minimum_should_match\":1}}}\n",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Same aggregations as the species inventory, skipping the species index."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Counts for selected species — all indexes",
           "event": [
             {
               "listen": "test",
@@ -894,10 +1265,7 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Counts for selected strain \u2014 all indexes",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -906,6 +1274,15 @@
                 "value": "application/x-ndjson"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"index\": \"{{index-species}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"species_acronym\":\"{{species_acronym}}\"}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"bool\":{\"should\":[{\"term\":{\"species_a_acronym\":\"{{species_acronym}}\"}},{\"term\":{\"species_b_acronym\":\"{{species_acronym}}\"}}],\"minimum_should_match\":1}}}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{mett-elasticsearch-current}}/_msearch",
               "host": [
@@ -915,18 +1292,12 @@
                 "_msearch"
               ]
             },
-            "description": "Filter every strain-bearing index to `isolate_name` (orthologs match isolate A or B).",
-            "body": {
-              "mode": "raw",
-              "raw": "{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name.keyword\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name.keyword\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"bool\":{\"should\":[{\"term\":{\"isolate_a\":\"{{isolate_name}}\"}},{\"term\":{\"isolate_b\":\"{{isolate_name}}\"}}],\"minimum_should_match\":1}}}\n",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Filter every index to `species_acronym` (orthologs match A or B). Species index uses `acronym`."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Counts for selected strain — all indexes",
           "event": [
             {
               "listen": "test",
@@ -967,7 +1338,36 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-ndjson"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"index\": \"{{index-strains}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name.keyword\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-strain-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name.keyword\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-features}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-feature-experiments}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-ppi}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-operons}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-fitness-correlations}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"term\":{\"isolate_name\":\"{{isolate_name}}\"}}}\n{\"index\": \"{{index-orthologs}}\"}\n{\"size\":0,\"track_total_hits\":true,\"query\":{\"bool\":{\"should\":[{\"term\":{\"isolate_a\":\"{{isolate_name}}\"}},{\"term\":{\"isolate_b\":\"{{isolate_name}}\"}}],\"minimum_should_match\":1}}}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/_msearch",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "_msearch"
+              ]
+            },
+            "description": "Filter every strain-bearing index to `isolate_name` (orthologs match isolate A or B)."
+          },
+          "response": []
         }
       ],
       "description": "Cross-index document counts. Change `species_acronym` / `isolate_name` at collection scope."
@@ -979,37 +1379,7 @@
           "name": "Species",
           "item": [
             {
-              "name": "Species \u2014 by species and strain",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-species}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-species}}`.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "response": [],
+              "name": "Species — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -1046,10 +1416,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Species \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1058,6 +1425,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
                   "host": [
@@ -1068,17 +1444,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-species}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Species — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -1115,10 +1486,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Species \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1127,6 +1495,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
                   "host": [
@@ -1136,18 +1513,12 @@
                     "{{index-species}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Species — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -1170,15 +1541,7 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Strains",
-          "item": [
-            {
-              "name": "Strains \u2014 by species and strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1187,28 +1550,35 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-strains}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-strains}}`.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name.keyword\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-species}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-species}}",
+                    "_search"
+                  ]
                 }
               },
-              "response": [],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Strains",
+          "item": [
+            {
+              "name": "Strains — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -1245,10 +1615,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Strains \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1257,6 +1624,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name.keyword\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
                   "host": [
@@ -1267,17 +1643,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-strains}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Strains — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -1314,10 +1685,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Strains \u2014 selected strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1326,6 +1694,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
                   "host": [
@@ -1335,18 +1712,12 @@
                     "{{index-strains}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Strains — selected strain",
               "event": [
                 {
                   "listen": "test",
@@ -1383,10 +1754,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Strains \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1395,6 +1763,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
                   "host": [
@@ -1404,19 +1781,12 @@
                     "{{index-strains}}",
                     "_search"
                   ]
-                },
-                "description": "One document for `isolate_name` so you can inspect ingest shape.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Strains — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -1442,15 +1812,7 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Strain experiments",
-          "item": [
-            {
-              "name": "Strain experiments \u2014 by species and strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1459,28 +1821,36 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-strain-experiments}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-strain-experiments}}`.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name.keyword\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
-                }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strains}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape."
               },
-              "response": [],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Strain experiments",
+          "item": [
+            {
+              "name": "Strain experiments — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -1517,10 +1887,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Strain experiments \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1529,6 +1896,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name.keyword\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
                   "host": [
@@ -1539,17 +1915,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-strain-experiments}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Strain experiments — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -1586,10 +1957,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Strain experiments \u2014 selected strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1598,6 +1966,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
                   "host": [
@@ -1607,18 +1984,12 @@
                     "{{index-strain-experiments}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Strain experiments — selected strain",
               "event": [
                 {
                   "listen": "test",
@@ -1655,10 +2026,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Strain experiments \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1667,6 +2035,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
                   "host": [
@@ -1676,19 +2053,12 @@
                     "{{index-strain-experiments}}",
                     "_search"
                   ]
-                },
-                "description": "One document for `isolate_name` so you can inspect ingest shape.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Strain experiments — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -1714,15 +2084,7 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Features",
-          "item": [
-            {
-              "name": "Features \u2014 by species and strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1731,28 +2093,36 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-features}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-features}}`.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name.keyword\": \"{{isolate_name}}\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
-                }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-strain-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-strain-experiments}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape."
               },
-              "response": [],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Features",
+          "item": [
+            {
+              "name": "Features — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -1789,10 +2159,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Features \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1801,6 +2168,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
                   "host": [
@@ -1811,17 +2187,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-features}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Features — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -1858,10 +2229,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Features \u2014 selected strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1870,6 +2238,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
                   "host": [
@@ -1879,18 +2256,12 @@
                     "{{index-features}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Features — selected strain",
               "event": [
                 {
                   "listen": "test",
@@ -1927,10 +2298,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Features \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -1939,6 +2307,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
                   "host": [
@@ -1948,19 +2325,12 @@
                     "{{index-features}}",
                     "_search"
                   ]
-                },
-                "description": "One document for `isolate_name` so you can inspect ingest shape.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Features — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -1986,15 +2356,7 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Feature experiments",
-          "item": [
-            {
-              "name": "Feature experiments \u2014 by species and strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2003,28 +2365,36 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-feature-experiments}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-feature-experiments}}`.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
-                }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-features}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape."
               },
-              "response": [],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Feature experiments",
+          "item": [
+            {
+              "name": "Feature experiments — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -2061,10 +2431,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Feature experiments \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2073,6 +2440,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
                   "host": [
@@ -2083,17 +2459,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-feature-experiments}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Feature experiments — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -2130,10 +2501,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Feature experiments \u2014 selected strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2142,6 +2510,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
                   "host": [
@@ -2151,18 +2528,12 @@
                     "{{index-feature-experiments}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Feature experiments — selected strain",
               "event": [
                 {
                   "listen": "test",
@@ -2199,10 +2570,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Feature experiments \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2211,6 +2579,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
                   "host": [
@@ -2220,19 +2597,12 @@
                     "{{index-feature-experiments}}",
                     "_search"
                   ]
-                },
-                "description": "One document for `isolate_name` so you can inspect ingest shape.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Feature experiments — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -2258,15 +2628,7 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "PPI",
-          "item": [
-            {
-              "name": "PPI \u2014 by species and strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2275,28 +2637,36 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-ppi}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-ppi}}`.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
-                }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-feature-experiments}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-feature-experiments}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape."
               },
-              "response": [],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "PPI",
+          "item": [
+            {
+              "name": "PPI — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -2333,10 +2703,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "PPI \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2345,6 +2712,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
                   "host": [
@@ -2355,17 +2731,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-ppi}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "PPI — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -2402,10 +2773,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "PPI \u2014 selected strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2414,6 +2782,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
                   "host": [
@@ -2423,18 +2800,12 @@
                     "{{index-ppi}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "PPI — selected strain",
               "event": [
                 {
                   "listen": "test",
@@ -2471,10 +2842,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "PPI \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2483,6 +2851,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
                   "host": [
@@ -2492,19 +2869,12 @@
                     "{{index-ppi}}",
                     "_search"
                   ]
-                },
-                "description": "One document for `isolate_name` so you can inspect ingest shape.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "PPI — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -2530,15 +2900,7 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Operons",
-          "item": [
-            {
-              "name": "Operons \u2014 by species and strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2547,28 +2909,36 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-operons}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-operons}}`.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
-                }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-ppi}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-ppi}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape."
               },
-              "response": [],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Operons",
+          "item": [
+            {
+              "name": "Operons — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -2605,10 +2975,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Operons \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2617,6 +2984,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
                   "host": [
@@ -2627,17 +3003,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-operons}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Operons — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -2674,10 +3045,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Operons \u2014 selected strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2686,6 +3054,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
                   "host": [
@@ -2695,18 +3072,12 @@
                     "{{index-operons}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Operons — selected strain",
               "event": [
                 {
                   "listen": "test",
@@ -2743,10 +3114,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Operons \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2755,6 +3123,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
                   "host": [
@@ -2764,19 +3141,12 @@
                     "{{index-operons}}",
                     "_search"
                   ]
-                },
-                "description": "One document for `isolate_name` so you can inspect ingest shape.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Operons — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -2802,15 +3172,7 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Fitness correlations",
-          "item": [
-            {
-              "name": "Fitness correlations \u2014 by species and strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2819,28 +3181,36 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-fitness-correlations}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-fitness-correlations}}`.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
-                }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-operons}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-operons}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape."
               },
-              "response": [],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Fitness correlations",
+          "item": [
+            {
+              "name": "Fitness correlations — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -2877,10 +3247,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Fitness correlations \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2889,6 +3256,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
                   "host": [
@@ -2899,17 +3275,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-fitness-correlations}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Fitness correlations — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -2946,10 +3317,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Fitness correlations \u2014 selected strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -2958,6 +3326,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"species_acronym\": \"{{species_acronym}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
                   "host": [
@@ -2967,18 +3344,12 @@
                     "{{index-fitness-correlations}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Fitness correlations — selected strain",
               "event": [
                 {
                   "listen": "test",
@@ -3015,10 +3386,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Fitness correlations \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -3027,6 +3395,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
                   "host": [
@@ -3036,19 +3413,12 @@
                     "{{index-fitness-correlations}}",
                     "_search"
                   ]
-                },
-                "description": "One document for `isolate_name` so you can inspect ingest shape.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Fitness correlations — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -3074,15 +3444,7 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Orthologs",
-          "item": [
-            {
-              "name": "Orthologs \u2014 by species and strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -3091,28 +3453,36 @@
                     "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
-                  "host": [
-                    "{{mett-elasticsearch-current}}"
-                  ],
-                  "path": [
-                    "{{index-orthologs}}",
-                    "_search"
-                  ]
-                },
-                "description": "Terms aggregations for `{{index-orthologs}}`.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species_a\": {\n      \"terms\": {\n        \"field\": \"species_a_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_species_b\": {\n      \"terms\": {\n        \"field\": \"species_b_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_isolate_a\": {\n      \"terms\": {\n        \"field\": \"isolate_a\",\n        \"size\": 200\n      }\n    },\n    \"by_isolate_b\": {\n      \"terms\": {\n        \"field\": \"isolate_b\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"isolate_name\": \"{{isolate_name}}\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
-                }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-fitness-correlations}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-fitness-correlations}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape."
               },
-              "response": [],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Orthologs",
+          "item": [
+            {
+              "name": "Orthologs — by species and strain",
               "event": [
                 {
                   "listen": "test",
@@ -3149,10 +3519,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Orthologs \u2014 selected species",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -3161,6 +3528,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"aggs\": {\n    \"by_species_a\": {\n      \"terms\": {\n        \"field\": \"species_a_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_species_b\": {\n      \"terms\": {\n        \"field\": \"species_b_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_isolate_a\": {\n      \"terms\": {\n        \"field\": \"isolate_a\",\n        \"size\": 200\n      }\n    },\n    \"by_isolate_b\": {\n      \"terms\": {\n        \"field\": \"isolate_b\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
                   "host": [
@@ -3171,17 +3547,12 @@
                     "_search"
                   ]
                 },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"species_a_acronym\": \"{{species_acronym}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"species_b_acronym\": \"{{species_acronym}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "Terms aggregations for `{{index-orthologs}}`."
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Orthologs — selected species",
               "event": [
                 {
                   "listen": "test",
@@ -3218,10 +3589,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Orthologs \u2014 selected strain",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -3230,6 +3598,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"species_a_acronym\": \"{{species_acronym}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"species_b_acronym\": \"{{species_acronym}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
                   "host": [
@@ -3239,18 +3616,12 @@
                     "{{index-orthologs}}",
                     "_search"
                   ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"isolate_a\": \"{{isolate_name}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"isolate_b\": \"{{isolate_name}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Orthologs — selected strain",
               "event": [
                 {
                   "listen": "test",
@@ -3287,10 +3658,7 @@
                     ]
                   }
                 }
-              ]
-            },
-            {
-              "name": "Orthologs \u2014 sample document",
+              ],
               "request": {
                 "method": "POST",
                 "header": [
@@ -3299,6 +3667,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"isolate_a\": \"{{isolate_name}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"isolate_b\": \"{{isolate_name}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
                   "host": [
@@ -3308,19 +3685,12 @@
                     "{{index-orthologs}}",
                     "_search"
                   ]
-                },
-                "description": "One document for `isolate_name` so you can inspect ingest shape.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"isolate_a\": \"{{isolate_name}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"isolate_b\": \"{{isolate_name}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
                 }
               },
-              "response": [],
+              "response": []
+            },
+            {
+              "name": "Orthologs — sample document",
               "event": [
                 {
                   "listen": "test",
@@ -3346,7 +3716,37 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"size\": 1,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"term\": {\n            \"isolate_a\": \"{{isolate_name}}\"\n          }\n        },\n        {\n          \"term\": {\n            \"isolate_b\": \"{{isolate_name}}\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{mett-elasticsearch-current}}/{{index-orthologs}}/_search",
+                  "host": [
+                    "{{mett-elasticsearch-current}}"
+                  ],
+                  "path": [
+                    "{{index-orthologs}}",
+                    "_search"
+                  ]
+                },
+                "description": "One document for `isolate_name` so you can inspect ingest shape."
+              },
+              "response": []
             }
           ]
         }
@@ -3358,35 +3758,6 @@
       "item": [
         {
           "name": "Strains missing fasta_url or gff_url",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "{{index-strains}}",
-                "_search"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"size\": 50,\n  \"track_total_hits\": true,\n  \"_source\": [\n    \"isolate_name\",\n    \"species_acronym\",\n    \"fasta_url\",\n    \"gff_url\",\n    \"fasta_file\",\n    \"gff_file\"\n  ],\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"fasta_url\"\n              }\n            }\n          }\n        },\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"gff_url\"\n              }\n            }\n          }\n        },\n        {\n          \"term\": {\n            \"fasta_url\": \"\"\n          }\n        },\n        {\n          \"term\": {\n            \"gff_url\": \"\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -3423,10 +3794,7 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Genes missing protein_sequence",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -3435,28 +3803,30 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "{{index-features}}",
-                "_search"
-              ]
-            },
-            "description": "Empty protein sequences usually mean the Prokka `.faa` was missing at ingest.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        }\n      ],\n      \"should\": [\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"protein_sequence\"\n              }\n            }\n          }\n        },\n        {\n          \"term\": {\n            \"protein_sequence.keyword\": \"\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+              "raw": "{\n  \"size\": 50,\n  \"track_total_hits\": true,\n  \"_source\": [\n    \"isolate_name\",\n    \"species_acronym\",\n    \"fasta_url\",\n    \"gff_url\",\n    \"fasta_file\",\n    \"gff_file\"\n  ],\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"fasta_url\"\n              }\n            }\n          }\n        },\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"gff_url\"\n              }\n            }\n          }\n        },\n        {\n          \"term\": {\n            \"fasta_url\": \"\"\n          }\n        },\n        {\n          \"term\": {\n            \"gff_url\": \"\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_search"
+              ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Genes missing protein_sequence",
           "event": [
             {
               "listen": "test",
@@ -3493,10 +3863,7 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Genes missing isolate_name",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -3505,6 +3872,15 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        }\n      ],\n      \"should\": [\n        {\n          \"bool\": {\n            \"must_not\": {\n              \"exists\": {\n                \"field\": \"protein_sequence\"\n              }\n            }\n          }\n        },\n        {\n          \"term\": {\n            \"protein_sequence.keyword\": \"\"\n          }\n        }\n      ],\n      \"minimum_should_match\": 1\n    }\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    },\n    \"by_strain\": {\n      \"terms\": {\n        \"field\": \"isolate_name\",\n        \"size\": 200\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
               "host": [
@@ -3515,17 +3891,12 @@
                 "_search"
               ]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        }\n      ],\n      \"must_not\": [\n        {\n          \"exists\": {\n            \"field\": \"isolate_name\"\n          }\n        }\n      ]\n    }\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Empty protein sequences usually mean the Prokka `.faa` was missing at ingest."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Genes missing isolate_name",
           "event": [
             {
               "listen": "test",
@@ -3562,10 +3933,7 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Type strains per species",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -3574,27 +3942,30 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
-              "host": [
-                "{{mett-elasticsearch-current}}"
-              ],
-              "path": [
-                "{{index-strains}}",
-                "_search"
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"type_strain\": true\n    }\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"feature_type\": \"gene\"\n          }\n        }\n      ],\n      \"must_not\": [\n        {\n          \"exists\": {\n            \"field\": \"isolate_name\"\n          }\n        }\n      ]\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-features}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-features}}",
+                "_search"
+              ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "Type strains per species",
           "event": [
             {
               "listen": "test",
@@ -3631,7 +4002,36 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 0,\n  \"track_total_hits\": true,\n  \"query\": {\n    \"term\": {\n      \"type_strain\": true\n    }\n  },\n  \"aggs\": {\n    \"by_species\": {\n      \"terms\": {\n        \"field\": \"species_acronym\",\n        \"size\": 50\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-elasticsearch-current}}/{{index-strains}}/_search",
+              "host": [
+                "{{mett-elasticsearch-current}}"
+              ],
+              "path": [
+                "{{index-strains}}",
+                "_search"
+              ]
+            }
+          },
+          "response": []
         }
       ],
       "description": "Spot-check ingest gaps after loading a new species batch."
@@ -3680,8 +4080,7 @@
     {
       "key": "mett-release",
       "value": "v1",
-      "type": "string",
-      "description": "Scientist-visible METT version token (v1, v2, \u2026). Used by index-* defaults."
+      "description": "Scientist-visible METT version token (v1, v2, …). Used by index-* defaults."
     },
     {
       "key": "index-species",
@@ -3722,26 +4121,35 @@
     {
       "key": "species_acronym",
       "value": "BU",
-      "type": "string",
       "description": "Species acronym used by filtered inventory queries (same as DataPortal)."
     },
     {
       "key": "isolate_name",
       "value": "BU_ATCC8492",
-      "type": "string",
       "description": "Isolate used by strain-filtered inventory (same as DataPortal)."
     },
     {
       "key": "species_acronym_toggle",
       "value": "AT",
-      "type": "string",
       "description": "Acronym used by single enable/disable so BU/PV stay untouched."
     },
     {
-      "key": "species_acronyms_bulk",
-      "value": "AR,AT,BT,BF",
-      "type": "string",
+      "key": "species_all_acronyms",
+      "value": "BU,PV,AR,BF,EL,BT,CR,RI,VP,FN,EB,CP,LS,SS,RG,CC,PM,SP,CA,DF,MS",
       "description": "Comma-separated species acronyms for bulk enable/disable."
+    },
+    {
+      "key": "species_acronyms_bulk",
+      "value": "AR,BF,EL,BT,CR,RI,VP,FN,EB,CP,LS,SS,RG,CC,PM,SP,CA,DF,MS",
+      "description": "Comma-separated species acronyms for bulk enable/disable."
+    },
+    {
+      "key": "isolate_name_toggle",
+      "value": "EL_DSM2243"
+    },
+    {
+      "key": "isolate_names_bulk",
+      "value": "EL_DSM2243,BF_NCTC9343,BT_ATCC29148,TR_ATCC25582,AR_VPI0990,RI_L1-82,VP_DSM2008,FN_ATCC25586,EB_ATCCBAA-613,CP_ATCC13124,LS_WM1,SS_NCTC8618,MG_ATCC29149,BC_ATCC27758,PM_ATCC43184,SP_ATCC15912,CA_ATCC25986,DF_ATCC27755,MS_ATCC35061,PD_ATCC8503,BF_YCH46,CP_C36,MS_DSM2374"
     }
   ]
 }
