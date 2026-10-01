@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c5588cda-f70d-4e39-b64b-d20178847cfb",
     "name": "METT-DataPortal",
-    "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** each top-level folder starts with an `00-Init-set-…-fixtures` request. Run that request first for the folder you are exercising; it writes collection variables from the `fixtures` object in its Pre-request Script. Edit values there when fixtures change.\n\nRun **CoreAPIs / Releases / List-Releases** after CoreAPIs init when exercising X-METT-Release scenarios; it stores `resolved_release_version`.\n\n**Annotation comparison:** folder `Annotation comparison / BU vs BF` compares BU_ATCC8492 gene fixtures (dnaA, rpsR, AMR, defense) against BF_NCTC9343 orthologs (run `00-Init-set-Annotation-comparison-fixtures` first).",
+    "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** each top-level folder starts with an `00-Init-set-\u2026-fixtures` request. Run that request first for the folder you are exercising; it writes collection variables from the `fixtures` object in its Pre-request Script. Edit values there when fixtures change.\n\nRun **CoreAPIs / Releases / List-Releases** after CoreAPIs init when exercising X-METT-Release scenarios; it stores `resolved_release_version`.\n\n**Annotation comparison:** folder `Annotation comparison / BU vs BF` compares BU_ATCC8492 gene fixtures (dnaA, rpsR, AMR, defense) against BF_NCTC9343 orthologs (run `00-Init-set-Annotation-comparison-fixtures` first).\n\n**Visibility / Admin:** species and strains use an `enabled` flag in Elasticsearch. After changing enablement via ingest, call **CoreAPIs / Admin / Cache-Rebuild-Visibility-Registries** (admin JWT) to reload in-memory registries. Disabled species (fixture `species_acronym_disabled`, default BF) must not appear in species, type-strain, genome, or gene search results.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "19420352"
   },
@@ -85,6 +85,132 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "Admin",
+          "item": [
+            {
+              "name": "Cache-Rebuild-Visibility-Registries",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Rebuild payload reports registry counts\", function () {",
+                      "    const data = pm.response.json().data;",
+                      "    pm.expect(data).to.be.an(\"object\");",
+                      "    pm.expect(data).to.have.property(\"species_enabled\");",
+                      "    pm.expect(data).to.have.property(\"strains_enabled\");",
+                      "    pm.expect(data.species_enabled).to.be.a(\"number\").and.to.be.at.least(1);",
+                      "    pm.expect(data.strains_enabled).to.be.a(\"number\").and.to.be.at.least(1);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-current}}/api/admin/cache/rebuild",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "cache",
+                    "rebuild"
+                  ]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearer-token-current}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Reloads in-memory enabled-species and enabled-strain registries from Elasticsearch. Requires an admin JWT (`bearer-token-current` in the environment must include the admin role). Call after species/strain ingest when enablement flags change. Does not modify ES documents.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cache-Rebuild-Unauthorized",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-current}}/api/admin/cache/rebuild",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "cache",
+                    "rebuild"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "description": "Cache rebuild without a bearer token must be rejected.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Operational endpoints. Visibility is data-driven (species/strain `enabled` in ES); use cache rebuild after ingest instead of mutating enablement through the portal API."
         },
         {
           "name": "Releases",
@@ -616,9 +742,23 @@
                       "",
                       "pm.test(\"Array length is greater than or equal to 2\", function () {",
                       "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.data.length).to.be.at.least(2); ",
+                      "    pm.expect(jsonData.data.length).to.be.at.least(2);",
                       "});",
-                      ""
+                      "",
+                      "pm.test(\"Only enabled species are returned\", function () {",
+                      "    const rows = pm.response.json().data;",
+                      "    rows.forEach(function (species) {",
+                      "        pm.expect(species).to.have.property(\"enabled\");",
+                      "        pm.expect(species.enabled).to.eql(true);",
+                      "    });",
+                      "});",
+                      "",
+                      "pm.test(\"Disabled fixture species is not listed\", function () {",
+                      "    const rows = pm.response.json().data;",
+                      "    const disabled = (pm.collectionVariables.get(\"species_acronym_disabled\") || \"BF\").toUpperCase();",
+                      "    const acronyms = rows.map(s => String(s.acronym || \"\").toUpperCase());",
+                      "    pm.expect(acronyms).to.not.include(disabled);",
+                      "});"
                     ],
                     "type": "text/javascript",
                     "packages": {},
@@ -639,7 +779,51 @@
                     "species",
                     ""
                   ]
+                },
+                "description": "Lists portal species. Only documents with enabled=true are returned."
+              },
+              "response": []
+            },
+            {
+              "name": "Species-List-Contains-Enabled-Fixtures",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Enabled fixture acronyms are present\", function () {",
+                      "    const rows = pm.response.json().data;",
+                      "    const acronyms = rows.map(s => String(s.acronym || \"\").toUpperCase());",
+                      "    const bu = (pm.collectionVariables.get(\"species_acronym\") || \"BU\").toUpperCase();",
+                      "    const pv = (pm.collectionVariables.get(\"species_acronym_pv\") || \"PV\").toUpperCase();",
+                      "    pm.expect(acronyms).to.include(bu);",
+                      "    pm.expect(acronyms).to.include(pv);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
                 }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/species/",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "species",
+                    ""
+                  ]
+                },
+                "description": "Enabled fixture species (BU/PV) remain visible in the species list."
               },
               "response": []
             }
@@ -778,6 +962,13 @@
                       "pm.test(\"Isolate Name matches expected value\", function () {",
                       "    const jsonData = pm.response.json();",
                       "    pm.expect(jsonData.data[0].isolate_name).contain(pm.collectionVariables.get(\"isolate_name_alt\"));",
+                      "});",
+                      "",
+                      "pm.test(\"Genome visibility fields are present\", function () {",
+                      "    const genome = pm.response.json().data[0];",
+                      "    pm.expect(genome).to.have.property(\"type_strain\");",
+                      "    pm.expect(genome.type_strain).to.be.a(\"boolean\");",
+                      "    pm.expect(genome.enabled === false).to.eql(false);",
                       "});"
                     ],
                     "type": "text/javascript",
@@ -1023,6 +1214,16 @@
                       "pm.test(\"Number of pages matches expected value\", function () {",
                       "    const jsonData = pm.response.json().pagination;",
                       "    pm.expect(jsonData.num_pages).to.be.at.least(22);",
+                      "});",
+                      "",
+                      "pm.test(\"Page results expose type_strain and are not disabled\", function () {",
+                      "    const rows = pm.response.json().data;",
+                      "    pm.expect(rows.length).to.be.above(0);",
+                      "    rows.forEach(function (genome) {",
+                      "        pm.expect(genome).to.have.property(\"type_strain\");",
+                      "        pm.expect(genome.type_strain).to.be.a(\"boolean\");",
+                      "        pm.expect(genome.enabled === false).to.eql(false);",
+                      "    });",
                       "});"
                     ],
                     "type": "text/javascript",
@@ -1066,7 +1267,37 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Array length is equal to 2\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data.length).to.eql(2); \n});\n\npm.test(\"Isolate Name matches expected value (first or second element)\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data.length).to.be.above(0);\n\n    const first = jsonData.data[0]?.isolate_name || \"\";\n    const second = jsonData.data[1]?.isolate_name || \"\";\n\n    pm.expect(first.includes(pm.collectionVariables.get(\"isolate_name_pv\")) || second.includes(pm.collectionVariables.get(\"isolate_name_pv\"))).to.be.true;\n});"
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Array length is equal to 2\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.data.length).to.eql(2);",
+                      "});",
+                      "",
+                      "pm.test(\"Isolate Name matches expected value (first or second element)\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.data.length).to.be.above(0);",
+                      "    const first = jsonData.data[0]?.isolate_name || \"\";",
+                      "    const second = jsonData.data[1]?.isolate_name || \"\";",
+                      "    pm.expect(first.includes(pm.collectionVariables.get(\"isolate_name_pv\")) || second.includes(pm.collectionVariables.get(\"isolate_name_pv\"))).to.be.true;",
+                      "});",
+                      "",
+                      "pm.test(\"All type strains are enabled and marked type_strain\", function () {",
+                      "    const rows = pm.response.json().data;",
+                      "    rows.forEach(function (genome) {",
+                      "        pm.expect(genome.type_strain).to.eql(true);",
+                      "        pm.expect(genome.enabled === false).to.eql(false);",
+                      "    });",
+                      "});",
+                      "",
+                      "pm.test(\"Disabled species type strain is not returned\", function () {",
+                      "    const rows = pm.response.json().data;",
+                      "    const disabledSpecies = (pm.collectionVariables.get(\"species_acronym_disabled\") || \"BF\").toUpperCase();",
+                      "    const acronyms = rows.map(g => String(g.species_acronym || \"\").toUpperCase());",
+                      "    pm.expect(acronyms).to.not.include(disabledSpecies);",
+                      "});"
                     ]
                   }
                 }
@@ -1087,7 +1318,107 @@
                     "genomes",
                     "type-strains"
                   ]
+                },
+                "description": "Type strains for enabled species only. Disabled species (for example BF) must not appear."
+              },
+              "response": []
+            },
+            {
+              "name": "Genome-by-Disabled-Species-Isolate-Empty",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Array length is equal to 0\", function () {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.data.length).to.eql(0);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
                 }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/genomes/by-isolate-names?isolates={{isolate_name_disabled_species}}",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "genomes",
+                    "by-isolate-names"
+                  ],
+                  "query": [
+                    {
+                      "key": "isolates",
+                      "value": "{{isolate_name_disabled_species}}"
+                    }
+                  ]
+                },
+                "description": "Isolate belonging to a disabled species is hidden from by-isolate-names."
+              },
+              "response": []
+            },
+            {
+              "name": "Genomes-by-Disabled-Species-Empty",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Disabled species yields zero genomes\", function () {",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body.pagination.total_results).to.eql(0);",
+                      "    pm.expect(body.data.length).to.eql(0);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/genomes/search?species_acronym={{species_acronym_disabled}}&page=1&per_page=5",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "genomes",
+                    "search"
+                  ],
+                  "query": [
+                    {
+                      "key": "species_acronym",
+                      "value": "{{species_acronym_disabled}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "5"
+                    }
+                  ]
+                },
+                "description": "Searching genomes for a disabled species acronym returns no results."
               },
               "response": []
             },
@@ -1896,7 +2227,12 @@
                       "",
                       "    pm.expect(allSelected.length).to.eql(0);",
                       "});",
-                      ""
+                      "",
+                      "",
+                      "pm.test(\"total_hits is positive for enabled species\", function () {",
+                      "    const json = pm.response.json().data;",
+                      "    pm.expect(json.total_hits).to.be.at.least(1);",
+                      "});"
                     ],
                     "type": "text/javascript",
                     "packages": {}
@@ -1927,6 +2263,157 @@
                     }
                   ]
                 }
+              },
+              "response": []
+            },
+            {
+              "name": "Genes-by-Disabled-Species-Isolate-Empty",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Disabled-species isolate gene search is empty\", function () {",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body.pagination.total_results).to.eql(0);",
+                      "    pm.expect(body.data.length).to.eql(0);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/genes/search/advanced?isolates={{isolate_name_disabled_species}}&query=",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "genes",
+                    "search",
+                    "advanced"
+                  ],
+                  "query": [
+                    {
+                      "key": "isolates",
+                      "value": "{{isolate_name_disabled_species}}"
+                    },
+                    {
+                      "key": "query",
+                      "value": ""
+                    }
+                  ]
+                },
+                "description": "Gene search scoped to an isolate from a disabled species returns no rows."
+              },
+              "response": []
+            },
+            {
+              "name": "Genes-by-Disabled-Species-Empty",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Disabled species gene search is empty\", function () {",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body.pagination.total_results).to.eql(0);",
+                      "    pm.expect(body.data.length).to.eql(0);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/genes/search/advanced?species_acronym={{species_acronym_disabled}}&query=dna",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "genes",
+                    "search",
+                    "advanced"
+                  ],
+                  "query": [
+                    {
+                      "key": "species_acronym",
+                      "value": "{{species_acronym_disabled}}"
+                    },
+                    {
+                      "key": "query",
+                      "value": "dna"
+                    }
+                  ]
+                },
+                "description": "Advanced gene search for a disabled species returns no rows."
+              },
+              "response": []
+            },
+            {
+              "name": "Gene-Faceted-Search-Disabled-Species-Empty",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Disabled species has zero facet hits\", function () {",
+                      "    const json = pm.response.json().data;",
+                      "    pm.expect(json.total_hits).to.eql(0);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/genes/faceted-search?species_acronym={{species_acronym_disabled}}&limit=5",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "genes",
+                    "faceted-search"
+                  ],
+                  "query": [
+                    {
+                      "key": "species_acronym",
+                      "value": "{{species_acronym_disabled}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "5"
+                    }
+                  ]
+                },
+                "description": "Faceted search for a disabled species returns zero hits."
               },
               "response": []
             },
@@ -4065,7 +4552,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "// CoreAPIs fixtures (genomes, genes, species, releases)\n// Edit values here when fixtures change; run this request before the rest of the folder.\n\nconst fixtures = {\n    isolate_name: \"BU_ATCC8492\",\n    isolate_name_pv: \"PV_ATCC8482\",\n    isolate_name_alt: \"BU_909\",\n    isolate_name_bu_2243b: \"BU_2243B\",\n    isolate_name_bu_3537: \"BU_3537\",\n    isolate_name_bu_61: \"BU_61\",\n    isolate_name_unknown: \"DOES_NOT_EXIST_ISOLATE\",\n    isolate_name_pv_h4: \"PV_H4-2\",\n    locus_tag: \"BU_ATCC8492_00001\",\n    locus_tag_pv: \"PV_ATCC8482_00001\",\n    locus_tag_pv_alt: \"PV_ATCC8482_03700\",\n    locus_tag_unknown: \"DOES_NOT_EXIST_LOCUS\",\n    type_strains: \"BU_ATCC8492,PV_ATCC8482\",\n    isolates_bu_sample: \"BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492\",\n    isolates_bu_short: \"BU_2243B,BU_3537,BU_61\",\n    isolates_bu_autocomplete: \"BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527\",\n    species_acronym: \"BU\",\n    species_acronym_pv: \"PV\",\n    species_acronym_lower: \"bu\",\n    contig_id: \"contig_1\",\n    gene_query: \"dnaA\",\n    uniprot_id: \"A7V2E8\",\n    genome_search_query_pv: \"PV_H4\",\n    release_token: \"current\",\n    release_version: \"v1\",\n    resolved_release_version: \"\"\n};\n\nObject.entries(fixtures).forEach(([key, value]) => {\n    pm.collectionVariables.set(key, value);\n});\n\nconsole.log(\"[init] set\", Object.keys(fixtures).length, \"fixtures:\", Object.keys(fixtures).join(\", \"));"
+              "// CoreAPIs fixtures (genomes, genes, species, releases)\n// Edit values here when fixtures change; run this request before the rest of the folder.\n\nconst fixtures = {\n    isolate_name: \"BU_ATCC8492\",\n    isolate_name_pv: \"PV_ATCC8482\",\n    isolate_name_alt: \"BU_909\",\n    isolate_name_bu_2243b: \"BU_2243B\",\n    isolate_name_bu_3537: \"BU_3537\",\n    isolate_name_bu_61: \"BU_61\",\n    isolate_name_unknown: \"DOES_NOT_EXIST_ISOLATE\",\n    isolate_name_pv_h4: \"PV_H4-2\",\n    locus_tag: \"BU_ATCC8492_00001\",\n    locus_tag_pv: \"PV_ATCC8482_00001\",\n    locus_tag_pv_alt: \"PV_ATCC8482_03700\",\n    locus_tag_unknown: \"DOES_NOT_EXIST_LOCUS\",\n    type_strains: \"BU_ATCC8492,PV_ATCC8482\",\n    isolates_bu_sample: \"BU_2243B,BU_3537,BU_61,BU_909,BU_ATCC8492\",\n    isolates_bu_short: \"BU_2243B,BU_3537,BU_61\",\n    isolates_bu_autocomplete: \"BU_3537,BU_AN67,BU_C7-17,BU_CCUG49527\",\n    species_acronym: \"BU\",\n    species_acronym_pv: \"PV\",\n    species_acronym_lower: \"bu\",\n    contig_id: \"contig_1\",\n    gene_query: \"dnaA\",\n    uniprot_id: \"A7V2E8\",\n    genome_search_query_pv: \"PV_H4\",\n    release_token: \"current\",\n    release_version: \"v1\",\n    resolved_release_version: \"\",\n    species_acronym_disabled: \"BF\",\n    isolate_name_disabled_species: \"BF_NCTC9343\",\n};\n\nObject.entries(fixtures).forEach(([key, value]) => {\n    pm.collectionVariables.set(key, value);\n});\n\nconsole.log(\"[init] set\", Object.keys(fixtures).length, \"fixtures:\", Object.keys(fixtures).join(\", \"));"
             ]
           }
         },
@@ -4074,7 +4561,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "const expected = [\"contig_id\", \"gene_query\", \"genome_search_query_pv\", \"isolate_name\", \"isolate_name_alt\", \"isolate_name_bu_2243b\", \"isolate_name_bu_3537\", \"isolate_name_bu_61\", \"isolate_name_pv\", \"isolate_name_pv_h4\", \"isolate_name_unknown\", \"isolates_bu_autocomplete\", \"isolates_bu_sample\", \"isolates_bu_short\", \"locus_tag\", \"locus_tag_pv\", \"locus_tag_pv_alt\", \"locus_tag_unknown\", \"release_token\", \"release_version\", \"resolved_release_version\", \"species_acronym\", \"species_acronym_lower\", \"species_acronym_pv\", \"type_strains\", \"uniprot_id\"];\npm.test(\"Folder fixtures are set on the collection\", function () {\n    expected.forEach(function (key) {\n        const v = pm.collectionVariables.get(key);\n        pm.expect(v, key + \" should be set\").to.not.be.undefined;\n        pm.expect(v, key + \" should not be null\").to.not.eql(null);\n    });\n});"
+              "const expected = [\"contig_id\", \"gene_query\", \"genome_search_query_pv\", \"isolate_name\", \"isolate_name_alt\", \"isolate_name_bu_2243b\", \"isolate_name_bu_3537\", \"isolate_name_bu_61\", \"isolate_name_pv\", \"isolate_name_pv_h4\", \"isolate_name_unknown\", \"isolates_bu_autocomplete\", \"isolates_bu_sample\", \"isolates_bu_short\", \"locus_tag\", \"locus_tag_pv\", \"locus_tag_pv_alt\", \"locus_tag_unknown\", \"release_token\", \"release_version\", \"resolved_release_version\", \"species_acronym\", \"species_acronym_lower\", \"species_acronym_disabled\", \"species_acronym_pv\", \"isolate_name_disabled_species\", \"type_strains\", \"uniprot_id\"];\npm.test(\"Folder fixtures are set on the collection\", function () {\n    expected.forEach(function (key) {\n        const v = pm.collectionVariables.get(key);\n        pm.expect(v, key + \" should be set\").to.not.be.undefined;\n        pm.expect(v, key + \" should not be null\").to.not.eql(null);\n    });\n});"
             ]
           }
         }
@@ -4108,7 +4595,7 @@
                           "    pm.expect(names).to.include(pm.collectionVariables.get(\"isolate_name\"));",
                           "});",
                           "if (names.indexOf(pm.collectionVariables.get(\"isolate_name_bf\")) === -1) {",
-                          "    console.warn(\"[anchors] BF_NCTC9343 not returned — 20hm genome may not be indexed yet\");",
+                          "    console.warn(\"[anchors] BF_NCTC9343 not returned \u2014 20hm genome may not be indexed yet\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -4149,7 +4636,7 @@
                         "exec": [
                           "const code = pm.response.code;",
                           "if (code === 404) {",
-                          "    console.warn(\"[anchors] BF genome 404 — not indexed yet\");",
+                          "    console.warn(\"[anchors] BF genome 404 \u2014 not indexed yet\");",
                           "    pm.test(\"BF genome absent (expected until 20hm ingest)\", function () {",
                           "        pm.expect(code).to.eql(404);",
                           "    });",
@@ -4300,7 +4787,7 @@
                           "} else {",
                           "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
                           "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
-                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "        \"\u2192 species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -4350,7 +4837,7 @@
                         "exec": [
                           "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
                           "if (!bfLocus) {",
-                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    console.warn(\"[BF gene] skipped \u2014 run Orthologs-to-BF first and ensure BF is indexed\");",
                           "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
                           "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
                           "    });",
@@ -4513,7 +5000,7 @@
                           "} else {",
                           "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
                           "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
-                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "        \"\u2192 species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -4563,7 +5050,7 @@
                         "exec": [
                           "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
                           "if (!bfLocus) {",
-                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    console.warn(\"[BF gene] skipped \u2014 run Orthologs-to-BF first and ensure BF is indexed\");",
                           "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
                           "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
                           "    });",
@@ -4726,7 +5213,7 @@
                           "} else {",
                           "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
                           "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
-                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "        \"\u2192 species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -4776,7 +5263,7 @@
                         "exec": [
                           "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
                           "if (!bfLocus) {",
-                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    console.warn(\"[BF gene] skipped \u2014 run Orthologs-to-BF first and ensure BF is indexed\");",
                           "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
                           "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
                           "    });",
@@ -4940,7 +5427,7 @@
                           "} else {",
                           "    pm.collectionVariables.set(\"locus_tag_bf\", \"\");",
                           "    console.warn(\"[BF ortholog] no hit for\", pm.collectionVariables.get(\"cmp_expected_locus\"),",
-                          "        \"→ species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
+                          "        \"\u2192 species\", bf, \"/ isolate\", isolateBf, \"(total_count=\", payload.total_count, \")\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -4990,7 +5477,7 @@
                         "exec": [
                           "const bfLocus = pm.collectionVariables.get(\"locus_tag_bf\");",
                           "if (!bfLocus) {",
-                          "    console.warn(\"[BF gene] skipped — run Orthologs-to-BF first and ensure BF is indexed\");",
+                          "    console.warn(\"[BF gene] skipped \u2014 run Orthologs-to-BF first and ensure BF is indexed\");",
                           "    pm.test(\"BF locus was resolved by prior ortholog request\", function () {",
                           "        pm.expect.fail(\"locus_tag_bf is empty; resolve orthologs to BF first\");",
                           "    });",
@@ -5123,7 +5610,7 @@
                         }
                       ]
                     },
-                    "description": "Shared Pfam (dnaA PF00308) across BU + BF isolates — checks whether the 20hm type strain surfaces the same domain hit."
+                    "description": "Shared Pfam (dnaA PF00308) across BU + BF isolates \u2014 checks whether the 20hm type strain surfaces the same domain hit."
                   },
                   "response": []
                 },
@@ -5147,7 +5634,7 @@
                           "    pm.expect(byIsolate[pm.collectionVariables.get(\"isolate_name\")] || 0).to.be.above(0);",
                           "});",
                           "if (!(byIsolate[pm.collectionVariables.get(\"isolate_name_bf\")] > 0)) {",
-                          "    console.warn(\"[AMR search] no BF AMR hits — possible annotation gap or missing index\");",
+                          "    console.warn(\"[AMR search] no BF AMR hits \u2014 possible annotation gap or missing index\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -5269,7 +5756,7 @@
                           "    pm.test(\"Status code is 200\", function () {",
                           "        pm.response.to.have.status(200);",
                           "    });",
-                          "    console.log(\"[faceted BF] ok — inspect facets/results for dnaA Pfam coverage\");",
+                          "    console.log(\"[faceted BF] ok \u2014 inspect facets/results for dnaA Pfam coverage\");",
                           "}"
                         ],
                         "type": "text/javascript",
@@ -5314,7 +5801,7 @@
           ]
         }
       ],
-      "description": "Compare annotation depth between the HD BU type strain (BU_ATCC8492) and a 20hm Bacteroides type strain (default BF_NCTC9343).\n\n**Fixtures:** dnaA (core), rpsR (essential ribosomal), per1/cblA (AMR), RnlAB (defense/MGE).\n\n**How to run each gene folder:** 01 → 02 → 03. Console logs list present/missing annotation layers and gaps vs BU.\n\n**Note:** BF requests soft-warn until the 20hm isolate is indexed.",
+      "description": "Compare annotation depth between the HD BU type strain (BU_ATCC8492) and a 20hm Bacteroides type strain (default BF_NCTC9343).\n\n**Fixtures:** dnaA (core), rpsR (essential ribosomal), per1/cblA (AMR), RnlAB (defense/MGE).\n\n**How to run each gene folder:** 01 \u2192 02 \u2192 03. Console logs list present/missing annotation layers and gaps vs BU.\n\n**Note:** BF requests soft-warn until the 20hm isolate is indexed.",
       "event": [
         {
           "listen": "prerequest",
@@ -11691,6 +12178,14 @@
     {
       "key": "resolved_release_version",
       "value": ""
+    },
+    {
+      "key": "species_acronym_disabled",
+      "value": "BF"
+    },
+    {
+      "key": "isolate_name_disabled_species",
+      "value": "BF_NCTC9343"
     }
   ]
 }

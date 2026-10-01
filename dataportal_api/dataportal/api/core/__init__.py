@@ -6,6 +6,7 @@ from dataportal.api.core.species_endpoints import species_router
 from dataportal.api.core.metadata_endpoints import metadata_router
 from dataportal.api.core.health_endpoints import health_router
 from dataportal.api.core.release_endpoints import release_router
+from dataportal.api.core.admin_endpoints import admin_router
 
 __all__ = [
     "gene_router",
@@ -14,4 +15,5 @@ __all__ = [
     "metadata_router",
     "health_router",
     "release_router",
+    "admin_router",
 ]

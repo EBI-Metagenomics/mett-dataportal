@@ -38,7 +38,6 @@ from dataportal.utils.constants import (
     FIELD_SEQ_ID_KEYWORD,
     GENE_FIELD_UNIPROT_ID,
     GENE_FIELD_LOCUS_TAG,
-    SPECIES_FIELD_ACRONYM_SHORT,
     INDEX_FEATURES,
     FACET_FIELDS,
     GENE_FIELD_COG_FUNCATS,
@@ -52,6 +51,12 @@ from dataportal.utils.exceptions import (
     ServiceError,
     InvalidGenomeIdError,
 )
+from dataportal.utils.enablement import (
+    gene_visibility_blocks_all,
+    gene_visibility_must_clauses,
+)
+from dataportal.utils.species_registry import is_species_enabled
+from dataportal.utils.strain_registry import is_isolate_enabled
 from dataportal.utils.utils import split_comma_param
 
 logger = logging.getLogger(__name__)
@@ -290,13 +295,17 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
                 type="best_fields",
             )
 
-            if species_acronym:
-                acronyms = split_comma_param(species_acronym)
-                if acronyms:
-                    s = s.filter("terms", **{SPECIES_FIELD_ACRONYM_SHORT: acronyms})
+            if gene_visibility_blocks_all(
+                species_acronym=species_acronym,
+                isolates=isolates,
+            ):
+                return []
 
-            if isolates:
-                s = s.filter("terms", **{GENOME_FIELD_ISOLATE_NAME: isolates})
+            for clause in gene_visibility_must_clauses(
+                species_acronym=species_acronym,
+                isolates=isolates,
+            ):
+                s = s.filter(Q(clause))
 
             parsed_filters = self._parse_filters(filter)
             for key, values in parsed_filters.items():
@@ -329,10 +338,17 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             gene = await sync_to_async(self.fetch_gene_by_locus_tag, thread_sensitive=False)(
                 locus_tag
             )
-            return self._convert_hit_to_gene_schema(gene)
+            schema = self._convert_hit_to_gene_schema(gene)
+            if not is_isolate_enabled(schema.isolate_name or "") or not is_species_enabled(
+                schema.species_acronym or ""
+            ):
+                raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
+            return schema
         except ServiceError:
             logger.error(f"Error in get_gene_by_locus_tag: {locus_tag}")
             raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
+        except GeneNotFoundError:
+            raise
         except Exception as e:
             logger.error(f"Error in get_gene_by_locus_tag: {e}")
             raise GeneNotFoundError(f"Could not fetch gene by locus_tag: {locus_tag}")
@@ -358,7 +374,9 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         sort_order: Optional[str] = DEFAULT_SORT_DIRECTION,
     ) -> GenePaginationSchema:
         try:
-            es_query = {"match_all": {}}
+            if gene_visibility_blocks_all():
+                return self._create_pagination_schema([], page, per_page, 0)
+            es_query = {"bool": {"must": gene_visibility_must_clauses()}}
             genes, total_results = await self._fetch_paginated_genes(
                 es_query,
                 page=page,
@@ -376,10 +394,14 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         params: GeneSearchQuerySchema,
     ) -> GenePaginationSchema:
         try:
-            # Build query filters
-            es_query = self._build_es_query(None, params.query, None, None)
+            if gene_visibility_blocks_all():
+                return self._create_pagination_schema([], params.page, params.per_page, 0)
 
-            # Call the common function
+            filter_criteria = {
+                "bool": {"must": gene_visibility_must_clauses()},
+            }
+            es_query = self._build_es_query(None, params.query, None, filter_criteria)
+
             genes, total_results = await self._fetch_paginated_genes(
                 es_query,
                 params.page,
@@ -407,6 +429,8 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
         sort_order: Optional[str] = SORT_DIRECTION_ASC,
     ) -> GenePaginationSchema:
         try:
+            if not is_isolate_enabled(isolate_name):
+                return self._create_pagination_schema([], page, per_page, 0)
             filter_criteria = {"isolate_name": isolate_name}
             parsed_filters = self._parse_filters(filter)
             parsed_filter_operators = self._parse_filter_operators(filter_operators)
@@ -450,20 +474,20 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
             )
             logger.info(f"DEBUG - Parsed isolate names: {isolate_names_list}")
 
-            filter_criteria = {"bool": {"must": []}}
+            if gene_visibility_blocks_all(
+                species_acronym=params.species_acronym,
+                isolates=isolate_names_list or None,
+            ):
+                return self._create_pagination_schema([], params.page, params.per_page, 0)
 
-            # Filters for genome IDs and species ID
-            if isolate_names_list:
-                filter_criteria["bool"]["must"].append(
-                    {"terms": {GENOME_FIELD_ISOLATE_NAME: isolate_names_list}}
-                )
-                logger.info(f"DEBUG - Added isolate filter: {filter_criteria['bool']['must']}")
-            if params.species_acronym:
-                acronyms = split_comma_param(params.species_acronym)
-                if acronyms:
-                    filter_criteria["bool"]["must"].append(
-                        {"terms": {SPECIES_FIELD_ACRONYM_SHORT: acronyms}}
+            filter_criteria = {
+                "bool": {
+                    "must": gene_visibility_must_clauses(
+                        species_acronym=params.species_acronym,
+                        isolates=isolate_names_list or None,
                     )
+                }
+            }
 
             # Apply additional filters
             parsed_filters = self._parse_filters(params.filter)
@@ -1161,19 +1185,20 @@ class GeneService(BaseService[GeneResponseSchema, Dict[str, Any]]):
     ):
         """Stream genes directly from Elasticsearch scroll API without loading all into memory."""
         isolate_names_list = [id.strip() for id in isolates.split(",")] if isolates else []
-        filter_criteria = {"bool": {"must": []}}
+        if gene_visibility_blocks_all(
+            species_acronym=species_acronym,
+            isolates=isolate_names_list or None,
+        ):
+            return
 
-        # Filters for genome IDs and species ID
-        if isolate_names_list:
-            filter_criteria["bool"]["must"].append(
-                {"terms": {GENOME_FIELD_ISOLATE_NAME: isolate_names_list}}
-            )
-        if species_acronym:
-            acronyms = split_comma_param(species_acronym)
-            if acronyms:
-                filter_criteria["bool"]["must"].append(
-                    {"terms": {SPECIES_FIELD_ACRONYM_SHORT: acronyms}}
+        filter_criteria = {
+            "bool": {
+                "must": gene_visibility_must_clauses(
+                    species_acronym=species_acronym,
+                    isolates=isolate_names_list or None,
                 )
+            }
+        }
 
         # Apply additional filters
         parsed_filters = self._parse_filters(filter)

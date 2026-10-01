@@ -33,9 +33,7 @@ class StrainDocument(Document):
 
     strain_id = Keyword()
 
-    species_scientific_name = Text(
-        fields={"keyword": Keyword(normalizer=lowercase_normalizer)}
-    )
+    species_scientific_name = Text(fields={"keyword": Keyword(normalizer=lowercase_normalizer)})
     species_acronym = Keyword(normalizer=lowercase_normalizer)
 
     isolate_name = Text(
@@ -57,6 +55,8 @@ class StrainDocument(Document):
     fasta_url = Keyword()
     gff_url = Keyword()
     type_strain = Boolean()
+    # Portal visibility. Missing/True = visible; False = hidden from genome/gene APIs.
+    enabled = Boolean()
 
     contig_count = Integer()
     genome_size = Long()

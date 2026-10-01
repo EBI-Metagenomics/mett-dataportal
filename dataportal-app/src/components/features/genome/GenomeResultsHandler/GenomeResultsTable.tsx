@@ -97,6 +97,7 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                             <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
                         )}
                     </th>
+                    <th className={`vf-table__heading ${styles.vfTableHeading}`}>Type strain</th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Assembly</th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Annotations</th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Actions</th>
@@ -117,6 +118,9 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                             <i>{result.species_scientific_name || 'Unknown Species'}</i>
                         </td>
                         <td className={`vf-table__cell ${styles.vfTableCell}`}>{result.isolate_name || 'Unknown Isolate'}</td>
+                        <td className={`vf-table__cell ${styles.vfTableCell}`}>
+                            {result.type_strain ? 'Yes' : 'No'}
+                        </td>
                         <td className={`vf-table__cell ${styles.vfTableCell}`}>
                             <a href={result.fasta_url || '#'} target="_blank"
                                rel="noreferrer">{result.assembly_name || 'Unknown Assembly'}<span

@@ -32,7 +32,14 @@ from dataportal.utils.constants import (
     MAX_RESULTS_PER_PAGE,
 )
 from dataportal.utils.exceptions import ServiceError
-from dataportal.utils.species_registry import get_enabled_species_acronyms
+from dataportal.utils.enablement import (
+    apply_enabled_species_to_criteria,
+    resolve_enabled_isolates,
+    resolve_enabled_species,
+    strain_not_disabled_clause,
+)
+from dataportal.utils.species_registry import is_species_enabled
+from dataportal.utils.strain_registry import is_isolate_enabled
 from dataportal.utils.utils import split_comma_param, split_comma_values
 
 logger = logging.getLogger(__name__)
@@ -65,20 +72,12 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
 
     def _apply_enabled_species_filter(self, filter_criteria: Dict[str, Any]) -> Dict[str, Any]:
         """Restrict results to genomes whose species is enabled. Modifies filter_criteria in place."""
-        enabled = get_enabled_species_acronyms()
-        if not enabled:
-            filter_criteria[SPECIES_FIELD_ACRONYM_SHORT] = []
-            return filter_criteria
-        allowed = list(enabled)
-        key = SPECIES_FIELD_ACRONYM_SHORT
-        existing = filter_criteria.get(key)
-        if existing is None:
-            filter_criteria[key] = allowed
-        elif isinstance(existing, list):
-            filter_criteria[key] = [s for s in existing if s in enabled]
-        else:
-            filter_criteria[key] = [existing] if existing in enabled else []
-        return filter_criteria
+        return apply_enabled_species_to_criteria(filter_criteria)
+
+    def _apply_visibility_filters(self, search: Search) -> Search:
+        """Hide strains with enabled=false; missing enabled remains visible."""
+        clause = strain_not_disabled_clause()["bool"]
+        return search.filter("bool", **clause)
 
     def _convert_hit_to_genome_schema(self, hit) -> GenomeResponseSchema:
         """Convert Elasticsearch hit directly to GenomeResponseSchema (Pydantic)."""
@@ -94,6 +93,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                         ContigSchema(seq_id=contig.get("seq_id"), length=contig.get("length"))
                     )
 
+        enabled_raw = hit_dict.get("enabled")
         return GenomeResponseSchema(
             species_scientific_name=hit_dict.get("species_scientific_name"),
             species_acronym=hit_dict.get("species_acronym"),
@@ -105,6 +105,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             fasta_url=hit_dict.get("fasta_url") or "",
             gff_url=hit_dict.get("gff_url") or "",
             type_strain=hit_dict.get("type_strain", False),
+            enabled=False if enabled_raw is False else True,
             contigs=contigs,
             annotation=_annotation_schema(hit_dict.get("annotation")),
         )
@@ -205,10 +206,11 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         if params.query:
             filter_criteria[GENOME_FIELD_ISOLATE_NAME] = params.query
         if params.isolates:
-            isolate_names = split_comma_values(params.isolates)
-            if isolate_names:
-                # terms query: a genome matches if its isolate is any of the selected names
-                filter_criteria["isolate_name.keyword"] = isolate_names
+            isolate_names = resolve_enabled_isolates(split_comma_values(params.isolates))
+            if not isolate_names:
+                return await self._create_pagination_schema([], 0, params.page, params.per_page)
+            # terms query: a genome matches if its isolate is any of the selected names
+            filter_criteria["isolate_name.keyword"] = isolate_names
         if params.species_acronym:
             acronyms = split_comma_param(params.species_acronym)
             if acronyms:
@@ -243,20 +245,16 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         params: GenomeAutocompleteQuerySchema,
     ) -> List[StrainSuggestionSchema]:
         try:
-            enabled = get_enabled_species_acronyms()
-            if not enabled:
+            enabled_species = resolve_enabled_species(params.species_acronym)
+            if not enabled_species:
                 return []
 
             search = Search(index=self.index_name)
             search = search.query(
                 "wildcard", **{GENOME_FIELD_ISOLATE_NAME: f"*{params.query.lower()}*"}
             )
-            search = search.filter("terms", **{SPECIES_FIELD_ACRONYM_SHORT: list(enabled)})
-
-            if params.species_acronym:
-                acronyms = split_comma_param(params.species_acronym)
-                if acronyms:
-                    search = search.filter("terms", **{SPECIES_FIELD_ACRONYM_SHORT: acronyms})
+            search = search.filter("terms", **{SPECIES_FIELD_ACRONYM_SHORT: enabled_species})
+            search = self._apply_visibility_filters(search)
 
             search = search[: params.limit]
             response = await sync_to_async(search.execute)()
@@ -296,16 +294,25 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
         )
 
     async def get_genome_by_strain_name(self, isolate_name: str):
-        return await self._fetch_single_genome(
+        if not is_isolate_enabled(isolate_name):
+            return None
+        genome = await self._fetch_single_genome(
             filter_criteria={GENOME_FIELD_ISOLATE_NAME: isolate_name},
             error_message=f"Error fetching genome by strain name {isolate_name}",
         )
+        if genome and not is_species_enabled(genome.species_acronym or ""):
+            return None
+        return genome
 
     async def get_genomes_by_isolate_names(
         self,
         params: GenomesByIsolateNamesQuerySchema,
     ) -> List[GenomeResponseSchema]:
-        isolate_names_list = [id.strip() for id in params.isolates.split(",")]
+        isolate_names_list = resolve_enabled_isolates(
+            [id.strip() for id in params.isolates.split(",") if id.strip()]
+        )
+        if not isolate_names_list:
+            return []
         filter_criteria = {"isolate_name.keyword": isolate_names_list}
         self._apply_enabled_species_filter(filter_criteria)
         if filter_criteria.get(SPECIES_FIELD_ACRONYM_SHORT) == []:
@@ -327,6 +334,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                 else:
                     search = search.filter("term", **{field: value})
 
+            search = self._apply_visibility_filters(search)
             search = search.extra(size=MAX_RESULTS_PER_PAGE)
             response = await sync_to_async(search.execute)()
 
@@ -402,6 +410,8 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                     search = search.filter("terms", **{field: value})
                 else:
                     search = search.filter("term", **{field: value})
+
+            search = self._apply_visibility_filters(search)
 
             # Map "species" to its actual field
             sortField = self._resolve_sort_field(sortField)
@@ -517,6 +527,8 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                     search_body["query"]["bool"]["must"].append({"terms": {field: value}})
                 else:
                     search_body["query"]["bool"]["must"].append({"term": {field: value}})
+
+            search_body["query"]["bool"]["must"].append(strain_not_disabled_clause())
 
             # Map "species" to its actual field
             sortField = self._resolve_sort_field(sortField)

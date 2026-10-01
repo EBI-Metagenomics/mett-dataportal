@@ -28,9 +28,7 @@ ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 METT_RELEASE = os.getenv("METT_RELEASE", "current")
 
 # Feature flags
-ENABLE_PYHMMER_SEARCH = (
-    os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
-)
+ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
@@ -102,7 +100,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
-    "dataportal",
+    "dataportal.apps.DataportalConfig",
     "ninja",
     "django_celery_results",
     "django_celery_beat",

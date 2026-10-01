@@ -13,6 +13,7 @@ from dataportal.api.core import (
     metadata_router,
     health_router,
     release_router,
+    admin_router,
 )
 
 # Experimental data API endpoints
@@ -78,6 +79,7 @@ URL_PREFIX_GENOMES = "/genomes"
 URL_PREFIX_GENES = "/genes"
 URL_PREFIX_METADATA = "/metadata"
 URL_PREFIX_RELEASES = "/releases"
+URL_PREFIX_ADMIN = "/admin"
 URL_PREFIX_DRUGS = "/drugs"
 URL_PREFIX_PPI = "/ppi"
 URL_PREFIX_TTP = "/ttp"
@@ -256,6 +258,7 @@ if getattr(settings, "ENABLE_PYHMMER_SEARCH", False):
     api.add_router(URL_PREFIX_PYHMMER_RESULT, pyhmmer_router_result)
 
 api.add_router("/", health_router)
+api.add_router(URL_PREFIX_ADMIN, admin_router)
 # Register specific handlers
 api.add_exception_handler(HttpError, custom_error_handler)
 api.add_exception_handler(Exception, custom_error_handler)
