@@ -18,21 +18,12 @@ import {useTabAwareUrlSync} from '../../hooks/useTabAwareUrlSync';
 import ErrorBoundary from '../shared/ErrorBoundary/ErrorBoundary';
 import {GeneService} from '../../services/gene';
 import { convertFacetedFiltersToLegacy, convertFacetOperatorsToLegacy } from '../../utils/common/filterUtils';
+import {
+    geneQueryGenomes,
+    looksLikeLocusTag,
+} from '../features/gene-viewer/GeneSearchForm/utils/geneSearchHelpers';
 
 const GENE_FILTER_SLOT_ID = 'homepage-gene-filters';
-
-function geneQueryGenomes(
-    genomes: { isolate_name: string; type_strain: boolean }[],
-    typeStrains: string[],
-) {
-    const names = new Set(genomes.map((genome) => genome.isolate_name));
-    return [
-        ...genomes,
-        ...typeStrains
-            .filter((isolateName) => !names.has(isolateName))
-            .map((isolate_name) => ({isolate_name, type_strain: true})),
-    ];
-}
 
 interface Tab {
     id: string;
@@ -78,6 +69,22 @@ const HomePage: React.FC = () => {
 
     const hasUserSelectedTab = useRef(false);
     const hasLoadedInitialGenes = useRef(false);
+    // Invalidates in-flight HomePage gene fetches when GeneSearchForm publishes newer results.
+    const geneFetchGenerationRef = useRef(0);
+
+    const beginGeneFetch = useCallback(() => {
+        geneFetchGenerationRef.current += 1;
+        return geneFetchGenerationRef.current;
+    }, []);
+
+    const applyGeneFetchIfCurrent = useCallback((generation: number, results: any[], pagination: any) => {
+        if (generation !== geneFetchGenerationRef.current) {
+            return false;
+        }
+        setGeneResults(results);
+        setGenePagination(pagination);
+        return true;
+    }, []);
 
     // Only use URL to set the initial tab
     useEffect(() => {
@@ -97,74 +104,42 @@ const HomePage: React.FC = () => {
         }
     }, [location.pathname, location.search, isFeatureEnabled, featuresLoading]);
 
-    // Load initial gene data when genes tab is selected
+    // Load initial gene data once when genes tab is selected.
+    // GeneSearchForm owns subsequent search/suggestion/clear fetches via onResultsUpdate.
     useEffect(() => {
-        if (activeTab === 'genes' && !hasLoadedInitialGenes.current) {
-            hasLoadedInitialGenes.current = true;
-            setGeneLoading(true);
-
-            // Load initial gene data
-            GeneService.fetchGeneSearchResultsAdvanced(
-                '', // empty query for initial load
-                1, // page
-                genePerPage, // perPage - use state instead of hardcoded 20
-                'locus_tag',
-                'asc',
-                geneQueryGenomes(filterStore.selectedGenomes, filterStore.selectedTypeStrains),
-                filterStore.selectedSpecies,
-                convertFacetedFiltersToLegacy(filterStore.facetedFilters),
-                convertFacetOperatorsToLegacy(filterStore.facetOperators),
-                undefined // No locus_tag for initial load
-            )
-                .then((response: any) => {
-                    setGeneResults(response.data || []);
-                    setGenePagination(response.pagination || null);
-                })
-                .catch((error: any) => {
-                    console.error('Failed to load initial gene data:', error);
-                })
-                .finally(() => {
-                    setGeneLoading(false);
-                });
+        if (activeTab !== 'genes' || hasLoadedInitialGenes.current) {
+            return;
         }
-    }, [activeTab, genePerPage]);
+        hasLoadedInitialGenes.current = true;
+        const generation = beginGeneFetch();
+        setGeneLoading(true);
 
-    // Reload initial data when search query is cleared
-    useEffect(() => {
-        if (activeTab === 'genes' && filterStore.geneSearchQuery === '') {
-            console.log('HomePage - Search query cleared, reloading initial data');
-            setGeneLoading(true);
-
-            // Convert faceted filters to legacy format
-            const legacyFilters = convertFacetedFiltersToLegacy(filterStore.facetedFilters);
-            const legacyOperators = convertFacetOperatorsToLegacy(filterStore.facetOperators);
-
-            // Load initial gene data
-            GeneService.fetchGeneSearchResultsAdvanced(
-                '', // empty query for initial load
-                1, // page
-                genePerPage, // perPage - use state instead of hardcoded 20
-                'locus_tag',
-                'asc',
-                geneQueryGenomes(filterStore.selectedGenomes, filterStore.selectedTypeStrains),
-                filterStore.selectedSpecies,
-                legacyFilters,
-                legacyOperators,
-                undefined // No locus_tag for reload
-            )
-                .then((response: any) => {
-                    // console.log('HomePage - Reload API response:', response);
-                    setGeneResults(response.data || []);
-                    setGenePagination(response.pagination || null);
-                })
-                .catch((error: any) => {
-                    console.error('Failed to reload initial gene data:', error);
-                })
-                .finally(() => {
+        GeneService.fetchGeneSearchResultsAdvanced(
+            '',
+            1,
+            genePerPage,
+            'locus_tag',
+            'asc',
+            geneQueryGenomes(filterStore.selectedGenomes, filterStore.selectedTypeStrains),
+            filterStore.selectedSpecies,
+            convertFacetedFiltersToLegacy(filterStore.facetedFilters),
+            convertFacetOperatorsToLegacy(filterStore.facetOperators),
+            undefined
+        )
+            .then((response: any) => {
+                applyGeneFetchIfCurrent(generation, response.data || [], response.pagination || null);
+            })
+            .catch((error: any) => {
+                console.error('Failed to load initial gene data:', error);
+            })
+            .finally(() => {
+                if (generation === geneFetchGenerationRef.current) {
                     setGeneLoading(false);
-                });
-        }
-    }, [activeTab, filterStore.geneSearchQuery, genePerPage]);
+                }
+            });
+        // Intentionally once per genes-tab entry; GeneSearchForm handles later refetches.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, genePerPage, beginGeneFetch, applyGeneFetchIfCurrent]);
 
     // Clean up gene viewer state when returning to home page
     useEffect(() => {
@@ -231,15 +206,54 @@ const HomePage: React.FC = () => {
         }
     };
 
-    // Callback to handle results updates from GeneSearchForm
+    // GeneSearchForm is the source of truth for search/suggestion/clear results.
     const handleGeneResultsUpdate = useCallback((results: any[], pagination: any) => {
-        console.log('HomePage - handleGeneResultsUpdate called with:', {
-            resultsCount: results.length,
-            pagination
-        });
+        beginGeneFetch(); // invalidate any in-flight HomePage gene fetches
         setGeneResults(results);
         setGenePagination(pagination);
-    }, []);
+    }, [beginGeneFetch]);
+
+    const fetchGenesForFilters = useCallback(async (
+        species: string[],
+        typeStrains: string[],
+        genomes: { isolate_name: string; type_strain: boolean }[],
+        searchQuery = filterStore.geneSearchQuery,
+    ) => {
+        const generation = beginGeneFetch();
+        setGeneLoading(true);
+        const locusTag = looksLikeLocusTag(searchQuery) ? searchQuery : undefined;
+        const textQuery = locusTag ? '' : searchQuery;
+        try {
+            const response = await GeneService.fetchGeneSearchResultsAdvanced(
+                textQuery,
+                1,
+                genePerPage,
+                filterStore.geneSortField,
+                filterStore.geneSortOrder,
+                geneQueryGenomes(genomes, typeStrains),
+                species,
+                convertFacetedFiltersToLegacy(filterStore.facetedFilters),
+                convertFacetOperatorsToLegacy(filterStore.facetOperators),
+                locusTag
+            );
+            applyGeneFetchIfCurrent(generation, response.data || [], response.pagination || null);
+        } catch (error) {
+            console.error('Error fetching gene data:', error);
+        } finally {
+            if (generation === geneFetchGenerationRef.current) {
+                setGeneLoading(false);
+            }
+        }
+    }, [
+        beginGeneFetch,
+        applyGeneFetchIfCurrent,
+        genePerPage,
+        filterStore.geneSearchQuery,
+        filterStore.geneSortField,
+        filterStore.geneSortOrder,
+        filterStore.facetedFilters,
+        filterStore.facetOperators,
+    ]);
 
     // Callback to handle page size changes from GeneSearchForm
     const handleGenePageSizeChange = useCallback((newPageSize: number) => {
@@ -258,30 +272,12 @@ const HomePage: React.FC = () => {
             const updatedSelectedSpecies = filterStore.selectedSpecies.includes(species_acronym)
                 ? filterStore.selectedSpecies.filter((acronym) => acronym !== species_acronym)
                 : [...filterStore.selectedSpecies, species_acronym];
-            
             filterStore.setSelectedSpecies(updatedSelectedSpecies);
-
-            setGeneLoading(true);
-            try {
-                const response = await GeneService.fetchGeneSearchResultsAdvanced(
-                    filterStore.geneSearchQuery,
-                    1,
-                    genePerPage,
-                    filterStore.geneSortField,
-                    filterStore.geneSortOrder,
-                    geneQueryGenomes(filterStore.selectedGenomes, filterStore.selectedTypeStrains),
-                    updatedSelectedSpecies,
-                    convertFacetedFiltersToLegacy(filterStore.facetedFilters),
-                    convertFacetOperatorsToLegacy(filterStore.facetOperators)
-                );
-                setGeneResults(response.data || []);
-                setGenePagination(response.pagination || null);
-
-            } catch (error) {
-                console.error('Error fetching gene data after species selection:', error);
-            } finally {
-                setGeneLoading(false);
-            }
+            await fetchGenesForFilters(
+                updatedSelectedSpecies,
+                filterStore.selectedTypeStrains,
+                filterStore.selectedGenomes
+            );
         } else {
             await genomeData.handleSpeciesSelect(species_acronym);
         }
@@ -297,27 +293,11 @@ const HomePage: React.FC = () => {
             ? filterStore.selectedTypeStrains.filter((name) => name !== isolateName)
             : [...filterStore.selectedTypeStrains, isolateName];
         filterStore.setSelectedTypeStrains(updatedTypeStrains);
-
-        setGeneLoading(true);
-        try {
-            const response = await GeneService.fetchGeneSearchResultsAdvanced(
-                filterStore.geneSearchQuery,
-                1,
-                genePerPage,
-                filterStore.geneSortField,
-                filterStore.geneSortOrder,
-                geneQueryGenomes(filterStore.selectedGenomes, updatedTypeStrains),
-                filterStore.selectedSpecies,
-                convertFacetedFiltersToLegacy(filterStore.facetedFilters),
-                convertFacetOperatorsToLegacy(filterStore.facetOperators)
-            );
-            setGeneResults(response.data || []);
-            setGenePagination(response.pagination || null);
-        } catch (error) {
-            console.error('Error fetching gene data after type strain selection:', error);
-        } finally {
-            setGeneLoading(false);
-        }
+        await fetchGenesForFilters(
+            filterStore.selectedSpecies,
+            updatedTypeStrains,
+            filterStore.selectedGenomes
+        );
     };
 
     const orderedSpecies = useMemo(() => {
@@ -331,30 +311,29 @@ const HomePage: React.FC = () => {
         filterStore.setSelectedTypeStrains([]);
         filterStore.setSelectedGenomes([]);
         filterStore.clearFacetedFilters();
+        filterStore.setGeneSearchQuery('');
 
         if (activeTab === 'genes') {
-            setGeneLoading(true);
-            try {
-                const response = await GeneService.fetchGeneSearchResultsAdvanced(
-                    filterStore.geneSearchQuery,
-                    1,
-                    genePerPage,
-                    filterStore.geneSortField,
-                    filterStore.geneSortOrder,
-                    [],
-                    [],
-                    {},
-                    {}
-                );
-                setGeneResults(response.data || []);
-                setGenePagination(response.pagination || null);
-            } catch (error) {
-                console.error('Error fetching gene data after resetting filters:', error);
-            } finally {
-                setGeneLoading(false);
-            }
+            await fetchGenesForFilters([], [], [], '');
         }
     };
+
+    const handleClearGeneSearch = useCallback(async () => {
+        const species = filterStore.selectedSpecies;
+        const typeStrains = filterStore.selectedTypeStrains;
+        const genomes = filterStore.selectedGenomes;
+        filterStore.setGeneSearchQuery('');
+        if (activeTab === 'genes') {
+            await fetchGenesForFilters(species, typeStrains, genomes, '');
+        }
+    }, [
+        activeTab,
+        fetchGenesForFilters,
+        filterStore.selectedSpecies,
+        filterStore.selectedTypeStrains,
+        filterStore.selectedGenomes,
+        filterStore.setGeneSearchQuery,
+    ]);
 
     const activeFilterItems: ActiveFilterItem[] = [
         ...filterStore.selectedSpecies.map((acronym) => ({
@@ -376,6 +355,15 @@ const HomePage: React.FC = () => {
             label: genome.isolate_name,
             onRemove: () => filterStore.removeSelectedGenome(genome.isolate_name),
         })),
+        ...(filterStore.geneSearchQuery && activeTab === 'genes'
+            ? [{
+                id: `gene-search-${filterStore.geneSearchQuery}`,
+                label: filterStore.geneSearchQuery,
+                onRemove: () => {
+                    void handleClearGeneSearch();
+                },
+            }]
+            : []),
     ];
 
     return (

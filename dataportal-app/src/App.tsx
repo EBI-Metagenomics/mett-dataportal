@@ -26,18 +26,39 @@ const UrlCleanupHandler: React.FC = () => {
     const location = useLocation();
 
     useEffect(() => {
-        if (location.pathname.startsWith('/genome/')) {
-            const searchParams = new URLSearchParams(location.search);
-            const locusTag = searchParams.get('locus_tag');
-
-            if (locusTag) {
-                const newParams = new URLSearchParams();
-                newParams.set('locus_tag', locusTag);
-
-                const newUrl = `${location.pathname}?${newParams.toString()}`;
-                window.history.replaceState({}, '', newUrl);
-            }
+        // Deep-links historically carried stray homepage params. Keep locus_tag
+        // and gene search/sort/facet params; drop the rest.
+        if (!location.pathname.startsWith('/genome/')) {
+            return;
         }
+
+        const searchParams = new URLSearchParams(location.search);
+        const locusTag = searchParams.get('locus_tag');
+        if (!locusTag) {
+            return;
+        }
+
+        const allowedKeys = [
+            'locus_tag',
+            'geneSearch',
+            'geneSortField',
+            'geneSortOrder',
+            'facetedFilters',
+            'facetOperators',
+        ];
+        const next = new URLSearchParams();
+        allowedKeys.forEach((key) => {
+            const value = searchParams.get(key);
+            if (value) {
+                next.set(key, value);
+            }
+        });
+
+        if (next.toString() === searchParams.toString()) {
+            return;
+        }
+
+        window.history.replaceState({}, '', `${location.pathname}?${next.toString()}`);
     }, [location.pathname, location.search]);
 
     return null;
