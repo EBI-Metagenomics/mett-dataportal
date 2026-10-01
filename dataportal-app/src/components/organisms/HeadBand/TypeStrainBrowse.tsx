@@ -1,6 +1,5 @@
 import React, {useMemo, useState} from 'react';
 import {GenomeMeta} from '../../../interfaces/Genome';
-import {compareTypeStrainIsolates} from '../../../utils/common/homePageConstants';
 import styles from './HomePageHeadBand.module.scss';
 
 const COLLAPSE_GROUP_LIMIT = 12;
@@ -54,23 +53,34 @@ const TypeStrainBrowse: React.FC<TypeStrainBrowseProps> = ({
         });
 
         strainsByAcronym.forEach((strains, acronym) => {
-            strainsByAcronym.set(acronym, [...strains].sort((left, right) =>
-                compareTypeStrainIsolates(left.isolate_name, right.isolate_name)
-            ));
+            strainsByAcronym.set(
+                acronym,
+                [...strains].sort((left, right) =>
+                    left.isolate_name.localeCompare(right.isolate_name, undefined, {sensitivity: 'base'})
+                )
+            );
         });
 
+        const resolveScientificName = (acronym: string) =>
+            speciesNameByAcronym.get(acronym) ||
+            strainsByAcronym.get(acronym)?.[0]?.species_scientific_name ||
+            acronym;
+
         const orderedAcronyms = Array.from(strainsByAcronym.keys()).sort((left, right) => {
-            const leftName = strainsByAcronym.get(left)?.[0]?.isolate_name || left;
-            const rightName = strainsByAcronym.get(right)?.[0]?.isolate_name || right;
-            return compareTypeStrainIsolates(leftName, rightName);
+            const byName = resolveScientificName(left).localeCompare(
+                resolveScientificName(right),
+                undefined,
+                {sensitivity: 'base'}
+            );
+            if (byName !== 0) {
+                return byName;
+            }
+            return left.localeCompare(right, undefined, {sensitivity: 'base'});
         });
 
         return orderedAcronyms.map((acronym) => ({
             acronym,
-            scientific_name:
-                speciesNameByAcronym.get(acronym) ||
-                strainsByAcronym.get(acronym)?.[0]?.species_scientific_name ||
-                acronym,
+            scientific_name: resolveScientificName(acronym),
             strains: strainsByAcronym.get(acronym) || [],
         }));
     }, [typeStrains, speciesList]);

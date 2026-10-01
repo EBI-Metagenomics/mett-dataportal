@@ -23,6 +23,27 @@ describe('SpeciesFilter', () => {
     expect(screen.getAllByRole('checkbox')).toHaveLength(2)
   })
 
+  test('sorts species alphabetically by scientific name', () => {
+    render(
+      <SpeciesFilter
+        speciesList={[
+          { acronym: 'PV', scientific_name: 'Phocaeicola vulgatus' },
+          { acronym: 'AR', scientific_name: 'Alistipes putredinis' },
+          { acronym: 'BU', scientific_name: 'Bacteroides uniformis' },
+        ]}
+        selectedSpecies={[]}
+        onSpeciesSelect={() => {}}
+      />
+    )
+
+    const labels = screen.getAllByRole('checkbox').map((checkbox) => checkbox.closest('label')?.textContent)
+    expect(labels).toEqual([
+      'Alistipes putredinis',
+      'Bacteroides uniformis',
+      'Phocaeicola vulgatus',
+    ])
+  })
+
   test('checkboxes reflect selectedSpecies prop', () => {
     render(
       <SpeciesFilter

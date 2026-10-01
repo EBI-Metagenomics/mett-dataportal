@@ -24,6 +24,7 @@ admin_router = Router(tags=["Admin"])
         "Does not modify Elasticsearch documents."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.ADMIN]),
+    include_in_schema=False,
 )
 @wrap_success_response
 def rebuild_visibility_cache(request):

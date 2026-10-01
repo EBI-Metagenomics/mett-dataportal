@@ -23,6 +23,7 @@ from dataportal.utils.decorators import log_execution_time
 from dataportal.utils.constants import (
     GENOME_FIELD_ISOLATE_NAME,
     GENOME_FIELD_SPECIES,
+    GENOME_FIELD_TYPE_STRAIN,
     SORT_DIRECTION_ASC,
     SPECIES_FIELD_ACRONYM_SHORT,
     INDEX_STRAINS,
@@ -459,6 +460,7 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             "genome": f"{GENOME_FIELD_ISOLATE_NAME}.keyword",  # Map 'genome' to 'isolate_name.keyword'
             "strain": f"{GENOME_FIELD_ISOLATE_NAME}.keyword",  # Map 'strain' to 'isolate_name.keyword'
             "name": f"{GENOME_FIELD_ISOLATE_NAME}.keyword",  # Map 'name' to 'isolate_name.keyword'
+            "type_strain": GENOME_FIELD_TYPE_STRAIN,
         }
 
         # Return mapped field if it exists, otherwise return the original field

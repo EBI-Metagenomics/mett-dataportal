@@ -45,29 +45,41 @@ describe('TypeStrainBrowse', () => {
     expect(screen.getByRole('link', { name: /PV_ATCC8482/i })).toHaveAttribute('href', '/genome/PV_ATCC8482')
   })
 
-  test('orders links by the type strain presentation sequence', () => {
+  test('orders species groups and isolate links alphabetically', () => {
     render(
       <TypeStrainBrowse
         typeStrains={[
           mockStrain('PV_ATCC8482', 'PV', 'Phocaeicola vulgatus'),
           mockStrain('BU_3537', 'BU', 'Bacteroides uniformis'),
           mockStrain('BU_ATCC8492', 'BU', 'Bacteroides uniformis'),
+          mockStrain('AR_VPI0990', 'AR', 'Alistipes putredinis'),
         ]}
-        speciesList={speciesList}
+        speciesList={[
+          ...speciesList,
+          { acronym: 'AR', scientific_name: 'Alistipes putredinis' },
+        ]}
         linkTemplate="/genome/$strain_name"
       />
     )
 
+    const headings = screen.getAllByRole('heading', { level: 4 }).map((node) => node.textContent)
+    expect(headings).toEqual([
+      'Alistipes putredinis',
+      'Bacteroides uniformis',
+      'Phocaeicola vulgatus',
+    ])
+
     const links = screen.getAllByRole('link').map((link) => link.textContent)
-    expect(links[0]).toMatch(/BU_ATCC8492/)
+    expect(links[0]).toMatch(/AR_VPI0990/)
     expect(links[1]).toMatch(/BU_3537/)
-    expect(links[2]).toMatch(/PV_ATCC8482/)
+    expect(links[2]).toMatch(/BU_ATCC8492/)
+    expect(links[3]).toMatch(/PV_ATCC8482/)
   })
 
   test('shows a Show all toggle when there are more than 12 species groups', () => {
     const manySpecies = Array.from({ length: 13 }, (_, index) => ({
       acronym: `S${index}`,
-      scientific_name: `Species ${index}`,
+      scientific_name: `Species ${String(index).padStart(2, '0')}`,
     }))
     const strains = manySpecies.map((species, index) =>
       mockStrain(`Z${String(index).padStart(2, '0')}_TYPE`, species.acronym, species.scientific_name)
@@ -81,7 +93,7 @@ describe('TypeStrainBrowse', () => {
       />
     )
 
-    expect(screen.getByText('Species 0')).toBeInTheDocument()
+    expect(screen.getByText('Species 00')).toBeInTheDocument()
     expect(screen.queryByText('Species 12')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /show all type strains/i }))

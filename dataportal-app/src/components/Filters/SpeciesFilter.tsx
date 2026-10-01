@@ -39,11 +39,15 @@ const SpeciesFilter: React.FC<SpeciesFilterProps> = ({
             !search ||
             species.scientific_name.toLowerCase().includes(search) ||
             species.acronym.toLowerCase().includes(search);
+        const byScientificName = (left: Species, right: Species) =>
+            left.scientific_name.localeCompare(right.scientific_name, undefined, {sensitivity: 'base'});
 
-        const selected = speciesList.filter((species) => selectedSpecies.includes(species.acronym));
-        const unselected = speciesList.filter((species) =>
-            !selectedSpecies.includes(species.acronym) && matches(species)
-        );
+        const selected = speciesList
+            .filter((species) => selectedSpecies.includes(species.acronym))
+            .sort(byScientificName);
+        const unselected = speciesList
+            .filter((species) => !selectedSpecies.includes(species.acronym) && matches(species))
+            .sort(byScientificName);
         return [...selected, ...unselected];
     }, [speciesList, selectedSpecies, filterText]);
 

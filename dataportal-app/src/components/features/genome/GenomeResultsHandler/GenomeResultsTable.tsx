@@ -97,7 +97,17 @@ const GenomeResultsTable: React.FC<GenomeResultsTableProps> = ({
                             <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
                         )}
                     </th>
-                    <th className={`vf-table__heading ${styles.vfTableHeading}`}>Type strain</th>
+                    <th onClick={() => handleSort('type_strain')}
+                        className={`vf-table__heading ${styles.vfTableHeading} ${styles.clickableHeader}`}>
+                        Type strain
+                        {sortField === 'type_strain' ? (
+                            <span
+                                className={`icon icon-common ${sortOrder === 'asc' ? 'icon-sort-up' : 'icon-sort-down'}`}
+                                style={{paddingLeft: '5px'}}></span>
+                        ) : (
+                            <span className="icon icon-common icon-sort" style={{paddingLeft: '5px'}}></span>
+                        )}
+                    </th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Assembly</th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Annotations</th>
                     <th className={`vf-table__heading ${styles.vfTableHeading}`}>Actions</th>

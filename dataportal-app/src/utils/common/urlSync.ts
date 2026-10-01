@@ -4,6 +4,7 @@ import { FilterState } from '../../stores/filterStore';
 const VALID_GENOME_SORT_FIELDS = {
     'species': 'species',
     'isolate_name': 'isolate_name',
+    'type_strain': 'type_strain',
     'genome': 'isolate_name', // Map 'genome' to 'isolate_name'
     'strain': 'isolate_name', // Map 'strain' to 'isolate_name'
     'name': 'isolate_name', // Map 'name' to 'isolate_name'

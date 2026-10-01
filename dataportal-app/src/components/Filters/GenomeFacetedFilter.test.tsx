@@ -41,6 +41,31 @@ describe('GenomeFacetedFilter', () => {
     expect(screen.getByRole('checkbox', { name: /PV_ATCC8482/i })).toBeInTheDocument()
   })
 
+  test('sorts type strains alphabetically by isolate name', () => {
+    render(
+      <GenomeFacetedFilter
+        typeStrains={[
+          mockStrain('PV_ET601', 'PV'),
+          mockStrain('BU_ATCC8492', 'BU'),
+          mockStrain('PV_ATCC8482', 'PV'),
+          mockStrain('BU_3537', 'BU'),
+        ]}
+        selectedTypeStrains={[]}
+        selectedSpecies={[]}
+        onTypeStrainToggle={jest.fn()}
+        initialVisibleCount={10}
+      />
+    )
+
+    const labels = screen.getAllByRole('checkbox').map((checkbox) => checkbox.closest('label')?.textContent?.trim())
+    expect(labels).toEqual([
+      'BU_3537',
+      'BU_ATCC8492',
+      'PV_ATCC8482',
+      'PV_ET601',
+    ])
+  })
+
   test('collapses and expands the type strain group', () => {
     render(
       <GenomeFacetedFilter

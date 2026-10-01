@@ -11,8 +11,6 @@ import HomepageFilterRail from '@components/Filters/HomepageFilterRail';
 import SpeciesFilter from '@components/Filters/SpeciesFilter';
 import GenomeFacetedFilter from '@components/Filters/GenomeFacetedFilter';
 import ActiveFilters, {ActiveFilterItem} from '@components/Filters/ActiveFilters';
-import {compareTypeStrainIsolates} from '../../utils/common/homePageConstants';
-
 
 import {useFilterStore} from '../../stores/filterStore';
 import {useGenomeData} from '../../hooks';
@@ -323,30 +321,10 @@ const HomePage: React.FC = () => {
     };
 
     const orderedSpecies = useMemo(() => {
-        const leadIsolate = (acronym: string) => {
-            const isolates = genomeData.typeStrains
-                .filter((strain) => strain.species_acronym === acronym)
-                .map((strain) => strain.isolate_name)
-                .sort(compareTypeStrainIsolates);
-            return isolates[0];
-        };
-
-        return [...genomeData.speciesList].sort((left, right) => {
-            const leftIsolate = leadIsolate(left.acronym);
-            const rightIsolate = leadIsolate(right.acronym);
-            if (leftIsolate && rightIsolate) {
-                const byStrain = compareTypeStrainIsolates(leftIsolate, rightIsolate);
-                if (byStrain !== 0) {
-                    return byStrain;
-                }
-            } else if (leftIsolate) {
-                return -1;
-            } else if (rightIsolate) {
-                return 1;
-            }
-            return left.scientific_name.localeCompare(right.scientific_name);
-        });
-    }, [genomeData.speciesList, genomeData.typeStrains]);
+        return [...genomeData.speciesList].sort((left, right) =>
+            left.scientific_name.localeCompare(right.scientific_name, undefined, {sensitivity: 'base'})
+        );
+    }, [genomeData.speciesList]);
 
     const handleResetFilters = async (): Promise<void> => {
         filterStore.setSelectedSpecies([]);

@@ -1,7 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import styles from './GeneFacetedFilter.module.scss';
 import {GenomeMeta} from '../../interfaces/Genome';
-import {compareTypeStrainIsolates} from '../../utils/common/homePageConstants';
 
 interface GenomeFacetedFilterProps {
     typeStrains: GenomeMeta[];
@@ -59,14 +58,13 @@ const GenomeFacetedFilter: React.FC<GenomeFacetedFilterProps> = ({
             return true;
         });
 
-        return [...selected, ...unselected].sort((left, right) => {
-            const leftSelected = selectedTypeStrains.includes(left.isolate_name);
-            const rightSelected = selectedTypeStrains.includes(right.isolate_name);
-            if (leftSelected !== rightSelected) {
-                return leftSelected ? -1 : 1;
-            }
-            return compareTypeStrainIsolates(left.isolate_name, right.isolate_name);
-        });
+        const byIsolateName = (left: GenomeMeta, right: GenomeMeta) =>
+            left.isolate_name.localeCompare(right.isolate_name, undefined, {sensitivity: 'base'});
+
+        return [
+            ...selected.sort(byIsolateName),
+            ...unselected.sort(byIsolateName),
+        ];
     }, [typeStrains, selectedTypeStrains, selectedSpecies, filterText]);
 
     const handleFilterChange = useCallback((text: string) => {
