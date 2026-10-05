@@ -94,7 +94,6 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
                         ContigSchema(seq_id=contig.get("seq_id"), length=contig.get("length"))
                     )
 
-        enabled_raw = hit_dict.get("enabled")
         return GenomeResponseSchema(
             species_scientific_name=hit_dict.get("species_scientific_name"),
             species_acronym=hit_dict.get("species_acronym"),
@@ -106,7 +105,6 @@ class GenomeService(BaseService[GenomeResponseSchema, Dict[str, Any]]):
             fasta_url=hit_dict.get("fasta_url") or "",
             gff_url=hit_dict.get("gff_url") or "",
             type_strain=hit_dict.get("type_strain", False),
-            enabled=False if enabled_raw is False else True,
             contigs=contigs,
             annotation=_annotation_schema(hit_dict.get("annotation")),
         )

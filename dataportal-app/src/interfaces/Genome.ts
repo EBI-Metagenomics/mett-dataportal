@@ -23,7 +23,6 @@ export interface GenomeMeta {
     fasta_url: string;
     gff_url: string;
     type_strain: boolean;
-    enabled?: boolean;
     contigs: Contig[];
     annotation?: StrainAnnotation | null;
 }

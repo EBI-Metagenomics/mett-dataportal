@@ -177,7 +177,6 @@ class GenomeResponseSchema(BaseModel):
     fasta_url: Optional[str] = ""
     gff_url: Optional[str] = ""
     type_strain: bool
-    enabled: bool = True
     contigs: List[ContigSchema]
     annotation: Optional[StrainAnnotationSchema] = None
 
