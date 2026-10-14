@@ -9,7 +9,7 @@ Django ingest commands (species → strains → assays → networks) are documen
 ```
 data-generators/
   scripts/
-    01-faa-generator/       # protein FASTA pipeline for PyHMMER
+    01-protein-db/          # deduplicated protein FASTA for PyHMMER
     02-stringdb-mapper/     # METT → STRING mapping (Diamond + UniProt)
     03-browser-indexes/     # JBrowse FASTA/GFF indexes
     04-qc-duplicates/       # intra-strain duplicate QC
@@ -25,9 +25,9 @@ data-generators/
     schema/                 # extended model (dbml/json)
 ```
 
-Default paths are relative to this folder. Override with `FAA_OUT`, `STRING_INPUT_DIR`, `STRING_OUT`, `BROWSER_INDEX_OUT`, `QC_OUT`, or `METTANNOTATOR_OUT`.
+Default paths are relative to this folder. Override with `PROTEIN_DB_OUT`, `FAA_OUT`, `STRING_INPUT_DIR`, `STRING_OUT`, `BROWSER_INDEX_OUT`, `QC_OUT`, or `METTANNOTATOR_OUT`.
 
-Local PyHMMER env vars should point at `data/generated/faa/` and `data/generated/faa/isolates-db/` (not the old `faa-generator/output/` path).
+Local PyHMMER should set `PYHMMER_DB` to `data/generated/protein-db/mett_proteins.faa`. `members.sqlite` and `catalog.json` are read from that same directory.
 
 ## Script sequence
 
@@ -35,16 +35,16 @@ Numbering follows generator dependencies, not Django ingest order. Steps 03 and 
 
 | Step | Script | Consumes | Produces |
 |---|---|---|---|
-| 01 | `scripts/01-faa-generator/run_pipeline.py` | EBI FTP annotations | `data/generated/faa/` (type-strain, all-strain, per-isolate FASTAs) |
-| 02 | `scripts/02-stringdb-mapper/` | `data/inputs/stringdb/` (STRING proteomes + type-strain FASTA from 01) | `data/generated/string-mapping/{raw,uniprot_mapped,mapping_coverage}` |
+| 01 | `scripts/01-protein-db/protein_db.nf` | Isolate protein FASTAs (HD and 20hm) | `data/generated/protein-db/mett_proteins.faa` |
+| 02 | `scripts/02-stringdb-mapper/` | `data/inputs/stringdb/` (STRING proteomes and copied type-strain FASTA) | `data/generated/string-mapping/{raw,uniprot_mapped,mapping_coverage}` |
 | 03 | `scripts/03-browser-indexes/` | Local or mounted FASTA + GFF (HD or 20hm roots) | `data/generated/browser-indexes/{release}/{species}/` |
 | 04 | `scripts/04-qc-duplicates/` | EBI FTP `.faa` | `data/generated/qc/` |
 | 05 | `scripts/05-mettannotator-prep/` | local `data/generated/mettannotator/` | pruned tree: `*_annotations.gff` with gene rows (`*-orig.gff` backup) + `prokka/{isolate}.faa` |
 
 ```bash
-# 01 — protein FASTAs (long-running)
-cd scripts/01-faa-generator
-python run_pipeline.py
+# 01 — protein database (Nextflow; see that folder's README)
+cd scripts/01-protein-db
+nextflow run protein_db.nf -profile all
 
 # 02 — STRING mapping (needs Diamond DBs in data/inputs/stringdb)
 cd ../02-stringdb-mapper

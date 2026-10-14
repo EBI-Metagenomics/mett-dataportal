@@ -27,23 +27,18 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
         setHasSearched(true);
 
         try {
-            // Use isolate-specific database if isolate name is provided
-            let database = 'bu_pv_all'; // Default database
-            if (isolateName) {
-                // Extract isolate name from locus tag (e.g., "BU_ATCC8492_00001" -> "BU_ATCC8492")
-                const isolateMatch = isolateName.match(/^([A-Z]{2}_[A-Z0-9]+)/);
-                if (isolateMatch) {
-                    const extractedIsolate = isolateMatch[1];
-                    // Use a custom database identifier that we'll handle in the backend
-                    database = `isolate_${extractedIsolate}`;
-                }
+            const geneSuffix = isolateName?.match(/^(.*)_\d+$/);
+            const isolate = geneSuffix?.[1] || '';
+            if (!isolate) {
+                throw new Error('Could not determine the isolate for this protein.');
             }
-            
+
             // Save to history BEFORE executing search
             let historyTempJobId = tempJobId;
             if (!tempJobId) {
                 const searchRequest = {
-                    database: database,
+                    database: 'mett_proteins',
+                    isolate,
                     threshold: 'E-value',
                     threshold_value: '0.01',
                     input: proteinSequence
@@ -61,7 +56,7 @@ export const PyhmmerFeaturePanel: React.FC<PyhmmerFeaturePanelProps> = ({protein
             
             // Execute the search and get real backend job ID
             console.log('PyhmmerFeaturePanel: Starting search execution');
-            const searchResponse = await PyhmmerService.executeSearch(proteinSequence, database);
+            const searchResponse = await PyhmmerService.executeSearch(proteinSequence, { isolate });
             console.log('PyhmmerFeaturePanel: Search completed, results:', searchResponse);
             console.log('PyhmmerFeaturePanel: Results count:', searchResponse.results?.length || 0);
             

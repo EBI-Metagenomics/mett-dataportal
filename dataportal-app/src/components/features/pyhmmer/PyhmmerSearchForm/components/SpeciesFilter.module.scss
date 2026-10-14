@@ -1,0 +1,70 @@
+.formSection {
+  margin-bottom: 24px;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1a1c1a;
+  font-size: 1rem;
+}
+
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.shortcut {
+  background: #fff;
+  color: #1a1c1a;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #3b6fb6;
+  }
+}
+
+.fieldLabel {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1a1c1a;
+  font-size: 0.95rem;
+}
+
+.speciesSelect {
+  width: 100%;
+  background-color: white;
+  color: #1a1c1a;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: #3b6fb6;
+    box-shadow: 0 0 0 2px rgba(59, 111, 182, 0.2);
+  }
+}
+
+.hint {
+  margin: 8px 0 12px;
+  color: #5c6568;
+  font-size: 13px;
+}
+
+.typeOnly {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #1a1c1a;
+}

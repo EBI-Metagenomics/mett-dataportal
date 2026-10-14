@@ -22,20 +22,24 @@ class DownloadFastaService:
         """Generate enhanced FASTA content from search results."""
         output = io.StringIO()
 
-        target_names = [hit.get("target", "") for hit in results if hit.get("target")]
-        logger.info(f"Generating FASTA for {len(target_names)} targets")
+        sequence_keys = [
+            hit.get("seq_id") or hit.get("target", "")
+            for hit in results
+            if hit.get("seq_id") or hit.get("target")
+        ]
+        logger.info(f"Generating FASTA for {len(sequence_keys)} targets")
 
-        # Fetch sequences in parallel
-        sequences = SequenceService.fetch_sequences_parallel(target_names, db_path)
+        sequences = SequenceService.fetch_sequences_parallel(sequence_keys, db_path)
 
         for hit in results:
             target = hit.get("target", "")
             description = hit.get("description", "")
+            sequence_key = hit.get("seq_id") or target
 
             if not target:
                 continue
 
-            sequence = sequences.get(target, "")
+            sequence = sequences.get(sequence_key, "")
             output.write(f">{target} {description}\n")
 
             if sequence:

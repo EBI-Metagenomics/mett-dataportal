@@ -19,6 +19,7 @@ class HmmerJob(models.Model):
         BITSCORE = "bitscore", "Bit score"
 
     class DbChoices(models.TextChoices):
+        METT_PROTEINS = "mett_proteins", "METT proteins"
         BU_TYPE_STRAINS = "bu_type_strains", "Bacteroides uniformis Type Strains"
         BU_ALL = "bu_all", "Bacteroides uniformis All Strains"
         PV_TYPE_STRAINS = "pv_type_strains", "Phocaeicola vulgatus Type Strains"
@@ -31,15 +32,27 @@ class HmmerJob(models.Model):
             "bu_pv_all",
             "Bacteroides uniformis + Phocaeicola vulgatus All Strains",
         )
-        # Dynamic isolate-specific databases (will be validated in tasks.py)
+        # Kept so older rows still validate. New searches store mett_proteins.
         ISOLATE_SPECIFIC = "isolate_specific", "Isolate-Specific Database"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     algo = models.CharField(
         max_length=16, choices=AlgoChoices.choices, default=AlgoChoices.PHMMER
     )
-    database = models.CharField(max_length=32, choices=DbChoices.choices)
+    database = models.CharField(
+        max_length=32, choices=DbChoices.choices, default=DbChoices.METT_PROTEINS
+    )
     input = models.TextField()
+    # Empty species list means every species in the database.
+    species = models.JSONField(default=list, blank=True)
+    type_only = models.BooleanField(default=False)
+    isolate = models.CharField(max_length=128, blank=True, default="")
+    # Empty status means a legacy Celery job. New jobs use PENDING/STARTED/SUCCESS/FAILURE.
+    status = models.CharField(max_length=16, blank=True, default="")
+    result = models.JSONField(null=True, blank=True)
+    error = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
 
     threshold = models.CharField(
         max_length=16,

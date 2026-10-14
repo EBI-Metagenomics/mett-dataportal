@@ -5,7 +5,7 @@ export const PYHMMER_DEFAULTS = {
     EVALUE_TYPE: 'evalue' as const,
     
     // Database
-    DATABASE: PYHMMER_CONSTANTS.DATABASES.BU_PV_ALL,
+    DATABASE: PYHMMER_CONSTANTS.DATABASES.METT_PROTEINS,
     
     // Cutoff parameters - E-value
     SIGNIFICANCE_EVALUE_SEQ: '0.01',

@@ -34,6 +34,60 @@ logger = logging.getLogger(__name__)
 pyhmmer_router_result = Router(tags=["PyHMMER Results"])
 
 
+def job_status_and_results(job):
+    """Prefer status stored on the job. Fall back to a legacy Celery task."""
+    if job.status:
+        result = job.result if isinstance(job.result, list) else []
+        task = {
+            "status": job.status,
+            "date_created": job.created_at,
+            "date_done": job.finished_at,
+            "result": result if job.status == "SUCCESS" else None,
+        }
+        return job.status, result, task
+
+    if not job.task:
+        task = {
+            "status": "PENDING",
+            "date_created": None,
+            "date_done": None,
+            "result": None,
+        }
+        return "PENDING", [], task
+
+    async_result = AsyncResult(job.task.task_id)
+    task_status = async_result.status or job.task.status or "PENDING"
+    raw_result = job.task.result
+    if raw_result is None and async_result.result is not None:
+        task_result_data = async_result.result
+    elif isinstance(raw_result, str):
+        try:
+            task_result_data = json.loads(raw_result)
+        except json.JSONDecodeError:
+            task_result_data = []
+    else:
+        task_result_data = raw_result or []
+    if not isinstance(task_result_data, list):
+        task_result_data = []
+    task = {
+        "status": job.task.status or task_status,
+        "date_created": job.task.date_created,
+        "date_done": job.task.date_done,
+        "result": task_result_data if task_status == "SUCCESS" else None,
+    }
+    return task_status, task_result_data, task
+
+
+def protein_db_path(job) -> str:
+    if not job.status and job.database in settings.HMMER_DATABASES:
+        return settings.HMMER_DATABASES[job.database]
+    if not job.status and str(job.database).startswith("isolate_"):
+        return settings.get_isolate_database_path(
+            job.database.replace("isolate_", "", 1)
+        )
+    return settings.PYHMMER_DB
+
+
 @pyhmmer_router_result.get("/{uuid:id}/download")
 def download_results(request, id: uuid.UUID, format: str):
     """Download search results in various formats (tab, fasta, aligned_fasta)"""
@@ -49,14 +103,10 @@ def download_results(request, id: uuid.UUID, format: str):
             )
 
         job = get_object_or_404(HmmerJob, id=id)
+        task_status, result_data, _task = job_status_and_results(job)
 
-        if not job.task or job.task.status != "SUCCESS":
+        if task_status != "SUCCESS":
             raise_validation_error("Job not completed successfully")
-
-        if isinstance(job.task.result, str):
-            result_data = json.loads(job.task.result)
-        else:
-            result_data = job.task.result or []
 
         if not result_data:
             raise_not_found_error(
@@ -64,7 +114,7 @@ def download_results(request, id: uuid.UUID, format: str):
                 error_code=ErrorCode.RESULT_NOT_FOUND,
             )
 
-        db_path = settings.HMMER_DATABASES.get(job.database)
+        db_path = protein_db_path(job)
         if not db_path:
             raise_internal_server_error(f"Database {job.database} not configured")
 
@@ -81,8 +131,10 @@ def download_results(request, id: uuid.UUID, format: str):
             logger.info(f"Generated FASTA content type: {type(content)}")
             logger.info(f"Generated FASTA content length: {len(content)}")
         elif format == "aligned_fasta":
-            content = DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
-                result_data, db_path, job.input
+            content = (
+                DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
+                    result_data, db_path, job.input
+                )
             )
             filename = f"pyhmmer_hits_{id}.aligned.fasta.gz"
             content_type = "application/gzip"
@@ -96,11 +148,15 @@ def download_results(request, id: uuid.UUID, format: str):
 
             try:
                 test_decompressed = gzip.decompress(content)
-                logger.info(f"Decompression test passed: {len(test_decompressed)} bytes")
+                logger.info(
+                    f"Decompression test passed: {len(test_decompressed)} bytes"
+                )
             except Exception as decompress_error:
                 logger.error(f"Decompression test failed: {decompress_error}")
                 # If decompression fails, return uncompressed content
-                logger.warning("Returning uncompressed content due to compression failure")
+                logger.warning(
+                    "Returning uncompressed content due to compression failure"
+                )
                 content = (
                     DownloadFastaService.generate_enhanced_fasta_content(
                         result_data, db_path, job.input
@@ -133,51 +189,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         job = get_object_or_404(HmmerJob, id=id)
         logger.info(f"Found job: {job}")
 
-        task_status = "PENDING"
-        task_result_data = []
-
-        if job.task:
-            logger.info(f"Job has task: {job.task}")
-            logger.info(f"Task ID: {job.task.task_id}")
-
-            async_result = AsyncResult(job.task.task_id)
-            task_status = async_result.status
-            logger.info(f"AsyncResult status: {task_status}")
-            logger.info(f"AsyncResult state: {async_result.state}")
-
-            # Get raw result from database
-            raw_result = job.task.result
-            logger.info(f"Raw result from database: {raw_result}")
-
-            try:
-                if raw_result is None:
-                    logger.warning("Raw result is None, checking AsyncResult for fallback...")
-                    if async_result.result is not None:
-                        logger.info("Using AsyncResult result as fallback")
-                        task_result_data = async_result.result
-                    else:
-                        logger.warning(
-                            "Both database and AsyncResult have no result, setting empty list"
-                        )
-                        task_result_data = []
-                elif isinstance(raw_result, str):
-                    logger.info("Raw result is string, attempting JSON decode...")
-
-                    task_result_data = json.loads(raw_result)
-                else:
-                    logger.info("Raw result is already a list/dict, using as is")
-                    task_result_data = raw_result
-            except Exception as e:
-                logger.error(f"Error parsing result: {e}")
-                task_result_data = []
-
-            logger.info(f"Parsed result data type: {type(task_result_data)}")
-            logger.info(
-                f"Result list length: {len(task_result_data) if isinstance(task_result_data, list) else 'N/A'}"
-            )
-        else:
-            logger.warning("Job has no task associated")
-
+        task_status, task_result_data, task_block = job_status_and_results(job)
         logger.info(f"Final task_status: {task_status}")
         logger.info(f"Final task_result_data type: {type(task_result_data)}")
         logger.info(
@@ -188,12 +200,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
             logger.info(f"Job not successful, returning status: {task_status}")
             response_data = {
                 "status": task_status,
-                "task": {
-                    "status": job.task.status if job.task else "PENDING",
-                    "date_created": job.task.date_created if job.task else None,
-                    "date_done": job.task.date_done if job.task else None,
-                    "result": None,
-                },
+                "task": task_block,
                 "database": None,
                 "id": job.id,
                 "algo": job.algo,
@@ -242,7 +249,9 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         if page == 1 and page_size == default_page_size:
             # Return all results (no pagination) - this is likely a polling request
             paginated_results = filtered_results
-            logger.info(f"Returning all {len(paginated_results)} results (polling mode)")
+            logger.info(
+                f"Returning all {len(paginated_results)} results (polling mode)"
+            )
         else:
             # Apply explicit pagination
             start_idx = (page - 1) * page_size
@@ -266,14 +275,10 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         except Database.DoesNotExist:
             database_data = None
 
+        task_block["result"] = paginated_results
         response_data = {
             "status": task_status,
-            "task": {
-                "status": job.task.status if job.task else "PENDING",
-                "date_created": job.task.date_created if job.task else None,
-                "date_done": job.task.date_done if job.task else None,
-                "result": paginated_results,
-            },
+            "task": task_block,
             "database": database_data,
             "id": job.id,
             "algo": job.algo,
@@ -310,14 +315,10 @@ def get_domains_by_target(request, id: uuid.UUID, target: str):
     """Get domain information for a specific target."""
     try:
         job = get_object_or_404(HmmerJob, id=id)
+        task_status, result_data, _task = job_status_and_results(job)
 
-        if not job.task or job.task.status != "SUCCESS":
+        if task_status != "SUCCESS":
             raise_validation_error("Job not completed successfully")
-
-        if isinstance(job.task.result, str):
-            result_data = json.loads(job.task.result)
-        else:
-            result_data = job.task.result or []
 
         if not result_data:
             raise_not_found_error(
@@ -362,14 +363,10 @@ def get_domain_details(request, id: uuid.UUID, domain_index: int):
     """Get detailed information for a specific domain."""
     try:
         job = get_object_or_404(HmmerJob, id=id)
+        task_status, result_data, _task = job_status_and_results(job)
 
-        if not job.task or job.task.status != "SUCCESS":
+        if task_status != "SUCCESS":
             raise_validation_error("Job not completed successfully")
-
-        if isinstance(job.task.result, str):
-            result_data = json.loads(job.task.result)
-        else:
-            result_data = job.task.result or []
 
         if not result_data or domain_index >= len(result_data):
             raise_not_found_error(
@@ -406,14 +403,10 @@ def get_alignment_details(request, id: uuid.UUID, domain_index: int):
     """Get detailed alignment information for a specific domain."""
     try:
         job = get_object_or_404(HmmerJob, id=id)
+        task_status, result_data, _task = job_status_and_results(job)
 
-        if not job.task or job.task.status != "SUCCESS":
+        if task_status != "SUCCESS":
             raise_validation_error("Job not completed successfully")
-
-        if isinstance(job.task.result, str):
-            result_data = json.loads(job.task.result)
-        else:
-            result_data = job.task.result or []
 
         if not result_data or domain_index >= len(result_data):
             raise_not_found_error(

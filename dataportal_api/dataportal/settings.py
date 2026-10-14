@@ -28,7 +28,9 @@ ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 METT_RELEASE = os.getenv("METT_RELEASE", "current")
 
 # Feature flags
-ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+ENABLE_PYHMMER_SEARCH = (
+    os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+)
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
@@ -283,6 +285,8 @@ PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/o
 PYHMMER_ISOLATES_BASE_PATH = os.environ.get(
     "PYHMMER_ISOLATES_BASE_PATH", "/data/pyhmmer/output/isolates-db/"
 )
+# Single deduplicated FASTA. members.sqlite and catalog.json sit beside it.
+PYHMMER_DB = os.environ.get("PYHMMER_DB", PYHMMER_FAA_BASE_PATH + "mett_proteins.faa")
 
 
 # Function to get isolate-specific database path

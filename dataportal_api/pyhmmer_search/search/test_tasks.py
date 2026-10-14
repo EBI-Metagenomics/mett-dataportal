@@ -73,11 +73,13 @@ class TestPyhmmerSearchTasks:
         mock_job.task = mock_task_result
 
         # Mock the domain significance calculation
-        with patch("pyhmmer_search.search.tasks.Pipeline") as mock_pipeline, patch(
-            "pyhmmer_search.search.tasks.SequenceFile"
-        ) as mock_seq_file, patch(
-            "pyhmmer_search.search.tasks.Builder"
-        ) as mock_builder:
+        with (
+            patch("pyhmmer_search.search.execution.engine.Pipeline") as mock_pipeline,
+            patch(
+                "pyhmmer_search.search.execution.targets.SequenceFile"
+            ) as mock_seq_file,
+            patch("pyhmmer_search.search.execution.engine.Builder") as mock_builder,
+        ):
 
             # Mock pipeline search results
             mock_pipeline_instance = Mock()

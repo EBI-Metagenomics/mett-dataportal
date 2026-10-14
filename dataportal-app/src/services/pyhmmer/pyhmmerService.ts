@@ -30,6 +30,25 @@ export interface PyhmmerSearchResult {
 
 export class PyhmmerService extends BaseService {
     @cacheResponse(60 * 60 * 1000, () => "getDatabases")
+    static async getCatalog(): Promise<{
+        id: string;
+        name: string;
+        shortcuts: { id: string; label: string; species: string[] }[];
+        species: { acronym: string; name: string; isolates: number; type_strain: string; collection: string }[];
+    }> {
+        try {
+            return await this.getWithRetry(`${API_BASE_SEARCH}/catalog`);
+        } catch (error) {
+            console.error('Error fetching PyHMMER catalog:', error);
+            return {
+                id: 'mett_proteins',
+                name: 'METT proteins',
+                shortcuts: [{ id: 'all', label: 'All species', species: [] }],
+                species: [],
+            };
+        }
+    }
+
     static async getDatabases(): Promise<PyhmmerDatabase[]> {
         try {
             console.log('PyhmmerService.getDatabases: Attempting to fetch databases from:', `${API_BASE_SEARCH}/databases`);
@@ -202,13 +221,19 @@ export class PyhmmerService extends BaseService {
     }
 
     // NEW: Unified search execution method (replaces PyhmmerSearchService)
-    static async executeSearch(proteinSequence: string, database: string = PYHMMER_CONSTANTS.DATABASES.DEFAULT): Promise<{results: PyhmmerSearchResult[], jobId: string}> {
+    static async executeSearch(
+        proteinSequence: string,
+        options: { isolate?: string; species?: string[]; typeOnly?: boolean } = {},
+    ): Promise<{results: PyhmmerSearchResult[], jobId: string}> {
         try {
             // Convert to FASTA format
             const fastaSequence = `>protein\n${proteinSequence}`;
 
             const searchRequest: PyhmmerSearchRequest = {
-                database: database,
+                database: PYHMMER_CONSTANTS.DATABASES.METT_PROTEINS,
+                species: options.species ?? [],
+                type_only: options.typeOnly ?? false,
+                isolate: options.isolate ?? '',
                 threshold: 'evalue',
                 threshold_value: PYHMMER_CONSTANTS.THRESHOLDS.DEFAULT_EVALUE,
                 input: fastaSequence,

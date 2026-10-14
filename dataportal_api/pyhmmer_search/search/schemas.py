@@ -11,6 +11,7 @@ from pydantic import model_validator
 from pydantic_core import PydanticCustomError
 from pyhmmer.easel import SequenceFile
 
+from .membership import ALIASES, DATABASE_ID, resolve_scope
 from .models import HmmerJob, Database
 from ..constants import MX_CHOICES_LITERAL, DEFAULT_MX
 
@@ -96,7 +97,10 @@ class DomainSchema(Schema):
 class HitSchema(Schema):
     """Enhanced hit schema with better field descriptions"""
 
-    target: str = Field(..., description="Target sequence name")
+    target: str = Field(..., description="Locus tag to open in the gene viewer")
+    seq_id: Optional[str] = Field(
+        None, description="Representative sequence id in the protein FASTA"
+    )
     description: str = Field(..., description="Target sequence description")
     evalue: str = Field(..., description="E-value formatted as string")
     score: str = Field(..., description="Bit score formatted as string")
@@ -118,7 +122,21 @@ class MessageSchema(Schema):
 
 
 class SearchRequestSchema(ModelSchema):
-    database: str = Field(..., description="Database identifier (consolidated or isolate-specific)")
+    database: str = Field(
+        default=DATABASE_ID,
+        description="Protein database id. Filters are species, type_only, and isolate.",
+    )
+    species: List[str] = Field(
+        default_factory=list,
+        description="Species acronyms to search. Empty means all species.",
+    )
+    type_only: bool = Field(
+        default=False, description="Restrict the search to type-strain proteins"
+    )
+    isolate: str = Field(
+        default="",
+        description="Restrict the search to one isolate, used by the gene viewer",
+    )
     threshold: Literal["evalue", "bitscore"]
     threshold_value: float
     input: str
@@ -269,37 +287,42 @@ class SearchRequestSchema(ModelSchema):
     @field_validator("database", mode="after")
     @classmethod
     def validate_database(cls, value: str):
-        """Validate database identifier"""
-        # Check if it's a valid consolidated database
-        valid_consolidated = [
-            "bu_type_strains", "bu_all", "pv_type_strains", "pv_all", 
-            "bu_pv_type_strains", "bu_pv_all"
-        ]
-        
-        if value in valid_consolidated:
+        if value in ALIASES or (
+            value.startswith("isolate_") and len(value) > len("isolate_")
+        ):
             return value
-        
-        # Check if it's a valid isolate-specific database
-        if value.startswith('isolate_'):
-            isolate_name = value.replace('isolate_', '')
-            # Basic validation for isolate name format
-            if isolate_name and (isolate_name.startswith('BU_') or isolate_name.startswith('PV_')):
-                return value
-            else:
-                raise PydanticCustomError(
-                    "invalid_database",
-                    "Isolate-specific database must have format 'isolate_BU_XXXXX' or 'isolate_PV_XXXXX'"
-                )
-        
-        # If neither, it's invalid
+        known = ", ".join(sorted(ALIASES))
         raise PydanticCustomError(
             "invalid_database",
-            f"Database must be one of: {', '.join(valid_consolidated)} or isolate-specific format 'isolate_BU_XXXXX'/'isolate_PV_XXXXX'"
+            f"Database must be one of: {known}, or an isolate id prefixed with 'isolate_'",
         )
+
+    @model_validator(mode="after")
+    def apply_database_alias(self):
+        species, type_only, isolate = resolve_scope(
+            self.database, self.species, self.type_only, self.isolate
+        )
+        self.species = species
+        self.type_only = type_only
+        self.isolate = isolate
+        self.database = DATABASE_ID
+        return self
 
     class Meta:
         model = HmmerJob
-        exclude = ["id", "task", "algo"]
+        exclude = [
+            "id",
+            "task",
+            "algo",
+            "status",
+            "result",
+            "error",
+            "created_at",
+            "finished_at",
+            "species",
+            "type_only",
+            "isolate",
+        ]
 
 
 class TaskResultSchema(ModelSchema):
