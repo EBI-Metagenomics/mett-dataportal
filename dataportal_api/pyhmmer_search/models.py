@@ -4,7 +4,21 @@ import uuid
 from django.db import models
 from django_celery_results.models import TaskResult
 
-from ..constants import DEFAULT_MX, MX_CHOICES_TUPLES
+from .constants import (
+    DEFAULT_DOM_E,
+    DEFAULT_DOM_T,
+    DEFAULT_E,
+    DEFAULT_INC_DOM_E,
+    DEFAULT_INC_DOM_T,
+    DEFAULT_INC_E,
+    DEFAULT_INC_T,
+    DEFAULT_MX,
+    DEFAULT_PEXTEND,
+    DEFAULT_POPEN,
+    DEFAULT_T,
+    DEFAULT_THRESHOLD_VALUE,
+    MX_CHOICES_TUPLES,
+)
 
 
 class HmmerJob(models.Model):
@@ -36,9 +50,7 @@ class HmmerJob(models.Model):
         ISOLATE_SPECIFIC = "isolate_specific", "Isolate-Specific Database"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    algo = models.CharField(
-        max_length=16, choices=AlgoChoices.choices, default=AlgoChoices.PHMMER
-    )
+    algo = models.CharField(max_length=16, choices=AlgoChoices.choices, default=AlgoChoices.PHMMER)
     database = models.CharField(
         max_length=32, choices=DbChoices.choices, default=DbChoices.METT_PROTEINS
     )
@@ -60,19 +72,19 @@ class HmmerJob(models.Model):
         default=ThresholdChoices.EVALUE,
     )
 
-    E = models.FloatField(default=1.0, null=True, blank=True)
-    domE = models.FloatField(default=1.0, null=True, blank=True)
-    T = models.FloatField(default=7.0, null=True, blank=True)
-    domT = models.FloatField(default=5.0, null=True, blank=True)
-    incE = models.FloatField(default=0.01, null=True, blank=True)
-    incdomE = models.FloatField(default=0.03, null=True, blank=True)
-    incT = models.FloatField(default=25.0, null=True, blank=True)
-    incdomT = models.FloatField(default=22.0, null=True, blank=True)
+    E = models.FloatField(default=DEFAULT_E, null=True, blank=True)
+    domE = models.FloatField(default=DEFAULT_DOM_E, null=True, blank=True)
+    T = models.FloatField(default=DEFAULT_T, null=True, blank=True)
+    domT = models.FloatField(default=DEFAULT_DOM_T, null=True, blank=True)
+    incE = models.FloatField(default=DEFAULT_INC_E, null=True, blank=True)
+    incdomE = models.FloatField(default=DEFAULT_INC_DOM_E, null=True, blank=True)
+    incT = models.FloatField(default=DEFAULT_INC_T, null=True, blank=True)
+    incdomT = models.FloatField(default=DEFAULT_INC_DOM_T, null=True, blank=True)
 
-    popen = models.FloatField(default=0.02, null=True, blank=True)
-    pextend = models.FloatField(default=0.4, null=True, blank=True)
+    popen = models.FloatField(default=DEFAULT_POPEN, null=True, blank=True)
+    pextend = models.FloatField(default=DEFAULT_PEXTEND, null=True, blank=True)
 
-    threshold_value = models.FloatField(default=1.0)
+    threshold_value = models.FloatField(default=DEFAULT_THRESHOLD_VALUE)
 
     task = models.OneToOneField(
         TaskResult, related_name="+", null=True, blank=True, on_delete=models.CASCADE
@@ -98,9 +110,7 @@ class Database(models.Model):
         SEQ = "seq"
 
     id = models.CharField(max_length=32, primary_key=True, unique=True)
-    type = models.CharField(
-        max_length=16, choices=TypeChoices.choices, default=TypeChoices.SEQ
-    )
+    type = models.CharField(max_length=16, choices=TypeChoices.choices, default=TypeChoices.SEQ)
     name = models.CharField(max_length=128)
     version = models.CharField(max_length=32)
     release_date = models.DateField(default=datetime.date.today)

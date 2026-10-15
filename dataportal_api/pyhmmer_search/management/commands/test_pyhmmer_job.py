@@ -1,8 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django_celery_results.models import TaskResult
-from pyhmmer_search.search.models import HmmerJob
-from pyhmmer_search.search.tasks import run_search
+from pyhmmer_search.models import HmmerJob
+from pyhmmer_search.tasks import run_search
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,9 +75,7 @@ class Command(BaseCommand):
             job.save()
             self.stdout.write("Task linked successfully")
 
-            self.stdout.write(
-                self.style.SUCCESS("Job creation test completed successfully")
-            )
+            self.stdout.write(self.style.SUCCESS("Job creation test completed successfully"))
 
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error starting task: {e}"))

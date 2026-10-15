@@ -5,8 +5,9 @@ from __future__ import annotations
 import logging
 import re
 
+from ..constants import DEFAULT_INC_E, DEFAULT_INC_T, THRESHOLD_BITSCORE
 from ..membership import product_from_description
-from ..schemas import DomainSchema, HitSchema
+from ..search.schemas import DomainSchema, HitSchema
 from .alignment import (
     biopython_alignment_schema,
     create_simple_alignment_display,
@@ -25,14 +26,12 @@ def domain_is_significant(
     inc_e: float | None,
     inc_t: float | None,
 ) -> bool:
-    if threshold == "bitscore":
-        return score > (inc_t if inc_t is not None else 25.0)
-    return ievalue < (inc_e if inc_e is not None else 0.01)
+    if threshold == THRESHOLD_BITSCORE:
+        return score > (inc_t if inc_t is not None else DEFAULT_INC_T)
+    return ievalue < (inc_e if inc_e is not None else DEFAULT_INC_E)
 
 
-def hit_is_significant(
-    hit, *, threshold: str, inc_e: float | None, inc_t: float | None
-):
+def hit_is_significant(hit, *, threshold: str, inc_e: float | None, inc_t: float | None):
     if hasattr(hit, "included"):
         return hit.included
     return domain_is_significant(
@@ -46,9 +45,7 @@ def _bias(value, hit_name: str) -> float | None:
     try:
         return float(value)
     except (TypeError, ValueError):
-        logger.warning(
-            "Could not convert bias value %s to float for hit %s", value, hit_name
-        )
+        logger.warning("Could not convert bias value %s to float for hit %s", value, hit_name)
         return None
 
 
@@ -110,9 +107,7 @@ def build_hits(
 
     results: list[HitSchema] = []
     for hit in hit_list:
-        hit_significant = hit_is_significant(
-            hit, threshold=threshold, inc_e=inc_e, inc_t=inc_t
-        )
+        hit_significant = hit_is_significant(hit, threshold=threshold, inc_e=inc_e, inc_t=inc_t)
         domains = _domains_for_hit(
             hit,
             query=query,
@@ -157,9 +152,7 @@ def build_hits(
     return results
 
 
-def _domains_for_hit(
-    hit, *, query, target_sequences, threshold, inc_e, inc_t, hit_significant
-):
+def _domains_for_hit(hit, *, query, target_sequences, threshold, inc_e, inc_t, hit_significant):
     if getattr(hit, "domains", None):
         return [
             _domain_from_pyhmmer(domain, threshold=threshold, inc_e=inc_e, inc_t=inc_t)
@@ -203,10 +196,6 @@ def _description(hit, member_info) -> str:
 
 
 def _display_sequence(domains: list[DomainSchema]) -> str | None:
-    if (
-        not domains
-        or not domains[0].alignment
-        or not domains[0].alignment.target_sequence
-    ):
+    if not domains or not domains[0].alignment or not domains[0].alignment.target_sequence:
         return None
     return domains[0].alignment.target_sequence.replace("-", "")

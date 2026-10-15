@@ -26,7 +26,7 @@ def _run(job_id: str) -> None:
     try:
         with _lock:
             close_old_connections()
-            from .tasks import execute_search
+            from ..tasks import execute_search
 
             execute_search(job_id)
     except Exception:

@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django_celery_results.models import TaskResult
 from ninja.testing import TestClient
 
-from pyhmmer_search.search.models import HmmerJob, Database
+from pyhmmer_search.models import HmmerJob, Database
 from pyhmmer_search.search.api import pyhmmer_router_search
 
 

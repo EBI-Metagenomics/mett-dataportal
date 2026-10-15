@@ -5,7 +5,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.db import transaction
-from django.tasks import TaskResult
+from django_celery_results.models import TaskResult
 from django.utils import timezone
 from ninja import Router
 
@@ -18,8 +18,23 @@ from dataportal.utils.errors import (
     raise_internal_server_error,
 )
 from dataportal.utils.response_wrappers import wrap_success_response
-from .membership import DATABASE_ID, catalog_path
-from .models import HmmerJob
+from ..constants import (
+    COLLECTION_EXTENDED,
+    COLLECTION_HD,
+    DATABASE_ID,
+    DATABASE_LABEL,
+    DEFAULT_TASK_RETENTION_DAYS,
+    HD_SPECIES,
+    MAX_TASK_RETENTION_DAYS,
+    MIN_TASK_RETENTION_DAYS,
+    SHORTCUT_ALL_ID,
+    SHORTCUT_ALL_LABEL,
+    SHORTCUT_HD_ID,
+    SHORTCUT_HD_LABEL,
+    STATUS_PENDING,
+)
+from ..membership import catalog_path
+from ..models import HmmerJob
 from .runner import start_search
 from .schemas import SearchRequestSchema
 
@@ -41,7 +56,7 @@ def search(request, body: SearchRequestSchema):
         logger.info(f"Job object created: {job}")
         logger.info(f"Job ID before save: {job.id}")
 
-        job.status = "PENDING"
+        job.status = STATUS_PENDING
         job.clean()
         job.save()
         logger.info(f"Job saved to database with ID: {job.id}")
@@ -61,17 +76,17 @@ def search(request, body: SearchRequestSchema):
         raise_internal_server_error(f"Internal server error: {str(e)}")
 
 
+def species_csv_path() -> Path:
+    if settings.PYHMMER_SPECIES_CSV:
+        return Path(settings.PYHMMER_SPECIES_CSV)
+    return Path(settings.BASE_DIR).parent / "data-generators" / "data" / "reference" / "species.csv"
+
+
 def load_catalog() -> dict:
     path = catalog_path(settings.PYHMMER_DB)
     if path.is_file():
         return json.loads(path.read_text())
-    species_csv = (
-        Path(settings.BASE_DIR).parent
-        / "data-generators"
-        / "data"
-        / "reference"
-        / "species.csv"
-    )
+    species_csv = species_csv_path()
     species = []
     if species_csv.is_file():
         import csv
@@ -87,18 +102,20 @@ def load_catalog() -> dict:
                         "name": (row.get("scientific_name") or acronym).strip(),
                         "isolates": 0,
                         "type_strain": (row.get("type_strain_isolate") or "").strip(),
-                        "collection": "hd" if acronym in {"BU", "PV"} else "20hm",
+                        "collection": (
+                            COLLECTION_HD if acronym in HD_SPECIES else COLLECTION_EXTENDED
+                        ),
                     }
                 )
     return {
         "id": DATABASE_ID,
-        "name": "METT proteins",
+        "name": DATABASE_LABEL,
         "shortcuts": [
-            {"id": "all", "label": "All species", "species": []},
+            {"id": SHORTCUT_ALL_ID, "label": SHORTCUT_ALL_LABEL, "species": []},
             {
-                "id": "hd",
-                "label": "B. uniformis + P. vulgatus",
-                "species": ["BU", "PV"],
+                "id": SHORTCUT_HD_ID,
+                "label": SHORTCUT_HD_LABEL,
+                "species": list(HD_SPECIES),
             },
         ],
         "species": species,
@@ -112,7 +129,7 @@ def get_databases(request):
     return [
         {
             "id": DATABASE_ID,
-            "name": "METT proteins",
+            "name": DATABASE_LABEL,
             "type": "seq",
             "version": "1",
             "release_date": None,
@@ -131,8 +148,8 @@ def get_catalog(request):
         logger.error(f"Error getting protein catalog: {e}")
         return {
             "id": DATABASE_ID,
-            "name": "METT proteins",
-            "shortcuts": [{"id": "all", "label": "All species", "species": []}],
+            "name": DATABASE_LABEL,
+            "shortcuts": [{"id": SHORTCUT_ALL_ID, "label": SHORTCUT_ALL_LABEL, "species": []}],
             "species": [],
         }
 
@@ -153,12 +170,13 @@ def get_catalog(request):
 
 @pyhmmer_router_search.get("/tasks-status", include_in_schema=False)
 @wrap_success_response
-def get_tasks_status(request, threshold_days: int = 30):
+def get_tasks_status(request, threshold_days: int = DEFAULT_TASK_RETENTION_DAYS):
     """Get current status of PyHMMER task results in the database."""
     try:
-        # Validate threshold_days parameter
-        if threshold_days < 1 or threshold_days > 365:
-            raise_validation_error("threshold_days must be between 1 and 365")
+        if threshold_days < MIN_TASK_RETENTION_DAYS or threshold_days > MAX_TASK_RETENTION_DAYS:
+            raise_validation_error(
+                f"threshold_days must be between {MIN_TASK_RETENTION_DAYS} and {MAX_TASK_RETENTION_DAYS}"
+            )
 
         cutoff = timezone.now() - timedelta(days=threshold_days)
 
@@ -180,12 +198,13 @@ def get_tasks_status(request, threshold_days: int = 30):
 
 @pyhmmer_router_search.post("/cleanup-tasks", include_in_schema=False)
 @wrap_success_response
-def cleanup_tasks_manual(request, threshold_days: int = 30):
+def cleanup_tasks_manual(request, threshold_days: int = DEFAULT_TASK_RETENTION_DAYS):
     """Manually trigger cleanup of old PyHMMER task results."""
     try:
-        # Validate threshold_days parameter
-        if threshold_days < 1 or threshold_days > 365:
-            raise_validation_error("threshold_days must be between 1 and 365")
+        if threshold_days < MIN_TASK_RETENTION_DAYS or threshold_days > MAX_TASK_RETENTION_DAYS:
+            raise_validation_error(
+                f"threshold_days must be between {MIN_TASK_RETENTION_DAYS} and {MAX_TASK_RETENTION_DAYS}"
+            )
 
         # Use the same logic as the scheduled task
         cutoff = timezone.now() - timedelta(days=threshold_days)

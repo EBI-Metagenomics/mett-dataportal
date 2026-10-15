@@ -7,8 +7,21 @@ from ninja import Schema, Field
 from pydantic import UUID4, field_validator
 from pydantic import model_validator
 
-from ..constants import MX_CHOICES_LITERAL, DEFAULT_MX
-from ..search.models import HmmerJob, Database
+from ..constants import (
+    DEFAULT_DOM_E,
+    DEFAULT_DOM_T,
+    DEFAULT_E,
+    DEFAULT_INC_DOM_E,
+    DEFAULT_INC_DOM_T,
+    DEFAULT_INC_E,
+    DEFAULT_INC_T,
+    DEFAULT_MX,
+    DEFAULT_PEXTEND,
+    DEFAULT_POPEN,
+    DEFAULT_T,
+    MX_CHOICES_LITERAL,
+)
+from ..models import HmmerJob, Database
 from ..search.schemas import (
     PyhmmerAlignmentSchema,
     AlignmentDisplay,
@@ -67,24 +80,20 @@ class JobsResponseSchema(ModelSchema):
 class HmmerJobStatusSchema(Schema):
     id: UUID4 = Field(..., description="The id of the job")
     status: str = Field(..., description="The status of the job")
-    result_url: Optional[str] = Field(
-        ..., description="URL to get the result of the job"
-    )
-    error_message: Optional[str] = Field(
-        ..., description="The error message of the job"
-    )
+    result_url: Optional[str] = Field(..., description="URL to get the result of the job")
+    error_message: Optional[str] = Field(..., description="The error message of the job")
 
 
 class CutOffSchema(Schema):
     threshold: Literal["evalue", "bitscore"] = "evalue"
-    incE: Optional[float] = Field(0.01, gt=0, le=10)
-    incdomE: Optional[float] = Field(0.03, gt=0, le=10)
-    E: Optional[float] = Field(1.0, gt=0, le=10)
-    domE: Optional[float] = Field(1.0, gt=0, le=10)
-    incT: Optional[float] = Field(25.0, gt=0)
-    incdomT: Optional[float] = Field(22.0, gt=0)
-    T: Optional[float] = Field(7.0, gt=0)
-    domT: Optional[float] = Field(5.0, gt=0)
+    incE: Optional[float] = Field(DEFAULT_INC_E, gt=0, le=10)
+    incdomE: Optional[float] = Field(DEFAULT_INC_DOM_E, gt=0, le=10)
+    E: Optional[float] = Field(DEFAULT_E, gt=0, le=10)
+    domE: Optional[float] = Field(DEFAULT_DOM_E, gt=0, le=10)
+    incT: Optional[float] = Field(DEFAULT_INC_T, gt=0)
+    incdomT: Optional[float] = Field(DEFAULT_INC_DOM_T, gt=0)
+    T: Optional[float] = Field(DEFAULT_T, gt=0)
+    domT: Optional[float] = Field(DEFAULT_DOM_T, gt=0)
 
     @model_validator(mode="after")
     def clean_threshold_fields(self):
@@ -102,11 +111,9 @@ class CutOffSchema(Schema):
 
 
 class GapPenaltiesSchema(Schema):
-    popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
-    pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
-    mx: Optional[MXChoicesType] = Field(
-        default=DEFAULT_MX, description="Substitution matrix"
-    )
+    popen: Optional[float] = Field(DEFAULT_POPEN, ge=0, lt=0.5)
+    pextend: Optional[float] = Field(DEFAULT_PEXTEND, ge=0, lt=1.0)
+    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
 
 
 class ResultQuerySchema(Schema):
@@ -130,9 +137,7 @@ class AlignmentDetailsResponseSchema(Schema):
     status: str = Field(..., description="Status of the request")
     target: str = Field(..., description="Target sequence name")
     domain_index: Optional[int] = Field(None, description="Index of the domain")
-    alignment: Optional[PyhmmerAlignmentSchema] = Field(
-        None, description="PyHMMER alignment data"
-    )
+    alignment: Optional[PyhmmerAlignmentSchema] = Field(None, description="PyHMMER alignment data")
     simple_alignment: Optional[AlignmentDisplay] = Field(
         None, description="Simple alignment display for UI"
     )

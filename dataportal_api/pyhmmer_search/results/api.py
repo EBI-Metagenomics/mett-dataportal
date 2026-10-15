@@ -27,7 +27,17 @@ from .services import (
     DownloadFastaService,
     DownloadAlignedFastaService,
 )
-from ..search.models import HmmerJob, Database
+from ..constants import (
+    DOWNLOAD_FORMATS,
+    FORMAT_ALIGNED_FASTA,
+    FORMAT_FASTA,
+    FORMAT_TAB,
+    ISOLATE_DB_PREFIX,
+    STATUS_PENDING,
+    STATUS_SUCCESS,
+)
+from ..models import HmmerJob, Database
+from ..paths import isolate_database_path, legacy_database_path
 
 logger = logging.getLogger(__name__)
 
@@ -42,21 +52,21 @@ def job_status_and_results(job):
             "status": job.status,
             "date_created": job.created_at,
             "date_done": job.finished_at,
-            "result": result if job.status == "SUCCESS" else None,
+            "result": result if job.status == STATUS_SUCCESS else None,
         }
         return job.status, result, task
 
     if not job.task:
         task = {
-            "status": "PENDING",
+            "status": STATUS_PENDING,
             "date_created": None,
             "date_done": None,
             "result": None,
         }
-        return "PENDING", [], task
+        return STATUS_PENDING, [], task
 
     async_result = AsyncResult(job.task.task_id)
-    task_status = async_result.status or job.task.status or "PENDING"
+    task_status = async_result.status or job.task.status or STATUS_PENDING
     raw_result = job.task.result
     if raw_result is None and async_result.result is not None:
         task_result_data = async_result.result
@@ -73,18 +83,18 @@ def job_status_and_results(job):
         "status": job.task.status or task_status,
         "date_created": job.task.date_created,
         "date_done": job.task.date_done,
-        "result": task_result_data if task_status == "SUCCESS" else None,
+        "result": task_result_data if task_status == STATUS_SUCCESS else None,
     }
     return task_status, task_result_data, task
 
 
 def protein_db_path(job) -> str:
-    if not job.status and job.database in settings.HMMER_DATABASES:
-        return settings.HMMER_DATABASES[job.database]
-    if not job.status and str(job.database).startswith("isolate_"):
-        return settings.get_isolate_database_path(
-            job.database.replace("isolate_", "", 1)
-        )
+    if not job.status:
+        legacy = legacy_database_path(job.database)
+        if legacy:
+            return legacy
+        if str(job.database).startswith(ISOLATE_DB_PREFIX):
+            return isolate_database_path(job.database[len(ISOLATE_DB_PREFIX) :])
     return settings.PYHMMER_DB
 
 
@@ -97,15 +107,15 @@ def download_results(request, id: uuid.UUID, format: str):
         logger.info(f"Format: {format}")
 
         # Validate format
-        if format not in ["tab", "fasta", "aligned_fasta"]:
+        if format not in DOWNLOAD_FORMATS:
             raise_validation_error(
-                f"Invalid format: {format}. Supported formats: tab, fasta, aligned_fasta"
+                "Invalid format: " f"{format}. Supported formats: {', '.join(DOWNLOAD_FORMATS)}"
             )
 
         job = get_object_or_404(HmmerJob, id=id)
         task_status, result_data, _task = job_status_and_results(job)
 
-        if task_status != "SUCCESS":
+        if task_status != STATUS_SUCCESS:
             raise_validation_error("Job not completed successfully")
 
         if not result_data:
@@ -118,11 +128,11 @@ def download_results(request, id: uuid.UUID, format: str):
         if not db_path:
             raise_internal_server_error(f"Database {job.database} not configured")
 
-        if format == "tab":
+        if format == FORMAT_TAB:
             content = DownloadTSVService.generate_tsv_content(result_data)
             filename = f"pyhmmer_hits_{id}.tsv"
             content_type = "text/tab-separated-values"
-        elif format == "fasta":
+        elif format == FORMAT_FASTA:
             content = DownloadFastaService.generate_enhanced_fasta_content(
                 result_data, db_path, job.input
             )
@@ -130,11 +140,9 @@ def download_results(request, id: uuid.UUID, format: str):
             content_type = "application/gzip"
             logger.info(f"Generated FASTA content type: {type(content)}")
             logger.info(f"Generated FASTA content length: {len(content)}")
-        elif format == "aligned_fasta":
-            content = (
-                DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
-                    result_data, db_path, job.input
-                )
+        elif format == FORMAT_ALIGNED_FASTA:
+            content = DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
+                result_data, db_path, job.input
             )
             filename = f"pyhmmer_hits_{id}.aligned.fasta.gz"
             content_type = "application/gzip"
@@ -142,26 +150,22 @@ def download_results(request, id: uuid.UUID, format: str):
             logger.info(f"Generated aligned FASTA content length: {len(content)}")
 
         # Create response
-        if format in ["fasta", "aligned_fasta"]:
+        if format in (FORMAT_FASTA, FORMAT_ALIGNED_FASTA):
             if isinstance(content, str):
                 content = content.encode("utf-8")
 
             try:
                 test_decompressed = gzip.decompress(content)
-                logger.info(
-                    f"Decompression test passed: {len(test_decompressed)} bytes"
-                )
+                logger.info(f"Decompression test passed: {len(test_decompressed)} bytes")
             except Exception as decompress_error:
                 logger.error(f"Decompression test failed: {decompress_error}")
                 # If decompression fails, return uncompressed content
-                logger.warning(
-                    "Returning uncompressed content due to compression failure"
-                )
+                logger.warning("Returning uncompressed content due to compression failure")
                 content = (
                     DownloadFastaService.generate_enhanced_fasta_content(
                         result_data, db_path, job.input
                     )
-                    if format == "fasta"
+                    if format == FORMAT_FASTA
                     else DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
                         result_data, db_path, job.input
                     )
@@ -196,7 +200,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
             f"Final task_result_data length: {len(task_result_data) if isinstance(task_result_data, list) else 'N/A'}"
         )
 
-        if task_status != "SUCCESS":
+        if task_status != STATUS_SUCCESS:
             logger.info(f"Job not successful, returning status: {task_status}")
             response_data = {
                 "status": task_status,
@@ -249,9 +253,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         if page == 1 and page_size == default_page_size:
             # Return all results (no pagination) - this is likely a polling request
             paginated_results = filtered_results
-            logger.info(
-                f"Returning all {len(paginated_results)} results (polling mode)"
-            )
+            logger.info(f"Returning all {len(paginated_results)} results (polling mode)")
         else:
             # Apply explicit pagination
             start_idx = (page - 1) * page_size
@@ -317,7 +319,7 @@ def get_domains_by_target(request, id: uuid.UUID, target: str):
         job = get_object_or_404(HmmerJob, id=id)
         task_status, result_data, _task = job_status_and_results(job)
 
-        if task_status != "SUCCESS":
+        if task_status != STATUS_SUCCESS:
             raise_validation_error("Job not completed successfully")
 
         if not result_data:
@@ -365,7 +367,7 @@ def get_domain_details(request, id: uuid.UUID, domain_index: int):
         job = get_object_or_404(HmmerJob, id=id)
         task_status, result_data, _task = job_status_and_results(job)
 
-        if task_status != "SUCCESS":
+        if task_status != STATUS_SUCCESS:
             raise_validation_error("Job not completed successfully")
 
         if not result_data or domain_index >= len(result_data):
@@ -405,7 +407,7 @@ def get_alignment_details(request, id: uuid.UUID, domain_index: int):
         job = get_object_or_404(HmmerJob, id=id)
         task_status, result_data, _task = job_status_and_results(job)
 
-        if task_status != "SUCCESS":
+        if task_status != STATUS_SUCCESS:
             raise_validation_error("Job not completed successfully")
 
         if not result_data or domain_index >= len(result_data):

@@ -10,18 +10,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-DATABASE_ID = "mett_proteins"
-
-# Old dropdown ids, kept so saved searches still run against the single file.
-ALIASES: dict[str, tuple[list[str], bool, str]] = {
-    "bu_all": (["BU"], False, ""),
-    "bu_type_strains": (["BU"], True, ""),
-    "pv_all": (["PV"], False, ""),
-    "pv_type_strains": (["PV"], True, ""),
-    "bu_pv_all": (["BU", "PV"], False, ""),
-    "bu_pv_type_strains": (["BU", "PV"], True, ""),
-    DATABASE_ID: ([], False, ""),
-}
+from .constants import ALIASES, ISOLATE_DB_PREFIX
 
 
 def resolve_scope(
@@ -35,12 +24,10 @@ def resolve_scope(
     An empty species list means every species. An isolate id limits the search
     to that genome, which is what the gene viewer uses.
     """
-    chosen = [
-        item.strip().upper() for item in (species or []) if item and str(item).strip()
-    ]
+    chosen = [item.strip().upper() for item in (species or []) if item and str(item).strip()]
     isolate_id = (isolate or "").strip()
-    if database.startswith("isolate_"):
-        return [], False, database[len("isolate_") :]
+    if database.startswith(ISOLATE_DB_PREFIX):
+        return [], False, database[len(ISOLATE_DB_PREFIX) :]
     if not chosen and not isolate_id and database in ALIASES:
         alias_species, alias_type, alias_isolate = ALIASES[database]
         return list(alias_species), alias_type, alias_isolate
@@ -104,9 +91,7 @@ def members_for_scope(
             params,
         )
         for seq_id, locus_tag, product in rows:
-            entry = grouped.setdefault(
-                seq_id, {"locus_tags": [], "product": product or ""}
-            )
+            entry = grouped.setdefault(seq_id, {"locus_tags": [], "product": product or ""})
             entry["locus_tags"].append(locus_tag)
     finally:
         connection.close()

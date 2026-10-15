@@ -42,9 +42,7 @@ def check_dependencies():
 
     # Check if we're in the right directory
     if not os.path.exists("manage.py"):
-        print(
-            "❌ manage.py not found. Please run this script from the dataportal_api directory."
-        )
+        print("❌ manage.py not found. Please run this script from the dataportal_api directory.")
         return False
 
     # Set up Django environment first
@@ -165,7 +163,7 @@ def run_unit_tests(verbose=False):
     """Run PyHMMER unit tests using pytest."""
     print("🚀 Running PyHMMER Unit Tests...")
 
-    test_path = "pyhmmer_search/search/test_tasks.py"
+    test_path = "pyhmmer_search/tests/test_tasks.py"
 
     # Use pytest with Django's in-memory database
     cmd = ["python", "-m", "pytest", test_path]
@@ -222,9 +220,7 @@ Examples:
     )
 
     parser.add_argument("--all", action="store_true", help="Run all PyHMMER tests")
-    parser.add_argument(
-        "--search", action="store_true", help="Run search API tests only"
-    )
+    parser.add_argument("--search", action="store_true", help="Run search API tests only")
     parser.add_argument("--unit", action="store_true", help="Run unit tests only")
     parser.add_argument(
         "--basic",
@@ -241,9 +237,7 @@ Examples:
 
     print("🧪 Simple PyHMMER Test Runner (from dataportal_api directory)")
     print("=" * 60)
-    print(
-        "📝 Note: Tests will run using pytest with Django's in-memory SQLite database"
-    )
+    print("📝 Note: Tests will run using pytest with Django's in-memory SQLite database")
     print("=" * 60)
 
     # Check dependencies first
@@ -260,9 +254,7 @@ Examples:
             results.append(("All PyHMMER Tests", run_all_tests(args.verbose)))
         else:
             if args.basic:
-                results.append(
-                    ("Basic Functionality Tests", run_basic_tests(args.verbose))
-                )
+                results.append(("Basic Functionality Tests", run_basic_tests(args.verbose)))
 
             if args.search:
                 results.append(("Search API Tests", run_search_tests(args.verbose)))

@@ -9,7 +9,7 @@ from pyhmmer.plan7 import Builder, Pipeline
 
 from .hits import build_hits
 from .schemas import PipelineParameters, QuerySequence
-from ..schemas import HitSchema
+from ..search.schemas import HitSchema
 
 logger = logging.getLogger(__name__)
 

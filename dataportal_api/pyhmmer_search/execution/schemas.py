@@ -9,9 +9,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from ..constants import DEFAULT_THRESHOLD, PIPELINE_FIELDS
 from ..membership import resolve_scope
-
-PIPELINE_FIELDS = ("E", "domE", "incE", "incdomE", "T", "domT", "incT", "incdomT")
 
 
 class SearchScope(BaseModel):
@@ -48,7 +47,7 @@ class PipelineParameters(BaseModel):
     incdomT: Optional[float] = None
     popen: Optional[float] = None
     pextend: Optional[float] = None
-    threshold: str = "evalue"
+    threshold: str = DEFAULT_THRESHOLD
     mx: Optional[str] = None
 
     @classmethod
@@ -64,15 +63,13 @@ class PipelineParameters(BaseModel):
             incdomT=job.incdomT,
             popen=job.popen,
             pextend=job.pextend,
-            threshold=job.threshold or "evalue",
+            threshold=job.threshold or DEFAULT_THRESHOLD,
             mx=job.mx,
         )
 
     def pipeline_kwargs(self) -> dict[str, float]:
         values = self.model_dump()
-        return {
-            name: values[name] for name in PIPELINE_FIELDS if values[name] is not None
-        }
+        return {name: values[name] for name in PIPELINE_FIELDS if values[name] is not None}
 
     def builder_kwargs(self) -> dict[str, float]:
         values = {}

@@ -15,7 +15,9 @@ from django.utils import timezone
 from django_celery_results.models import TaskResult
 from pyhmmer.easel import Alphabet
 
-from dataportal import settings
+from django.conf import settings
+
+from .constants import STATUS_STARTED
 from .execution.engine import search_targets
 from .execution.jobs import load_job
 from .execution.query import digitize_query
@@ -39,19 +41,17 @@ def execute_search(job_id: str):
 
     job = load_job(job_id)
     logger.info("Updating job status to STARTED...")
-    job.status = "STARTED"
+    job.status = STATUS_STARTED
     job.save(update_fields=["status"])
     if job.task:
-        job.task.status = "STARTED"
+        job.task.status = STATUS_STARTED
         job.task.save(update_fields=["status"])
 
     try:
         return _run(job)
     except Exception as exc:
         logger.error("=== TASK FAILED ===")
-        logger.error(
-            "Error in execute_search for job %s: %s", job_id, exc, exc_info=True
-        )
+        logger.error("Error in execute_search for job %s: %s", job_id, exc, exc_info=True)
         store_failure(job, str(exc))
         raise
 
@@ -69,9 +69,7 @@ def _run(job: HmmerJob):
     if not db_path:
         raise ValueError("PYHMMER_DB is not configured")
 
-    membership = members_for_scope(
-        db_path, scope.species, scope.type_only, scope.isolate
-    )
+    membership = members_for_scope(db_path, scope.species, scope.type_only, scope.isolate)
     if membership is not None and not membership:
         logger.info("Filter matched no proteins")
         store_success(job, [])
@@ -110,6 +108,6 @@ def run_search(self, job_id: str):
 
 @shared_task
 def cleanup_old_tasks():
-    cutoff = timezone.now() - timedelta(days=30)
+    cutoff = timezone.now() - timedelta(days=settings.PYHMMER_TASK_RETENTION_DAYS)
     deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
     return f"Deleted {deleted} old task results"

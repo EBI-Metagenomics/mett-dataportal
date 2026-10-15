@@ -2,9 +2,9 @@ import pytest
 from unittest.mock import Mock, patch
 from pyhmmer.plan7 import Hit, Domain
 
-from ..search.tasks import run_search
-from ..search.models import HmmerJob
-from ..search.schemas import HitSchema
+from pyhmmer_search.models import HmmerJob
+from pyhmmer_search.search.schemas import HitSchema
+from pyhmmer_search.tasks import run_search
 from django_celery_results.models import TaskResult
 
 
@@ -74,11 +74,9 @@ class TestPyhmmerSearchTasks:
 
         # Mock the domain significance calculation
         with (
-            patch("pyhmmer_search.search.execution.engine.Pipeline") as mock_pipeline,
-            patch(
-                "pyhmmer_search.search.execution.targets.SequenceFile"
-            ) as mock_seq_file,
-            patch("pyhmmer_search.search.execution.engine.Builder") as mock_builder,
+            patch("pyhmmer_search.execution.engine.Pipeline") as mock_pipeline,
+            patch("pyhmmer_search.execution.targets.SequenceFile") as mock_seq_file,
+            patch("pyhmmer_search.execution.engine.Builder") as mock_builder,
         ):
 
             # Mock pipeline search results
@@ -145,9 +143,7 @@ class TestPyhmmerSearchTasks:
         # Test bit score threshold logic
         # Domain with score 95.5 should be significant (> 25.0)
 
-    def test_evalue_threshold_calculation(
-        self, mock_hit, mock_domain, mock_job, mock_task_result
-    ):
+    def test_evalue_threshold_calculation(self, mock_hit, mock_domain, mock_job, mock_task_result):
         """Test domain counting with E-value threshold"""
         # Setup
         mock_hit.domains = [mock_domain]
@@ -186,9 +182,7 @@ class TestPyhmmerSearchTasks:
 
         # Test fallback logic for both E-value and bit score thresholds
 
-    def test_bias_field_handling(
-        self, mock_hit, mock_domain, mock_job, mock_task_result
-    ):
+    def test_bias_field_handling(self, mock_hit, mock_domain, mock_job, mock_task_result):
         """Test bias field handling and type conversion"""
         # Setup
         mock_hit.bias = "0.1"  # String that should be converted to float
@@ -197,9 +191,7 @@ class TestPyhmmerSearchTasks:
 
         # Test that bias is properly converted to float
 
-    def test_invalid_bias_field_handling(
-        self, mock_hit, mock_domain, mock_job, mock_task_result
-    ):
+    def test_invalid_bias_field_handling(self, mock_hit, mock_domain, mock_job, mock_task_result):
         """Test handling of invalid bias field values"""
         # Setup
         mock_hit.bias = "invalid"  # Invalid value that can't be converted
@@ -208,9 +200,7 @@ class TestPyhmmerSearchTasks:
 
         # Test that invalid bias values are handled gracefully
 
-    def test_sequence_field_handling(
-        self, mock_hit, mock_domain, mock_job, mock_task_result
-    ):
+    def test_sequence_field_handling(self, mock_hit, mock_domain, mock_job, mock_task_result):
         """Test sequence field extraction and handling"""
         # Setup
         mock_domain.alignment = Mock()
@@ -220,9 +210,7 @@ class TestPyhmmerSearchTasks:
 
         # Test that sequence is properly extracted and cleaned
 
-    def test_empty_sequence_handling(
-        self, mock_hit, mock_domain, mock_job, mock_task_result
-    ):
+    def test_empty_sequence_handling(self, mock_hit, mock_domain, mock_job, mock_task_result):
         """Test handling when sequence field is empty or None"""
         # Setup
         mock_domain.alignment = Mock()

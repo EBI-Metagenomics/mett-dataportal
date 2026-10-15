@@ -11,9 +11,25 @@ from pydantic import model_validator
 from pydantic_core import PydanticCustomError
 from pyhmmer.easel import SequenceFile
 
-from .membership import ALIASES, DATABASE_ID, resolve_scope
-from .models import HmmerJob, Database
-from ..constants import MX_CHOICES_LITERAL, DEFAULT_MX
+from ..constants import (
+    ALIASES,
+    DATABASE_ID,
+    DEFAULT_DOM_E,
+    DEFAULT_DOM_T,
+    DEFAULT_E,
+    DEFAULT_INC_DOM_E,
+    DEFAULT_INC_DOM_T,
+    DEFAULT_INC_E,
+    DEFAULT_INC_T,
+    DEFAULT_MX,
+    DEFAULT_PEXTEND,
+    DEFAULT_POPEN,
+    DEFAULT_T,
+    ISOLATE_DB_PREFIX,
+    MX_CHOICES_LITERAL,
+)
+from ..membership import resolve_scope
+from ..models import HmmerJob, Database
 
 MXChoicesType = Literal[MX_CHOICES_LITERAL]
 
@@ -27,12 +43,8 @@ class PyhmmerAlignmentSchema(Schema):
     hmm_accession: Optional[str] = Field(None, description="Accession of the query HMM")
     hmm_from: int = Field(..., description="Start coordinate in the query HMM")
     hmm_to: int = Field(..., description="End coordinate in the query HMM")
-    hmm_length: Optional[int] = Field(
-        None, description="Length of the query HMM in the alignment"
-    )
-    hmm_sequence: str = Field(
-        ..., description="Sequence of the query HMM in the alignment"
-    )
+    hmm_length: Optional[int] = Field(None, description="Length of the query HMM in the alignment")
+    hmm_sequence: str = Field(..., description="Sequence of the query HMM in the alignment")
 
     target_name: str = Field(..., description="Name of the target sequence")
     target_from: int = Field(..., description="Start coordinate in the target sequence")
@@ -44,9 +56,7 @@ class PyhmmerAlignmentSchema(Schema):
         ..., description="Sequence of the target sequence in the alignment"
     )
 
-    identity_sequence: str = Field(
-        ..., description="Identity sequence between query and target"
-    )
+    identity_sequence: str = Field(..., description="Identity sequence between query and target")
     posterior_probabilities: Optional[str] = Field(
         None, description="Posterior probability annotation"
     )
@@ -70,25 +80,17 @@ class AlignmentDisplay(Schema):
 class DomainSchema(Schema):
     """Enhanced domain schema with alignment support"""
 
-    env_from: Optional[int] = Field(
-        None, description="Start coordinate of domain envelope"
-    )
+    env_from: Optional[int] = Field(None, description="Start coordinate of domain envelope")
     env_to: Optional[int] = Field(None, description="End coordinate of domain envelope")
     bitscore: float = Field(..., description="Bit score of the domain")
     ievalue: float = Field(..., description="Independent E-value of the domain")
-    cevalue: Optional[float] = Field(
-        None, description="Conditional E-value of the domain"
-    )
+    cevalue: Optional[float] = Field(None, description="Conditional E-value of the domain")
     bias: Optional[float] = Field(None, description="Bias score contribution")
-    strand: Optional[str] = Field(
-        None, description="Strand where domain is located (+/-)"
-    )
+    strand: Optional[str] = Field(None, description="Strand where domain is located (+/-)")
     is_significant: bool = Field(..., description="Whether this domain is significant")
 
     # Alignment data
-    alignment: Optional[PyhmmerAlignmentSchema] = Field(
-        None, description="PyHMMER alignment data"
-    )
+    alignment: Optional[PyhmmerAlignmentSchema] = Field(None, description="PyHMMER alignment data")
     alignment_display: Optional[AlignmentDisplay] = Field(
         None, description="Simple alignment display for UI"
     )
@@ -107,12 +109,8 @@ class HitSchema(Schema):
     sequence: Optional[str] = Field(None, description="Target sequence")
     bias: Optional[float] = Field(None, description="Bias score contribution")
     num_hits: Optional[int] = Field(None, description="Total number of hits")
-    num_significant: Optional[int] = Field(
-        None, description="Number of significant hits"
-    )
-    is_significant: bool = Field(
-        ..., description="Whether this individual hit is significant"
-    )
+    num_significant: Optional[int] = Field(None, description="Number of significant hits")
+    is_significant: bool = Field(..., description="Whether this individual hit is significant")
     domains: List[DomainSchema] = Field(..., description="List of domains for this hit")
 
 
@@ -140,9 +138,7 @@ class SearchRequestSchema(ModelSchema):
     threshold: Literal["evalue", "bitscore"]
     threshold_value: float
     input: str
-    mx: Optional[MXChoicesType] = Field(
-        default=DEFAULT_MX, description="Substitution matrix"
-    )
+    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
 
     # E-value parameters
     E: Optional[float] = Field(None, description="Report E-values - Sequence")
@@ -153,14 +149,12 @@ class SearchRequestSchema(ModelSchema):
     # Bit score parameters
     T: Optional[float] = Field(None, description="Report Bit scores - Sequence")
     domT: Optional[float] = Field(None, description="Report Bit scores - Hit")
-    incT: Optional[float] = Field(
-        None, description="Significance Bit scores - Sequence"
-    )
+    incT: Optional[float] = Field(None, description="Significance Bit scores - Sequence")
     incdomT: Optional[float] = Field(None, description="Significance Bit scores - Hit")
 
     # Gap penalties
-    popen: float = Field(default=0.02, ge=0.0, description="Gap open penalty")
-    pextend: float = Field(default=0.4, ge=0.0, description="Gap extend penalty")
+    popen: float = Field(default=DEFAULT_POPEN, ge=0.0, description="Gap open penalty")
+    pextend: float = Field(default=DEFAULT_PEXTEND, ge=0.0, description="Gap extend penalty")
 
     @field_validator("input", mode="after", check_fields=False)
     @classmethod
@@ -207,9 +201,7 @@ class SearchRequestSchema(ModelSchema):
         dna_chars = set("ACGTN")
         rna_chars = set("ACGUN")
 
-        seq_strict = "".join(
-            c for c in sequence_upper if c not in {" ", "\n", "\r", "\t", "-"}
-        )
+        seq_strict = "".join(c for c in sequence_upper if c not in {" ", "\n", "\r", "\t", "-"})
 
         # if all characters are DNA or all are RNA, reject
         if seq_strict and all(c in dna_chars for c in seq_strict):
@@ -236,11 +228,7 @@ class SearchRequestSchema(ModelSchema):
 
         # Check for invalid characters
         invalid_chars = (
-            set(sequence_upper)
-            - protein_chars
-            - dna_chars
-            - rna_chars
-            - {" ", "\n", "\r", "\t"}
+            set(sequence_upper) - protein_chars - dna_chars - rna_chars - {" ", "\n", "\r", "\t"}
         )
         if invalid_chars:
             raise PydanticCustomError(
@@ -278,9 +266,7 @@ class SearchRequestSchema(ModelSchema):
             with SequenceFile(io.BytesIO(value.encode())) as fh:
                 fh.guess_alphabet()
         except Exception as e:
-            raise PydanticCustomError(
-                "invalid_input", f"PyHMMER validation failed: {str(e)}"
-            )
+            raise PydanticCustomError("invalid_input", f"PyHMMER validation failed: {str(e)}")
 
         return value
 
@@ -288,7 +274,7 @@ class SearchRequestSchema(ModelSchema):
     @classmethod
     def validate_database(cls, value: str):
         if value in ALIASES or (
-            value.startswith("isolate_") and len(value) > len("isolate_")
+            value.startswith(ISOLATE_DB_PREFIX) and len(value) > len(ISOLATE_DB_PREFIX)
         ):
             return value
         known = ", ".join(sorted(ALIASES))
@@ -380,24 +366,20 @@ class HmmerJobCreatedSchema(Schema):
 class HmmerJobStatusSchema(Schema):
     id: UUID4 = Field(..., description="The id of the job")
     status: str = Field(..., description="The status of the job")
-    result_url: Optional[str] = Field(
-        ..., description="URL to get the result of the job"
-    )
-    error_message: Optional[str] = Field(
-        ..., description="The error message of the job"
-    )
+    result_url: Optional[str] = Field(..., description="URL to get the result of the job")
+    error_message: Optional[str] = Field(..., description="The error message of the job")
 
 
 class CutOffSchema(Schema):
     threshold: Literal["evalue", "bitscore"] = "evalue"
-    incE: Optional[float] = Field(0.01, ge=0, le=100.0)
-    incdomE: Optional[float] = Field(0.03, ge=0, le=100.0)
-    E: Optional[float] = Field(1.0, ge=0, le=100.0)
-    domE: Optional[float] = Field(1.0, ge=0, le=100.0)
-    incT: Optional[float] = Field(25.0, ge=0.0, le=1000.0)
-    incdomT: Optional[float] = Field(22.0, ge=0.0, le=1000.0)
-    T: Optional[float] = Field(7.0, ge=0.0, le=1000.0)
-    domT: Optional[float] = Field(5.0, ge=0.0, le=1000.0)
+    incE: Optional[float] = Field(DEFAULT_INC_E, ge=0, le=100.0)
+    incdomE: Optional[float] = Field(DEFAULT_INC_DOM_E, ge=0, le=100.0)
+    E: Optional[float] = Field(DEFAULT_E, ge=0, le=100.0)
+    domE: Optional[float] = Field(DEFAULT_DOM_E, ge=0, le=100.0)
+    incT: Optional[float] = Field(DEFAULT_INC_T, ge=0.0, le=1000.0)
+    incdomT: Optional[float] = Field(DEFAULT_INC_DOM_T, ge=0.0, le=1000.0)
+    T: Optional[float] = Field(DEFAULT_T, ge=0.0, le=1000.0)
+    domT: Optional[float] = Field(DEFAULT_DOM_T, ge=0.0, le=1000.0)
 
     @model_validator(mode="after")
     def clean_threshold_fields(self):
@@ -417,11 +399,9 @@ class CutOffSchema(Schema):
 
 
 class GapPenaltiesSchema(Schema):
-    popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
-    pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
-    mx: Optional[MXChoicesType] = Field(
-        default=DEFAULT_MX, description="Substitution matrix"
-    )
+    popen: Optional[float] = Field(DEFAULT_POPEN, ge=0, lt=0.5)
+    pextend: Optional[float] = Field(DEFAULT_PEXTEND, ge=0, lt=1.0)
+    mx: Optional[MXChoicesType] = Field(default=DEFAULT_MX, description="Substitution matrix")
 
 
 class ResultQuerySchema(Schema):
@@ -444,9 +424,7 @@ class AlignmentDetailsResponseSchema(Schema):
     status: str = Field(..., description="Status of the request")
     target: str = Field(..., description="Target sequence name")
     domain_index: Optional[int] = Field(None, description="Index of the domain")
-    alignment: Optional[PyhmmerAlignmentSchema] = Field(
-        None, description="PyHMMER alignment data"
-    )
+    alignment: Optional[PyhmmerAlignmentSchema] = Field(None, description="PyHMMER alignment data")
     simple_alignment: Optional[AlignmentDisplay] = Field(
         None, description="Simple alignment display for UI"
     )

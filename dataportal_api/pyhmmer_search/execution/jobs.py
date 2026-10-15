@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 
+from ..constants import JOB_LOAD_ATTEMPTS, JOB_LOAD_RETRY_SECONDS
 from ..models import HmmerJob
 
 logger = logging.getLogger(__name__)
@@ -12,14 +13,14 @@ logger = logging.getLogger(__name__)
 
 def load_job(job_id: str) -> HmmerJob:
     """Fetch the job, retrying briefly so a just-committed row is visible."""
-    retry_delay = 0.5
+    retry_delay = JOB_LOAD_RETRY_SECONDS
     last_error = None
-    for attempt in range(5):
+    for attempt in range(JOB_LOAD_ATTEMPTS):
         try:
             return HmmerJob.objects.select_related("task").get(id=job_id)
         except HmmerJob.DoesNotExist as exc:
             last_error = exc
-            if attempt == 4:
+            if attempt == JOB_LOAD_ATTEMPTS - 1:
                 break
             logger.warning(
                 "Job %s not found on attempt %s, retrying in %.1fs",

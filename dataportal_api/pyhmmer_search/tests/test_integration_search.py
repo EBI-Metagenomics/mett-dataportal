@@ -11,8 +11,8 @@ from django_celery_results.models import TaskResult
 from ninja.testing import TestClient
 from django.db import transaction
 
-from pyhmmer_search.search.models import HmmerJob, Database
-from pyhmmer_search.search.tasks import run_search
+from pyhmmer_search.models import HmmerJob, Database
+from pyhmmer_search.tasks import run_search
 from pyhmmer_search.search.api import pyhmmer_router_search
 
 
@@ -26,9 +26,7 @@ class TestPyhmmerSearchIntegration(TransactionTestCase):
         try:
             # Create test user within a transaction
             with transaction.atomic():
-                self.user = User.objects.create_user(
-                    username="testuser", password="testpass123"
-                )
+                self.user = User.objects.create_user(username="testuser", password="testpass123")
         except Exception as e:
             self.fail(f"Failed to create test user: {e}")
 
@@ -299,9 +297,7 @@ class TestPyhmmerSearchEdgeCases(TransactionTestCase):
         try:
             # Create test user within a transaction
             with transaction.atomic():
-                self.user = User.objects.create_user(
-                    username="testuser", password="testpass123"
-                )
+                self.user = User.objects.create_user(username="testuser", password="testpass123")
         except Exception as e:
             self.fail(f"Failed to create test user: {e}")
 

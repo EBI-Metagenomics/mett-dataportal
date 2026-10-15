@@ -9,9 +9,9 @@ from pyhmmer.easel import TextSequence, DigitalSequenceBlock, Alphabet
 from pyhmmer.hmmer import hmmalign
 from pyhmmer.plan7 import Background, Builder
 
-logger = logging.getLogger(__name__)
+from ...constants import VALID_AMINO_ACIDS
 
-VALID_AMINO_ACIDS = set("ACDEFGHIKLMNPQRSTVWY*")
+logger = logging.getLogger(__name__)
 
 
 class DownloadAlignedFastaService:
@@ -42,12 +42,7 @@ class DownloadAlignedFastaService:
         for hit in results:
             seq_id = hit.get("seq_id")
             target = hit.get("target")
-            if (
-                seq_id
-                and target
-                and seq_id in all_sequences
-                and target not in all_sequences
-            ):
+            if seq_id and target and seq_id in all_sequences and target not in all_sequences:
                 all_sequences[target] = all_sequences[seq_id]
         return DownloadAlignedFastaService.build_aligned_fasta_msa(
             query_input, results, all_sequences
@@ -70,9 +65,7 @@ class DownloadAlignedFastaService:
         # Clean query input
         input_sequence = DownloadAlignedFastaService.clean_sequence(input_sequence)
         if not input_sequence:
-            raise ValueError(
-                "Query sequence is empty after removing invalid characters."
-            )
+            raise ValueError("Query sequence is empty after removing invalid characters.")
 
         alphabet = Alphabet.amino()
         builder = Builder(alphabet)
@@ -103,14 +96,10 @@ class DownloadAlignedFastaService:
 
                 name = f"{target}/{env_from}-{env_to}".encode()
                 try:
-                    digitized = TextSequence(
-                        name=name, sequence=cleaned_subseq
-                    ).digitize(alphabet)
+                    digitized = TextSequence(name=name, sequence=cleaned_subseq).digitize(alphabet)
                     digital_seqs.append(digitized)
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to digitize sequence '{name.decode()}': {e}"
-                    )
+                    logger.warning(f"Failed to digitize sequence '{name.decode()}': {e}")
 
         if not digital_seqs:
             raise ValueError("No valid sequences available for alignment.")

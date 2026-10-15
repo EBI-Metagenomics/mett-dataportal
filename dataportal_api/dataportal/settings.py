@@ -5,6 +5,13 @@ from pathlib import Path
 
 from celery.schedules import crontab
 
+from pyhmmer_search.constants import (
+    DEFAULT_FAA_BASE_PATH,
+    DEFAULT_ISOLATES_BASE_PATH,
+    DEFAULT_RESULT_MAX_BYTES,
+    DEFAULT_TASK_RETENTION_DAYS,
+    PROTEIN_DB_FILENAME,
+)
 from .elasticsearch_client import init_es_connection
 
 
@@ -28,9 +35,7 @@ ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 METT_RELEASE = os.getenv("METT_RELEASE", "current")
 
 # Feature flags
-ENABLE_PYHMMER_SEARCH = (
-    os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
-)
+ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
@@ -110,7 +115,7 @@ INSTALLED_APPS = [
 
 # Conditionally include PyHMMER search app based on feature flag
 if ENABLE_PYHMMER_SEARCH:
-    INSTALLED_APPS.append("pyhmmer_search.search.apps.PyhmmerSearchConfig")
+    INSTALLED_APPS.append("pyhmmer_search.apps.PyhmmerSearchConfig")
 
 if DEBUG:
     INSTALLED_APPS.append("debug_toolbar")
@@ -281,32 +286,15 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/output/")
+PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", DEFAULT_FAA_BASE_PATH)
 PYHMMER_ISOLATES_BASE_PATH = os.environ.get(
-    "PYHMMER_ISOLATES_BASE_PATH", "/data/pyhmmer/output/isolates-db/"
+    "PYHMMER_ISOLATES_BASE_PATH", DEFAULT_ISOLATES_BASE_PATH
 )
 # Single deduplicated FASTA. members.sqlite and catalog.json sit beside it.
-PYHMMER_DB = os.environ.get("PYHMMER_DB", PYHMMER_FAA_BASE_PATH + "mett_proteins.faa")
-
-
-# Function to get isolate-specific database path
-def get_isolate_database_path(isolate_name: str) -> str:
-    """Get the database path for a specific isolate."""
-    if isolate_name.startswith("BU_"):
-        species_dir = "BU"
-    elif isolate_name.startswith("PV_"):
-        species_dir = "PV"
-    else:
-        species_dir = "BU"  # Default to BU
-
-    return f"{PYHMMER_ISOLATES_BASE_PATH}{species_dir}/{isolate_name}_deduplicated.faa"
-
-
-HMMER_DATABASES = {
-    "bu_type_strains": PYHMMER_FAA_BASE_PATH + "bu_typestrains_deduplicated.faa",
-    "bu_all": PYHMMER_FAA_BASE_PATH + "bu_all_strains_deduplicated.faa",
-    "pv_type_strains": PYHMMER_FAA_BASE_PATH + "pv_typestrains_deduplicated.faa",
-    "pv_all": PYHMMER_FAA_BASE_PATH + "pv_all_strains_deduplicated.faa",
-    "bu_pv_type_strains": PYHMMER_FAA_BASE_PATH + "bu_pv_typestrains_deduplicated.faa",
-    "bu_pv_all": PYHMMER_FAA_BASE_PATH + "bu_pv_all_strains_deduplicated.faa",
-}
+PYHMMER_DB = os.environ.get("PYHMMER_DB", PYHMMER_FAA_BASE_PATH + PROTEIN_DB_FILENAME)
+PYHMMER_RESULT_MAX_BYTES = int(os.environ.get("PYHMMER_RESULT_MAX_BYTES", DEFAULT_RESULT_MAX_BYTES))
+PYHMMER_TASK_RETENTION_DAYS = int(
+    os.environ.get("PYHMMER_TASK_RETENTION_DAYS", DEFAULT_TASK_RETENTION_DAYS)
+)
+# Optional override for the species list used when catalog.json is not beside the FASTA.
+PYHMMER_SPECIES_CSV = os.environ.get("PYHMMER_SPECIES_CSV", "")

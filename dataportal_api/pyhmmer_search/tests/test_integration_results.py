@@ -6,7 +6,7 @@ from django_celery_results.models import TaskResult
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from pyhmmer_search.search.models import HmmerJob, Database
+from pyhmmer_search.models import HmmerJob, Database
 
 
 class TestPyhmmerResultsIntegration(TestCase):
@@ -17,9 +17,7 @@ class TestPyhmmerResultsIntegration(TestCase):
         self.client = APIClient()
 
         # Create test user
-        self.user = User.objects.create_user(
-            username="testuser", password="testpass123"
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123")
         self.client.force_authenticate(user=self.user)
 
         # Create test database
@@ -65,9 +63,7 @@ class TestPyhmmerResultsIntegration(TestCase):
         response = self.client.get(results_url)
 
         # Should get a response (even if no results yet)
-        self.assertIn(
-            response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND]
-        )
+        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND])
 
         if response.status_code == status.HTTP_200_OK:
             # Verify response structure
@@ -78,9 +74,7 @@ class TestPyhmmerResultsIntegration(TestCase):
     def test_get_job_results_not_found(self):
         """Test results endpoint with non-existent job."""
         fake_job_id = "00000000-0000-0000-0000-000000000000"
-        results_url = reverse(
-            "pyhmmer_search:get_results", kwargs={"job_id": fake_job_id}
-        )
+        results_url = reverse("pyhmmer_search:get_results", kwargs={"job_id": fake_job_id})
 
         response = self.client.get(results_url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -110,9 +104,7 @@ class TestPyhmmerResultsIntegration(TestCase):
 
         # Test different page sizes
         for page_size in [10, 25, 50]:
-            results_url = reverse(
-                "pyhmmer_search:get_results", kwargs={"job_id": job_id}
-            )
+            results_url = reverse("pyhmmer_search:get_results", kwargs={"job_id": job_id})
             response = self.client.get(results_url, {"page_size": page_size})
 
             if response.status_code == status.HTTP_200_OK:
@@ -140,9 +132,7 @@ class TestPyhmmerResultsIntegration(TestCase):
         response = self.client.get(results_url, filter_params)
 
         # Should handle filter parameters gracefully
-        self.assertIn(
-            response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND]
-        )
+        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND])
 
     def test_results_sorting_parameters(self):
         """Test results sorting with different parameters."""
@@ -158,9 +148,7 @@ class TestPyhmmerResultsIntegration(TestCase):
         response = self.client.get(results_url, sort_params)
 
         # Should handle sorting parameters gracefully
-        self.assertIn(
-            response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND]
-        )
+        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND])
 
     def test_results_data_structure(self):
         """Test that results have the expected data structure."""
@@ -255,9 +243,7 @@ class TestPyhmmerResultsIntegration(TestCase):
         """Test error handling in results API."""
         # Test with malformed job ID
         malformed_job_id = "invalid-uuid"
-        results_url = reverse(
-            "pyhmmer_search:get_results", kwargs={"job_id": malformed_job_id}
-        )
+        results_url = reverse("pyhmmer_search:get_results", kwargs={"job_id": malformed_job_id})
 
         response = self.client.get(results_url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -271,18 +257,14 @@ class TestPyhmmerResultsIntegration(TestCase):
                 **self.search_request,
                 "input": f"SEQUENCE_{i}_{self.test_sequence}",
             }
-            response = self.client.post(
-                reverse("pyhmmer_search:search"), request, format="json"
-            )
+            response = self.client.post(reverse("pyhmmer_search:search"), request, format="json")
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             jobs.append(response.data["id"])
 
         # Test response time for each job
         for job_id in jobs:
             start_time = time.time()
-            results_url = reverse(
-                "pyhmmer_search:get_results", kwargs={"job_id": job_id}
-            )
+            results_url = reverse("pyhmmer_search:get_results", kwargs={"job_id": job_id})
             response = self.client.get(results_url)
             end_time = time.time()
 
@@ -311,9 +293,7 @@ class TestPyhmmerResultsIntegration(TestCase):
 
         # All responses should be successful
         for response in responses:
-            self.assertIn(
-                response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND]
-            )
+            self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND])
 
     def test_results_data_integrity(self):
         """Test that results data maintains integrity across requests."""
@@ -358,9 +338,7 @@ class TestPyhmmerResultsDataProcessing(TestCase):
         self.client = APIClient()
 
         # Create test user
-        self.user = User.objects.create_user(
-            username="testuser", password="testpass123"
-        )
+        self.user = User.objects.create_user(username="testuser", password="testpass123")
         self.client.force_authenticate(user=self.user)
 
     def test_results_pagination_calculation(self):
@@ -439,9 +417,7 @@ class TestPyhmmerResultsDataProcessing(TestCase):
         ]
 
         # Test sorting by score (descending)
-        sorted_by_score_desc = sorted(
-            mock_results, key=lambda x: x["score"], reverse=True
-        )
+        sorted_by_score_desc = sorted(mock_results, key=lambda x: x["score"], reverse=True)
         self.assertEqual(sorted_by_score_desc[0]["score"], 100.0)
         self.assertEqual(sorted_by_score_desc[1]["score"], 75.0)
         self.assertEqual(sorted_by_score_desc[2]["score"], 50.0)

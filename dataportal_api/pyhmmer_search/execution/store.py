@@ -5,40 +5,41 @@ from __future__ import annotations
 import json
 import logging
 
+from django.conf import settings
 from django.utils import timezone
+
+from ..constants import STATUS_FAILURE, STATUS_SUCCESS
 
 logger = logging.getLogger(__name__)
 
-MAX_RESULT_SIZE = 50 * 1024 * 1024
-
 
 def limit_payload(payload: list[dict]) -> list[dict]:
-    if len(json.dumps(payload)) > MAX_RESULT_SIZE:
+    if len(json.dumps(payload)) > settings.PYHMMER_RESULT_MAX_BYTES:
         logger.warning("Truncated results to 10 hits")
         return payload[:10]
     return payload
 
 
 def store_success(job, payload: list[dict]) -> None:
-    job.status = "SUCCESS"
+    job.status = STATUS_SUCCESS
     job.result = payload
     job.error = ""
     job.finished_at = timezone.now()
     job.save(update_fields=["status", "result", "error", "finished_at"])
     if job.task:
-        job.task.status = "SUCCESS"
+        job.task.status = STATUS_SUCCESS
         job.task.result = json.dumps(payload)
         job.task.date_done = timezone.now()
         job.task.save()
 
 
 def store_failure(job, error: str) -> None:
-    job.status = "FAILURE"
+    job.status = STATUS_FAILURE
     job.error = error
     job.finished_at = timezone.now()
     job.save(update_fields=["status", "error", "finished_at"])
     if job.task:
-        job.task.status = "FAILURE"
+        job.task.status = STATUS_FAILURE
         job.task.result = error
         job.task.date_done = timezone.now()
         job.task.save()

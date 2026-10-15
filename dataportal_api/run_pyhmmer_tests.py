@@ -85,9 +85,7 @@ def check_dependencies():
 
     # Check if we're in the right directory
     if not os.path.exists("manage.py"):
-        print(
-            "❌ manage.py not found. Please run this script from the dataportal_api directory."
-        )
+        print("❌ manage.py not found. Please run this script from the dataportal_api directory.")
         return False
 
     print("✅ Running from correct directory (dataportal_api)")
@@ -121,12 +119,10 @@ def run_unit_tests(verbose=False, coverage=False):
     """Run PyHMMER unit tests."""
     print("🚀 Running PyHMMER Unit Tests...")
 
-    test_path = "pyhmmer_search/search/test_tasks.py"
+    test_path = "pyhmmer_search/tests/test_tasks.py"
 
     if os.path.exists(test_path):
-        success, output = run_pytest_tests(
-            test_path, "PyHMMER Unit Tests", verbose, coverage
-        )
+        success, output = run_pytest_tests(test_path, "PyHMMER Unit Tests", verbose, coverage)
 
         if success:
             print("✅ PyHMMER Unit Tests completed successfully")
@@ -146,9 +142,7 @@ def run_search_tests(verbose=False, coverage=False):
     test_path = "pyhmmer_search/tests/test_integration_search.py"
 
     if os.path.exists(test_path):
-        success, output = run_pytest_tests(
-            test_path, "PyHMMER Search API Tests", verbose, coverage
-        )
+        success, output = run_pytest_tests(test_path, "PyHMMER Search API Tests", verbose, coverage)
 
         if success:
             print("✅ PyHMMER Search API Tests completed successfully")
@@ -190,9 +184,7 @@ def run_workflow_tests(verbose=False, coverage=False):
     test_path = "pyhmmer_search/tests/test_integration_workflow.py"
 
     if os.path.exists(test_path):
-        success, output = run_pytest_tests(
-            test_path, "PyHMMER Workflow Tests", verbose, coverage
-        )
+        success, output = run_pytest_tests(test_path, "PyHMMER Workflow Tests", verbose, coverage)
 
         if success:
             print("✅ PyHMMER Workflow Tests completed successfully")
@@ -220,23 +212,13 @@ Examples:
     )
 
     parser.add_argument("--all", action="store_true", help="Run all PyHMMER tests")
-    parser.add_argument(
-        "--integration", action="store_true", help="Run integration tests only"
-    )
+    parser.add_argument("--integration", action="store_true", help="Run integration tests only")
     parser.add_argument("--unit", action="store_true", help="Run unit tests only")
-    parser.add_argument(
-        "--search", action="store_true", help="Run search API tests only"
-    )
-    parser.add_argument(
-        "--results", action="store_true", help="Run results API tests only"
-    )
-    parser.add_argument(
-        "--workflow", action="store_true", help="Run workflow tests only"
-    )
+    parser.add_argument("--search", action="store_true", help="Run search API tests only")
+    parser.add_argument("--results", action="store_true", help="Run results API tests only")
+    parser.add_argument("--workflow", action="store_true", help="Run workflow tests only")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
-    parser.add_argument(
-        "--coverage", action="store_true", help="Run with coverage reporting"
-    )
+    parser.add_argument("--coverage", action="store_true", help="Run with coverage reporting")
 
     args = parser.parse_args()
 
@@ -283,14 +265,10 @@ Examples:
                 )
 
             if args.unit:
-                results.append(
-                    ("Unit Tests", run_unit_tests(args.verbose, args.coverage))
-                )
+                results.append(("Unit Tests", run_unit_tests(args.verbose, args.coverage)))
 
             if args.search:
-                results.append(
-                    ("Search API Tests", run_search_tests(args.verbose, args.coverage))
-                )
+                results.append(("Search API Tests", run_search_tests(args.verbose, args.coverage)))
 
             if args.results:
                 results.append(
@@ -301,9 +279,7 @@ Examples:
                 )
 
             if args.workflow:
-                results.append(
-                    ("Workflow Tests", run_workflow_tests(args.verbose, args.coverage))
-                )
+                results.append(("Workflow Tests", run_workflow_tests(args.verbose, args.coverage)))
 
         # Print summary
         end_time = time.time()

@@ -84,9 +84,7 @@ def run_command(cmd, description, verbose=False):
         return False, e.stderr
 
 
-def run_pytest_tests(
-        test_path, description, verbose=False, coverage=False, parallel=False
-):
+def run_pytest_tests(test_path, description, verbose=False, coverage=False, parallel=False):
     """Run pytest tests with the given options."""
     cmd = ["python", "-m", "pytest", test_path, "-v"]
 
@@ -216,7 +214,7 @@ def run_unit_tests(verbose=False, coverage=False):
     """Run unit tests."""
     print("🚀 Running Unit Tests...")
 
-    test_path = "pyhmmer_search/search/test_tasks.py"
+    test_path = "pyhmmer_search/tests/test_tasks.py"
 
     if os.path.exists(test_path):
         success, output = run_pytest_tests(test_path, "Unit Tests", verbose, coverage)
@@ -280,9 +278,7 @@ Examples:
     )
     parser.add_argument("--unit", action="store_true", help="Run unit tests only")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
-    parser.add_argument(
-        "--coverage", action="store_true", help="Run with coverage reporting"
-    )
+    parser.add_argument("--coverage", action="store_true", help="Run with coverage reporting")
     parser.add_argument(
         "--parallel", action="store_true", help="Run tests in parallel (if supported)"
     )
@@ -307,9 +303,7 @@ Examples:
     try:
         # Run the requested tests
         if args.all:
-            results.append(
-                ("All Tests", run_all_tests(args.verbose, args.coverage, args.parallel))
-            )
+            results.append(("All Tests", run_all_tests(args.verbose, args.coverage, args.parallel)))
         else:
             if args.search:
                 results.append(
@@ -336,9 +330,7 @@ Examples:
                 )
 
             if args.unit:
-                results.append(
-                    ("Unit Tests", run_unit_tests(args.verbose, args.coverage))
-                )
+                results.append(("Unit Tests", run_unit_tests(args.verbose, args.coverage)))
 
         # Print summary
         end_time = time.time()

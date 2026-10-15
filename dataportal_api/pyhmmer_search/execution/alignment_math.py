@@ -9,9 +9,7 @@ class AlignmentCalculator:
     """Class for calculating identity and similarity from alignment data."""
 
     @classmethod
-    def calculate_identity(
-        cls, model: str, mline: str, aseq: str
-    ) -> Optional[Tuple[float, int]]:
+    def calculate_identity(cls, model: str, mline: str, aseq: str) -> Optional[Tuple[float, int]]:
         try:
             if len(mline) != len(aseq):
                 return None
@@ -37,9 +35,7 @@ class AlignmentCalculator:
             return None
 
     @classmethod
-    def calculate_similarity(
-        cls, model: str, mline: str, aseq: str
-    ) -> Optional[Tuple[float, int]]:
+    def calculate_similarity(cls, model: str, mline: str, aseq: str) -> Optional[Tuple[float, int]]:
         try:
             if len(mline) != len(aseq):
                 return None
@@ -119,24 +115,18 @@ class AlignmentCalculator:
         try:
             mline = cls.create_match_line(hmm_sequence, target_sequence)
 
-            identity_result = cls.calculate_identity(
-                hmm_sequence, mline, target_sequence
-            )
+            identity_result = cls.calculate_identity(hmm_sequence, mline, target_sequence)
             if identity_result is None:
                 identity_result = (0.0, 0)
 
-            similarity_result = cls.calculate_similarity(
-                hmm_sequence, mline, target_sequence
-            )
+            similarity_result = cls.calculate_similarity(hmm_sequence, mline, target_sequence)
             if similarity_result is None:
                 similarity_result = (0.0, 0)
 
             return identity_result, similarity_result
 
         except Exception as e:
-            logger.warning(
-                f"Failed to calculate identity and similarity from sequences: {e}"
-            )
+            logger.warning(f"Failed to calculate identity and similarity from sequences: {e}")
             return (0.0, 0), (0.0, 0)
 
     @classmethod
@@ -144,22 +134,16 @@ class AlignmentCalculator:
         cls, hmm_sequence: str, mline: str, target_sequence: str
     ) -> Tuple[Tuple[float, int], Tuple[float, int]]:
         try:
-            identity_result = cls.calculate_identity(
-                hmm_sequence, mline, target_sequence
-            )
+            identity_result = cls.calculate_identity(hmm_sequence, mline, target_sequence)
             if identity_result is None:
                 identity_result = (0.0, 0)
 
-            similarity_result = cls.calculate_similarity(
-                hmm_sequence, mline, target_sequence
-            )
+            similarity_result = cls.calculate_similarity(hmm_sequence, mline, target_sequence)
             if similarity_result is None:
                 similarity_result = (0.0, 0)
 
             return identity_result, similarity_result
 
         except Exception as e:
-            logger.warning(
-                f"Failed to calculate identity and similarity from match line: {e}"
-            )
+            logger.warning(f"Failed to calculate identity and similarity from match line: {e}")
             return (0.0, 0), (0.0, 0)

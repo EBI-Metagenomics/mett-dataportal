@@ -11,7 +11,7 @@ from unittest.mock import Mock
 import django
 from django_celery_results.models import TaskResult
 
-from pyhmmer_search.search.models import HmmerJob
+from pyhmmer_search.models import HmmerJob
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -102,9 +102,7 @@ def test_multiple_domains_mixed_significance():
     """Test scenario: Gene with multiple domains, mixed significance"""
     print("=== Testing Multiple Domains Mixed Significance ===")
 
-    mock_hit, mock_domain1, mock_domain2, mock_job, mock_task_result = (
-        create_mock_objects()
-    )
+    mock_hit, mock_domain1, mock_domain2, mock_job, mock_task_result = create_mock_objects()
     mock_hit.domains = [mock_domain1, mock_domain2]
     mock_job.task = mock_task_result
 
@@ -184,18 +182,12 @@ def test_fallback_threshold_calculation():
 
     print(f"Gene: {mock_hit.name.decode()}")
     print("hit.included attribute: Not available")
-    print(
-        f"Will use fallback calculation based on threshold type: {mock_job.threshold}"
-    )
+    print(f"Will use fallback calculation based on threshold type: {mock_job.threshold}")
 
     if mock_job.threshold == HmmerJob.ThresholdChoices.EVALUE:
-        print(
-            f"Fallback: i_evalue < {mock_job.incE} = {mock_domain.i_evalue < mock_job.incE}"
-        )
+        print(f"Fallback: i_evalue < {mock_job.incE} = {mock_domain.i_evalue < mock_job.incE}")
     else:
-        print(
-            f"Fallback: score > {mock_job.incT} = {mock_domain.score > mock_job.incT}"
-        )
+        print(f"Fallback: score > {mock_job.incT} = {mock_domain.score > mock_job.incT}")
     print()
 
 
@@ -240,9 +232,7 @@ def run_all_tests():
     print("✅ All test scenarios completed!")
     print()
     print("To run actual tests with pytest:")
-    print(
-        "cd dataportal_api && python -m pytest pyhmmer_search/search/test_tasks.py -v"
-    )
+    print("cd dataportal_api && python -m pytest pyhmmer_search/tests/test_tasks.py -v")
 
 
 if __name__ == "__main__":

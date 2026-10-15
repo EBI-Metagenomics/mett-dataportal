@@ -7,8 +7,8 @@ from typing import Optional
 
 from Bio import pairwise2
 
-from ..schemas import AlignmentDisplay, PyhmmerAlignmentSchema
-from ..utils import AlignmentCalculator
+from ..search.schemas import AlignmentDisplay, PyhmmerAlignmentSchema
+from .alignment_math import AlignmentCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +87,7 @@ def parse_biopython_alignment(query: str, target: str) -> Optional[AlignmentDisp
         return None
 
 
-def biopython_alignment_schema(
-    query_name: str, query: str, target_name: str, target: str
-):
+def biopython_alignment_schema(query_name: str, query: str, target_name: str, target: str):
     """Full alignment record for a phmmer hit that has no domain alignment."""
     pair = _align_pair(query, target)
     if pair is None:
@@ -107,9 +105,7 @@ def biopython_alignment_schema(
         target_to=len(target),
         target_length=len(target),
         target_sequence=aligned_target,
-        identity_sequence=AlignmentCalculator.create_match_line(
-            aligned_query, aligned_target
-        ),
+        identity_sequence=AlignmentCalculator.create_match_line(aligned_query, aligned_target),
         posterior_probabilities=None,
     )
     return detailed, _display_from_pair(aligned_query, aligned_target)
