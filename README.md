@@ -669,8 +669,8 @@ python manage.py import_features \
 
 ```bash
 python manage.py import_features \
-  --index mett-v1-features-temp \
-  --local-root ../data-generators/data/generated/mettannotator
+  --index mett-v1-features \
+  --local-root ../data-generators/data/generated/mettannotator/gff3_files/
 ```
 
 Essentiality only (GFF already loaded):
