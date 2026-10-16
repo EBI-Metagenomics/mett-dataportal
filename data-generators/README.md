@@ -39,7 +39,7 @@ Numbering follows generator dependencies, not Django ingest order. Steps 03 and 
 | 02 | `scripts/02-stringdb-mapper/` | `data/inputs/stringdb/` (STRING proteomes and copied type-strain FASTA) | `data/generated/string-mapping/{raw,uniprot_mapped,mapping_coverage}` |
 | 03 | `scripts/03-browser-indexes/` | Local or mounted FASTA + GFF (HD or 20hm roots) | `data/generated/browser-indexes/{release}/{species}/` |
 | 04 | `scripts/04-qc-duplicates/` | EBI FTP `.faa` | `data/generated/qc/` |
-| 05 | `scripts/05-mettannotator-prep/` | local `data/generated/mettannotator/` | pruned tree: `*_annotations.gff` with gene rows (`*-orig.gff` backup) + `prokka/{isolate}.faa` |
+| 05 | `scripts/05-mettannotator-prep/` | local `data/generated/mettannotator/` | pruned tree: `*_annotations.gff`, `*-orig.gff`, and `prokka/{isolate}.faa` |
 
 ```bash
 # 01 — protein database (Nextflow; see that folder's README)
@@ -62,7 +62,8 @@ python3 run.py run \
 cd ../04-qc-duplicates
 python find_intra_strain_duplicates.py
 
-# 05 — prune mettannotator results and add gene rows (dry-run first)
+# 05 — prune extra mettannotator files (dry-run first).
+# Gene rows and FASTA removal are done earlier by prepare_gff_files.py.
 cd ../05-mettannotator-prep
 python prep_mettannotator.py
 python prep_mettannotator.py --apply

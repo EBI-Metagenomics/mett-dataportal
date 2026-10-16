@@ -665,7 +665,7 @@ python manage.py import_features \
   --dbxref-db-name STRING
 ```
 
-20HM from a local mettannotator tree (no FTP upload). Run `prep_mettannotator.py --apply` first so each GFF has `gene` rows; ingest indexes `gene` only and loads protein sequence from `functional_annotation/prokka/{isolate}.faa`.
+20HM from a local mettannotator tree (no FTP upload). Stage GFFs with `prepare_gff_files.py` first so each annotations file has `gene` rows and no trailing FASTA. Ingest indexes `gene` only and loads protein sequence from `functional_annotation/prokka/{isolate}.faa`. `prep_mettannotator.py --apply` only deletes files outside that keep pattern.
 
 ```bash
 python manage.py import_features \
