@@ -13,6 +13,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from fetch import local_faa
 from index_db import build_sqlite, build_ssi
 from merge import load_chunks, write_catalog, write_database
 from plan import BATCHES, FAA_TEMPLATE, plan_batches, read_manifest, write_sources
@@ -21,6 +22,7 @@ from stage import stage_isolate
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_SPECIES = SCRIPT_DIR.parents[1] / "data" / "reference" / "species.csv"
 DEFAULT_OUT = SCRIPT_DIR.parents[1] / "data" / "generated" / "protein-db"
+DEFAULT_CACHE = DEFAULT_OUT / "faa-cache"
 
 
 def _batch_names(value: str) -> list[str]:
@@ -62,8 +64,9 @@ def command_plan(args: argparse.Namespace) -> None:
 
 
 def command_stage(args: argparse.Namespace) -> None:
+    faa = local_faa(args.faa, fetch=args.fetch, cache=args.cache)
     count = stage_isolate(
-        args.faa,
+        faa,
         isolate=args.isolate,
         species=args.species,
         is_type=args.type_strain,
@@ -121,6 +124,12 @@ def build_parser() -> argparse.ArgumentParser:
     stage.add_argument("--type-strain", action="store_true")
     stage.add_argument("--collection", default="")
     stage.add_argument("--out", type=Path, required=True)
+    stage.add_argument(
+        "--fetch",
+        action="store_true",
+        help="Download a missing HD FASTA from the public EBI site. Local runs only.",
+    )
+    stage.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     stage.set_defaults(func=command_stage)
 
     merge = commands.add_parser(

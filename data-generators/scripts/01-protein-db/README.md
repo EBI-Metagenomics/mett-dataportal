@@ -46,13 +46,24 @@ nextflow run protein_db.nf --manifest /path/sources.tsv
 
 ## Local run
 
-Same steps Nextflow runs, without a cluster:
+`run-local.sh` is the same sequence Nextflow runs, on this machine. `sources.tsv` keeps the cluster paths. Where `/pub/databases` is not mounted, `--fetch` downloads each missing HD FASTA from `https://ftp.ebi.ac.uk/pub/databases/mett` into `data/generated/protein-db/faa-cache` and stages that copy. Nextflow does not use this flag.
+
+The 20hm rows point at `/pub/databases/metagenomics/temp`, which is not on the public site. Those isolates still need the cluster mount or `--hm-root` when planning.
 
 ```bash
 python3 run.py plan --batch hd --jobs sources.tsv
-python3 run.py stage --faa /path/BU_ATCC8492.faa --isolate BU_ATCC8492 --species BU --type-strain --collection hd --out BU_ATCC8492.jsonl
+./run-local.sh --fetch
+```
+
+`--batch all` includes 20hm. `./run-local.sh --fetch sources.tsv ./chunks ../../data/generated/protein-db` overrides the input list, the chunk directory, and the output directory.
+
+The script stages one JSONL chunk per isolate, then:
+
+```bash
 python3 run.py merge --chunks ./chunks --out ../../data/generated/protein-db
-python3 run.py index --faa ../../data/generated/protein-db/mett_proteins.faa --members ../../data/generated/protein-db/members.tsv
+python3 run.py index \
+  --faa ../../data/generated/protein-db/mett_proteins.faa \
+  --members ../../data/generated/protein-db/members.tsv
 ```
 
 Point the API at the FASTA with `PYHMMER_DB`. `members.sqlite` and `catalog.json` are read from the same directory.

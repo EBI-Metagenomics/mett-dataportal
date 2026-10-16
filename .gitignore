@@ -17,6 +17,7 @@ work/
 
 # Exclude large output directories
 data-generators/data/generated/faa/
+data-generators/data/generated/protein-db/faa-cache/
 data-generators/data/generated/browser-indexes/
 data-generators/data/generated/mettannotator/
 data-generators/scripts/**/__pycache__/
@@ -288,3 +289,5 @@ site/
 # yarn.lock
 # uv.lock
 
+/data-generators/scripts/01-protein-db/chunks/
+/data-generators/data/generated/protein-db/
