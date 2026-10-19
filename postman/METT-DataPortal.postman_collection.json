@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "2c57c732-5351-4e14-8e72-0e9832efcbee",
+    "_postman_id": "02b65722-11f4-4672-8d0e-ad5e2d32a69d",
     "name": "METT-DataPortal",
     "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** each top-level folder starts with an `00-Init-set-…-fixtures` request. Run that request first for the folder you are exercising; it writes collection variables from the `fixtures` object in its Pre-request Script. Edit values there when fixtures change.\n\nRun **CoreAPIs / Releases / List-Releases** after CoreAPIs init when exercising X-METT-Release scenarios; it stores `resolved_release_version`.\n\n**Annotation comparison:** folder `Annotation comparison / BU vs BF` compares BU_ATCC8492 gene fixtures (dnaA, rpsR, AMR, defense) against BF_NCTC9343 orthologs (run `00-Init-set-Annotation-comparison-fixtures` first).\n\n**Visibility / Admin:** species and strains use an `enabled` flag in Elasticsearch. After changing enablement via ingest, call **CoreAPIs / Admin / Cache-Rebuild-Visibility-Registries** (admin JWT) to reload in-memory registries. Disabled species (fixture `species_acronym_disabled`, default BF) must not appear in species, type-strain, genome, or gene search results.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -723,34 +723,10 @@
                 {
                   "listen": "test",
                   "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
-                      "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Array length is greater than or equal to 2\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.data.length).to.be.at.least(2);",
-                      "});",
-                      "",
-                      "pm.test(\"Only enabled species are returned\", function () {",
-                      "    const rows = pm.response.json().data;",
-                      "    rows.forEach(function (species) {",
-                      "        pm.expect(species).to.have.property(\"enabled\");",
-                      "        pm.expect(species.enabled).to.eql(true);",
-                      "    });",
-                      "});",
-                      "",
-                      "pm.test(\"Disabled fixture species is not listed\", function () {",
-                      "    const rows = pm.response.json().data;",
-                      "    const disabled = (pm.collectionVariables.get(\"species_acronym_disabled\") || \"BF\").toUpperCase();",
-                      "    const acronyms = rows.map(s => String(s.acronym || \"\").toUpperCase());",
-                      "    pm.expect(acronyms).to.not.include(disabled);",
-                      "});"
-                    ],
                     "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Array length is greater than or equal to 2\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data.length).to.be.at.least(2);\n});\n\npm.test(\"Only enabled species are returned\", function () {\n    const rows = pm.response.json().data;\n    rows.forEach(function (species) {\n        pm.expect(species).to.have.property(\"enabled\");\n        pm.expect(species.enabled).to.eql(true);\n    });\n});\n\npm.test(\"Disabled fixture species is not listed\", function () {\n    const rows = pm.response.json().data;\n    const disabled = (pm.collectionVariables.get(\"species_acronym_disabled\") || \"BF\").toUpperCase();\n    const acronyms = rows.map(s => String(s.acronym || \"\").toUpperCase());\n    pm.expect(acronyms).to.not.include(disabled);\n});"
+                    ]
                   }
                 }
               ],
@@ -1503,6 +1479,42 @@
                     {
                       "key": "query",
                       "value": "{{genome_search_query_pv}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Genomes-by-SpeciesString-Bacteroides",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Number of pages matches expected value\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data).to.be.an('array').length(1)\n});\n\npm.test(\"Isolate Name matches expected value\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data[0].isolate_name).contain(pm.collectionVariables.get(\"isolate_name_pv_h4\"));\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/genomes/search?query=Bacteroides",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "genomes",
+                    "search"
+                  ],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "Bacteroides"
                     }
                   ]
                 }
@@ -12028,7 +12040,725 @@
               "response": []
             }
           ]
+        },
+    {
+      "name": "Protein filters",
+      "description": "Create a search job for each protein-database filter. The job runs in the background. After it finishes, call Query-Search-Results with the saved hmmer_job_id and check hit.target locus tags. A local database built with --batch hd only contains BU and PV, so a 20hm species returns an empty hit list.",
+      "item": [
+        {
+          "name": "catalog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Catalog lists species\", function () {",
+                  "    pm.expect(json.data).to.have.property(\"species\");",
+                  "    pm.expect(json.data.species).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search/catalog",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search",
+                "catalog"
+              ]
+            },
+            "description": "Species currently in the protein database. Run this first. A HD-only build lists BU and PV."
+          },
+          "response": []
+        },
+        {
+          "name": "bu-and-pv",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\n        \"BU\",\n        \"PV\"\n    ],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "Both flagship species. Hits should be BU_ or PV_ locus tags only."
+          },
+          "response": []
+        },
+        {
+          "name": "bu-and-pv-legacy-alias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "Old dropdown id bu_pv_all. The API rewrites it to mett_proteins with species BU and PV."
+          },
+          "response": []
+        },
+        {
+          "name": "species-bu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\n        \"BU\"\n    ],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "B. uniformis only. Every hit target should start with BU_."
+          },
+          "response": []
+        },
+        {
+          "name": "species-pv",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\n        \"PV\"\n    ],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "P. vulgatus only. Every hit target should start with PV_."
+          },
+          "response": []
+        },
+        {
+          "name": "species-20hm-bf",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\n        \"BF\"\n    ],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "One 20hm species, B. fragilis. The job is accepted. With a HD-only FASTA the result list is empty."
+          },
+          "response": []
+        },
+        {
+          "name": "strain-bu-atcc8492",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"BU_ATCC8492\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "Same filter as the gene-viewer feature panel: one isolate. Hits should be locus tags from BU_ATCC8492."
+          },
+          "response": []
+        },
+        {
+          "name": "strain-pv-atcc8482",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"PV_ATCC8482\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "Feature-panel filter for the P. vulgatus type strain. Hits should be locus tags from PV_ATCC8482."
+          },
+          "response": []
+        },
+        {
+          "name": "strain-legacy-isolate-prefix",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"isolate_BU_ATCC8492\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "Old isolate_ database id. The API rewrites it to isolate BU_ATCC8492."
+          },
+          "response": []
+        },
+        {
+          "name": "multiple-species-bu-pv-bf",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\n        \"BU\",\n        \"PV\",\n        \"BF\"\n    ],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "BU, PV, and one 20hm species together. On a HD-only database, BF adds no sequences and hits stay BU_ or PV_."
+          },
+          "response": []
+        },
+        {
+          "name": "type-strains-bu-pv",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\n        \"BU\",\n        \"PV\"\n    ],\n    \"type_only\": true,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "Type strains of BU and PV only. Hits should come from BU_ATCC8492 and PV_ATCC8482."
+          },
+          "response": []
+        },
+        {
+          "name": "all-species",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "Empty species list searches every species in the file. On the current local build that is BU and PV."
+          },
+          "response": []
+        },
+        {
+          "name": "legacy-bu-type-strains",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const jobId = (json.data && json.data.id) || json.id;",
+                  "pm.test(\"Search job id is returned\", function () {",
+                  "    pm.expect(jobId, \"job id\").to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (jobId) {",
+                  "    pm.globals.set(\"hmmer_job_id\", jobId);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"database\": \"bu_type_strains\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mett-current}}/api/pyhmmer/search",
+              "host": [
+                "{{mett-current}}"
+              ],
+              "path": [
+                "api",
+                "pyhmmer",
+                "search"
+              ]
+            },
+            "description": "Old dropdown id bu_type_strains. The API rewrites it to species BU and type_only true."
+          },
+          "response": []
         }
+      ]
+    }
       ],
       "event": [
         {

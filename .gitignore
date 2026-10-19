@@ -21,6 +21,8 @@ data-generators/data/generated/protein-db/faa-cache/
 data-generators/data/generated/browser-indexes/
 data-generators/data/generated/mettannotator/
 data-generators/scripts/**/__pycache__/
+/data-generators/scripts/01-protein-db/chunks/
+/data-generators/data/generated/protein-db/
 
 # Exclude sub-projects data (too large)
 data-generators/data/Sub-Projects-Data/*
@@ -289,5 +291,3 @@ site/
 # yarn.lock
 # uv.lock
 
-/data-generators/scripts/01-protein-db/chunks/
-/data-generators/data/generated/protein-db/

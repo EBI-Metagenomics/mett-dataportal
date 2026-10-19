@@ -52,6 +52,7 @@ The 20hm rows point at `/pub/databases/metagenomics/temp`, which is not on the p
 
 ```bash
 python3 run.py plan --batch hd --jobs sources.tsv
+python3 run.py plan --batch all --hm-root /Users/vikasg/Documents/mett-portal/ws/mett-dataportal/data-generators/data/generated/mettannotator/gff3_files/ --jobs sources.tsv
 ./run-local.sh --fetch
 ```
 
