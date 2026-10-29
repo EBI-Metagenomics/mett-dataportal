@@ -59,7 +59,7 @@ class HmmerJob(models.Model):
     species = models.JSONField(default=list, blank=True)
     type_only = models.BooleanField(default=False)
     isolate = models.CharField(max_length=128, blank=True, default="")
-    # Empty status means a legacy Celery job. New jobs use PENDING/STARTED/SUCCESS/FAILURE.
+    # Empty status is an older job. New jobs use PENDING/STARTED/SUCCESS/FAILURE.
     status = models.CharField(max_length=16, blank=True, default="")
     result = models.JSONField(null=True, blank=True)
     error = models.TextField(blank=True, default="")

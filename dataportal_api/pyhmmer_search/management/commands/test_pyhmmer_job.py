@@ -1,6 +1,4 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
-from django_celery_results.models import TaskResult
 from pyhmmer_search.models import HmmerJob
 from pyhmmer_search.tasks import run_search
 import logging
@@ -49,32 +47,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("Job not found in database after save!"))
             return
 
-        # Start the task
-        self.stdout.write("Starting Celery task...")
         job_id_str = str(job.id)
-        self.stdout.write(f"Passing job ID to task: {job_id_str}")
+        self.stdout.write(f"Running search for job {job_id_str}")
 
         try:
-            result = run_search.delay(job_id_str)
-            self.stdout.write(f"Celery task started with ID: {result.id}")
-
-            # Create TaskResult entry
-            task_result = TaskResult.objects.create(
-                task_id=result.id,
-                status="PENDING",
-                result=None,
-                traceback=None,
-                meta=None,
-                date_done=None,
-                date_created=timezone.now(),
-            )
-            self.stdout.write(f"TaskResult created: {task_result}")
-
-            # Link the task to the job
-            job.task = task_result
-            job.save()
-            self.stdout.write("Task linked successfully")
-
+            run_search(job_id_str)
             self.stdout.write(self.style.SUCCESS("Job creation test completed successfully"))
 
         except Exception as e:

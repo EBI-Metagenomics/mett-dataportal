@@ -3,7 +3,6 @@ import json
 import logging
 import uuid
 
-from celery.result import AsyncResult
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -45,7 +44,11 @@ pyhmmer_router_result = Router(tags=["PyHMMER Results"])
 
 
 def job_status_and_results(job):
-    """Prefer status stored on the job. Fall back to a legacy Celery task."""
+    """Read status and hits from the job row.
+
+    Jobs saved before status lived on HmmerJob keep a linked task row in the
+    database. That row is read directly. Nothing is fetched from Redis.
+    """
     if job.status:
         result = job.result if isinstance(job.result, list) else []
         task = {
@@ -56,7 +59,7 @@ def job_status_and_results(job):
         }
         return job.status, result, task
 
-    if not job.task:
+    if not job.task_id:
         task = {
             "status": STATUS_PENDING,
             "date_created": None,
@@ -65,12 +68,8 @@ def job_status_and_results(job):
         }
         return STATUS_PENDING, [], task
 
-    async_result = AsyncResult(job.task.task_id)
-    task_status = async_result.status or job.task.status or STATUS_PENDING
     raw_result = job.task.result
-    if raw_result is None and async_result.result is not None:
-        task_result_data = async_result.result
-    elif isinstance(raw_result, str):
+    if isinstance(raw_result, str):
         try:
             task_result_data = json.loads(raw_result)
         except json.JSONDecodeError:
@@ -79,8 +78,9 @@ def job_status_and_results(job):
         task_result_data = raw_result or []
     if not isinstance(task_result_data, list):
         task_result_data = []
+    task_status = job.task.status or STATUS_PENDING
     task = {
-        "status": job.task.status or task_status,
+        "status": task_status,
         "date_created": job.task.date_created,
         "date_done": job.task.date_done,
         "result": task_result_data if task_status == STATUS_SUCCESS else None,

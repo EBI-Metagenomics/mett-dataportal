@@ -5,7 +5,6 @@ from pathlib import Path
 
 from django.conf import settings
 from django.db import transaction
-from django_celery_results.models import TaskResult
 from django.utils import timezone
 from ninja import Router
 
@@ -35,6 +34,7 @@ from ..constants import (
 )
 from ..membership import catalog_path
 from ..models import HmmerJob
+from ..tasks import cleanup_old_jobs
 from .runner import start_search
 from .schemas import SearchRequestSchema
 
@@ -180,8 +180,8 @@ def get_tasks_status(request, threshold_days: int = DEFAULT_TASK_RETENTION_DAYS)
 
         cutoff = timezone.now() - timedelta(days=threshold_days)
 
-        total_tasks = TaskResult.objects.count()
-        old_tasks = TaskResult.objects.filter(date_done__lt=cutoff).count()
+        total_tasks = HmmerJob.objects.count()
+        old_tasks = HmmerJob.objects.filter(created_at__lt=cutoff).count()
         recent_tasks = total_tasks - old_tasks
 
         return {
@@ -206,9 +206,8 @@ def cleanup_tasks_manual(request, threshold_days: int = DEFAULT_TASK_RETENTION_D
                 f"threshold_days must be between {MIN_TASK_RETENTION_DAYS} and {MAX_TASK_RETENTION_DAYS}"
             )
 
-        # Use the same logic as the scheduled task
         cutoff = timezone.now() - timedelta(days=threshold_days)
-        deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
+        deleted = cleanup_old_jobs(threshold_days)
 
         logger.info(
             f"Manual PyHMMER cleanup triggered: Deleted {deleted} old task results (threshold: {threshold_days} days)"

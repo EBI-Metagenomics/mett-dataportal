@@ -1,7 +1,6 @@
 """Load a saved job, run PyHMMER, and store the hits.
 
-The steps live in ``execution``. This module is the entry point used by the
-background thread and by the Celery task.
+The search API starts ``execute_search`` on a background thread.
 """
 
 from __future__ import annotations
@@ -10,9 +9,7 @@ import logging
 import uuid
 from datetime import timedelta
 
-from celery import shared_task
 from django.utils import timezone
-from django_celery_results.models import TaskResult
 from pyhmmer.easel import Alphabet
 
 from django.conf import settings
@@ -43,9 +40,6 @@ def execute_search(job_id: str):
     logger.info("Updating job status to STARTED...")
     job.status = STATUS_STARTED
     job.save(update_fields=["status"])
-    if job.task:
-        job.task.status = STATUS_STARTED
-        job.task.save(update_fields=["status"])
 
     try:
         return _run(job)
@@ -100,14 +94,14 @@ def _run(job: HmmerJob):
     return payload
 
 
-@shared_task(bind=True, queue="pyhmmer_queue", routing_key="pyhmmer.search")
-def run_search(self, job_id: str):
-    """Celery entry point. The API starts execute_search on a thread instead."""
+def run_search(job_id: str):
+    """Run a saved job. Tests and scripts call this directly."""
     return execute_search(job_id)
 
 
-@shared_task
-def cleanup_old_tasks():
-    cutoff = timezone.now() - timedelta(days=settings.PYHMMER_TASK_RETENTION_DAYS)
-    deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
-    return f"Deleted {deleted} old task results"
+def cleanup_old_jobs(days: int | None = None) -> int:
+    """Delete finished search jobs older than the retention window."""
+    retention = settings.PYHMMER_TASK_RETENTION_DAYS if days is None else days
+    cutoff = timezone.now() - timedelta(days=retention)
+    deleted, _ = HmmerJob.objects.filter(created_at__lt=cutoff).delete()
+    return deleted

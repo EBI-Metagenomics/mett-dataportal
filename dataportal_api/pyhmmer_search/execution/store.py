@@ -26,11 +26,6 @@ def store_success(job, payload: list[dict]) -> None:
     job.error = ""
     job.finished_at = timezone.now()
     job.save(update_fields=["status", "result", "error", "finished_at"])
-    if job.task:
-        job.task.status = STATUS_SUCCESS
-        job.task.result = json.dumps(payload)
-        job.task.date_done = timezone.now()
-        job.task.save()
 
 
 def store_failure(job, error: str) -> None:
@@ -38,8 +33,3 @@ def store_failure(job, error: str) -> None:
     job.error = error
     job.finished_at = timezone.now()
     job.save(update_fields=["status", "error", "finished_at"])
-    if job.task:
-        job.task.status = STATUS_FAILURE
-        job.task.result = error
-        job.task.date_done = timezone.now()
-        job.task.save()

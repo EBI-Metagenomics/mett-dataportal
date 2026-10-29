@@ -3,8 +3,6 @@ import os
 import sys
 from pathlib import Path
 
-from celery.schedules import crontab
-
 from pyhmmer_search.constants import (
     DEFAULT_FAA_BASE_PATH,
     DEFAULT_ISOLATES_BASE_PATH,
@@ -43,16 +41,6 @@ ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() =
 STRING_DB_API_BASE = os.environ.get("STRING_DB_API_BASE", "https://string-db.org/api")
 STRING_DB_WEB_BASE = os.environ.get("STRING_DB_WEB_BASE", "https://string-db.org")
 
-
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
-
-CELERY_TASK_QUEUES = {
-    "pyhmmer_queue": {
-        "exchange": "pyhmmer",
-        "routing_key": "pyhmmer.search",
-    }
-}
 
 LOGGING = {
     "version": 1,
@@ -278,13 +266,6 @@ CORS_ALLOW_PRIVATE_NETWORK = True
 APPEND_SLASH = False
 
 DEFAULT_LIMIT = 10
-
-CELERY_BEAT_SCHEDULE = {
-    "cleanup-task-results-weekly": {
-        "task": "pyhmmer_search.tasks.cleanup_old_tasks",
-        "schedule": crontab(day_of_week="sunday", hour=3),
-    },
-}
 
 PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", DEFAULT_FAA_BASE_PATH)
 PYHMMER_ISOLATES_BASE_PATH = os.environ.get(
