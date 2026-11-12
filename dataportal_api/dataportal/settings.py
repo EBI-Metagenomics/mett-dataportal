@@ -178,6 +178,9 @@ if not IS_TESTING:
         "PASSWORD": os.environ.get("DATAPORTAL_DB_PASSWORD", "changeme"),
         "HOST": os.environ.get("DATAPORTAL_DB_HOST", "localhost"),
         "PORT": os.environ.get("DATAPORTAL_DB_PORT", "5432"),
+        "OPTIONS": {
+            "options": "-c search_path=mett_portal,public",
+        },
     }
 
 if "pytest" in sys.argv[0]:
