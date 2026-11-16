@@ -11,6 +11,7 @@ from elasticsearch_dsl import (
     Keyword,
     Integer,
     Boolean,
+    Double,
     ScaledFloat,
 )
 
@@ -20,6 +21,8 @@ from .base import (
     canonical_pair,
     build_pair_id,
 )
+from dataportal.utils.constants import PPI_EVIDENCE_CATEGORIES, PPI_INDEXED_SCORE_FIELDS
+from dataportal.utils.ppi_scores import apply_ppi_v4_rollups
 
 
 class ProteinProteinDocument(Document):
@@ -75,63 +78,40 @@ class ProteinProteinDocument(Document):
     string_protein_a_id = Keyword()
     string_protein_b_id = Keyword()
 
-    # ---- Consensus network scores (RankAvg / PPI-v1 traced TSV) ----
-    consensus_score = ScaledFloat(scaling_factor=1_000_000)
+    # ---- PPI v4 scores ----
+    # Double keeps the full TSV precision (scaled_float rounded category scores).
+    consensus_score = Double()
+    raw_consensus_score = Double()
     consensus_rank = Integer()
-    consensus_avg_rank = ScaledFloat(scaling_factor=1_000_000)
     edge_id = Keyword()
-    # PPI-v1: Score/Weight composite (distinct from ConsensusScore)
-    interaction_weight = ScaledFloat(scaling_factor=1_000_000)
-    # PPI-v1: number of evidence sources contributing to the edge
-    n_sources = Integer()
+    q_ppi = Double()
+    q_chemical_genetic = Double()
+    q_coexpression = Double()
+    q_operons = Double()
+    q_metabolic = Double()
 
-    # Non-PPI evidence channel weights from consensus network
-    weight_coexp = ScaledFloat(scaling_factor=1_000_000)
-    weight_operons_annogesic = ScaledFloat(scaling_factor=1_000_000)
-    weight_operons_opdetect = ScaledFloat(scaling_factor=1_000_000)
-    weight_operons_opmapper = ScaledFloat(scaling_factor=1_000_000)
-    weight_phenocorr_neg = ScaledFloat(scaling_factor=1_000_000)
-    weight_phenocorr_pos = ScaledFloat(scaling_factor=1_000_000)
-    weight_pmi_gsms = ScaledFloat(scaling_factor=1_000_000)
-    weight_pmi = ScaledFloat(scaling_factor=1_000_000)
-    weight_ppi_gp_score_neg = ScaledFloat(scaling_factor=1_000_000)
-    weight_ppi_gp_score_pos = ScaledFloat(scaling_factor=1_000_000)
-    weight_ppi_perturb_score_neg = ScaledFloat(scaling_factor=1_000_000)
-    weight_ppi_perturb_score_pos = ScaledFloat(scaling_factor=1_000_000)
-    weight_ppi_xlms_files = ScaledFloat(scaling_factor=1_000_000)
-    weight_ppi_xlms_peptides = ScaledFloat(scaling_factor=1_000_000)
-
-    # ---- Scores / evidence (ScaledFloat keeps storage compact & sortable) ----
-    # Use scaling_factor=1e6 to preserve up to ~6 decimal places and allow negatives.
-    dl_score = ScaledFloat(scaling_factor=1_000_000)  # "ds_score" in CSV?
-    comelt_score = ScaledFloat(scaling_factor=1_000_000)  # "melt_score" / "comelt" variants
-    perturbation_score = ScaledFloat(scaling_factor=1_000_000)  # "perturb_score"
-    abundance_score = ScaledFloat(scaling_factor=1_000_000)  # "gp_score" (global proteomics)
-    melt_score = ScaledFloat(scaling_factor=1_000_000)  # "melt_score" (if distinct)
-    secondary_score = ScaledFloat(scaling_factor=1_000_000)  # "sec_score"
-    bayesian_score = ScaledFloat(scaling_factor=1_000_000)  # "bn_score"
-    string_score = ScaledFloat(scaling_factor=1_000_000)  # "string_physical_score"
-    operon_score = ScaledFloat(scaling_factor=1_000_000)
-    ecocyc_score = ScaledFloat(scaling_factor=1_000_000)
-    tt_score = ScaledFloat(scaling_factor=1_000_000)  # "tt_score" in CSV
-    ds_score = ScaledFloat(scaling_factor=1_000_000)  # "ds_score" in CSV (keep both if needed)
+    # How many evidence categories and underlying networks support the edge.
+    n_evidence_types = Integer()
+    n_networks_total = Integer()
+    n_ppi = Integer()
+    n_chemical_genetic = Integer()
+    n_coexpression = Integer()
+    n_operons = Integer()
+    n_metabolic = Integer()
 
     # ---- Experimental context ----
     experimental_condition_id = Integer()  # from SP2_ppi_interaction
     experimental_condition = Keyword()  # optional human-friendly label
 
-    # ---- XL-MS & external evidence ----
-    xlms_peptides = Text()  # free text list from CSV / DB
-    xlms_files = Keyword(multi=True)  # split on delimiters into array if possible
+    # Category presence flags for filtering
+    has_ppi = Boolean()
+    has_chemical_genetic = Boolean()
+    has_coexpression = Boolean()
+    has_operons = Boolean()
+    has_metabolic = Boolean()
 
-    # Quick evidence flags for filtering
-    has_xlms = Boolean()
-    has_string = Boolean()
-    has_operon = Boolean()
-    has_ecocyc = Boolean()
-
-    # Optional rollups for UI
-    evidence_count = Integer()  # how many sources contributed (non-null scores)
+    # Number of evidence categories (n_evidence_types), or legacy network total.
+    evidence_count = Integer()
 
     class Index:
         name = "ppi_index"
@@ -159,52 +139,10 @@ class ProteinProteinDocument(Document):
         self.pair_id = build_pair_id(species_key, aa, bb)
         self.meta.id = self.pair_id
 
-        # Convenience flags
-        self.has_string = self.string_score is not None and self.string_score > 0
-        self.has_operon = self.operon_score is not None and self.operon_score > 0
-        self.has_ecocyc = self.ecocyc_score is not None and self.ecocyc_score > 0
-
-        # Prefer file-provided n_sources (PPI-v1); otherwise roll up non-zero scores
-        if self.n_sources is not None:
-            self.evidence_count = int(self.n_sources)
-        else:
-            numeric_scores = [
-                self.consensus_score,
-                self.weight_coexp,
-                self.weight_operons_annogesic,
-                self.weight_operons_opdetect,
-                self.weight_operons_opmapper,
-                self.weight_phenocorr_neg,
-                self.weight_phenocorr_pos,
-                self.weight_pmi_gsms,
-                self.weight_pmi,
-                self.weight_ppi_gp_score_neg,
-                self.weight_ppi_gp_score_pos,
-                self.weight_ppi_perturb_score_neg,
-                self.weight_ppi_perturb_score_pos,
-                self.weight_ppi_xlms_files,
-                self.weight_ppi_xlms_peptides,
-                self.dl_score,
-                self.comelt_score,
-                self.perturbation_score,
-                self.abundance_score,
-                self.melt_score,
-                self.secondary_score,
-                self.bayesian_score,
-                self.string_score,
-                self.operon_score,
-                self.ecocyc_score,
-                self.tt_score,
-                self.ds_score,
-            ]
-            self.evidence_count = sum(1 for v in numeric_scores if v is not None and v != 0)
-
-        # XL-MS evidence from legacy text fields or consensus weights
-        self.has_xlms = bool(
-            self.xlms_peptides
-            or self.xlms_files
-            or (self.weight_ppi_xlms_files and self.weight_ppi_xlms_files > 0)
-            or (self.weight_ppi_xlms_peptides and self.weight_ppi_xlms_peptides > 0)
-        )
+        rolled = {field: getattr(self, field, None) for field in PPI_INDEXED_SCORE_FIELDS}
+        apply_ppi_v4_rollups(rolled)
+        for _, _, flag_field in PPI_EVIDENCE_CATEGORIES:
+            setattr(self, flag_field, rolled[flag_field])
+        self.evidence_count = rolled["evidence_count"]
 
         return super().save(**kwargs)

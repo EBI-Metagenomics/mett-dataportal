@@ -55,42 +55,42 @@ export const STRING_EVIDENCE_SCORE_FIELDS: Record<StringEvidenceChannel, string>
   textmining: 'tscore',
 } as const;
 
-/** Default score type for local ES network (consensus RankAvg). */
+/** Default score type for the local PPI v4 network. */
 export const DEFAULT_LOCAL_SCORE_TYPE = 'consensus_score';
 
 /**
- * Display labels for local consensus / evidence channel fields.
+ * METT evidence categories on a PPI v4 edge.
+ * scoreField is the category score; countField is the supporting network count.
+ */
+export const LOCAL_EVIDENCE_CATEGORIES = [
+  { value: 'ppi', scoreField: 'q_ppi', countField: 'n_ppi', label: 'PPI' },
+  { value: 'chemical_genetic', scoreField: 'q_chemical_genetic', countField: 'n_chemical_genetic', label: 'Chemical-genetic' },
+  { value: 'coexpression', scoreField: 'q_coexpression', countField: 'n_coexpression', label: 'Co-expression' },
+  { value: 'operons', scoreField: 'q_operons', countField: 'n_operons', label: 'Operons' },
+  { value: 'metabolic', scoreField: 'q_metabolic', countField: 'n_metabolic', label: 'Metabolic' },
+] as const;
+
+export type LocalEvidenceCategory = (typeof LOCAL_EVIDENCE_CATEGORIES)[number]['value'];
+
+/**
+ * Display labels for local consensus / evidence category fields.
  * Used in edge detail panel and score-type filter.
  */
 export const LOCAL_EVIDENCE_CHANNEL_LABELS: Record<string, string> = {
   consensus_score: 'Consensus',
-  interaction_weight: 'Interaction weight',
-  n_sources: 'Evidence sources',
-  weight_coexp: 'Co-expression',
-  weight_operons_annogesic: 'Operons (ANNOgesic)',
-  weight_operons_opdetect: 'Operons (OpDetect)',
-  weight_operons_opmapper: 'Operons (OpMapper)',
-  weight_phenocorr_neg: 'Phenotype correlation (−)',
-  weight_phenocorr_pos: 'Phenotype correlation (+)',
-  weight_pmi_gsms: 'PMI (GSMs)',
-  weight_pmi: 'PMI',
-  bayesian_score: 'Bayesian network',
-  ds_score: 'Deep learning',
-  ecocyc_score: 'EcoCyc',
-  weight_ppi_gp_score_neg: 'Global proteomics (−)',
-  weight_ppi_gp_score_pos: 'Global proteomics (+)',
-  melt_score: 'Thermal proteome profiling',
-  operon_score: 'Operon score',
-  weight_ppi_perturb_score_neg: 'Perturbation (−)',
-  weight_ppi_perturb_score_pos: 'Perturbation (+)',
-  secondary_score: 'Secondary structure',
-  string_score: 'STRING physical',
-  tt_score: 'Thermal tolerance',
-  weight_ppi_xlms_files: 'XL-MS (files)',
-  weight_ppi_xlms_peptides: 'XL-MS (peptides)',
-  comelt_score: 'Co-melting',
-  perturbation_score: 'Perturbation',
-  abundance_score: 'Global proteomics',
+  raw_consensus_score: 'Raw consensus',
+  q_ppi: 'PPI',
+  q_chemical_genetic: 'Chemical-genetic',
+  q_coexpression: 'Co-expression',
+  q_operons: 'Operons',
+  q_metabolic: 'Metabolic',
+  n_evidence_types: 'Evidence types',
+  n_networks_total: 'Networks',
+  n_ppi: 'PPI networks',
+  n_chemical_genetic: 'Chemical-genetic networks',
+  n_coexpression: 'Co-expression networks',
+  n_operons: 'Operon networks',
+  n_metabolic: 'Metabolic networks',
 };
 
 /** Fallback edge color for expansion levels when no specific color is defined (Cytoscape styles). */

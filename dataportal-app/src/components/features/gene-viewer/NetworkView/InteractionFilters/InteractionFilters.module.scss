@@ -201,3 +201,18 @@
 .evidenceSwatch[data-channel='textmining'] {
   background-color: var(--network-evidence-textmining);
 }
+.evidenceSwatch[data-channel='ppi'] {
+  background-color: #5b8dee;
+}
+.evidenceSwatch[data-channel='chemical_genetic'] {
+  background-color: #e65100;
+}
+.evidenceSwatch[data-channel='coexpression'] {
+  background-color: #2196f3;
+}
+.evidenceSwatch[data-channel='operons'] {
+  background-color: #50c878;
+}
+.evidenceSwatch[data-channel='metabolic'] {
+  background-color: #9c27b0;
+}

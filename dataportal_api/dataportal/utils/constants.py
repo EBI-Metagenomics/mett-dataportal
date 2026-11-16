@@ -233,109 +233,77 @@ KEYWORD_SORT_FIELDS = {
 # 8. INTERACTION DATA (PPI, TTP)
 # ============================================================================
 
-# --- PPI Score Fields ---
+# PPI v4 evidence categories: (network-count field, category-score field, presence flag).
+# Source-specific Score_*/Rank_* columns from PPI-v1 are not stored.
+PPI_EVIDENCE_CATEGORIES = (
+    ("n_ppi", "q_ppi", "has_ppi"),
+    ("n_chemical_genetic", "q_chemical_genetic", "has_chemical_genetic"),
+    ("n_coexpression", "q_coexpression", "has_coexpression"),
+    ("n_operons", "q_operons", "has_operons"),
+    ("n_metabolic", "q_metabolic", "has_metabolic"),
+)
+
+PPI_NETWORK_COUNT_FIELDS = [category[0] for category in PPI_EVIDENCE_CATEGORIES]
+PPI_EVIDENCE_SCORE_FIELDS = [category[1] for category in PPI_EVIDENCE_CATEGORIES]
+PPI_EVIDENCE_FLAG_FIELDS = [category[2] for category in PPI_EVIDENCE_CATEGORIES]
+
+# Scores that can rank, filter, and weight network edges.
 PPI_SCORE_FIELDS = [
     "consensus_score",
-    "ds_score",
-    "comelt_score",
-    "perturbation_score",
-    "abundance_score",
-    "melt_score",
-    "secondary_score",
-    "bayesian_score",
-    "string_score",
-    "operon_score",
-    "ecocyc_score",
-    "tt_score",
+    "raw_consensus_score",
+    *PPI_EVIDENCE_SCORE_FIELDS,
 ]
 
-# --- Consensus network evidence channel weight fields (non-PPI channels) ---
-PPI_EVIDENCE_WEIGHT_FIELDS = [
-    "weight_coexp",
-    "weight_operons_annogesic",
-    "weight_operons_opdetect",
-    "weight_operons_opmapper",
-    "weight_phenocorr_neg",
-    "weight_phenocorr_pos",
-    "weight_pmi_gsms",
-    "weight_pmi",
-    "weight_ppi_gp_score_neg",
-    "weight_ppi_gp_score_pos",
-    "weight_ppi_perturb_score_neg",
-    "weight_ppi_perturb_score_pos",
-    "weight_ppi_xlms_files",
-    "weight_ppi_xlms_peptides",
-]
+# Short names accepted by score_type query params.
+PPI_SCORE_ALIASES = {
+    "consensus": "consensus_score",
+    "raw": "raw_consensus_score",
+    "raw_consensus": "raw_consensus_score",
+    "ppi": "q_ppi",
+    "chemical_genetic": "q_chemical_genetic",
+    "chemical-genetic": "q_chemical_genetic",
+    "coexpression": "q_coexpression",
+    "co-expression": "q_coexpression",
+    "operons": "q_operons",
+    "operon": "q_operons",
+    "metabolic": "q_metabolic",
+}
 
-# Fields returned in edge/detail evidence_scores (exclude consensus — that is edge weight)
-PPI_EVIDENCE_SCORE_FIELDS = [
-    "weight_coexp",
-    "weight_operons_annogesic",
-    "weight_operons_opdetect",
-    "weight_operons_opmapper",
-    "weight_phenocorr_neg",
-    "weight_phenocorr_pos",
-    "weight_pmi_gsms",
-    "weight_pmi",
-    "bayesian_score",
-    "ds_score",
-    "ecocyc_score",
-    "weight_ppi_gp_score_neg",
-    "weight_ppi_gp_score_pos",
-    "melt_score",
-    "operon_score",
-    "weight_ppi_perturb_score_neg",
-    "weight_ppi_perturb_score_pos",
-    "secondary_score",
-    "string_score",
-    "tt_score",
-    "weight_ppi_xlms_files",
-    "weight_ppi_xlms_peptides",
+# Numeric fields copied from a parsed row onto the Elasticsearch document.
+PPI_INDEXED_SCORE_FIELDS = [
+    "consensus_score",
+    "consensus_rank",
+    "raw_consensus_score",
+    "edge_id",
+    "n_evidence_types",
+    "n_networks_total",
+    *PPI_EVIDENCE_SCORE_FIELDS,
+    *PPI_NETWORK_COUNT_FIELDS,
 ]
 
 # Display labels for evidence channels (used by API / UI)
 PPI_EVIDENCE_CHANNEL_LABELS = {
     "consensus_score": "Consensus",
-    "weight_coexp": "Co-expression",
-    "weight_operons_annogesic": "Operons (ANNOgesic)",
-    "weight_operons_opdetect": "Operons (OpDetect)",
-    "weight_operons_opmapper": "Operons (OpMapper)",
-    "weight_phenocorr_neg": "Phenotype correlation (negative)",
-    "weight_phenocorr_pos": "Phenotype correlation (positive)",
-    "weight_pmi_gsms": "PMI (GSMs)",
-    "weight_pmi": "PMI",
-    "bayesian_score": "Bayesian network",
-    "ds_score": "Deep learning",
-    "ecocyc_score": "EcoCyc",
-    "weight_ppi_gp_score_neg": "Global proteomics (negative)",
-    "weight_ppi_gp_score_pos": "Global proteomics (positive)",
-    "melt_score": "Thermal proteome profiling",
-    "operon_score": "Operon score",
-    "weight_ppi_perturb_score_neg": "Perturbation (negative)",
-    "weight_ppi_perturb_score_pos": "Perturbation (positive)",
-    "secondary_score": "Secondary structure",
-    "string_score": "STRING physical",
-    "tt_score": "Thermal tolerance",
-    "weight_ppi_xlms_files": "XL-MS (files)",
-    "weight_ppi_xlms_peptides": "XL-MS (peptides)",
-    "comelt_score": "Co-melting",
-    "perturbation_score": "Perturbation",
-    "abundance_score": "Global proteomics",
-    "interaction_weight": "Interaction weight",
-    "n_sources": "Evidence sources",
+    "raw_consensus_score": "Raw consensus",
+    "q_ppi": "PPI",
+    "q_chemical_genetic": "Chemical-genetic",
+    "q_coexpression": "Co-expression",
+    "q_operons": "Operons",
+    "q_metabolic": "Metabolic",
+    "n_evidence_types": "Evidence types",
+    "n_networks_total": "Networks",
+    "n_ppi": "PPI networks",
+    "n_chemical_genetic": "Chemical-genetic networks",
+    "n_coexpression": "Co-expression networks",
+    "n_operons": "Operon networks",
+    "n_metabolic": "Metabolic networks",
 }
 
 # Default score used for network edge weight / ranking
 PPI_DEFAULT_SCORE_TYPE = "consensus_score"
 
-# --- PPI Non-Score Filter Fields ---
-PPI_NON_SCORE_FIELDS = [
-    "xlms_peptides",
-    "xlms_files",
-]
-
 # --- All Valid PPI Filter Fields ---
-PPI_VALID_FILTER_FIELDS = PPI_SCORE_FIELDS + PPI_NON_SCORE_FIELDS
+PPI_VALID_FILTER_FIELDS = PPI_SCORE_FIELDS + list(PPI_SCORE_ALIASES)
 
 # --- PPI Data Sources ---
 # These represent logical sources of PPI interaction/network data.

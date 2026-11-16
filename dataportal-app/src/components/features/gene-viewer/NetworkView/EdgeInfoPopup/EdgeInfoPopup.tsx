@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { LocalEvidenceScores, PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
+import { LocalEvidenceScores, LocalNetworkCounts, PPINetworkEdge, StringScoreBreakdown } from '../../../../../interfaces/PPI';
 import {
   EVIDENCE_DISPLAY_LABELS,
   LOCAL_EVIDENCE_CHANNEL_LABELS,
@@ -16,6 +16,7 @@ interface EdgeInfoPopupProps {
     expansionLevel?: number;
     string_score_breakdown?: StringScoreBreakdown;
     evidence_scores?: LocalEvidenceScores;
+    network_counts?: LocalNetworkCounts;
   };
   sourceNode?: { locus_tag?: string; name?: string; product?: string };
   targetNode?: { locus_tag?: string; name?: string; product?: string };
@@ -52,6 +53,27 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
       }))
       .sort((a, b) => b.score - a.score);
   }, [edge]);
+
+  const networkCounts = useMemo(() => {
+    const counts = edge.network_counts;
+    if (!counts || typeof counts !== 'object') return [];
+    return Object.entries(counts)
+      .filter(([, value]) => typeof value === 'number' && value > 0)
+      .map(([field, count]) => ({
+        field,
+        label: formatScoreLabel(field),
+        count: count as number,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [edge]);
+
+  const consensusScore = edge.consensus_score;
+  const rawConsensusScore = edge.raw_consensus_score;
+  const showConsensus =
+    consensusScore != null && edge.score_type && edge.score_type !== 'consensus_score';
+  const showRaw =
+    rawConsensusScore != null &&
+    (consensusScore == null || Math.abs(rawConsensusScore - consensusScore) > 1e-6);
 
   /** For STRING edges with string_score_breakdown, collect all evidence scores > 0 */
   const stringEvidenceScores = useMemo(() => {
@@ -170,10 +192,28 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
                 <span className={styles.value}>{Number(edge.weight).toFixed(4)}</span>
               </div>
             )}
-            {edge.n_sources != null && (
+            {showConsensus && consensusScore != null && (
               <div className={styles.infoRow}>
-                <span className={styles.label}>Evidence sources:</span>
-                <span className={styles.value}>{edge.n_sources}</span>
+                <span className={styles.label}>Consensus score:</span>
+                <span className={styles.value}>{Number(consensusScore).toFixed(4)}</span>
+              </div>
+            )}
+            {showRaw && rawConsensusScore != null && (
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Raw consensus:</span>
+                <span className={styles.value}>{Number(rawConsensusScore).toFixed(4)}</span>
+              </div>
+            )}
+            {edge.n_evidence_types != null && (
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Evidence types:</span>
+                <span className={styles.value}>{edge.n_evidence_types}</span>
+              </div>
+            )}
+            {edge.n_networks_total != null && (
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Networks:</span>
+                <span className={styles.value}>{edge.n_networks_total}</span>
               </div>
             )}
             {edge.score_type && localEvidenceScores.length === 0 && stringEvidenceScores.length === 0 && (
@@ -185,11 +225,23 @@ export const EdgeInfoPopup: React.FC<EdgeInfoPopupProps> = ({
 
             {localEvidenceScores.length > 0 && (
               <>
-                <div className={styles.sectionTitle}>Evidence channels</div>
+                <div className={styles.sectionTitle}>Evidence categories</div>
                 {localEvidenceScores.map(({ field, label, score }) => (
                   <div key={field} className={styles.infoRow}>
                     <span className={styles.label}>{label}:</span>
                     <span className={styles.value}>{score.toFixed(4)}</span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {networkCounts.length > 0 && (
+              <>
+                <div className={styles.sectionTitle}>Supporting networks</div>
+                {networkCounts.map(({ field, label, count }) => (
+                  <div key={field} className={styles.infoRow}>
+                    <span className={styles.label}>{label}:</span>
+                    <span className={styles.value}>{count}</span>
                   </div>
                 ))}
               </>

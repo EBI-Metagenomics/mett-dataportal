@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Optional, Tuple, List, Dict, Any
 
+import logging
+
 from elasticsearch import Elasticsearch, NotFoundError
 from elasticsearch.helpers import bulk as es_bulk, BulkIndexError, bulk
 from elasticsearch_dsl import connections
@@ -18,6 +20,32 @@ from dataportal.models import (
     OrthologDocument,
     GeneFitnessCorrelationDocument,
 )
+
+
+logger = logging.getLogger(__name__)
+
+# Fields added for PPI v4. Applied onto an existing index without retargeting
+# consensus_score, which may already be mapped as scaled_float.
+PPI_V4_MAPPING_PROPERTIES = {
+    "raw_consensus_score": {"type": "double"},
+    "q_ppi": {"type": "double"},
+    "q_chemical_genetic": {"type": "double"},
+    "q_coexpression": {"type": "double"},
+    "q_operons": {"type": "double"},
+    "q_metabolic": {"type": "double"},
+    "n_evidence_types": {"type": "integer"},
+    "n_networks_total": {"type": "integer"},
+    "n_ppi": {"type": "integer"},
+    "n_chemical_genetic": {"type": "integer"},
+    "n_coexpression": {"type": "integer"},
+    "n_operons": {"type": "integer"},
+    "n_metabolic": {"type": "integer"},
+    "has_ppi": {"type": "boolean"},
+    "has_chemical_genetic": {"type": "boolean"},
+    "has_coexpression": {"type": "boolean"},
+    "has_operons": {"type": "boolean"},
+    "has_metabolic": {"type": "boolean"},
+}
 
 
 # -----------------------------
@@ -146,12 +174,34 @@ class PPIIndexRepository:
 
     def ensure_index(self) -> None:
         es = self._conn()
-        # If concrete index exists, we're good.
+        # If concrete index exists, add v4 fields and leave existing field types alone.
         if es.indices.exists(index=self.concrete_index):
+            self._ensure_v4_mapping(es)
             return
         # If it's an alias, DO NOT create a new index. Just use the alias target(s).
         if es.indices.exists_alias(name=self.concrete_index):
+            self._ensure_v4_mapping(es)
             return
+        ProteinProteinDocument.init(index=self.concrete_index, using=es)
+
+    def _ensure_v4_mapping(self, es: Elasticsearch) -> None:
+        """Add PPI v4 properties. Warn when consensus_score cannot store full precision."""
+        try:
+            es.indices.put_mapping(index=self.concrete_index, properties=PPI_V4_MAPPING_PROPERTIES)
+        except Exception as exc:
+            logger.warning(
+                "[ppi] could not add v4 field mapping on %s: %s", self.concrete_index, exc
+            )
+            return
+
+        score_type = _mapped_field_type(es, self.concrete_index, "consensus_score")
+        if score_type and score_type != "double":
+            logger.warning(
+                "[ppi] %s maps consensus_score as %s. Recreate the PPI index before "
+                "loading v4 so consensus and category scores keep full TSV precision.",
+                self.concrete_index,
+                score_type,
+            )
 
     def get(self, pair_id: str) -> Optional[ProteinProteinDocument]:
         try:
@@ -211,6 +261,18 @@ class PPIIndexRepository:
             for f in errs[:3]:
                 print(f"  -> {f}")
             return 0, errs
+
+
+def _mapped_field_type(es: Elasticsearch, index: str, field: str) -> Optional[str]:
+    try:
+        mapping = es.indices.get_mapping(index=index)
+    except Exception:
+        return None
+    for body in mapping.values():
+        spec = body.get("mappings", {}).get("properties", {}).get(field)
+        if isinstance(spec, dict):
+            return spec.get("type")
+    return None
 
 
 @dataclass

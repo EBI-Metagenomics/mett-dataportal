@@ -52,10 +52,11 @@ export class PPIService extends BaseService {
     score_threshold?: number;
     protein_id?: string;
     locus_tag?: string;
-    has_xlms?: boolean;
-    has_string?: boolean;
-    has_operon?: boolean;
-    has_ecocyc?: boolean;
+    has_ppi?: boolean;
+    has_chemical_genetic?: boolean;
+    has_coexpression?: boolean;
+    has_operons?: boolean;
+    has_metabolic?: boolean;
     page?: number;
     per_page?: number;
   }): Promise<{ data: PPIInteraction[]; pagination: any }> {
@@ -67,10 +68,11 @@ export class PPIService extends BaseService {
         score_threshold: params.score_threshold,
         protein_id: params.protein_id,
         locus_tag: params.locus_tag,
-        has_xlms: params.has_xlms,
-        has_string: params.has_string,
-        has_operon: params.has_operon,
-        has_ecocyc: params.has_ecocyc,
+        has_ppi: params.has_ppi,
+        has_chemical_genetic: params.has_chemical_genetic,
+        has_coexpression: params.has_coexpression,
+        has_operons: params.has_operons,
+        has_metabolic: params.has_metabolic,
         page: params.page || 1,
         per_page: params.per_page || 20,
       });
