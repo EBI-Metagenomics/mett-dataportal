@@ -7,6 +7,7 @@ from celery.result import AsyncResult
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from ninja import Router, Query
 from dataportal.schema.response_schemas import (
     ErrorCode,
@@ -32,6 +33,97 @@ from ..search.models import HmmerJob, Database
 logger = logging.getLogger(__name__)
 
 pyhmmer_router_result = Router(tags=["PyHMMER Results"])
+
+_TERMINAL_TASK_STATES = {"SUCCESS", "FAILURE"}
+
+
+def _celery_async_state(task_id: str):
+    """Read the Redis result backend. A missing or unread result stays PENDING."""
+    try:
+        async_result = AsyncResult(task_id)
+        status = async_result.status
+        result = async_result.result if status in _TERMINAL_TASK_STATES else None
+        return status, result
+    except Exception as exc:
+        logger.warning("Could not read Celery result for %s: %s", task_id, exc)
+        return None, None
+
+
+def _parse_stored_result(raw):
+    if raw is None or isinstance(raw, BaseException):
+        return []
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            logger.error("Stored PyHMMER task result is not valid JSON")
+            return []
+        return parsed if isinstance(parsed, list) else []
+    if isinstance(raw, list):
+        return raw
+    return []
+
+
+def _persist_terminal_state(job, status, raw):
+    """Copy a finished Redis result onto the TaskResult row when the worker did not."""
+    task = job.task
+    if task is None or task.status in _TERMINAL_TASK_STATES:
+        return
+    try:
+        task.status = status
+        if status == "SUCCESS" and isinstance(raw, list):
+            task.result = json.dumps(raw)
+        elif status == "FAILURE":
+            task.result = str(raw) if raw is not None else None
+        task.date_done = timezone.now()
+        task.save(update_fields=["status", "result", "date_done"])
+    except Exception as exc:
+        logger.warning("Could not persist Celery state for job %s: %s", job.id, exc)
+
+
+def _resolve_task_status(job):
+    """Return the status the search tab should poll.
+
+    The worker writes SUCCESS and the hit JSON onto the TaskResult row before
+    the task returns. Result polls used to ignore that row and wait for
+    AsyncResult, which only sees the Redis result backend. A finished search
+    then stayed PENDING on the API until Redis caught up, so the search tab
+    never rendered hits that were already stored.
+    """
+    if job.task_id:
+        job.task.refresh_from_db()
+
+    db_status = (job.task.status or "PENDING") if job.task else "PENDING"
+    db_result = job.task.result if job.task else None
+    async_status, async_result = (None, None)
+    # The worker's TaskResult row is the completion record. Skip Redis once
+    # that row already holds a finished result.
+    db_has_result = db_status == "SUCCESS" and db_result not in (None, "")
+    if job.task and job.task.task_id and not db_has_result:
+        async_status, async_result = _celery_async_state(job.task.task_id)
+        logger.info(
+            "PyHMMER job %s task states: database=%s celery=%s",
+            job.id,
+            db_status,
+            async_status,
+        )
+
+    if db_status in _TERMINAL_TASK_STATES:
+        status = db_status
+        raw = db_result if db_result not in (None, "") else async_result
+    elif async_status in _TERMINAL_TASK_STATES:
+        status = async_status
+        raw = async_result
+        _persist_terminal_state(job, status, raw)
+    elif db_status != "PENDING":
+        status = db_status
+        raw = None
+    else:
+        status = async_status or db_status
+        raw = None
+
+    parsed = _parse_stored_result(raw) if status == "SUCCESS" else []
+    return status, parsed
 
 
 @pyhmmer_router_result.get("/{uuid:id}/download")
@@ -139,42 +231,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         if job.task:
             logger.info(f"Job has task: {job.task}")
             logger.info(f"Task ID: {job.task.task_id}")
-
-            async_result = AsyncResult(job.task.task_id)
-            task_status = async_result.status
-            logger.info(f"AsyncResult status: {task_status}")
-            logger.info(f"AsyncResult state: {async_result.state}")
-
-            # Get raw result from database
-            raw_result = job.task.result
-            logger.info(f"Raw result from database: {raw_result}")
-
-            try:
-                if raw_result is None:
-                    logger.warning("Raw result is None, checking AsyncResult for fallback...")
-                    if async_result.result is not None:
-                        logger.info("Using AsyncResult result as fallback")
-                        task_result_data = async_result.result
-                    else:
-                        logger.warning(
-                            "Both database and AsyncResult have no result, setting empty list"
-                        )
-                        task_result_data = []
-                elif isinstance(raw_result, str):
-                    logger.info("Raw result is string, attempting JSON decode...")
-
-                    task_result_data = json.loads(raw_result)
-                else:
-                    logger.info("Raw result is already a list/dict, using as is")
-                    task_result_data = raw_result
-            except Exception as e:
-                logger.error(f"Error parsing result: {e}")
-                task_result_data = []
-
-            logger.info(f"Parsed result data type: {type(task_result_data)}")
-            logger.info(
-                f"Result list length: {len(task_result_data) if isinstance(task_result_data, list) else 'N/A'}"
-            )
+            task_status, task_result_data = _resolve_task_status(job)
         else:
             logger.warning("Job has no task associated")
 
@@ -189,7 +246,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
             response_data = {
                 "status": task_status,
                 "task": {
-                    "status": job.task.status if job.task else "PENDING",
+                    "status": task_status,
                     "date_created": job.task.date_created if job.task else None,
                     "date_done": job.task.date_done if job.task else None,
                     "result": None,
@@ -269,7 +326,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         response_data = {
             "status": task_status,
             "task": {
-                "status": job.task.status if job.task else "PENDING",
+                "status": task_status,
                 "date_created": job.task.date_created if job.task else None,
                 "date_done": job.task.date_done if job.task else None,
                 "result": paginated_results,
