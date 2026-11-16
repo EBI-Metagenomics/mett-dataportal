@@ -243,7 +243,7 @@ export class PyhmmerService extends BaseService {
                 const jobDetails = await this.getJobDetails(jobId);
                 console.log('PyhmmerService.pollJobStatus: Full jobDetails:', jobDetails);
                 
-                const status = jobDetails.status;
+                const status = jobDetails.task?.status || jobDetails.status;
                 console.log('PyhmmerService.pollJobStatus: Job status:', status);
 
                 // Check for completed status (handle both lowercase and uppercase)
@@ -290,7 +290,14 @@ export class PyhmmerService extends BaseService {
                 attempts++;
             } catch (error) {
                 console.error('PyhmmerService.pollJobStatus: Error polling job status:', error);
-                throw error;
+                if (error instanceof Error && error.message === 'PyHMMER search failed') {
+                    throw error;
+                }
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    throw error;
+                }
+                await new Promise(resolve => setTimeout(resolve, PYHMMER_CONSTANTS.TIMING.JOB_POLL_INTERVAL));
             }
         }
         throw new Error('PyHMMER search timed out');
