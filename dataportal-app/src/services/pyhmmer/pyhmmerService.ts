@@ -137,7 +137,12 @@ export class PyhmmerService extends BaseService {
     static async getJobDetails(jobId: string): Promise<PyhmmerJobDetailsResponse> {
         try {
             console.log(`PyhmmerService.getJobDetails: Fetching job details for ID: ${jobId}`);
-            const result = await this.getWithRetry<PyhmmerJobDetailsResponse>(`${API_BASE_RESULT}/${jobId}`);
+            // A new query string on every read stops a cached STARTED response
+            // from answering the next poll or a history click.
+            const result = await this.getWithRetry<PyhmmerJobDetailsResponse>(
+                `${API_BASE_RESULT}/${jobId}`,
+                { _t: Date.now() }
+            );
             console.log(`PyhmmerService.getJobDetails: Received response:`, result);
             console.log(`PyhmmerService.getJobDetails: Response status: ${result.status}`);
             console.log(`PyhmmerService.getJobDetails: Task status: ${result.task?.status}`);

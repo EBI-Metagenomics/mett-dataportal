@@ -1,6 +1,7 @@
 import gzip
 import json
 import logging
+import time
 import uuid
 
 from celery.result import AsyncResult
@@ -35,6 +36,8 @@ logger = logging.getLogger(__name__)
 pyhmmer_router_result = Router(tags=["PyHMMER Results"])
 
 _TERMINAL_TASK_STATES = {"SUCCESS", "FAILURE"}
+_RESULT_WAIT_SECONDS = 5
+_RESULT_WAIT_INTERVAL = 0.25
 
 
 def _celery_async_state(task_id: str):
@@ -81,7 +84,7 @@ def _persist_terminal_state(job, status, raw):
         logger.warning("Could not persist Celery state for job %s: %s", job.id, exc)
 
 
-def _resolve_task_status(job):
+def _resolve_task_status(job, check_celery=True):
     """Return the status the search tab should poll.
 
     The worker writes SUCCESS and the hit JSON onto the TaskResult row before
@@ -99,7 +102,7 @@ def _resolve_task_status(job):
     # The worker's TaskResult row is the completion record. Skip Redis once
     # that row already holds a finished result.
     db_has_result = db_status == "SUCCESS" and db_result not in (None, "")
-    if job.task and job.task.task_id and not db_has_result:
+    if check_celery and job.task and job.task.task_id and not db_has_result:
         async_status, async_result = _celery_async_state(job.task.task_id)
         logger.info(
             "PyHMMER job %s task states: database=%s celery=%s",
@@ -123,6 +126,34 @@ def _resolve_task_status(job):
         raw = None
 
     parsed = _parse_stored_result(raw) if status == "SUCCESS" else []
+    return status, parsed
+
+
+def _wait_for_stored_result(job):
+    """Re-read the task row for a few seconds before answering.
+
+    The search tab asks once, often while the worker still has the row marked
+    STARTED. The worker then stores SUCCESS on that same row. Waiting here lets
+    that request return the hits instead of closing while the write is in flight.
+    Later checks read the database only, so a slow Redis call cannot stretch the wait.
+    """
+    status, parsed = _resolve_task_status(job)
+    if status in _TERMINAL_TASK_STATES:
+        return status, parsed
+
+    logger.info(
+        "PyHMMER job %s is %s; waiting up to %ss for the stored result",
+        job.id,
+        status,
+        _RESULT_WAIT_SECONDS,
+    )
+    deadline = time.monotonic() + _RESULT_WAIT_SECONDS
+    while time.monotonic() < deadline:
+        time.sleep(_RESULT_WAIT_INTERVAL)
+        status, parsed = _resolve_task_status(job, check_celery=False)
+        if status in _TERMINAL_TASK_STATES:
+            logger.info("PyHMMER job %s reached %s while waiting", job.id, status)
+            return status, parsed
     return status, parsed
 
 
@@ -231,7 +262,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         if job.task:
             logger.info(f"Job has task: {job.task}")
             logger.info(f"Task ID: {job.task.task_id}")
-            task_status, task_result_data = _resolve_task_status(job)
+            task_status, task_result_data = _wait_for_stored_result(job)
         else:
             logger.warning("Job has no task associated")
 
