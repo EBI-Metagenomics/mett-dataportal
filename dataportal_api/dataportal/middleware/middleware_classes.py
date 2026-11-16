@@ -80,6 +80,12 @@ class RemoveCOOPHeaderMiddleware(MiddlewareMixin):
         # Remove the Cross-Origin-Opener-Policy header if it exists
         if "Cross-Origin-Opener-Policy" in response:
             del response["Cross-Origin-Opener-Policy"]
+        # Job status changes after the first response. A cached STARTED body
+        # would answer later polls and history clicks without reaching the API.
+        path = getattr(request, "path", "") or ""
+        if "/pyhmmer/result" in path:
+            response["Cache-Control"] = "no-store, no-cache, must-revalidate"
+            response["Pragma"] = "no-cache"
         return response
 
 
