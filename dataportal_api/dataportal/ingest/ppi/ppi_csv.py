@@ -5,8 +5,10 @@ from typing import Dict, List, Optional, Tuple
 from django.utils.timezone import now
 
 from dataportal.ingest.ppi.parsing import iter_ppi_rows
+from dataportal.utils.ppi_scores import apply_ppi_v4_rollups
 from dataportal.ingest.gff.parser import GFFParser
 from dataportal.ingest.es_repo import PPIIndexRepository
+from dataportal.utils.constants import PPI_INDEXED_SCORE_FIELDS
 
 
 # Keep helpers consistent with your model
@@ -44,48 +46,7 @@ def _get_isolate_name(species_name: Optional[str], species_map: Dict[str, str]) 
 
 
 def _flags_and_rollups(src: Dict) -> None:
-    src["has_xlms"] = bool(
-        src.get("xlms_peptides")
-        or src.get("xlms_files")
-        or (src.get("weight_ppi_xlms_files") or 0) > 0
-        or (src.get("weight_ppi_xlms_peptides") or 0) > 0
-    )
-    src["has_string"] = (src.get("string_score") or 0) > 0
-    src["has_operon"] = (src.get("operon_score") or 0) > 0
-    src["has_ecocyc"] = (src.get("ecocyc_score") or 0) > 0
-
-    score_keys = [
-        "weight_coexp",
-        "weight_operons_annogesic",
-        "weight_operons_opdetect",
-        "weight_operons_opmapper",
-        "weight_phenocorr_neg",
-        "weight_phenocorr_pos",
-        "weight_pmi_gsms",
-        "weight_pmi",
-        "weight_ppi_gp_score_neg",
-        "weight_ppi_gp_score_pos",
-        "weight_ppi_perturb_score_neg",
-        "weight_ppi_perturb_score_pos",
-        "weight_ppi_xlms_files",
-        "weight_ppi_xlms_peptides",
-        "ds_score",
-        "tt_score",
-        "perturbation_score",
-        "abundance_score",
-        "melt_score",
-        "secondary_score",
-        "bayesian_score",
-        "string_score",
-        "operon_score",
-        "ecocyc_score",
-    ]
-    if src.get("n_sources") is not None:
-        src["evidence_count"] = int(src["n_sources"])
-    else:
-        src["evidence_count"] = sum(
-            1 for k in score_keys if src.get(k) is not None and src.get(k) != 0
-        )
+    apply_ppi_v4_rollups(src)
 
 
 @dataclass
@@ -177,42 +138,8 @@ class PPICSVFlow:
             "is_self_interaction": (aa == bb),
             "participants_locus_tag": locus_participants or None,
             "participants_locus_tag_sorted": locus_participants_sorted,
-            # consensus network scores
-            "consensus_score": row.get("consensus_score"),
-            "consensus_rank": row.get("consensus_rank"),
-            "consensus_avg_rank": row.get("consensus_avg_rank"),
-            "edge_id": row.get("edge_id"),
-            "interaction_weight": row.get("interaction_weight"),
-            "n_sources": row.get("n_sources"),
-            # evidence channel weights (non-PPI)
-            "weight_coexp": row.get("weight_coexp"),
-            "weight_operons_annogesic": row.get("weight_operons_annogesic"),
-            "weight_operons_opdetect": row.get("weight_operons_opdetect"),
-            "weight_operons_opmapper": row.get("weight_operons_opmapper"),
-            "weight_phenocorr_neg": row.get("weight_phenocorr_neg"),
-            "weight_phenocorr_pos": row.get("weight_phenocorr_pos"),
-            "weight_pmi_gsms": row.get("weight_pmi_gsms"),
-            "weight_pmi": row.get("weight_pmi"),
-            "weight_ppi_gp_score_neg": row.get("weight_ppi_gp_score_neg"),
-            "weight_ppi_gp_score_pos": row.get("weight_ppi_gp_score_pos"),
-            "weight_ppi_perturb_score_neg": row.get("weight_ppi_perturb_score_neg"),
-            "weight_ppi_perturb_score_pos": row.get("weight_ppi_perturb_score_pos"),
-            "weight_ppi_xlms_files": row.get("weight_ppi_xlms_files"),
-            "weight_ppi_xlms_peptides": row.get("weight_ppi_xlms_peptides"),
-            # PPI scores (legacy + consensus-mapped)
-            "ds_score": row.get("ds_score"),
-            "tt_score": row.get("tt_score"),
-            "perturbation_score": row.get("perturbation_score"),
-            "abundance_score": row.get("abundance_score"),
-            "melt_score": row.get("melt_score"),
-            "secondary_score": row.get("secondary_score"),
-            "bayesian_score": row.get("bayesian_score"),
-            "string_score": row.get("string_score"),
-            "operon_score": row.get("operon_score"),
-            "ecocyc_score": row.get("ecocyc_score"),
-            # xlms
-            "xlms_peptides": row.get("xlms_peptides"),
-            "xlms_files": row.get("xlms_files"),
+            # PPI v4 consensus, category scores, and network counts
+            **{field: row.get(field) for field in PPI_INDEXED_SCORE_FIELDS},
             # gene information for protein_a
             "protein_a_locus_tag": left.get("locus_tag"),
             "protein_a_uniprot_id": left.get("uniprot_id"),

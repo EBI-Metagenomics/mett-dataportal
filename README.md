@@ -533,6 +533,12 @@ python manage.py create_es_index --model FeatureDocument
 python manage.py create_es_index --model StrainExperimentDocument
 python manage.py create_es_index --model FeatureExperimentDocument
 
+# next generation (v1) with family ppi
+python manage.py create_es_index \
+  --release v1 \
+  --generation 2 \
+  --family ppi
+
 # Recreate if the index already exists
 python manage.py create_es_index --if-exists recreate
 ```
@@ -778,6 +784,14 @@ python manage.py import_ppi_with_genes \
   --index mett-v1-ppi \
   --pattern "*.tsv" \
   --csv-folder ../data-generators/data/Sub-Projects-Data/PPI-v1 \
+  --string-mapping-dir ../data-generators/data/generated/string-mapping/uniprot_mapped \
+  --refresh-every-rows 500000
+  
+# v4 PPI (newer STRING mapping, larger TSVs)
+python manage.py import_ppi_with_genes \
+  --index mett-v1-g002-ppi \
+  --pattern "*.tsv" \
+  --csv-folder ../data-generators/data/Sub-Projects-Data/PPI-v4 \
   --string-mapping-dir ../data-generators/data/generated/string-mapping/uniprot_mapped \
   --refresh-every-rows 500000
 ```

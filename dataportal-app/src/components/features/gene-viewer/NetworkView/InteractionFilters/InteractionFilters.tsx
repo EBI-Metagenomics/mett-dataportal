@@ -7,8 +7,10 @@ import {
   STRING_EVIDENCE_CHANNELS,
   EVIDENCE_DISPLAY_LABELS,
   LOCAL_EVIDENCE_CHANNEL_LABELS,
+  LOCAL_EVIDENCE_CATEGORIES,
   type StringNetworkType,
   type StringEvidenceChannel,
+  type LocalEvidenceCategory,
 } from '../constants';
 import styles from './InteractionFilters.module.scss';
 
@@ -35,6 +37,7 @@ interface InteractionFiltersProps {
   stringNetworkType: StringNetworkType;
   stringRequiredScore: number;
   stringEvidenceChannels: StringEvidenceChannel[];
+  localEvidenceCategories: LocalEvidenceCategory[];
   availableScoreTypes: string[];
   onDataSourceChange: (source: PPIDataSource) => void;
   onStringRequiredScoreChange?: (score: number) => void;
@@ -47,6 +50,7 @@ interface InteractionFiltersProps {
   onMaxOrthologsPerNodeChange: (n: number) => void;
   onStringNetworkTypeChange?: (networkType: StringNetworkType) => void;
   onStringEvidenceChannelsChange?: (channels: StringEvidenceChannel[]) => void;
+  onLocalEvidenceCategoriesChange?: (categories: LocalEvidenceCategory[]) => void;
   onResetView?: () => void;
 }
 
@@ -62,6 +66,7 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
   stringNetworkType,
   stringRequiredScore,
   stringEvidenceChannels,
+  localEvidenceCategories,
   availableScoreTypes,
   onDataSourceChange,
   onStringRequiredScoreChange,
@@ -74,11 +79,13 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
   onMaxOrthologsPerNodeChange,
   onStringNetworkTypeChange,
   onStringEvidenceChannelsChange,
+  onLocalEvidenceCategoriesChange,
   onResetView,
 }) => {
   const showStringControls = (dataSource === 'stringdb' || dataSource === 'both');
   const showStringNetworkType = showStringControls && !!onStringNetworkTypeChange;
   const showStringEvidence = showStringControls && !!onStringEvidenceChannelsChange;
+  const showLocalEvidence = (dataSource === 'local' || dataSource === 'both') && !!onLocalEvidenceCategoriesChange;
 
   const handleEvidenceToggle = (channel: StringEvidenceChannel, checked: boolean) => {
     if (!onStringEvidenceChannelsChange) return;
@@ -86,6 +93,14 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
       ? [...stringEvidenceChannels, channel]
       : stringEvidenceChannels.filter((c) => c !== channel);
     onStringEvidenceChannelsChange(next);
+  };
+
+  const handleLocalEvidenceToggle = (category: LocalEvidenceCategory, checked: boolean) => {
+    if (!onLocalEvidenceCategoriesChange) return;
+    const next = checked
+      ? [...localEvidenceCategories, category]
+      : localEvidenceCategories.filter((value) => value !== category);
+    onLocalEvidenceCategoriesChange(next);
   };
 
   return (
@@ -316,6 +331,27 @@ export const InteractionFilters: React.FC<InteractionFiltersProps> = ({
                   ['--slider-fill' as string]: `${((maxOrthologsPerNode - ORTHOLOGS.MIN) / (ORTHOLOGS.MAX - ORTHOLOGS.MIN)) * 100}%`,
                 }}
               />
+            </div>
+          </div>
+        )}
+
+        {/* METT evidence categories — filter local edges by supporting category */}
+        {showLocalEvidence && (
+          <div className={styles.filterItem}>
+            <span className={styles.filterLabel}>METT evidence</span>
+            <div className={styles.evidenceList}>
+              {LOCAL_EVIDENCE_CATEGORIES.map(({ value, label }) => (
+                <label key={value} className={styles.evidenceItem}>
+                  <input
+                    type="checkbox"
+                    checked={localEvidenceCategories.includes(value)}
+                    onChange={(e) => handleLocalEvidenceToggle(value, e.target.checked)}
+                    className={styles.checkbox}
+                  />
+                  <span className={styles.evidenceSwatch} data-channel={value} title={label} />
+                  {label}
+                </label>
+              ))}
             </div>
           </div>
         )}

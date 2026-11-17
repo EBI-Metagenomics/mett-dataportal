@@ -27,6 +27,7 @@ import GeneViewerTabNavigation from '../features/gene-viewer/GeneViewerTabNaviga
 import { GeneService } from '../../services/gene';
 import { ZOOM_LEVELS } from '../../utils/common/constants';
 import { NETWORK_VIEW_ENABLED, isNetworkViewEnabled } from '../../config/featureFlags';
+import { refreshJBrowseGeneColors } from '../../utils/gene-viewer/networkJBrowseHighlight';
 
 const GeneViewerPage: React.FC = () => {
     const renderCount = useRef(0);
@@ -252,8 +253,32 @@ const GeneViewerPage: React.FC = () => {
         setSelectedFeature(feature);
     }, []);
 
-    // Navigate JBrowse to a gene by locus tag (e.g. from Network View "View in JBrowse" button)
+    // Scroll JBrowse to a gene. Does not change the network anchor or the expanded subgraph.
     const handleViewInJBrowse = useCallback(async (locusTag: string) => {
+        if (!viewState || !geneViewerData.setLoading) return;
+        const view = viewState.session?.views?.[0];
+        if (!view || typeof view.navToLocString !== 'function') return;
+
+        geneViewerData.setLoading(true);
+        try {
+            const geneMeta = await GeneService.fetchGeneByLocusTag(locusTag);
+            const seqId = geneMeta.seq_id;
+            const start = geneMeta.start_position ?? 0;
+            const end = geneMeta.end_position ?? 0;
+
+            view.navToLocString(`${seqId}:${start}..${end}`);
+            setTimeout(() => {
+                view.zoomTo(ZOOM_LEVELS.NAV);
+                geneViewerData.setLoading(false);
+            }, 200);
+        } catch (err) {
+            console.error('Failed to navigate to gene:', err);
+            geneViewerData.setLoading(false);
+        }
+    }, [viewState, geneViewerData]);
+
+    // Load a different gene's interactions and scroll JBrowse to that gene.
+    const handleSelectAnchor = useCallback(async (locusTag: string) => {
         if (!viewState || !geneViewerData.setLoading) return;
         const view = viewState.session?.views?.[0];
         if (!view || typeof view.navToLocString !== 'function') return;
@@ -271,14 +296,14 @@ const GeneViewerPage: React.FC = () => {
             view.navToLocString(`${seqId}:${start}..${end}`);
             setTimeout(() => {
                 view.zoomTo(ZOOM_LEVELS.NAV);
+                refreshJBrowseGeneColors(viewState);
                 geneViewerData.setLoading(false);
             }, 200);
 
             const proteinData = await GeneService.fetchGeneProteinSeq(locusTag).catch(() => ({ protein_sequence: '' }));
-            const completeData = { ...geneMeta, protein_sequence: proteinData.protein_sequence || '' };
-            setSelectedFeature(completeData);
+            setSelectedFeature({ ...geneMeta, protein_sequence: proteinData.protein_sequence || '' });
         } catch (err) {
-            console.error('Failed to navigate to gene:', err);
+            console.error('Failed to select network anchor:', err);
             geneViewerData.setLoading(false);
         }
     }, [viewState, geneViewerData]);
@@ -477,6 +502,8 @@ const GeneViewerPage: React.FC = () => {
                                             setLoading={geneViewerData.setLoading}
                                             onFeatureSelect={handleFeatureSelect}
                                             onViewInJBrowse={handleViewInJBrowse}
+                                            onSelectAnchor={handleSelectAnchor}
+                                            viewState={viewState}
                                         />
                                     ) : (
                                         <GeneSearchForm

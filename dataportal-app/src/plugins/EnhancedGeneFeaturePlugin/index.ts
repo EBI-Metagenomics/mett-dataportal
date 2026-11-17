@@ -3,7 +3,10 @@ import PluginManager from '@jbrowse/core/PluginManager';
 import AdapterType from '@jbrowse/core/pluggableElementTypes/AdapterType';
 import configSchema from "./configSchema";
 import {getColorForEssentiality} from '../../utils/common/geneUtils';
-import {VIEWPORT_SYNC_CONSTANTS} from '../../utils/gene-viewer';
+import {
+    geneColorForNetworkHighlight,
+    readNetworkJBrowseHighlight,
+} from '../../utils/gene-viewer/networkJBrowseHighlight';
 
 export default class EnhancedGeneFeaturePlugin extends Plugin {
     name = 'EnhancedGeneFeaturePlugin';
@@ -22,13 +25,16 @@ export default class EnhancedGeneFeaturePlugin extends Plugin {
         pluginManager.jexl.addFunction('getGeneColor', (feature: any) => {
             const locusTag = feature?.locus_tag || feature?.get?.('locus_tag');
             const selectedId = (typeof window !== 'undefined' && (window as typeof window & { selectedGeneId?: string }).selectedGeneId) || null;
-            
-            if (selectedId && locusTag === selectedId) {
-                return VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR; // Unified blue color for selected gene
-            }
-            
+            const networkHighlight = readNetworkJBrowseHighlight();
             const essentiality = feature?.Essentiality || feature?.get?.('Essentiality');
-            return getColorForEssentiality(essentiality);
+
+            return geneColorForNetworkHighlight({
+                locusTag,
+                selectedGeneId: selectedId,
+                hoverLocusTag: networkHighlight.hoverLocusTag,
+                interactionLocusTags: networkHighlight.interactionLocusTags,
+                essentialityColor: getColorForEssentiality(essentiality),
+            });
         });
 
         // console.log("install called");

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import cytoscape from 'cytoscape';
 import { EDGE_FALLBACK_COLOR, NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_COLORS, type StringEvidenceChannel } from '../../constants';
+import { VIEWPORT_SYNC_CONSTANTS } from '../../../../../../utils/gene-viewer/viewportSyncConstants';
 
 const GT = NETWORK_VIEW_CONSTANTS.GRAPH_THEME;
 const EW = NETWORK_VIEW_CONSTANTS.EDGE_WIDTH;
@@ -113,6 +114,12 @@ export const useCytoscapeStyles = ({
                 },
             },
             {
+                selector: 'node[pathRole = "seed"], node[pathRole = "intermediate"]',
+                style: {
+                    'text-opacity': 1,
+                },
+            },
+            {
                 selector: '.faded',
                 style: {
                     opacity: GT.FADED.OPACITY,
@@ -205,6 +212,26 @@ export const useCytoscapeStyles = ({
                     opacity: GT.SELECTED_EDGE.OPACITY,
                     'line-color': GT.SELECTED_EDGE.LINE_COLOR,
                     'z-index': GT.SELECTED_EDGE.Z_INDEX,
+                },
+            },
+            {
+                // Same lime and purple ring used for interaction partners in JBrowse.
+                selector: 'node[nodeType = "ppi"][isAnchor != "true"]',
+                style: {
+                    'background-color': VIEWPORT_SYNC_CONSTANTS.NETWORK_HOVER_HIGHLIGHT_COLOR,
+                    'border-color': VIEWPORT_SYNC_CONSTANTS.NETWORK_INTERACTION_HIGHLIGHT_COLOR,
+                    'border-width': 3,
+                },
+            },
+            {
+                // Same blue used for the selected gene in JBrowse.
+                selector: 'node[isAnchor = "true"]',
+                style: {
+                    'background-color': VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR,
+                    'border-color': '#1e40af',
+                    'border-width': 2,
+                    width: GT.NODE.WIDTH * 1.15,
+                    height: GT.NODE.HEIGHT * 1.15,
                 },
             },
         ];

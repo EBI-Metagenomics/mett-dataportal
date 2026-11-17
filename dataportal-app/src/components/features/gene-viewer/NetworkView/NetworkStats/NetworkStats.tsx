@@ -1,6 +1,7 @@
 import React from 'react';
 import { PPINetworkProperties } from '../../../../../interfaces/PPI';
 import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS } from '../constants';
+import { VIEWPORT_SYNC_CONSTANTS } from '../../../../../utils/gene-viewer';
 import styles from './NetworkStats.module.scss';
 
 type DataSourceOption = 'local' | 'stringdb' | 'both';
@@ -15,6 +16,8 @@ interface NetworkStatsProps {
   dataSource?: DataSourceOption;
   /** When STRING DB, show evidence channel colors (multiple edges per pair). */
   showStringEvidenceLegend?: boolean;
+  /** Gene whose interactions are loaded. Partners are highlighted in JBrowse. */
+  anchorLocusTag?: string | null;
 }
 
 
@@ -25,6 +28,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
   showOrthologs,
   dataSource = 'local',
   showStringEvidenceLegend = false,
+  anchorLocusTag,
 }) => {
   // Prefer explicit counts when provided (e.g. enriched graph with expansions); otherwise use properties
   const numNodes = nodeCount ?? properties?.num_nodes ?? 0;
@@ -57,6 +61,14 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Cross-species edges:</span>
             <span className={styles.statValue}>{properties.cross_species_edges}</span>
+          </div>
+        )}
+        {anchorLocusTag && (
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Anchor</span>
+            <span className={styles.statValue} title="Gene whose interactions are loaded">
+              {anchorLocusTag}
+            </span>
           </div>
         )}
         {properties?.ppi_enrichment_p_value !== undefined && (
@@ -113,18 +125,32 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
             </div>
           )
         )}
-        {dataSource === 'local' && (
-          <div className={styles.legendItem}>
-            <span className={`${styles.legendColor} ${styles.legendColorPPI}`}></span>
-            <span>PPI Interaction</span>
-          </div>
+        {anchorLocusTag && (
+          <>
+            <div className={styles.legendItem}>
+              <span
+                className={styles.legendColor}
+                style={{
+                  backgroundColor: VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR,
+                  borderColor: '#1e40af',
+                }}
+              />
+              <span>Anchor</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span
+                className={styles.legendColor}
+                style={{
+                  backgroundColor: VIEWPORT_SYNC_CONSTANTS.NETWORK_HOVER_HIGHLIGHT_COLOR,
+                  border: `3px solid ${VIEWPORT_SYNC_CONSTANTS.NETWORK_INTERACTION_HIGHLIGHT_COLOR}`,
+                }}
+              />
+              <span>Other genes</span>
+            </div>
+          </>
         )}
         {showOrthologs && (
           <>
-            <div className={styles.legendItem}>
-              <span className={`${styles.legendColor} ${styles.legendColorPPIWithOrthologs}`}></span>
-              <span>PPI Node with Orthologs</span>
-            </div>
             <div className={styles.legendItem}>
               <span className={`${styles.legendColor} ${styles.legendColorOrtholog}`}></span>
               <span>Ortholog Node</span>

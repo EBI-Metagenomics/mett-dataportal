@@ -7,7 +7,7 @@ Only `promote_release` retargets those aliases.
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Optional
+from typing import Iterable, NamedTuple, Optional
 
 from django.db import transaction
 from django.utils import timezone
@@ -349,6 +349,14 @@ def record_change(
     )
 
 
+class CreateReleaseIndexesResult(NamedTuple):
+    """Physical indexes created, aliases newly bound, and aliases left on an older generation."""
+
+    physical: dict[str, str]
+    bound_aliases: dict[str, str]
+    unchanged_aliases: dict[str, list[str]]
+
+
 def _upsert_release_index(
     release: MettRelease,
     family: str,
@@ -380,20 +388,37 @@ def create_release_indexes(
     families: Optional[Iterable[str]] = None,
     actor: str = "",
     bind_release_aliases: bool = True,
-) -> dict[str, str]:
-    """Create physical generation indexes and bind `mett-vN-{family}` aliases.
+) -> CreateReleaseIndexesResult:
+    """Create physical generation indexes and bind `mett-vN-{family}` when the alias is free.
 
-    Does not create or move `mett-current-*`.
+    An alias that already points at another generation is left in place. Retargeting
+    happens in a later rebuild step, after validation. Does not create or move
+    `mett-current-*`. The ReleaseIndex row keeps recording the index the alias
+    currently points at, so a new unbound generation does not overwrite it.
     """
     rel = get_or_create_release(release, actor=actor)
     fams = [coerce_family(f) for f in (families or INDEX_FAMILIES)]
     created = project.create_physical_set(
         rel.version, generation, if_exists=if_exists, families=fams
     )
+    bound: dict[str, str] = {}
+    unchanged: dict[str, list[str]] = {}
     if bind_release_aliases:
         for fam, concrete in created.items():
-            add_alias(concrete, release_alias_name(rel.version, fam))
+            alias = release_alias_name(rel.version, fam)
+            current = resolve_concrete_indices(alias)
+            if current and set(current) != {concrete}:
+                unchanged[fam] = current
+                logger.info(
+                    "Leaving alias %s on %s; new physical index is %s",
+                    alias,
+                    current,
+                    concrete,
+                )
+                continue
+            add_alias(concrete, alias)
             _upsert_release_index(rel, fam, concrete, generation, adopted_legacy=False)
+            bound[fam] = alias
     else:
         for fam, concrete in created.items():
             _upsert_release_index(rel, fam, concrete, generation, adopted_legacy=False)
@@ -410,10 +435,16 @@ def create_release_indexes(
             "generation": generation,
             "physical": created,
             "bind_aliases": bind_release_aliases,
+            "bound_aliases": bound,
+            "unchanged_aliases": unchanged,
         },
         actor=actor,
     )
-    return created
+    return CreateReleaseIndexesResult(
+        physical=created,
+        bound_aliases=bound,
+        unchanged_aliases=unchanged,
+    )
 
 
 @transaction.atomic

@@ -22,9 +22,19 @@ import {
 } from './utils/expansionUtils';
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
+import { applyLocalEvidenceFilter } from './utils/localEvidence';
+import {
+  anchorInteractionLocusTags,
+  clearNetworkJBrowseHighlight,
+  publishNetworkJBrowseHighlight,
+  type JBrowseHighlightView,
+} from '../../../../utils/gene-viewer/networkJBrowseHighlight';
 import { SourceOverlapDebug } from './SourceOverlapDebug';
 import { NetworkViewThemeProvider } from './NetworkViewThemeProvider';
-import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, DEFAULT_LOCAL_SCORE_TYPE, type StringEvidenceChannel } from './constants';
+import { GeneSetPanel } from './paths/GeneSetPanel';
+import { GENE_SET_MAX } from './paths/geneSetRules';
+import { useGeneSetPaths } from './paths/useGeneSetPaths';
+import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, DEFAULT_LOCAL_SCORE_TYPE, LOCAL_EVIDENCE_CATEGORIES, type StringEvidenceChannel, type LocalEvidenceCategory } from './constants';
 import styles from './NetworkView.module.scss';
 
 interface NetworkViewProps {
@@ -35,6 +45,10 @@ interface NetworkViewProps {
   onFeatureSelect?: (feature: { data: { locus_tag?: string; gene_name?: string; product?: string; uniprot_id?: string; isolate_name?: string; species_acronym?: string } }) => void;
   /** Navigate JBrowse to the gene for this locus tag (current genome). Used for "View in JBrowse" from node popup. */
   onViewInJBrowse?: (locusTag: string) => void;
+  /** Load this gene's interactions, highlight them in JBrowse, and scroll JBrowse to the gene. */
+  onSelectAnchor?: (locusTag: string) => void;
+  /** Live JBrowse session, used to repaint gene colors for the anchor and hover. */
+  viewState?: JBrowseHighlightView | null;
 }
 
 /**
@@ -51,6 +65,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   selectedLocusTag,
   setLoading,
   onViewInJBrowse,
+  onSelectAnchor,
+  viewState,
 }) => {
   const { isAuthenticated } = useAuth();
   const [scoreType, setScoreType] = useState<string>('consensus_score');
@@ -67,6 +83,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   );
   const [stringEvidenceChannels, setStringEvidenceChannels] = useState<StringEvidenceChannel[]>(
     STRING_EVIDENCE_CHANNELS.map((c) => c.value)
+  );
+  const [localEvidenceCategories, setLocalEvidenceCategories] = useState<LocalEvidenceCategory[]>(
+    LOCAL_EVIDENCE_CATEGORIES.map((category) => category.value)
   );
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
   const [maxOrthologsPerNode, setMaxOrthologsPerNode] = useState<number>(
@@ -565,6 +584,79 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     };
   }, [baseNetwork, orthologMap, showOrthologs, maxOrthologsPerNode, expansionState, dataSource]);
 
+  const focalNodeId = expansionState.path.nodes[0]?.nodeId ?? selectedLocusTag ?? null;
+  const { nodes: visibleNodes, edges: visibleEdges } = useMemo(
+    () => applyLocalEvidenceFilter(enrichedNodes, enrichedEdges, localEvidenceCategories, focalNodeId),
+    [enrichedNodes, enrichedEdges, localEvidenceCategories, focalNodeId],
+  );
+  const interactionLocusTags = useMemo(
+    () => anchorInteractionLocusTags(visibleNodes, visibleEdges, focalNodeId),
+    [visibleNodes, visibleEdges, focalNodeId],
+  );
+  const anchorLocusTag = useMemo(() => {
+    const anchor = visibleNodes.find((node) => node.id === focalNodeId || node.locus_tag === focalNodeId);
+    return anchor?.locus_tag || selectedLocusTag || null;
+  }, [visibleNodes, focalNodeId, selectedLocusTag]);
+  const [hoveredLocusTag, setHoveredLocusTag] = useState<string | null>(null);
+  const viewStateRef = useRef(viewState);
+  viewStateRef.current = viewState;
+
+  const handleNodeHover = useCallback((locusTag: string | null) => {
+    setHoveredLocusTag((current) => (current === locusTag ? current : locusTag));
+  }, []);
+
+  useEffect(() => {
+    setHoveredLocusTag(null);
+  }, [selectedLocusTag]);
+
+  useEffect(() => {
+    if (!hoveredLocusTag) return;
+    const stillVisible = visibleNodes.some((node) => node.locus_tag === hoveredLocusTag);
+    if (!stillVisible) setHoveredLocusTag(null);
+  }, [visibleNodes, hoveredLocusTag]);
+
+  useEffect(() => {
+    publishNetworkJBrowseHighlight(
+      { interactionLocusTags, hoverLocusTag: hoveredLocusTag },
+      viewState,
+    );
+  }, [interactionLocusTags, hoveredLocusTag, viewState]);
+
+  useEffect(() => () => {
+    clearNetworkJBrowseHighlight(viewStateRef.current);
+  }, []);
+
+  const geneSet = useGeneSetPaths({
+    speciesAcronym: speciesScope === 'all' ? undefined : speciesAcronym,
+    scoreType,
+    // Top interactors ranks partners at any score. The score slider is unused in that mode.
+    scoreThreshold: limitMode === 'topN' ? 0 : scoreThreshold,
+  });
+
+  // Editing the gene set leaves the drawing alone. Filters and a new anchor
+  // return to the neighborhood; Find paths is what replaces it.
+  const pathFilterKey = [
+    selectedLocusTag,
+    scoreType,
+    scoreThreshold,
+    limitMode,
+    topN,
+    speciesScope,
+    dataSource,
+    showOrthologs,
+    maxOrthologsPerNode,
+    stringNetworkType,
+    stringRequiredScore,
+    stringEvidenceChannels.join(','),
+    localEvidenceCategories.join(','),
+  ].join('|');
+  const pathFilterKeyRef = useRef(pathFilterKey);
+  useEffect(() => {
+    if (pathFilterKeyRef.current === pathFilterKey) return;
+    pathFilterKeyRef.current = pathFilterKey;
+    geneSet.backToNetwork();
+  }, [pathFilterKey, geneSet.backToNetwork]);
+
   // Stable expansion path so NetworkGraph does not re-create on every render (e.g. when only selectedNode changes)
   const expansionPath = useMemo(
     () => expansionState.path.nodes.map(p => ({ nodeId: p.nodeId, level: p.level })),
@@ -641,6 +733,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     setStringNetworkType('physical');
     setStringRequiredScore(NETWORK_VIEW_CONSTANTS.STRING_REQUIRED_SCORE.DEFAULT);
     setStringEvidenceChannels(STRING_EVIDENCE_CHANNELS.map((c) => c.value));
+    setLocalEvidenceCategories(LOCAL_EVIDENCE_CATEGORIES.map((category) => category.value));
     setShowOrthologs(false);
     setMaxOrthologsPerNode(NETWORK_VIEW_CONSTANTS.ORTHOLOGS_PER_NODE.DEFAULT);
     setSelectedNode(null);
@@ -858,10 +951,15 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     );
   }
 
+  const displayNodes = geneSet.pathGraph?.nodes ?? visibleNodes;
+  const displayEdges = geneSet.pathGraph?.edges ?? visibleEdges;
+  const showingPaths = Boolean(geneSet.pathGraph);
+
   return (
     <NetworkViewThemeProvider>
     <div className={styles.networkView}>
       <div className={styles.leftPane}>
+        <GeneSetPanel geneSet={geneSet} />
         <InteractionFilters
           dataSource={dataSource}
           scoreType={scoreType}
@@ -874,6 +972,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           stringNetworkType={stringNetworkType}
           stringRequiredScore={stringRequiredScore}
           stringEvidenceChannels={stringEvidenceChannels}
+          localEvidenceCategories={localEvidenceCategories}
           availableScoreTypes={availableScoreTypes}
           onDataSourceChange={setDataSource}
           onScoreTypeChange={handleScoreTypeChange}
@@ -886,6 +985,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           onStringNetworkTypeChange={setStringNetworkType}
           onStringRequiredScoreChange={setStringRequiredScore}
           onStringEvidenceChannelsChange={setStringEvidenceChannels}
+          onLocalEvidenceCategoriesChange={setLocalEvidenceCategories}
           onResetView={handleResetView}
         />
       </div>
@@ -899,29 +999,30 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       )}
 
       {/* Loading State */}
-      {(loading || stringLoading) && !hasData && !(error || stringError) && (
+      {(loading || stringLoading) && !hasData && !showingPaths && !(error || stringError) && (
         <div className={styles.networkViewLoading}>
           <p>Loading network data...</p>
         </div>
       )}
 
       {/* Empty State */}
-      {!loading && !stringLoading && !(error || stringError) && !hasData && <EmptyState />}
+      {!loading && !stringLoading && !(error || stringError) && !hasData && !showingPaths && <EmptyState />}
 
       {/* Network Stats (use enriched counts so expansion increases node/edge count) */}
-      {hasData && (
+      {(hasData || showingPaths) && (
         <NetworkStats
           properties={networkProperties ?? baseNetwork?.properties ?? null}
-          nodeCount={enrichedNodes.length}
-          edgeCount={enrichedEdges.length}
-          showOrthologs={showOrthologs}
+          nodeCount={displayNodes.length}
+          edgeCount={displayEdges.length}
+          showOrthologs={showingPaths ? false : showOrthologs}
           dataSource={dataSource}
           showStringEvidenceLegend={false}
+          anchorLocusTag={anchorLocusTag}
         />
       )}
 
       {/* Source overlap debug – verify node overlap when both sources selected */}
-      {hasData && dataSource === 'both' && networkData?.nodes && stringNetwork?.nodes && (
+      {hasData && !showingPaths && dataSource === 'both' && networkData?.nodes && stringNetwork?.nodes && (
         <SourceOverlapDebug
           localNodes={networkData.nodes}
           stringNodes={stringNetwork.nodes}
@@ -929,7 +1030,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       )}
 
       {/* Expansion Breadcrumb */}
-      {expansionState.path.nodes.length > 0 && (
+      {expansionState.path.nodes.length > 0 && !showingPaths && (
         <ExpansionBreadcrumb
           expansionState={expansionState}
           onNavigateToLevel={(level) => {
@@ -946,7 +1047,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       )}
 
       {/* Export Controls */}
-      {expansionState.path.nodes.length > 0 && (
+      {expansionState.path.nodes.length > 0 && !showingPaths && (
         <div className={styles.exportControls}>
           <button
             className={styles.exportButton}
@@ -975,17 +1076,18 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       )}
 
       {/* Network Visualization */}
-      {hasData && !(error || stringError) && (
+      {((hasData && !(error || stringError)) || showingPaths) && (
         <div className={styles.networkVisualization}>
           <NetworkGraph
             ref={graphRef}
-            nodes={enrichedNodes}
-            edges={enrichedEdges}
-            showOrthologs={showOrthologs}
+            nodes={displayNodes}
+            edges={displayEdges}
+            showOrthologs={showingPaths ? false : showOrthologs}
             currentExpansionLevel={expansionState.path.currentLevel}
             expansionPath={expansionPath}
-            focalNodeId={expansionState.path.nodes[0]?.nodeId ?? selectedLocusTag ?? null}
+            focalNodeId={focalNodeId}
             onNodeClick={handleNodeClick}
+            onNodeHover={handleNodeHover}
             onEdgeClick={handleEdgeClick}
             selectedNode={selectedNode}
             layoutRevision={layoutRevision}
@@ -1001,15 +1103,25 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           x={popupNode.x}
           y={popupNode.y}
           expansionState={expansionState}
-          interactions={enrichedEdges.filter(e => 
+          interactions={visibleEdges.filter(e => 
             e.source === popupNode.node.id || e.target === popupNode.node.id
           )}
-          connectedNodes={new Map(enrichedNodes.map(n => [n.id, n]))}
+          connectedNodes={new Map(visibleNodes.map(n => [n.id, n]))}
           isOrthologNode={(popupNode.node as PPINetworkNode & { nodeType?: string }).nodeType === 'ortholog'}
           onClose={() => setPopupNode(null)}
           onExpand={handleExpandNode}
           isExpanding={expandingNodeId === popupNode.node.id}
           onViewInJBrowse={onViewInJBrowse}
+          onSelectAnchor={onSelectAnchor}
+          onAddToGeneSet={geneSet.addGene}
+          geneSetFull={geneSet.genes.length >= GENE_SET_MAX}
+          geneSetIncludesLocus={Boolean(
+            popupNode.node.locus_tag && geneSet.genes.includes(popupNode.node.locus_tag)
+          )}
+          isAnchor={Boolean(
+            anchorLocusTag &&
+            (popupNode.node.locus_tag === anchorLocusTag || popupNode.node.id === anchorLocusTag)
+          )}
         />
       )}
 
@@ -1018,8 +1130,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         <EdgeInfoPopup
           key={`${popupEdge.edge.source}-${popupEdge.edge.target}-${popupEdge.x}-${popupEdge.y}`}
           edge={popupEdge.edge}
-          sourceNode={enrichedNodes.find(n => n.id === popupEdge.edge.source)}
-          targetNode={enrichedNodes.find(n => n.id === popupEdge.edge.target)}
+          sourceNode={visibleNodes.find(n => n.id === popupEdge.edge.source)}
+          targetNode={visibleNodes.find(n => n.id === popupEdge.edge.target)}
           x={popupEdge.x}
           y={popupEdge.y}
           onClose={() => setPopupEdge(null)}

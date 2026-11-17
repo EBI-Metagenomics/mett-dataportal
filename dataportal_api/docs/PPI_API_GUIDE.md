@@ -17,9 +17,10 @@ This document explains the four PPI (Protein–Protein Interaction) endpoints an
 
 ## 1. `/ppi/neighborhood`
 
-- **Query:** `locus_tag` (or `protein_id`), `n` (1–50), optional `species_acronym`, optional `score_type` (default `ds_score`), optional `score_threshold` (default 0).
+- **Query:** `locus_tag` (or `protein_id`), `n` (1–50), optional `species_acronym`, optional `score_type` (default `consensus_score`), optional `score_threshold` (default 0).
 - **Logic:** Resolves locus → protein_id. Only interactions with **score ≥ score_threshold** (for the chosen **score_type**) are considered. Among those, the graph is built with edge weight = that score; **Dijkstra** (distance = 1/score) picks the **top N** nearest neighbors. So “top N” = top N by the chosen score, among interactions above the threshold.
-- **Use when:** You want “show me this gene and its **N closest** interactors by [score type], above [threshold]” (e.g. “Top 10 by ds_score above 0.5” in the UI).
+- **Use when:** You want “show me this gene and its **N closest** interactors by [score type], above [threshold]” (e.g. “Top 10 by consensus_score” in the UI).
+- **PPI v4 scores:** `consensus_score` (default edge weight), `raw_consensus_score`, and category scores `q_ppi`, `q_chemical_genetic`, `q_coexpression`, `q_operons`, `q_metabolic`. Category presence filters are `has_ppi`, `has_chemical_genetic`, `has_coexpression`, `has_operons`, and `has_metabolic`. Edges also carry `n_evidence_types`, `n_networks_total`, and per-category network counts. Source-specific PPI-v1 columns (for example `Score_PPI-DsScore`) are not imported or returned.
 
 ---
 

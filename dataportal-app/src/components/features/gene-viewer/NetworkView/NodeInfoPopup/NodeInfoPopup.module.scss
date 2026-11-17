@@ -133,6 +133,17 @@
   }
 }
 
+.anchorBadge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background-color: #7c3aed;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
 .expandedBadge {
   display: inline-block;
   padding: 0.125rem 0.5rem;
@@ -153,6 +164,46 @@
   border-top: 1px solid #eee;
   background-color: #f9f9f9;
   border-radius: 0 0 8px 8px;
+}
+
+.geneSetButton {
+  padding: 0.5rem 1rem;
+  background-color: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    background-color: #ddd6fe;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.anchorButton {
+  padding: 0.5rem 1rem;
+  background-color: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #6d28d9;
+  }
+
+  &:active {
+    background-color: #5b21b6;
+  }
 }
 
 .viewInJBrowseButton {

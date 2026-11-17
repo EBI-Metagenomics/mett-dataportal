@@ -1,0 +1,160 @@
+@use '../_networkViewTheme' as theme;
+
+.panel {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background-color: theme.$network-ui-bg-subtle;
+  border: 1px solid theme.$network-ui-border;
+  border-radius: theme.$network-radius;
+}
+
+.title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: theme.$network-ui-text;
+}
+
+.hint,
+.partial,
+.legend {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: theme.$network-ui-text-muted;
+  line-height: 1.35;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.35rem 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 0.72rem;
+
+  button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 0 0.15rem;
+  }
+}
+
+.addRow {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid theme.$network-ui-border;
+    border-radius: theme.$network-radius;
+    font-size: 0.8rem;
+  }
+
+  button {
+    padding: 0.35rem 0.6rem;
+    border: 1px solid theme.$network-ui-border;
+    border-radius: theme.$network-radius;
+    background: white;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.findButton,
+.backButton,
+.notice button {
+  padding: 0.4rem 0.7rem;
+  border: 0;
+  border-radius: theme.$network-radius;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.findButton {
+  background: #7c3aed;
+  color: white;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.backButton {
+  background: theme.$network-ui-primary;
+  color: white;
+  margin-bottom: 0.4rem;
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  color: #b91c1c;
+  font-size: 0.75rem;
+}
+
+.notice {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #fef3c7;
+  border-radius: theme.$network-radius;
+  font-size: 0.75rem;
+
+  p {
+    margin: 0 0 0.35rem;
+  }
+
+  button {
+    background: #92400e;
+    color: white;
+  }
+}
+
+.pathActions {
+  margin-top: 0.6rem;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.seedSwatch,
+.intermediateSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.seedSwatch {
+  background: #2563eb;
+  box-shadow: 0 0 0 2px #1e40af;
+}
+
+.intermediateSwatch {
+  background: #65a30d;
+  box-shadow: 0 0 0 2px #7c3aed;
+}

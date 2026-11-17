@@ -56,5 +56,10 @@ export const VIEWPORT_SYNC_CONSTANTS = {
   GENE_HIGHLIGHT_BACKGROUND: '#dbeafe', // Light blue background for table rows
   GENE_HIGHLIGHT_BORDER: '#2563eb', // Blue border for table rows
   GENE_HIGHLIGHT_BACKGROUND_HOVER: '#bfdbfe', // Slightly darker blue for hover state
+
+  // Network view overlays in JBrowse. Kept apart from the selected-gene blue
+  // and from essentiality colors (red, teal, brown, gray, goldenrod).
+  NETWORK_INTERACTION_HIGHLIGHT_COLOR: '#7c3aed', // Anchor gene's interaction partners
+  NETWORK_HOVER_HIGHLIGHT_COLOR: '#65a30d', // Lime: gene under the network cursor
 } as const;
 
