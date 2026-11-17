@@ -22,9 +22,10 @@ import {
 } from './utils/expansionUtils';
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
+import { applyLocalEvidenceFilter } from './utils/localEvidence';
 import { SourceOverlapDebug } from './SourceOverlapDebug';
 import { NetworkViewThemeProvider } from './NetworkViewThemeProvider';
-import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, DEFAULT_LOCAL_SCORE_TYPE, type StringEvidenceChannel } from './constants';
+import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, DEFAULT_LOCAL_SCORE_TYPE, LOCAL_EVIDENCE_CATEGORIES, type StringEvidenceChannel, type LocalEvidenceCategory } from './constants';
 import styles from './NetworkView.module.scss';
 
 interface NetworkViewProps {
@@ -67,6 +68,9 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   );
   const [stringEvidenceChannels, setStringEvidenceChannels] = useState<StringEvidenceChannel[]>(
     STRING_EVIDENCE_CHANNELS.map((c) => c.value)
+  );
+  const [localEvidenceCategories, setLocalEvidenceCategories] = useState<LocalEvidenceCategory[]>(
+    LOCAL_EVIDENCE_CATEGORIES.map((category) => category.value)
   );
   const [showOrthologs, setShowOrthologs] = useState<boolean>(false);
   const [maxOrthologsPerNode, setMaxOrthologsPerNode] = useState<number>(
@@ -565,6 +569,12 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     };
   }, [baseNetwork, orthologMap, showOrthologs, maxOrthologsPerNode, expansionState, dataSource]);
 
+  const focalNodeId = expansionState.path.nodes[0]?.nodeId ?? selectedLocusTag ?? null;
+  const { nodes: visibleNodes, edges: visibleEdges } = useMemo(
+    () => applyLocalEvidenceFilter(enrichedNodes, enrichedEdges, localEvidenceCategories, focalNodeId),
+    [enrichedNodes, enrichedEdges, localEvidenceCategories, focalNodeId],
+  );
+
   // Stable expansion path so NetworkGraph does not re-create on every render (e.g. when only selectedNode changes)
   const expansionPath = useMemo(
     () => expansionState.path.nodes.map(p => ({ nodeId: p.nodeId, level: p.level })),
@@ -641,6 +651,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     setStringNetworkType('physical');
     setStringRequiredScore(NETWORK_VIEW_CONSTANTS.STRING_REQUIRED_SCORE.DEFAULT);
     setStringEvidenceChannels(STRING_EVIDENCE_CHANNELS.map((c) => c.value));
+    setLocalEvidenceCategories(LOCAL_EVIDENCE_CATEGORIES.map((category) => category.value));
     setShowOrthologs(false);
     setMaxOrthologsPerNode(NETWORK_VIEW_CONSTANTS.ORTHOLOGS_PER_NODE.DEFAULT);
     setSelectedNode(null);
@@ -874,6 +885,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           stringNetworkType={stringNetworkType}
           stringRequiredScore={stringRequiredScore}
           stringEvidenceChannels={stringEvidenceChannels}
+          localEvidenceCategories={localEvidenceCategories}
           availableScoreTypes={availableScoreTypes}
           onDataSourceChange={setDataSource}
           onScoreTypeChange={handleScoreTypeChange}
@@ -886,6 +898,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           onStringNetworkTypeChange={setStringNetworkType}
           onStringRequiredScoreChange={setStringRequiredScore}
           onStringEvidenceChannelsChange={setStringEvidenceChannels}
+          onLocalEvidenceCategoriesChange={setLocalEvidenceCategories}
           onResetView={handleResetView}
         />
       </div>
@@ -912,8 +925,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
       {hasData && (
         <NetworkStats
           properties={networkProperties ?? baseNetwork?.properties ?? null}
-          nodeCount={enrichedNodes.length}
-          edgeCount={enrichedEdges.length}
+          nodeCount={visibleNodes.length}
+          edgeCount={visibleEdges.length}
           showOrthologs={showOrthologs}
           dataSource={dataSource}
           showStringEvidenceLegend={false}
@@ -979,12 +992,12 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         <div className={styles.networkVisualization}>
           <NetworkGraph
             ref={graphRef}
-            nodes={enrichedNodes}
-            edges={enrichedEdges}
+            nodes={visibleNodes}
+            edges={visibleEdges}
             showOrthologs={showOrthologs}
             currentExpansionLevel={expansionState.path.currentLevel}
             expansionPath={expansionPath}
-            focalNodeId={expansionState.path.nodes[0]?.nodeId ?? selectedLocusTag ?? null}
+            focalNodeId={focalNodeId}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
             selectedNode={selectedNode}
@@ -1001,10 +1014,10 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           x={popupNode.x}
           y={popupNode.y}
           expansionState={expansionState}
-          interactions={enrichedEdges.filter(e => 
+          interactions={visibleEdges.filter(e => 
             e.source === popupNode.node.id || e.target === popupNode.node.id
           )}
-          connectedNodes={new Map(enrichedNodes.map(n => [n.id, n]))}
+          connectedNodes={new Map(visibleNodes.map(n => [n.id, n]))}
           isOrthologNode={(popupNode.node as PPINetworkNode & { nodeType?: string }).nodeType === 'ortholog'}
           onClose={() => setPopupNode(null)}
           onExpand={handleExpandNode}
@@ -1018,8 +1031,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
         <EdgeInfoPopup
           key={`${popupEdge.edge.source}-${popupEdge.edge.target}-${popupEdge.x}-${popupEdge.y}`}
           edge={popupEdge.edge}
-          sourceNode={enrichedNodes.find(n => n.id === popupEdge.edge.source)}
-          targetNode={enrichedNodes.find(n => n.id === popupEdge.edge.target)}
+          sourceNode={visibleNodes.find(n => n.id === popupEdge.edge.source)}
+          targetNode={visibleNodes.find(n => n.id === popupEdge.edge.target)}
           x={popupEdge.x}
           y={popupEdge.y}
           onClose={() => setPopupEdge(null)}

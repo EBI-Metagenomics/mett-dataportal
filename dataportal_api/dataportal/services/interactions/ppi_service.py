@@ -23,10 +23,12 @@ from asgiref.sync import sync_to_async
 from dataportal.services.base_service import BaseService
 from dataportal.utils.constants import (
     INDEX_PPI,
-    PPI_VALID_FILTER_FIELDS,
     PPI_SCORE_FIELDS,
-    PPI_EVIDENCE_WEIGHT_FIELDS,
+    PPI_SCORE_ALIASES,
     PPI_EVIDENCE_SCORE_FIELDS,
+    PPI_EVIDENCE_FLAG_FIELDS,
+    PPI_NETWORK_COUNT_FIELDS,
+    PPI_INDEXED_SCORE_FIELDS,
     PPI_DEFAULT_SCORE_TYPE,
 )
 from dataportal.utils.exceptions import ServiceError, ValidationError
@@ -144,7 +146,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         """
         Resolve a locus tag to its STRING protein ID from the PPI index.
         Use as fallback when the feature index has no STRING dbxref for the gene.
-        Prefers interactions with has_string=True.
+        STRING ids come from the import-time UniProt mapping, not from a score column.
         """
         try:
             s = Search(index=self.index_name)
@@ -161,18 +163,13 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                     "protein_b_locus_tag",
                     "string_protein_a_id",
                     "string_protein_b_id",
-                    "has_string",
                 ]
             )
 
             if species_acronym:
                 s = s.filter("term", species_acronym=species_acronym.strip().lower())
 
-            # Prefer interactions with STRING evidence
-            s_has_string = s.filter("term", has_string=True)
-            response = await self._execute_search(s_has_string[:1])
-            if not response.hits:
-                response = await self._execute_search(s[:5])
+            response = await self._execute_search(s[:5])
 
             for hit in response.hits:
                 a_tag = getattr(hit, "protein_a_locus_tag", None) or ""
@@ -262,67 +259,70 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         if include_scores:
             base_fields.extend(
                 [
-                    "consensus_score",
-                    "consensus_rank",
-                    "consensus_avg_rank",
-                    "edge_id",
-                    "interaction_weight",
-                    "n_sources",
-                    "ds_score",
-                    "string_score",
-                    "melt_score",
-                    "dl_score",
-                    "comelt_score",
-                    "perturbation_score",
-                    "abundance_score",
-                    "secondary_score",
-                    "bayesian_score",
-                    "operon_score",
-                    "ecocyc_score",
-                    "tt_score",
-                    *PPI_EVIDENCE_WEIGHT_FIELDS,
-                    "has_xlms",
-                    "has_string",
-                    "has_operon",
-                    "has_ecocyc",
+                    *PPI_INDEXED_SCORE_FIELDS,
+                    *PPI_EVIDENCE_FLAG_FIELDS,
                     "evidence_count",
                 ]
             )
 
         return base_fields
 
-    def _extract_evidence_scores(self, hit) -> Dict[str, float]:
-        """Extract non-zero per-channel evidence scores from an ES hit."""
-        scores: Dict[str, float] = {}
-        for field in PPI_EVIDENCE_SCORE_FIELDS:
+    def _extract_numeric_map(self, hit, fields: List[str], caster) -> Dict[str, Any]:
+        """Extract non-zero numeric fields from an ES hit."""
+        values: Dict[str, Any] = {}
+        for field in fields:
             value = getattr(hit, field, None)
             if value is None:
                 continue
             try:
-                numeric = float(value)
+                numeric = caster(value)
             except (TypeError, ValueError):
                 continue
             if numeric != 0:
-                scores[field] = numeric
-        return scores
+                values[field] = numeric
+        return values
+
+    def _extract_evidence_scores(self, hit) -> Dict[str, float]:
+        """Extract non-zero evidence-category scores from an ES hit."""
+        return self._extract_numeric_map(hit, PPI_EVIDENCE_SCORE_FIELDS, float)
+
+    def _extract_network_counts(self, hit) -> Dict[str, int]:
+        """Extract non-zero per-category network counts from an ES hit."""
+        return self._extract_numeric_map(hit, PPI_NETWORK_COUNT_FIELDS, int)
+
+    def _optional_float(self, hit, field: str) -> Optional[float]:
+        value = getattr(hit, field, None)
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _optional_int(self, hit, field: str) -> Optional[int]:
+        value = getattr(hit, field, None)
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
 
     def _edge_from_hit(self, hit, score_field: str) -> PPINetworkEdgeSchema:
-        """Build a network edge with consensus/selected weight plus evidence details."""
-        score = getattr(hit, score_field, None)
-        try:
-            weight = float(score) if score is not None else None
-        except (TypeError, ValueError):
-            weight = None
-        if weight == 0:
-            weight = None
+        """Build a network edge weighted by the selected v4 score, plus category detail."""
+        weight = self._optional_float(hit, score_field)
 
         return PPINetworkEdgeSchema(
             source=hit.protein_a,
             target=hit.protein_b,
             weight=weight,
             pair_id=getattr(hit, "pair_id", None),
-            n_sources=getattr(hit, "n_sources", None),
+            consensus_score=self._optional_float(hit, "consensus_score"),
+            raw_consensus_score=self._optional_float(hit, "raw_consensus_score"),
+            n_evidence_types=self._optional_int(hit, "n_evidence_types"),
+            n_networks_total=self._optional_int(hit, "n_networks_total"),
             evidence_scores=self._extract_evidence_scores(hit) or None,
+            network_counts=self._extract_network_counts(hit) or None,
         )
 
     @lru_cache(maxsize=50)
@@ -342,29 +342,17 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
         if not score_type:
             raise ValidationError("Score type cannot be empty")
 
-        # If it's already a valid field, use it as-is
-        if score_type in PPI_VALID_FILTER_FIELDS:
-            return score_type
+        normalized = score_type.strip()
+        alias = PPI_SCORE_ALIASES.get(normalized) or PPI_SCORE_ALIASES.get(normalized.lower())
+        if alias:
+            return alias
 
-        # If it ends with _score, check if it's a valid score field
-        if score_type.endswith("_score"):
-            if score_type in PPI_SCORE_FIELDS:
-                return score_type
-            else:
-                raise ValidationError(
-                    f"Invalid score field: {score_type}. Valid score fields: {PPI_SCORE_FIELDS}"
-                )
+        if normalized in PPI_SCORE_FIELDS:
+            return normalized
 
-        # Try to construct the score field name
-        constructed_field = f"{score_type}_score"
-        if constructed_field in PPI_SCORE_FIELDS:
-            return constructed_field
-
-        # If none of the above work, it's invalid
         raise ValidationError(
-            f"Invalid score type: {score_type}. "
-            f"Valid fields are: {PPI_VALID_FILTER_FIELDS}. "
-            f"For score fields, you can use the base name (e.g., 'ds' for 'ds_score') or the full name."
+            f"Invalid score type: {score_type}. Valid score fields: {PPI_SCORE_FIELDS}. "
+            f"Short names such as 'ppi', 'operons', or 'metabolic' are also accepted."
         )
 
     def _build_networkx_graph(self, network_data: PPINetworkSchema) -> nx.Graph:
@@ -478,17 +466,10 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                 if actual_protein_id:
                     s = s.filter("terms", participants=[actual_protein_id])
 
-                if query.has_xlms is not None:
-                    s = s.filter("term", has_xlms=query.has_xlms)
-
-                if query.has_string is not None:
-                    s = s.filter("term", has_string=query.has_string)
-
-                if query.has_operon is not None:
-                    s = s.filter("term", has_operon=query.has_operon)
-
-                if query.has_ecocyc is not None:
-                    s = s.filter("term", has_ecocyc=query.has_ecocyc)
+                for flag in PPI_EVIDENCE_FLAG_FIELDS:
+                    flag_value = getattr(query, flag, None)
+                    if flag_value is not None:
+                        s = s.filter("term", **{flag: flag_value})
 
                 # Score filtering
                 if query.score_type and query.score_threshold is not None:
@@ -818,9 +799,14 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         "protein_b": hit.protein_b,
                         "pair_id": getattr(hit, "pair_id", None),
                         "consensus_score": getattr(hit, "consensus_score", None),
-                        "ds_score": getattr(hit, "ds_score", None),
-                        "string_score": getattr(hit, "string_score", None),
-                        "melt_score": getattr(hit, "melt_score", None),
+                        "raw_consensus_score": getattr(hit, "raw_consensus_score", None),
+                        "q_ppi": getattr(hit, "q_ppi", None),
+                        "q_chemical_genetic": getattr(hit, "q_chemical_genetic", None),
+                        "q_coexpression": getattr(hit, "q_coexpression", None),
+                        "q_operons": getattr(hit, "q_operons", None),
+                        "q_metabolic": getattr(hit, "q_metabolic", None),
+                        "n_evidence_types": getattr(hit, "n_evidence_types", None),
+                        "n_networks_total": getattr(hit, "n_networks_total", None),
                         "protein_a_locus_tag": getattr(hit, "protein_a_locus_tag", None),
                         "protein_a_name": getattr(hit, "protein_a_name", None),
                         "protein_a_product": getattr(hit, "protein_a_product", None),
@@ -828,6 +814,7 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
                         "protein_b_name": getattr(hit, "protein_b_name", None),
                         "protein_b_product": getattr(hit, "protein_b_product", None),
                         "evidence_scores": self._extract_evidence_scores(hit) or None,
+                        "network_counts": self._extract_network_counts(hit) or None,
                     }
                 )
 
@@ -1105,48 +1092,9 @@ class PPIService(BaseService[PPIInteractionSchema, Dict[str, Any]]):
             # STRING DB ids
             "string_protein_a_id": getattr(hit, "string_protein_a_id", None),
             "string_protein_b_id": getattr(hit, "string_protein_b_id", None),
-            # Consensus network
-            "consensus_score": getattr(hit, "consensus_score", None),
-            "consensus_rank": getattr(hit, "consensus_rank", None),
-            "consensus_avg_rank": getattr(hit, "consensus_avg_rank", None),
-            "edge_id": getattr(hit, "edge_id", None),
-            "interaction_weight": getattr(hit, "interaction_weight", None),
-            "n_sources": getattr(hit, "n_sources", None),
-            # Evidence channel weights
-            "weight_coexp": getattr(hit, "weight_coexp", None),
-            "weight_operons_annogesic": getattr(hit, "weight_operons_annogesic", None),
-            "weight_operons_opdetect": getattr(hit, "weight_operons_opdetect", None),
-            "weight_operons_opmapper": getattr(hit, "weight_operons_opmapper", None),
-            "weight_phenocorr_neg": getattr(hit, "weight_phenocorr_neg", None),
-            "weight_phenocorr_pos": getattr(hit, "weight_phenocorr_pos", None),
-            "weight_pmi_gsms": getattr(hit, "weight_pmi_gsms", None),
-            "weight_pmi": getattr(hit, "weight_pmi", None),
-            "weight_ppi_gp_score_neg": getattr(hit, "weight_ppi_gp_score_neg", None),
-            "weight_ppi_gp_score_pos": getattr(hit, "weight_ppi_gp_score_pos", None),
-            "weight_ppi_perturb_score_neg": getattr(hit, "weight_ppi_perturb_score_neg", None),
-            "weight_ppi_perturb_score_pos": getattr(hit, "weight_ppi_perturb_score_pos", None),
-            "weight_ppi_xlms_files": getattr(hit, "weight_ppi_xlms_files", None),
-            "weight_ppi_xlms_peptides": getattr(hit, "weight_ppi_xlms_peptides", None),
-            # Scores
-            "dl_score": getattr(hit, "dl_score", None),
-            "comelt_score": getattr(hit, "comelt_score", None),
-            "perturbation_score": getattr(hit, "perturbation_score", None),
-            "abundance_score": getattr(hit, "abundance_score", None),
-            "melt_score": getattr(hit, "melt_score", None),
-            "secondary_score": getattr(hit, "secondary_score", None),
-            "bayesian_score": getattr(hit, "bayesian_score", None),
-            "string_score": getattr(hit, "string_score", None),
-            "operon_score": getattr(hit, "operon_score", None),
-            "ecocyc_score": getattr(hit, "ecocyc_score", None),
-            "tt_score": getattr(hit, "tt_score", None),
-            "ds_score": getattr(hit, "ds_score", None),
-            # Evidence flags
-            "has_xlms": getattr(hit, "has_xlms", False),
-            "has_string": getattr(hit, "has_string", False),
-            "has_operon": getattr(hit, "has_operon", False),
-            "has_ecocyc": getattr(hit, "has_ecocyc", False),
-            # Metadata
-            "evidence_count": getattr(hit, "evidence_count", 0),
+            **{field: getattr(hit, field, None) for field in PPI_INDEXED_SCORE_FIELDS},
+            **{flag: bool(getattr(hit, flag, False)) for flag in PPI_EVIDENCE_FLAG_FIELDS},
+            "evidence_count": getattr(hit, "evidence_count", 0) or 0,
         }
 
     def _resolve_string_ids_to_locus_tags(

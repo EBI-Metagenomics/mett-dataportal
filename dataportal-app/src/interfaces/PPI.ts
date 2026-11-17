@@ -24,51 +24,32 @@ export interface PPIInteraction {
   protein_b_name?: string | null;
   protein_b_product?: string | null;
   
-  // Consensus network scores
+  // PPI v4 consensus and evidence-category scores
   consensus_score?: number | null;
+  raw_consensus_score?: number | null;
   consensus_rank?: number | null;
-  consensus_avg_rank?: number | null;
   edge_id?: string | null;
-  /** PPI-v1 Score/Weight composite (distinct from consensus_score). */
-  interaction_weight?: number | null;
-  /** Number of evidence sources contributing to the interaction. */
-  n_sources?: number | null;
+  q_ppi?: number | null;
+  q_chemical_genetic?: number | null;
+  q_coexpression?: number | null;
+  q_operons?: number | null;
+  q_metabolic?: number | null;
 
-  // Evidence channel weights (consensus network)
-  weight_coexp?: number | null;
-  weight_operons_annogesic?: number | null;
-  weight_operons_opdetect?: number | null;
-  weight_operons_opmapper?: number | null;
-  weight_phenocorr_neg?: number | null;
-  weight_phenocorr_pos?: number | null;
-  weight_pmi_gsms?: number | null;
-  weight_pmi?: number | null;
-  weight_ppi_gp_score_neg?: number | null;
-  weight_ppi_gp_score_pos?: number | null;
-  weight_ppi_perturb_score_neg?: number | null;
-  weight_ppi_perturb_score_pos?: number | null;
-  weight_ppi_xlms_files?: number | null;
-  weight_ppi_xlms_peptides?: number | null;
+  // Supporting network counts
+  n_evidence_types?: number | null;
+  n_networks_total?: number | null;
+  n_ppi?: number | null;
+  n_chemical_genetic?: number | null;
+  n_coexpression?: number | null;
+  n_operons?: number | null;
+  n_metabolic?: number | null;
 
-  // Scores
-  dl_score?: number | null;
-  comelt_score?: number | null;
-  perturbation_score?: number | null;
-  abundance_score?: number | null;
-  melt_score?: number | null;
-  secondary_score?: number | null;
-  bayesian_score?: number | null;
-  string_score?: number | null;
-  operon_score?: number | null;
-  ecocyc_score?: number | null;
-  tt_score?: number | null;
-  ds_score?: number | null;
-  
-  // Evidence flags
-  has_xlms: boolean;
-  has_string: boolean;
-  has_operon: boolean;
-  has_ecocyc: boolean;
+  // Evidence-category presence
+  has_ppi: boolean;
+  has_chemical_genetic: boolean;
+  has_coexpression: boolean;
+  has_operons: boolean;
+  has_metabolic: boolean;
   
   // Metadata
   evidence_count: number;
@@ -87,8 +68,11 @@ export interface StringScoreBreakdown {
   ncbiTaxonId?: number | string;
 }
 
-/** Per-channel evidence weights from local consensus network (detail panel). */
+/** Non-zero evidence-category scores from the local PPI v4 network. */
 export type LocalEvidenceScores = Record<string, number>;
+
+/** Non-zero per-category network counts (n_ppi, n_operons, and so on). */
+export type LocalNetworkCounts = Record<string, number>;
 
 export interface PPINetworkNode {
   id: string;
@@ -109,16 +93,22 @@ export interface PPINetworkNode {
 export interface PPINetworkEdge {
   source: string;
   target: string;
-  /** Edge weight shown on the graph (typically consensus_score). */
+  /** Edge weight shown on the graph (selected score, default consensus_score). */
   weight?: number;
   score_type?: string;
   /** Canonical interaction pair ID for detail lookups. */
   pair_id?: string;
-  /** Number of evidence sources (PPI-v1 n_sources). */
-  n_sources?: number;
+  consensus_score?: number;
+  raw_consensus_score?: number;
+  /** Number of evidence categories supporting the interaction. */
+  n_evidence_types?: number;
+  /** Total supporting networks across categories. */
+  n_networks_total?: number;
   evidence_types?: string[];
-  /** Per-channel evidence weights for the interaction details panel. */
+  /** Non-zero evidence-category scores for the interaction details panel. */
   evidence_scores?: LocalEvidenceScores;
+  /** Non-zero per-category network counts. */
+  network_counts?: LocalNetworkCounts;
   [key: string]: any;
 }
 

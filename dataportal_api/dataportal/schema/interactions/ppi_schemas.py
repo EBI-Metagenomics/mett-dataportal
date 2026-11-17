@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, validator
 from dataportal.schema.response_schemas import PaginatedResponseSchema, SuccessResponseSchema
 from dataportal.schema.base_schemas import BasePaginationSchema
-from dataportal.utils.constants import PPI_VALID_FILTER_FIELDS
+from dataportal.utils.constants import PPI_SCORE_FIELDS, PPI_VALID_FILTER_FIELDS
 
 
 class PPIInteractionSchema(BaseModel):
@@ -34,49 +34,32 @@ class PPIInteractionSchema(BaseModel):
     string_protein_a_id: Optional[str] = None
     string_protein_b_id: Optional[str] = None
 
-    # Consensus network scores
+    # PPI v4 consensus and evidence-category scores
     consensus_score: Optional[float] = None
+    raw_consensus_score: Optional[float] = None
     consensus_rank: Optional[int] = None
-    consensus_avg_rank: Optional[float] = None
     edge_id: Optional[str] = None
-    interaction_weight: Optional[float] = None
-    n_sources: Optional[int] = None
+    q_ppi: Optional[float] = None
+    q_chemical_genetic: Optional[float] = None
+    q_coexpression: Optional[float] = None
+    q_operons: Optional[float] = None
+    q_metabolic: Optional[float] = None
 
-    # Evidence channel weights (consensus network)
-    weight_coexp: Optional[float] = None
-    weight_operons_annogesic: Optional[float] = None
-    weight_operons_opdetect: Optional[float] = None
-    weight_operons_opmapper: Optional[float] = None
-    weight_phenocorr_neg: Optional[float] = None
-    weight_phenocorr_pos: Optional[float] = None
-    weight_pmi_gsms: Optional[float] = None
-    weight_pmi: Optional[float] = None
-    weight_ppi_gp_score_neg: Optional[float] = None
-    weight_ppi_gp_score_pos: Optional[float] = None
-    weight_ppi_perturb_score_neg: Optional[float] = None
-    weight_ppi_perturb_score_pos: Optional[float] = None
-    weight_ppi_xlms_files: Optional[float] = None
-    weight_ppi_xlms_peptides: Optional[float] = None
+    # Supporting network counts
+    n_evidence_types: Optional[int] = None
+    n_networks_total: Optional[int] = None
+    n_ppi: Optional[int] = None
+    n_chemical_genetic: Optional[int] = None
+    n_coexpression: Optional[int] = None
+    n_operons: Optional[int] = None
+    n_metabolic: Optional[int] = None
 
-    # Scores
-    dl_score: Optional[float] = None
-    comelt_score: Optional[float] = None
-    perturbation_score: Optional[float] = None
-    abundance_score: Optional[float] = None
-    melt_score: Optional[float] = None
-    secondary_score: Optional[float] = None
-    bayesian_score: Optional[float] = None
-    string_score: Optional[float] = None
-    operon_score: Optional[float] = None
-    ecocyc_score: Optional[float] = None
-    tt_score: Optional[float] = None
-    ds_score: Optional[float] = None
-
-    # Evidence flags
-    has_xlms: bool = False
-    has_string: bool = False
-    has_operon: bool = False
-    has_ecocyc: bool = False
+    # Evidence-category presence
+    has_ppi: bool = False
+    has_chemical_genetic: bool = False
+    has_coexpression: bool = False
+    has_operons: bool = False
+    has_metabolic: bool = False
 
     # Metadata
     evidence_count: int = 0
@@ -89,12 +72,22 @@ class PPISearchQuerySchema(BaseModel):
     isolate_name: Optional[str] = Field(
         None, description="Isolate name (e.g., 'BU_ATCC8492', 'PV_ATCC8482')"
     )
-    score_type: Optional[str] = Field(None, description="Score type to filter by")
+    score_type: Optional[str] = Field(
+        None,
+        description=(
+            "Score used to filter interactions. One of consensus_score, raw_consensus_score, "
+            "q_ppi, q_chemical_genetic, q_coexpression, q_operons, q_metabolic "
+            "(short aliases such as ppi or operons are accepted)."
+        ),
+    )
     score_threshold: Optional[float] = Field(None, description="Minimum score threshold")
-    has_xlms: Optional[bool] = Field(None, description="Filter by XL-MS evidence")
-    has_string: Optional[bool] = Field(None, description="Filter by STRING evidence")
-    has_operon: Optional[bool] = Field(None, description="Filter by operon evidence")
-    has_ecocyc: Optional[bool] = Field(None, description="Filter by EcoCyc evidence")
+    has_ppi: Optional[bool] = Field(None, description="Filter by PPI-category evidence")
+    has_chemical_genetic: Optional[bool] = Field(
+        None, description="Filter by chemical-genetic evidence"
+    )
+    has_coexpression: Optional[bool] = Field(None, description="Filter by co-expression evidence")
+    has_operons: Optional[bool] = Field(None, description="Filter by operon evidence")
+    has_metabolic: Optional[bool] = Field(None, description="Filter by metabolic evidence")
     protein_id: Optional[str] = Field(
         None, description="Filter interactions involving specific protein"
     )
@@ -107,13 +100,7 @@ class PPISearchQuerySchema(BaseModel):
     @validator("score_type")
     def validate_score_type(cls, v):
         if v is not None and v not in PPI_VALID_FILTER_FIELDS:
-            # Check if it's a base name that can be converted to a score field
-            if not v.endswith("_score"):
-                potential_score = f"{v}_score"
-                if potential_score not in PPI_VALID_FILTER_FIELDS:
-                    raise ValueError(
-                        f"Invalid score_type: {v}. Valid options: {PPI_VALID_FILTER_FIELDS}"
-                    )
+            raise ValueError(f"Invalid score_type: {v}. Valid options: {PPI_SCORE_FIELDS}")
         return v
 
     @validator("locus_tag")
@@ -139,13 +126,23 @@ class PPINetworkEdgeSchema(BaseModel):
 
     source: str = Field(..., description="Source node ID")
     target: str = Field(..., description="Target node ID")
-    weight: Optional[float] = Field(None, description="Edge weight (consensus score on graph)")
+    weight: Optional[float] = Field(
+        None, description="Edge weight from the selected score (default: consensus_score)"
+    )
     pair_id: Optional[str] = Field(None, description="Canonical interaction pair ID")
-    n_sources: Optional[int] = Field(
-        None, description="Number of evidence sources contributing to this interaction"
+    consensus_score: Optional[float] = Field(None, description="PPI v4 consensus score")
+    raw_consensus_score: Optional[float] = Field(None, description="Unnormalized consensus score")
+    n_evidence_types: Optional[int] = Field(
+        None, description="Number of evidence categories supporting this interaction"
+    )
+    n_networks_total: Optional[int] = Field(
+        None, description="Total supporting networks across all evidence categories"
     )
     evidence_scores: Optional[Dict[str, float]] = Field(
-        None, description="Per-channel evidence weights (detail panel only)"
+        None, description="Non-zero evidence-category scores (Q_PPI, Q_Operons, and so on)"
+    )
+    network_counts: Optional[Dict[str, int]] = Field(
+        None, description="Non-zero per-category network counts"
     )
 
 
@@ -308,7 +305,7 @@ class PPIScoreTypesResponseSchema(SuccessResponseSchema):
         description=(
             "Available score types and evidence channel metadata. "
             "Example: {'score_types': [...], 'default': 'consensus_score', "
-            "'evidence_channels': {'ds_score': 'Deep learning', ...}}."
+            "'evidence_channels': {'q_ppi': 'PPI', 'q_operons': 'Operons', ...}}."
         ),
     )
 

@@ -53,7 +53,16 @@ export interface PreparedEdge {
         expansionLevel?: number;
         inPath: string;
         pair_id?: string;
+        consensus_score?: number;
+        raw_consensus_score?: number;
+        n_evidence_types?: number;
+        n_networks_total?: number;
         evidence_scores?: Record<string, number>;
+        network_counts?: Record<string, number>;
+        score_type?: string;
+        dataSource?: string;
+        evidence_type?: string;
+        evidence_channel?: string;
     };
 }
 
@@ -169,8 +178,12 @@ export const prepareEdges = (
             evidence_type?: string;
             evidence_channel?: string;
             pair_id?: string;
-            n_sources?: number;
+            consensus_score?: number;
+            raw_consensus_score?: number;
+            n_evidence_types?: number;
+            n_networks_total?: number;
             evidence_scores?: Record<string, number>;
+            network_counts?: Record<string, number>;
             score_type?: string;
         };
 
@@ -186,8 +199,8 @@ export const prepareEdges = (
                 id: edgeId,
                 source: edge.source,
                 target: edge.target,
-                // Graph uses only this weight (typically consensus_score from API)
-                weight: edge.weight ?? 1,
+                // Selected score. Zero stays zero so a missing category is not drawn as a strong edge.
+                weight: edge.weight ?? 0,
                 edgeType: edgeData.edgeType || 'ppi',
                 orthology_type: edgeData.orthology_type,
                 expansionLevel: edgeData.expansionLevel,
@@ -195,8 +208,12 @@ export const prepareEdges = (
                 evidence_type: edgeData.evidence_type,
                 evidence_channel: edgeData.evidence_channel,
                 pair_id: edgeData.pair_id,
-                n_sources: edgeData.n_sources,
+                consensus_score: edgeData.consensus_score,
+                raw_consensus_score: edgeData.raw_consensus_score,
+                n_evidence_types: edgeData.n_evidence_types,
+                n_networks_total: edgeData.n_networks_total,
                 evidence_scores: edgeData.evidence_scores,
+                network_counts: edgeData.network_counts,
                 score_type: edgeData.score_type,
                 inPath: edgeInPath ? 'true' : 'false',
             },

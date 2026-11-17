@@ -2,6 +2,22 @@ import { ExpansionState } from '../types/expansion';
 import { PPINetworkNode, PPINetworkEdge } from '../../../../../interfaces/PPI';
 import cytoscape from 'cytoscape';
 
+function edgeExportRecord(edge: PPINetworkEdge) {
+  return {
+    source: edge.source,
+    target: edge.target,
+    weight: edge.weight ?? null,
+    scoreType: edge.score_type ?? null,
+    pairId: edge.pair_id ?? null,
+    consensusScore: edge.consensus_score ?? null,
+    rawConsensusScore: edge.raw_consensus_score ?? null,
+    nEvidenceTypes: edge.n_evidence_types ?? null,
+    nNetworksTotal: edge.n_networks_total ?? null,
+    evidenceScores: edge.evidence_scores ?? null,
+    networkCounts: edge.network_counts ?? null,
+  };
+}
+
 /**
  * Export expansion path as JSON
  */
@@ -26,6 +42,8 @@ export const exportExpansionPathJSON = (
     totalEdges: expansionState.allExpandedEdges.length,
     originalNodeCount: originalNodes.length,
     originalEdgeCount: originalEdges.length,
+    edges: originalEdges.map(edgeExportRecord),
+    expandedEdges: expansionState.allExpandedEdges.map(edgeExportRecord),
     exportedAt: new Date().toISOString(),
   };
 

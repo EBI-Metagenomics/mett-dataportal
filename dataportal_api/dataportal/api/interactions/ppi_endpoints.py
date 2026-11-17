@@ -108,8 +108,8 @@ async def get_ppi_data_sources(request):
     response=PPIInteractionDetailResponseSchema,
     summary="Get PPI interaction by pair ID",
     description=(
-        "Fetch a single protein-protein interaction including consensus score "
-        "and all evidence-channel weights for the interaction details panel."
+        "Fetch a single protein-protein interaction including the consensus score, "
+        "evidence-category scores, and supporting network counts."
     ),
     auth=RoleBasedJWTAuth(required_roles=[APIRoles.PPI]),
 )
@@ -157,10 +157,11 @@ async def search_ppi_interactions(request, query: PPISearchQuerySchema = Query(.
             query.species_acronym,
             query.isolate_name,
             query.score_type,
-            query.has_xlms,
-            query.has_string,
-            query.has_operon,
-            query.has_ecocyc,
+            query.has_ppi,
+            query.has_chemical_genetic,
+            query.has_coexpression,
+            query.has_operons,
+            query.has_metabolic,
         ]
     )
 
