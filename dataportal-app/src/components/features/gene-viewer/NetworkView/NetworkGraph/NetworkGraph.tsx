@@ -236,7 +236,13 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                 const hasExpansionLevels = currentNodes.some(
                     (node) => ((node as { expansionLevel?: number }).expansionLevel ?? 0) > 0
                 );
-                const preparedNodes = prepareNodes(currentNodes, pathNodeIdsRef.current, new Map(), hasExpansionLevels);
+                const preparedNodes = prepareNodes(
+                    currentNodes,
+                    pathNodeIdsRef.current,
+                    new Map(),
+                    hasExpansionLevels,
+                    focalNodeIdRef.current,
+                );
                 const preparedEdges = prepareEdges(currentEdges, pathNodeIdsRef.current);
                 const isReset = layoutRevision > 0 && layoutRevision !== prevLayoutRevisionRef.current;
                 prevLayoutRevisionRef.current = layoutRevision;
@@ -304,7 +310,17 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                 toAddNodes.length > 0 ||
                 toAddEdges.length > 0;
 
+            const markAnchor = () => {
+                const focal = focalNodeId ? String(focalNodeId) : '';
+                cy.nodes().forEach((node) => {
+                    const locus = node.data('locus_tag');
+                    const isAnchor = Boolean(focal && (node.id() === focal || locus === focal));
+                    node.data('isAnchor', isAnchor ? 'true' : 'false');
+                });
+            };
+
             if (!changed) {
+                markAnchor();
                 cy.style(cyStyles as unknown as cytoscape.StylesheetJson);
                 cy.trigger('zoom');
                 return;
@@ -319,11 +335,18 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                 const hasExpansionLevels = nodes.some(
                     (node) => ((node as { expansionLevel?: number }).expansionLevel ?? 0) > 0
                 );
-                const preparedNewNodes = prepareNodes(toAddNodes, pathNodeIds, new Map(), hasExpansionLevels);
+                const preparedNewNodes = prepareNodes(
+                    toAddNodes,
+                    pathNodeIds,
+                    new Map(),
+                    hasExpansionLevels,
+                    focalNodeId,
+                );
                 const preparedNewEdges = prepareEdges(toAddEdges, pathNodeIds);
                 cy.add([...preparedNewNodes, ...preparedNewEdges]);
                 seedNewNodePositions(cy, toAddNodes.map((n) => n.id), existingIds);
             }
+            markAnchor();
             cy.style(cyStyles as unknown as cytoscape.StylesheetJson);
             cy.trigger('zoom');
 

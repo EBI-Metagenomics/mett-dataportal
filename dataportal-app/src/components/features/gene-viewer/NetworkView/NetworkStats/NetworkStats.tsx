@@ -125,36 +125,32 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({
             </div>
           )
         )}
-        {dataSource === 'local' && (
-          <div className={styles.legendItem}>
-            <span className={`${styles.legendColor} ${styles.legendColorPPI}`}></span>
-            <span>PPI Interaction</span>
-          </div>
-        )}
         {anchorLocusTag && (
           <>
             <div className={styles.legendItem}>
               <span
                 className={styles.legendColor}
-                style={{ backgroundColor: VIEWPORT_SYNC_CONSTANTS.NETWORK_INTERACTION_HIGHLIGHT_COLOR }}
+                style={{
+                  backgroundColor: VIEWPORT_SYNC_CONSTANTS.GENE_HIGHLIGHT_COLOR,
+                  borderColor: '#1e40af',
+                }}
               />
-              <span>JBrowse interactions</span>
+              <span>Anchor</span>
             </div>
             <div className={styles.legendItem}>
               <span
                 className={styles.legendColor}
-                style={{ backgroundColor: VIEWPORT_SYNC_CONSTANTS.NETWORK_HOVER_HIGHLIGHT_COLOR }}
+                style={{
+                  backgroundColor: VIEWPORT_SYNC_CONSTANTS.NETWORK_HOVER_HIGHLIGHT_COLOR,
+                  border: `3px solid ${VIEWPORT_SYNC_CONSTANTS.NETWORK_INTERACTION_HIGHLIGHT_COLOR}`,
+                }}
               />
-              <span>JBrowse hover</span>
+              <span>Other genes</span>
             </div>
           </>
         )}
         {showOrthologs && (
           <>
-            <div className={styles.legendItem}>
-              <span className={`${styles.legendColor} ${styles.legendColorPPIWithOrthologs}`}></span>
-              <span>PPI Node with Orthologs</span>
-            </div>
             <div className={styles.legendItem}>
               <span className={`${styles.legendColor} ${styles.legendColorOrtholog}`}></span>
               <span>Ortholog Node</span>

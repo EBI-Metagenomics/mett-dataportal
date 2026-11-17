@@ -35,6 +35,7 @@ from dataportal.api.interactions import (
     operon_router,
 )
 from dataportal.api.external.string_network_endpoints import register_string_network_routes
+from dataportal.api.interactions.ppi_path_endpoints import register_ppi_path_routes
 
 from pyhmmer_search.results.api import pyhmmer_router_result
 from pyhmmer_search.search.api import pyhmmer_router_search
@@ -242,6 +243,7 @@ api.add_router(URL_PREFIX_METADATA, metadata_router)
 api.add_router(URL_PREFIX_RELEASES, release_router)
 api.add_router(URL_PREFIX_DRUGS, drug_router)
 register_string_network_routes(ppi_router)
+register_ppi_path_routes(ppi_router)
 api.add_router(URL_PREFIX_PPI, ppi_router)
 api.add_router(URL_PREFIX_TTP, ttp_router)
 api.add_router(URL_PREFIX_FITNESS_CORRELATION, fitness_correlation_router)

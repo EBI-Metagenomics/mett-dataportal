@@ -69,11 +69,18 @@ export interface PreparedEdge {
 /**
  * Prepare nodes for Cytoscape with hierarchical positioning
  */
+const anchorFlag = (id: string, locusTag: string | undefined, focalNodeId?: string | null): string => {
+    if (!focalNodeId) return 'false';
+    const focal = String(focalNodeId);
+    return id === focal || locusTag === focal ? 'true' : 'false';
+};
+
 export const prepareNodes = (
     nodes: NetworkGraphProps['nodes'],
     pathNodeIds: Set<string>,
     existingPositions: Map<string, { x: number; y: number }>,
-    hasExpansionLevels: boolean
+    hasExpansionLevels: boolean,
+    focalNodeId?: string | null,
 ): PreparedNode[] => {
     // Group nodes by expansion level
     const nodesByLevel = new Map<number, Array<typeof nodes[0]>>();
@@ -152,6 +159,7 @@ export const prepareNodes = (
                 expansionLevel: expansionLevel,
                 inPath: inPath ? 'true' : 'false',
                 ...nodeData,
+                isAnchor: anchorFlag(id, locus, focalNodeId),
                 // Keep computed display label last so source `label` cannot overwrite it
                 label: displayLabel,
                 fullLabel,

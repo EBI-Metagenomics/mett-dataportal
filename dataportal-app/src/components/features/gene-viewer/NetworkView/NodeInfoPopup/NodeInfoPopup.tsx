@@ -24,6 +24,10 @@ interface NodeInfoPopupProps {
   onViewInJBrowse?: (locusTag: string) => void;
   /** Load this gene's interactions and scroll JBrowse to it. */
   onSelectAnchor?: (locusTag: string) => void;
+  /** Add this gene to the path-search set. No-op when the set is full or the tag is already present. */
+  onAddToGeneSet?: (locusTag: string) => void;
+  geneSetFull?: boolean;
+  geneSetIncludesLocus?: boolean;
   /** This node is the gene whose interactions are currently loaded. */
   isAnchor?: boolean;
 }
@@ -45,6 +49,9 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
   onViewInJBrowse,
   onSelectAnchor,
   isAnchor = false,
+  onAddToGeneSet,
+  geneSetFull = false,
+  geneSetIncludesLocus = false,
 }) => {
   const [enrichedNode, setEnrichedNode] = useState<PPINetworkNode>(node);
 
@@ -265,8 +272,29 @@ export const NodeInfoPopup: React.FC<NodeInfoPopupProps> = ({
 
         {((onViewInJBrowse && !isOrthologNode && enrichedNode.locus_tag) ||
           (onSelectAnchor && !isOrthologNode && enrichedNode.locus_tag && !isAnchor) ||
+          (onAddToGeneSet && !isOrthologNode && enrichedNode.locus_tag) ||
           (onExpand && !isOrthologNode)) && (
           <div className={styles.popupFooter}>
+            {onAddToGeneSet && !isOrthologNode && enrichedNode.locus_tag && (
+              <button
+                type="button"
+                className={styles.geneSetButton}
+                disabled={geneSetFull || geneSetIncludesLocus}
+                onClick={() => {
+                  onAddToGeneSet(enrichedNode.locus_tag!);
+                  onClose();
+                }}
+                title={
+                  geneSetIncludesLocus
+                    ? 'Already in the gene set'
+                    : geneSetFull
+                      ? 'The gene set already has 5 genes'
+                      : 'Add this gene to the path search set'
+                }
+              >
+                {geneSetIncludesLocus ? 'In gene set' : 'Add to gene set'}
+              </button>
+            )}
             {onSelectAnchor && !isOrthologNode && enrichedNode.locus_tag && !isAnchor && (
               <button
                 type="button"
