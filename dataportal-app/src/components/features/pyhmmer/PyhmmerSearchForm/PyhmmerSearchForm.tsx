@@ -12,8 +12,8 @@ import PyhmmerSearchInput from "./PyhmmerSearchInput";
 import PyhmmerSearchHistory from "./PyhmmerSearchHistory";
 import { ThresholdTypeSelector, CutoffParameters, GapPenalties, InfoPopover, SpeciesFilter } from "./components";
 import { SpeciesOption, SpeciesShortcut } from "./components/SpeciesFilter";
-import {SearchHistoryItem} from '../../../../utils/pyhmmer';
 import {PYHMMER_CONSTANTS, PYHMMER_CUTOFF_HELP, PYHMMER_GAP_PENALTIES_HELP} from '../../../../utils/pyhmmer';
+import {SearchHistoryItem} from '../../../../utils/pyhmmer/types';
 import { usePyhmmerSearchForm } from '../../../../hooks/usePyhmmerSearchForm';
 
 
@@ -109,7 +109,11 @@ const PyhmmerSearchForm: React.FC = () => {
     }, []);
 
     // Helper to poll for job status
-    const pollJobStatus = async (jobId: string, maxAttempts = 60, delay = 2000) => {
+    const pollJobStatus = async (
+        jobId: string,
+        maxAttempts = PYHMMER_CONSTANTS.TIMING.MAX_JOB_POLL_ATTEMPTS,
+        delay = PYHMMER_CONSTANTS.TIMING.JOB_POLL_INTERVAL
+    ) => {
         let attempts = 0;
         console.log(`=== STARTING POLLING FOR JOB ${jobId} ===`);
         console.log(`Max attempts: ${maxAttempts}, Delay: ${delay}ms`);
@@ -120,29 +124,29 @@ const PyhmmerSearchForm: React.FC = () => {
 
             try {
                 const job = await PyhmmerService.getJobDetails(jobId);
+                const jobState = (job.task?.status || job.status || '').toUpperCase();
                 console.log(`Job details received:`, job);
                 console.log(`Job status: ${job.status}`);
                 console.log(`Job task status: ${job.task?.status}`);
                 console.log(`Job task result type: ${typeof job.task?.result}`);
                 console.log(`Job task result length: ${Array.isArray(job.task?.result) ? job.task?.result.length : 'N/A'}`);
 
-                if (job.status === 'SUCCESS' && job.task && Array.isArray(job.task.result)) {
+                if ((jobState === 'SUCCESS' || jobState === 'COMPLETED') && job.task && Array.isArray(job.task.result)) {
                     console.log(`Job ${jobId} completed successfully with ${job.task.result.length} results`);
                     console.log(`First result:`, job.task.result[0]);
                     console.log(`=== POLLING COMPLETED SUCCESSFULLY ===`);
                     return job.task.result;
-                } else if (job.status === 'FAILURE') {
+                } else if (jobState === 'FAILURE' || jobState === 'FAILED') {
                     console.error(`Job ${jobId} failed`);
                     console.error(`Job task result:`, job.task?.result);
                     throw new Error('Job failed');
-                } else if (job.status === 'STARTED' || job.status === 'PENDING') {
-                    console.log(`Job ${jobId} is still running (${job.status}), waiting...`);
-                    // Continue polling
                 } else {
-                    console.log(`Job ${jobId} has unexpected status: ${job.status}`);
-                    console.log(`Full job response:`, job);
+                    console.log(`Job ${jobId} is still running (${jobState || 'unknown'}), waiting...`);
                 }
             } catch (error) {
+                if (error instanceof Error && error.message === 'Job failed') {
+                    throw error;
+                }
                 console.error(`Error polling job ${jobId} (attempt ${attempts}):`, error);
                 if (attempts === maxAttempts) {
                     throw error;
@@ -308,7 +312,8 @@ const PyhmmerSearchForm: React.FC = () => {
         setResults([]);
         try {
             const job = await PyhmmerService.getJobDetails(jobId);
-            if (job.status === 'SUCCESS' && job.task && Array.isArray(job.task.result)) {
+            const jobState = (job.task?.status || job.status || '').toUpperCase();
+            if ((jobState === 'SUCCESS' || jobState === 'COMPLETED') && job.task && Array.isArray(job.task.result)) {
                 setResults(mapResults(job.task.result));
             } else {
                 setError('No results found for this job.');

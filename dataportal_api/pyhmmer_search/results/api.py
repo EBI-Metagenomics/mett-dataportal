@@ -1,6 +1,7 @@
 import gzip
 import json
 import logging
+import time
 import uuid
 
 from django.conf import settings
@@ -32,6 +33,7 @@ from ..constants import (
     FORMAT_FASTA,
     FORMAT_TAB,
     ISOLATE_DB_PREFIX,
+    STATUS_FAILURE,
     STATUS_PENDING,
     STATUS_SUCCESS,
 )
@@ -41,6 +43,10 @@ from ..paths import isolate_database_path, legacy_database_path
 logger = logging.getLogger(__name__)
 
 pyhmmer_router_result = Router(tags=["PyHMMER Results"])
+
+_TERMINAL_TASK_STATES = {STATUS_SUCCESS, STATUS_FAILURE}
+_RESULT_WAIT_SECONDS = 5
+_RESULT_WAIT_INTERVAL = 0.25
 
 
 def job_status_and_results(job):
@@ -86,6 +92,35 @@ def job_status_and_results(job):
         "result": task_result_data if task_status == STATUS_SUCCESS else None,
     }
     return task_status, task_result_data, task
+
+
+def _wait_for_stored_result(job):
+    """Re-read the job row for a few seconds before answering.
+
+    A result request often arrives while the background search still has the
+    job marked STARTED. The search then stores SUCCESS and the hits on that
+    same row. Waiting here returns those hits with the request that is already
+    open.
+    """
+    status, result, task = job_status_and_results(job)
+    if status in _TERMINAL_TASK_STATES:
+        return status, result, task
+
+    logger.info(
+        "PyHMMER job %s is %s; waiting up to %ss for the stored result",
+        job.id,
+        status,
+        _RESULT_WAIT_SECONDS,
+    )
+    deadline = time.monotonic() + _RESULT_WAIT_SECONDS
+    while time.monotonic() < deadline:
+        time.sleep(_RESULT_WAIT_INTERVAL)
+        job.refresh_from_db()
+        status, result, task = job_status_and_results(job)
+        if status in _TERMINAL_TASK_STATES:
+            logger.info("PyHMMER job %s reached %s while waiting", job.id, status)
+            return status, result, task
+    return status, result, task
 
 
 def protein_db_path(job) -> str:
@@ -193,7 +228,7 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         job = get_object_or_404(HmmerJob, id=id)
         logger.info(f"Found job: {job}")
 
-        task_status, task_result_data, task_block = job_status_and_results(job)
+        task_status, task_result_data, task_block = _wait_for_stored_result(job)
         logger.info(f"Final task_status: {task_status}")
         logger.info(f"Final task_result_data type: {type(task_result_data)}")
         logger.info(

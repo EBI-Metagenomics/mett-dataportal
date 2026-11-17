@@ -87,7 +87,9 @@ export const PYHMMER_CONSTANTS = {
         BUTTON_STYLING_TIMEOUT: 10000,
         STYLING_CHECK_INTERVAL: 1000,
         JOB_POLL_INTERVAL: 2000,
-        MAX_JOB_POLL_ATTEMPTS: 30,
+        // PyHMMER searches against the full isolate set often run well past two minutes.
+        // 450 attempts at 2s keeps the search tab open for 15 minutes.
+        MAX_JOB_POLL_ATTEMPTS: 450,
         STATUS_POLL_INTERVAL: 2000,
         RESULTS_POLL_INTERVAL: 1000,
         SEARCH_TIMEOUT: 300000, // 5 minutes

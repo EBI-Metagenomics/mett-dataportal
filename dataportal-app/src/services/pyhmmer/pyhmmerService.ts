@@ -156,7 +156,12 @@ export class PyhmmerService extends BaseService {
     static async getJobDetails(jobId: string): Promise<PyhmmerJobDetailsResponse> {
         try {
             console.log(`PyhmmerService.getJobDetails: Fetching job details for ID: ${jobId}`);
-            const result = await this.getWithRetry<PyhmmerJobDetailsResponse>(`${API_BASE_RESULT}/${jobId}`);
+            // A new query string on every read stops a cached STARTED response
+            // from answering the next poll or a history click.
+            const result = await this.getWithRetry<PyhmmerJobDetailsResponse>(
+                `${API_BASE_RESULT}/${jobId}`,
+                { _t: Date.now() }
+            );
             console.log(`PyhmmerService.getJobDetails: Received response:`, result);
             console.log(`PyhmmerService.getJobDetails: Response status: ${result.status}`);
             console.log(`PyhmmerService.getJobDetails: Task status: ${result.task?.status}`);
@@ -268,7 +273,7 @@ export class PyhmmerService extends BaseService {
                 const jobDetails = await this.getJobDetails(jobId);
                 console.log('PyhmmerService.pollJobStatus: Full jobDetails:', jobDetails);
                 
-                const status = jobDetails.status;
+                const status = jobDetails.task?.status || jobDetails.status;
                 console.log('PyhmmerService.pollJobStatus: Job status:', status);
 
                 // Check for completed status (handle both lowercase and uppercase)
@@ -315,7 +320,14 @@ export class PyhmmerService extends BaseService {
                 attempts++;
             } catch (error) {
                 console.error('PyhmmerService.pollJobStatus: Error polling job status:', error);
-                throw error;
+                if (error instanceof Error && error.message === 'PyHMMER search failed') {
+                    throw error;
+                }
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    throw error;
+                }
+                await new Promise(resolve => setTimeout(resolve, PYHMMER_CONSTANTS.TIMING.JOB_POLL_INTERVAL));
             }
         }
         throw new Error('PyHMMER search timed out');
