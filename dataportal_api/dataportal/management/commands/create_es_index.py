@@ -6,6 +6,7 @@ from dataportal.elasticsearch.names import (
     IndexNameError,
     coerce_family,
     normalize_release,
+    release_alias_name,
 )
 from dataportal.elasticsearch.release_ops import adopt_legacy_indexes, create_release_indexes
 from dataportal.models import (
@@ -169,7 +170,7 @@ class Command(BaseCommand):
                     "(release aliases only; mett-current-* is not switched)."
                 )
             )
-            created = create_release_indexes(
+            result = create_release_indexes(
                 release=release,
                 generation=generation,
                 project=pim,
@@ -178,9 +179,21 @@ class Command(BaseCommand):
                 actor="create_es_index",
             )
             rel = normalize_release(release)
-            for fam, concrete in created.items():
-                self.stdout.write(self.style.SUCCESS(f"  ✓ {concrete}  alias mett-{rel}-{fam}"))
-            self.stdout.write(self.style.SUCCESS(f"\n{len(created)} index(es) created."))
+            for fam, concrete in result.physical.items():
+                alias = result.bound_aliases.get(fam)
+                if alias:
+                    self.stdout.write(self.style.SUCCESS(f"  ✓ {concrete}  alias {alias}"))
+                else:
+                    self.stdout.write(self.style.SUCCESS(f"  ✓ {concrete}"))
+            for fam, current in result.unchanged_aliases.items():
+                targets = ", ".join(current)
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  {release_alias_name(rel, fam)} still points at {targets}; "
+                        "not retargeted"
+                    )
+                )
+            self.stdout.write(self.style.SUCCESS(f"\n{len(result.physical)} index(es) created."))
             return
 
         # Legacy path: unversioned *_index, optional --es-version suffix
