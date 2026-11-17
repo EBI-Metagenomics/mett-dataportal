@@ -26,6 +26,8 @@ export interface NetworkGraphProps {
     /** Node id to place at center (e.g. selected gene in neighborhood view). Enables concentric layout. */
     focalNodeId?: string | null;
     onNodeClick: (node: PPINetworkNode, event?: MouseEvent) => void;
+    /** Locus tag under the cursor, or null when the pointer leaves every node. */
+    onNodeHover?: (locusTag: string | null) => void;
     onEdgeClick?: (edge: PPINetworkEdge & { edgeType?: string; orthology_type?: string; expansionLevel?: number }, event?: MouseEvent) => void;
     selectedNode: PPINetworkNode | null;
     /** Increment to force a full layout + fit (Reset). */

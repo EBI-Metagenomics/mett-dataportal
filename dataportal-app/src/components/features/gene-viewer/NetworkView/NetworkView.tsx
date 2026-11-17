@@ -23,6 +23,12 @@ import {
 import type { ExpansionState } from './utils/expansionUtils';
 import { exportExpansionPathJSON, exportNetworkImage } from './utils/exportUtils';
 import { applyLocalEvidenceFilter } from './utils/localEvidence';
+import {
+  anchorInteractionLocusTags,
+  clearNetworkJBrowseHighlight,
+  publishNetworkJBrowseHighlight,
+  type JBrowseHighlightView,
+} from '../../../../utils/gene-viewer/networkJBrowseHighlight';
 import { SourceOverlapDebug } from './SourceOverlapDebug';
 import { NetworkViewThemeProvider } from './NetworkViewThemeProvider';
 import { NETWORK_VIEW_CONSTANTS, STRING_EVIDENCE_CHANNELS, STRING_EVIDENCE_SCORE_FIELDS, DEFAULT_LOCAL_SCORE_TYPE, LOCAL_EVIDENCE_CATEGORIES, type StringEvidenceChannel, type LocalEvidenceCategory } from './constants';
@@ -36,6 +42,10 @@ interface NetworkViewProps {
   onFeatureSelect?: (feature: { data: { locus_tag?: string; gene_name?: string; product?: string; uniprot_id?: string; isolate_name?: string; species_acronym?: string } }) => void;
   /** Navigate JBrowse to the gene for this locus tag (current genome). Used for "View in JBrowse" from node popup. */
   onViewInJBrowse?: (locusTag: string) => void;
+  /** Load this gene's interactions, highlight them in JBrowse, and scroll JBrowse to the gene. */
+  onSelectAnchor?: (locusTag: string) => void;
+  /** Live JBrowse session, used to repaint gene colors for the anchor and hover. */
+  viewState?: JBrowseHighlightView | null;
 }
 
 /**
@@ -52,6 +62,8 @@ const NetworkView: React.FC<NetworkViewProps> = ({
   selectedLocusTag,
   setLoading,
   onViewInJBrowse,
+  onSelectAnchor,
+  viewState,
 }) => {
   const { isAuthenticated } = useAuth();
   const [scoreType, setScoreType] = useState<string>('consensus_score');
@@ -574,6 +586,42 @@ const NetworkView: React.FC<NetworkViewProps> = ({
     () => applyLocalEvidenceFilter(enrichedNodes, enrichedEdges, localEvidenceCategories, focalNodeId),
     [enrichedNodes, enrichedEdges, localEvidenceCategories, focalNodeId],
   );
+  const interactionLocusTags = useMemo(
+    () => anchorInteractionLocusTags(visibleNodes, visibleEdges, focalNodeId),
+    [visibleNodes, visibleEdges, focalNodeId],
+  );
+  const anchorLocusTag = useMemo(() => {
+    const anchor = visibleNodes.find((node) => node.id === focalNodeId || node.locus_tag === focalNodeId);
+    return anchor?.locus_tag || selectedLocusTag || null;
+  }, [visibleNodes, focalNodeId, selectedLocusTag]);
+  const [hoveredLocusTag, setHoveredLocusTag] = useState<string | null>(null);
+  const viewStateRef = useRef(viewState);
+  viewStateRef.current = viewState;
+
+  const handleNodeHover = useCallback((locusTag: string | null) => {
+    setHoveredLocusTag((current) => (current === locusTag ? current : locusTag));
+  }, []);
+
+  useEffect(() => {
+    setHoveredLocusTag(null);
+  }, [selectedLocusTag]);
+
+  useEffect(() => {
+    if (!hoveredLocusTag) return;
+    const stillVisible = visibleNodes.some((node) => node.locus_tag === hoveredLocusTag);
+    if (!stillVisible) setHoveredLocusTag(null);
+  }, [visibleNodes, hoveredLocusTag]);
+
+  useEffect(() => {
+    publishNetworkJBrowseHighlight(
+      { interactionLocusTags, hoverLocusTag: hoveredLocusTag },
+      viewState,
+    );
+  }, [interactionLocusTags, hoveredLocusTag, viewState]);
+
+  useEffect(() => () => {
+    clearNetworkJBrowseHighlight(viewStateRef.current);
+  }, []);
 
   // Stable expansion path so NetworkGraph does not re-create on every render (e.g. when only selectedNode changes)
   const expansionPath = useMemo(
@@ -930,6 +978,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           showOrthologs={showOrthologs}
           dataSource={dataSource}
           showStringEvidenceLegend={false}
+          anchorLocusTag={anchorLocusTag}
         />
       )}
 
@@ -999,6 +1048,7 @@ const NetworkView: React.FC<NetworkViewProps> = ({
             expansionPath={expansionPath}
             focalNodeId={focalNodeId}
             onNodeClick={handleNodeClick}
+            onNodeHover={handleNodeHover}
             onEdgeClick={handleEdgeClick}
             selectedNode={selectedNode}
             layoutRevision={layoutRevision}
@@ -1023,6 +1073,11 @@ const NetworkView: React.FC<NetworkViewProps> = ({
           onExpand={handleExpandNode}
           isExpanding={expandingNodeId === popupNode.node.id}
           onViewInJBrowse={onViewInJBrowse}
+          onSelectAnchor={onSelectAnchor}
+          isAnchor={Boolean(
+            anchorLocusTag &&
+            (popupNode.node.locus_tag === anchorLocusTag || popupNode.node.id === anchorLocusTag)
+          )}
         />
       )}
 

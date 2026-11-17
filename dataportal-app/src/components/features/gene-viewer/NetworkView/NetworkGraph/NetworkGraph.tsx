@@ -57,7 +57,7 @@ const seedNewNodePositions = (
  * NetworkGraph component - Cytoscape.js graph visualization
  */
 export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
-    ({nodes, edges, showOrthologs, currentExpansionLevel, expansionPath = [], focalNodeId, onNodeClick, onEdgeClick, selectedNode, layoutRevision = 0}, ref) => {
+    ({nodes, edges, showOrthologs, currentExpansionLevel, expansionPath = [], focalNodeId, onNodeClick, onNodeHover, onEdgeClick, selectedNode, layoutRevision = 0}, ref) => {
         const pathNodeIds = useMemo(() => {
             return new Set(expansionPath.map(p => p.nodeId));
         }, [expansionPath]);
@@ -74,7 +74,9 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         const focalNodeIdRef = useRef(focalNodeId);
         const showOrthologsRef = useRef(showOrthologs);
         const onNodeClickRef = useRef(onNodeClick);
+        const onNodeHoverRef = useRef(onNodeHover);
         const onEdgeClickRef = useRef(onEdgeClick);
+        const hoveredNodeIdRef = useRef<string | null>(null);
         const cyStylesRef = useRef<cytoscape.StylesheetJson | null>(null);
 
         nodesRef.current = nodes;
@@ -83,6 +85,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         focalNodeIdRef.current = focalNodeId;
         showOrthologsRef.current = showOrthologs;
         onNodeClickRef.current = onNodeClick;
+        onNodeHoverRef.current = onNodeHover;
         onEdgeClickRef.current = onEdgeClick;
 
         const scoreRange = useMemo(() => {
@@ -134,6 +137,23 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         }), [relayout]);
 
         const bindHandlers = (cy: cytoscape.Core) => {
+            cy.on('mouseover', 'node', (event: cytoscape.EventObject) => {
+                const hovered = event.target as cytoscape.NodeSingular;
+                const nodeData = hovered.data() as { id: string; locus_tag?: string };
+                hoveredNodeIdRef.current = nodeData.id;
+                const locusTag = nodeData.locus_tag?.trim()
+                    || nodesRef.current.find((node) => node.id === nodeData.id)?.locus_tag?.trim()
+                    || null;
+                onNodeHoverRef.current?.(locusTag);
+            });
+
+            cy.on('mouseout', 'node', (event: cytoscape.EventObject) => {
+                const left = event.target as cytoscape.NodeSingular;
+                if (hoveredNodeIdRef.current !== left.id()) return;
+                hoveredNodeIdRef.current = null;
+                onNodeHoverRef.current?.(null);
+            });
+
             cy.on('tap', 'node', (event: cytoscape.EventObject) => {
                 const tapped = event.target as cytoscape.NodeSingular;
                 const nodeData = tapped.data() as { id: string };
