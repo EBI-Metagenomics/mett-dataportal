@@ -5,28 +5,17 @@ import {EXAMPLE_SEQUENCE} from '../../../../utils/common/constants';
 interface PyhmmerSearchInputProps {
     sequence: string;
     setSequence: (value: string) => void;
-    handleSubmit: (e?: React.FormEvent) => void;
     sequenceError?: string;
-    isFormValid: boolean;
-    // Reset functions for all form values
-    onResetAll: () => void;
 }
 
 const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({
-    sequence, 
-    setSequence, 
-    handleSubmit, 
-    sequenceError, 
-    isFormValid,
-    onResetAll
+    sequence,
+    setSequence,
+    sequenceError,
 }) => {
     const handleUseExample = (e: React.MouseEvent) => {
         e.preventDefault();
         setSequence(EXAMPLE_SEQUENCE);
-    };
-
-    const handleReset = () => {
-        onResetAll();
     };
 
     return (
@@ -50,24 +39,6 @@ const PyhmmerSearchInput: React.FC<PyhmmerSearchInputProps> = ({
                 {sequenceError && (
                     <div className={styles.errorMessage}>{sequenceError}</div>
                 )}
-            </div>
-
-            <div className={styles.buttonRow}>
-                <button
-                    className="vf-button vf-button--primary vf-button--sm"
-                    onClick={handleSubmit}
-                    type="button"
-                    disabled={!isFormValid}
-                >
-                    Submit
-                </button>
-                <button
-                    className="vf-button vf-button--sm"
-                    type="button"
-                    onClick={handleReset}
-                >
-                    Reset
-                </button>
             </div>
         </div>
     );

@@ -68,7 +68,9 @@ const PyhmmerSearchForm: React.FC = () => {
     const saveSearchToHistoryLocal = (jobId: string, query: string) => {
         const searchRequest = {
             database: PYHMMER_CONSTANTS.DATABASES.METT_PROTEINS,
-            species: selectedSpecies,
+            species: speciesOptions.length > 0 && speciesOptions.every(item => selectedSpecies.includes(item.acronym))
+                ? []
+                : selectedSpecies,
             type_only: typeOnly,
             threshold: evalueType,
             threshold_value: evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq),
@@ -94,7 +96,9 @@ const PyhmmerSearchForm: React.FC = () => {
         const fetchCatalog = async () => {
             try {
                 const catalog = await PyhmmerService.getCatalog();
-                setSpeciesOptions(catalog.species.map(item => ({ acronym: item.acronym, name: item.name })));
+                const options = catalog.species.map(item => ({ acronym: item.acronym, name: item.name }));
+                setSpeciesOptions(options);
+                setSelectedSpecies(current => current.length === 0 ? options.map(item => item.acronym) : current);
                 if (catalog.shortcuts.length > 0) {
                     setShortcuts(catalog.shortcuts);
                 }
@@ -189,6 +193,10 @@ const PyhmmerSearchForm: React.FC = () => {
             setError('Please fix the validation errors before submitting.');
             return;
         }
+        if (selectedSpecies.length === 0) {
+            setError('Select at least one species.');
+            return;
+        }
 
         setLoading(true);
         setLoadingMessage('Submitting search job...');
@@ -196,9 +204,11 @@ const PyhmmerSearchForm: React.FC = () => {
         setResults([]);
         try {
             // Compose request with all parameters
+            const everySpecies = speciesOptions.length > 0
+                && speciesOptions.every(item => selectedSpecies.includes(item.acronym));
             const req = {
                 database: PYHMMER_CONSTANTS.DATABASES.METT_PROTEINS,
-                species: selectedSpecies,
+                species: everySpecies ? [] : selectedSpecies,
                 type_only: typeOnly,
                 threshold: evalueType,
                 threshold_value: evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq),
@@ -222,7 +232,7 @@ const PyhmmerSearchForm: React.FC = () => {
 
             // Enhanced logging for form values
             console.log('=== FORM VALUES BEING SENT ===');
-            console.log('Species:', selectedSpecies.length ? selectedSpecies.join(',') : 'all');
+            console.log('Species:', req.species.length ? req.species.join(',') : 'all');
             console.log('Type strains only:', typeOnly);
             console.log('Threshold type:', evalueType);
             console.log('Threshold value:', evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq));
@@ -329,7 +339,7 @@ const PyhmmerSearchForm: React.FC = () => {
     const handleReset = () => {
         // Use the form hook's reset function
         resetForm();
-        setSelectedSpecies([]);
+        setSelectedSpecies(speciesOptions.map(item => item.acronym));
         setTypeOnly(false);
 
         // Clear results and job IDs
@@ -351,10 +361,7 @@ const PyhmmerSearchForm: React.FC = () => {
                     <PyhmmerSearchInput
                         sequence={sequence}
                         setSequence={setSequence}
-                        handleSubmit={handleSubmit}
                         sequenceError={getFieldError('sequence')}
-                        isFormValid={isFormValid()}
-                        onResetAll={handleReset}
                     />
                     <SpeciesFilter
                         species={speciesOptions}
@@ -369,16 +376,18 @@ const PyhmmerSearchForm: React.FC = () => {
                 <details className={styles.advanced}>
                     <summary>Advanced cut-offs and gap penalties</summary>
                     <div className={styles.advancedBody}>
-                        <div>
-                            <InfoPopover
-                                label="Cut off"
-                                helpText={PYHMMER_CUTOFF_HELP}
-                                ariaLabel="Cut off info"
-                            />
-                            <ThresholdTypeSelector
-                                evalueType={evalueType}
-                                onEvalueTypeChange={setEvalueType}
-                            />
+                        <div className={styles.advancedGroup}>
+                            <div className={styles.advancedHeading}>
+                                <InfoPopover
+                                    label="Cut off"
+                                    helpText={PYHMMER_CUTOFF_HELP}
+                                    ariaLabel="Cut off info"
+                                />
+                                <ThresholdTypeSelector
+                                    evalueType={evalueType}
+                                    onEvalueTypeChange={setEvalueType}
+                                />
+                            </div>
                             <CutoffParameters
                                 evalueType={evalueType}
                                 significanceEValueSeq={significanceEValueSeq}
@@ -400,12 +409,14 @@ const PyhmmerSearchForm: React.FC = () => {
                                 getFieldError={getFieldError}
                             />
                         </div>
-                        <div>
-                            <InfoPopover
-                                label="Gap penalties"
-                                helpText={PYHMMER_GAP_PENALTIES_HELP}
-                                ariaLabel="Gap penalties info"
-                            />
+                        <div className={styles.advancedGroup}>
+                            <div className={styles.advancedHeading}>
+                                <InfoPopover
+                                    label="Gap penalties"
+                                    helpText={PYHMMER_GAP_PENALTIES_HELP}
+                                    ariaLabel="Gap penalties info"
+                                />
+                            </div>
                             <GapPenalties
                                 gapOpen={gapOpen}
                                 gapExtend={gapExtend}
@@ -416,6 +427,24 @@ const PyhmmerSearchForm: React.FC = () => {
                         </div>
                     </div>
                 </details>
+
+                <div className={styles.actions}>
+                    <button
+                        className="vf-button vf-button--primary vf-button--sm"
+                        onClick={handleSubmit}
+                        type="button"
+                        disabled={!isFormValid()}
+                    >
+                        Submit
+                    </button>
+                    <button
+                        className="vf-button vf-button--sm"
+                        type="button"
+                        onClick={handleReset}
+                    >
+                        Reset
+                    </button>
+                </div>
             </div>
 
             {/* Results two-column layout */}

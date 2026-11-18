@@ -37,17 +37,39 @@ const SpeciesFilter: React.FC<SpeciesFilterProps> = ({
     onSelectedChange,
     onTypeOnlyChange,
 }) => {
+    const allAcronyms = species.map(item => item.acronym);
+    const allSelected = allAcronyms.length > 0 && allAcronyms.every(acronym => selected.includes(acronym));
+
     const toggleSpecies = (acronym: string) => {
+        // From the full set, one click limits the search to that species.
+        if (allSelected) {
+            onSelectedChange([acronym]);
+            return;
+        }
         if (selected.includes(acronym)) {
             onSelectedChange(selected.filter(item => item !== acronym));
             return;
         }
-        onSelectedChange([...selected, acronym]);
+        const next = [...selected, acronym];
+        onSelectedChange(allAcronyms.every(item => next.includes(item)) ? allAcronyms : next);
     };
 
-    const summary = selected.length === 0
-        ? 'All species'
-        : `${selected.length} selected${typeOnly ? ' · type strains' : ''}`;
+    const chooseShortcut = (shortcut: SpeciesShortcut) => {
+        onSelectedChange(shortcut.species.length === 0 ? allAcronyms : shortcut.species);
+    };
+
+    const shortcutActive = (shortcut: SpeciesShortcut) => {
+        if (shortcut.species.length === 0) {
+            return allSelected;
+        }
+        return sameSpecies(selected, shortcut.species);
+    };
+
+    const summary = allSelected
+        ? `All ${allAcronyms.length} species${typeOnly ? ' · type strains' : ''}`
+        : selected.length === 0
+            ? 'None selected'
+            : `${selected.length} selected${typeOnly ? ' · type strains' : ''}`;
 
     return (
         <div className={styles.formSection}>
@@ -61,9 +83,9 @@ const SpeciesFilter: React.FC<SpeciesFilterProps> = ({
                         <button
                             key={shortcut.id}
                             type="button"
-                            className={`${styles.shortcut} ${sameSpecies(selected, shortcut.species) ? styles.active : ''}`}
-                            onClick={() => onSelectedChange(shortcut.species)}
-                            aria-pressed={sameSpecies(selected, shortcut.species)}
+                            className={`${styles.shortcut} ${shortcutActive(shortcut) ? styles.active : ''}`}
+                            onClick={() => chooseShortcut(shortcut)}
+                            aria-pressed={shortcutActive(shortcut)}
                         >
                             {shortcut.label}
                         </button>
@@ -78,6 +100,9 @@ const SpeciesFilter: React.FC<SpeciesFilterProps> = ({
                     Type strains only
                 </label>
             </div>
+            {allSelected && (
+                <p className={styles.hint}>Every species is included. Choose a shortcut, or a species, to limit the search.</p>
+            )}
             <div className={styles.speciesList} role="group" aria-label="Species">
                 {species.map(item => {
                     const checked = selected.includes(item.acronym);
