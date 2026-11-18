@@ -1,4 +1,10 @@
-"""Turn PyHMMER hits into one stored hit per member locus tag."""
+"""Turn each PyHMMER sequence hit into one stored hit.
+
+Identical proteins are one FASTA record. The row uses the representative
+locus tag when that gene is in scope, otherwise the first member in scope.
+Copying every member locus tag would count the same domains again for each
+isolate.
+"""
 
 from __future__ import annotations
 
@@ -31,7 +37,9 @@ def domain_is_significant(
     return ievalue < (inc_e if inc_e is not None else DEFAULT_INC_E)
 
 
-def hit_is_significant(hit, *, threshold: str, inc_e: float | None, inc_t: float | None):
+def hit_is_significant(
+    hit, *, threshold: str, inc_e: float | None, inc_t: float | None
+):
     if hasattr(hit, "included"):
         return hit.included
     return domain_is_significant(
@@ -45,7 +53,9 @@ def _bias(value, hit_name: str) -> float | None:
     try:
         return float(value)
     except (TypeError, ValueError):
-        logger.warning("Could not convert bias value %s to float for hit %s", value, hit_name)
+        logger.warning(
+            "Could not convert bias value %s to float for hit %s", value, hit_name
+        )
         return None
 
 
@@ -101,13 +111,15 @@ def build_hits(
     inc_t: float | None,
     membership: dict | None,
 ) -> list[HitSchema]:
-    """Expand each sequence hit to one row per locus tag in the search scope."""
+    """One row per distinct sequence. Domain counts stay on that row."""
     if not hit_list:
         return []
 
     results: list[HitSchema] = []
     for hit in hit_list:
-        hit_significant = hit_is_significant(hit, threshold=threshold, inc_e=inc_e, inc_t=inc_t)
+        hit_significant = hit_is_significant(
+            hit, threshold=threshold, inc_e=inc_e, inc_t=inc_t
+        )
         domains = _domains_for_hit(
             hit,
             query=query,
@@ -130,29 +142,37 @@ def build_hits(
         )
         seq_id = hit.name.decode()
         member_info = membership.get(seq_id) if membership else None
-        hit_obj = HitSchema(
-            target=seq_id,
-            seq_id=seq_id,
-            description=_description(hit, member_info),
-            evalue=f"{hit.evalue:.2e}",
-            score=f"{hit.score:.2f}",
-            sequence=_display_sequence(domains),
-            bias=_bias(getattr(hit, "bias", None), seq_id),
-            num_hits=len(domains),
-            num_significant=significant_domains,
-            is_significant=hit_significant,
-            domains=domains,
+        results.append(
+            HitSchema(
+                target=_target_in_scope(seq_id, member_info),
+                seq_id=seq_id,
+                description=_description(hit, member_info),
+                evalue=f"{hit.evalue:.2e}",
+                score=f"{hit.score:.2f}",
+                sequence=_display_sequence(domains),
+                bias=_bias(getattr(hit, "bias", None), seq_id),
+                num_hits=len(domains),
+                num_significant=significant_domains,
+                is_significant=hit_significant,
+                domains=domains,
+            )
         )
-        locus_tags = member_info["locus_tags"] if member_info else [seq_id]
-        for locus_tag in locus_tags:
-            row = hit_obj.model_copy(deep=True)
-            row.target = locus_tag
-            results.append(row)
-        logger.info("Added %s locus tags for %s", len(locus_tags), seq_id)
     return results
 
 
-def _domains_for_hit(hit, *, query, target_sequences, threshold, inc_e, inc_t, hit_significant):
+def _target_in_scope(seq_id: str, member_info: dict | None) -> str:
+    """Gene to open. Prefer the representative when the filter includes it."""
+    if not member_info:
+        return seq_id
+    locus_tags = member_info.get("locus_tags") or []
+    if seq_id in locus_tags or not locus_tags:
+        return seq_id
+    return locus_tags[0]
+
+
+def _domains_for_hit(
+    hit, *, query, target_sequences, threshold, inc_e, inc_t, hit_significant
+):
     if getattr(hit, "domains", None):
         return [
             _domain_from_pyhmmer(domain, threshold=threshold, inc_e=inc_e, inc_t=inc_t)
@@ -196,6 +216,10 @@ def _description(hit, member_info) -> str:
 
 
 def _display_sequence(domains: list[DomainSchema]) -> str | None:
-    if not domains or not domains[0].alignment or not domains[0].alignment.target_sequence:
+    if (
+        not domains
+        or not domains[0].alignment
+        or not domains[0].alignment.target_sequence
+    ):
         return None
     return domains[0].alignment.target_sequence.replace("-", "")

@@ -5,11 +5,13 @@
   python run.py stage --faa isolate.faa --isolate BU_ATCC8492 --species BU --type-strain --out BU_ATCC8492.jsonl
   python run.py merge --chunks ./chunks --species-csv ../../data/reference/species.csv --out ../../data/generated/protein-db
   python run.py index --faa ../../data/generated/protein-db/mett_proteins.faa --members ../../data/generated/protein-db/members.tsv
+  python run.py cleanup --out ../../data/generated/protein-db
 """
 
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from pathlib import Path
 
@@ -22,7 +24,8 @@ from stage import stage_isolate
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_SPECIES = SCRIPT_DIR.parents[1] / "data" / "reference" / "species.csv"
 DEFAULT_OUT = SCRIPT_DIR.parents[1] / "data" / "generated" / "protein-db"
-DEFAULT_CACHE = DEFAULT_OUT / "faa-cache"
+DEFAULT_CACHE = SCRIPT_DIR.parents[1] / "data" / "cache" / "faa"
+RUNTIME_FILES = ("mett_proteins.faa", "members.sqlite", "catalog.json")
 
 
 def _batch_names(value: str) -> list[str]:
@@ -88,12 +91,48 @@ def command_merge(args: argparse.Namespace) -> None:
     print(f"Wrote {catalog_path}")
 
 
+def cleanup_output(out: Path, *, cache: Path = DEFAULT_CACHE) -> None:
+    """Leave the files search reads, and move a nested download cache aside.
+
+    Search reads ``mett_proteins.faa``, ``members.sqlite``, and ``catalog.json``
+    from this directory. ``mett_proteins.faa.ssi`` is kept when esl-sfetch wrote
+    it. ``members.tsv`` is only the input to the sqlite build.
+    """
+    missing = [name for name in RUNTIME_FILES if not (out / name).is_file()]
+    if missing:
+        raise SystemExit(
+            f"Refusing to clean {out}: missing {', '.join(missing)}. "
+            "Search needs mett_proteins.faa, members.sqlite, and catalog.json."
+        )
+
+    members_tsv = out / "members.tsv"
+    if members_tsv.is_file():
+        members_tsv.unlink()
+        print(f"Removed {members_tsv}")
+
+    nested_cache = out / "faa-cache"
+    if not nested_cache.exists():
+        return
+    if not cache.exists():
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(nested_cache), str(cache))
+        print(f"Moved download cache to {cache}")
+        return
+    shutil.rmtree(nested_cache)
+    print(f"Removed {nested_cache}")
+
+
 def command_index(args: argparse.Namespace) -> None:
     sqlite_path = args.out / "members.sqlite"
     build_sqlite(args.members, sqlite_path)
     print(f"Wrote {sqlite_path}")
     if build_ssi(args.faa):
         print(f"Wrote {args.faa}.ssi")
+    cleanup_output(args.out, cache=args.cache)
+
+
+def command_cleanup(args: argparse.Namespace) -> None:
+    cleanup_output(args.out, cache=args.cache)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -144,7 +183,16 @@ def build_parser() -> argparse.ArgumentParser:
     index.add_argument("--faa", type=Path, required=True)
     index.add_argument("--members", type=Path, required=True)
     index.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    index.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     index.set_defaults(func=command_index)
+
+    cleanup = commands.add_parser(
+        "cleanup",
+        help="Drop members.tsv and move faa-cache out of the published directory",
+    )
+    cleanup.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    cleanup.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
+    cleanup.set_defaults(func=command_cleanup)
     return parser
 
 

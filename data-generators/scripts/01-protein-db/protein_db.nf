@@ -57,7 +57,8 @@ process STAGE {
 
 process MERGE {
     tag 'merge'
-    publishDir "${params.out}", mode: 'copy', overwrite: true
+    // members.tsv is the sqlite input. It is not published.
+    publishDir "${params.out}", mode: 'copy', overwrite: true, pattern: '{mett_proteins.faa,catalog.json}'
 
     input:
     path chunks

@@ -7,23 +7,19 @@ the values that stay the same in every environment.
 
 # Deployment defaults. Override with the environment variables of the same name
 # except where noted.
-DEFAULT_FAA_BASE_PATH = "/data/pyhmmer/output/"
-DEFAULT_ISOLATES_BASE_PATH = "/data/pyhmmer/output/isolates-db/"
 DEFAULT_RESULT_MAX_BYTES = 50 * 1024 * 1024
 DEFAULT_TASK_RETENTION_DAYS = 30
 MIN_TASK_RETENTION_DAYS = 1
 MAX_TASK_RETENTION_DAYS = 365
 
-# PYHMMER_DB, PYHMMER_FAA_BASE_PATH, PYHMMER_ISOLATES_BASE_PATH,
-# PYHMMER_RESULT_MAX_BYTES, PYHMMER_TASK_RETENTION_DAYS, PYHMMER_SPECIES_CSV
+# PYHMMER_DB, PYHMMER_RESULT_MAX_BYTES, PYHMMER_TASK_RETENTION_DAYS,
+# PYHMMER_SPECIES_CSV (optional catalog fallback)
 
 PROTEIN_DB_FILENAME = "mett_proteins.faa"
+DEFAULT_DB_PATH = f"/data/pyhmmer/output/{PROTEIN_DB_FILENAME}"
 DATABASE_ID = "mett_proteins"
 DATABASE_LABEL = "METT proteins"
 ISOLATE_DB_PREFIX = "isolate_"
-ISOLATE_DB_SUFFIX = "_deduplicated.faa"
-DEFAULT_ISOLATE_SPECIES = "BU"
-SPECIES_PREFIX = (("BU_", "BU"), ("PV_", "PV"))
 HD_SPECIES = ("BU", "PV")
 COLLECTION_HD = "hd"
 COLLECTION_EXTENDED = "20hm"
@@ -41,15 +37,6 @@ ALIASES: dict[str, tuple[list[str], bool, str]] = {
     "bu_pv_all": (["BU", "PV"], False, ""),
     "bu_pv_type_strains": (["BU", "PV"], True, ""),
     DATABASE_ID: ([], False, ""),
-}
-
-LEGACY_FAA_FILES = {
-    "bu_type_strains": "bu_typestrains_deduplicated.faa",
-    "bu_all": "bu_all_strains_deduplicated.faa",
-    "pv_type_strains": "pv_typestrains_deduplicated.faa",
-    "pv_all": "pv_all_strains_deduplicated.faa",
-    "bu_pv_type_strains": "bu_pv_typestrains_deduplicated.faa",
-    "bu_pv_all": "bu_pv_all_strains_deduplicated.faa",
 }
 
 STATUS_PENDING = "PENDING"

@@ -8,7 +8,9 @@
 #
 # --fetch is for a machine without /pub/databases mounted. It downloads each
 # missing HD FASTA from https://ftp.ebi.ac.uk/pub/databases/mett into
-# data/generated/protein-db/faa-cache. The 20hm paths are not on that site.
+# data/cache/faa. The 20hm paths are not on that site. The published directory
+# keeps mett_proteins.faa, members.sqlite, catalog.json, and the SSI file
+# when esl-sfetch is available.
 
 set -euo pipefail
 

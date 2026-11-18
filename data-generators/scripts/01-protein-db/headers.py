@@ -1,8 +1,8 @@
 """Protein FASTA headers.
 
-The sequence name is the representative locus tag (SSI key). Every other gene
-that shares the sequence is listed in ``lt`` so a hit can still open the gene
-viewer for each member.
+The sequence name is the representative locus tag (SSI key). Other genes that
+share the sequence are listed in ``lt``. A search result is one row for that
+sequence, not one row per member.
 """
 
 from __future__ import annotations

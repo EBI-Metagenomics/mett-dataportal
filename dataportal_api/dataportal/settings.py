@@ -4,11 +4,9 @@ import sys
 from pathlib import Path
 
 from pyhmmer_search.constants import (
-    DEFAULT_FAA_BASE_PATH,
-    DEFAULT_ISOLATES_BASE_PATH,
+    DEFAULT_DB_PATH,
     DEFAULT_RESULT_MAX_BYTES,
     DEFAULT_TASK_RETENTION_DAYS,
-    PROTEIN_DB_FILENAME,
 )
 from .elasticsearch_client import init_es_connection
 
@@ -33,7 +31,9 @@ ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 METT_RELEASE = os.getenv("METT_RELEASE", "current")
 
 # Feature flags
-ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+ENABLE_PYHMMER_SEARCH = (
+    os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+)
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
@@ -270,13 +270,11 @@ APPEND_SLASH = False
 
 DEFAULT_LIMIT = 10
 
-PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", DEFAULT_FAA_BASE_PATH)
-PYHMMER_ISOLATES_BASE_PATH = os.environ.get(
-    "PYHMMER_ISOLATES_BASE_PATH", DEFAULT_ISOLATES_BASE_PATH
-)
 # Single deduplicated FASTA. members.sqlite and catalog.json sit beside it.
-PYHMMER_DB = os.environ.get("PYHMMER_DB", PYHMMER_FAA_BASE_PATH + PROTEIN_DB_FILENAME)
-PYHMMER_RESULT_MAX_BYTES = int(os.environ.get("PYHMMER_RESULT_MAX_BYTES", DEFAULT_RESULT_MAX_BYTES))
+PYHMMER_DB = os.environ.get("PYHMMER_DB", DEFAULT_DB_PATH)
+PYHMMER_RESULT_MAX_BYTES = int(
+    os.environ.get("PYHMMER_RESULT_MAX_BYTES", DEFAULT_RESULT_MAX_BYTES)
+)
 PYHMMER_TASK_RETENTION_DAYS = int(
     os.environ.get("PYHMMER_TASK_RETENTION_DAYS", DEFAULT_TASK_RETENTION_DAYS)
 )

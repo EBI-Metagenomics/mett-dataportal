@@ -32,13 +32,11 @@ from ..constants import (
     FORMAT_ALIGNED_FASTA,
     FORMAT_FASTA,
     FORMAT_TAB,
-    ISOLATE_DB_PREFIX,
     STATUS_FAILURE,
     STATUS_PENDING,
     STATUS_SUCCESS,
 )
 from ..models import HmmerJob, Database
-from ..paths import isolate_database_path, legacy_database_path
 
 logger = logging.getLogger(__name__)
 
@@ -123,13 +121,8 @@ def _wait_for_stored_result(job):
     return status, result, task
 
 
-def protein_db_path(job) -> str:
-    if not job.status:
-        legacy = legacy_database_path(job.database)
-        if legacy:
-            return legacy
-        if str(job.database).startswith(ISOLATE_DB_PREFIX):
-            return isolate_database_path(job.database[len(ISOLATE_DB_PREFIX) :])
+def protein_db_path(_job) -> str:
+    """FASTA used to fetch hit sequences. Every job reads the single protein database."""
     return settings.PYHMMER_DB
 
 
@@ -144,7 +137,8 @@ def download_results(request, id: uuid.UUID, format: str):
         # Validate format
         if format not in DOWNLOAD_FORMATS:
             raise_validation_error(
-                "Invalid format: " f"{format}. Supported formats: {', '.join(DOWNLOAD_FORMATS)}"
+                "Invalid format: "
+                f"{format}. Supported formats: {', '.join(DOWNLOAD_FORMATS)}"
             )
 
         job = get_object_or_404(HmmerJob, id=id)
@@ -176,8 +170,10 @@ def download_results(request, id: uuid.UUID, format: str):
             logger.info(f"Generated FASTA content type: {type(content)}")
             logger.info(f"Generated FASTA content length: {len(content)}")
         elif format == FORMAT_ALIGNED_FASTA:
-            content = DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
-                result_data, db_path, job.input
+            content = (
+                DownloadAlignedFastaService.generate_enhanced_aligned_fasta_content(
+                    result_data, db_path, job.input
+                )
             )
             filename = f"pyhmmer_hits_{id}.aligned.fasta.gz"
             content_type = "application/gzip"
@@ -191,11 +187,15 @@ def download_results(request, id: uuid.UUID, format: str):
 
             try:
                 test_decompressed = gzip.decompress(content)
-                logger.info(f"Decompression test passed: {len(test_decompressed)} bytes")
+                logger.info(
+                    f"Decompression test passed: {len(test_decompressed)} bytes"
+                )
             except Exception as decompress_error:
                 logger.error(f"Decompression test failed: {decompress_error}")
                 # If decompression fails, return uncompressed content
-                logger.warning("Returning uncompressed content due to compression failure")
+                logger.warning(
+                    "Returning uncompressed content due to compression failure"
+                )
                 content = (
                     DownloadFastaService.generate_enhanced_fasta_content(
                         result_data, db_path, job.input
@@ -288,7 +288,9 @@ def get_result(request, id: uuid.UUID, query: Query[ResultQuerySchema]):
         if page == 1 and page_size == default_page_size:
             # Return all results (no pagination) - this is likely a polling request
             paginated_results = filtered_results
-            logger.info(f"Returning all {len(paginated_results)} results (polling mode)")
+            logger.info(
+                f"Returning all {len(paginated_results)} results (polling mode)"
+            )
         else:
             # Apply explicit pagination
             start_idx = (page - 1) * page_size

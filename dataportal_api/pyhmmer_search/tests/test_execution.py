@@ -40,7 +40,7 @@ def test_explicit_species_overrides_an_old_database_alias():
     assert scope.type_only is True
 
 
-def test_phmmer_hit_expands_to_one_row_per_locus_tag():
+def test_phmmer_hit_is_one_row_for_a_shared_sequence():
     hit = Mock(spec=Hit)
     hit.name = b"BU_ATCC8492_00001"
     hit.description = b"hypothetical protein [Bacteroides]"
@@ -70,10 +70,7 @@ def test_phmmer_hit_expands_to_one_row_per_locus_tag():
         membership=membership,
     )
 
-    assert [item.target for item in hits] == [
-        "BU_ATCC8492_00001",
-        "PV_ATCC8482_00456",
-    ]
+    assert [item.target for item in hits] == ["BU_ATCC8492_00001"]
     assert hits[0].seq_id == "BU_ATCC8492_00001"
     assert hits[0].description == "hypothetical protein"
     assert hits[0].is_significant is True
@@ -124,3 +121,36 @@ def test_domain_significance_uses_the_reporting_threshold():
     assert hits[0].num_significant == 1
     assert [domain.is_significant for domain in hits[0].domains] == [True, False]
     assert hits[0].target == "gene"
+
+
+def test_isolate_filter_opens_the_member_in_scope():
+    hit = SimpleNamespace(
+        name=b"BU_ATCC8492_00001",
+        description=b"product=kinase lt=BU_ATCC8492_00001",
+        evalue=1e-3,
+        score=40.0,
+        bias=None,
+        domains=[],
+        envelope_from=None,
+        envelope_to=None,
+        c_evalue=None,
+        included=True,
+    )
+    hits = build_hits(
+        [hit],
+        query=QuerySequence(name="query", sequence="AAAA"),
+        target_sequences={"BU_ATCC8492_00001": SimpleNamespace(sequence="AAAA")},
+        threshold="evalue",
+        inc_e=0.01,
+        inc_t=25.0,
+        membership={
+            "BU_ATCC8492_00001": {
+                "locus_tags": ["BU_61_00088"],
+                "product": "kinase",
+            }
+        },
+    )
+    assert len(hits) == 1
+    assert hits[0].target == "BU_61_00088"
+    assert hits[0].seq_id == "BU_ATCC8492_00001"
+    assert hits[0].num_hits == 1

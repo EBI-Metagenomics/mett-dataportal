@@ -32,7 +32,7 @@
   - [Configuration](#configuration)
     - [Pydantic Configuration](#pydantic-configuration)
     - [Environment Files](#environment-files)
-    - [METT release (API / Celery)](#mett-release-api--celery)
+    - [METT release](#mett-release)
     - [Frontend](#frontend)
   - [Database Setup](#database-setup)
     - [PostgreSQL Migrations](#postgresql-migrations)
@@ -109,7 +109,6 @@ etc.) .
 - **Sequence Analysis**: PyHMMER integration for homology searches
 - **RESTful API**: Comprehensive API for programmatic access
 - **Docker & Kubernetes Ready**: Production-ready containerization
-- **Real-time Updates**: Celery-based async task processing
 
 ---
 
@@ -132,19 +131,13 @@ etc.) .
 │                  │   (Relational)  │  │   (Search)   │      │
 │                  └─────────────────┘  └──────────────┘      │
 │                                                             │
-│                  ┌─────────────────┐                        │
-│                  │     Celery      │                        │
-│                  │  (Task Queue)   │                        │
-│                  └─────────────────┘                        │
-│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 **Technology Stack:**
-- **Backend**: Django 5.x, Django Ninja (API), Celery
+- **Backend**: Django 5.x, Django Ninja (API)
 - **Frontend**: React, TypeScript, SCSS
 - **Database**: PostgreSQL 13+, Elasticsearch 8+
-- **Task Queue**: Celery with Redis/RabbitMQ
 - **Containerization**: Docker, Kubernetes
 - **Package Management**: uv (Python), npm (JavaScript)
 
@@ -256,10 +249,6 @@ ES_INDEX_VERSION=2025.09.03
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-# Celery
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
-
 # CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
@@ -338,7 +327,7 @@ The project uses [Pydantic](https://pydantic-docs.helpmanual.io/) for configurat
 - **Development**: `config/local.env` or `dataportal_api/set-env-dev.sh`
 - **Production**: Kubernetes ConfigMaps / secrets (`mett-app-config-*`)
 
-### METT release (API / Celery)
+### METT release
 
 Portal Elasticsearch **reads** (not ingest) honour `METT_RELEASE`. Restart the API after changing it.
 
@@ -373,9 +362,6 @@ python manage.py migrate
 
 # PyHMMER specific migrations
 python manage.py migrate pyhmmer_search
-
-# Celery Beat migrations (for scheduled tasks)
-python manage.py migrate django_celery_beat
 ```
 
 ### Elasticsearch Indices
@@ -914,22 +900,11 @@ npm test -- --watch
 ### Local Development Workflow
 
 ```bash
-# 1. Start Redis (for Celery)
-docker run -d -p 6379:6379 redis:7
-
-# 2. Start Django development server
+# 1. Start Django development server
 cd dataportal_api
 python manage.py runserver
 
-# 3. Start Celery worker (in another terminal)
-cd dataportal_api
-celery -A dataportal worker -l info
-
-# 4. Start Celery beat (for scheduled tasks, in another terminal)
-cd dataportal_api
-celery -A dataportal beat -l info
-
-# 5. Start React development server (in another terminal)
+# 2. Start React development server (in another terminal)
 cd dataportal-app
 npm run dev
 ```
