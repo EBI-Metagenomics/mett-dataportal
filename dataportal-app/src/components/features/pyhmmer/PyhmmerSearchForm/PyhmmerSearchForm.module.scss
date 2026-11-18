@@ -1,7 +1,54 @@
 .pyhmmerSection {
-  padding: 0.1rem;
+  padding: 0;
   background-color: transparent;
-  width: 80%;
+  width: 100%;
+}
+
+.searchCard {
+  background: #fff;
+  border: 1px solid #e6e8ea;
+  border-radius: 8px;
+  padding: 14px 16px 10px;
+  margin-bottom: 16px;
+}
+
+.searchGrid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.advanced {
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+
+  summary {
+    cursor: pointer;
+    color: #3b6fb6;
+    font-size: 13px;
+    font-weight: 600;
+    width: fit-content;
+
+    &:hover {
+      color: #193f90;
+    }
+  }
+}
+
+.advancedBody {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.4fr) minmax(180px, 0.7fr);
+  gap: 24px;
+  padding: 12px 0 4px;
+}
+
+@media (max-width: 900px) {
+  .searchGrid,
+  .advancedBody {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sectionDivider {
@@ -37,46 +84,6 @@
     flex: 1;
     line-height: 1.4;
   }
-}
-
-.formContainer {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-.leftPane {
-  flex: 0.5;
-  padding: 24px 2rem 24px 0;
-
-  .formSection {
-    margin-bottom: 2rem;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-
-
-  // Spacing for form sections
-  .formSection {
-    margin-bottom: 2rem;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-}
-
-.rightPane {
-  flex: 0.8;
-  min-width: 300px;
-  background: #fff;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .resultsContainer {

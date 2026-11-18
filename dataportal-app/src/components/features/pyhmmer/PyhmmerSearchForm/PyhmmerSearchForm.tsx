@@ -346,74 +346,8 @@ const PyhmmerSearchForm: React.FC = () => {
 
     return (
         <section className={styles.pyhmmerSection}>
-            <div className={styles.formContainer}>
-                <div className={styles.leftPane}>
-
-                    {/* Cut off */}
-                    <div className={styles.formSection}>
-                        <InfoPopover
-                            label="Cut off"
-                            helpText={PYHMMER_CUTOFF_HELP}
-                            ariaLabel="Cut off info"
-                        />
-                        <ThresholdTypeSelector
-                            evalueType={evalueType}
-                            onEvalueTypeChange={setEvalueType}
-                        />
-                        <CutoffParameters
-                            evalueType={evalueType}
-                            significanceEValueSeq={significanceEValueSeq}
-                            significanceEValueHit={significanceEValueHit}
-                            reportEValueSeq={reportEValueSeq}
-                            reportEValueHit={reportEValueHit}
-                            significanceBitScoreSeq={significanceBitScoreSeq}
-                            significanceBitScoreHit={significanceBitScoreHit}
-                            reportBitScoreSeq={reportBitScoreSeq}
-                            reportBitScoreHit={reportBitScoreHit}
-                            setSignificanceEValueSeq={setSignificanceEValueSeq}
-                            setSignificanceEValueHit={setSignificanceEValueHit}
-                            setReportEValueSeq={setReportEValueSeq}
-                            setReportEValueHit={setReportEValueHit}
-                            setSignificanceBitScoreSeq={setSignificanceBitScoreSeq}
-                            setSignificanceBitScoreHit={setSignificanceBitScoreHit}
-                            setReportBitScoreSeq={setReportBitScoreSeq}
-                            setReportBitScoreHit={setReportBitScoreHit}
-                            getFieldError={getFieldError}
-                        />
-                    </div>
-
-                    <div className={styles.sectionDivider}></div>
-
-                    {/* Gap penalties */}
-                    <div className={styles.formSection}>
-                        <InfoPopover
-                            label="Gap penalties"
-                            helpText={PYHMMER_GAP_PENALTIES_HELP}
-                            ariaLabel="Gap penalties info"
-                        />
-                        <GapPenalties
-                            gapOpen={gapOpen}
-                            gapExtend={gapExtend}
-                            setGapOpen={setGapOpen}
-                            setGapExtend={setGapExtend}
-                            getFieldError={getFieldError}
-                        />
-                    </div>
-
-                </div>
-                <div className={styles.rightPane}>
-                    {/* Sequence database */}
-                    <SpeciesFilter
-                        species={speciesOptions}
-                        shortcuts={shortcuts}
-                        selected={selectedSpecies}
-                        typeOnly={typeOnly}
-                        onSelectedChange={setSelectedSpecies}
-                        onTypeOnlyChange={setTypeOnly}
-                    />
-
-                    {/* <div className={`${styles.sectionDivider} ${styles.tight}`}></div> */}
-
+            <div className={styles.searchCard}>
+                <div className={styles.searchGrid}>
                     <PyhmmerSearchInput
                         sequence={sequence}
                         setSequence={setSequence}
@@ -422,11 +356,67 @@ const PyhmmerSearchForm: React.FC = () => {
                         isFormValid={isFormValid()}
                         onResetAll={handleReset}
                     />
+                    <SpeciesFilter
+                        species={speciesOptions}
+                        shortcuts={shortcuts}
+                        selected={selectedSpecies}
+                        typeOnly={typeOnly}
+                        onSelectedChange={setSelectedSpecies}
+                        onTypeOnlyChange={setTypeOnly}
+                    />
                 </div>
-            </div>
 
-            {/* Section divider between form and results */}
-            <div className={styles.sectionDivider}></div>
+                <details className={styles.advanced}>
+                    <summary>Advanced cut-offs and gap penalties</summary>
+                    <div className={styles.advancedBody}>
+                        <div>
+                            <InfoPopover
+                                label="Cut off"
+                                helpText={PYHMMER_CUTOFF_HELP}
+                                ariaLabel="Cut off info"
+                            />
+                            <ThresholdTypeSelector
+                                evalueType={evalueType}
+                                onEvalueTypeChange={setEvalueType}
+                            />
+                            <CutoffParameters
+                                evalueType={evalueType}
+                                significanceEValueSeq={significanceEValueSeq}
+                                significanceEValueHit={significanceEValueHit}
+                                reportEValueSeq={reportEValueSeq}
+                                reportEValueHit={reportEValueHit}
+                                significanceBitScoreSeq={significanceBitScoreSeq}
+                                significanceBitScoreHit={significanceBitScoreHit}
+                                reportBitScoreSeq={reportBitScoreSeq}
+                                reportBitScoreHit={reportBitScoreHit}
+                                setSignificanceEValueSeq={setSignificanceEValueSeq}
+                                setSignificanceEValueHit={setSignificanceEValueHit}
+                                setReportEValueSeq={setReportEValueSeq}
+                                setReportEValueHit={setReportEValueHit}
+                                setSignificanceBitScoreSeq={setSignificanceBitScoreSeq}
+                                setSignificanceBitScoreHit={setSignificanceBitScoreHit}
+                                setReportBitScoreSeq={setReportBitScoreSeq}
+                                setReportBitScoreHit={setReportBitScoreHit}
+                                getFieldError={getFieldError}
+                            />
+                        </div>
+                        <div>
+                            <InfoPopover
+                                label="Gap penalties"
+                                helpText={PYHMMER_GAP_PENALTIES_HELP}
+                                ariaLabel="Gap penalties info"
+                            />
+                            <GapPenalties
+                                gapOpen={gapOpen}
+                                gapExtend={gapExtend}
+                                setGapOpen={setGapOpen}
+                                setGapExtend={setGapExtend}
+                                getFieldError={getFieldError}
+                            />
+                        </div>
+                    </div>
+                </details>
+            </div>
 
             {/* Results two-column layout */}
             <div className={styles.resultsContainer}>

@@ -2,12 +2,35 @@
   margin-bottom: 2px;
 }
 
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
 .label {
   display: block;
-  font-weight: 500;
-  margin-bottom: 12px;
+  margin: 0;
+  font-weight: 600;
   color: #1a1c1a;
-  font-size: 1rem;
+  font-size: 0.95rem;
+}
+
+.exampleLink {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #3b6fb6;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+    color: #193f90;
+  }
 }
 
 .sequenceContainer {
@@ -25,15 +48,15 @@
 
 .textarea {
   width: 100%;
-  min-height: 130px;
-  max-height: 170px;
+  min-height: 88px;
+  max-height: 140px;
   border: none;
   background: transparent;
   font-family: 'IBM Plex Mono', Monaco, Consolas, 'Lucida Console', monospace;
   font-size: 0.9rem;
   resize: vertical;
   outline: none;
-  padding: 16px;
+  padding: 10px 12px;
   line-height: 1.4;
   color: #333;
 
@@ -55,24 +78,6 @@
   padding: 8px 16px;
   background-color: #fff5f5;
   border-top: 1px solid #fed7d7;
-}
-
-.helpText {
-  padding: 12px 16px;
-  border-top: 1px solid #dee2e6;
-  font-size: 0.85rem;
-  color: #6c757d;
-
-  .exampleLink {
-    color: #3b6fb6;
-    text-decoration: none;
-    font-weight: 500;
-
-    &:hover {
-      text-decoration: underline;
-      color: #193f90;
-    }
-  }
 }
 
 .buttonRow {

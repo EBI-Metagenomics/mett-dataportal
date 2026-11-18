@@ -21,6 +21,14 @@ interface SpeciesFilterProps {
     onTypeOnlyChange: (typeOnly: boolean) => void;
 }
 
+const sameSpecies = (left: string[], right: string[]) => {
+    if (left.length !== right.length) {
+        return false;
+    }
+    const chosen = new Set(left);
+    return right.every(acronym => chosen.has(acronym));
+};
+
 const SpeciesFilter: React.FC<SpeciesFilterProps> = ({
     species,
     shortcuts,
@@ -29,52 +37,66 @@ const SpeciesFilter: React.FC<SpeciesFilterProps> = ({
     onSelectedChange,
     onTypeOnlyChange,
 }) => {
-    const onMultiChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const acronyms = Array.from(event.target.selectedOptions).map(option => option.value);
-        onSelectedChange(acronyms);
+    const toggleSpecies = (acronym: string) => {
+        if (selected.includes(acronym)) {
+            onSelectedChange(selected.filter(item => item !== acronym));
+            return;
+        }
+        onSelectedChange([...selected, acronym]);
     };
+
+    const summary = selected.length === 0
+        ? 'All species'
+        : `${selected.length} selected${typeOnly ? ' · type strains' : ''}`;
 
     return (
         <div className={styles.formSection}>
-            <div className={styles.label}>METT proteins</div>
-            <div className={styles.shortcuts}>
-                {shortcuts.map(shortcut => (
-                    <button
-                        key={shortcut.id}
-                        type="button"
-                        className={styles.shortcut}
-                        onClick={() => onSelectedChange(shortcut.species)}
-                    >
-                        {shortcut.label}
-                    </button>
-                ))}
+            <div className={styles.header}>
+                <span className={styles.label}>Species</span>
+                <span className={styles.summary}>{summary}</span>
             </div>
-            <label className={styles.fieldLabel} htmlFor="pyhmmer-species">
-                Species
-            </label>
-            <select
-                id="pyhmmer-species"
-                className={styles.speciesSelect}
-                multiple
-                size={Math.min(8, Math.max(species.length, 3))}
-                value={selected}
-                onChange={onMultiChange}
-            >
-                {species.map(item => (
-                    <option key={item.acronym} value={item.acronym}>
-                        {item.name}
-                    </option>
-                ))}
-            </select>
-            <p className={styles.hint}>No selection searches all species.</p>
-            <label className={styles.typeOnly}>
-                <input
-                    type="checkbox"
-                    checked={typeOnly}
-                    onChange={event => onTypeOnlyChange(event.target.checked)}
-                />
-                Type strains only
-            </label>
+            <div className={styles.toolbar}>
+                <div className={styles.shortcuts}>
+                    {shortcuts.map(shortcut => (
+                        <button
+                            key={shortcut.id}
+                            type="button"
+                            className={`${styles.shortcut} ${sameSpecies(selected, shortcut.species) ? styles.active : ''}`}
+                            onClick={() => onSelectedChange(shortcut.species)}
+                            aria-pressed={sameSpecies(selected, shortcut.species)}
+                        >
+                            {shortcut.label}
+                        </button>
+                    ))}
+                </div>
+                <label className={styles.typeOnly}>
+                    <input
+                        type="checkbox"
+                        checked={typeOnly}
+                        onChange={event => onTypeOnlyChange(event.target.checked)}
+                    />
+                    Type strains only
+                </label>
+            </div>
+            <div className={styles.speciesList} role="group" aria-label="Species">
+                {species.map(item => {
+                    const checked = selected.includes(item.acronym);
+                    return (
+                        <label
+                            key={item.acronym}
+                            className={`${styles.speciesOption} ${checked ? styles.checked : ''}`}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleSpecies(item.acronym)}
+                            />
+                            <span className={styles.acronym}>{item.acronym}</span>
+                            <span className={styles.speciesName} title={item.name}>{item.name}</span>
+                        </label>
+                    );
+                })}
+            </div>
         </div>
     );
 };
