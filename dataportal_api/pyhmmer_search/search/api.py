@@ -35,6 +35,7 @@ from ..constants import (
 from ..membership import catalog_path
 from ..models import HmmerJob
 from ..tasks import cleanup_old_jobs
+from ..visibility import limit_search_species, visible_catalog
 from .runner import start_search
 from .schemas import SearchRequestSchema
 
@@ -50,9 +51,15 @@ def search(request, body: SearchRequestSchema):
         logger.info("=== SEARCH REQUEST RECEIVED ===")
         logger.debug("Request metadata captured; input sequence omitted for privacy.")
 
-        # Create the job
+        # Create the job. An empty species list means every enabled species.
         logger.info("Creating HmmerJob...")
-        job = HmmerJob(**body.dict(), algo=HmmerJob.AlgoChoices.PHMMER)
+        payload = body.dict()
+        limited = limit_search_species(payload.get("species"))
+        if limited is not None:
+            if payload.get("species") and not limited:
+                raise_validation_error("None of the requested species are enabled.")
+            payload["species"] = limited
+        job = HmmerJob(**payload, algo=HmmerJob.AlgoChoices.PHMMER)
         logger.info(f"Job object created: {job}")
         logger.info(f"Job ID before save: {job.id}")
 
@@ -143,7 +150,7 @@ def get_databases(request):
 def get_catalog(request):
     """Species and shortcuts for the search form."""
     try:
-        return load_catalog()
+        return visible_catalog(load_catalog())
     except Exception as e:
         logger.error(f"Error getting protein catalog: {e}")
         return {
