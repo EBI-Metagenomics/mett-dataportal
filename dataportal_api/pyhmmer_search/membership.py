@@ -24,7 +24,9 @@ def resolve_scope(
     An empty species list means every species. An isolate id limits the search
     to that genome, which is what the gene viewer uses.
     """
-    chosen = [item.strip().upper() for item in (species or []) if item and str(item).strip()]
+    chosen = [
+        item.strip().upper() for item in (species or []) if item and str(item).strip()
+    ]
     isolate_id = (isolate or "").strip()
     if database.startswith(ISOLATE_DB_PREFIX):
         return [], False, database[len(ISOLATE_DB_PREFIX) :]
@@ -43,10 +45,6 @@ def product_from_description(description: str) -> str:
 
 def members_db_path(faa_path: str) -> Path:
     return Path(faa_path).with_name("members.sqlite")
-
-
-def catalog_path(faa_path: str) -> Path:
-    return Path(faa_path).with_name("catalog.json")
 
 
 def members_for_scope(
@@ -91,7 +89,9 @@ def members_for_scope(
             params,
         )
         for seq_id, locus_tag, product in rows:
-            entry = grouped.setdefault(seq_id, {"locus_tags": [], "product": product or ""})
+            entry = grouped.setdefault(
+                seq_id, {"locus_tags": [], "product": product or ""}
+            )
             entry["locus_tags"].append(locus_tag)
     finally:
         connection.close()

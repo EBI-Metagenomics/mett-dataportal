@@ -14,10 +14,9 @@ Identical amino-acid sequences collapse to one record. The representative name i
 
 - `mett_proteins.faa` — the search database
 - `members.sqlite` — one row per locus tag, indexed for species, type-strain, and isolate filters
-- `catalog.json` — species list for the search form
 - `mett_proteins.faa.ssi` — random-access index, written when `esl-sfetch` is on `PATH`
 
-`members.tsv` is written while merging and removed once `members.sqlite` exists. A local `--fetch` stores source FASTAs in `data/cache/faa`, not in this directory. `python3 run.py cleanup` removes a `members.tsv` or `faa-cache` left by an older run, and refuses to run when one of the three search files is missing.
+The search form species list comes from the strain index. `members.tsv` is written while merging and removed once `members.sqlite` exists. A local `--fetch` stores source FASTAs in `data/cache/faa`, not in this directory. `python3 run.py cleanup` removes a `members.tsv`, an older `catalog.json`, or a `faa-cache` left by an older run, and refuses to run when a search file is missing.
 
 ## Inputs
 
@@ -68,4 +67,4 @@ python3 run.py index \
   --members ../../data/generated/protein-db/members.tsv
 ```
 
-`index` builds `members.sqlite`, writes the SSI file when `esl-sfetch` is available, then removes `members.tsv`. Point the API at the FASTA with `PYHMMER_DB`. `members.sqlite` and `catalog.json` are read from the same directory.
+`index` builds `members.sqlite`, writes the SSI file when `esl-sfetch` is available, then removes `members.tsv`. Point the API at the FASTA with `PYHMMER_DB`. `members.sqlite` is read from that same directory.

@@ -9,7 +9,6 @@ from collections import defaultdict
 from pathlib import Path
 
 from headers import Member, choose_representative, format_header
-from plan import load_species
 
 MEMBER_FIELDS = (
     "seq_id",
@@ -90,70 +89,3 @@ def write_database(members: list[Member], out_dir: Path) -> tuple[Path, Path]:
                     }
                 )
     return faa_path, members_path
-
-
-def write_catalog(members_path: Path, species_csv: Path, out_path: Path) -> None:
-    species_info = load_species(species_csv) if species_csv.is_file() else {}
-    counts: dict[str, dict] = {}
-    with members_path.open(newline="") as handle:
-        for row in csv.DictReader(handle, delimiter="\t"):
-            acronym = row["species"]
-            entry = counts.setdefault(
-                acronym,
-                {
-                    "isolates": set(),
-                    "type_strain": "",
-                    "collection": row.get("collection") or "",
-                },
-            )
-            entry["isolates"].add(row["isolate"])
-            if row["is_type"] == "1" and not entry["type_strain"]:
-                entry["type_strain"] = row["isolate"]
-            if row.get("collection") == "hd":
-                entry["collection"] = "hd"
-
-    species_rows = []
-    for acronym in sorted(counts):
-        info = species_info.get(acronym, {})
-        species_rows.append(
-            {
-                "acronym": acronym,
-                "name": (info.get("scientific_name") or acronym).strip(),
-                "isolates": len(counts[acronym]["isolates"]),
-                "type_strain": counts[acronym]["type_strain"]
-                or (info.get("type_strain_isolate") or ""),
-                "collection": counts[acronym]["collection"],
-            }
-        )
-
-    present = {row["acronym"] for row in species_rows}
-    hd_species = [row["acronym"] for row in species_rows if row["collection"] == "hd"]
-    catalog = {
-        "id": "mett_proteins",
-        "name": "METT proteins",
-        "shortcuts": [
-            {"id": "all", "label": "All species", "species": []},
-            {
-                "id": "hd",
-                "label": _hd_label(species_rows),
-                "species": hd_species,
-            },
-        ],
-        "species": species_rows,
-    }
-    if not present:
-        catalog["shortcuts"] = [catalog["shortcuts"][0]]
-    out_path.write_text(json.dumps(catalog, indent=2) + "\n")
-
-
-def _hd_label(species_rows: list[dict]) -> str:
-    names = []
-    for row in species_rows:
-        if row["collection"] != "hd":
-            continue
-        parts = row["name"].split()
-        if len(parts) >= 2:
-            names.append(f"{parts[0][0]}. {parts[1]}")
-        else:
-            names.append(row["name"])
-    return " + ".join(names) if names else "Flagship species"

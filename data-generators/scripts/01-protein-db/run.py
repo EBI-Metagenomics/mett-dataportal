@@ -3,7 +3,7 @@
 
   python run.py plan --batch all --jobs sources.tsv
   python run.py stage --faa isolate.faa --isolate BU_ATCC8492 --species BU --type-strain --out BU_ATCC8492.jsonl
-  python run.py merge --chunks ./chunks --species-csv ../../data/reference/species.csv --out ../../data/generated/protein-db
+  python run.py merge --chunks ./chunks --out ../../data/generated/protein-db
   python run.py index --faa ../../data/generated/protein-db/mett_proteins.faa --members ../../data/generated/protein-db/members.tsv
   python run.py cleanup --out ../../data/generated/protein-db
 """
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from fetch import local_faa
 from index_db import build_sqlite, build_ssi
-from merge import load_chunks, write_catalog, write_database
+from merge import load_chunks, write_database
 from plan import BATCHES, FAA_TEMPLATE, plan_batches, read_manifest, write_sources
 from stage import stage_isolate
 
@@ -25,7 +25,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_SPECIES = SCRIPT_DIR.parents[1] / "data" / "reference" / "species.csv"
 DEFAULT_OUT = SCRIPT_DIR.parents[1] / "data" / "generated" / "protein-db"
 DEFAULT_CACHE = SCRIPT_DIR.parents[1] / "data" / "cache" / "faa"
-RUNTIME_FILES = ("mett_proteins.faa", "members.sqlite", "catalog.json")
+RUNTIME_FILES = ("mett_proteins.faa", "members.sqlite")
 
 
 def _batch_names(value: str) -> list[str]:
@@ -84,26 +84,29 @@ def command_merge(args: argparse.Namespace) -> None:
     if not members:
         raise SystemExit(f"No JSONL chunks in {args.chunks}")
     faa_path, members_path = write_database(members, args.out)
-    catalog_path = args.out / "catalog.json"
-    write_catalog(members_path, args.species_csv, catalog_path)
     print(f"Wrote {faa_path}")
     print(f"Wrote {members_path}")
-    print(f"Wrote {catalog_path}")
 
 
 def cleanup_output(out: Path, *, cache: Path = DEFAULT_CACHE) -> None:
     """Leave the files search reads, and move a nested download cache aside.
 
-    Search reads ``mett_proteins.faa``, ``members.sqlite``, and ``catalog.json``
-    from this directory. ``mett_proteins.faa.ssi`` is kept when esl-sfetch wrote
-    it. ``members.tsv`` is only the input to the sqlite build.
+    Search reads ``mett_proteins.faa`` and ``members.sqlite`` from this directory.
+    ``mett_proteins.faa.ssi`` is kept when esl-sfetch wrote it. ``members.tsv``
+    is only the input to the sqlite build. ``catalog.json`` is an older form
+    list; the API builds that list from the strain index.
     """
     missing = [name for name in RUNTIME_FILES if not (out / name).is_file()]
     if missing:
         raise SystemExit(
             f"Refusing to clean {out}: missing {', '.join(missing)}. "
-            "Search needs mett_proteins.faa, members.sqlite, and catalog.json."
+            "Search needs mett_proteins.faa and members.sqlite."
         )
+
+    catalog = out / "catalog.json"
+    if catalog.is_file():
+        catalog.unlink()
+        print(f"Removed {catalog}")
 
     members_tsv = out / "members.tsv"
     if members_tsv.is_file():
@@ -175,7 +178,6 @@ def build_parser() -> argparse.ArgumentParser:
         "merge", help="Deduplicate chunks into mett_proteins.faa"
     )
     merge.add_argument("--chunks", type=Path, required=True)
-    merge.add_argument("--species-csv", type=Path, default=DEFAULT_SPECIES)
     merge.add_argument("--out", type=Path, default=DEFAULT_OUT)
     merge.set_defaults(func=command_merge)
 

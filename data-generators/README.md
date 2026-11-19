@@ -27,7 +27,7 @@ data-generators/
 
 Default paths are relative to this folder. Override with `PROTEIN_DB_OUT`, `FAA_OUT`, `STRING_INPUT_DIR`, `STRING_OUT`, `BROWSER_INDEX_OUT`, `QC_OUT`, or `METTANNOTATOR_OUT`.
 
-Local PyHMMER should set `PYHMMER_DB` to `data/generated/protein-db/mett_proteins.faa`. `members.sqlite` and `catalog.json` are read from that same directory.
+Local PyHMMER should set `PYHMMER_DB` to `data/generated/protein-db/mett_proteins.faa`. `members.sqlite` is read from that same directory. The search form species list comes from the strain index.
 
 ## Script sequence
 
@@ -35,7 +35,7 @@ Numbering follows generator dependencies, not Django ingest order. Steps 03 and 
 
 | Step | Script | Consumes | Produces |
 |---|---|---|---|
-| 01 | `scripts/01-protein-db/protein_db.nf` | Isolate protein FASTAs (HD and 20hm) | `data/generated/protein-db/` (`mett_proteins.faa`, `members.sqlite`, `catalog.json`) |
+| 01 | `scripts/01-protein-db/protein_db.nf` | Isolate protein FASTAs (HD and 20hm) | `data/generated/protein-db/` (`mett_proteins.faa`, `members.sqlite`) |
 | 02 | `scripts/02-stringdb-mapper/` | `data/inputs/stringdb/` (STRING proteomes and copied type-strain FASTA) | `data/generated/string-mapping/{raw,uniprot_mapped,mapping_coverage}` |
 | 03 | `scripts/03-browser-indexes/` | Local or mounted FASTA + GFF (HD or 20hm roots) | `data/generated/browser-indexes/{release}/{species}/` |
 | 04 | `scripts/04-qc-duplicates/` | EBI FTP `.faa` | `data/generated/qc/` |

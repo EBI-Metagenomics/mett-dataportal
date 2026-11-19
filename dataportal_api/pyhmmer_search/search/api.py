@@ -1,9 +1,6 @@
-import json
 import logging
 from datetime import timedelta
-from pathlib import Path
 
-from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from ninja import Router
@@ -18,21 +15,16 @@ from dataportal.utils.errors import (
 )
 from dataportal.utils.response_wrappers import wrap_success_response
 from ..constants import (
-    COLLECTION_EXTENDED,
-    COLLECTION_HD,
     DATABASE_ID,
     DATABASE_LABEL,
     DEFAULT_TASK_RETENTION_DAYS,
-    HD_SPECIES,
     MAX_TASK_RETENTION_DAYS,
     MIN_TASK_RETENTION_DAYS,
     SHORTCUT_ALL_ID,
     SHORTCUT_ALL_LABEL,
-    SHORTCUT_HD_ID,
-    SHORTCUT_HD_LABEL,
     STATUS_PENDING,
 )
-from ..membership import catalog_path
+from ..catalog import load_catalog
 from ..models import HmmerJob
 from ..tasks import cleanup_old_jobs
 from ..visibility import limit_search_species, visible_catalog
@@ -83,52 +75,6 @@ def search(request, body: SearchRequestSchema):
         raise_internal_server_error(f"Internal server error: {str(e)}")
 
 
-def species_csv_path() -> Path:
-    if settings.PYHMMER_SPECIES_CSV:
-        return Path(settings.PYHMMER_SPECIES_CSV)
-    return Path(settings.BASE_DIR).parent / "data-generators" / "data" / "reference" / "species.csv"
-
-
-def load_catalog() -> dict:
-    path = catalog_path(settings.PYHMMER_DB)
-    if path.is_file():
-        return json.loads(path.read_text())
-    species_csv = species_csv_path()
-    species = []
-    if species_csv.is_file():
-        import csv
-
-        with species_csv.open(newline="") as handle:
-            for row in csv.DictReader(handle):
-                acronym = (row.get("acronym") or "").strip()
-                if not acronym:
-                    continue
-                species.append(
-                    {
-                        "acronym": acronym,
-                        "name": (row.get("scientific_name") or acronym).strip(),
-                        "isolates": 0,
-                        "type_strain": (row.get("type_strain_isolate") or "").strip(),
-                        "collection": (
-                            COLLECTION_HD if acronym in HD_SPECIES else COLLECTION_EXTENDED
-                        ),
-                    }
-                )
-    return {
-        "id": DATABASE_ID,
-        "name": DATABASE_LABEL,
-        "shortcuts": [
-            {"id": SHORTCUT_ALL_ID, "label": SHORTCUT_ALL_LABEL, "species": []},
-            {
-                "id": SHORTCUT_HD_ID,
-                "label": SHORTCUT_HD_LABEL,
-                "species": list(HD_SPECIES),
-            },
-        ],
-        "species": species,
-    }
-
-
 @pyhmmer_router_search.get("/databases", include_in_schema=False)
 @wrap_success_response
 def get_databases(request):
@@ -156,7 +102,9 @@ def get_catalog(request):
         return {
             "id": DATABASE_ID,
             "name": DATABASE_LABEL,
-            "shortcuts": [{"id": SHORTCUT_ALL_ID, "label": SHORTCUT_ALL_LABEL, "species": []}],
+            "shortcuts": [
+                {"id": SHORTCUT_ALL_ID, "label": SHORTCUT_ALL_LABEL, "species": []}
+            ],
             "species": [],
         }
 
@@ -180,7 +128,10 @@ def get_catalog(request):
 def get_tasks_status(request, threshold_days: int = DEFAULT_TASK_RETENTION_DAYS):
     """Get current status of PyHMMER task results in the database."""
     try:
-        if threshold_days < MIN_TASK_RETENTION_DAYS or threshold_days > MAX_TASK_RETENTION_DAYS:
+        if (
+            threshold_days < MIN_TASK_RETENTION_DAYS
+            or threshold_days > MAX_TASK_RETENTION_DAYS
+        ):
             raise_validation_error(
                 f"threshold_days must be between {MIN_TASK_RETENTION_DAYS} and {MAX_TASK_RETENTION_DAYS}"
             )
@@ -208,7 +159,10 @@ def get_tasks_status(request, threshold_days: int = DEFAULT_TASK_RETENTION_DAYS)
 def cleanup_tasks_manual(request, threshold_days: int = DEFAULT_TASK_RETENTION_DAYS):
     """Manually trigger cleanup of old PyHMMER task results."""
     try:
-        if threshold_days < MIN_TASK_RETENTION_DAYS or threshold_days > MAX_TASK_RETENTION_DAYS:
+        if (
+            threshold_days < MIN_TASK_RETENTION_DAYS
+            or threshold_days > MAX_TASK_RETENTION_DAYS
+        ):
             raise_validation_error(
                 f"threshold_days must be between {MIN_TASK_RETENTION_DAYS} and {MAX_TASK_RETENTION_DAYS}"
             )

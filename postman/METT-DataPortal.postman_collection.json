@@ -11239,7 +11239,7 @@
                     "catalog"
                   ]
                 },
-                "description": "Species and shortcuts from catalog.json beside PYHMMER_DB."
+                "description": "Species and shortcuts built from the strain index. Disabled species are omitted."
               },
               "response": []
             },

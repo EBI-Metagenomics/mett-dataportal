@@ -58,13 +58,13 @@ process STAGE {
 process MERGE {
     tag 'merge'
     // members.tsv is the sqlite input. It is not published.
-    publishDir "${params.out}", mode: 'copy', overwrite: true, pattern: '{mett_proteins.faa,catalog.json}'
+    publishDir "${params.out}", mode: 'copy', overwrite: true, pattern: 'mett_proteins.faa'
 
     input:
     path chunks
 
     output:
-    tuple path('mett_proteins.faa'), path('members.tsv'), path('catalog.json')
+    tuple path('mett_proteins.faa'), path('members.tsv')
 
     script:
     """
@@ -72,7 +72,6 @@ process MERGE {
     cp ${chunks} chunks/
     python3 ${projectDir}/run.py merge \\
         --chunks chunks \\
-        --species-csv '${params.species_csv}' \\
         --out .
     """
 }
@@ -82,7 +81,7 @@ process INDEX {
     publishDir "${params.out}", mode: 'copy', overwrite: true
 
     input:
-    tuple path(faa), path(members), path(catalog)
+    tuple path(faa), path(members)
 
     output:
     path 'members.sqlite'

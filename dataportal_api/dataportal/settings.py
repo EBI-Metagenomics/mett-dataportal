@@ -270,7 +270,8 @@ APPEND_SLASH = False
 
 DEFAULT_LIMIT = 10
 
-# Single deduplicated FASTA. members.sqlite and catalog.json sit beside it.
+# Single deduplicated FASTA. members.sqlite sits beside it.
+# The search form species list comes from the strain index.
 PYHMMER_DB = os.environ.get("PYHMMER_DB", DEFAULT_DB_PATH)
 PYHMMER_RESULT_MAX_BYTES = int(
     os.environ.get("PYHMMER_RESULT_MAX_BYTES", DEFAULT_RESULT_MAX_BYTES)
@@ -278,5 +279,3 @@ PYHMMER_RESULT_MAX_BYTES = int(
 PYHMMER_TASK_RETENTION_DAYS = int(
     os.environ.get("PYHMMER_TASK_RETENTION_DAYS", DEFAULT_TASK_RETENTION_DAYS)
 )
-# Optional override for the species list used when catalog.json is not beside the FASTA.
-PYHMMER_SPECIES_CSV = os.environ.get("PYHMMER_SPECIES_CSV", "")
