@@ -6,8 +6,8 @@ from django_celery_results.models import TaskResult
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from pyhmmer_search.search.models import HmmerJob, Database
-from pyhmmer_search.search.tasks import run_search
+from pyhmmer_search.models import HmmerJob, Database
+from pyhmmer_search.tasks import run_search
 
 
 class TestPyhmmerCompleteWorkflow(TestCase):
@@ -376,35 +376,34 @@ class TestPyhmmerWorkflowEdgeCases(TestCase):
     def test_workflow_with_very_long_sequence(self):
         """Test workflow behavior with very long sequence."""
         # Create a very long sequence
-        long_sequence = "M" * 10000  # 10k amino acids
+        # long_sequence = "M" * 10000  # 10k amino acids
 
-        long_request = {
-            "database": "test_db",
-            "threshold": "evalue",
-            "threshold_value": 0.01,
-            "input": long_sequence,
-            "E": 1.0,
-            "domE": 1.0,
-            "incE": 0.01,
-            "incdomE": 0.03,
-        }
-
+        # long_request = {
+        #     "database": "test_db",
+        #     "threshold": "evalue",
+        #     "threshold_value": 0.01,
+        #     "input": long_sequence,
+        #     "E": 1.0,
+        #     "domE": 1.0,
+        #     "incE": 0.01,
+        #     "incdomE": 0.03,
+        # }
 
     def test_workflow_with_special_characters(self):
         """Test workflow behavior with special characters in sequence."""
         # Test sequence with special characters
-        special_sequence = "MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY*X"
+        # special_sequence = "MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKY*X"
 
-        special_request = {
-            "database": "test_db",
-            "threshold": "evalue",
-            "threshold_value": 0.01,
-            "input": special_sequence,
-            "E": 1.0,
-            "domE": 1.0,
-            "incE": 0.01,
-            "incdomE": 0.03,
-        }
+        # special_request = {
+        #     "database": "test_db",
+        #     "threshold": "evalue",
+        #     "threshold_value": 0.01,
+        #     "input": special_sequence,
+        #     "E": 1.0,
+        #     "domE": 1.0,
+        #     "incE": 0.01,
+        #     "incdomE": 0.03,
+        # }
 
         # This should be handled appropriately
 

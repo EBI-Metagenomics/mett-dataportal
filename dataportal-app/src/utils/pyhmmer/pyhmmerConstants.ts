@@ -28,7 +28,8 @@ export const PYHMMER_CONSTANTS = {
         PV_TYPE_STRAINS: 'pv_type_strains',
         BU_PV_TYPE_STRAINS: 'bu_pv_type_strains',
         BU_PV_ALL: 'bu_pv_all',
-        DEFAULT: 'bu_pv_all'
+        METT_PROTEINS: 'mett_proteins',
+        DEFAULT: 'mett_proteins'
     },
     
     // Threshold configurations

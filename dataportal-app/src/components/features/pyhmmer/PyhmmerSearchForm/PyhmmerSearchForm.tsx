@@ -10,9 +10,10 @@ import {PyhmmerMXChoice, PyhmmerResult} from "../../../../interfaces/Pyhmmer";
 import PyhmmerResultsTable from "../PyhmmerResultsHandler/PyhmmerResultsTable";
 import PyhmmerSearchInput from "./PyhmmerSearchInput";
 import PyhmmerSearchHistory from "./PyhmmerSearchHistory";
-import { ThresholdTypeSelector, CutoffParameters, GapPenalties, InfoPopover, DatabaseSelector } from "./components";
-import {PYHMMER_CONSTANTS, SearchHistoryItem} from '../../../../utils/pyhmmer';
-import {PYHMMER_CUTOFF_HELP, PYHMMER_GAP_PENALTIES_HELP} from '../../../../utils/pyhmmer';
+import { ThresholdTypeSelector, CutoffParameters, GapPenalties, InfoPopover, SpeciesFilter } from "./components";
+import { SpeciesOption, SpeciesShortcut } from "./components/SpeciesFilter";
+import {PYHMMER_CONSTANTS, PYHMMER_CUTOFF_HELP, PYHMMER_GAP_PENALTIES_HELP} from '../../../../utils/pyhmmer';
+import {SearchHistoryItem} from '../../../../utils/pyhmmer/types';
 import { usePyhmmerSearchForm } from '../../../../hooks/usePyhmmerSearchForm';
 
 
@@ -23,7 +24,6 @@ const PyhmmerSearchForm: React.FC = () => {
     const {
         evalueType, setEvalueType,
         sequence, setSequence,
-        database, setDatabase,
         significanceEValueSeq, setSignificanceEValueSeq,
         significanceEValueHit, setSignificanceEValueHit,
         reportEValueSeq, setReportEValueSeq,
@@ -45,7 +45,12 @@ const PyhmmerSearchForm: React.FC = () => {
     const [loadingMessage, setLoadingMessage] = useState<string>('');
     const [error, setError] = useState<string | undefined>(undefined);
 
-    const [databases, setDatabases] = useState<{ id: string; name: string }[]>([]);
+    const [speciesOptions, setSpeciesOptions] = useState<SpeciesOption[]>([]);
+    const [shortcuts, setShortcuts] = useState<SpeciesShortcut[]>([
+        { id: 'all', label: 'All species', species: [] },
+    ]);
+    const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
+    const [typeOnly, setTypeOnly] = useState(false);
     const [mxChoices, setMXChoices] = useState<PyhmmerMXChoice[]>([]);
 
     // Search history state
@@ -62,7 +67,11 @@ const PyhmmerSearchForm: React.FC = () => {
     // Save search to history using centralized service
     const saveSearchToHistoryLocal = (jobId: string, query: string) => {
         const searchRequest = {
-            database: database,
+            database: PYHMMER_CONSTANTS.DATABASES.METT_PROTEINS,
+            species: speciesOptions.length > 0 && speciesOptions.every(item => selectedSpecies.includes(item.acronym))
+                ? []
+                : selectedSpecies,
+            type_only: typeOnly,
             threshold: evalueType,
             threshold_value: evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq),
             input: query
@@ -84,19 +93,22 @@ const PyhmmerSearchForm: React.FC = () => {
     };
 
     useEffect(() => {
-        const fetchDatabases = async () => {
+        const fetchCatalog = async () => {
             try {
-                const response = await PyhmmerService.getDatabases();
-                setDatabases(response);
+                const catalog = await PyhmmerService.getCatalog();
+                const options = catalog.species.map(item => ({ acronym: item.acronym, name: item.name }));
+                setSpeciesOptions(options);
+                setSelectedSpecies(current => current.length === 0 ? options.map(item => item.acronym) : current);
+                if (catalog.shortcuts.length > 0) {
+                    setShortcuts(catalog.shortcuts);
+                }
             } catch (error) {
-                console.error('Failed to fetch databases:', error);
-                setDatabases([]);
-                setError('Unable to load databases. Please check if the backend server is running.');
+                console.error('Failed to fetch protein catalog:', error);
+                setError('Unable to load species. Please check if the backend server is running.');
             }
         };
 
-        fetchDatabases();
-
+        fetchCatalog();
         loadSearchHistoryLocal();
     }, []);
 
@@ -181,6 +193,10 @@ const PyhmmerSearchForm: React.FC = () => {
             setError('Please fix the validation errors before submitting.');
             return;
         }
+        if (selectedSpecies.length === 0) {
+            setError('Select at least one species.');
+            return;
+        }
 
         setLoading(true);
         setLoadingMessage('Submitting search job...');
@@ -188,8 +204,12 @@ const PyhmmerSearchForm: React.FC = () => {
         setResults([]);
         try {
             // Compose request with all parameters
+            const everySpecies = speciesOptions.length > 0
+                && speciesOptions.every(item => selectedSpecies.includes(item.acronym));
             const req = {
-                database,
+                database: PYHMMER_CONSTANTS.DATABASES.METT_PROTEINS,
+                species: everySpecies ? [] : selectedSpecies,
+                type_only: typeOnly,
                 threshold: evalueType,
                 threshold_value: evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq),
                 input: sequence,
@@ -212,7 +232,8 @@ const PyhmmerSearchForm: React.FC = () => {
 
             // Enhanced logging for form values
             console.log('=== FORM VALUES BEING SENT ===');
-            console.log('Database:', database);
+            console.log('Species:', req.species.length ? req.species.join(',') : 'all');
+            console.log('Type strains only:', typeOnly);
             console.log('Threshold type:', evalueType);
             console.log('Threshold value:', evalueType === 'evalue' ? parseFloat(significanceEValueSeq) : parseFloat(significanceBitScoreSeq));
             // Temporarily disabled - PyHMMER only supports default scoring matrix
@@ -318,6 +339,8 @@ const PyhmmerSearchForm: React.FC = () => {
     const handleReset = () => {
         // Use the form hook's reset function
         resetForm();
+        setSelectedSpecies(speciesOptions.map(item => item.acronym));
+        setTypeOnly(false);
 
         // Clear results and job IDs
         setResults([]);
@@ -333,84 +356,96 @@ const PyhmmerSearchForm: React.FC = () => {
 
     return (
         <section className={styles.pyhmmerSection}>
-            <div className={styles.formContainer}>
-                <div className={styles.leftPane}>
-
-                    {/* Cut off */}
-                    <div className={styles.formSection}>
-                        <InfoPopover
-                            label="Cut off"
-                            helpText={PYHMMER_CUTOFF_HELP}
-                            ariaLabel="Cut off info"
-                        />
-                        <ThresholdTypeSelector
-                            evalueType={evalueType}
-                            onEvalueTypeChange={setEvalueType}
-                        />
-                        <CutoffParameters
-                            evalueType={evalueType}
-                            significanceEValueSeq={significanceEValueSeq}
-                            significanceEValueHit={significanceEValueHit}
-                            reportEValueSeq={reportEValueSeq}
-                            reportEValueHit={reportEValueHit}
-                            significanceBitScoreSeq={significanceBitScoreSeq}
-                            significanceBitScoreHit={significanceBitScoreHit}
-                            reportBitScoreSeq={reportBitScoreSeq}
-                            reportBitScoreHit={reportBitScoreHit}
-                            setSignificanceEValueSeq={setSignificanceEValueSeq}
-                            setSignificanceEValueHit={setSignificanceEValueHit}
-                            setReportEValueSeq={setReportEValueSeq}
-                            setReportEValueHit={setReportEValueHit}
-                            setSignificanceBitScoreSeq={setSignificanceBitScoreSeq}
-                            setSignificanceBitScoreHit={setSignificanceBitScoreHit}
-                            setReportBitScoreSeq={setReportBitScoreSeq}
-                            setReportBitScoreHit={setReportBitScoreHit}
-                            getFieldError={getFieldError}
-                        />
-                    </div>
-
-                    <div className={styles.sectionDivider}></div>
-
-                    {/* Gap penalties */}
-                    <div className={styles.formSection}>
-                        <InfoPopover
-                            label="Gap penalties"
-                            helpText={PYHMMER_GAP_PENALTIES_HELP}
-                            ariaLabel="Gap penalties info"
-                        />
-                        <GapPenalties
-                            gapOpen={gapOpen}
-                            gapExtend={gapExtend}
-                            setGapOpen={setGapOpen}
-                            setGapExtend={setGapExtend}
-                            getFieldError={getFieldError}
-                        />
-                    </div>
-
-                </div>
-                <div className={styles.rightPane}>
-                    {/* Sequence database */}
-                    <DatabaseSelector
-                        database={database}
-                        databases={databases}
-                        onDatabaseChange={setDatabase}
-                    />
-
-                    {/* <div className={`${styles.sectionDivider} ${styles.tight}`}></div> */}
-
+            <div className={styles.searchCard}>
+                <div className={styles.searchGrid}>
                     <PyhmmerSearchInput
                         sequence={sequence}
                         setSequence={setSequence}
-                        handleSubmit={handleSubmit}
                         sequenceError={getFieldError('sequence')}
-                        isFormValid={isFormValid()}
-                        onResetAll={handleReset}
+                    />
+                    <SpeciesFilter
+                        species={speciesOptions}
+                        shortcuts={shortcuts}
+                        selected={selectedSpecies}
+                        typeOnly={typeOnly}
+                        onSelectedChange={setSelectedSpecies}
+                        onTypeOnlyChange={setTypeOnly}
                     />
                 </div>
-            </div>
 
-            {/* Section divider between form and results */}
-            <div className={styles.sectionDivider}></div>
+                <details className={styles.advanced}>
+                    <summary>Advanced cut-offs and gap penalties</summary>
+                    <div className={styles.advancedBody}>
+                        <div className={styles.advancedGroup}>
+                            <div className={styles.advancedHeading}>
+                                <InfoPopover
+                                    label="Cut off"
+                                    helpText={PYHMMER_CUTOFF_HELP}
+                                    ariaLabel="Cut off info"
+                                />
+                                <ThresholdTypeSelector
+                                    evalueType={evalueType}
+                                    onEvalueTypeChange={setEvalueType}
+                                />
+                            </div>
+                            <CutoffParameters
+                                evalueType={evalueType}
+                                significanceEValueSeq={significanceEValueSeq}
+                                significanceEValueHit={significanceEValueHit}
+                                reportEValueSeq={reportEValueSeq}
+                                reportEValueHit={reportEValueHit}
+                                significanceBitScoreSeq={significanceBitScoreSeq}
+                                significanceBitScoreHit={significanceBitScoreHit}
+                                reportBitScoreSeq={reportBitScoreSeq}
+                                reportBitScoreHit={reportBitScoreHit}
+                                setSignificanceEValueSeq={setSignificanceEValueSeq}
+                                setSignificanceEValueHit={setSignificanceEValueHit}
+                                setReportEValueSeq={setReportEValueSeq}
+                                setReportEValueHit={setReportEValueHit}
+                                setSignificanceBitScoreSeq={setSignificanceBitScoreSeq}
+                                setSignificanceBitScoreHit={setSignificanceBitScoreHit}
+                                setReportBitScoreSeq={setReportBitScoreSeq}
+                                setReportBitScoreHit={setReportBitScoreHit}
+                                getFieldError={getFieldError}
+                            />
+                        </div>
+                        <div className={styles.advancedGroup}>
+                            <div className={styles.advancedHeading}>
+                                <InfoPopover
+                                    label="Gap penalties"
+                                    helpText={PYHMMER_GAP_PENALTIES_HELP}
+                                    ariaLabel="Gap penalties info"
+                                />
+                            </div>
+                            <GapPenalties
+                                gapOpen={gapOpen}
+                                gapExtend={gapExtend}
+                                setGapOpen={setGapOpen}
+                                setGapExtend={setGapExtend}
+                                getFieldError={getFieldError}
+                            />
+                        </div>
+                    </div>
+                </details>
+
+                <div className={styles.actions}>
+                    <button
+                        className="vf-button vf-button--primary vf-button--sm"
+                        onClick={handleSubmit}
+                        type="button"
+                        disabled={!isFormValid()}
+                    >
+                        Submit
+                    </button>
+                    <button
+                        className="vf-button vf-button--sm"
+                        type="button"
+                        onClick={handleReset}
+                    >
+                        Reset
+                    </button>
+                </div>
+            </div>
 
             {/* Results two-column layout */}
             <div className={styles.resultsContainer}>

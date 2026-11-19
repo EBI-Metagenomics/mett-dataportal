@@ -3,8 +3,11 @@ import os
 import sys
 from pathlib import Path
 
-from celery.schedules import crontab
-
+from pyhmmer_search.constants import (
+    DEFAULT_DB_PATH,
+    DEFAULT_RESULT_MAX_BYTES,
+    DEFAULT_TASK_RETENTION_DAYS,
+)
 from .elasticsearch_client import init_es_connection
 
 
@@ -28,7 +31,9 @@ ES_MAX_RETRIES = int(os.getenv("ES_MAX_RETRIES", 3))
 METT_RELEASE = os.getenv("METT_RELEASE", "current")
 
 # Feature flags
-ENABLE_PYHMMER_SEARCH = os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+ENABLE_PYHMMER_SEARCH = (
+    os.environ.get("ENABLE_PYHMMER_SEARCH", "false").lower() == "true"
+)
 ENABLE_FEEDBACK = os.environ.get("ENABLE_FEEDBACK", "false").lower() == "true"
 ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() == "true"
 
@@ -36,16 +41,6 @@ ENABLE_NATURAL_QUERY = os.environ.get("ENABLE_NATURAL_QUERY", "false").lower() =
 STRING_DB_API_BASE = os.environ.get("STRING_DB_API_BASE", "https://string-db.org/api")
 STRING_DB_WEB_BASE = os.environ.get("STRING_DB_WEB_BASE", "https://string-db.org")
 
-
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
-
-CELERY_TASK_QUEUES = {
-    "pyhmmer_queue": {
-        "exchange": "pyhmmer",
-        "routing_key": "pyhmmer.search",
-    }
-}
 
 LOGGING = {
     "version": 1,
@@ -108,7 +103,7 @@ INSTALLED_APPS = [
 
 # Conditionally include PyHMMER search app based on feature flag
 if ENABLE_PYHMMER_SEARCH:
-    INSTALLED_APPS.append("pyhmmer_search.search.apps.PyhmmerSearchConfig")
+    INSTALLED_APPS.append("pyhmmer_search.apps.PyhmmerSearchConfig")
 
 if DEBUG:
     INSTALLED_APPS.append("debug_toolbar")
@@ -275,37 +270,12 @@ APPEND_SLASH = False
 
 DEFAULT_LIMIT = 10
 
-CELERY_BEAT_SCHEDULE = {
-    "cleanup-task-results-weekly": {
-        "task": "pyhmmer_search.tasks.cleanup_old_tasks",
-        "schedule": crontab(day_of_week="sunday", hour=3),
-    },
-}
-
-PYHMMER_FAA_BASE_PATH = os.environ.get("PYHMMER_FAA_BASE_PATH", "/data/pyhmmer/output/")
-PYHMMER_ISOLATES_BASE_PATH = os.environ.get(
-    "PYHMMER_ISOLATES_BASE_PATH", "/data/pyhmmer/output/isolates-db/"
+# Single deduplicated FASTA. members.sqlite sits beside it.
+# The search form species list comes from the strain index.
+PYHMMER_DB = os.environ.get("PYHMMER_DB", DEFAULT_DB_PATH)
+PYHMMER_RESULT_MAX_BYTES = int(
+    os.environ.get("PYHMMER_RESULT_MAX_BYTES", DEFAULT_RESULT_MAX_BYTES)
 )
-
-
-# Function to get isolate-specific database path
-def get_isolate_database_path(isolate_name: str) -> str:
-    """Get the database path for a specific isolate."""
-    if isolate_name.startswith("BU_"):
-        species_dir = "BU"
-    elif isolate_name.startswith("PV_"):
-        species_dir = "PV"
-    else:
-        species_dir = "BU"  # Default to BU
-
-    return f"{PYHMMER_ISOLATES_BASE_PATH}{species_dir}/{isolate_name}_deduplicated.faa"
-
-
-HMMER_DATABASES = {
-    "bu_type_strains": PYHMMER_FAA_BASE_PATH + "bu_typestrains_deduplicated.faa",
-    "bu_all": PYHMMER_FAA_BASE_PATH + "bu_all_strains_deduplicated.faa",
-    "pv_type_strains": PYHMMER_FAA_BASE_PATH + "pv_typestrains_deduplicated.faa",
-    "pv_all": PYHMMER_FAA_BASE_PATH + "pv_all_strains_deduplicated.faa",
-    "bu_pv_type_strains": PYHMMER_FAA_BASE_PATH + "bu_pv_typestrains_deduplicated.faa",
-    "bu_pv_all": PYHMMER_FAA_BASE_PATH + "bu_pv_all_strains_deduplicated.faa",
-}
+PYHMMER_TASK_RETENTION_DAYS = int(
+    os.environ.get("PYHMMER_TASK_RETENTION_DAYS", DEFAULT_TASK_RETENTION_DAYS)
+)

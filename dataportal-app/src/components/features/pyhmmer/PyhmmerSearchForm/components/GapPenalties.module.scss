@@ -1,24 +1,24 @@
 .gapRow {
   display: grid;
-  grid-template-columns: 1fr 1fr 2fr;
-  gap: 16px;
+  grid-template-columns: 92px 92px;
+  gap: 8px 10px;
   align-items: start;
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
 .gapLabel {
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #495057;
-  font-size: 0.95rem;
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-align: center;
+  color: #1a1c1a;
+  font-size: 0.85rem;
 }
 
 .inputContainer {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
 }
 
 .inputSmall {
@@ -31,6 +31,7 @@
   font-size: 0.8rem;
   font-family: inherit;
   box-sizing: border-box;
+  text-align: center;
   color: #888;
 
   &:focus {

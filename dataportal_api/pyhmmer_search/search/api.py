@@ -1,8 +1,8 @@
 import logging
 from datetime import timedelta
 
+from django.db import transaction
 from django.utils import timezone
-from django_celery_results.models import TaskResult
 from ninja import Router
 
 from dataportal.schema.response_schemas import (
@@ -14,12 +14,22 @@ from dataportal.utils.errors import (
     raise_internal_server_error,
 )
 from dataportal.utils.response_wrappers import wrap_success_response
-from .models import Database
-from .models import HmmerJob
+from ..constants import (
+    DATABASE_ID,
+    DATABASE_LABEL,
+    DEFAULT_TASK_RETENTION_DAYS,
+    MAX_TASK_RETENTION_DAYS,
+    MIN_TASK_RETENTION_DAYS,
+    SHORTCUT_ALL_ID,
+    SHORTCUT_ALL_LABEL,
+    STATUS_PENDING,
+)
+from ..catalog import load_catalog
+from ..models import HmmerJob
+from ..tasks import cleanup_old_jobs
+from ..visibility import limit_search_species, visible_catalog
+from .runner import start_search
 from .schemas import SearchRequestSchema
-from .tasks import run_search
-
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -33,55 +43,31 @@ def search(request, body: SearchRequestSchema):
         logger.info("=== SEARCH REQUEST RECEIVED ===")
         logger.debug("Request metadata captured; input sequence omitted for privacy.")
 
-        # Create the job
+        # Create the job. An empty species list means every enabled species.
         logger.info("Creating HmmerJob...")
-        job = HmmerJob(**body.dict(), algo=HmmerJob.AlgoChoices.PHMMER)
+        payload = body.dict()
+        limited = limit_search_species(payload.get("species"))
+        if limited is not None:
+            if payload.get("species") and not limited:
+                raise_validation_error("None of the requested species are enabled.")
+            payload["species"] = limited
+        job = HmmerJob(**payload, algo=HmmerJob.AlgoChoices.PHMMER)
         logger.info(f"Job object created: {job}")
         logger.info(f"Job ID before save: {job.id}")
 
+        job.status = STATUS_PENDING
         job.clean()
         job.save()
         logger.info(f"Job saved to database with ID: {job.id}")
 
-        try:
-            job.refresh_from_db()
-            logger.info(f"Job verified in database with ID: {job.id}")
-            time.sleep(0.1)
-            logger.info(f"Job {job.id} should be committed to database")
-        except Exception as e:
-            logger.error(f"Failed to verify job in database: {e}")
-            raise_internal_server_error(f"Failed to create job: {str(e)}")
-
-        # Start the task
-        logger.info("Starting Celery task...")
         job_id_str = str(job.id)
-
-        result = run_search.delay(job_id_str)
-        logger.info(f"Celery task started with ID: {result.id}")
-
-        # Create TaskResult entry
-        logger.info("Creating TaskResult entry...")
-        task_result = TaskResult.objects.create(
-            task_id=result.id,
-            status="PENDING",
-            result=None,
-            traceback=None,
-            meta=None,
-            date_done=None,
-            date_created=timezone.now(),
-        )
-        logger.info(f"TaskResult created: {task_result}")
-
-        job.task = task_result
-        job.save()
-        logger.info("Task linked successfully")
-
+        transaction.on_commit(lambda: start_search(job_id_str))
         logger.info("=== SEARCH REQUEST COMPLETED ===")
         logger.info(f"Job ID: {job.id}")
-        logger.info(f"Task ID: {result.id}")
 
         return create_success_response(
-            data={"id": job.id}, message=f"PyHMMER search job created successfully with ID {job.id}"
+            data={"id": job.id},
+            message=f"PyHMMER search job created successfully with ID {job.id}",
         )
 
     except Exception as e:
@@ -92,33 +78,35 @@ def search(request, body: SearchRequestSchema):
 @pyhmmer_router_search.get("/databases", include_in_schema=False)
 @wrap_success_response
 def get_databases(request):
-    """Get available databases for PyHMMER search."""
-    try:
-        databases = Database.objects.all().order_by("order")
+    """The search form uses one database. Species is a filter, not a second file."""
+    return [
+        {
+            "id": DATABASE_ID,
+            "name": DATABASE_LABEL,
+            "type": "seq",
+            "version": "1",
+            "release_date": None,
+            "order": 0,
+        }
+    ]
 
-        return [
-            {
-                "id": db.id,
-                "name": db.name,
-                "type": db.type,
-                "version": db.version,
-                "release_date": (db.release_date.isoformat() if db.release_date else None),
-                "order": db.order,
-            }
-            for db in databases
-        ]
+
+@pyhmmer_router_search.get("/catalog", include_in_schema=False)
+@wrap_success_response
+def get_catalog(request):
+    """Species and shortcuts for the search form."""
+    try:
+        return visible_catalog(load_catalog())
     except Exception as e:
-        logger.error(f"Error getting databases: {e}")
-        return [
-            {
-                "id": "bu_pv_all",
-                "name": "Bacteroides uniformis + Phocaeicola vulgatus All Strains",
-                "type": "seq",
-                "version": "1.0",
-                "release_date": "2024-01-01",
-                "order": 1,
-            }
-        ]
+        logger.error(f"Error getting protein catalog: {e}")
+        return {
+            "id": DATABASE_ID,
+            "name": DATABASE_LABEL,
+            "shortcuts": [
+                {"id": SHORTCUT_ALL_ID, "label": SHORTCUT_ALL_LABEL, "species": []}
+            ],
+            "species": [],
+        }
 
 
 # @pyhmmer_router_search.get("/mx-choices", include_in_schema=False)
@@ -137,17 +125,21 @@ def get_databases(request):
 
 @pyhmmer_router_search.get("/tasks-status", include_in_schema=False)
 @wrap_success_response
-def get_tasks_status(request, threshold_days: int = 30):
+def get_tasks_status(request, threshold_days: int = DEFAULT_TASK_RETENTION_DAYS):
     """Get current status of PyHMMER task results in the database."""
     try:
-        # Validate threshold_days parameter
-        if threshold_days < 1 or threshold_days > 365:
-            raise_validation_error("threshold_days must be between 1 and 365")
+        if (
+            threshold_days < MIN_TASK_RETENTION_DAYS
+            or threshold_days > MAX_TASK_RETENTION_DAYS
+        ):
+            raise_validation_error(
+                f"threshold_days must be between {MIN_TASK_RETENTION_DAYS} and {MAX_TASK_RETENTION_DAYS}"
+            )
 
         cutoff = timezone.now() - timedelta(days=threshold_days)
 
-        total_tasks = TaskResult.objects.count()
-        old_tasks = TaskResult.objects.filter(date_done__lt=cutoff).count()
+        total_tasks = HmmerJob.objects.count()
+        old_tasks = HmmerJob.objects.filter(created_at__lt=cutoff).count()
         recent_tasks = total_tasks - old_tasks
 
         return {
@@ -164,16 +156,19 @@ def get_tasks_status(request, threshold_days: int = 30):
 
 @pyhmmer_router_search.post("/cleanup-tasks", include_in_schema=False)
 @wrap_success_response
-def cleanup_tasks_manual(request, threshold_days: int = 30):
+def cleanup_tasks_manual(request, threshold_days: int = DEFAULT_TASK_RETENTION_DAYS):
     """Manually trigger cleanup of old PyHMMER task results."""
     try:
-        # Validate threshold_days parameter
-        if threshold_days < 1 or threshold_days > 365:
-            raise_validation_error("threshold_days must be between 1 and 365")
+        if (
+            threshold_days < MIN_TASK_RETENTION_DAYS
+            or threshold_days > MAX_TASK_RETENTION_DAYS
+        ):
+            raise_validation_error(
+                f"threshold_days must be between {MIN_TASK_RETENTION_DAYS} and {MAX_TASK_RETENTION_DAYS}"
+            )
 
-        # Use the same logic as the scheduled task
         cutoff = timezone.now() - timedelta(days=threshold_days)
-        deleted, _ = TaskResult.objects.filter(date_done__lt=cutoff).delete()
+        deleted = cleanup_old_jobs(threshold_days)
 
         logger.info(
             f"Manual PyHMMER cleanup triggered: Deleted {deleted} old task results (threshold: {threshold_days} days)"

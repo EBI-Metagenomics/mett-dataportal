@@ -165,7 +165,7 @@ def run_unit_tests(verbose=False):
     """Run PyHMMER unit tests using pytest."""
     print("🚀 Running PyHMMER Unit Tests...")
 
-    test_path = "pyhmmer_search/search/test_tasks.py"
+    test_path = "pyhmmer_search/tests/test_tasks.py"
 
     # Use pytest with Django's in-memory database
     cmd = ["python", "-m", "pytest", test_path]

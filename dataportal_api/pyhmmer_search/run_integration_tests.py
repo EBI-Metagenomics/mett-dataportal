@@ -85,7 +85,7 @@ def run_command(cmd, description, verbose=False):
 
 
 def run_pytest_tests(
-        test_path, description, verbose=False, coverage=False, parallel=False
+    test_path, description, verbose=False, coverage=False, parallel=False
 ):
     """Run pytest tests with the given options."""
     cmd = ["python", "-m", "pytest", test_path, "-v"]
@@ -216,7 +216,7 @@ def run_unit_tests(verbose=False, coverage=False):
     """Run unit tests."""
     print("🚀 Running Unit Tests...")
 
-    test_path = "pyhmmer_search/search/test_tasks.py"
+    test_path = "pyhmmer_search/tests/test_tasks.py"
 
     if os.path.exists(test_path):
         success, output = run_pytest_tests(test_path, "Unit Tests", verbose, coverage)

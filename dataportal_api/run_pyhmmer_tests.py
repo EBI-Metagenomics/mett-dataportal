@@ -121,7 +121,7 @@ def run_unit_tests(verbose=False, coverage=False):
     """Run PyHMMER unit tests."""
     print("🚀 Running PyHMMER Unit Tests...")
 
-    test_path = "pyhmmer_search/search/test_tasks.py"
+    test_path = "pyhmmer_search/tests/test_tasks.py"
 
     if os.path.exists(test_path):
         success, output = run_pytest_tests(

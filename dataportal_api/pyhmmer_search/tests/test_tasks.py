@@ -2,9 +2,9 @@ import pytest
 from unittest.mock import Mock, patch
 from pyhmmer.plan7 import Hit, Domain
 
-from ..search.tasks import run_search
-from ..search.models import HmmerJob
-from ..search.schemas import HitSchema
+from pyhmmer_search.models import HmmerJob
+from pyhmmer_search.search.schemas import HitSchema
+from pyhmmer_search.tasks import run_search
 from django_celery_results.models import TaskResult
 
 
@@ -73,11 +73,11 @@ class TestPyhmmerSearchTasks:
         mock_job.task = mock_task_result
 
         # Mock the domain significance calculation
-        with patch("pyhmmer_search.search.tasks.Pipeline") as mock_pipeline, patch(
-            "pyhmmer_search.search.tasks.SequenceFile"
-        ) as mock_seq_file, patch(
-            "pyhmmer_search.search.tasks.Builder"
-        ) as mock_builder:
+        with (
+            patch("pyhmmer_search.execution.engine.Pipeline") as mock_pipeline,
+            patch("pyhmmer_search.execution.targets.SequenceFile") as mock_seq_file,
+            patch("pyhmmer_search.execution.engine.Builder") as mock_builder,
+        ):
 
             # Mock pipeline search results
             mock_pipeline_instance = Mock()

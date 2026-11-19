@@ -9,9 +9,9 @@ from pyhmmer.easel import TextSequence, DigitalSequenceBlock, Alphabet
 from pyhmmer.hmmer import hmmalign
 from pyhmmer.plan7 import Background, Builder
 
-logger = logging.getLogger(__name__)
+from ...constants import VALID_AMINO_ACIDS
 
-VALID_AMINO_ACIDS = set("ACDEFGHIKLMNPQRSTVWY*")
+logger = logging.getLogger(__name__)
 
 
 class DownloadAlignedFastaService:
@@ -32,8 +32,23 @@ class DownloadAlignedFastaService:
     ) -> bytes:
         from .sequence_service import SequenceService
 
-        target_names = [hit["target"] for hit in results if "target" in hit]
+        target_names = [
+            hit.get("seq_id") or hit.get("target")
+            for hit in results
+            if hit.get("seq_id") or hit.get("target")
+        ]
         all_sequences = SequenceService.fetch_sequences_parallel(target_names, db_path)
+        # Alignments are keyed by the representative sequence, which several locus tags share.
+        for hit in results:
+            seq_id = hit.get("seq_id")
+            target = hit.get("target")
+            if (
+                seq_id
+                and target
+                and seq_id in all_sequences
+                and target not in all_sequences
+            ):
+                all_sequences[target] = all_sequences[seq_id]
         return DownloadAlignedFastaService.build_aligned_fasta_msa(
             query_input, results, all_sequences
         )

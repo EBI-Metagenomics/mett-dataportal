@@ -11,8 +11,8 @@ from django_celery_results.models import TaskResult
 from ninja.testing import TestClient
 from django.db import transaction
 
-from pyhmmer_search.search.models import HmmerJob, Database
-from pyhmmer_search.search.tasks import run_search
+from pyhmmer_search.models import HmmerJob, Database
+from pyhmmer_search.tasks import run_search
 from pyhmmer_search.search.api import pyhmmer_router_search
 
 

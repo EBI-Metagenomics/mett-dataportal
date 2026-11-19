@@ -6,7 +6,7 @@ from django_celery_results.models import TaskResult
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from pyhmmer_search.search.models import HmmerJob, Database
+from pyhmmer_search.models import HmmerJob, Database
 
 
 class TestPyhmmerResultsIntegration(TestCase):

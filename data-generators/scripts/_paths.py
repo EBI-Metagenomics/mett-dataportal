@@ -14,6 +14,9 @@ def _env_path(name: str, default: Path) -> Path:
 
 
 FAA_OUT = _env_path("FAA_OUT", DATA_GENERATORS_ROOT / "data" / "generated" / "faa")
+PROTEIN_DB_OUT = _env_path(
+    "PROTEIN_DB_OUT", DATA_GENERATORS_ROOT / "data" / "generated" / "protein-db"
+)
 STRING_INPUT_DIR = _env_path(
     "STRING_INPUT_DIR", DATA_GENERATORS_ROOT / "data" / "inputs" / "stringdb"
 )

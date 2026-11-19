@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "2c57c732-5351-4e14-8e72-0e9832efcbee",
+    "_postman_id": "02b65722-11f4-4672-8d0e-ad5e2d32a69d",
     "name": "METT-DataPortal",
-    "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** each top-level folder starts with an `00-Init-set-…-fixtures` request. Run that request first for the folder you are exercising; it writes collection variables from the `fixtures` object in its Pre-request Script. Edit values there when fixtures change.\n\nRun **CoreAPIs / Releases / List-Releases** after CoreAPIs init when exercising X-METT-Release scenarios; it stores `resolved_release_version`.\n\n**Annotation comparison:** folder `Annotation comparison / BU vs BF` compares BU_ATCC8492 gene fixtures (dnaA, rpsR, AMR, defense) against BF_NCTC9343 orthologs (run `00-Init-set-Annotation-comparison-fixtures` first).\n\n**Visibility / Admin:** species and strains use an `enabled` flag in Elasticsearch. After changing enablement via ingest, call **CoreAPIs / Admin / Cache-Rebuild-Visibility-Registries** (admin JWT) to reload in-memory registries. Disabled species (fixture `species_acronym_disabled`, default BF) must not appear in species, type-strain, genome, or gene search results.",
+    "description": "METT Data Portal REST API.\n\n**Auth:** collection-level Bearer `{{bearer-token-current}}` (set in the Postman environment).\n\n**Host:** `{{mett-current}}` from the environment (local / dev / prod).\n\n**Fixtures:** each top-level folder starts with an `00-Init-set-…-fixtures` request. Run that request first for the folder you are exercising; it writes collection variables from the `fixtures` object in its Pre-request Script. Edit values there when fixtures change.\n\nRun **CoreAPIs / Releases / List-Releases** after CoreAPIs init when exercising X-METT-Release scenarios; it stores `resolved_release_version`.\n\n**Annotation comparison:** folder `Annotation comparison / BU vs BF` compares BU_ATCC8492 gene fixtures (dnaA, rpsR, AMR, defense) against BF_NCTC9343 orthologs (run `00-Init-set-Annotation-comparison-fixtures` first).\n\n**Visibility / Admin:** species and strains use an `enabled` flag in Elasticsearch. After changing enablement via ingest, call **CoreAPIs / Admin / Cache-Rebuild-Visibility-Registries** (admin JWT) to reload in-memory registries. Disabled species (fixture `species_acronym_disabled`, default BF) must not appear in species, type-strain, genome, or gene search results.\n\n**PyHMMER:** run `PyHmmer / Catalog`, then `PyHmmer / 01 Smoke — BU and PV`. Other folders under PyHmmer are separate scenarios. `{{mett-current}}` selects local or production.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "19420352"
   },
@@ -723,34 +723,10 @@
                 {
                   "listen": "test",
                   "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
-                      "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Array length is greater than or equal to 2\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.data.length).to.be.at.least(2);",
-                      "});",
-                      "",
-                      "pm.test(\"Only enabled species are returned\", function () {",
-                      "    const rows = pm.response.json().data;",
-                      "    rows.forEach(function (species) {",
-                      "        pm.expect(species).to.have.property(\"enabled\");",
-                      "        pm.expect(species.enabled).to.eql(true);",
-                      "    });",
-                      "});",
-                      "",
-                      "pm.test(\"Disabled fixture species is not listed\", function () {",
-                      "    const rows = pm.response.json().data;",
-                      "    const disabled = (pm.collectionVariables.get(\"species_acronym_disabled\") || \"BF\").toUpperCase();",
-                      "    const acronyms = rows.map(s => String(s.acronym || \"\").toUpperCase());",
-                      "    pm.expect(acronyms).to.not.include(disabled);",
-                      "});"
-                    ],
                     "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Array length is greater than or equal to 2\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data.length).to.be.at.least(2);\n});\n\npm.test(\"Only enabled species are returned\", function () {\n    const rows = pm.response.json().data;\n    rows.forEach(function (species) {\n        pm.expect(species).to.have.property(\"enabled\");\n        pm.expect(species.enabled).to.eql(true);\n    });\n});\n\npm.test(\"Disabled fixture species is not listed\", function () {\n    const rows = pm.response.json().data;\n    const disabled = (pm.collectionVariables.get(\"species_acronym_disabled\") || \"BF\").toUpperCase();\n    const acronyms = rows.map(s => String(s.acronym || \"\").toUpperCase());\n    pm.expect(acronyms).to.not.include(disabled);\n});"
+                    ]
                   }
                 }
               ],
@@ -1503,6 +1479,42 @@
                     {
                       "key": "query",
                       "value": "{{genome_search_query_pv}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Genomes-by-SpeciesString-Bacteroides",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Number of pages matches expected value\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data).to.be.an('array').length(1)\n});\n\npm.test(\"Isolate Name matches expected value\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.data[0].isolate_name).contain(pm.collectionVariables.get(\"isolate_name_pv_h4\"));\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/genomes/search?query=Bacteroides",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "genomes",
+                    "search"
+                  ],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "Bacteroides"
                     }
                   ]
                 }
@@ -11108,51 +11120,70 @@
     },
     {
       "name": "PyHmmer",
+      "description": "Single protein database. {{mett-current}} is the host (METT_LOCAL or METT_PROD). Search runs in the API process. Run Catalog, then one scenario folder from top to bottom. 01 Smoke is the production check: it submits, waits, then downloads. Running this whole folder starts every filter search.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const sequences = {",
+              "    pyhmmer_seq_demo_a: \">demo_a\\nMMMMHVGLWNRCLEIIRRRREQTYKTWWWWIPLKYEDDDLV\",",
+              "    pyhmmer_seq_demo_b: \">demo_b\\nMSEIDHVGLWNRCLEIIRQQQQDNVPDDDDDEQTYKTWFLPICCCCIPLKYEDKTLV\",",
+              "    pyhmmer_seq_demo_c: \">demo_c\\nMSEIDDDLWNRCLEIIRDNVPEQTYLIGHKDHATVLHACKTIKELKEVDKSFFFFFFIQAALKKG\",",
+              "    pyhmmer_seq_two_domains: \">demo_two_domains\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVVQVPSQFFYEFLEDKFDPHLNPEYNFETFIEGYSNKLSRSVAEAVALNPAKTIFNPLFLYGASGVGKTHLANAIGT\",",
+              "};",
+              "Object.entries(sequences).forEach(([key, value]) => {",
+              "    pm.collectionVariables.set(key, JSON.stringify(value));",
+              "});"
+            ],
+            "packages": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Demo sequences are available to the searches\", function () {",
+              "    [\"pyhmmer_seq_demo_a\", \"pyhmmer_seq_demo_b\", \"pyhmmer_seq_demo_c\", \"pyhmmer_seq_two_domains\"].forEach(function (key) {",
+              "        const value = pm.collectionVariables.get(key);",
+              "        pm.expect(value, key).to.be.a(\"string\").and.not.empty;",
+              "    });",
+              "});"
+            ],
+            "packages": {}
+          }
+        }
+      ],
       "item": [
         {
-          "name": "Meta-data",
+          "name": "Catalog",
+          "description": "Read-only. Run this before a search folder.",
           "item": [
             {
-              "name": "databases-list",
+              "name": "List databases",
               "event": [
                 {
                   "listen": "test",
                   "script": {
+                    "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
+                      "pm.test(\"One protein database is advertised\", function () {",
                       "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Response has a data payload\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData).to.have.property(\"data\");",
+                      "    const rows = pm.response.json().data;",
+                      "    pm.expect(rows).to.be.an(\"array\").that.is.not.empty;",
+                      "    pm.expect(rows[0].id).to.eql(\"mett_proteins\");",
+                      "    pm.expect(rows.map(function (row) { return row.id; })).to.not.include(\"bu_all\");",
                       "});"
                     ],
-                    "type": "text/javascript",
                     "packages": {}
                   }
                 }
               ],
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
+                "header": [],
                 "url": {
                   "raw": "{{mett-current}}/api/pyhmmer/search/databases",
                   "host": [
@@ -11165,53 +11196,39 @@
                     "databases"
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "The form has one database. Species, type strain, and isolate are filters."
               },
               "response": []
             },
             {
-              "name": "mxchoices-list",
+              "name": "Catalog",
               "event": [
                 {
                   "listen": "test",
                   "script": {
+                    "type": "text/javascript",
                     "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
+                      "pm.test(\"Catalog lists species and the HD shortcut\", function () {",
                       "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Response has a data payload\", function () {",
-                      "    const jsonData = pm.response.json();",
-                      "    pm.expect(jsonData).to.have.property(\"data\");",
+                      "    const data = pm.response.json().data;",
+                      "    pm.expect(data.id).to.eql(\"mett_proteins\");",
+                      "    pm.expect(data.species).to.be.an(\"array\").that.is.not.empty;",
+                      "    const acronyms = data.species.map(function (row) { return row.acronym; });",
+                      "    pm.expect(acronyms).to.include.members([\"BU\", \"PV\"]);",
+                      "    const hd = data.shortcuts.find(function (row) { return row.id === \"hd\"; });",
+                      "    pm.expect(hd, \"hd shortcut\").to.be.an(\"object\");",
+                      "    pm.expect(hd.species).to.eql([\"BU\", \"PV\"]);",
                       "});"
                     ],
-                    "type": "text/javascript",
                     "packages": {}
                   }
                 }
               ],
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
+                "header": [],
                 "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/search/mx-choices",
+                  "raw": "{{mett-current}}/api/pyhmmer/search/catalog",
                   "host": [
                     "{{mett-current}}"
                   ],
@@ -11219,31 +11236,80 @@
                     "api",
                     "pyhmmer",
                     "search",
-                    "mx-choices"
+                    "catalog"
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "Species and shortcuts built from the strain index. Disabled species are omitted."
+              },
+              "response": []
+            },
+            {
+              "name": "Task status",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Task counts are returned\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "    const data = pm.response.json().data;",
+                      "    pm.expect(data.total_tasks).to.be.a(\"number\");",
+                      "    pm.expect(data.old_tasks_eligible_for_cleanup).to.be.a(\"number\");",
+                      "    pm.expect(data.cleanup_threshold_days).to.be.a(\"number\");",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/pyhmmer/search/tasks-status",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pyhmmer",
+                    "search",
+                    "tasks-status"
+                  ]
+                },
+                "description": "Counts stored jobs. Does not delete anything."
               },
               "response": []
             }
           ]
         },
         {
-          "name": "Search",
+          "name": "01 Smoke — BU and PV",
+          "description": "Production smoke test. Submits the two-domain demo sequence against BU and PV, waits until the job finishes, then checks domains and the three download formats. Run Catalog first so the sequence fixtures exist.",
           "item": [
             {
-              "name": "pyhmmer-search-req Copy",
+              "name": "Submit — BU and PV, two domains",
               "event": [
                 {
                   "listen": "test",
                   "script": {
+                    "type": "text/javascript",
                     "exec": [
-                      "let json = pm.response.json();",
-                      "if (json.id) {",
-                      "    pm.globals.set(\"hmmer_job_id\", json.id);",
+                      "pm.test(\"Search is accepted\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "const body = pm.response.json();",
+                      "const jobId = body.data && body.data.id;",
+                      "pm.test(\"Job id is returned\", function () {",
+                      "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                      "});",
+                      "if (jobId) {",
+                      "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                      "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                      "    pm.collectionVariables.unset(\"pyhmmer_target\");",
                       "}"
                     ],
-                    "type": "text/javascript",
                     "packages": {}
                   }
                 }
@@ -11256,15 +11322,6 @@
                     "value": "application/json"
                   }
                 ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
                 "url": {
                   "raw": "{{mett-current}}/api/pyhmmer/search",
                   "host": [
@@ -11276,279 +11333,102 @@
                     "search"
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "Two-domain demo sequence limited to B. uniformis and P. vulgatus.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\"BU\", \"PV\"],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_two_domains}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
               },
               "response": []
             },
             {
-              "name": "pyhmmer-search-req",
+              "name": "Poll — BU and PV, two domains",
               "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                      "if (!jobId) {",
+                      "    throw new Error(\"Run the submit request in this folder first.\");",
+                      "}"
+                    ],
+                    "packages": {}
+                  }
+                },
                 {
                   "listen": "test",
                   "script": {
+                    "type": "text/javascript",
                     "exec": [
-                      "let json = pm.response.json();",
-                      "if (json.id) {",
-                      "    pm.globals.set(\"hmmer_job_id\", json.id);",
+                      "const maxAttempts = 24;",
+                      "const expectHits = true;",
+                      "const body = pm.response.json();",
+                      "const data = body.data || {};",
+                      "const status = data.status;",
+                      "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                      "pm.test(\"Result request succeeded\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                      "});",
+                      "if (status === \"PENDING\" || status === \"STARTED\") {",
+                      "    if (attempt >= maxAttempts) {",
+                      "        pm.test(\"Search finished within the poll limit\", function () {",
+                      "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                      "        });",
+                      "    } else {",
+                      "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                      "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                      "        postman.setNextRequest(\"Poll \\u2014 BU and PV, two domains\");",
+                      "    }",
+                      "} else if (status === \"FAILURE\") {",
+                      "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                      "    const task = data.task || {};",
+                      "    pm.test(\"Search completed without an error\", function () {",
+                      "        pm.expect.fail(task.error || JSON.stringify(task));",
+                      "    });",
+                      "} else if (status === \"SUCCESS\") {",
+                      "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                      "    const hits = (data.task && data.task.result) || [];",
+                      "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                      "    pm.test(\"Result payload is a hit list\", function () {",
+                      "        pm.expect(hits).to.be.an(\"array\");",
+                      "    });",
+                      "    if (expectHits) {",
+                      "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                      "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                      "        });",
+                      "    }",
+                      "    hits.forEach(function (hit, index) {",
+                      "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                      "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                      "            pm.expect(hit.domains).to.be.an(\"array\");",
+                      "        });",
+                      "    });",
+                      "    if (hits.length && expectHits) {",
+                      "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                      "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                      "        pm.test(\"At least one hit includes a domain\", function () {",
+                      "            pm.expect(withDomains.length).to.be.above(0);",
+                      "        });",
+                      "    }",
                       "}"
                     ],
-                    "type": "text/javascript",
                     "packages": {}
                   }
                 }
               ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/search",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "search"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "pyhmmer-search-varied-seq",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "let json = pm.response.json();",
-                      "if (json.id) {",
-                      "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                      "}"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">Example protein sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVKQVP\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/search",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "search"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "pyhmmer-search-long",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "let json = pm.response.json();",
-                      "if (json.id) {",
-                      "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                      "}"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">test_long_sequence\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLVYQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKQPGKTLEYNVVVDWKSRKTTVDLESTGRTIIKER\",\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"T\": null,\n    \"domT\": null,\n    \"incT\": null,\n    \"incdomT\": null,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/search",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "search"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "pyhmmer-search-invalid",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "let json = pm.response.json();",
-                      "if (json.id) {",
-                      "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                      "}"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"database\": \"bu_all\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \"MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\",\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/search",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "search"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "pyhmmer-search-dna",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "let json = pm.response.json();",
-                      "if (json.id) {",
-                      "    pm.globals.set(\"hmmer_job_id\", json.id);",
-                      "}"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"database\": \"bu_type_strains\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">test_dna\\nATGAGTGAAATAGATCATGTCGGGCTGTGGAACCGCTGTCTTGAAATCATCAG\",\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/search",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "search"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "Query-Search-Results",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
+                "header": [],
                 "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}",
+                  "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
                   "host": [
                     "{{mett-current}}"
                   ],
@@ -11556,37 +11436,52 @@
                     "api",
                     "pyhmmer",
                     "result",
-                    "{{hmmer_job_id}}"
+                    "{{pyhmmer_job_id}}"
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "Polls until SUCCESS or FAILURE and stores the first hit target."
               },
               "response": []
             },
             {
-              "name": "download-fasta-debug",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
+              "name": "Domains for the first hit",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                      "const target = pm.collectionVariables.get(\"pyhmmer_target\");",
+                      "if (!jobId || !target) {",
+                      "    throw new Error(\"Run the smoke submit and poll requests first.\");",
+                      "}"
+                    ],
+                    "packages": {}
                   }
                 },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Domains are returned for the first hit\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "    const data = pm.response.json().data;",
+                      "    pm.expect(data.target).to.eql(pm.collectionVariables.get(\"pyhmmer_target\"));",
+                      "    pm.expect(data.domains).to.be.an(\"array\").that.is.not.empty;",
+                      "    pm.expect(data.domains[0]).to.include.keys(\"bitscore\", \"ievalue\", \"is_significant\");",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
                 "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/dfef7a0e-38f0-4568-8e10-5f7333ed2c13/debug-fasta",
+                  "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}/domains?target={{pyhmmer_target}}",
                   "host": [
                     "{{mett-current}}"
                   ],
@@ -11594,122 +11489,56 @@
                     "api",
                     "pyhmmer",
                     "result",
-                    "dfef7a0e-38f0-4568-8e10-5f7333ed2c13",
-                    "debug-fasta"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "debug-aligned-fasta",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/debug-pyhmmer-msa",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "result",
-                    "{{hmmer_job_id}}",
-                    "debug-pyhmmer-msa"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "Query-Domain-Results",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/domains?target={{isolate_name_cla}}-JM-H26-B_04207",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "result",
-                    "{{hmmer_job_id}}",
+                    "{{pyhmmer_job_id}}",
                     "domains"
                   ],
                   "query": [
                     {
                       "key": "target",
-                      "value": "{{isolate_name_cla}}-JM-H26-B_04207"
+                      "value": "{{pyhmmer_target}}"
                     }
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "Uses the target saved by the poll request."
               },
               "response": []
             },
             {
-              "name": "test-Query-Domain",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
+              "name": "Download TSV",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                      "if (!jobId) {",
+                      "    throw new Error(\"Run the submit request in this folder first.\");",
+                      "}"
+                    ],
+                    "packages": {}
                   }
                 },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"TSV download is a non-empty table\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"text/tab-separated-values\");",
+                      "    pm.expect(pm.response.text().length).to.be.above(0);",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
                 "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/851eb6cd-0852-4f63-967b-5130fe7129d6/domains?target={{isolate_name_cla}}-JM-H26-B_04207",
+                  "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}/download?format=tab",
                   "host": [
                     "{{mett-current}}"
                   ],
@@ -11717,168 +11546,7 @@
                     "api",
                     "pyhmmer",
                     "result",
-                    "851eb6cd-0852-4f63-967b-5130fe7129d6",
-                    "domains"
-                  ],
-                  "query": [
-                    {
-                      "key": "target",
-                      "value": "{{isolate_name_cla}}-JM-H26-B_04207"
-                    }
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "test-Search-Results",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/94da93bb-624a-4a3e-a8cb-947ac92390b3",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "result",
-                    "94da93bb-624a-4a3e-a8cb-947ac92390b3"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "test-task",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"input\": \">query1\\nMSEQNNTEMTFQIQRIYTKDISFEAPNAPHVFQKDWRAKQ\",\n  \"database\": \"bu_all\",\n  \"threshold\": \"evalue\",\n  \"threshold_value\": 1e-5\n}\n",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/testtask",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "testtask"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            },
-            {
-              "name": "debug-task",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/debug/task/2a6f5b95-9c43-46a6-ab80-9762b00db8aa",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "debug",
-                    "task",
-                    "2a6f5b95-9c43-46a6-ab80-9762b00db8aa"
-                  ]
-                },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Downloads",
-          "item": [
-            {
-              "name": "Download-TSV",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=tab",
-                  "host": [
-                    "{{mett-current}}"
-                  ],
-                  "path": [
-                    "api",
-                    "pyhmmer",
-                    "result",
-                    "{{hmmer_job_id}}",
+                    "{{pyhmmer_job_id}}",
                     "download"
                   ],
                   "query": [
@@ -11888,34 +11556,48 @@
                     }
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "Tab-separated hit table."
               },
               "response": []
             },
             {
-              "name": "Download-Fasta",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
+              "name": "Download FASTA",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                      "if (!jobId) {",
+                      "    throw new Error(\"Run the submit request in this folder first.\");",
+                      "}"
+                    ],
+                    "packages": {}
                   }
                 },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"FASTA download is gzip\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"gzip\");",
+                      "    const bytes = pm.response.stream;",
+                      "    pm.expect(bytes[0]).to.eql(0x1f);",
+                      "    pm.expect(bytes[1]).to.eql(0x8b);",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
                 "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=fasta",
+                  "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}/download?format=fasta",
                   "host": [
                     "{{mett-current}}"
                   ],
@@ -11923,7 +11605,7 @@
                     "api",
                     "pyhmmer",
                     "result",
-                    "{{hmmer_job_id}}",
+                    "{{pyhmmer_job_id}}",
                     "download"
                   ],
                   "query": [
@@ -11933,34 +11615,48 @@
                     }
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "Gzip of the hit sequences, fetched from mett_proteins.faa."
               },
               "response": []
             },
             {
-              "name": "Download-Aligned-Fasta",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
+              "name": "Download aligned FASTA",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                      "if (!jobId) {",
+                      "    throw new Error(\"Run the submit request in this folder first.\");",
+                      "}"
+                    ],
+                    "packages": {}
                   }
                 },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Aligned FASTA download is gzip\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"gzip\");",
+                      "    const bytes = pm.response.stream;",
+                      "    pm.expect(bytes[0]).to.eql(0x1f);",
+                      "    pm.expect(bytes[1]).to.eql(0x8b);",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
                 "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=aligned_fasta",
+                  "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}/download?format=aligned_fasta",
                   "host": [
                     "{{mett-current}}"
                   ],
@@ -11968,7 +11664,7 @@
                     "api",
                     "pyhmmer",
                     "result",
-                    "{{hmmer_job_id}}",
+                    "{{pyhmmer_job_id}}",
                     "download"
                   ],
                   "query": [
@@ -11978,34 +11674,2240 @@
                     }
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "Gzip of the query aligned to the hits."
               },
               "response": []
+            }
+          ]
+        },
+        {
+          "name": "02 Filters",
+          "description": "One folder per filter. Run a folder on its own. Each submit replaces pyhmmer_job_id. Demo sequences previously matched BU and PV; a zero-hit SUCCESS on those filters means the protein database or membership index is not the file the API is searching.",
+          "item": [
+            {
+              "name": "BU",
+              "description": "Species filter BU, demo sequence A.",
+              "item": [
+                {
+                  "name": "Submit — BU",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Species filter BU, demo sequence A.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\"BU\"],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_demo_a}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — BU",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 BU\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
             },
             {
-              "name": "Download-Invalid-Format",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
+              "name": "PV",
+              "description": "Species filter PV, demo sequence B.",
+              "item": [
+                {
+                  "name": "Submit — PV",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Species filter PV, demo sequence B.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\"PV\"],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_demo_b}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — PV",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 PV\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "BU and PV",
+              "description": "Both high-definition species, demo sequence B.",
+              "item": [
+                {
+                  "name": "Submit — BU and PV",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Both high-definition species, demo sequence B.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\"BU\", \"PV\"],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_demo_b}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — BU and PV",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 BU and PV\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Type strains BU and PV",
+              "description": "type_only limits the search to type-strain members.",
+              "item": [
+                {
+                  "name": "Submit — Type strains BU and PV",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "type_only limits the search to type-strain members.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\"BU\", \"PV\"],\n    \"type_only\": true,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_demo_a}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — Type strains BU and PV",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 Type strains BU and PV\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Isolate BU_ATCC8492",
+              "description": "Gene-viewer style filter: one isolate, every species field empty.",
+              "item": [
+                {
+                  "name": "Submit — Isolate BU_ATCC8492",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Gene-viewer style filter: one isolate, every species field empty.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"BU_ATCC8492\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_two_domains}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — Isolate BU_ATCC8492",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 Isolate BU_ATCC8492\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Isolate PV_ATCC8482",
+              "description": "One P. vulgatus type-strain isolate.",
+              "item": [
+                {
+                  "name": "Submit — Isolate PV_ATCC8482",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "One P. vulgatus type-strain isolate.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"PV_ATCC8482\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_demo_b}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — Isolate PV_ATCC8482",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 Isolate PV_ATCC8482\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Legacy alias bu_pv_all",
+              "description": "Old database id. The API rewrites it to BU+PV on the single FASTA.",
+              "item": [
+                {
+                  "name": "Submit — Legacy alias bu_pv_all",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Old database id. The API rewrites it to BU+PV on the single FASTA.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"bu_pv_all\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_demo_b}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — Legacy alias bu_pv_all",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 Legacy alias bu_pv_all\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Legacy isolate prefix",
+              "description": "database isolate_BU_ATCC8492 is the same filter as isolate=BU_ATCC8492.",
+              "item": [
+                {
+                  "name": "Submit — Legacy isolate prefix",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "database isolate_BU_ATCC8492 is the same filter as isolate=BU_ATCC8492.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"isolate_BU_ATCC8492\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_two_domains}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — Legacy isolate prefix",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 Legacy isolate prefix\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Extended species BF",
+              "description": "B. fragilis from the 20hm set. Completing with zero hits is valid; this query was chosen against BU and PV.",
+              "item": [
+                {
+                  "name": "Submit — Extended species BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "B. fragilis from the 20hm set. Completing with zero hits is valid; this query was chosen against BU and PV.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\"BF\"],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_two_domains}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — Extended species BF",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = false;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 Extended species BF\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "BU, PV and BF",
+              "description": "High-definition species plus one extended species.",
+              "item": [
+                {
+                  "name": "Submit — BU, PV and BF",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "High-definition species plus one extended species.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [\"BU\", \"PV\", \"BF\"],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_demo_c}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — BU, PV and BF",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 BU, PV and BF\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "All species",
+              "description": "Empty species list scans the whole FASTA. Slow on production. Run this folder on its own.",
+              "item": [
+                {
+                  "name": "Submit — All species",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Empty species list scans the whole FASTA. Slow on production. Run this folder on its own.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": {{pyhmmer_seq_two_domains}},\n    \"mx\": \"BLOSUM62\",\n    \"E\": 1,\n    \"domE\": 1,\n    \"incE\": 0.01,\n    \"incdomE\": 0.03,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — All species",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 60;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 All species\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Bitscore on BU_ATCC8492",
+              "description": "Same isolate filter with a bitscore threshold instead of an E-value.",
+              "item": [
+                {
+                  "name": "Submit — Bitscore on BU_ATCC8492",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Search is accepted\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "});",
+                          "const body = pm.response.json();",
+                          "const jobId = body.data && body.data.id;",
+                          "pm.test(\"Job id is returned\", function () {",
+                          "    pm.expect(jobId, \"data.id\").to.be.a(\"string\").and.not.empty;",
+                          "});",
+                          "if (jobId) {",
+                          "    pm.collectionVariables.set(\"pyhmmer_job_id\", jobId);",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    pm.collectionVariables.unset(\"pyhmmer_target\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/search",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "search"
+                      ]
+                    },
+                    "description": "Same isolate filter with a bitscore threshold instead of an E-value.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"database\": \"mett_proteins\",\n    \"species\": [],\n    \"type_only\": false,\n    \"isolate\": \"BU_ATCC8492\",\n    \"threshold\": \"bitscore\",\n    \"threshold_value\": 25,\n    \"input\": {{pyhmmer_seq_two_domains}},\n    \"mx\": \"BLOSUM62\",\n    \"T\": 7,\n    \"domT\": 5,\n    \"incT\": 25,\n    \"incdomT\": 22,\n    \"popen\": 0.02,\n    \"pextend\": 0.4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Poll — Bitscore on BU_ATCC8492",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const jobId = pm.collectionVariables.get(\"pyhmmer_job_id\");",
+                          "if (!jobId) {",
+                          "    throw new Error(\"Run the submit request in this folder first.\");",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const maxAttempts = 24;",
+                          "const expectHits = true;",
+                          "const body = pm.response.json();",
+                          "const data = body.data || {};",
+                          "const status = data.status;",
+                          "const attempt = Number(pm.collectionVariables.get(\"pyhmmer_poll_attempt\") || \"1\");",
+                          "pm.test(\"Result request succeeded\", function () {",
+                          "    pm.response.to.have.status(200);",
+                          "    pm.expect(status, \"job status\").to.be.oneOf([\"PENDING\", \"STARTED\", \"SUCCESS\", \"FAILURE\"]);",
+                          "});",
+                          "if (status === \"PENDING\" || status === \"STARTED\") {",
+                          "    if (attempt >= maxAttempts) {",
+                          "        pm.test(\"Search finished within the poll limit\", function () {",
+                          "            pm.expect.fail(\"still \" + status + \" after \" + attempt + \" result requests\");",
+                          "        });",
+                          "    } else {",
+                          "        console.log(\"[pyhmmer] \" + status + \" attempt \" + attempt + \"/\" + maxAttempts);",
+                          "        pm.collectionVariables.set(\"pyhmmer_poll_attempt\", String(attempt + 1));",
+                          "        postman.setNextRequest(\"Poll \\u2014 Bitscore on BU_ATCC8492\");",
+                          "    }",
+                          "} else if (status === \"FAILURE\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const task = data.task || {};",
+                          "    pm.test(\"Search completed without an error\", function () {",
+                          "        pm.expect.fail(task.error || JSON.stringify(task));",
+                          "    });",
+                          "} else if (status === \"SUCCESS\") {",
+                          "    pm.collectionVariables.set(\"pyhmmer_poll_attempt\", \"1\");",
+                          "    const hits = (data.task && data.task.result) || [];",
+                          "    console.log(\"[pyhmmer] SUCCESS hits=\" + hits.length);",
+                          "    pm.test(\"Result payload is a hit list\", function () {",
+                          "        pm.expect(hits).to.be.an(\"array\");",
+                          "    });",
+                          "    if (expectHits) {",
+                          "        pm.test(\"Demo sequence returned at least one hit\", function () {",
+                          "            pm.expect(hits.length, \"hits\").to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "    hits.forEach(function (hit, index) {",
+                          "        pm.test(\"Hit \" + index + \" has the fields the viewer needs\", function () {",
+                          "            pm.expect(hit).to.include.keys(\"target\", \"evalue\", \"score\", \"domains\");",
+                          "            pm.expect(hit.domains).to.be.an(\"array\");",
+                          "        });",
+                          "    });",
+                          "    if (hits.length && expectHits) {",
+                          "        pm.collectionVariables.set(\"pyhmmer_target\", hits[0].target);",
+                          "        const withDomains = hits.filter(function (hit) { return hit.domains && hit.domains.length; });",
+                          "        pm.test(\"At least one hit includes a domain\", function () {",
+                          "            pm.expect(withDomains.length).to.be.above(0);",
+                          "        });",
+                          "    }",
+                          "}"
+                        ],
+                        "packages": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{mett-current}}/api/pyhmmer/result/{{pyhmmer_job_id}}",
+                      "host": [
+                        "{{mett-current}}"
+                      ],
+                      "path": [
+                        "api",
+                        "pyhmmer",
+                        "result",
+                        "{{pyhmmer_job_id}}"
+                      ]
+                    },
+                    "description": "Re-sends itself while the job is PENDING or STARTED. The result endpoint already waits a few seconds server-side."
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "03 Rejected input",
+          "description": "These must fail before a job is stored. Safe to run against production.",
+          "item": [
+            {
+              "name": "Missing FASTA header",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Invalid search is rejected\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                      "});",
+                      "pm.test(\"No job id is created\", function () {",
+                      "    let body = {};",
+                      "    try { body = pm.response.json(); } catch (error) {}",
+                      "    pm.expect(body.data && body.data.id).to.be.undefined;",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
               "request": {
-                "method": "GET",
+                "method": "POST",
                 "header": [
                   {
                     "key": "Content-Type",
                     "value": "application/json"
                   }
                 ],
+                "url": {
+                  "raw": "{{mett-current}}/api/pyhmmer/search",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pyhmmer",
+                    "search"
+                  ]
+                },
+                "description": "A bare sequence is not accepted.",
                 "body": {
                   "mode": "raw",
-                  "raw": "",
+                  "raw": "{\n    \"database\": \"mett_proteins\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \"MSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
-                },
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Sequence too short",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Invalid search is rejected\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                      "});",
+                      "pm.test(\"No job id is created\", function () {",
+                      "    let body = {};",
+                      "    try { body = pm.response.json(); } catch (error) {}",
+                      "    pm.expect(body.data && body.data.id).to.be.undefined;",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "url": {
-                  "raw": "{{mett-current}}/api/pyhmmer/result/{{hmmer_job_id}}/download?format=csv",
+                  "raw": "{{mett-current}}/api/pyhmmer/search",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pyhmmer",
+                    "search"
+                  ]
+                },
+                "description": "Fewer than 10 amino acids.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"database\": \"mett_proteins\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">short\\nMSEID\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "DNA sequence",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Invalid search is rejected\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                      "});",
+                      "pm.test(\"No job id is created\", function () {",
+                      "    let body = {};",
+                      "    try { body = pm.response.json(); } catch (error) {}",
+                      "    pm.expect(body.data && body.data.id).to.be.undefined;",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-current}}/api/pyhmmer/search",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pyhmmer",
+                    "search"
+                  ]
+                },
+                "description": "Nucleotide sequence is rejected.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"database\": \"mett_proteins\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">dna\\nATGAGTGAAATAGATCATGTCGGGCTGTGGAACCGCTGTCTTGAAATCATCAG\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Unknown database",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Invalid search is rejected\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                      "});",
+                      "pm.test(\"No job id is created\", function () {",
+                      "    let body = {};",
+                      "    try { body = pm.response.json(); } catch (error) {}",
+                      "    pm.expect(body.data && body.data.id).to.be.undefined;",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-current}}/api/pyhmmer/search",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pyhmmer",
+                    "search"
+                  ]
+                },
+                "description": "Database ids outside the alias list are rejected. Species is a filter, not a second file.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"database\": \"custom-db\",\n    \"threshold\": \"evalue\",\n    \"threshold_value\": 0.01,\n    \"input\": \">demo\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Unknown threshold",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Invalid search is rejected\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                      "});",
+                      "pm.test(\"No job id is created\", function () {",
+                      "    let body = {};",
+                      "    try { body = pm.response.json(); } catch (error) {}",
+                      "    pm.expect(body.data && body.data.id).to.be.undefined;",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{mett-current}}/api/pyhmmer/search",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pyhmmer",
+                    "search"
+                  ]
+                },
+                "description": "threshold must be evalue or bitscore.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"database\": \"mett_proteins\",\n    \"threshold\": \"score\",\n    \"threshold_value\": 0.01,\n    \"input\": \">demo\\nMSEIDHVGLWNRCLEIIRDNVPEQTYKTWFLPIIPLKYEDKTLV\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Download format csv",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Unsupported format is rejected\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/pyhmmer/result/00000000-0000-0000-0000-000000000000/download?format=csv",
                   "host": [
                     "{{mett-current}}"
                   ],
@@ -12013,7 +13915,7 @@
                     "api",
                     "pyhmmer",
                     "result",
-                    "{{hmmer_job_id}}",
+                    "00000000-0000-0000-0000-000000000000",
                     "download"
                   ],
                   "query": [
@@ -12023,31 +13925,46 @@
                     }
                   ]
                 },
-                "description": "Generated from cURL: curl -X POST http://localhost:8000/api/pyhmmer/phmmer \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"query_sequence\": \"MADEUPSEQ\",\n        \"database\": \"custom-db\"\n      }'\n"
+                "description": "csv is not a download format. Checked before the job is loaded."
+              },
+              "response": []
+            },
+            {
+              "name": "Unknown job id",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Unknown job is not found\", function () {",
+                      "    pm.response.to.have.status(404);",
+                      "});"
+                    ],
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{mett-current}}/api/pyhmmer/result/00000000-0000-0000-0000-000000000001",
+                  "host": [
+                    "{{mett-current}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pyhmmer",
+                    "result",
+                    "00000000-0000-0000-0000-000000000001"
+                  ]
+                },
+                "description": "A job id that was never created."
               },
               "response": []
             }
           ]
-        }
-      ],
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "// PyHmmer fixtures\n// Edit values here when fixtures change; run this request before the rest of the folder.\n\nconst fixtures = {\n    isolate_name_cla: \"BU_CLA\"\n};\n\nObject.entries(fixtures).forEach(([key, value]) => {\n    pm.collectionVariables.set(key, value);\n});\n\nconsole.log(\"[init] set\", Object.keys(fixtures).length, \"fixtures:\", Object.keys(fixtures).join(\", \"));"
-            ]
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "\nconst expected = [\"isolate_name_cla\"];\npm.test(\"Folder fixtures are set on the collection\", function () {\n    expected.forEach(function (key) {\n        const v = pm.collectionVariables.get(key);\n        pm.expect(v, key + \" should be set\").to.not.be.undefined;\n        pm.expect(v, key + \" should not be null\").to.not.eql(null);\n    });\n});"
-            ]
-          }
         }
       ]
     }

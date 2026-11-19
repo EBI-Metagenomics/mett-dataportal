@@ -11,7 +11,7 @@ from unittest.mock import Mock
 import django
 from django_celery_results.models import TaskResult
 
-from pyhmmer_search.search.models import HmmerJob
+from pyhmmer_search.models import HmmerJob
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -240,9 +240,7 @@ def run_all_tests():
     print("✅ All test scenarios completed!")
     print()
     print("To run actual tests with pytest:")
-    print(
-        "cd dataportal_api && python -m pytest pyhmmer_search/search/test_tasks.py -v"
-    )
+    print("cd dataportal_api && python -m pytest pyhmmer_search/tests/test_tasks.py -v")
 
 
 if __name__ == "__main__":

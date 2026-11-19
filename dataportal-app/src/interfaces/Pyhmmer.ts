@@ -72,6 +72,9 @@ export interface PyhmmerResult {
 
 export interface PyhmmerSearchRequest {
     database: string;
+    species?: string[];
+    type_only?: boolean;
+    isolate?: string;
     threshold: 'evalue' | 'bitscore';
     threshold_value: number;
     input: string;

@@ -11,8 +11,25 @@ from pydantic import model_validator
 from pydantic_core import PydanticCustomError
 from pyhmmer.easel import SequenceFile
 
-from .models import HmmerJob, Database
-from ..constants import MX_CHOICES_LITERAL, DEFAULT_MX
+from ..constants import (
+    ALIASES,
+    DATABASE_ID,
+    DEFAULT_DOM_E,
+    DEFAULT_DOM_T,
+    DEFAULT_E,
+    DEFAULT_INC_DOM_E,
+    DEFAULT_INC_DOM_T,
+    DEFAULT_INC_E,
+    DEFAULT_INC_T,
+    DEFAULT_MX,
+    DEFAULT_PEXTEND,
+    DEFAULT_POPEN,
+    DEFAULT_T,
+    ISOLATE_DB_PREFIX,
+    MX_CHOICES_LITERAL,
+)
+from ..membership import resolve_scope
+from ..models import HmmerJob, Database
 
 MXChoicesType = Literal[MX_CHOICES_LITERAL]
 
@@ -96,7 +113,10 @@ class DomainSchema(Schema):
 class HitSchema(Schema):
     """Enhanced hit schema with better field descriptions"""
 
-    target: str = Field(..., description="Target sequence name")
+    target: str = Field(..., description="Locus tag to open in the gene viewer")
+    seq_id: Optional[str] = Field(
+        None, description="Representative sequence id in the protein FASTA"
+    )
     description: str = Field(..., description="Target sequence description")
     evalue: str = Field(..., description="E-value formatted as string")
     score: str = Field(..., description="Bit score formatted as string")
@@ -118,7 +138,21 @@ class MessageSchema(Schema):
 
 
 class SearchRequestSchema(ModelSchema):
-    database: str = Field(..., description="Database identifier (consolidated or isolate-specific)")
+    database: str = Field(
+        default=DATABASE_ID,
+        description="Protein database id. Filters are species, type_only, and isolate.",
+    )
+    species: List[str] = Field(
+        default_factory=list,
+        description="Species acronyms to search. Empty means all species.",
+    )
+    type_only: bool = Field(
+        default=False, description="Restrict the search to type-strain proteins"
+    )
+    isolate: str = Field(
+        default="",
+        description="Restrict the search to one isolate, used by the gene viewer",
+    )
     threshold: Literal["evalue", "bitscore"]
     threshold_value: float
     input: str
@@ -141,8 +175,10 @@ class SearchRequestSchema(ModelSchema):
     incdomT: Optional[float] = Field(None, description="Significance Bit scores - Hit")
 
     # Gap penalties
-    popen: float = Field(default=0.02, ge=0.0, description="Gap open penalty")
-    pextend: float = Field(default=0.4, ge=0.0, description="Gap extend penalty")
+    popen: float = Field(default=DEFAULT_POPEN, ge=0.0, description="Gap open penalty")
+    pextend: float = Field(
+        default=DEFAULT_PEXTEND, ge=0.0, description="Gap extend penalty"
+    )
 
     @field_validator("input", mode="after", check_fields=False)
     @classmethod
@@ -269,37 +305,42 @@ class SearchRequestSchema(ModelSchema):
     @field_validator("database", mode="after")
     @classmethod
     def validate_database(cls, value: str):
-        """Validate database identifier"""
-        # Check if it's a valid consolidated database
-        valid_consolidated = [
-            "bu_type_strains", "bu_all", "pv_type_strains", "pv_all", 
-            "bu_pv_type_strains", "bu_pv_all"
-        ]
-        
-        if value in valid_consolidated:
+        if value in ALIASES or (
+            value.startswith(ISOLATE_DB_PREFIX) and len(value) > len(ISOLATE_DB_PREFIX)
+        ):
             return value
-        
-        # Check if it's a valid isolate-specific database
-        if value.startswith('isolate_'):
-            isolate_name = value.replace('isolate_', '')
-            # Basic validation for isolate name format
-            if isolate_name and (isolate_name.startswith('BU_') or isolate_name.startswith('PV_')):
-                return value
-            else:
-                raise PydanticCustomError(
-                    "invalid_database",
-                    "Isolate-specific database must have format 'isolate_BU_XXXXX' or 'isolate_PV_XXXXX'"
-                )
-        
-        # If neither, it's invalid
+        known = ", ".join(sorted(ALIASES))
         raise PydanticCustomError(
             "invalid_database",
-            f"Database must be one of: {', '.join(valid_consolidated)} or isolate-specific format 'isolate_BU_XXXXX'/'isolate_PV_XXXXX'"
+            f"Database must be one of: {known}, or an isolate id prefixed with 'isolate_'",
         )
+
+    @model_validator(mode="after")
+    def apply_database_alias(self):
+        species, type_only, isolate = resolve_scope(
+            self.database, self.species, self.type_only, self.isolate
+        )
+        self.species = species
+        self.type_only = type_only
+        self.isolate = isolate
+        self.database = DATABASE_ID
+        return self
 
     class Meta:
         model = HmmerJob
-        exclude = ["id", "task", "algo"]
+        exclude = [
+            "id",
+            "task",
+            "algo",
+            "status",
+            "result",
+            "error",
+            "created_at",
+            "finished_at",
+            "species",
+            "type_only",
+            "isolate",
+        ]
 
 
 class TaskResultSchema(ModelSchema):
@@ -367,14 +408,14 @@ class HmmerJobStatusSchema(Schema):
 
 class CutOffSchema(Schema):
     threshold: Literal["evalue", "bitscore"] = "evalue"
-    incE: Optional[float] = Field(0.01, ge=0, le=100.0)
-    incdomE: Optional[float] = Field(0.03, ge=0, le=100.0)
-    E: Optional[float] = Field(1.0, ge=0, le=100.0)
-    domE: Optional[float] = Field(1.0, ge=0, le=100.0)
-    incT: Optional[float] = Field(25.0, ge=0.0, le=1000.0)
-    incdomT: Optional[float] = Field(22.0, ge=0.0, le=1000.0)
-    T: Optional[float] = Field(7.0, ge=0.0, le=1000.0)
-    domT: Optional[float] = Field(5.0, ge=0.0, le=1000.0)
+    incE: Optional[float] = Field(DEFAULT_INC_E, ge=0, le=100.0)
+    incdomE: Optional[float] = Field(DEFAULT_INC_DOM_E, ge=0, le=100.0)
+    E: Optional[float] = Field(DEFAULT_E, ge=0, le=100.0)
+    domE: Optional[float] = Field(DEFAULT_DOM_E, ge=0, le=100.0)
+    incT: Optional[float] = Field(DEFAULT_INC_T, ge=0.0, le=1000.0)
+    incdomT: Optional[float] = Field(DEFAULT_INC_DOM_T, ge=0.0, le=1000.0)
+    T: Optional[float] = Field(DEFAULT_T, ge=0.0, le=1000.0)
+    domT: Optional[float] = Field(DEFAULT_DOM_T, ge=0.0, le=1000.0)
 
     @model_validator(mode="after")
     def clean_threshold_fields(self):
@@ -394,8 +435,8 @@ class CutOffSchema(Schema):
 
 
 class GapPenaltiesSchema(Schema):
-    popen: Optional[float] = Field(0.02, ge=0, lt=0.5)
-    pextend: Optional[float] = Field(0.4, ge=0, lt=1.0)
+    popen: Optional[float] = Field(DEFAULT_POPEN, ge=0, lt=0.5)
+    pextend: Optional[float] = Field(DEFAULT_PEXTEND, ge=0, lt=1.0)
     mx: Optional[MXChoicesType] = Field(
         default=DEFAULT_MX, description="Substitution matrix"
     )
