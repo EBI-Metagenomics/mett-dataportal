@@ -67,7 +67,7 @@ def command_plan(args: argparse.Namespace) -> None:
 
 
 def command_stage(args: argparse.Namespace) -> None:
-    faa = local_faa(args.faa, fetch=args.fetch, cache=args.cache)
+    faa = local_faa(args.faa, fetch=not args.no_fetch, cache=args.cache)
     count = stage_isolate(
         faa,
         isolate=args.isolate,
@@ -169,7 +169,12 @@ def build_parser() -> argparse.ArgumentParser:
     stage.add_argument(
         "--fetch",
         action="store_true",
-        help="Download a missing HD FASTA from the public EBI site. Local runs only.",
+        help="Accepted for older commands. Missing public FASTAs are downloaded unless --no-fetch is set.",
+    )
+    stage.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="Do not download a missing /pub/databases/mett FASTA from the public EBI site.",
     )
     stage.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     stage.set_defaults(func=command_stage)

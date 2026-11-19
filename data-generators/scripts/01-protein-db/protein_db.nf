@@ -37,7 +37,7 @@ process STAGE {
     tag "${isolate}"
 
     input:
-    tuple val(isolate), val(species), val(type_strain), val(collection), path(faa)
+    tuple val(isolate), val(species), val(type_strain), val(collection), val(faa)
 
     output:
     path "${isolate}.jsonl"
@@ -46,7 +46,7 @@ process STAGE {
     def flag = type_strain == "true" ? "--type-strain" : ""
     """
     python3 ${projectDir}/run.py stage \\
-        --faa ${faa} \\
+        --faa '${faa}' \\
         --isolate '${isolate}' \\
         --species '${species}' \\
         --collection '${collection}' \\
@@ -105,7 +105,7 @@ workflow {
                 row.species,
                 row.type_strain,
                 row.collection,
-                file(row.faa, checkIfExists: true),
+                row.faa,
             )
         }
 

@@ -7,12 +7,20 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import urllib.request
 from pathlib import Path
 
 CLUSTER_ROOT = "/pub/databases/mett"
 PUBLIC_URL = "https://ftp.ebi.ac.uk/pub/databases/mett"
+_DEFAULT_ANNOTATION_ROOT = (
+    Path(__file__).resolve().parents[2]
+    / "data"
+    / "generated"
+    / "mettannotator"
+    / "gff3_files"
+)
 
 
 def public_url(faa: str) -> str | None:
@@ -26,18 +34,62 @@ def public_url(faa: str) -> str | None:
     return None
 
 
-def local_faa(faa: Path, *, fetch: bool, cache: Path, opener=None) -> Path:
-    """Return a readable FASTA, downloading the public copy when asked."""
+def annotation_root() -> Path:
+    """Local mettannotator tree. ``METTANNOTATOR_OUT`` overrides the default."""
+    override = os.environ.get("METTANNOTATOR_OUT")
+    if not override:
+        return _DEFAULT_ANNOTATION_ROOT
+    return Path(override).expanduser() / "gff3_files"
+
+
+def local_annotation_copy(faa: Path, root: Path | None = None) -> Path | None:
+    """Same isolate under the local annotation tree, when that file exists."""
+    if not faa.name.endswith(".faa"):
+        return None
+    isolate = faa.name[: -len(".faa")]
+    if not isolate:
+        return None
+    candidate = (
+        (root or annotation_root())
+        / isolate
+        / "functional_annotation"
+        / "prokka"
+        / faa.name
+    )
+    if candidate.is_file() and candidate != faa:
+        return candidate
+    return None
+
+
+def local_faa(
+    faa: Path,
+    *,
+    fetch: bool,
+    cache: Path,
+    opener=None,
+    annotation: Path | None = None,
+) -> Path:
+    """Return a readable FASTA.
+
+    A missing path is replaced by the local mettannotator copy when that
+    isolate has one. A missing ``/pub/databases/mett`` path is otherwise
+    downloaded from the public EBI site when ``fetch`` is set.
+    """
     if faa.is_file():
         return faa
-    if not fetch:
-        raise FileNotFoundError(faa)
-
+    local = local_annotation_copy(faa, root=annotation)
+    if local is not None:
+        print(f"Using local annotation {local}")
+        return local
     url = public_url(str(faa))
-    if url is None:
+    if not fetch or url is None:
+        if url:
+            raise FileNotFoundError(
+                f"{faa} is not on this machine. The public copy is {url}."
+            )
         raise FileNotFoundError(
             f"{faa} is not on this machine and is not in the public EBI tree "
-            f"({PUBLIC_URL}). The 20hm annotations need a local or cluster path."
+            f"({PUBLIC_URL}). Looked for a local copy under {annotation_root()}."
         )
 
     relative = str(faa)[len(CLUSTER_ROOT) :].lstrip("/")

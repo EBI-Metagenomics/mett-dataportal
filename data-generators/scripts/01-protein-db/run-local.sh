@@ -3,25 +3,21 @@
 #
 #   python3 run.py plan --batch all --jobs sources.tsv
 #   ./run-local.sh
-#   ./run-local.sh --fetch
-#   ./run-local.sh --fetch sources.tsv ./chunks ../../data/generated/protein-db
+#   ./run-local.sh sources.tsv ./chunks ../../data/generated/protein-db
 #
-# --fetch is for a machine without /pub/databases mounted. It downloads each
-# missing HD FASTA from https://ftp.ebi.ac.uk/pub/databases/mett into
-# data/cache/faa. The 20hm paths are not on that site. The published directory
-# keeps mett_proteins.faa, members.sqlite, and the SSI file
-# when esl-sfetch is available.
+# A missing /pub/databases/mett FASTA is downloaded from
+# https://ftp.ebi.ac.uk/pub/databases/mett into data/cache/faa. The 20hm paths
+# are not on that site. The published directory keeps mett_proteins.faa,
+# members.sqlite, and the SSI file when esl-sfetch is available.
 
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
-fetch=0
 positional=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --fetch)
-      fetch=1
       shift
       ;;
     *)
@@ -46,9 +42,6 @@ tail -n +2 "$sources" | while IFS=$'\t' read -r isolate species faa type_strain 
   flag=()
   if [[ "$type_strain" == "true" ]]; then
     flag=(--type-strain)
-  fi
-  if [[ "$fetch" -eq 1 ]]; then
-    flag+=(--fetch)
   fi
   python3 run.py stage \
     --faa "$faa" \

@@ -16,7 +16,7 @@ Identical amino-acid sequences collapse to one record. The representative name i
 - `members.sqlite` — one row per locus tag, indexed for species, type-strain, and isolate filters
 - `mett_proteins.faa.ssi` — random-access index, written when `esl-sfetch` is on `PATH`
 
-The search form species list comes from the strain index. `members.tsv` is written while merging and removed once `members.sqlite` exists. A local `--fetch` stores source FASTAs in `data/cache/faa`, not in this directory. `python3 run.py cleanup` removes a `members.tsv`, an older `catalog.json`, or a `faa-cache` left by an older run, and refuses to run when a search file is missing.
+The search form species list comes from the strain index. `members.tsv` is written while merging and removed once `members.sqlite` exists. A missing `/pub/databases/mett` FASTA is downloaded into `data/cache/faa`. `python3 run.py cleanup` removes a `members.tsv`, an older `catalog.json`, or a `faa-cache` left by an older run, and refuses to run when a search file is missing.
 
 ## Inputs
 
@@ -46,17 +46,17 @@ nextflow run protein_db.nf --manifest /path/sources.tsv
 
 ## Local run
 
-`run-local.sh` is the same sequence Nextflow runs, on this machine. `sources.tsv` keeps the cluster paths. Where `/pub/databases` is not mounted, `--fetch` downloads each missing HD FASTA from `https://ftp.ebi.ac.uk/pub/databases/mett` into `data/cache/faa` and stages that copy. Nextflow does not use this flag.
+`run-local.sh` is the same sequence Nextflow runs, on this machine. `sources.tsv` keeps the cluster paths. A missing `/pub/databases/mett` FASTA is downloaded from `https://ftp.ebi.ac.uk/pub/databases/mett` into `data/cache/faa` and staged from that copy. Nextflow does the same during `STAGE`, so the workflow no longer requires those files to exist before it starts.
 
-The 20hm rows point at `/pub/databases/metagenomics/temp`, which is not on the public site. Those isolates still need the cluster mount or `--hm-root` when planning.
+The 20hm rows point at `/pub/databases/metagenomics/temp`, which is not on the public site. When that path is missing, planning and staging use `data/generated/mettannotator/gff3_files/{isolate}/functional_annotation/prokka/{isolate}.faa` if it is there. Otherwise pass `--hm-root`.
 
 ```bash
 python3 run.py plan --batch hd --jobs sources.tsv
 python3 run.py plan --batch all --hm-root /Users/vikasg/Documents/mett-portal/ws/mett-dataportal/data-generators/data/generated/mettannotator/gff3_files/ --jobs sources.tsv
-./run-local.sh --fetch
+./run-local.sh
 ```
 
-`--batch all` includes 20hm. `./run-local.sh --fetch sources.tsv ./chunks ../../data/generated/protein-db` overrides the input list, the chunk directory, and the output directory.
+`--batch all` includes 20hm. `./run-local.sh sources.tsv ./chunks ../../data/generated/protein-db` overrides the input list, the chunk directory, and the output directory.
 
 The script stages one JSONL chunk per isolate, then:
 

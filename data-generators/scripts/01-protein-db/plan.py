@@ -5,6 +5,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+from fetch import local_annotation_copy
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 REFERENCE_DIR = SCRIPT_DIR.parents[1] / "data" / "reference"
 
@@ -90,6 +92,11 @@ def plan_batches(
             acronym = isolate.split("_", 1)[0]
             info = species.get(acronym, {})
             path = faa_path(root, isolate, template)
+            planned = Path(path)
+            if not planned.is_file():
+                local = local_annotation_copy(planned)
+                if local is not None:
+                    path = str(local)
             if skip_missing and not Path(path).is_file():
                 continue
             type_isolate = (info.get("type_strain_isolate") or "").strip()
